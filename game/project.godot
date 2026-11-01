@@ -1,0 +1,12 @@
+config_version=5
+
+[application]
+config/name="Wargrid"
+run/main_scene="res://scenes/main.tscn"
+
+[physics]
+common/physics_ticks_per_second=30
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"

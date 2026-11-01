@@ -1,0 +1,30 @@
+name: Tests
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  godot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GODOT_VERSION: 4.7.2-stable
+      GODOT_ZIP: Godot_v4.7.2-stable_linux.x86_64.zip
+      GODOT_SHA256: cadd3204e728a35d3f13adb7fd0d7902636b79f6b95c40c265eb73b6c35329e4
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot
+        run: |
+          curl -fsSLO "https://github.com/godotengine/godot/releases/download/$GODOT_VERSION/$GODOT_ZIP"
+          echo "$GODOT_SHA256  $GODOT_ZIP" | sha256sum -c -
+          unzip -q "$GODOT_ZIP"
+          sudo install Godot_v4.7.2-stable_linux.x86_64 /usr/local/bin/godot
+      - name: Test
+        run: |
+          set -o pipefail
+          sh tools/run_tests.sh 2>&1 | tee test-results.log
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-results
+          path: test-results.log
