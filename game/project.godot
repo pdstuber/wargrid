@@ -4,6 +4,34 @@ config_version=5
 config/name="Wargrid"
 run/main_scene="res://scenes/main.tscn"
 
+[display]
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/size/resizable=true
+window/stretch/mode="canvas_items"
+
+[input]
+camera_left={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"keycode":65), Object(InputEventKey,"keycode":4194319)]
+}
+camera_right={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"keycode":68), Object(InputEventKey,"keycode":4194321)]
+}
+camera_up={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"keycode":87), Object(InputEventKey,"keycode":4194320)]
+}
+camera_down={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"keycode":83), Object(InputEventKey,"keycode":4194322)]
+}
+deselect={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"keycode":4194305)]
+}
+
 [physics]
 common/physics_ticks_per_second=30
 

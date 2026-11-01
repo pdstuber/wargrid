@@ -376,16 +376,16 @@ Canonical snapshots should use consistent key ordering, stable IDs, explicit num
 
 #### M0 infrastructure
 
-- [x] `test_repeatability` (C11): 1,000 direct simulation steps twice with nonempty orders → identical canonical state and expected final orders.
+- [x] `test_repeatability` (C11): 1,000 direct simulation steps twice with nonempty orders → identical canonical state and expected final state.
 - [x] `test_same_tick_replacement` / `test_canonical_pending_order` (C4/C10): commands at same tick have a defined stable execution order.
 - [x] `test_atomic_rejection` (C5): commands from non-owners or invalid entity IDs do not change entity gameplay state.
 
 #### Movement and pathfinding (M1 onward)
 
-- [ ] `test_world_to_screen_roundtrip`: world → isometric screen → world preserves ground position within chosen precision, including camera pan/zoom in input mapping.
-- [ ] `test_move_open_ground`: vehicle reaches valid destination.
-- [ ] `test_path_around_building`: blocked obstacle avoided without collision.
-- [ ] `test_unreachable_destination`: unit does not stall the simulation; emits appropriate blocked/idle behavior.
+- [x] `test_world_to_screen_roundtrip`: world → isometric screen → world preserves ground position within chosen precision, including camera pan/zoom in input mapping.
+- [x] `test_move_open_ground`: vehicle reaches valid destination.
+- [x] `test_path_around_building`: blocked obstacle avoided without collision.
+- [x] `test_unreachable_destination`: unit does not stall the simulation; emits appropriate blocked/idle behavior.
 - [ ] `test_group_destination_assignment`: 10 vehicles spread instead of stacking on one point.
 - [ ] `test_dynamic_blockage_repath`: new obstruction triggers a reasonable response.
 - [ ] `test_movement_parity`: matched reference observation of a vehicle route/speed, once measured.
@@ -495,7 +495,7 @@ Add a regression fixture **before** implementing the fix wherever possible.
 
 A desert test map; isometric projection; select vehicle; click-to-move; camera movement; simple pathfinding; UI feedback. Include movement/selection/projection tests.
 
-Proposed concrete scope and execution details: [M1 vehicle plan](docs/superpowers/plans/2026-11-01-m1-vehicle.md). It is based on implemented M0 and explicitly migrates stationary-order tests to moving/arrived state. Prototype map, speed and four-way routes are not Zero Hour parity claims.
+Adopted concrete scope and execution details: [M1 vehicle plan](docs/superpowers/plans/2026-11-01-m1-vehicle.md). It is based on implemented M0 and explicitly migrates stationary-order tests to moving/arrived state. Prototype map, speed and four-way routes are not Zero Hour parity claims.
 
 **Exit gate:** same movement orders yield repeatable results in headless simulation; view projection and click mapping work.
 
@@ -531,7 +531,7 @@ Subfactions/generals, superweapons, advanced unit interactions, more environment
 
 ### 7.1 M0 implementation plan — stop before movement
 
-**Execution status:** original M0 commit passed local and remote checks; follow-up test additions verified locally. See [verification evidence](docs/reference/m0-verification.md) and [README](README.md) for current state.
+**Execution status:** M0 including follow-up test additions passed local and remote checks. See [verification evidence](docs/reference/m0-verification.md) and [README](README.md) for current state.
 
 **Execution detail:** follow [M0 foundation implementation plan](docs/superpowers/plans/2026-11-01-m0-foundation.md) for exact method signatures, data shapes, concrete acceptance cases and verification order. This section defines milestone scope; the linked plan resolves its implementation details without adding M1 work.
 

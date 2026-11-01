@@ -4,22 +4,22 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 ## Session
 
-2026-11-01: M0 baseline is `7d67481` on local/remote `main`, now GitHub default branch. M1 planning commit `1a3e316` is on local/remote `m1-vehicle-plan`, not yet integrated into `main`. Both commits passed remote CI (12 cases / 212 checks / 0 failures). No M1 implementation started.
+2026-11-01: explicit `prompt.txt` kickoff adopted M1 defaults. Single-vehicle implementation now passes local headless suite on `m1-vehicle-plan`: **32 cases / 1089 checks / exit 0**. User authorized committing all current work; publishing not authorized. Four pre-existing modified docs preserved. [M1 verification](reference/m1-verification.md) owns detailed evidence; [movement note](reference/movement.md) marks prototype/reference limits.
 
 ## Pending user action
 
-- Choose whether to begin M1 from `m1-vehicle-plan`, which contains the plan and kickoff prompt. Implementation awaits explicit kickoff.
-- Further commits, pushes, PRs and merges require approval. Published branch state is verified below; no new Git publishing action performed during this check.
+- Visible M1 play/screenshots authorized; Computer Use Godot access blocked. User screenshot and second recording confirm rendering, selection, movement/retargeting/arrival and pan. Visible smoke covered by second recording plus user reports for zoom/resize and ignored blocked/outside targets. Basic visible smoke covered within recorded scope; no exhaustive visual/feel claim. M1 remote CI requires separately approved push. Local commit authorized; push, PR and merge not authorized.
+- Sole Grok review found no production defects; three test gaps closed with scratch mutation evidence. Final Ponytail pass found no cuts.
 
 ## Deferred experiments and research
 
-- Current 212-check suite passed remote CI for both M0 follow-up and M1 planning commits; see latest verification below. Older [M0 evidence](reference/m0-verification.md) records the earlier pending state.
-- Visuals, game feel, performance, cross-platform determinism and Zero Hour parity unverified.
-- Original M0 exit gate passed. M1 now has a proposed detailed plan; implementation starts only on explicit kickoff.
+- Visuals, feel, performance, cross-platform determinism and Zero Hour parity unverified. No retail-data extraction or sibling-project changes.
+- M0 and planning commits passed remote CI at 12 cases / 212 checks. Those historical runs do not cover current M1 code.
+- No M2 implementation; groups, collision/dynamic blockers and polished art remain out of scope.
 
 ## Next action
 
-Review the [M1 vehicle plan](superpowers/plans/2026-11-01-m1-vehicle.md) on `m1-vehicle-plan` and choose whether to begin M1 via root `prompt.txt`. `main` does not yet contain these planning files.
+M1 local implementation/review complete; stop before M2. Await explicit Git instructions if publishing is wanted. Remote CI, reference parity and performance remain unverified; see verification record for visible scope. Do not rebuild M0 or expand scope.
 
 ## 2026-11-01 — M0 local foundation
 
@@ -92,3 +92,29 @@ Review the [M1 vehicle plan](superpowers/plans/2026-11-01-m1-vehicle.md) on `m1-
 - GitHub branch API confirms `main` at `7d67481`, `m1-vehicle-plan` at `1a3e316`; default branch is `main`. Branch publication is observed state, not an inferred approval history.
 - [M0 follow-up CI](https://github.com/pdstuber/wargrid/actions/runs/41299222791) and [M1 planning CI](https://github.com/pdstuber/wargrid/actions/runs/41301269564) both completed successfully; fetched logs show 12 cases / 212 checks / 0 failures and `TESTS PASSED 212`.
 - Earlier dated pending-CI/approval notes describe their historical checkpoints. Current handoff supersedes them. `prompt.txt` contains no commit hashes and needs no correction.
+
+## 2026-11-01 — Final documentation wrap-up
+
+- Verified published `m1-vehicle-plan` at `3c0f150`, successful remote CI and GitHub default `main`. Publication observed, not performed during wrap-up; M1 branch remains unmerged.
+- Corrected stale CI summaries in README, blueprint and M0 evidence; refreshed current handoff. No design or implementation change. Historical commit baselines retained.
+- Documentation-only checks: local links/paths, kickoff headings, diff whitespace and status consistency. No game rerun, visible check or implementation review required. No stray untracked files or active game/test processes found.
+- Proposed commit on `m1-vehicle-plan`: `Refresh wrap-up and verified CI summaries`. Commit awaits approval; no push, PR or merge included. Tomorrow: review M1 plan on this branch and choose whether to start implementation.
+
+## 2026-11-01 — M1 implementation
+
+- Followed adopted vehicle plan in order: projection/navigation red/green, movement and named M0 migrations, view picking, scene/input/camera. Pulled async runner setup forward only to enable scene red tests; recorded in session ledger.
+- Red evidence: helper 13 failures; movement 39; view picking 3; scene skeleton 24. Diagnosed wrong arrow constants with engine-key assertions and double-transformed headless mouse injection; fixed config/injector, preserved production coordinate conversion and tolerances.
+- `sh tools/run_tests.sh`: 32 cases / 1089 checks / 0 failures, exit 0, final marker. Outside-root and fresh-cache copy match. Pinned-engine headless smoke exit 0; all eight runner failure probes exit 1, including actual watchdog timeout.
+- Existing test agents kept old sandbox across allow-all switch; fresh agent picked up current permissions. No project workaround needed.
+- Batched visible check authorized. Game launched without diagnostics; Computer Use denied Godot access. User screenshot and second recording confirm static scene/HUD plus selection, moving targets, arrival and camera pan. User confirms resize/zoom and ignored blocked/outside clicks. Basic visible smoke covered; HUD error text/post-transform re-selection explicitly checked headlessly, not separately captured in video. No commit, push, PR, merge, engine upgrade or sibling edits. Sole Grok review complete; test gaps closed and mutation-verified. Ponytail pass found no cuts.
+
+## 2026-11-01 — M1 final handoff
+
+- Final exact checkout, outside-root and fresh-cache suites each pass: 32 cases / 1089 checks / 0 failures, exit 0, `TESTS PASSED 1089`. Headless smoke exit 0. Eight runner probes exit 1.
+- Three review regressions each pass old check and fail tightened check; production unchanged after review. Grok completed substantive report; capture-shell readonly-variable error means its exit code unknown, not an unfinished review. No duplicate substantive review. Final Ponytail lean pass: no cuts.
+- Basic visible smoke supported by second user recording plus reports: selection, movement around obstacle, retargeting, arrival, pan, resize/zoom and ignored blocked/outside targets. HUD rejection text/post-transform re-selection established automatically, not separately recorded visually. No exhaustive feel/performance/reference claim.
+- README, movement/verification notes and plan checkboxes reflect local evidence. No commit, push, PR or merge; M1 remote CI pending approved publication. Stop at M1.
+
+## 2026-11-01 — M1 commit approval
+
+- User explicitly authorized committing everything currently in repo, including pre-existing documentation changes and reviewed M1 implementation/tests/evidence. No push, PR or merge included. Read Git log/status for resulting commit.

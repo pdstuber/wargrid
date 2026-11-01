@@ -10,7 +10,7 @@ func equal(runner, actual: Variant, expected: Variant, label: String) -> void:
 
 func test_spawn(runner) -> bool:
 	var sim = Simulation.new()
-	equal(runner, sim.snapshot(), {"tick": 0, "next_entity_id": 1, "entities": [], "pending_commands": [], "last_sequences": []}, "C1 fresh")
+	equal(runner, sim.snapshot(), {"tick": 0, "next_entity_id": 1, "entities": [], "pending_commands": [], "last_sequences": [], "map": {"size": [16, 16], "blocked_cells": []}}, "C1 fresh")
 	equal(runner, sim.spawn(1, Vector2(1, 2)), 1, "C1 first ID")
 	equal(runner, sim.spawn(2, Vector2.ZERO), 2, "C1 second ID")
 	var before: Dictionary = sim.snapshot()
@@ -19,9 +19,9 @@ func test_spawn(runner) -> bool:
 		equal(runner, sim.snapshot(), before, "C1 rejection unchanged")
 	equal(runner, sim.spawn(1, Vector2(0.5, 2.5)), 3, "C1 next ID")
 	equal(runner, sim.snapshot().entities, [
-		{"id": 1, "owner": 1, "position": [1.0, 2.0], "order": null},
-		{"id": 2, "owner": 2, "position": [0.0, 0.0], "order": null},
-		{"id": 3, "owner": 1, "position": [0.5, 2.5], "order": null},
+		{"id": 1, "owner": 1, "position": [1.0, 2.0], "order": null, "status": "idle", "route": []},
+		{"id": 2, "owner": 2, "position": [0.0, 0.0], "order": null, "status": "idle", "route": []},
+		{"id": 3, "owner": 1, "position": [0.5, 2.5], "order": null, "status": "idle", "route": []},
 	], "C1 entities in ID order")
 	return true
 
@@ -58,7 +58,7 @@ func test_tick_zero(runner) -> bool:
 	equal(runner, state.tick, 1, "C2 tick")
 	equal(runner, state.pending_commands, [], "C2 consumed")
 	equal(runner, state.entities[0].order, {"type": "move", "target": [3.5, 4.0]}, "C2 applied")
-	equal(runner, state.entities[0].position, [1.0, 2.0], "C2 position")
+	check_first_motion(runner, state.entities[0], "C2")
 	return true
 
 func test_future_tick(runner) -> bool:
@@ -72,10 +72,12 @@ func test_future_tick(runner) -> bool:
 	if state.entities.is_empty():
 		return false
 	equal(runner, state.entities[0].order, null, "C3 no early application")
+	equal(runner, state.entities[0].position, [1.0, 2.0], "C3 no early motion")
 	sim.step()
 	equal(runner, sim.snapshot().tick, 3, "C3 third tick")
 	equal(runner, sim.snapshot().pending_commands, [], "C3 consumed")
 	equal(runner, sim.snapshot().entities[0].order, {"type": "move", "target": [3.5, 4.0]}, "C3 applied")
+	check_first_motion(runner, sim.snapshot().entities[0], "C3 due movement")
 	return true
 
 func test_same_tick_replacement(runner) -> bool:
@@ -93,7 +95,7 @@ func test_same_tick_replacement(runner) -> bool:
 	equal(runner, state.entities[0].order, {"type": "move", "target": [8.0, 9.0]}, "C4 replaced")
 	for axis in range(2):
 		equal(runner, typeof(state.entities[0].order.target[axis]), TYPE_FLOAT, "C4 applied target axis %d type" % axis)
-	equal(runner, state.entities[0].position, [1.0, 2.0], "C4 position")
+	check_first_motion(runner, state.entities[0], "C4")
 	return true
 
 func test_atomic_rejection(runner) -> bool:
@@ -171,6 +173,10 @@ func test_snapshot_copy(runner) -> bool:
 	before = sim.snapshot()
 	changed = sim.snapshot()
 	changed.entities[0].order.target[0] = 99
+	if not changed.entities[0].route.is_empty():
+		changed.entities[0].route[0][0] = 99
+	changed.map.size[0] = 99
+	changed.map.blocked_cells.append([1, 1])
 	equal(runner, sim.snapshot(), before, "C9 applied order isolation")
 	return true
 
@@ -203,7 +209,8 @@ func test_repeatability(runner) -> bool:
 	equal(runner, a.snapshot(), b.snapshot(), "C11 equal worlds")
 	equal(runner, a.snapshot(), {
 		"tick": 1000, "next_entity_id": 2,
-		"entities": [{"id": 1, "owner": 1, "position": [1.0, 2.0], "order": {"type": "move", "target": [8.0, 9.0]}}],
+		"entities": [{"id": 1, "owner": 1, "position": [8.0, 9.0], "order": null, "status": "arrived", "route": []}],
+		"map": {"size": [16, 16], "blocked_cells": []},
 		"pending_commands": [], "last_sequences": [{"player": 1, "sequence": 1}],
 	}, "C11 full final state")
 	return true
@@ -214,12 +221,28 @@ func test_group_move(runner) -> bool:
 	accepted(runner, sim, command(0, 0, 1, [2, 1]), "C12 group accepted")
 	equal(runner, sim.snapshot().pending_commands, [command(0, 0, 1, [2, 1])], "C12 whole group queued")
 	sim.step()
-	equal(runner, sim.snapshot(), {
-		"tick": 1, "next_entity_id": 3,
-		"entities": [
-			{"id": 1, "owner": 1, "position": [1.0, 2.0], "order": {"type": "move", "target": [3.5, 4.0]}},
-			{"id": 2, "owner": 1, "position": [5.0, 6.0], "order": {"type": "move", "target": [3.5, 4.0]}},
-		],
-		"pending_commands": [], "last_sequences": [{"player": 1, "sequence": 0}],
-	}, "C12 all group orders applied in ID-sorted snapshot without movement")
+	var state: Dictionary = sim.snapshot()
+	equal(runner, state.tick, 1, "C12 tick")
+	equal(runner, state.next_entity_id, 3, "C12 next ID")
+	equal(runner, state.pending_commands, [], "C12 consumed")
+	equal(runner, state.last_sequences, [{"player": 1, "sequence": 0}], "C12 sequence")
+	equal(runner, state.map, {"size": [16, 16], "blocked_cells": []}, "C12 map")
+	equal(runner, state.entities.size(), 2, "C12 entity count")
+	for i in range(state.entities.size()):
+		var unit: Dictionary = state.entities[i]
+		equal(runner, unit.id, i + 1, "C12 ID order")
+		equal(runner, unit.owner, 1, "C12 owner")
+		equal(runner, unit.order, {"type": "move", "target": [3.5, 4.0]}, "C12 copied target")
+		equal(runner, unit.status, "moving", "C12 status")
+		runner.check(not unit.route.is_empty(), "C12 remaining route")
+		var start := Vector2(1, 2) if i == 0 else Vector2(5, 6)
+		var distance: float = Vector2(unit.position[0], unit.position[1]).distance_to(start)
+		runner.check(distance > 0 and distance <= 0.1 + 1e-5, "C12 each member moves one budget")
+	state.entities[0].order.target[0] = 99
+	equal(runner, sim.snapshot().entities[1].order.target, [3.5, 4.0], "C12 targets independent")
 	return true
+
+func check_first_motion(runner, unit: Dictionary, label: String) -> void:
+	var point := Vector2(unit.position[0], unit.position[1])
+	runner.check(absf(point.distance_to(Vector2(1, 2)) - 0.1) <= 1e-5, label + " one budget")
+	equal(runner, unit.get("status"), "moving", label + " status")

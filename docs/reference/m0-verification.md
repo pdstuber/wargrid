@@ -1,6 +1,6 @@
 # M0 verification — 2026-11-01
 
-Status: local correctness PASS (212 checks); remote CI PASS for original commit `20739d6` (199 checks), pending for current additions. Original M0 exit gate passed; no M1 implementation. Visuals and reference fidelity UNVERIFIED.
+Status: local correctness PASS (212 checks); remote CI PASS for M0 follow-up `7d67481` and documentation follow-up `3c0f150` (212 checks each). Original M0 exit gate passed; no M1 implementation. Visuals and reference fidelity UNVERIFIED.
 
 ## Environment and provenance
 
@@ -83,3 +83,7 @@ User requested addressing coverage limits, then commit and local merge to `main`
 `sh tools/run_tests.sh` before/after scratch probes: 12 cases / 212 checks / 0 failures, exit 0. Applying only first group member yields one C12 failure, wrapper exit 1. Reversing entity snapshot IDs yields C1/C12 failures, wrapper exit 1. Neither probe produced parse/runtime diagnostics. Production code unchanged.
 
 Focused Grok follow-up completed: no defects in C1/C12 or updated status docs; no test rerun by reviewer. Final Ponytail pass found no useful cuts. User authorized local commit/merge; updated-suite remote CI still pending separate push approval.
+
+## Updated-suite remote verification — 2026-11-01
+
+GitHub API confirms successful completed runs for [M0 follow-up `7d67481`](https://github.com/pdstuber/wargrid/actions/runs/41299222791) and [documentation follow-up `3c0f150`](https://github.com/pdstuber/wargrid/actions/runs/41301647871). Fetched logs show `CASES 12 CHECKS 212 FAILURES 0` and `TESTS PASSED 212` for both. Earlier pending-CI statements record historical checkpoints; current suite remote gate is satisfied. Visuals, performance and reference fidelity remain unverified.

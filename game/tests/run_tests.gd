@@ -1,9 +1,10 @@
 extends SceneTree
 
-const Suites = [preload("res://tests/test_simulation.gd")]
+const Suites = [preload("res://tests/test_simulation.gd"), preload("res://tests/test_isometric.gd"), preload("res://tests/test_navigation.gd"), preload("res://tests/test_movement.gd"), preload("res://tests/test_view.gd"), preload("res://tests/test_scene.gd")]
 var checks: int = 0
 var failures: int = 0
 var case_count: int = 0
+var _active_case: String = "startup"
 
 func check(condition: bool, message: String) -> void:
 	checks += 1
@@ -12,6 +13,10 @@ func check(condition: bool, message: String) -> void:
 		print("FAIL: ", message)
 
 func _initialize() -> void:
+	_run.call_deferred()
+
+func _run() -> void:
+	create_timer(60.0).timeout.connect(_timeout)
 	for suite_script in Suites:
 		var suite = suite_script.new()
 		var selected: Array[Callable] = suite.cases()
@@ -19,9 +24,10 @@ func _initialize() -> void:
 			failures += 1
 			print("FAIL: zero tests in suite")
 		for test in selected:
+			_active_case = test.get_method()
 			case_count += 1
 			var before: int = checks
-			var completed: Variant = test.call(self)
+			var completed: Variant = await test.call(self)
 			if completed is not bool or completed != true or checks == before:
 				failures += 1
 				print("FAIL: incomplete/empty case ", test.get_method())
@@ -32,3 +38,7 @@ func _initialize() -> void:
 	if failures == 0:
 		print("TESTS PASSED ", checks)
 	quit(0 if failures == 0 else 1)
+
+func _timeout() -> void:
+	print("FAIL: watchdog timeout in ", _active_case)
+	quit(1)
