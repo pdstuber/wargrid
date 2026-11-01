@@ -4,22 +4,22 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 ## Session
 
-2026-11-01: M1 plan prepared at user request against local `main` at `7d67481`. M0 baseline rechecked: 12 cases / 212 checks / exit 0. No M1 implementation started. Documentation-only wrap-up checked links, paths and handoff consistency; user approved committing planning changes on `m1-vehicle-plan`.
+2026-11-01: M0 baseline is `7d67481` on local/remote `main`, now GitHub default branch. M1 planning commit `1a3e316` is on local/remote `m1-vehicle-plan`, not yet integrated into `main`. Both commits passed remote CI (12 cases / 212 checks / 0 failures). No M1 implementation started.
 
 ## Pending user action
 
-- M1 implementation awaits explicit kickoff. User approved planning branch and commit only; no push, PR or merge authorized.
-- Local `main` contains M0 follow-up at `7d67481`, verified during M1 planning. No new push/PR authorization; updated-suite remote CI awaits a separately approved push.
+- Choose whether to begin M1 from `m1-vehicle-plan`, which contains the plan and kickoff prompt. Implementation awaits explicit kickoff.
+- Further commits, pushes, PRs and merges require approval. Published branch state is verified below; no new Git publishing action performed during this check.
 
 ## Deferred experiments and research
 
-- Current 212-check suite has not run remotely; original 199-check commit passed CI. See [evidence](reference/m0-verification.md).
+- Current 212-check suite passed remote CI for both M0 follow-up and M1 planning commits; see latest verification below. Older [M0 evidence](reference/m0-verification.md) records the earlier pending state.
 - Visuals, game feel, performance, cross-platform determinism and Zero Hour parity unverified.
 - Original M0 exit gate passed. M1 now has a proposed detailed plan; implementation starts only on explicit kickoff.
 
 ## Next action
 
-Review the [M1 vehicle plan](superpowers/plans/2026-11-01-m1-vehicle.md) and choose whether to begin M1 via root `prompt.txt`. Updated-suite remote CI requires separate push approval.
+Review the [M1 vehicle plan](superpowers/plans/2026-11-01-m1-vehicle.md) on `m1-vehicle-plan` and choose whether to begin M1 via root `prompt.txt`. `main` does not yet contain these planning files.
 
 ## 2026-11-01 — M0 local foundation
 
@@ -85,3 +85,10 @@ Review the [M1 vehicle plan](superpowers/plans/2026-11-01-m1-vehicle.md) and cho
 
 - User explicitly approved branch `m1-vehicle-plan` and six-file documentation commit `Plan M1 vehicle slice and handoff`.
 - No push, PR, merge or M1 implementation authorized.
+
+## 2026-11-01 — Commit reference and remote-state check
+
+- Verified `20739d6` is original M0, `7d67481` is M0 coverage follow-up, and `1a3e316` is M1 planning. Historical baseline hashes remain correct; no game/test/tool/CI changes between the latter two.
+- GitHub branch API confirms `main` at `7d67481`, `m1-vehicle-plan` at `1a3e316`; default branch is `main`. Branch publication is observed state, not an inferred approval history.
+- [M0 follow-up CI](https://github.com/pdstuber/wargrid/actions/runs/41299222791) and [M1 planning CI](https://github.com/pdstuber/wargrid/actions/runs/41301269564) both completed successfully; fetched logs show 12 cases / 212 checks / 0 failures and `TESTS PASSED 212`.
+- Earlier dated pending-CI/approval notes describe their historical checkpoints. Current handoff supersedes them. `prompt.txt` contains no commit hashes and needs no correction.
