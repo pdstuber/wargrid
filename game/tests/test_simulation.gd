@@ -3,7 +3,7 @@ extends RefCounted
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 
 func cases() -> Array[Callable]:
-	return [test_spawn, test_tick_zero, test_future_tick, test_same_tick_replacement, test_atomic_rejection, test_sequences, test_malformed_commands, test_command_copy, test_snapshot_copy, test_canonical_pending_order, test_repeatability]
+	return [test_spawn, test_tick_zero, test_future_tick, test_same_tick_replacement, test_atomic_rejection, test_sequences, test_malformed_commands, test_command_copy, test_snapshot_copy, test_canonical_pending_order, test_repeatability, test_group_move]
 
 func equal(runner, actual: Variant, expected: Variant, label: String) -> void:
 	runner.check(actual == expected, "%s expected %s, actual %s" % [label, expected, actual])
@@ -18,8 +18,11 @@ func test_spawn(runner) -> bool:
 		equal(runner, sim.spawn(invalid[0], invalid[1]), -1, "C1 invalid spawn")
 		equal(runner, sim.snapshot(), before, "C1 rejection unchanged")
 	equal(runner, sim.spawn(1, Vector2(0.5, 2.5)), 3, "C1 next ID")
-	if not sim.snapshot().entities.is_empty():
-		equal(runner, sim.snapshot().entities[0], {"id": 1, "owner": 1, "position": [1.0, 2.0], "order": null}, "C1 entity")
+	equal(runner, sim.snapshot().entities, [
+		{"id": 1, "owner": 1, "position": [1.0, 2.0], "order": null},
+		{"id": 2, "owner": 2, "position": [0.0, 0.0], "order": null},
+		{"id": 3, "owner": 1, "position": [0.5, 2.5], "order": null},
+	], "C1 entities in ID order")
 	return true
 
 func world():
@@ -79,12 +82,17 @@ func test_same_tick_replacement(runner) -> bool:
 	var sim = world()
 	accepted(runner, sim, command(0, 0, 1, [1], [3, 4]), "C4 first")
 	accepted(runner, sim, command(0, 1, 1, [1], [8, 9]), "C4 second")
+	var queued_target: Array = sim.snapshot().pending_commands[1].target
+	for axis in range(2):
+		equal(runner, typeof(queued_target[axis]), TYPE_FLOAT, "C4 queued target axis %d type" % axis)
 	sim.step()
 	var state: Dictionary = sim.snapshot()
 	equal(runner, state.last_sequences, [{"player": 1, "sequence": 1}], "C4 sequence")
 	if state.entities.is_empty():
 		return false
 	equal(runner, state.entities[0].order, {"type": "move", "target": [8.0, 9.0]}, "C4 replaced")
+	for axis in range(2):
+		equal(runner, typeof(state.entities[0].order.target[axis]), TYPE_FLOAT, "C4 applied target axis %d type" % axis)
 	equal(runner, state.entities[0].position, [1.0, 2.0], "C4 position")
 	return true
 
@@ -172,12 +180,13 @@ func test_canonical_pending_order(runner) -> bool:
 	for sim in [a, b]:
 		sim.spawn(2, Vector2.ZERO)
 	accepted(runner, a, command(0, 0, 2, [2]), "C10 a player2")
-	accepted(runner, a, command(), "C10 a player1")
-	accepted(runner, b, command(), "C10 b player1")
+	for cmd in [command(), command(3, 1), command(1, 2), command(1, 3)]:
+		accepted(runner, a, cmd, "C10 a player1 " + str(cmd.sequence))
+		accepted(runner, b, cmd, "C10 b player1 " + str(cmd.sequence))
 	accepted(runner, b, command(0, 0, 2, [2]), "C10 b player2")
 	equal(runner, a.snapshot(), b.snapshot(), "C10 canonical before")
-	equal(runner, a.snapshot().last_sequences, [{"player": 1, "sequence": 0}, {"player": 2, "sequence": 0}], "C10 sorted sequences")
-	equal(runner, a.snapshot().pending_commands, [command(), command(0, 0, 2, [2])], "C10 sorted commands")
+	equal(runner, a.snapshot().last_sequences, [{"player": 1, "sequence": 3}, {"player": 2, "sequence": 0}], "C10 sorted sequences")
+	equal(runner, a.snapshot().pending_commands, [command(), command(0, 0, 2, [2]), command(1, 2), command(1, 3), command(3, 1)], "C10 commands sorted by tick/player/sequence")
 	a.step()
 	b.step()
 	equal(runner, a.snapshot(), b.snapshot(), "C10 canonical after")
@@ -197,4 +206,20 @@ func test_repeatability(runner) -> bool:
 		"entities": [{"id": 1, "owner": 1, "position": [1.0, 2.0], "order": {"type": "move", "target": [8.0, 9.0]}}],
 		"pending_commands": [], "last_sequences": [{"player": 1, "sequence": 1}],
 	}, "C11 full final state")
+	return true
+
+func test_group_move(runner) -> bool:
+	var sim = world()
+	sim.spawn(1, Vector2(5, 6))
+	accepted(runner, sim, command(0, 0, 1, [2, 1]), "C12 group accepted")
+	equal(runner, sim.snapshot().pending_commands, [command(0, 0, 1, [2, 1])], "C12 whole group queued")
+	sim.step()
+	equal(runner, sim.snapshot(), {
+		"tick": 1, "next_entity_id": 3,
+		"entities": [
+			{"id": 1, "owner": 1, "position": [1.0, 2.0], "order": {"type": "move", "target": [3.5, 4.0]}},
+			{"id": 2, "owner": 1, "position": [5.0, 6.0], "order": {"type": "move", "target": [3.5, 4.0]}},
+		],
+		"pending_commands": [], "last_sequences": [{"player": 1, "sequence": 0}],
+	}, "C12 all group orders applied in ID-sorted snapshot without movement")
 	return true

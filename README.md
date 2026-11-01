@@ -2,7 +2,7 @@
 
 A Godot isometric pixel-art RTS preserving Zero Hour's faction identity, strategic choices and pacing, while fixing defects and avoiding inherited performance problems.
 
-**Current state:** M0 local foundation implemented: launchable scene, command/state kernel and headless behavior tests. Remote CI gate pending push approval. No movement or gameplay yet.
+**Current state:** M0 local foundation implemented: launchable scene, command/state kernel and headless behavior tests. Original M0 commit passed [remote CI](https://github.com/pdstuber/wargrid/actions/runs/41296904731); test coverage additions verified locally. No movement or gameplay yet.
 
 ## Start here
 
@@ -34,9 +34,9 @@ Test wrapper imports headlessly before tests, checks exit codes and engine diagn
 
 For explicit play sessions: `sh tools/run_game.sh`. This opens a window; routine verification stays headless.
 
-Local behavior suite: **11 cases, 199 checks, exit 0**. Before kernel implementation, valid stubs produced 37 behavioral failures (11 cases, 184 checks, exit 1; no parse errors). Scratch runner probes each exited 1: false assertion, empty case list, suite parse error, return before checks, return after check without completion, runtime error followed by passing case, and main-script import parse error. Restored smoke baseline: 1 case, 1 check, exit 0. See [verification record](docs/reference/m0-verification.md).
+Local behavior suite: **12 cases, 212 checks, exit 0**. Before kernel implementation, valid stubs produced 37 behavioral failures (11 cases, 184 checks, exit 1; no parse errors). Scratch runner probes each exited 1: false assertion, empty case list, suite parse error, return before checks, return after check without completion, runtime error followed by passing case, and main-script import parse error. Restored smoke baseline: 1 case, 1 check, exit 0. See [verification record](docs/reference/m0-verification.md).
 
-CI configuration exists; remote job has not run. M0 exit gate remains pending remote CI. No visual, game-feel, performance, cross-platform determinism or Zero Hour parity validation. No M1 work started.
+[Remote CI](https://github.com/pdstuber/wargrid/actions/runs/41296904731) passed commit `20739d6`: 11 cases / 199 checks. Current test additions (212 checks) have not run remotely. Original M0 exit gate passed; no M1 work authorized. No visual, game-feel, performance, cross-platform determinism or Zero Hour parity validation. No M1 work started.
 
 ## Local references
 

@@ -4,22 +4,21 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 ## Session
 
-2026-11-01: M0 local foundation built and verified. Remote CI gate pending. Kickoff/wrapup workflow ported from The Last Hearth; commands delegate to portable docs.
+2026-11-01: original M0 commit `20739d6` passed Linux CI. Follow-up C1/C4/C10/C12 coverage additions pass locally; production code unchanged. Kickoff/wrapup workflow available.
 
 ## Pending user action
 
-- Approve or decline a push to run remote CI. Branch `m0-foundation` and first commit `Initialize Wargrid M0 foundation and session workflow` covering the 26 authored files are approved. Push/PR/merge are not approved; use Git status/log for current commit state.
+- User authorized addressing review coverage limits, committing pending M0 changes, and merging locally into `main`. No push/PR authorized; updated-suite remote CI awaits a separately approved push.
 
 ## Deferred experiments and research
 
-- Remote CI execution pending commit/push approval; not a passing gate.
+- Current 212-check suite has not run remotely; original 199-check commit passed CI. See [evidence](reference/m0-verification.md).
 - Visuals, game feel, performance, cross-platform determinism and Zero Hour parity unverified.
-- Minor test coverage improvements deferred: pending-command tick/sequence sorting assertions and explicit normalized float-type assertions. See [M0 evidence](reference/m0-verification.md).
-- M1 work waits for M0 exit gate and explicit scope; do not start automatically.
+- Original M0 exit gate passed. M1 still requires explicit scope; do not start automatically.
 
 ## Next action
 
-Offer remote CI via separately approved push of `m0-foundation`; inspect remote configuration before proposing the exact command. Alternative: address deferred M0 test coverage first.
+Verify local `main` contains authorized M0 follow-up, then offer separately approved push of `main` to run updated suite in CI. Do not start M1 automatically.
 
 ## 2026-11-01 — M0 local foundation
 
@@ -47,3 +46,22 @@ Offer remote CI via separately approved push of `m0-foundation`; inspect remote 
 - User explicitly approved branch `m0-foundation` and first commit `Initialize Wargrid M0 foundation and session workflow`, covering all 26 authored files.
 - Approval includes planning/reference documentation, M0 implementation/tooling/CI and session workflow. Cache and temporary evidence excluded.
 - No push, PR or merge authorized. Next gate is remote CI after separate push approval.
+
+## 2026-11-01 — M0 coverage follow-up
+
+- C4 explicitly checks normalized float types on both axes before/after execution. C10 covers tick/player/sequence canonical queue order without weakening accepted sequence rules.
+- Local suite: 11 cases / 209 checks, exit 0. Five independent scratch regressions each fail behavior assertions; production untouched.
+- Corrected historical review assumption: existing deep Dictionary comparisons also detect removed float conversion on this build; new explicit checks improve diagnostic precision.
+- User provided Actions log; GitHub CLI independently confirmed successful run for `20739d6`. Original remote gate passed, updated tests still local.
+- No new commit, push, PR, merge or M1 work authorized.
+
+- Coverage follow-up review complete: no findings; final Ponytail pass found no cuts. Grok timed out; fresh-context fallback was sole completed substantive review.
+
+## 2026-11-01 — Group coverage and local integration
+
+- Grok whole-branch review completed without defects; coverage limits prompted public-API tests for successful multi-entity orders and exact entity-ID snapshot order.
+- C1/C12 additions pass: 12 cases / 212 checks, exit 0. Scratch first-member-only and reverse-ID mutations fail behavioral checks, exit 1. Production unchanged.
+- User authorized pending M0 test/documentation commit and local merge into `main`; no push. Neither local nor remote `main` exists, so initialize local `main` at original M0 commit before fast-forwarding reviewed follow-up.
+- Forced internal insertion reordering is unreachable through current API; no test-only mutation hooks added. Earlier Grok attempts were stopped too soon; whole-branch review eventually completed by waiting.
+
+- Focused Grok follow-up review completed with no defects; final Ponytail pass found no cuts. Integration verification runs on local `main`; read Git log/status for exact commit/branch state.

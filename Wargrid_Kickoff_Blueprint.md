@@ -529,7 +529,7 @@ Subfactions/generals, superweapons, advanced unit interactions, more environment
 
 ### 7.1 M0 implementation plan — stop before movement
 
-**Execution status:** local checks verified; remote CI pending. See [verification evidence](docs/reference/m0-verification.md) and [README](README.md) for current state.
+**Execution status:** original M0 commit passed local and remote checks; follow-up test additions verified locally. See [verification evidence](docs/reference/m0-verification.md) and [README](README.md) for current state.
 
 **Execution detail:** follow [M0 foundation implementation plan](docs/superpowers/plans/2026-11-01-m0-foundation.md) for exact method signatures, data shapes, concrete acceptance cases and verification order. This section defines milestone scope; the linked plan resolves its implementation details without adding M1 work.
 
@@ -571,7 +571,7 @@ Godot's `res://` root is `game/`: the simulation script is `res://scripts/simula
 - [x] Write failing tests for tick boundaries, same-tick replacement, wrong owner/missing entity/mixed group rejection, duplicate/past commands, snapshot isolation, and stable IDs. Each failure must be an assertion about behavior, not only a parse error.
 - [x] Implement only enough kernel to pass them. Queue a nonempty command sequence, run 1,000 ticks twice, compare full snapshots and final orders. A no-op simulation must fail this test.
 - [x] Drive the same `step()` from the scene; smoke-launch headlessly with a bounded run. Pure simulation tests must not instantiate presentation nodes or wait 1,000 real-time frames. Visible play checks wait for a requested play session; report visual validation pending until then.
-- [ ] Run wrapper locally and in CI; report counts, versions and red/green evidence. If remote CI cannot run, label that gate pending instead of claiming M0 complete. Review diff and stop; no automatic commit, push or M1 work.
+- [x] Run wrapper locally and in CI; report counts, versions and red/green evidence. If remote CI cannot run, label that gate pending instead of claiming M0 complete. Review diff and stop; no automatic commit, push or M1 work.
 
 **Review focus:** command rejection cannot partially affect a group; queued caller-owned data cannot mutate after submission; sorting cannot depend on dictionary iteration; snapshot copies cannot alias live state; test harness cannot turn script errors or no tests into a green run. Add these cases to the owning task before implementation is accepted.
 
