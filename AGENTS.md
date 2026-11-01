@@ -4,21 +4,22 @@
 
 Wargrid is a Godot isometric pixel-art RTS inspired by Zero Hour's game design. Preserve strategic identity and feel; original bugs and slow algorithms are not compatibility requirements.
 
-Current setup and milestone status live in [README](README.md). M0 scope and exit gate live in [the blueprint](Wargrid_Kickoff_Blueprint.md), §7.1. Stop at that gate; do not automatically expand into movement, factions or multiplayer.
+Current setup and milestone status live in [README](README.md). Milestone scope lives in [the blueprint](Wargrid_Kickoff_Blueprint.md). M0 is implemented; M1 is planned. Implement only the explicitly requested milestone and stop at its exit gate; do not automatically expand into groups, factions or multiplayer.
 
 ## Read before changing
 
 - For `/kickoff` and `/wrapup`, follow [kickoff](docs/kickoff.md) and [wrap-up](docs/wrapup.md). Keep resumable working notes in [session notes](docs/session-notes.md); they do not override authoritative docs.
 - Start with [README](README.md) for actual project state and commands, then relevant blueprint sections for scope and acceptance criteria.
-- For M0, read [execution plan](docs/superpowers/plans/2026-11-01-m0-foundation.md) fully. It fixes API/data shapes and acceptance cases; follow its order instead of redesigning the foundation. Resume completed steps; mark them complete only with verification evidence.
+- For M1, read [vehicle execution plan](docs/superpowers/plans/2026-11-01-m1-vehicle.md) fully. It defines movement and the intentional updates to M0 tests; do not retain a stationary compatibility mode. Editing the plan does not start implementation.
+- For M0 history, read [execution plan](docs/superpowers/plans/2026-11-01-m0-foundation.md) fully. It fixes API/data shapes and acceptance cases; follow its order instead of redesigning the foundation. Resume completed steps; mark them complete only with verification evidence.
 - Use [installation reference](docs/reference/installation.md) and other reference notes for evidence. Preserve confirmed, proposed, provisional and deferred labels; never invent approvals or playtests.
-- Keep setup/current status in README, design decisions in the blueprint, M0 implementation contracts in its execution plan, evidence in reference notes. Link rather than duplicate rules and numeric values.
+- Keep setup/current status in README, design decisions in the blueprint, milestone implementation contracts in their execution plans, evidence in reference notes. Link rather than duplicate rules and numeric values.
 - Inspect existing work before editing. Keep changes small; do not scaffold future systems or generic frameworks.
 
 ## Implementation
 
 - Terminal-first: author, import and test through files and documented commands; no routine editor clicking.
-- Keep Godot project under `game/`, repository tools outside it. `res://` resolves to `game/`. Follow blueprint §7.1 for exact M0 paths and contracts.
+- Keep Godot project under `game/`, repository tools outside it. `res://` resolves to `game/`. Follow the active milestone execution plan for exact paths and contracts.
 - Use typed GDScript. Keep authoritative simulation separate from scenes, rendering, wall-clock time and networking callbacks. Advance it explicitly by ticks; inject randomness when needed.
 - Adapt Hell's Verdict's wrappers and CI patterns without modifying that project. Keep Wargrid's planned renderer and tick rate; do not inherit FPS settings or server assumptions.
 - Follow personal code-style, Superpowers, review and model-routing instructions. Do not import another project's agent models or workflow exceptions.

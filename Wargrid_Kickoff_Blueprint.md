@@ -495,6 +495,8 @@ Add a regression fixture **before** implementing the fix wherever possible.
 
 A desert test map; isometric projection; select vehicle; click-to-move; camera movement; simple pathfinding; UI feedback. Include movement/selection/projection tests.
 
+Proposed concrete scope and execution details: [M1 vehicle plan](docs/superpowers/plans/2026-11-01-m1-vehicle.md). It is based on implemented M0 and explicitly migrates stationary-order tests to moving/arrived state. Prototype map, speed and four-way routes are not Zero Hour parity claims.
+
 **Exit gate:** same movement orders yield repeatable results in headless simulation; view projection and click mapping work.
 
 ### M2 — Groups and obstacles
@@ -538,7 +540,7 @@ Subfactions/generals, superweapons, advanced unit interactions, more environment
 **Tech stack:** GDScript, an exactly pinned Godot editor build, shell wrapper and GitHub Actions.
 **Spec:** this blueprint, especially §§3, 5 and 7. No gameplay reference data is required for M0.
 
-Defaults below are implementation decisions for kickoff, not claims about EA behavior. Use the existing Superpowers execution workflow when implementing. A user request to execute the kickoff prompt authorizes M0; editing these documents alone does not start implementation.
+Defaults below are implementation decisions for kickoff, not claims about EA behavior. Use the existing Superpowers execution workflow when implementing. This section records the M0 contract; the current kickoff prompt names the active milestone. Editing documents alone does not start implementation.
 
 | Create or update when implementing M0 | Responsibility |
 |---|---|
@@ -658,7 +660,7 @@ Keep `game/.godot/`, build output, local environment files, temporary generated 
 
 ### Agent operating rules
 
-[AGENTS.md](AGENTS.md) owns project-specific workflow instructions. [README.md](README.md) records current implementation status and verified commands; planned commands remain explicitly labeled until M0 exists. Keep both aligned with this blueprint without duplicating its mechanic specifications.
+[AGENTS.md](AGENTS.md) owns project-specific workflow instructions. [README.md](README.md) records current implementation status and verified commands; planned commands remain explicitly labeled until implemented and verified. Keep both aligned with this blueprint without duplicating its mechanic specifications.
 
 ---
 
@@ -735,7 +737,7 @@ Keep the working title **Wargrid** independently of EA branding; also check name
 
 ## 13. Kickoff prompt for Codex CLI / Claude Code
 
-Use [prompt.txt](prompt.txt) in a new session in the Wargrid repository. It points to [the M0 execution plan](docs/superpowers/plans/2026-11-01-m0-foundation.md), limits work to M0, requires verification and review, and preserves Git/window approval rules. Keep the runnable handoff prompt in that one file rather than maintaining a second copy here.
+Use [prompt.txt](prompt.txt) in a new session in the Wargrid repository. It now targets the [M1 vehicle plan](docs/superpowers/plans/2026-11-01-m1-vehicle.md); M0 is implemented. The prompt limits work to M1, requires verification/review and preserves Git/window approval rules. Keep the current handoff prompt in that one file rather than maintaining a second copy here.
 
 ### Follow-up prompt for a dedicated research agent
 

@@ -1,23 +1,19 @@
-Implement Wargrid milestone M0 only, in /Users/pdstuber/projects/wargrid.
+Implement Wargrid M1 only in /Users/pdstuber/projects/wargrid. M0 already exists; do not rebuild it.
 
-Read in this order:
-1. AGENTS.md
-2. README.md
-3. Wargrid_Kickoff_Blueprint.md sections 3, 5 and 7.1
-4. docs/superpowers/plans/2026-11-01-m0-foundation.md in full
+Read in order:
+1. AGENTS.md and README.md
+2. docs/session-notes.md (current handoff sections)
+3. docs/superpowers/plans/2026-11-01-m1-vehicle.md in full
+4. Relevant blueprint sections 2–5 and M1; consult M0 plan only for history.
 
-The M0 plan specifies exact files, API/data shapes, test cases and verification steps. Use it rather than inventing a different architecture. Other blueprint sections describe future work, not additional M0 tasks. If instructions materially conflict, identify the conflict instead of silently choosing one.
+This kickoff adopts the M1 plan's prototype defaults and authorizes its implementation, not M2 or Git publishing. Follow the specified files, APIs, coordinate conventions, tick phases and acceptance cases. Do not restart a broad design interview. Ask only when a genuine missing decision or instruction conflict blocks progress.
 
-Start by checking git status and existing files. This repository may contain untracked user work. Preserve it. Resume completed work instead of overwriting or rebuilding it. Briefly state current state and next task, then work through the plan in order. Check off steps only when their checks actually passed.
+Inspect git status and implementation first; preserve all user work. Run baseline headless suite through the required test subagent. Report current state and first task. Work through plan in order with small red/green cycles; mark steps done only with evidence. Reuse existing runner, wrappers, pinned engine and CI.
 
-This request authorizes implementing the specified M0 plan. Do not restart a broad game-design interview. Follow applicable project/personal skills and review rules; ask only when a missing decision or permission blocks progress.
+Movement deliberately replaces M0 stationary behavior. Apply only named expectation changes; retain validation, sequence, snapshot-isolation and multi-ID coverage. Do not add a stationary compatibility mode or weaken tests to obtain green.
 
-Adapt only specified Hell's Verdict tooling patterns. Do not modify sibling projects or read/extract retail backups for M0. Use game/project.godot, typed GDScript, Compatibility rendering and 30 Hz simulation. Move commands store orders; they do not move units yet.
+Implement one vehicle, static grid navigation, isometric view, click selection, right-click orders, pan/zoom and HUD. Prototype speed and path shape are not Zero Hour measurements. No groups, dynamic blockers, physics bodies, polished art, networking, new dependencies or retail-data extraction.
 
-Write listed behavioral tests before implementing each behavior. Prove wrapper catches false assertions, empty tests, parse errors, early returns and runtime errors. Do not count parse errors as behavioral red tests. Never change expected results simply to make implementation pass.
+Keep checks headless. Ask before visible play/screenshots; pending play gate is not a passed gate. No commits, pushes, PRs, engine upgrades or sibling-project edits without required approval. Remote CI pending a push is not remote CI success.
 
-Keep checks headless. No visible windows, engine upgrades, extra dependencies, commits, pushes or PRs without required authorization. Do not add future gameplay, RNG, networking, save/load, generic frameworks or a second test runner.
-
-If a check fails, diagnose actual failure and fix its cause. If blocked externally, continue independent work and state what remains blocked. Remote CI pending approval is not remote CI passing. Never claim tests/reviews ran without evidence.
-
-Before finishing, perform required review, resolve findings, re-run affected checks, and update README with actual setup/status. Report changed files, commands, case/check counts, exit codes, failure-probe results and remaining gaps. Stop after M0; do not start M1.
+Diagnose failures instead of repeating unchanged attempts or weakening assertions. Follow required final substantive review plus Ponytail review; no reviewer per task. Update README, movement/verification notes and session handoff with commands, case/check counts, failure probes and exact remaining gaps. Stop after M1.

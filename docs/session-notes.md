@@ -4,21 +4,22 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 ## Session
 
-2026-11-01: original M0 commit `20739d6` passed Linux CI. Follow-up C1/C4/C10/C12 coverage additions pass locally; production code unchanged. Kickoff/wrapup workflow available.
+2026-11-01: M1 plan prepared at user request against local `main` at `7d67481`. M0 baseline rechecked: 12 cases / 212 checks / exit 0. No M1 implementation started. Documentation-only wrap-up checked links, paths and handoff consistency; user approved committing planning changes on `m1-vehicle-plan`.
 
 ## Pending user action
 
-- User authorized addressing review coverage limits, committing pending M0 changes, and merging locally into `main`. No push/PR authorized; updated-suite remote CI awaits a separately approved push.
+- M1 implementation awaits explicit kickoff. User approved planning branch and commit only; no push, PR or merge authorized.
+- Local `main` contains M0 follow-up at `7d67481`, verified during M1 planning. No new push/PR authorization; updated-suite remote CI awaits a separately approved push.
 
 ## Deferred experiments and research
 
 - Current 212-check suite has not run remotely; original 199-check commit passed CI. See [evidence](reference/m0-verification.md).
 - Visuals, game feel, performance, cross-platform determinism and Zero Hour parity unverified.
-- Original M0 exit gate passed. M1 still requires explicit scope; do not start automatically.
+- Original M0 exit gate passed. M1 now has a proposed detailed plan; implementation starts only on explicit kickoff.
 
 ## Next action
 
-Verify local `main` contains authorized M0 follow-up, then offer separately approved push of `main` to run updated suite in CI. Do not start M1 automatically.
+Review the [M1 vehicle plan](superpowers/plans/2026-11-01-m1-vehicle.md) and choose whether to begin M1 via root `prompt.txt`. Updated-suite remote CI requires separate push approval.
 
 ## 2026-11-01 — M0 local foundation
 
@@ -65,3 +66,22 @@ Verify local `main` contains authorized M0 follow-up, then offer separately appr
 - Forced internal insertion reordering is unreachable through current API; no test-only mutation hooks added. Earlier Grok attempts were stopped too soon; whole-branch review eventually completed by waiting.
 
 - Focused Grok follow-up review completed with no defects; final Ponytail pass found no cuts. Integration verification runs on local `main`; read Git log/status for exact commit/branch state.
+
+## 2026-11-01 — M1 planning
+
+- User requested an execution plan suitable for Sol at Medium; no implementation request yet.
+- Inspected production kernel, all 12 existing cases, runner, scene, wrappers and CI. Fresh baseline: 12 cases / 212 checks / exit 0 via test subagent.
+- Added bounded static-grid movement, projection/view/input contracts, intentional M0 test migrations, headless scene cases and async-runner failure probes. Prototype choices remain labeled; no parity claims.
+- Updated current prompt, README, AGENTS and blueprint links. No game code, visible launch, commit or push.
+
+## 2026-11-01 — M1 planning wrap-up
+
+- Documentation-only scope: M1 plan plus AGENTS, README, blueprint, prompt and this handoff. No game, test, wrapper or engine changes; no game test rerun required.
+- Checked 38 local Markdown links/paths, four kickoff handoff headings and diff whitespace. Proposed plan paths for future implementation are not existing-file claims.
+- M0 remains implemented; M1 remains proposed, with implementation awaiting explicit kickoff. Existing local test evidence and remote/visual/reference limits remain unchanged.
+- Proposed branch `m1-vehicle-plan`, commit `Plan M1 vehicle slice and handoff`; no staging, branch creation, commit or push before approval. No design decisions changed during wrap-up.
+
+## 2026-11-01 — M1 planning commit approval
+
+- User explicitly approved branch `m1-vehicle-plan` and six-file documentation commit `Plan M1 vehicle slice and handoff`.
+- No push, PR, merge or M1 implementation authorized.
