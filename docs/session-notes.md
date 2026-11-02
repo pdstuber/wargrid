@@ -4,14 +4,16 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 ## Session
 
-2026-11-02 M2 continuation: existing task 5 completed in place, task 6 shared workload/statistics/headless and visible-probe files implemented. Local normal suite **58 cases / 96,953 checks / zero failures / exit0**, success marker present. Outside-root/fresh-cache/Rosetta trace suites each **58 / 96,955 / zero failures / exit0**, exact1,200-tick traces match three files. Python comparator6 tests/exit0; headless smoke/shell syntax pass. [M2 evidence](reference/m2-verification.md) owns commands, red/green and full measurements. Grok stalled without report and was terminated exit143; single fresh-context fallback M2 review complete, no consequential findings. Ponytail cuts pass complete, no warranted cuts. Added S8 exact rejection-reason assertion after coverage caveat; scratch lost-error mutation failed exactly S8, then final normal/trace suites passed.
+2026-11-02 local handoff: M2 committed as `a23f697` on preserved `m2-groups`; local `main` fast-forwarded to same commit. Created `m3-base-supplies` from that complete tree, carrying all four M3 preparation files. Installed `docs/m3-prompt.txt` verbatim as root prompt for a later user-invoked task. Post-merge delegated suite: 58 cases / 96,953 checks / zero failures / exit 0, `TESTS PASSED 96953`. M3 implementation has not started; no push/PR performed.
+
+M2 continuation: existing task 5 completed in place, task 6 shared workload/statistics/headless and visible-probe files implemented. Local normal suite **58 cases / 96,953 checks / zero failures / exit0**, success marker present. Outside-root/fresh-cache/Rosetta trace suites each **58 / 96,955 / zero failures / exit0**, exact1,200-tick traces match three files. Python comparator6 tests/exit0; headless smoke/shell syntax pass. [M2 evidence](reference/m2-verification.md) owns commands, red/green and full measurements. Grok stalled without report and was terminated exit143; single fresh-context fallback M2 review complete, no consequential findings. Ponytail cuts pass complete, no warranted cuts. Added S8 exact rejection-reason assertion after coverage caveat; scratch lost-error mutation failed exactly S8, then final normal/trace suites passed.
 
 Headless300-unit simulation budgets pass: open p95/p99/max1.310/1.369/7.954ms; dense1.330/1.385/7.458ms. Far-coordinate M9 regression exposed float32 accumulation; scalar float motion fixes it with unchanged1e-5 tolerance/speed/snapshot shape. No assertion deletion or compatibility modes. Historical precision trace values change intentionally; exact native/Rosetta equality verified.
 
 ## Pending user action
 
 - User chose **headless only** after one batched M2 visible/play/rendered request. No window/screenshots/rendered run. Play feel, rendered-frame p95 and real-time backlog gates remain pending; do not label full M2 accepted or start M3.
-- Local M2 commit/main merge/M3 branch handoff authorized despite documented pending visible gates. Parent performs Git handoff after final review/cuts and evidence updates; no push/PR/remote merge authorized.
+- Authorized local M2 commit/main fast-forward/M3 branch preparation performed; `m2-groups` preserved. No push/PR/remote merge authorized.
 - M2 remote matrix remains unpublished/unverified. Historical M1 successful CI does not cover current tree.
 
 ## Deferred experiments and research
@@ -23,7 +25,7 @@ Headless300-unit simulation budgets pass: open p95/p99/max1.310/1.369/7.954ms; d
 
 ## Next action
 
-Perform authorized local Git handoff from [root prompt](../prompt.txt): commit reviewed M2 plus M3 preparation, fast-forward local main if possible, preserve m2-groups, create m3-base-supplies, install [M3 next prompt](m3-prompt.txt) and commit handoff update. Carry entire merged repo and four M3 preparation files; never start M3 in this run. Parent will update this current state after Git integration. Entries below are history.
+Resolve remaining M2 visible/play/rendered-frame/backlog gates in a separately authorized session before M3 implementation. Remote CI remains pending publication approval. Current `m3-base-supplies` branch and [root prompt](../prompt.txt) are preparation only; explicit later kickoff still required. Four M3 preparation files are inherited from main. Entries below are history.
 
 ## 2026-11-01 — M0 local foundation
 

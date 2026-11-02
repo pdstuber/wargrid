@@ -2,7 +2,7 @@
 
 A Godot isometric pixel-art RTS preserving Zero Hour's faction identity, strategic choices and pacing, while fixing defects and avoiding inherited performance problems.
 
-**Current state (2026-11-02):** M2 implementation is locally verified on `m2-groups`: group selection/orders, distinct destinations, bounded route queue and obstacle replacement. Headless suite: **58 cases / 96,953 checks / zero failures / exit 0**. Both 300-unit simulation workloads pass proposed timing budgets. Visible play, rendered-frame and real-time backlog gates remain pending: user requested headless checks only. [M2 verification](docs/reference/m2-verification.md) separates these results from remote CI/reference limits. M3 preparation exists; implementation has not started.
+**Current state (2026-11-02):** M2 implementation is locally integrated at `a23f697` on `main` and preserved on `m2-groups`; current branch `m3-base-supplies` inherits full tree: group selection/orders, distinct destinations, bounded route queue and obstacle replacement. Headless suite: **58 cases / 96,953 checks / zero failures / exit 0**. Both 300-unit simulation workloads pass proposed timing budgets. Visible play, rendered-frame and real-time backlog gates remain pending: user requested headless checks only. [M2 verification](docs/reference/m2-verification.md) separates these results from remote CI/reference limits. M3 preparation exists; implementation has not started.
 
 ## Start here
 
@@ -12,7 +12,7 @@ A Godot isometric pixel-art RTS preserving Zero Hour's faction identity, strateg
 - [M0 execution plan](docs/superpowers/plans/2026-11-01-m0-foundation.md): exact interfaces, concrete test cases and ordered verification steps.
 - [M1 execution plan](docs/superpowers/plans/2026-11-01-m1-vehicle.md): adopted single-vehicle slice, exact movement/input contracts and acceptance cases.
 - [M2 execution plan](docs/superpowers/plans/2026-11-01-m2-groups.md): group movement contracts, implemented benchmarks and remaining acceptance gates.
-- [Session prompt](prompt.txt): authorized M2 local integration and M3 branch handoff; M3 starts only in a later explicitly invoked session.
+- [Session prompt](prompt.txt): M3 kickoff prompt installed for a later explicitly invoked session; M2 acceptance gates below remain pending.
 - [M3 plan](docs/superpowers/plans/2026-11-02-m3-base-supplies.md), [approved design](docs/superpowers/specs/2026-11-02-m3-base-supplies-design.md), [source evidence](docs/reference/m3-economy.md) and [next prompt](docs/m3-prompt.txt): preparation only; no M3 implementation yet.
 - [Agent instructions](AGENTS.md): development and verification rules.
 - [Installation reference](docs/reference/installation.md): available game data, archive hashes and unresolved version questions.
