@@ -19,3 +19,10 @@ position_smoothing_enabled = false
 offset_left = 16.0
 offset_top = 16.0
 mouse_filter = 2
+
+[node name="SelectionBox" type="ReferenceRect" parent="HUD"]
+visible = false
+mouse_filter = 2
+border_color = Color(0.55, 1, 0.53, 1)
+border_width = 1.0
+editor_only = false

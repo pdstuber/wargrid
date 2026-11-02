@@ -2,8 +2,8 @@
 
 **Version:** 0.4
 
-**Date:** 2026-11-01  
-**Status:** Revised kickoff specification; implementation has not started
+**Date:** 2026-11-02
+**Status:** Design specification; M0/M1 implemented, M2 in progress. [README](README.md) owns current verification status.
 
 **Working title:** Wargrid
 
@@ -442,7 +442,7 @@ Each pull request / agent change must:
 5. Store test results, failing fixture IDs and useful command/event traces as artifacts.
 6. Track performance regression measurements separately rather than making flaky elapsed-time thresholds mandatory from the first week.
 
-Configure push, pull-request and manual triggers. Pin one engine version in README and CI, verify its archive checksum before installing, and set a job timeout. Keep this one Godot job; do not import other projects' engine comparisons or release/signing setup.
+Configure push, pull-request and manual triggers. Pin one engine version in README and CI, verify its archive checksum before installing, and set a job timeout. M2 extends the Godot job to a Linux/Windows/macOS matrix with a dependent replay comparison job, per [M2 task 0](docs/superpowers/plans/2026-11-01-m2-groups.md). No engine comparisons or release/signing setup.
 
 **AI acceptance rule:** A coding agent must not say “implemented” without reporting test command, test counts/results and any missing parity evidence. A rendered screenshot is supplemental evidence only.
 
@@ -503,11 +503,15 @@ Adopted concrete scope and execution details: [M1 vehicle plan](docs/superpowers
 
 Select 10–30 vehicles; group move; building as obstacle; destination allocation; no pile-up that makes play unusable; basic benchmarks.
 
+Adopted execution contracts: [M2 groups plan](docs/superpowers/plans/2026-11-01-m2-groups.md). Temporary travel overlap and distinct reserved destinations are deliberate prototype choices. Current implementation/verification status lives in [README](README.md); [verification evidence](docs/reference/m2-verification.md) records local correctness/simulation measurements and pending visible, rendered/backlog and remote gates.
+
 **Exit gate:** automated scenarios for open ground, blocking, group destinations and repathing; measured performance gates in §11 before expanding scope.
 
 ### M3 — Base and supplies
 
 Construction vehicle, supply resource, Chinook-like collector, resource drop-off, basic power plant, production building, construction queue. USA economy requires limited collector flight now: ground obstacles do not block its cruise path; pickup, cargo, deposit and destroyed-destination behavior need explicit rules. Combat aircraft, passenger transport and advanced air interactions remain deferred.
+
+**Planning:** [approved M3 design](docs/superpowers/specs/2026-11-02-m3-base-supplies-design.md), [source/config evidence](docs/reference/m3-economy.md), and [execution plan](docs/superpowers/plans/2026-11-02-m3-base-supplies.md). Source-informed economy slice; M2 gates and explicit M3 kickoff still precede implementation.
 
 **Exit gate:** fully automated supply and construction sequence with resource accounting assertions; observed timing parity as evidence becomes available.
 
@@ -737,7 +741,7 @@ Keep the working title **Wargrid** independently of EA branding; also check name
 
 ## 13. Kickoff prompt for Codex CLI / Claude Code
 
-Use [prompt.txt](prompt.txt) in a new session in the Wargrid repository. It now targets the [M1 vehicle plan](docs/superpowers/plans/2026-11-01-m1-vehicle.md); M0 is implemented. The prompt limits work to M1, requires verification/review and preserves Git/window approval rules. Keep the current handoff prompt in that one file rather than maintaining a second copy here.
+Use [prompt.txt](prompt.txt) in a new session in the Wargrid repository with Sol at Medium reasoning. It resumes the [M2 groups plan](docs/superpowers/plans/2026-11-01-m2-groups.md) from unfinished task 5; M0/M1 already exist. The prompt limits work to M2, requires verification/review and preserves Git/window approval rules. Keep the current handoff prompt in that one file rather than maintaining a second copy here.
 
 ### Follow-up prompt for a dedicated research agent
 

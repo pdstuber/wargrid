@@ -4,7 +4,7 @@ const Main = preload("res://scenes/main.tscn")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 
 func cases() -> Array[Callable]:
-	return [test_ready, test_clicks, test_rejection, test_camera, test_driver]
+	return [test_ready, test_clicks, test_rejection, test_camera, test_driver, test_boxes, test_drag_rules, test_obstacle_toggle]
 
 func setup(runner):
 	var main = Main.instantiate()
@@ -26,15 +26,21 @@ func click(runner, view, plane: Vector2, button: MouseButton) -> void:
 		await runner.process_frame
 
 func select(runner, main) -> void:
-	await click(runner, main.get_node("WorldView"), Iso.world_to_plane(Vector2(2.5, 2.5)) + Vector2(0, -8), MOUSE_BUTTON_LEFT)
+	await click(runner, main.get_node("WorldView"), Iso.world_to_plane(Vector2(1.5, 1.5)) + Vector2(0, -8), MOUSE_BUTTON_LEFT)
 
 func test_ready(runner) -> bool:
 	var main = await setup(runner)
 	var state: Dictionary = main.simulation.snapshot()
-	runner.check(state.entities.size() == 1 and state.entities[0].owner == 1 and state.entities[0].position == [2.5, 2.5], "S1 one vehicle")
+	runner.check(state.entities.size() == 20 and state.entities[0].owner == 1 and state.entities[0].position == [1.5, 1.5], "S1 twenty vehicles")
+	var positions: Dictionary = {}
+	for i in range(state.entities.size()):
+		var unit: Dictionary = state.entities[i]
+		runner.check(unit.id == i + 1 and unit.owner == 1 and unit.position == [float(i % 5) + 1.5, float(i / 5) + 1.5], "S1 authored start")
+		positions[unit.position] = true
+	runner.check(positions.size() == 20, "S1 unique starts")
 	runner.check(state.map.blocked_cells.size() == 18, "S1 static obstacle")
 	runner.check(main.has_node("Camera2D") and main.has_node("WorldView") and main.has_node("HUD/Status"), "S1 scene nodes")
-	runner.check(main.selected_id == -1, "S1 no selection")
+	runner.check(main.selected_ids == [], "S1 no selection")
 	runner.check(main.get_node("Camera2D").position == Iso.world_to_plane(Vector2(8, 8)), "S1 camera center")
 	runner.check(main.get_node("HUD/Status").mouse_filter == Control.MOUSE_FILTER_IGNORE, "S1 HUD click through")
 	runner.check(ProjectSettings.get_setting("physics/common/physics_ticks_per_second") == 30, "S1 tick rate")
@@ -59,7 +65,7 @@ func test_clicks(runner) -> bool:
 			camera.force_update_scroll()
 			await runner.process_frame
 			await select(runner, main)
-			runner.check(main.selected_id == 1, "S2 transformed selection " + str([center, zoom]))
+			runner.check(main.selected_ids == [1], "S2 transformed selection " + str([center, zoom]))
 			await click(runner, view, Iso.world_to_plane(Vector2(4.5, 3.5)), MOUSE_BUTTON_RIGHT)
 			var state: Dictionary = main.simulation.snapshot()
 			runner.check(state.pending_commands.size() == sequence + 1, "S2 one command per press")
@@ -93,7 +99,7 @@ func test_rejection(runner) -> bool:
 	runner.check(queued.pending_commands.size() == 1 and queued.pending_commands[0].sequence == 1, "S3 rejection did not consume sequence")
 	runner.check(not main.get_node("HUD/Status").text.contains("Target"), "S3 accepted clears error")
 	await click(runner, view, Iso.world_to_plane(Vector2(0.5, 0.5)), MOUSE_BUTTON_LEFT)
-	runner.check(main.selected_id == -1, "S3 empty clears")
+	runner.check(main.selected_ids == [], "S3 empty clears")
 	await click(runner, view, Iso.world_to_plane(Vector2(4.5, 4.5)), MOUSE_BUTTON_RIGHT)
 	runner.check(main.simulation.snapshot() == queued, "S3 unselected right no order")
 	await select(runner, main)
@@ -105,7 +111,7 @@ func test_rejection(runner) -> bool:
 	escape.pressed = false
 	Input.parse_input_event(escape)
 	await runner.process_frame
-	runner.check(main.selected_id == -1, "S3 escape clears")
+	runner.check(main.selected_ids == [], "S3 escape clears")
 	main.free()
 	return true
 
@@ -151,5 +157,123 @@ func test_driver(runner) -> bool:
 	before = main.simulation.snapshot().tick
 	main._physics_process(0.0)
 	runner.check(main.simulation.snapshot().tick == before + 1, "S5 one callback one tick")
+	main.free()
+	return true
+
+func _mouse(runner, main, viewport_point: Vector2, button: MouseButton, pressed: bool, shift: bool = false) -> void:
+	var event := InputEventMouseButton.new()
+	event.position = runner.root.get_final_transform() * viewport_point
+	event.global_position = event.position
+	event.button_index = button
+	event.pressed = pressed
+	event.shift_pressed = shift
+	Input.parse_input_event(event)
+	await runner.process_frame
+
+func _motion(runner, viewport_point: Vector2) -> void:
+	var event := InputEventMouseMotion.new()
+	event.position = runner.root.get_final_transform() * viewport_point
+	event.global_position = event.position
+	event.button_mask = MOUSE_BUTTON_MASK_LEFT
+	Input.parse_input_event(event)
+	await runner.process_frame
+
+func _box(runner, main, from: Vector2, to: Vector2, shift: bool = false) -> void:
+	var transform: Transform2D = main.get_node("WorldView").get_global_transform_with_canvas()
+	await _mouse(runner, main, transform * from, MOUSE_BUTTON_LEFT, true, shift)
+	await _motion(runner, transform * to)
+	await _mouse(runner, main, transform * to, MOUSE_BUTTON_LEFT, false, shift)
+
+func _key(runner, key: Key, physical: bool = false) -> void:
+	for pressed in [true, false]:
+		var event := InputEventKey.new()
+		event.keycode = key
+		if physical:
+			event.physical_keycode = key
+		event.pressed = pressed
+		Input.parse_input_event(event)
+		await runner.process_frame
+
+func test_boxes(runner) -> bool:
+	var main = await setup(runner)
+	var camera: Camera2D = main.get_node("Camera2D")
+	for center in [Vector2(0, 128), Vector2(80, 160)]:
+		for zoom in [0.5, 1.0, 2.0]:
+			camera.position = center
+			camera.zoom = Vector2.ONE * zoom
+			camera.force_update_scroll()
+			await runner.process_frame
+			for reverse in [false, true]:
+				await _box(runner, main, Vector2(33, 81) if reverse else Vector2(-33, 47), Vector2(-33, 47) if reverse else Vector2(33, 81))
+				runner.check(main.selected_ids == [1, 2, 6, 7], "S6 transformed/reverse box " + str([center, zoom, reverse]))
+	await click(runner, main.get_node("WorldView"), Iso.world_to_plane(Vector2(5.5, 1.5)) + Vector2(0, -8), MOUSE_BUTTON_LEFT)
+	await _box(runner, main, Vector2(-33, 47), Vector2(33, 81), true)
+	await _box(runner, main, Vector2(-33, 47), Vector2(33, 81), true)
+	runner.check(main.selected_ids == [1, 2, 5, 6, 7], "S6 Shift union sorted without duplicates")
+	var transform: Transform2D = main.get_node("WorldView").get_global_transform_with_canvas()
+	var empty: Vector2 = transform * Vector2(0, 0)
+	await _mouse(runner, main, empty, MOUSE_BUTTON_LEFT, true, true)
+	await _mouse(runner, main, empty, MOUSE_BUTTON_LEFT, false, true)
+	runner.check(main.selected_ids == [1, 2, 5, 6, 7], "S6 Shift empty preserves")
+	await click(runner, main.get_node("WorldView"), Iso.world_to_plane(Vector2(12.5, 12.5)), MOUSE_BUTTON_RIGHT)
+	var pending: Array = main.simulation.snapshot().pending_commands
+	runner.check(pending.size() == 1 and pending[0].entity_ids == [1, 2, 5, 6, 7], "S6 exactly one sorted group order")
+	main.free()
+	return true
+
+func test_drag_rules(runner) -> bool:
+	var main = await setup(runner)
+	var camera: Camera2D = main.get_node("Camera2D")
+	var transform: Transform2D = main.get_node("WorldView").get_global_transform_with_canvas()
+	var point: Vector2 = transform * (Iso.world_to_plane(Vector2(1.5, 1.5)) + Vector2(0, -8))
+	await _mouse(runner, main, point, MOUSE_BUTTON_LEFT, true)
+	runner.check(main.selected_ids == [], "S7 selection waits for release")
+	await _mouse(runner, main, point + Vector2(5, 0), MOUSE_BUTTON_LEFT, false)
+	runner.check(main.selected_ids == [1], "S7 five-pixel excursion is click")
+	await _mouse(runner, main, point, MOUSE_BUTTON_LEFT, true)
+	await _motion(runner, point + Vector2(6, 0))
+	var before: Vector2 = camera.position
+	var zoom: Vector2 = camera.zoom
+	main.pan_camera(Vector2.RIGHT, 0.5)
+	main.change_zoom(1)
+	runner.check(camera.position == before and camera.zoom == zoom, "S7 camera frozen during drag")
+	await _mouse(runner, main, point, MOUSE_BUTTON_RIGHT, true)
+	await _mouse(runner, main, point, MOUSE_BUTTON_RIGHT, false)
+	runner.check(main.simulation.snapshot().pending_commands == [], "S7 right during drag ignored")
+	await _mouse(runner, main, point + Vector2(5, 0), MOUSE_BUTTON_LEFT, false)
+	runner.check(main.selected_ids == [], "S7 max excursion retains drag classification")
+	await _mouse(runner, main, point, MOUSE_BUTTON_LEFT, true)
+	await _motion(runner, point + Vector2(100, 100))
+	await _key(runner, KEY_ESCAPE)
+	await _mouse(runner, main, point + Vector2(100, 100), MOUSE_BUTTON_LEFT, false)
+	runner.check(main.selected_ids == [] and not main.get_node("HUD/SelectionBox").visible, "S7 Escape cancels drag and later release")
+	main.pan_camera(Vector2.RIGHT, 0.25)
+	runner.check(camera.position != before, "S7 camera resumes after cancel")
+	main.free()
+	return true
+
+func test_obstacle_toggle(runner) -> bool:
+	var main = await setup(runner)
+	await _key(runner, KEY_B, true)
+	runner.check(main.simulation.snapshot().map.blocked_cells.size() == 24, "S8 B adds authored obstacle")
+	await _key(runner, KEY_B, true)
+	runner.check(main.simulation.snapshot().map.blocked_cells.size() == 18, "S8 B removes authored obstacle")
+	var command := {"tick": 0, "player": 1, "sequence": 0, "type": "move", "entity_ids": [1], "target": [10.5, 5.5]}
+	runner.check(main.simulation.issue_command(command).ok, "S8 move onto toggle cell")
+	for i in range(250):
+		main._physics_process(0.0)
+	runner.check(main.simulation.snapshot().entities[0].position == [10.5, 5.5], "S8 occupied toggle setup")
+	var before: Dictionary = main.simulation.snapshot()
+	await _key(runner, KEY_B, true)
+	runner.check(main.simulation.snapshot() == before and not main.get_node("HUD/Status").text.is_empty(), "S8 occupied toggle rejected")
+	runner.check(main.get_node("HUD/Status").text.contains("Obstacle would cover a unit"), "S8 occupied toggle rejection reason")
+	command.tick = main.simulation.snapshot().tick
+	command.sequence = 1
+	command.target = [10.5, 3.5]
+	runner.check(main.simulation.issue_command(command).ok, "S8 vacate toggle cell")
+	for i in range(100):
+		main._physics_process(0.0)
+	await _key(runner, KEY_B, true)
+	runner.check(main.simulation.snapshot().map.blocked_cells.size() == 24, "S8 rejected toggle preserves next action")
 	main.free()
 	return true

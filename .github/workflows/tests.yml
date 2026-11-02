@@ -5,26 +5,90 @@ on:
   workflow_dispatch:
 jobs:
   godot:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux
+            runner: ubuntu-latest
+            python: python3
+            zip: Godot_v4.7.2-stable_linux.x86_64.zip
+            executable: Godot_v4.7.2-stable_linux.x86_64
+            sha256: cadd3204e728a35d3f13adb7fd0d7902636b79f6b95c40c265eb73b6c35329e4
+          - platform: windows
+            runner: windows-latest
+            python: python
+            zip: Godot_v4.7.2-stable_win64.exe.zip
+            executable: Godot_v4.7.2-stable_win64_console.exe
+            sha256: 731980f9608d61333e5baf54a2ef17210acc7a538446c0cb9969f002aca1e953
+          - platform: macos
+            runner: macos-latest
+            python: python3
+            zip: Godot_v4.7.2-stable_macos.universal.zip
+            executable: Godot.app/Contents/MacOS/Godot
+            sha256: c58a24e31d720be9d62f60cb5627c4e695fb72f21b0cfe1bc9ccaa9a3b3ba63e
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
     env:
       GODOT_VERSION: 4.7.2-stable
-      GODOT_ZIP: Godot_v4.7.2-stable_linux.x86_64.zip
-      GODOT_SHA256: cadd3204e728a35d3f13adb7fd0d7902636b79f6b95c40c265eb73b6c35329e4
+      GODOT_ZIP: ${{ matrix.zip }}
+      GODOT_SHA256: ${{ matrix.sha256 }}
+      GODOT_EXECUTABLE: ${{ matrix.executable }}
+      PYTHON: ${{ matrix.python }}
+      WARGRID_REPLAY_TRACE: ${{ runner.temp }}/replay-${{ matrix.platform }}.tsv
     steps:
       - uses: actions/checkout@v4
-      - name: Install Godot
+      - name: Install pinned Godot
         run: |
-          curl -fsSLO "https://github.com/godotengine/godot/releases/download/$GODOT_VERSION/$GODOT_ZIP"
-          echo "$GODOT_SHA256  $GODOT_ZIP" | sha256sum -c -
-          unzip -q "$GODOT_ZIP"
-          sudo install Godot_v4.7.2-stable_linux.x86_64 /usr/local/bin/godot
-      - name: Test
+          "$PYTHON" - <<'PY'
+          import hashlib
+          import os
+          from pathlib import Path
+          import urllib.request
+          import zipfile
+
+          archive = Path(os.environ["RUNNER_TEMP"]) / os.environ["GODOT_ZIP"]
+          url = f"https://github.com/godotengine/godot/releases/download/{os.environ['GODOT_VERSION']}/{archive.name}"
+          urllib.request.urlretrieve(url, archive)
+          if hashlib.sha256(archive.read_bytes()).hexdigest() != os.environ["GODOT_SHA256"]:
+              raise SystemExit("Godot checksum mismatch")
+          directory = archive.parent / "godot"
+          with zipfile.ZipFile(archive) as bundle:
+              bundle.extractall(directory)
+          executable = directory / os.environ["GODOT_EXECUTABLE"]
+          executable.chmod(0o755)
+          with open(os.environ["GITHUB_ENV"], "a") as output:
+              output.write(f"GODOT_BIN={executable.resolve().as_posix()}\n")
+          PY
+      - name: Test and produce replay trace
         run: |
           set -o pipefail
           sh tools/run_tests.sh 2>&1 | tee test-results.log
       - uses: actions/upload-artifact@v4
+        with:
+          name: replay-${{ matrix.platform }}
+          path: ${{ env.WARGRID_REPLAY_TRACE }}
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: test-results
+          name: test-results-${{ matrix.platform }}
           path: test-results.log
+  compare-replays:
+    needs: godot
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: replay-*
+          merge-multiple: true
+          path: traces
+      - name: Test trace validation
+        run: python3 tools/test_compare_replays.py
+      - name: Compare all platform ticks
+        run: python3 tools/compare_replays.py traces/replay-linux.tsv traces/replay-windows.tsv traces/replay-macos.tsv

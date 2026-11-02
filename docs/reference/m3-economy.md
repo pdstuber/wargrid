@@ -1,0 +1,55 @@
+# M3 economy reference — 2026-11-02
+
+Status: **SOURCE_SUPPORTED / CONFIG_SUPPORTED; RETAIL_UNVERIFIED**. User requested Zero Hour research before M3 design and chose a source-informed playable slice. [Approved design](../superpowers/specs/2026-11-02-m3-base-supplies-design.md) distinguishes adopted rules and deliberate fixes. No retail run, parity measurement, archive modification or EA code/asset copy into Wargrid.
+
+## Provenance
+
+Read local official-source checkout `/Users/pdstuber/projects/CnC_Generals_Zero_Hour`, revision `0a05454d8574207440a5fb15241b98ad0b435590`. Source paths below relative to `GeneralsMD/Code/GameEngine/`. Links pin that revision.
+
+Read root member `Command & Conquer Generals - Zero Hour/INIZH.big` from user archive `/Users/pdstuber/CnC/Command & Conquer Generals - Zero Hour.tar.gz` in memory. Recomputed embedded BIG SHA-256 `1a6d41a7a2cb31e67ad2f868aca9264ad069c275e0074f8a0d970a336071e9a0`; 135 indexed entries, header/bounds checked. Excluded nested Data/INI/INIZH.big. Selected decoded text used only in temporary scratch. [Installation evidence](installation.md) owns earlier patch-index findings and unresolved executable/mod/override status. This pass did not establish effective retail configuration or inspect every override. Line numbers are within decoded payloads.
+
+## Selected base-USA configuration
+
+| Payload, object, lines | Fields read | M3 use |
+|---|---|---|
+| `Data\INI\Object\FactionBuilding.ini`, AmericaPowerPlant, 4814–4820 | prerequisite list empty (CommandCenter commented); cost 800; build time 10 seconds; energy +5 | reactor; upgrade bonus excluded |
+| Same payload, AmericaSupplyCenter, 18710–18718 | prerequisite AmericaPowerPlant; cost 2000; time 10 seconds; energy -1 | depot |
+| Same, AmericaSupplyCenter, 18740, 18761–18782 | no POWERED KindOf; ProductionUpdate; one-shot SpawnBehavior produces one AmericaVehicleChinook; dock approach count 9 | one free collector on completion; production allowed; approach geometry simplified |
+| Same, AmericaWarFactory, 24920–24926, 24948 | prerequisite AmericaSupplyCenter; cost 2000; time 15 seconds; energy -1; no POWERED KindOf | factory |
+| `Data\INI\Object\AmericaAir.ini`, AmericaVehicleChinook, 2203–2206, 2239, 2255–2259 | cost 1200; time 10 seconds; depot prerequisite; AIRCRAFT/HARVESTER, no POWERED; MaxBoxes 8; center delay 2900 ms; warehouse delay 1200 ms; source scan distance 700 source units | collector; 87/36 ticks; scan distance not transplanted |
+| `Data\INI\Object\AmericaVehicle.ini`, AmericaVehicleHumvee, 101–106 | cost 700; time 10 seconds; factory prerequisite | economy-only vehicle, no weapons/passengers |
+| Same, AmericaVehicleDozer, 1682–1683 | cost 1000; time 5 seconds | evidence only; builder scenario-spawned, production excluded |
+| `Data\INI\GameData.ini`, 248–262, 440 | box value 75; BuildSpeed 1; low-power min .5/max .8/modifier 1; RefundPercent 50%; starting cash 10000 | box value, work-rate bounds and initial funds; 50% is not construction/queue cancel rule |
+
+Source clock is 30 logic frames/second: [GameCommon.h:72–78](https://github.com/electronicarts/CnC_Generals_Zero_Hour/blob/0a05454d8574207440a5fb15241b98ad0b435590/GeneralsMD/Code/GameEngine/Include/Common/GameCommon.h#L72-L78). Selected decimal-second durations map exactly to Wargrid ticks; flight/approach/animation time is additional and uncalibrated.
+
+## Construction, production and power rules
+
+- Placement validates permission/funds/geometry before creating foundation and charging full cost. Foundation exists before builder arrives. Work starts at build dock. [DozerAIUpdate.cpp:1656–1742, 500–593](https://github.com/electronicarts/CnC_Generals_Zero_Hour/blob/0a05454d8574207440a5fb15241b98ad0b435590/GeneralsMD/Code/GameEngine/Source/GameLogic/Object/Update/AIUpdate/DozerAIUpdate.cpp#L1656-L1742).
+- One-shot collector spawn is suppressed while parent is under construction or sold; this supports grant only after depot completion. [SpawnBehavior.cpp:827–846](https://github.com/electronicarts/CnC_Generals_Zero_Hour/blob/0a05454d8574207440a5fb15241b98ad0b435590/GeneralsMD/Code/GameEngine/Source/GameLogic/Object/Behavior/SpawnBehavior.cpp#L827-L846).
+- Explicit unfinished-building cancellation refunds full calculated cost, not partial progress or global 50%. Stopping builder is distinct from cancelling foundation. [GameLogicDispatch.cpp:1437–1471](https://github.com/electronicarts/CnC_Generals_Zero_Hour/blob/0a05454d8574207440a5fb15241b98ad0b435590/GeneralsMD/Code/GameEngine/Source/GameLogic/System/GameLogicDispatch.cpp#L1437-L1471).
+- Queue insertion checks funds/capacity/permissions and charges full cost; entry cancellation refunds full calculated cost. Default queue cap is 9; selected depot/factory ProductionUpdate blocks have no cap override in inspected payload. FIFO head advances; blocked exit retains ready head; producer death cancels/refunds queue. [ProductionUpdate.cpp:390–496, 661–749, 1133–1165](https://github.com/electronicarts/CnC_Generals_Zero_Hour/blob/0a05454d8574207440a5fb15241b98ad0b435590/GeneralsMD/Code/GameEngine/Source/GameLogic/Object/Update/ProductionUpdate.cpp#L390-L496), default at 104–111. Head processing rechecks allowedToBuild, not full prerequisite graph; keeping accepted queue after prerequisite loss is source-informed inference from this path.
+- Prerequisite count excludes unfinished foundations. [ProductionPrerequisite.cpp:106–117](https://github.com/electronicarts/CnC_Generals_Zero_Hour/blob/0a05454d8574207440a5fb15241b98ad0b435590/GeneralsMD/Code/GameEngine/Source/Common/RTS/ProductionPrerequisite.cpp#L106-L117), Player.h default `ignoreUnderConstruction`, Team.cpp:1617–1641.
+- Completed structures enter power ledger; positive EnergyProduction supplies, negative consumes. Equality is sufficient. [Energy.cpp:83–150](https://github.com/electronicarts/CnC_Generals_Zero_Hour/blob/0a05454d8574207440a5fb15241b98ad0b435590/GeneralsMD/Code/GameEngine/Source/Common/RTS/Energy.cpp#L83-L150), Player.cpp:1060–1069,1668–1685. Zero-demand ratio returns production, creating a source edge when both zero.
+- Low-power duration multiplier uses supply/demand bounded by configured minimum/maximum speeds; shared by dozer construction and factory production. [ThingTemplate.cpp:1548–1600](https://github.com/electronicarts/CnC_Generals_Zero_Hour/blob/0a05454d8574207440a5fb15241b98ad0b435590/GeneralsMD/Code/GameEngine/Source/Common/Thing/ThingTemplate.cpp#L1548-L1600). Source factory percent uses elapsed/current-duration, so rate changes can retroactively change progress. Wargrid intentionally accumulates work instead.
+- Brownout disables only KINDOF_POWERED objects. Selected depot/factory lack that flag. This supports slowdown, not shutdown. [Player.cpp:3250–3272](https://github.com/electronicarts/CnC_Generals_Zero_Hour/blob/0a05454d8574207440a5fb15241b98ad0b435590/GeneralsMD/Code/GameEngine/Source/Common/RTS/Player.cpp#L3250-L3272). Not a claim about every USA building.
+
+## Supply loop rules
+
+- Chinook shares supply-truck behavior; cargo starts at zero, increments by one box, and any positive cargo chooses depot after docking finishes. Empty cargo chooses source; partial last load returns. [SupplyTruckAIUpdate.cpp:80–88,140–160,511–553](https://github.com/electronicarts/CnC_Generals_Zero_Hour/blob/0a05454d8574207440a5fb15241b98ad0b435590/GeneralsMD/Code/GameEngine/Source/GameLogic/Object/Update/AIUpdate/SupplyTruckAIUpdate.cpp#L511-L553).
+- Warehouse holds finite integer StartingBoxes; successful transaction decrements one and restores it if collector rejects. Configured deletion after final box does not revoke transferred cargo. [SupplyWarehouseDockUpdate.cpp:48–139](https://github.com/electronicarts/CnC_Generals_Zero_Hour/blob/0a05454d8574207440a5fb15241b98ad0b435590/GeneralsMD/Code/GameEngine/Source/GameLogic/Object/Update/DockUpdate/SupplyWarehouseDockUpdate.cpp#L48-L139).
+- Depot unloads all cargo and credits box value in one action. No upgrade in M3. [SupplyCenterDockUpdate.cpp:88–113](https://github.com/electronicarts/CnC_Generals_Zero_Hour/blob/0a05454d8574207440a5fb15241b98ad0b435590/GeneralsMD/Code/GameEngine/Source/GameLogic/Object/Update/DockUpdate/SupplyCenterDockUpdate.cpp#L88-L113).
+- Dock timer precedes every source action, one whole-load depot action. Literal source waits an additional action delay after capacity fills before gain fails and departure begins. M3 intentionally departs at capacity. One active docker with separate approach positions exists in source; M3 keeps one active dock but simplifies flight/waiting geometry. [AIDock.cpp:575–636](https://github.com/electronicarts/CnC_Generals_Zero_Hour/blob/0a05454d8574207440a5fb15241b98ad0b435590/GeneralsMD/Code/GameEngine/Source/GameLogic/AI/AIDock.cpp#L575-L636), DockUpdate.cpp:112–182,355–427.
+- Automatic lookup prefers selected legal dock, then nearest available by squared distance. Source search radius applies to automatic warehouse search, not explicit preferred warehouse/depot search. M3 uses all-map source search with ID tie-break because scale/registry order are not calibrated. [ResourceGatheringManager.cpp:108–250](https://github.com/electronicarts/CnC_Generals_Zero_Hour/blob/0a05454d8574207440a5fb15241b98ad0b435590/GeneralsMD/Code/GameEngine/Source/Common/RTS/ResourceGatheringManager.cpp#L108-L250).
+- Transfer rejects dead/sold/unfinished dock; depot must be same owner. Neither transfer path nor depot action checks power, and inspected depot lacks POWERED. Lost target triggers reselection; cargo survives source/depot loss. [ActionManager.cpp:211–283](https://github.com/electronicarts/CnC_Generals_Zero_Hour/blob/0a05454d8574207440a5fb15241b98ad0b435590/GeneralsMD/Code/GameEngine/Source/Common/RTS/ActionManager.cpp#L211-L283), SupplyTruckAIUpdate.cpp:557–629, AIDock.cpp:591–623. Exact recovery frame count and every death module were not traced.
+
+## Explicit M3 departures and unknowns
+
+- Integer accumulated work, stored paid-cost refunds, zero-demand full speed; no inherited progress jump or price-change refund exploit.
+- Fixed grid footprints and no terrain/fog legality; direct 2D air travel at provisional 6 units/sec, no altitude, acceleration, ropes, passengers or hard collision.
+- ID tie-break, all-map source search, 30-tick retry and simplified single-dock air waiting; immediate departure when full. Chosen for bounded deterministic slice, not measured reference values.
+- One fixed authored 200-box source and 10,000 starting credits. No source damage/crippling model, sale, upgrades or automatic builder production.
+- Scenario removal specifies cargo loss on collector destruction; instance-local source cargo supports this inference, but all retail death modules were not audited.
+- Spatial scale, effective overrides/mod/version, full build legality, approach/exit animations, exact retail timing and feel remain unknown. Source/config evidence cannot close runtime parity gate.
+
+Temporary source reports and decoded selected text: `/tmp/wargrid-m3-plan/`; not repository dependencies. Research was read-only. Planning approval does not authorize M3 implementation.

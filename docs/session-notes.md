@@ -4,22 +4,26 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 ## Session
 
-2026-11-01: explicit `prompt.txt` kickoff adopted M1 defaults. Single-vehicle implementation now passes local headless suite on `m1-vehicle-plan`: **32 cases / 1089 checks / exit 0**. User authorized committing all current work; publishing not authorized. Four pre-existing modified docs preserved. [M1 verification](reference/m1-verification.md) owns detailed evidence; [movement note](reference/movement.md) marks prototype/reference limits.
+2026-11-02 M2 continuation: existing task 5 completed in place, task 6 shared workload/statistics/headless and visible-probe files implemented. Local normal suite **58 cases / 96,953 checks / zero failures / exit0**, success marker present. Outside-root/fresh-cache/Rosetta trace suites each **58 / 96,955 / zero failures / exit0**, exact1,200-tick traces match three files. Python comparator6 tests/exit0; headless smoke/shell syntax pass. [M2 evidence](reference/m2-verification.md) owns commands, red/green and full measurements. Grok stalled without report and was terminated exit143; single fresh-context fallback M2 review complete, no consequential findings. Ponytail cuts pass complete, no warranted cuts. Added S8 exact rejection-reason assertion after coverage caveat; scratch lost-error mutation failed exactly S8, then final normal/trace suites passed.
+
+Headless300-unit simulation budgets pass: open p95/p99/max1.310/1.369/7.954ms; dense1.330/1.385/7.458ms. Far-coordinate M9 regression exposed float32 accumulation; scalar float motion fixes it with unchanged1e-5 tolerance/speed/snapshot shape. No assertion deletion or compatibility modes. Historical precision trace values change intentionally; exact native/Rosetta equality verified.
 
 ## Pending user action
 
-- Visible M1 play/screenshots authorized; Computer Use Godot access blocked. User screenshot and second recording confirm rendering, selection, movement/retargeting/arrival and pan. Visible smoke covered by second recording plus user reports for zoom/resize and ignored blocked/outside targets. Basic visible smoke covered within recorded scope; no exhaustive visual/feel claim. M1 remote CI requires separately approved push. Local commit authorized; push, PR and merge not authorized.
-- Sole Grok review found no production defects; three test gaps closed with scratch mutation evidence. Final Ponytail pass found no cuts.
+- User chose **headless only** after one batched M2 visible/play/rendered request. No window/screenshots/rendered run. Play feel, rendered-frame p95 and real-time backlog gates remain pending; do not label full M2 accepted or start M3.
+- Local M2 commit/main merge/M3 branch handoff authorized despite documented pending visible gates. Parent performs Git handoff after final review/cuts and evidence updates; no push/PR/remote merge authorized.
+- M2 remote matrix remains unpublished/unverified. Historical M1 successful CI does not cover current tree.
 
 ## Deferred experiments and research
 
-- Visuals, feel, performance, cross-platform determinism and Zero Hour parity unverified. No retail-data extraction or sibling-project changes.
-- M0 and planning commits passed remote CI at 12 cases / 212 checks. Those historical runs do not cover current M1 code.
-- No M2 implementation; groups, collision/dynamic blockers and polished art remain out of scope.
+- Run separately authorized M2 visible play/rendered probe later; command and expected setup in README. Do not infer any approval from historical M1 play.
+- Cross-OS replay awaits authorized publication/remote runs. Same-host native/Rosetta check is narrower.
+- Travel overlap intentional; no hard collision/formations, economy/combat, polished art, M3 implementation or multiplayer.
+- Source labels remain `UNVERIFIED_REFERENCE`; no retail parity claim. M3 source/design/plan remain preparation.
 
 ## Next action
 
-M1 local implementation/review complete; stop before M2. Await explicit Git instructions if publishing is wanted. Remote CI, reference parity and performance remain unverified; see verification record for visible scope. Do not rebuild M0 or expand scope.
+Perform authorized local Git handoff from [root prompt](../prompt.txt): commit reviewed M2 plus M3 preparation, fast-forward local main if possible, preserve m2-groups, create m3-base-supplies, install [M3 next prompt](m3-prompt.txt) and commit handoff update. Carry entire merged repo and four M3 preparation files; never start M3 in this run. Parent will update this current state after Git integration. Entries below are history.
 
 ## 2026-11-01 — M0 local foundation
 
@@ -118,3 +122,12 @@ M1 local implementation/review complete; stop before M2. Await explicit Git inst
 ## 2026-11-01 — M1 commit approval
 
 - User explicitly authorized committing everything currently in repo, including pre-existing documentation changes and reviewed M1 implementation/tests/evidence. No push, PR or merge included. Read Git log/status for resulting commit.
+
+
+## 2026-11-02 — recovery and M3 planning
+
+- Reconciled README, AGENTS, blueprint, M2 plan, reference status and root prompt against actual unfinished checkout. Game code untouched. Fresh delegated Godot result: 54 cases / 95,914 checks / 42 failures / exit1; Python comparator6 tests/exit0. Test subagent interruption recovered; original usage-limit stop unverified.
+- User chose Zero Hour research first, then source-informed playable M3 slice; approved design for detailed planning. Read pinned GeneralsMD source and hash-verified root INIZH.big selected configuration. Original archives/source unchanged; no EA implementation/assets added. Research limits and explicit fixes recorded in M3 reference.
+- Added M3 design, detailed sequential Sol/Medium execution plan, source/config record and separate docs/m3-prompt.txt. One fresh design builder check found no consequential gaps; plan self-review mapped scope, signatures, tests and lifecycle boundaries. Planning only; M2 gates precede M3 execution.
+- User authorized future local M2 completion commits, local main merge and creation of m3-base-supplies carrying full repo/preparation documents. Root prompt includes exact handoff and installs M3 root prompt only after branch switch; no push/PR or M3 implementation during that run. No Git action performed here.
+- Documentation verification delegated: diff whitespace and local Markdown link targets checked; final result recorded in response. No game rerun after documentation-only changes, no rendered checks, no M2 implementation review claimed.

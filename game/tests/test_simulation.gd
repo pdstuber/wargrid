@@ -10,7 +10,7 @@ func equal(runner, actual: Variant, expected: Variant, label: String) -> void:
 
 func test_spawn(runner) -> bool:
 	var sim = Simulation.new()
-	equal(runner, sim.snapshot(), {"tick": 0, "next_entity_id": 1, "entities": [], "pending_commands": [], "last_sequences": [], "map": {"size": [16, 16], "blocked_cells": []}}, "C1 fresh")
+	equal(runner, sim.snapshot(), {"tick": 0, "next_entity_id": 1, "entities": [], "pending_commands": [], "last_sequences": [], "map": {"size": [16, 16], "blocked_cells": []}, "path_queue": []}, "C1 fresh")
 	equal(runner, sim.spawn(1, Vector2(1, 2)), 1, "C1 first ID")
 	equal(runner, sim.spawn(2, Vector2.ZERO), 2, "C1 second ID")
 	var before: Dictionary = sim.snapshot()
@@ -19,9 +19,9 @@ func test_spawn(runner) -> bool:
 		equal(runner, sim.snapshot(), before, "C1 rejection unchanged")
 	equal(runner, sim.spawn(1, Vector2(0.5, 2.5)), 3, "C1 next ID")
 	equal(runner, sim.snapshot().entities, [
-		{"id": 1, "owner": 1, "position": [1.0, 2.0], "order": null, "status": "idle", "route": []},
-		{"id": 2, "owner": 2, "position": [0.0, 0.0], "order": null, "status": "idle", "route": []},
-		{"id": 3, "owner": 1, "position": [0.5, 2.5], "order": null, "status": "idle", "route": []},
+		{"id": 1, "owner": 1, "position": [1.0, 2.0], "order": null, "status": "idle", "route": [], "destination": null},
+		{"id": 2, "owner": 2, "position": [0.0, 0.0], "order": null, "status": "idle", "route": [], "destination": null},
+		{"id": 3, "owner": 1, "position": [0.5, 2.5], "order": null, "status": "idle", "route": [], "destination": null},
 	], "C1 entities in ID order")
 	return true
 
@@ -209,8 +209,8 @@ func test_repeatability(runner) -> bool:
 	equal(runner, a.snapshot(), b.snapshot(), "C11 equal worlds")
 	equal(runner, a.snapshot(), {
 		"tick": 1000, "next_entity_id": 2,
-		"entities": [{"id": 1, "owner": 1, "position": [8.0, 9.0], "order": null, "status": "arrived", "route": []}],
-		"map": {"size": [16, 16], "blocked_cells": []},
+		"entities": [{"id": 1, "owner": 1, "position": [8.0, 9.0], "order": null, "status": "arrived", "route": [], "destination": [8.0, 9.0]}],
+		"map": {"size": [16, 16], "blocked_cells": []}, "path_queue": [],
 		"pending_commands": [], "last_sequences": [{"player": 1, "sequence": 1}],
 	}, "C11 full final state")
 	return true
@@ -234,6 +234,7 @@ func test_group_move(runner) -> bool:
 		equal(runner, unit.owner, 1, "C12 owner")
 		equal(runner, unit.order, {"type": "move", "target": [3.5, 4.0]}, "C12 copied target")
 		equal(runner, unit.status, "moving", "C12 status")
+		equal(runner, unit.destination, [3.5, 4.0] if i == 0 else [3.5, 3.5], "C12 distinct destination")
 		runner.check(not unit.route.is_empty(), "C12 remaining route")
 		var start := Vector2(1, 2) if i == 0 else Vector2(5, 6)
 		var distance: float = Vector2(unit.position[0], unit.position[1]).distance_to(start)

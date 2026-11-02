@@ -1,19 +1,37 @@
-Implement Wargrid M1 only in /Users/pdstuber/projects/wargrid. M0 already exists; do not rebuild it.
+Resume Wargrid M2 only in /Users/pdstuber/projects/wargrid, using Sol at Medium reasoning. This is an implementation continuation, not a new design interview. M0/M1 already exist; do not rebuild them or begin M3.
 
 Read in order:
-1. AGENTS.md and README.md
-2. docs/session-notes.md (current handoff sections)
-3. docs/superpowers/plans/2026-11-01-m1-vehicle.md in full
-4. Relevant blueprint sections 2–5 and M1; consult M0 plan only for history.
+1. AGENTS.md and README.md.
+2. Current sections of docs/session-notes.md and docs/reference/m2-verification.md.
+3. docs/superpowers/plans/2026-11-01-m1-vehicle.md in full for inherited contracts.
+4. docs/superpowers/plans/2026-11-01-m2-groups.md in full; blueprint M2 and section 11.
+5. Relevant production code and tests, including untracked files, before editing.
 
-This kickoff adopts the M1 plan's prototype defaults and authorizes its implementation, not M2 or Git publishing. Follow the specified files, APIs, coordinate conventions, tick phases and acceptance cases. Do not restart a broad design interview. Ask only when a genuine missing decision or instruction conflict blocks progress.
+Recovery checkpoint, 2026-11-02:
+- Branch m2-groups, HEAD 7b70a61; substantial uncommitted M2 work. Inspect live Git state; preserve every existing edit. Do not reset, clean, stash away, or regenerate completed work.
+- M2 tasks 0–4 are recorded complete: replay/CI preparation, sized navigation, destination allocation, bounded path queue, dynamic obstacle replacement. Current suite reports no failures outside view/scene tests, but whole suite is red.
+- Task 5 stopped after tests and partial stubs. main.gd still spawns one vehicle and handles selected_id; selected_ids is incompletely wired. WorldView.pick_entities() returns []; selection/draw ordering and group controls remain incomplete. HUD/SelectionBox exists. Finish these files against existing tests and plan, not a parallel replacement implementation.
+- Fresh delegated sh tools/run_tests.sh: 54 cases / 95914 checks / 42 failures / exit 1, no TESTS PASSED marker. Failures cover box picking/depth ordering, 20-unit scene, transformed selection/group orders, rejection feedback, Shift/drag behavior and obstacle toggle.
+- python3 -m unittest discover -s tools -p 'test_compare_replays.py': 6 tests, OK, exit 0.
+- Task 6 benchmark files are absent. Task 7 final verification, substantive review, Ponytail cuts and closing documentation remain pending.
+- User reported possible usage-limit interruption and an accidentally interrupted subagent. Original stop cause is unknown. Recovery test subagent was resumed and returned results. Do not assume prior workers still run or interrupted review passed; inspect available worker/process state before launching duplicate work.
 
-Inspect git status and implementation first; preserve all user work. Run baseline headless suite through the required test subagent. Report current state and first task. Work through plan in order with small red/green cycles; mark steps done only with evidence. Reuse existing runner, wrappers, pinned engine and CI.
+Start by reporting live state and reproducing headless baseline through required test subagent. If Godot import fails only on macOS certificate/editor-settings sandbox access, request proper command escalation; do not change project code or hide diagnostics to bypass it. Temporary recovery logs were under /tmp/wargrid-status; their absence must not block reproducible checks.
 
-Movement deliberately replaces M0 stationary behavior. Apply only named expectation changes; retain validation, sequence, snapshot-isolation and multi-ID coverage. Do not add a stationary compatibility mode or weaken tests to obtain green.
+Use superpowers:executing-plans sequentially in main session. Resume task 5's existing red tests; audit coverage, then implement group selection/input/HUD/obstacle demo until green. Continue task 6's measured 300-unit workload, then task 7. Delegate build/tests/lint per AGENTS.md using a shared context file; no per-task reviewer fan-out. Preserve validation, canonical commands, exact snapshots, tick semantics and old behavior coverage. Never widen tolerances, delete assertions or add compatibility modes to obtain green.
 
-Implement one vehicle, static grid navigation, isometric view, click selection, right-click orders, pan/zoom and HUD. Prototype speed and path shape are not Zero Hour measurements. No groups, dynamic blockers, physics bodies, polished art, networking, new dependencies or retail-data extraction.
+Keep adopted M2 choices: distinct reserved destination cells, temporary travel overlap, four-way movement, at most eight route searches per tick, conservative repath on obstacle changes. No hard collision, formations, construction/economy/combat, new dependencies, engine upgrade or sibling-project edits. Any M3 plan is planning-only and cannot expand this run.
 
-Keep checks headless. Ask before visible play/screenshots; pending play gate is not a passed gate. No commits, pushes, PRs, engine upgrades or sibling-project edits without required approval. Remote CI pending a push is not remote CI success.
+Keep tests/replays/simulation benchmarks headless. Ask once before batched M2 play/screenshots/rendered benchmark; historical M1 permission does not transfer. Headless timing cannot establish rendered-frame or real-time backlog gates. Record actual counts, commands, exit codes, markers, hardware and limits; never label pending checks passed. M1 CI passed 7b70a61; current M2 matrix and changes still need separately authorized publication and remote runs.
 
-Diagnose failures instead of repeating unchanged attempts or weakening assertions. Follow required final substantive review plus Ponytail review; no reviewer per task. Update README, movement/verification notes and session handoff with commands, case/check counts, failure probes and exact remaining gaps. Stop after M1.
+Finish with one substantive M2 review (Grok if available, otherwise fresh context) and one Ponytail cuts pass per AGENTS.md; apply findings and reverify. Do not repeat M1 review or count interrupted review as complete. Update README, M2 plan checkboxes, docs/reference/m2-verification.md and current session handoff with evidence and remaining gates.
+
+Authorized local Git handoff (user requested 2026-11-02): after M2 implementation, required local verification and reviews finish, commit completed M2 work and these preparation documents, merge m2-groups into local main, then create/switch to m3-base-supplies. This grants local commits needed for that handoff and local merge/branch creation; no push, PR, remote merge or M3 implementation. If visible/performance gates remain open, request their required approval and report status; never label them passed. Remote CI can remain explicitly pending because no push is authorized; it must not be invented as a prerequisite to this authorized local handoff.
+
+Handoff procedure:
+1. Verify reviewed tree, show concise staged summary, exclude caches/scratch/secrets, commit M2 implementation/tests/evidence and all M3 preparation files listed below. Do not include unrelated new user edits blindly. Keep commit message short. No further confirmation needed for this authorized local work.
+2. Require clean tracked working tree and inspect local main/m2-groups ancestry. Switch main and fast-forward merge m2-groups when possible. If main diverged, report concrete conflict/branch state before resolving a non-fast-forward integration; never force/reset branches. Preserve m2-groups branch.
+3. Create m3-base-supplies from resulting main. If branch already exists, inspect it and avoid overwriting its history. Do not invent another branch silently.
+4. Verify complete repository and four M3 preparation files exist on new branch: docs/superpowers/specs/2026-11-02-m3-base-supplies-design.md; docs/reference/m3-economy.md; docs/superpowers/plans/2026-11-02-m3-base-supplies.md; docs/m3-prompt.txt. The whole merged tree is inherited; do not cherry-pick/copy only the plan or depend on /tmp research files.
+5. On M3 branch, replace root prompt.txt with contents of docs/m3-prompt.txt, update current README/session handoff to say M2 locally integrated and M3 prepared (implementation not started), preserving remote/visible/reference limits. Commit this small handoff update locally. Root M3 prompt is for a later user-invoked session; writing it does not start M3.
+6. Report branch names/commit hashes, final checks, unverified gates and M3 readiness; stop. No M3 implementation in this run.

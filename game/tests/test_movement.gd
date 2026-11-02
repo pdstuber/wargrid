@@ -4,7 +4,7 @@ const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Navigation = preload("res://scripts/simulation/grid_navigation.gd")
 
 func cases() -> Array[Callable]:
-	return [test_distance, test_short_zero, test_replacement, test_retarget, test_obstacle, test_blocked, test_invalid, test_replay]
+	return [test_distance, test_short_zero, test_replacement, test_retarget, test_obstacle, test_blocked, test_invalid, test_replay, test_far_coordinates]
 
 func order(sim, target: Vector2, sequence: int = 0, tick: int = -1) -> Dictionary:
 	return sim.issue_command({"tick": sim.snapshot().tick if tick < 0 else tick, "player": 1,
@@ -152,4 +152,14 @@ func test_replay(runner) -> bool:
 	for batch in [1, 3, 10]:
 		runner.check(replay(batch, true).snapshot() == expected, "M8 exact replay batch " + str(batch))
 	arrived(runner, replay(10), Vector2(4.5, 4.5), "M8 final")
+	return true
+
+func test_far_coordinates(runner) -> bool:
+	var sim = Simulation.new([], Vector2i(64, 64))
+	sim.spawn(1, Vector2(51.5, 48.5))
+	order(sim, Vector2(54.5, 48.5))
+	advance(sim, 10)
+	runner.check(absf(entity(sim).position[0] - 52.5) <= 1e-5, "M9 far coordinate ten-tick distance")
+	advance(sim, 20)
+	arrived(runner, sim, Vector2(54.5, 48.5), "M9 far coordinate thirty-tick arrival")
 	return true
