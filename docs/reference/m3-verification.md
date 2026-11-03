@@ -1,6 +1,6 @@
 # M3 verification — 2026-11-03
 
-Status: **HEADLESS AND CROSS-OS CI VERIFIED; POSITIVE USER PLAYTEST; DETAILED VISIBLE/PERFORMANCE/PARITY GAPS REMAIN**.
+Status: **HEADLESS AND CROSS-OS CI VERIFIED; POSITIVE USER PLAYTEST; NO USER-REPORTED VISUAL ISSUES; PERFORMANCE/PARITY GAPS REMAIN**.
 
 ## Authorization and inherited gates
 
@@ -155,3 +155,7 @@ Default launcher still selects M2; M3 uses `sh tools/run_game.sh res://scenes/ba
 User requested wrap-up and local merge into `main`; fast-forward completed through documentation commit `17f2f12`. Documentation updated to match this evidence; no production code changes. Publishing `main` and any PR require separate approval. Remaining gaps: detailed visible checklist coverage, inherited M2 visible gates, rendered-frame/backlog measurements and retail timing/feel parity. Stop at M3.
 
 Post-merge verification on local `main`: ordinary headless suite **95 cases / 101,305 checks / zero failures / exit 0**, marker `TESTS PASSED 101305`, no engine diagnostics. Python comparator: **6 tests / exit 0**. Initial sandboxed import failed on macOS certificate/user-settings access before tests; retry with required filesystem access passed. No code changes. Logs: `/tmp/wargrid-wrapup-godot-retry.log`, `/tmp/wargrid-wrapup-python.log` (temporary evidence, not dependencies). Documentation check: 103 local links across 23 Markdown files, zero missing; kickoff headings and prompt copies match; whitespace check passes. Rendered checks and benchmarks were not rerun.
+
+## Additional user visual confirmation — 2026-11-03
+
+User reported positive M2 playability and no visual issues in M3 playtest. Initial mention of M4 was explicitly corrected to M3; no M4 playtest evidence exists. Accept this as positive manual playability/visual evidence, without inventing itemized checklist coverage. Remaining inherited performance checks were rendered frame-time and real-time backlog measurements (completed 2026-11-03, see [M2 verification](m2-verification.md) and the [performance ledger](performance.md)); retail parity remains unverified. No new agent-launched window or automated test run.

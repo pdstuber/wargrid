@@ -143,7 +143,7 @@ Finding (measured): the per-tile terrain loop is the cost. About 8,200 canvas co
 
 ### Terrain fix and rerun — 2026-11-03
 
-`WorldView._draw_terrain` now draws one base polygon, polygons for solid cells and one `draw_multiline` for the grid (same colors and cells) instead of two canvas commands per tile. Headless suite after the change: 96 cases / 101,351 checks / zero failures / exit 0 (101,306 before the builder speed change to 1.2, 101,351 after; the +45 checks are probably per-tick check loops running longer with a slower builder, not confirmed; see [verification plan](zero-hour-verification.md)). Visual equivalence not yet looked at by a person.
+`WorldView._draw_terrain` now draws one base polygon, polygons for solid cells and one `draw_multiline` for the grid (same colors and cells) instead of two canvas commands per tile. Headless suite after the change: 96 cases / 101,351 checks / zero failures / exit 0 (101,306 before the builder speed change to 1.2, 101,351 after; confirmed by testing the commits separately: the +45 checks come entirely from the builder speed change, most likely per-tick check loops running longer with a slower builder; see [verification plan](zero-hour-verification.md)). Visual equivalence not yet looked at by a person.
 
 Third visible run of the real benchmark, same machine and settings (attempt 3): exit 0, `RENDERED BENCHMARK PASSED 2`, zero ERROR lines.
 

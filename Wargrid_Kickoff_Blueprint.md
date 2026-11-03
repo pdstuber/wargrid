@@ -3,7 +3,7 @@
 **Version:** 0.4
 
 **Date:** 2026-11-02
-**Status:** Design specification; M0–M2 implemented; M3 headless implementation and cross-OS CI verified; positive user playtest reported; detailed visible coverage, rendered/backlog measurements and parity pending. [README](README.md) owns current verification status.
+**Status:** Design specification; M0–M2 implemented; M3 headless implementation and cross-OS CI verified; positive user playtest reported; detailed visible coverage and retail parity pending; rendered benchmark measured on the development machine only, low-end budgets tracked in the [performance ledger](docs/reference/performance.md). [README](README.md) owns current verification status.
 
 **Working title:** Wargrid
 
@@ -519,7 +519,11 @@ Construction vehicle, supply resource, Chinook-like collector, resource drop-off
 
 Infantry, one or two vehicles, targeting, health/damage, basic AI, victory/defeat, build/selection HUD; a **small single-player skirmish**.
 
+**Approved design (2026-11-03):** [combat and mini-match design](docs/superpowers/specs/2026-11-03-m4-combat-design.md), [execution plan for Sol/Medium](docs/superpowers/plans/2026-11-03-m4-combat.md), and [source/config evidence](docs/reference/m4-combat.md). Design approved; implementation not started. Remaining inherited verification gaps stay open.
+
 **Exit gate:** reproducible scenario test for a scripted 5–10 minute match plus combat reference fixtures and manual playability review. This is the first true vertical slice.
+
+**Pre-M5 gate (proposed 2026-11-03):** run or explicitly defer the level 1 observation protocol in [Zero Hour verification](docs/reference/zero-hour-verification.md) before kickoff of M5, which multiplies unverified constants. Level 0 found ground-unit speeds 2.5–3.75× faster than the range scale implies; scale decision pending.
 
 ### M5 — Core factions
 
@@ -710,6 +714,8 @@ Start with representative benchmarks at 100, 300 and 500 units, varying:
 - Pathfinding spikes, collision queries, target scans, simulation tick distributions.
 
 Track p50/p95/p99 tick time and test-machine metadata. At M2, establish a repeatable 300-unit movement workload (open ground and dense obstacles) with a 10-second warmup and 60-second sample. Proposed initial gate on the recorded development Mac: simulation p95 ≤ 8 ms, p99 ≤ 16 ms, and no growing tick backlog at 30 Hz. Measure rendered frame times separately; target p95 ≤ 16.7 ms at the recorded resolution/zoom for 60 FPS. These are engineering targets, not measured results or promises for unspecified hardware. Record engine/build, hardware, map, seed and unit count with each result.
+
+**Low-end target (2026-11-03):** the project targets a low-end device and possibly a browser (WebAssembly). Budgets derive from an assumed 6× slowdown relative to the development machine, tracked per milestone in the [performance ledger](docs/reference/performance.md); the rendered benchmark runs with vsync off so it measures render cost. Existing development-machine gates above stay in force; the ledger adds stricter derived ones.
 
 Pathfinding work must be bounded per tick; blocked destinations cannot cause endless immediate retries. A long frame must not trigger unbounded catch-up work or silently drop simulation ticks. First measure the bottleneck, then choose the smallest fix; do not prebuild flow fields, threading or an ECS. Keep hardware-sensitive gates out of ordinary CI; run them before advancing the milestone. If a gate fails, fix it or explicitly revise scope/budget before expanding unit counts.
 

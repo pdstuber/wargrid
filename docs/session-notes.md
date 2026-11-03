@@ -15,17 +15,38 @@ Sole completed substantive review was fresh-context fallback after bounded four-
 ## Pending user action
 
 - M3 fast-forwarded into local `main` during wrap-up; publishing `main` and any PR need separate approval.
-- M3 user playtest positive; detailed visible checklist coverage, inherited M2 visible gates, rendered-frame/backlog measurements and retail parity remain unverified.
+- User confirmed positive M2 playability and no M3 visual issues; M4 mention corrected to M3. Rendered-frame/backlog measurements and retail parity remain unverified; no itemized visible checklist inferred.
 - M3 cross-OS tests and both exact replay comparisons passed at `303006b`; see [verification](reference/m3-verification.md).
 
 ## Deferred experiments and research
 
 - Source/config-supported economy remains RETAIL_UNVERIFIED; geometry, flight speed, docking simplification and work accumulation departures stay explicit in reference/design.
-- No M4, combat, sale, upgrade, passengers, factions, AI, multiplayer or art expansion.
+- M4 planning requested; implementation remains unauthorized. Sale, upgrade, passengers, later factions, multiplayer and art expansion remain excluded.
 
 ## Next action
 
-Inspect clean local `main`, then offer publication of `main` for approval. No M4 or PR authorized. Review remaining evidence gaps in [M3 verification](reference/m3-verification.md); do not restart completed implementation or reviews. Original prompts below remain historical task contracts.
+Read [M4 approved design](superpowers/specs/2026-11-03-m4-combat-design.md) and [Sol/Medium execution plan](superpowers/plans/2026-11-03-m4-combat.md). User approved M4 design on2026-11-03. Do not ask for design approval again. Implementation kickoff remains pending (inherited rendered-frame/backlog measurements were completed 2026-11-03; see [performance ledger](reference/performance.md)); Git publication and visible checks require explicit authorization. Review remaining evidence gaps in [M3 verification](reference/m3-verification.md); do not restart completed implementation or reviews. Original prompts below remain historical task contracts.
+
+## 2026-11-03 — Performance open points and real-game verification
+
+- Rendered benchmark was broken since M2 (untyped `[]` to typed `set_state`); fixed with regression `test_rendered_probe_ticks`, suite then 96 cases / 101,306 checks / exit 0 (now 97 / 101,355 with later tests and the builder-speed change; see below). Corrected rerun completed but **fails the frame budget** (about 3 fps, p95 320/340 ms; backlog grows). Simulation cost fine. Headless probe shows script-side `_draw` is 3–5 ms, so cost is renderer-side; rendered probe confirmed the per-tile terrain loop (about 8,200 canvas commands) costs about 80 ms/frame vs about 2 ms for a one-polygon-plus-multiline variant. Fix applied (`WorldView._draw_terrain`); real benchmark rerun: ~120 fps, zero backlog, frame p95 19.6/19.5 ms vs 16.7 budget (marginal fail, tail likely tick frames, unprofiled). Builder speed now 1.2 (user directed speed from `Locomotor.ini` ÷25; infantry 0.8/tank 1.2 go into M4 definitions; legacy vehicle stays 3.0). Suite 96 cases / 101,351 checks / exit 0. Frame-tail follow-up: plumbing is ~2.3 ms/tick headless; tick frames spend ~13 ms waiting in render submission (vsync on) vs ~2 ms with vsync off in an earlier probe, so the p95 tail is likely vsync pacing; untested. Vsync-off rerun done (`--disable-vsync`): frame p95 3.6/5.1 ms, max 15.8 ms, zero backlog: rendered benchmark passes; the vsync-on tail was display pacing. Decided by user: benchmark scene disables vsync itself (done; header `vsync=off`; frame p95 4.1/6.5 ms, dense max 19.5 ms). Raised by user: target is a low-end device/browser (WebAssembly). Done: [performance ledger](reference/performance.md) (assumed 6× slowdown, derived budgets: plumbing and rendered frame currently exceed, sim passes with ~12% margin; per-milestone History rows) and M4 plan Task9a combat benchmark (150 v 150, three layouts, sim-only budgets, no implementation yet). Not done: CI trend logging, machine-independent counters, web export spike. No `AGENTS.md` change (a one-line ledger rule there is optional). See [M2 verification](reference/m2-verification.md).
+- M4 plan corrected: baseline/wall-time, watchdog is one 60 s suite budget (task7 gate ≤30 s), HP bars only selected/damaged, open decisions listed.
+- New [Zero Hour verification plan](reference/zero-hour-verification.md): level 0 found ground speeds 2.5–3.75× faster than range scale implies; level 1 observation protocol proposed; gate before M5 proposed. Needs user decisions: speed scale, rendering fix, level 1 session.
+- Item 2 (machine-independent counters): added `test_snapshot_size_ceiling` (open 79,481 / dense 80,345 nodes at the step-38 peak, busiest unit 322; mutation of the ceiling by 1 fails) and an engine draw-call print in the rendered benchmark (not yet run in a window). A* expansions not countable (built-in `AStarGrid2D`); canvas commands not observable headless. Plan Task9a adds `combat_work()` counter. [AGENTS.md](../AGENTS.md) updated: M4 reading list, performance ledger rule, rendered-benchmark etiquette, parity goal.
+- Doc consistency sweep: counts (now 97 cases / 101,355 checks), rendered-gate status, speeds, vsync, M4 prompt and design aligned; historical M3 text kept with forward pointers.
+- User approved the integration plan: branch `m4-prep` from `c441a7f` with three commits (benchmark/terrain fix, builder speed, docs), then push for CI, then fast-forward `main`, then fast-forward `m4-combat`. Each code commit passed the suite alone (97 cases / 101,310 then 101,355 checks). Read git log/status and CI for current publication state. No M4 implementation. Code changes: `movement_benchmark.gd` (typed selection, vsync off, draw-call print), `world_view.gd` terrain, `economy_definitions.gd` builder speed, tests in `test_benchmark.gd` and `test_economy.gd`.
+
+## 2026-11-03 — M4 planning
+
+- User confirmed positive M2 playability and no M3 visual issues; corrected M4 playtest mention to M3. Reference notes updated; no M4 playtest or performance measurements inferred.
+
+- User explicitly approved M4 design. Updated design/plan/prompt status; no implementation kickoff or inherited-gate deferral inferred.
+
+- Added proposed design, source/config evidence and sequential Sol/Medium execution plan. No game-code changes or implementation kickoff.
+- Read hash-verified root INIZH.big and pinned official source; selected rifle burst/reload, tank, health/armor and barracks values. Geometry, direct-hit simplifications and runtime parity remain explicitly provisional/unverified.
+- Fresh Sol/Medium builder check resolved mixed armed selection and real match-duration assertions. Final scripted schedule/outcome must be measured and pinned during bounded task7 calibration.
+- User subsequently authorized M4 branch and Sol prompt preparation: created `m4-combat` from local `main` at `c441a7f`, preserving uncommitted planning files; replaced root `prompt.txt` with M4 handoff. Historical M3 prompt remains `docs/m3-prompt.txt`. No implementation kickoff.
+- Existing runtime test counts remain historical; no game tests or visible checks run for planning/preparation. No commit/push/PR/merge.
 
 ## 2026-11-03 — M3 playtest and wrap-up
 

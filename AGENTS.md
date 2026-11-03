@@ -2,7 +2,7 @@
 
 ## Intent and scope
 
-Wargrid is a Godot isometric pixel-art RTS inspired by Zero Hour's game design. Preserve strategic identity and feel; original bugs and slow algorithms are not compatibility requirements.
+Wargrid is a Godot isometric pixel-art RTS inspired by Zero Hour's game design. Preserve strategic identity and feel; original bugs and slow algorithms are not compatibility requirements. The goal is a pixel-art clone that feels very close, not mathematical parity; see [Zero Hour verification](docs/reference/zero-hour-verification.md).
 
 Current setup and milestone status live in [README](README.md). Milestone scope lives in [the blueprint](Wargrid_Kickoff_Blueprint.md). M0–M3 are implemented; remaining acceptance evidence lives in README. Implement only the explicitly requested milestone and stop at its exit gate; do not automatically expand into later milestones, factions or multiplayer.
 
@@ -13,8 +13,10 @@ Current setup and milestone status live in [README](README.md). Milestone scope 
 - For M1, read [vehicle execution plan](docs/superpowers/plans/2026-11-01-m1-vehicle.md) fully. It defines movement and the intentional updates to M0 tests; do not retain a stationary compatibility mode. Editing the plan does not start implementation.
 - For M2, read [groups execution plan](docs/superpowers/plans/2026-11-01-m2-groups.md) fully and its linked M1 contracts. Resume from the recorded checkpoint after inspecting live changes; do not restart completed tasks or treat partial UI stubs as implemented behavior.
 - For M3, read [approved design](docs/superpowers/specs/2026-11-02-m3-base-supplies-design.md), [source evidence](docs/reference/m3-economy.md) and [execution plan](docs/superpowers/plans/2026-11-02-m3-base-supplies.md) fully. M3 was explicitly kicked off with remaining M2 visible/performance gates deferred by user approval; see verification evidence. Planning/branch preparation alone never starts implementation.
+- For M4, read [approved design](docs/superpowers/specs/2026-11-03-m4-combat-design.md), [combat evidence](docs/reference/m4-combat.md) and [execution plan](docs/superpowers/plans/2026-11-03-m4-combat.md) fully. Design is approved; implementation starts only on explicit kickoff (root `prompt.txt` is the handoff). Planning alone never starts implementation.
 - For M0 history, read [execution plan](docs/superpowers/plans/2026-11-01-m0-foundation.md) fully. It fixes API/data shapes and acceptance cases; follow its order instead of redesigning the foundation. Resume completed steps; mark them complete only with verification evidence.
 - Use [installation reference](docs/reference/installation.md) and other reference notes for evidence. Preserve confirmed, proposed, provisional and deferred labels; never invent approvals or playtests.
+- Performance targets a low-end device and possibly a browser (WebAssembly), not the fast development machine. Budgets, assumptions and measurement history live in the [performance ledger](docs/reference/performance.md). A milestone exit gate is not met without a passing `sh tools/run_benchmark.sh`, a rendered benchmark rerun if presentation changed, and a new ledger row. Never loosen a budget or the assumed slowdown to make a row pass; report it as exceeded.
 - Keep setup/current status in README, design decisions in the blueprint, milestone implementation contracts in their execution plans, evidence in reference notes. Link rather than duplicate rules and numeric values.
 - Inspect existing work before editing. Keep changes small; do not scaffold future systems or generic frameworks.
 
@@ -29,6 +31,7 @@ Current setup and milestone status live in [README](README.md). Milestone scope 
 ## Verification and desktop use
 
 - Write meaningful behavior tests alongside mechanics. Keep small suites per system; fail on zero checks, parse errors, failed expectations and incomplete suites. Require successful exit plus final completion marker.
+- Rendered benchmarks (`sh tools/run_game.sh res://scenes/movement_benchmark.tscn`) open a window: ask first, batch with other visible checks. They disable vsync themselves (header shows `vsync=off`) so frame intervals measure render cost, not display refresh.
 - Run commands before claiming they work. Report counts, exit status, unverified checks and reference gaps. Planned commands in README are not implemented until M0 creates and verifies them.
 - Keep tests, replays and simulation benchmarks headless. Open a visible game window only when the user asks to play. Ask before screenshots or other rendering-dependent checks; batch such checks into one request.
 - Separate internal correctness from reference fidelity. Record intentional fixes with regression tests; never silently widen tolerances or change expected results to hide failures.
