@@ -38,7 +38,7 @@ jobs:
       GODOT_SHA256: ${{ matrix.sha256 }}
       GODOT_EXECUTABLE: ${{ matrix.executable }}
       PYTHON: ${{ matrix.python }}
-      WARGRID_REPLAY_TRACE: ${{ runner.temp }}/replay-${{ matrix.platform }}.tsv
+      WARGRID_REPLAY_TRACE: ${{ github.workspace }}/replay-${{ matrix.platform }}.tsv
     steps:
       - uses: actions/checkout@v4
       - name: Install pinned Godot
