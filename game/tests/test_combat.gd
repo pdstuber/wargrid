@@ -319,7 +319,7 @@ func test_acquisition_throttle(runner) -> bool:
 	fresh.step()
 	fresh.spawn(2, Vector2(12.5, 10.5), "builder")
 	Fixture.send(fresh, {"type": "stop", "entity_ids": [other]})
-	runner.check(_first_shot_tick(fresh, 1, 30, runner, "T2") == 1, "T2 a new order scans immediately")
+	runner.check(_first_shot_tick(fresh, 1, 30, runner, "T2") == 14, "T2 stop delays the next scan to the unit's phase tick like Zero Hour idle")
 	return true
 
 func _events(sim: RefCounted) -> Array:
@@ -608,7 +608,10 @@ func test_scan_same_tick_orders(runner) -> bool:
 	var stopped: Array = _chasing_world()
 	Fixture.send(stopped[0], {"type": "stop", "entity_ids": [stopped[1]]})
 	stopped[0].step()
-	runner.check(Fixture.object(stopped[0], stopped[1]).combat.mode == "guard", "O2 stop returns to guard")
+	var halted: Dictionary = Fixture.object(stopped[0], stopped[1])
+	runner.check(halted.combat.mode == "guard" and halted.combat.target_id == null and halted.status == "idle", "O2 stop returns to guard and does not re-acquire in the same tick")
+	for tick in range(20): stopped[0].step()
+	runner.check(Fixture.object(stopped[0], stopped[1]).combat.target_id != null, "O2 guard re-acquires after the delay")
 	var attacking: Array = _chasing_world()
 	Fixture.send(attacking[0], {"type": "attack", "entity_ids": [attacking[1]], "target_id": attacking[3]})
 	attacking[0].step()

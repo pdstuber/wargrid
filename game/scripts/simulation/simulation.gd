@@ -280,6 +280,7 @@ func _apply_orders() -> void:
 			for unit in members:
 				_stop_unit(unit)
 				_set_intent(unit,"guard")
+				unit.combat.repath_tick = _tick + Combat.REPATH_TICKS - (_tick + unit.id) % Combat.REPATH_TICKS
 			continue
 		if command.type == "attack":
 			if not Combat.valid_target(self,command.player,command.target_id): continue
