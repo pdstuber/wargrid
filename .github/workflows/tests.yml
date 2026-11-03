@@ -21,12 +21,6 @@ jobs:
             zip: Godot_v4.7.2-stable_win64.exe.zip
             executable: Godot_v4.7.2-stable_win64_console.exe
             sha256: 731980f9608d61333e5baf54a2ef17210acc7a538446c0cb9969f002aca1e953
-          - platform: macos
-            runner: macos-latest
-            python: python3
-            zip: Godot_v4.7.2-stable_macos.universal.zip
-            executable: Godot.app/Contents/MacOS/Godot
-            sha256: c58a24e31d720be9d62f60cb5627c4e695fb72f21b0cfe1bc9ccaa9a3b3ba63e
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 10
     defaults:
@@ -99,6 +93,6 @@ jobs:
           python3 tools/test_check_reference.py
       - name: Compare all platform ticks
         run: |
-          python3 tools/compare_replays.py traces/replay-linux.tsv traces/replay-windows.tsv traces/replay-macos.tsv
-          python3 tools/compare_replays.py traces/economy-linux.tsv traces/economy-windows.tsv traces/economy-macos.tsv
-          python3 tools/compare_replays.py traces/combat-linux.tsv traces/combat-windows.tsv traces/combat-macos.tsv
+          python3 tools/compare_replays.py traces/replay-linux.tsv traces/replay-windows.tsv
+          python3 tools/compare_replays.py traces/economy-linux.tsv traces/economy-windows.tsv
+          python3 tools/compare_replays.py traces/combat-linux.tsv traces/combat-windows.tsv

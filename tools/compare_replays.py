@@ -17,8 +17,8 @@ def read_trace(path: Path) -> list[str]:
 
 
 def compare_traces(paths: list[Path]) -> None:
-    if len(paths) != 3:
-        raise ValueError("Expected exactly three platform traces")
+    if len(paths) < 2:
+        raise ValueError("Expected at least two platform traces")
     traces = [read_trace(path) for path in paths]
     for tick, values in enumerate(zip(*traces), 1):
         if len(set(values)) != 1:
@@ -27,8 +27,8 @@ def compare_traces(paths: list[Path]) -> None:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Compare exact 1200-tick Linux/Windows/macOS replay traces")
-    parser.add_argument("traces", type=Path, nargs=3)
+    parser = argparse.ArgumentParser(description="Compare exact 1200-tick replay traces from two or more platforms")
+    parser.add_argument("traces", type=Path, nargs="+")
     args = parser.parse_args()
     try:
         compare_traces(args.traces)

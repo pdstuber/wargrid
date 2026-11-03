@@ -43,9 +43,12 @@ class ReplayComparisonTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     compare_traces(self.paths)
 
-    def test_requires_three_platforms(self):
-        with self.assertRaisesRegex(ValueError, "three"):
-            compare_traces(self.paths[:2])
+    def test_accepts_two_platforms(self):
+        compare_traces(self.paths[:2])
+
+    def test_requires_at_least_two_platforms(self):
+        with self.assertRaisesRegex(ValueError, "at least two"):
+            compare_traces(self.paths[:1])
 
 
 if __name__ == "__main__":
