@@ -26,6 +26,8 @@ var _last_sequences: Dictionary = {}
 var _combat_events: Array[Dictionary] = []
 var _match: Variant = null
 var _combat_work: int = 0
+var _chases: Dictionary = {}
+var _scan_chases: int = 0
 var _allocation_calls: int = 0
 var _navigation_builds: int = 0
 
@@ -316,6 +318,7 @@ func _assign_move(members: Array[Dictionary], target: Array) -> void:
 
 func _set_intent(unit: Dictionary, mode: String, target_id: Variant = null, goal: Variant = null) -> void:
 	if unit.combat == null: return
+	_chases.erase(unit.id)
 	unit.combat.mode = mode
 	unit.combat.target_id = target_id
 	unit.combat.goal = goal.duplicate() if goal != null else null
@@ -336,6 +339,9 @@ func _service_paths() -> void:
 func combat_work() -> int:
 	return _combat_work
 
+func scan_chases() -> int:
+	return _scan_chases
+
 func navigation_builds() -> int:
 	return _navigation_builds
 
@@ -350,6 +356,7 @@ func step() -> void:
 	_command_results.clear()
 	_combat_events.clear()
 	_combat_work = 0
+	_scan_chases = 0
 	_allocation_calls = 0
 	_apply_orders()
 	var ids: Array[int] = []
@@ -514,6 +521,7 @@ func remove_object(id: int) -> Dictionary:
 		_detach_task(_entities[id])
 		_path_queue.erase(id)
 		_entities.erase(id)
+		_chases.erase(id)
 		Combat.object_removed(self,id)
 	elif _buildings.has(id):
 		_remove_building(id)

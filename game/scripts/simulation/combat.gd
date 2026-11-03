@@ -40,7 +40,8 @@ static func _in_range(sim: RefCounted, unit: Dictionary, target: Dictionary) -> 
 	return distance_squared(Vector2(unit.position[0], unit.position[1]), target) <= reach * reach
 
 static func plan(sim: RefCounted, unit_ids: Array[int]) -> void:
-	var candidates: Array = []
+	var grid: Dictionary = {}
+	var grid_ready: bool = false
 	var held := {"ready": false, "cells": {}}
 	for unit_id in unit_ids:
 		var unit: Dictionary = sim._entities[unit_id]
@@ -52,16 +53,22 @@ static func plan(sim: RefCounted, unit_ids: Array[int]) -> void:
 		if mode != "guard" and mode != "attack_move": continue
 		var combat: Dictionary = unit.combat
 		var kept: Dictionary = record(sim, combat.target_id) if combat.target_id != null else {}
-		if kept.is_empty() or kept.owner == unit.owner or not _in_range(sim, unit, kept):
+		if kept.is_empty() or kept.owner == unit.owner or not _within(unit, kept, _scan_reach(sim, unit)):
 			combat.target_id = null
 			if sim._tick >= combat.repath_tick:
-				if candidates.is_empty(): candidates = _targets(sim)
-				combat.target_id = _nearest(sim, unit, candidates)
+				if not grid_ready:
+					grid = _build_grid(sim)
+					grid_ready = true
+				combat.target_id = _nearest(sim, unit, grid)
 				if combat.target_id == null: combat.repath_tick = sim._tick + REPATH_TICKS - (sim._tick + unit.id) % REPATH_TICKS
+		if combat.target_id == null:
+			_end_chase(sim, unit)
+		else:
+			_engage(sim, unit, record(sim, combat.target_id), held)
 		if mode != "attack_move": continue
 		var moving: bool = unit.status == "moving" or unit.status == "path_pending"
 		if combat.target_id != null:
-			if moving:
+			if moving and not sim._chases.has(unit.id):
 				unit.route = []
 				unit.status = "idle"
 				sim._path_queue.erase(unit.id)
@@ -72,12 +79,42 @@ static func plan(sim: RefCounted, unit_ids: Array[int]) -> void:
 			combat.mode = "guard"
 			combat.goal = null
 
+static func _scan_reach(sim: RefCounted, unit: Dictionary) -> float:
+	return maxf(scan_radius(sim, unit), _reach(unit.kind))
+
+static func _within(unit: Dictionary, target: Dictionary, radius: float) -> bool:
+	return distance_squared(Vector2(unit.position[0], unit.position[1]), target) <= radius * radius
+
+static func _engage(sim: RefCounted, unit: Dictionary, target: Dictionary, held: Dictionary) -> void:
+	if _in_range(sim, unit, target):
+		if sim._chases.has(unit.id) and unit.status != "idle": _halt(sim, unit)
+		return
+	if not sim._chases.has(unit.id):
+		sim._chases[unit.id] = unit.destination.duplicate() if unit.combat.mode == "attack_move" and unit.destination != null else null
+		sim._scan_chases += 1
+	_approach(sim, unit, target, held)
+
+static func _end_chase(sim: RefCounted, unit: Dictionary) -> void:
+	if not sim._chases.has(unit.id): return
+	_halt(sim, unit)
+	sim._chases.erase(unit.id)
+
+static func _halt(sim: RefCounted, unit: Dictionary) -> void:
+	sim._stop_unit(unit)
+	var resume: Variant = sim._chases[unit.id]
+	if resume == null: return
+	unit.destination = resume.duplicate()
+	unit.order = {"type": "move", "target": resume.duplicate()}
+
 static func _pursue(sim: RefCounted, unit: Dictionary, held: Dictionary) -> void:
-	var combat: Dictionary = unit.combat
-	var target: Dictionary = record(sim, combat.target_id)
+	var target: Dictionary = record(sim, unit.combat.target_id)
 	if _in_range(sim, unit, target):
 		if unit.status == "moving" or unit.status == "path_pending": sim._stop_unit(unit)
 		return
+	_approach(sim, unit, target, held)
+
+static func _approach(sim: RefCounted, unit: Dictionary, target: Dictionary, held: Dictionary) -> void:
+	var combat: Dictionary = unit.combat
 	if sim._tick < combat.repath_tick: return
 	combat.repath_tick = sim._tick + REPATH_TICKS
 	var reach: float = _reach(unit.kind)
@@ -130,26 +167,40 @@ static func _firing_cell(sim: RefCounted, unit: Dictionary, target: Dictionary, 
 				best_distance = distance
 	return best
 
-static func _targets(sim: RefCounted) -> Array:
-	var targets: Array = []
-	for entity in sim._entities.values():
-		if entity.kind != "collector": targets.append(entity)
-	targets.append_array(sim._buildings.values())
-	return targets
+const GRID_CELL: int = 8
 
-static func _nearest(sim: RefCounted, unit: Dictionary, candidates: Array) -> Variant:
+static func _build_grid(sim: RefCounted) -> Dictionary:
+	var grid: Dictionary = {}
+	for entity in sim._entities.values():
+		if entity.kind == "collector": continue
+		_bucket(grid, int(floorf(entity.position[0] / GRID_CELL)), int(floorf(entity.position[1] / GRID_CELL)), entity)
+	for building in sim._buildings.values():
+		var size: Vector2i = Definitions.building(building.kind).footprint
+		for y in range(int(floorf(building.origin[1] / GRID_CELL)), int(floorf((building.origin[1] + size.y) / GRID_CELL)) + 1):
+			for x in range(int(floorf(building.origin[0] / GRID_CELL)), int(floorf((building.origin[0] + size.x) / GRID_CELL)) + 1):
+				_bucket(grid, x, y, building)
+	return grid
+
+static func _bucket(grid: Dictionary, x: int, y: int, target: Dictionary) -> void:
+	var key := Vector2i(x, y)
+	if not grid.has(key): grid[key] = []
+	grid[key].append(target)
+
+static func _nearest(sim: RefCounted, unit: Dictionary, grid: Dictionary) -> Variant:
 	var best: Variant = null
 	var best_distance: float = INF
-	var reach: float = _reach(unit.kind)
+	var radius: float = _scan_reach(sim, unit)
 	var position := Vector2(unit.position[0], unit.position[1])
-	for target in candidates:
-		if target.owner == unit.owner: continue
-		sim._combat_work += 1
-		var distance: float = distance_squared(position, target)
-		if distance > reach * reach: continue
-		if distance < best_distance or (distance == best_distance and target.id < best):
-			best = target.id
-			best_distance = distance
+	for y in range(int(floorf((position.y - radius) / GRID_CELL)), int(floorf((position.y + radius) / GRID_CELL)) + 1):
+		for x in range(int(floorf((position.x - radius) / GRID_CELL)), int(floorf((position.x + radius) / GRID_CELL)) + 1):
+			for target in grid.get(Vector2i(x, y), []):
+				if target.owner == unit.owner: continue
+				sim._combat_work += 1
+				var distance: float = distance_squared(position, target)
+				if distance > radius * radius: continue
+				if distance < best_distance or (distance == best_distance and target.id < best):
+					best = target.id
+					best_distance = distance
 	return best
 
 static func fire(sim: RefCounted, unit_ids: Array[int], moved_ids: Array[int]) -> void:

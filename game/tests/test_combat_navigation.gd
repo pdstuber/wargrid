@@ -229,21 +229,13 @@ func test_guard_retarget(runner) -> bool:
 	var staying: int = sim.spawn(2, Vector2(10.5, 13.9), "builder")
 	sim.step()
 	runner.check(Fixture.object(sim, guard).combat.target_id == leaving, "G2 nearest enemy acquired first")
-	Fixture.send(sim, {"player": 2, "type": "move", "entity_ids": [leaving], "target": [13.5, 28.5]})
-	var start: Array = Fixture.object(sim, guard).position
-	var out_tick: int = -1
-	for tick in range(200):
-		sim.step()
-		for event in _shots_by(_events(sim), guard):
-			runner.check(out_tick == -1 or event.target_id != leaving, "G2 never fires at the out-of-range target")
-		if out_tick != -1:
-			runner.check(Fixture.object(sim, guard).combat.target_id == staying, "G2 retargets on the next planning tick")
-			break
-		var away: Array = Fixture.object(sim, leaving).position
-		if Vector2(away[0], away[1]).distance_squared_to(Vector2(10.5, 10.5)) > 16.0: out_tick = tick
-	runner.check(out_tick != -1, "G2 target left range")
-	var unit: Dictionary = Fixture.object(sim, guard)
-	runner.check(unit.position == start and unit.status == "idle" and unit.destination == null, "G2 guard never chases")
+	sim._entities[leaving].position = [13.5, 31.5]
+	var dropped_shots: bool = false
+	sim.step()
+	for event in _shots_by(_events(sim), guard): dropped_shots = dropped_shots or event.target_id == leaving
+	runner.check(not dropped_shots, "G2 never fires at the target beyond the scan radius")
+	runner.check(Fixture.object(sim, guard).combat.target_id == staying, "G2 retargets on the next planning tick")
+	runner.check(Fixture.object(sim, guard).combat.mode == "guard", "G2 guard stays in guard while chasing")
 	return true
 
 func test_pursuit_respects_reservations(runner) -> bool:

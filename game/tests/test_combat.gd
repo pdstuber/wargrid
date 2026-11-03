@@ -9,7 +9,7 @@ const Fixture = preload("res://tests/combat_fixture.gd")
 const EconomyFixture = preload("res://tests/economy_fixture.gd")
 
 func cases() -> Array[Callable]:
-	return [test_combat_definitions, test_health_snapshot_isolation, test_weapon_range_boundary, test_damage_armor_matrix, test_weapon_cooldown, test_guard_priority, test_attack_validation_atomic, test_combat_intent_order, test_orders_preserve_reload, test_acquisition_throttle, test_mutual_lethal_fire, test_target_removed_cleanup, test_destroyed_unit_no_actions, test_destroyed_producer_accounting, test_same_tick_attack_and_cancel, test_removed_target_rescans, test_controller_and_scan_radius]
+	return [test_combat_definitions, test_health_snapshot_isolation, test_weapon_range_boundary, test_damage_armor_matrix, test_weapon_cooldown, test_guard_priority, test_attack_validation_atomic, test_combat_intent_order, test_orders_preserve_reload, test_acquisition_throttle, test_mutual_lethal_fire, test_target_removed_cleanup, test_destroyed_unit_no_actions, test_destroyed_producer_accounting, test_same_tick_attack_and_cancel, test_removed_target_rescans, test_controller_and_scan_radius, test_scan_acquires_beyond_weapon_range, test_scan_radius_by_controller, test_scan_drops_target_leaving_radius, test_attack_move_resumes_after_chase, test_scan_same_tick_orders, test_scan_includes_buildings]
 
 func test_combat_definitions(runner) -> bool:
 	runner.check(Definitions.profile("infantry") == {"max_hp": 180000, "armor": "human", "weapon": "rifle"}, "D1 infantry")
@@ -512,4 +512,127 @@ func test_controller_and_scan_radius(runner) -> bool:
 	runner.check(is_equal_approx(Combat.scan_radius(sim, sim._entities[orphan]), 8.8), "C4 owner without player record is human")
 	var builder: int = skirmish.spawn(1, Vector2(14.5, 10.5), "builder")
 	runner.check(Combat.scan_radius(skirmish, skirmish._entities[builder]) == 0.0, "C5 unarmed unit has no scan radius")
+	return true
+
+func _scan_shot_within(sim: RefCounted, limit: int) -> bool:
+	for tick in range(limit):
+		sim.step()
+		if not _shots(sim).is_empty(): return true
+	return false
+
+func test_scan_acquires_beyond_weapon_range(runner) -> bool:
+	var sim = Fixture.world()
+	var guard: int = sim.spawn(1, Vector2(2.5, 2.5), "infantry")
+	var builder: int = sim.spawn(2, Vector2(10.5, 2.5), "builder")
+	sim.step()
+	var unit: Dictionary = Fixture.object(sim, guard)
+	runner.check(unit.combat.target_id == builder and unit.combat.mode == "guard", "X1 guard acquires an enemy 8 cells away and stays in guard")
+	runner.check(unit.status != "idle", "X1 guard approaches the out-of-range target")
+	runner.check(_scan_shot_within(sim, 300), "X1 chasing guard later fires")
+	var far = Fixture.world()
+	var idle: int = far.spawn(1, Vector2(2.5, 2.5), "infantry")
+	far.spawn(2, Vector2(11.5, 2.5), "builder")
+	far.step()
+	runner.check(Fixture.object(far, idle).combat.target_id == null, "X2 enemy 9 cells away is outside the 8.8 radius")
+	return true
+
+func test_scan_radius_by_controller(runner) -> bool:
+	var near = Fixture.world()
+	near.add_player(2, 0, "ai")
+	var scanner: int = near.spawn(2, Vector2(2.5, 2.5), "infantry")
+	var prey: int = near.spawn(1, Vector2(7.8, 2.5), "builder")
+	near.step()
+	runner.check(Fixture.object(near, scanner).combat.target_id == prey, "R1 ai infantry acquires at 5.3 cells")
+	var far = Fixture.world()
+	far.add_player(2, 0, "ai")
+	var blind: int = far.spawn(2, Vector2(2.5, 2.5), "infantry")
+	far.spawn(1, Vector2(7.9, 2.5), "builder")
+	far.step()
+	runner.check(Fixture.object(far, blind).combat.target_id == null, "R1 ai infantry ignores an enemy at 5.4 cells")
+	return true
+
+func test_scan_drops_target_leaving_radius(runner) -> bool:
+	var sim = Fixture.world()
+	var guard: int = sim.spawn(1, Vector2(2.5, 2.5), "infantry")
+	var builder: int = sim.spawn(2, Vector2(10.5, 2.5), "builder")
+	sim.step()
+	runner.check(Fixture.object(sim, guard).combat.target_id == builder, "K1 chase started")
+	sim._entities[builder].position = [30.5, 2.5]
+	sim.step()
+	var unit: Dictionary = Fixture.object(sim, guard)
+	runner.check(unit.combat.target_id == null and unit.combat.mode == "guard", "K1 target beyond the radius is dropped, mode stays guard")
+	runner.check(unit.status == "idle" and unit.destination == null, "K1 the dropped chase stops the unit")
+	return true
+
+func test_attack_move_resumes_after_chase(runner) -> bool:
+	var sim = Fixture.world()
+	var walker: int = sim.spawn(1, Vector2(2.5, 2.5), "infantry")
+	var goal := [2.5, 20.5]
+	Fixture.send(sim, {"type": "attack_move", "entity_ids": [walker], "target": goal})
+	var prey: int = sim.spawn(2, Vector2(8.5, 8.5), "builder")
+	sim._entities[prey].hp = 1
+	var killed: bool = false
+	for tick in range(600):
+		sim.step()
+		for event in sim.snapshot().combat_events:
+			if event.type == "death" and event.object_id == prey: killed = true
+		if killed: break
+	runner.check(killed, "M1 the off-path enemy is chased and killed")
+	sim.step()
+	var unit: Dictionary = Fixture.object(sim, walker)
+	runner.check(unit.combat.mode == "attack_move" and unit.combat.goal == goal, "M1 combat goal is unchanged after the chase")
+	for tick in range(1500):
+		sim.step()
+		if Vector2(Fixture.object(sim, walker).position[0], Fixture.object(sim, walker).position[1]).distance_to(Vector2(goal[0], goal[1])) < 1.0: break
+	var end: Dictionary = Fixture.object(sim, walker)
+	runner.check(Vector2(end.position[0], end.position[1]).distance_to(Vector2(goal[0], goal[1])) < 1.0, "M1 the unit reaches the original goal")
+	return true
+
+func _chasing_world() -> Array:
+	var sim = Fixture.world()
+	var guard: int = sim.spawn(1, Vector2(2.5, 2.5), "infantry")
+	var builder: int = sim.spawn(2, Vector2(10.5, 2.5), "builder")
+	var other: int = sim.spawn(2, Vector2(2.5, 11.5), "builder")
+	sim.step()
+	return [sim, guard, builder, other]
+
+func test_scan_same_tick_orders(runner) -> bool:
+	var moved: Array = _chasing_world()
+	Fixture.send(moved[0], {"type": "move", "entity_ids": [moved[1]], "target": [2.5, 20.5]})
+	moved[0].step()
+	var unit: Dictionary = Fixture.object(moved[0], moved[1])
+	runner.check(unit.combat.mode == "move" and unit.combat.target_id == null and unit.destination != null and unit.destination[1] > 15.0, "O1 move replaces the chase")
+	var stopped: Array = _chasing_world()
+	Fixture.send(stopped[0], {"type": "stop", "entity_ids": [stopped[1]]})
+	stopped[0].step()
+	runner.check(Fixture.object(stopped[0], stopped[1]).combat.mode == "guard", "O2 stop returns to guard")
+	var attacking: Array = _chasing_world()
+	Fixture.send(attacking[0], {"type": "attack", "entity_ids": [attacking[1]], "target_id": attacking[3]})
+	attacking[0].step()
+	var attacker: Dictionary = Fixture.object(attacking[0], attacking[1])
+	runner.check(attacker.combat.mode == "attack" and attacker.combat.target_id == attacking[3], "O3 attack replaces the chase")
+	var marching: Array = _chasing_world()
+	Fixture.send(marching[0], {"type": "attack_move", "entity_ids": [marching[1]], "target": [2.5, 20.5]})
+	marching[0].step()
+	var marcher: Dictionary = Fixture.object(marching[0], marching[1])
+	runner.check(marcher.combat.mode == "attack_move" and marcher.combat.goal == [2.5, 20.5], "O4 attack_move replaces the chase")
+	var removed: Array = _chasing_world()
+	removed[0].remove_object(removed[2])
+	removed[0].remove_object(removed[3])
+	removed[0].step()
+	var orphan: Dictionary = Fixture.object(removed[0], removed[1])
+	runner.check(orphan.combat.target_id == null and orphan.status == "idle", "O5 a target removed on a scan tick leaves no stale target and ends the chase")
+	return true
+
+func test_scan_includes_buildings(runner) -> bool:
+	var sim = EconomyFixture.make_world()
+	sim.add_player(2, 0, "human")
+	var placed: Dictionary = EconomyFixture.send(sim, {"type": "build", "builder_id": 1, "building_kind": "reactor", "origin": [14, 4]})
+	runner.check(placed.ok, "B1 foundation placement accepted")
+	EconomyFixture.steps(sim, 2)
+	sim.remove_object(1)
+	var scanner: int = sim.spawn(2, Vector2(6.0, 4.5), "infantry")
+	sim.step()
+	var foundation: Array = sim.snapshot().buildings
+	runner.check(not foundation.is_empty() and Fixture.object(sim, scanner).combat.target_id == foundation[0].id, "B1 an enemy foundation 8 cells away is acquired")
 	return true
