@@ -21,6 +21,12 @@ func _create_simulation() -> RefCounted:
 	sim.add_supply_source(Vector2i(24,4),200)
 	return sim
 
+func _placement_kinds() -> Dictionary:
+	return {KEY_1:"reactor",KEY_2:"depot",KEY_3:"factory"}
+
+func _production_kind(building: Dictionary) -> String:
+	return Definitions.building(building.kind).produces
+
 func _view_selection() -> Array[int]:
 	var ids: Array[int] = []
 	if selected_building_id != -1: ids.append(selected_building_id)
@@ -47,7 +53,7 @@ func _refresh_hud(state: Dictionary) -> void:
 	var detail: String = "Units: " + str(selected_ids)
 	if not building.is_empty(): detail = "%s #%d | Work %d/%d" % [building.kind,building.id,building.work,Definitions.building(building.kind).ticks * 1000]
 	_status.text = "Credits: %d | Power: %d/%d | Tick: %d\n%s | Place: %s\n1/2/3 build | Right: context/move | E: produce | Esc: cancel\n%s" % [player.credits,player.power_supply,player.power_demand,state.tick,detail,_placement_kind,_error]
-	$HUD/Economy/Produce.visible = not building.is_empty() and building.completed and not Definitions.building(building.kind).produces.is_empty()
+	$HUD/Economy/Produce.visible = not building.is_empty() and building.completed and not _production_kind(building).is_empty()
 	$HUD/Economy/CancelBuild.visible = not building.is_empty() and not building.completed
 	_refresh_queue(building.get("queue",[]))
 
@@ -97,7 +103,7 @@ func _update_preview(plane: Vector2) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.physical_keycode == KEY_B: return
-		var kind: String = {KEY_1:"reactor",KEY_2:"depot",KEY_3:"factory"}.get(event.physical_keycode,"")
+		var kind: String = _placement_kinds().get(event.physical_keycode,"")
 		if not kind.is_empty():
 			if is_selecting(): _pending_placement = kind
 			else: _enter_placement(kind)
@@ -166,7 +172,7 @@ func _context_order(id: int) -> bool:
 func _produce_selected() -> void:
 	var building: Dictionary = _building(simulation.snapshot(),selected_building_id)
 	if building.is_empty(): return
-	_submit({"type":"produce","building_id":building.id,"unit_kind":Definitions.building(building.kind).produces})
+	_submit({"type":"produce","building_id":building.id,"unit_kind":_production_kind(building)})
 
 func _cancel_entry(id: int) -> void:
 	_submit({"type":"cancel_production","building_id":selected_building_id,"production_id":id})

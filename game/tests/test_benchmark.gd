@@ -2,12 +2,13 @@ extends RefCounted
 
 const Stats = preload("res://scripts/debug/timing_stats.gd")
 const Workload = preload("res://scripts/debug/movement_workload.gd")
+const CombatWorkload = preload("res://scripts/debug/combat_workload.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Navigation = preload("res://scripts/simulation/grid_navigation.gd")
 const Probe = preload("res://scenes/movement_benchmark.tscn")
 
 func cases() -> Array[Callable]:
-	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling]
+	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_combat_work_ceiling]
 
 func test_statistics(runner) -> bool:
 	runner.check(Stats.summary(PackedFloat64Array()) == {"n": 0, "p50": 0.0, "p95": 0.0, "p99": 0.0, "max": 0.0}, "BM1 empty")
@@ -75,7 +76,7 @@ func test_rendered_probe_ticks(runner) -> bool:
 
 func test_snapshot_size_ceiling(runner) -> bool:
 	# Step 38 is the peak (routes full, queue just drained). The snapshot is copied twice per tick; raise a ceiling only deliberately and add a performance-ledger row.
-	var ceilings := {"open": 79481, "dense": 80345}
+	var ceilings := {"open": 81285, "dense": 82149}
 	for layout in ceilings:
 		var sim: RefCounted = Workload.create(layout)
 		Workload.issue_leg(sim, 0)
@@ -86,7 +87,7 @@ func test_snapshot_size_ceiling(runner) -> bool:
 		for unit in state.entities:
 			busiest = maxi(busiest, _nodes(unit))
 		runner.check(_nodes(state) <= ceilings[layout], "BM5 snapshot node ceiling " + layout)
-		runner.check(busiest <= 322, "BM5 per-unit node ceiling " + layout)
+		runner.check(busiest <= 328, "BM5 per-unit node ceiling " + layout)
 	return true
 
 func _nodes(value: Variant) -> int:
@@ -98,3 +99,42 @@ func _nodes(value: Variant) -> int:
 		for item in value:
 			count += _nodes(item)
 	return count
+
+func test_combat_fixtures(runner) -> bool:
+	for layout in ["open", "dense", "contact"]:
+		var sim: RefCounted = CombatWorkload.create(layout)
+		var state: Dictionary = sim.snapshot()
+		var size: Array = state.map.size
+		var kinds := {1: {"infantry": 0, "tank": 0}, 2: {"infantry": 0, "tank": 0}}
+		var cells := {}
+		for unit in state.entities:
+			kinds[unit.owner][unit.kind] += 1
+			cells[Vector2i(Vector2(unit.position[0], unit.position[1]).floor())] = true
+			runner.check(unit.position[0] > 0.0 and unit.position[1] > 0.0 and unit.position[0] < size[0] and unit.position[1] < size[1], "BM5 inside the map " + layout)
+		runner.check(state.entities.size() == 300 and cells.size() == 300, "BM5 300 unique cells " + layout)
+		runner.check(kinds[1] == {"infantry": 100, "tank": 50} and kinds[2] == {"infantry": 100, "tank": 50}, "BM5 100/50 mix per side " + layout)
+		runner.check(state.players.size() == 2 and CombatWorkload.create(layout).snapshot() == state, "BM5 players and deterministic creation " + layout)
+		var first_shot: int = -1
+		for tick in range(60):
+			sim.step()
+			if first_shot == -1 and not sim.snapshot().combat_events.is_empty(): first_shot = tick
+		runner.check((first_shot != -1) == (layout == "contact"), "BM5 only contact fires inside 60 ticks: " + layout)
+		if layout == "contact":
+			var kinds_fired := {}
+			var fresh: RefCounted = CombatWorkload.create("contact")
+			for tick in range(60):
+				fresh.step()
+				for event in fresh.snapshot().combat_events:
+					if event.type == "shot": kinds_fired[fresh.snapshot().entities.filter(func(unit: Dictionary) -> bool: return unit.id == event.attacker_id)[0].kind] = true
+			runner.check(kinds_fired.has("infantry") and kinds_fired.has("tank"), "BM5 contact exercises both rifles and cannons")
+	return true
+
+func test_combat_work_ceiling(runner) -> bool:
+	# Machine-independent cost: target and distance checks per step in the 'contact' layout (tick 0 is the peak, every unit scans once). Raise only deliberately and add a performance-ledger row.
+	var sim: RefCounted = CombatWorkload.create("contact")
+	var peak: int = 0
+	for tick in range(120):
+		sim.step()
+		peak = maxi(peak, sim.combat_work())
+	runner.check(peak <= 45300 and peak > 40000, "BM6 combat work ceiling, got " + str(peak))
+	return true

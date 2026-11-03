@@ -2,9 +2,10 @@ extends RefCounted
 
 const Fixture = preload("res://tests/economy_fixture.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
+const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 
 func cases() -> Array[Callable]:
-	return [test_trace, test_exact_hash,test_economy_repeatability]
+	return [test_trace, test_exact_hash,test_economy_repeatability,test_combat_repeatability,test_combat_hash_sensitivity]
 
 func _world(runner):
 	var blocked: Array[Vector2i] = []
@@ -163,3 +164,100 @@ func _economy_trace(runner) -> PackedStringArray:
 		runner.check(a.sim.snapshot() == state,"R3 deep economy snapshot isolation")
 		rows.append("%d\t%s" % [index + 1,_hash(state)])
 	return rows
+
+func _combat_world(runner) -> Dictionary:
+	var sim = Skirmish.create(false)
+	var barracks: int = Fixture.build(runner,sim,"barracks",Skirmish.origin("barracks",1))
+	var ids := {"barracks":barracks}
+	for key in ["inf1","inf2"]:
+		ids[key] = sim.spawn(1,Vector2(20.5,10.5 if key == "inf1" else 11.5),"infantry")
+	ids.tank1 = sim.spawn(1,Vector2(22.5,10.5),"tank")
+	ids.enemy = sim.spawn(2,Vector2(26.5,10.5),"infantry")
+	ids.duel1 = sim.spawn(1,Vector2(30.5,24.5),"tank")
+	ids.duel2 = sim.spawn(2,Vector2(34.5,24.5),"tank")
+	runner.check(sim.start_match([1,2] as Array[int]).ok,"R4 match starts after setup")
+	return {"sim":sim,"ids":ids,"refund":0}
+
+func _combat_events(runner, world: Dictionary, index: int) -> void:
+	var sim = world.sim
+	var ids: Dictionary = world.ids
+	match index:
+		0:
+			for i in range(2): runner.check(Fixture.send(sim,{"type":"produce","building_id":ids.barracks,"unit_kind":"infantry"}).ok,"R4 produce")
+			runner.check(Fixture.send(sim,{"type":"attack","entity_ids":[ids.inf1,ids.inf2],"target_id":ids.enemy}).ok,"R4 attack")
+		5:
+			var credits: int = sim.snapshot().players[0].credits
+			var queue: Array = Fixture.object(sim,ids.barracks).queue
+			runner.check(Fixture.send(sim,{"type":"cancel_production","building_id":ids.barracks,"production_id":queue.back().id}).ok,"R4 cancel production")
+			world.refund = credits
+		40: runner.check(Fixture.send(sim,{"type":"move","entity_ids":[ids.tank1],"target":[22.5,14.5]}).ok,"R4 move")
+		80: runner.check(Fixture.send(sim,{"type":"attack_move","entity_ids":[ids.inf2,ids.tank1],"target":[40.5,14.5]}).ok,"R4 attack_move")
+		150: runner.check(Fixture.send(sim,{"type":"stop","entity_ids":[ids.inf1]}).ok,"R4 stop")
+		200:
+			if not Fixture.object(sim,ids.enemy).is_empty(): runner.check(sim.remove_object(ids.enemy).ok,"R4 target removal")
+		600:
+			for at in [Vector2(38.5,14.5),Vector2(38.5,15.5),Vector2(38.5,13.5),Vector2(39.5,14.5),Vector2(39.5,15.5)]:
+				runner.check(sim.spawn(1,at,"tank") != -1,"R4 finishing group")
+
+func _combat_trace(runner) -> Dictionary:
+	var a: Dictionary = _combat_world(runner)
+	var b: Dictionary = _combat_world(runner)
+	var base: int = a.sim.snapshot().tick
+	runner.check(a.sim.snapshot() == b.sim.snapshot() and base > 0,"R4 identical public setup at an absolute tick")
+	var rows := PackedStringArray()
+	var seen := {"shots":0,"double_death":false,"refund":false,"ended":-1}
+	var credits_before: int = 0
+	for index in range(1200):
+		_combat_events(runner,a,index)
+		_combat_events(runner,b,index)
+		if index == 5: credits_before = a.refund
+		a.sim.step()
+		b.sim.step()
+		var state: Dictionary = a.sim.snapshot()
+		runner.check(state == b.sim.snapshot(),"R4 exact entire snapshot step %d" % (index + 1))
+		if index == 5 and state.players[0].credits >= credits_before + 225: seen.refund = true
+		seen.shots += state.combat_events.filter(func(event: Dictionary) -> bool: return event.type == "shot").size()
+		if state.combat_events.filter(func(event: Dictionary) -> bool: return event.type == "death").size() >= 2: seen.double_death = true
+		if seen.ended == -1 and state.match.status != "ongoing": seen.ended = index
+		rows.append("%d\t%s" % [index + 1,_hash(state)])
+	return {"rows":rows,"seen":seen,"base":base,"tick":a.sim.snapshot().tick,"match":a.sim.snapshot().match}
+
+func test_combat_repeatability(runner) -> bool:
+	var result: Dictionary = _combat_trace(runner)
+	var rows: PackedStringArray = result.rows
+	runner.check(rows.size() == 1200,"R4 complete combat trace")
+	runner.check(result.seen.shots > 0 and result.seen.double_death and result.seen.refund,"R4 shots, a simultaneous double death and a queue refund all happened")
+	runner.check(result.seen.ended > 0 and result.seen.ended < 1199 and result.match.status == "won" and result.match.winner == 1,"R4 terminal state reached inside the trace")
+	runner.check(result.tick == result.base + result.seen.ended + 1 and rows[result.seen.ended + 1].split("\t")[1] == rows[1199].split("\t")[1],"R4 absolute tick frozen after the terminal step")
+	var path: String = OS.get_environment("WARGRID_COMBAT_REPLAY_TRACE")
+	if not path.is_empty():
+		var file := FileAccess.open(path,FileAccess.WRITE)
+		runner.check(file != null,"R4 combat trace opens")
+		if file == null: return false
+		file.store_string("\n".join(rows) + "\n")
+		runner.check(file.get_error() == OK,"R4 combat trace writes")
+		file.close()
+	return true
+
+func test_combat_hash_sensitivity(runner) -> bool:
+	var world: Dictionary = _combat_world(runner)
+	for index in range(60):
+		_combat_events(runner,world,index)
+		world.sim.step()
+	var state: Dictionary = world.sim.snapshot()
+	var armed: int = state.entities.find_custom(func(unit: Dictionary) -> bool: return unit.combat != null and unit.combat.target_id != null)
+	runner.check(armed != -1,"R5 an engaged unit exists")
+	var original: String = _hash(state)
+	var mutations := {
+		"hp": func(copy: Dictionary) -> void: copy.entities[armed].hp += 1,
+		"next_fire_tick": func(copy: Dictionary) -> void: copy.entities[armed].combat.next_fire_tick += 1,
+		"ammo": func(copy: Dictionary) -> void: copy.entities[armed].combat.shots_left += 1,
+		"target_id": func(copy: Dictionary) -> void: copy.entities[armed].combat.target_id += 1,
+		"winner": func(copy: Dictionary) -> void: copy.match.winner = 2,
+	}
+	for name in mutations:
+		var copy: Dictionary = state.duplicate(true)
+		mutations[name].call(copy)
+		runner.check(_hash(copy) != original,"R5 digest retains one " + name)
+	runner.check(_hash(world.sim.snapshot()) == original,"R5 live original unchanged")
+	return true

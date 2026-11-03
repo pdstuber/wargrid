@@ -6,16 +6,37 @@ var _preview_cells: Array[Vector2i] = []
 var _preview_valid: bool = false
 var _state: Dictionary = {}
 var _selected_ids: Array[int] = []
+var _last_points: Dictionary = {}
+const OwnerColors := {1: Color("376eac"), 2: Color("b04a3a")}
+
+static func owner_color(owner: int) -> Color:
+	return OwnerColors.get(owner, Color("808080"))
+
+static func hp_fraction(hp: int, max_hp: int) -> float:
+	return clampf(float(hp) / float(max_hp), 0.0, 1.0) if max_hp > 0 else 1.0
 
 func set_state(state: Dictionary, selected_ids: Array[int]) -> void:
 	_state = state.duplicate(true)
 	_selected_ids = selected_ids.duplicate()
 	_state.get("entities", []).sort_custom(_draw_before)
+	_remember_points()
 	queue_redraw()
 
 func _vehicle_bounds(unit: Dictionary) -> Rect2:
 	var point := Vector2(unit.position[0], unit.position[1])
-	return Rect2(Iso.world_to_plane(point) + Vector2(-12, -34 if unit.get("kind") == "collector" else -16), Vector2(24, 16))
+	var half: float = {"infantry": 6.0, "tank": 15.0}.get(unit.get("kind"), 12.0)
+	return Rect2(Iso.world_to_plane(point) + Vector2(-half, -34 if unit.get("kind") == "collector" else -16), Vector2(half * 2.0, 16))
+
+func pick_target(plane_point: Vector2, own: int) -> int:
+	for i in range(_state.get("entities", []).size() - 1, -1, -1):
+		var unit: Dictionary = _state.entities[i]
+		if unit.owner != own and unit.get("kind") != "collector" and _vehicle_bounds(unit).has_point(plane_point): return unit.id
+	var point: Vector2 = Iso.plane_to_world(plane_point)
+	for building in _state.get("buildings", []):
+		var definition: Dictionary = Definitions.building(building.kind)
+		if building.owner == own or definition.is_empty(): continue
+		if Rect2(Vector2(building.origin[0], building.origin[1]), Vector2(definition.footprint)).has_point(point): return building.id
+	return -1
 
 func pick_entity(plane_point: Vector2) -> int:
 	for i in range(_state.get("entities", []).size() - 1, -1, -1):
@@ -34,15 +55,18 @@ func _draw() -> void:
 	for building in _state.get("buildings",[]):
 		var definition: Dictionary = Definitions.building(building.kind)
 		if definition.is_empty(): continue
-		_draw_footprint(building.origin,definition.footprint,Color("687b8c") if building.completed else Color("887966"),_selected_ids.has(building.id))
-		var label: String = building.kind if building.completed else "%s %d%%" % [building.kind,building.work * 100 / (definition.ticks * 1000)]
+		var tint: Color = owner_color(building.owner)
+		_draw_footprint(building.origin,definition.footprint,tint.lerp(Color("687b8c"),0.4) if building.completed else tint.lerp(Color("887966"),0.6),_selected_ids.has(building.id))
+		var label: String = "P%d %s" % [building.owner,building.kind] if building.completed else "P%d %s %d%%" % [building.owner,building.kind,building.work * 100 / (definition.ticks * 1000)]
 		_draw_text(building.origin,label)
+		_draw_health(Iso.world_to_plane(Vector2(building.origin[0],building.origin[1]) + Vector2(definition.footprint) / 2.0) + Vector2(-16,-26),building,_selected_ids.has(building.id))
 	for cell in _preview_cells:
 		_draw_footprint([cell.x,cell.y],Vector2i.ONE,Color(0.2,0.9,0.3,0.55) if _preview_valid else Color(0.9,0.2,0.2,0.55),false)
 	for unit in _state.get("entities",[]):
 		if unit.get("kind") == "collector": draw_circle(Iso.world_to_plane(Vector2(unit.position[0],unit.position[1])),8,Color(0,0,0,.35))
 		var bounds: Rect2 = _vehicle_bounds(unit)
-		draw_rect(bounds, Color("376eac"))
+		draw_rect(bounds, owner_color(unit.owner))
+		_draw_health(bounds.position + Vector2(0, -6), unit, _selected_ids.has(unit.id))
 		if _selected_ids.has(unit.id):
 			draw_rect(bounds, Color("8cff87"), false, 2.0)
 		if unit.order != null:
@@ -50,6 +74,31 @@ func _draw() -> void:
 			var point: Vector2 = Iso.world_to_plane(target)
 			draw_line(point - Vector2(6, 0), point + Vector2(6, 0), Color("8cff87"), 2.0)
 			draw_line(point - Vector2(0, 6), point + Vector2(0, 6), Color("8cff87"), 2.0)
+	_draw_cues()
+
+func _draw_health(top_left: Vector2, object: Dictionary, selected: bool) -> void:
+	if not object.has("hp") or (not selected and object.hp >= object.max_hp): return
+	draw_rect(Rect2(top_left, Vector2(24, 3)), Color(0, 0, 0, 0.7))
+	draw_rect(Rect2(top_left, Vector2(24.0 * hp_fraction(object.hp, object.max_hp), 3)), Color("e0d060"))
+
+func _draw_cues() -> void:
+	for event in _state.get("combat_events", []):
+		if event.type == "shot" and _last_points.has(event.attacker_id) and _last_points.has(event.target_id):
+			draw_line(_last_points[event.attacker_id], _last_points[event.target_id], Color("ffe680"), 2.0)
+		elif event.type == "death" and _last_points.has(event.object_id):
+			var at: Vector2 = _last_points[event.object_id]
+			draw_line(at - Vector2(7, 7), at + Vector2(7, 7), Color("ff5030"), 3.0)
+			draw_line(at - Vector2(7, -7), at + Vector2(7, -7), Color("ff5030"), 3.0)
+
+func _remember_points() -> void:
+	var points := {}
+	for unit in _state.get("entities", []): points[unit.id] = Iso.world_to_plane(Vector2(unit.position[0], unit.position[1])) + Vector2(0, -8)
+	for building in _state.get("buildings", []):
+		var definition: Dictionary = Definitions.building(building.kind)
+		if not definition.is_empty(): points[building.id] = Iso.world_to_plane(Vector2(building.origin[0], building.origin[1]) + Vector2(definition.footprint) / 2.0)
+	for event in _state.get("combat_events", []):
+		if event.type == "death" and _last_points.has(event.object_id): points[event.object_id] = _last_points[event.object_id]
+	_last_points = points
 
 func _draw_terrain() -> void:
 	var size := Vector2(_state.map.size[0], _state.map.size[1])

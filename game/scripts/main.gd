@@ -22,15 +22,21 @@ var _camera_bounds: Rect2
 
 func _ready() -> void:
 	simulation = _create_simulation()
+	_reset_camera()
+	_refresh()
+
+func _reset_camera() -> void:
 	var size: Array = simulation.snapshot().map.size
 	_camera_bounds = Rect2(Vector2.ZERO, Vector2.ZERO)
 	for corner in [Vector2(size[0], 0), Vector2(0, size[1]), Vector2(size[0], size[1])]:
 		_camera_bounds = _camera_bounds.expand(Iso.world_to_plane(corner))
 	_camera.position = Iso.world_to_plane(Vector2(size[0], size[1]) / 2.0)
-	_refresh()
+
+func _step_simulation() -> void:
+	simulation.step()
 
 func _physics_process(_delta: float) -> void:
-	simulation.step()
+	_step_simulation()
 	_refresh()
 
 func _process(delta: float) -> void:

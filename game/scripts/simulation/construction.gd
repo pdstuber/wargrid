@@ -1,6 +1,7 @@
 extends RefCounted
 
 const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
+const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
 const Navigation = preload("res://scripts/simulation/grid_navigation.gd")
 
 static func cells(kind: String, origin: Vector2i) -> Array[Vector2i]:
@@ -78,7 +79,7 @@ static func place(sim: RefCounted, command: Dictionary) -> Dictionary:
 	var id: int = sim._next_entity_id
 	sim._next_entity_id += 1
 	sim._players[command.player].credits -= definition.cost
-	sim._buildings[id] = {"id":id,"owner":command.player,"kind":command.building_kind,"origin":command.origin.duplicate(),"completed":false,"work":0,"paid_cost":definition.cost,"builder_id":null,"approach":null,"queue":[],"active_collector_id":null}
+	sim._buildings[id] = {"id":id,"owner":command.player,"kind":command.building_kind,"hp":CombatDefinitions.profile(command.building_kind).max_hp,"max_hp":CombatDefinitions.profile(command.building_kind).max_hp,"origin":command.origin.duplicate(),"completed":false,"work":0,"paid_cost":definition.cost,"builder_id":null,"approach":null,"queue":[],"active_collector_id":null}
 	rebuild_navigation(sim)
 	result.building_id = id
 	return result

@@ -4,6 +4,8 @@ const Supply = preload("res://scripts/simulation/supply_collection.gd")
 const Production = preload("res://scripts/simulation/production.gd")
 const Construction = preload("res://scripts/simulation/construction.gd")
 const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
+const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
+const Combat = preload("res://scripts/simulation/combat.gd")
 const Allocation = preload("res://scripts/simulation/destination_allocation.gd")
 const Navigation = preload("res://scripts/simulation/grid_navigation.gd")
 const PATH_REQUESTS_PER_TICK: int = 8
@@ -21,6 +23,10 @@ var _entities: Dictionary = {}
 var _pending: Array[Dictionary] = []
 var _path_queue: Array[int] = []
 var _last_sequences: Dictionary = {}
+var _combat_events: Array[Dictionary] = []
+var _match: Variant = null
+var _combat_work: int = 0
+var _allocation_calls: int = 0
 
 func _init(blocked_cells: Array[Vector2i] = [], size: Vector2i = Navigation.SIZE) -> void:
 	_navigation = Navigation.new(blocked_cells, size)
@@ -42,11 +48,40 @@ func spawn(owner: int, position: Vector2, kind: String = "vehicle") -> int:
 		if _cell(unit.position) == cell or (unit.destination != null and _cell(unit.destination) == cell):
 			return -1
 	var id: int = _next_entity_id
-	_entities[id] = {"id": id, "owner": owner, "position": [position.x, position.y], "order": null, "status": "idle", "route": [], "destination": null, "kind":kind,"construction_id":null,"collection": {"enabled":false,"preferred_source_id":null,"target_id":null,"phase":"idle","remaining_ticks":0,"retry_tick":0,"cargo":0} if kind == "collector" else null}
+	_entities[id] = {"id": id, "owner": owner, "position": [position.x, position.y], "order": null, "status": "idle", "route": [], "destination": null, "kind":kind,"hp":CombatDefinitions.profile(kind).max_hp,"max_hp":CombatDefinitions.profile(kind).max_hp,"combat":CombatDefinitions.initial_combat(kind),"construction_id":null,"collection": {"enabled":false,"preferred_source_id":null,"target_id":null,"phase":"idle","remaining_ticks":0,"retry_tick":0,"cargo":0} if kind == "collector" else null}
 	_next_entity_id += 1
 	return id
 
+func start_match(players: Array[int]) -> Dictionary:
+	var ids: Array[int] = players.duplicate()
+	ids.sort()
+	if _match != null or ids.size() != 2 or ids[0] == ids[1] or ids[0] <= 0: return {"ok":false,"error":"Invalid match players"}
+	for id in ids:
+		if not _players.has(id) or not _survives(id): return {"ok":false,"error":"Player cannot start a match"}
+	_match = {"players":ids,"status":"ongoing","winner":null,"ended_tick":null}
+	return {"ok":true,"error":""}
+
+func _survives(player: int) -> bool:
+	for unit in _entities.values():
+		if unit.owner == player and unit.kind == "builder": return true
+	for building in _buildings.values():
+		if building.owner == player and building.completed and building.kind in ["depot","barracks","factory"]: return true
+	return false
+
+func _evaluate_match() -> void:
+	var alive: Array[int] = []
+	for player in _match.players:
+		if _survives(player): alive.append(player)
+	if alive.size() == 2: return
+	_match.status = "draw" if alive.is_empty() else "won"
+	_match.winner = alive[0] if alive.size() == 1 else null
+	_match.ended_tick = _tick
+
+func match_over() -> bool:
+	return _match != null and _match.status != "ongoing"
+
 func issue_command(command: Dictionary) -> Dictionary:
+	if match_over(): return {"ok":false,"error":"Match ended"}
 	var error: String = _validate(command)
 	if not error.is_empty():
 		return {"ok":false,"error":error}
@@ -69,6 +104,8 @@ func _payload_fields(type: String) -> Array:
 		"produce": return ["building_id","unit_kind"]
 		"cancel_production": return ["building_id","production_id"]
 		"gather": return ["entity_ids","source_id"]
+		"attack": return ["entity_ids","target_id"]
+		"attack_move": return ["entity_ids","target"]
 	return []
 
 func _validate(command: Dictionary, due: bool = false) -> String:
@@ -83,7 +120,7 @@ func _validate(command: Dictionary, due: bool = false) -> String:
 	var fields: Array = _payload_fields(command.type)
 	for key in fields:
 		if not command.has(key): return "Missing field: " + key
-	for key in ["builder_id","building_id","production_id","source_id"]:
+	for key in ["builder_id","building_id","production_id","source_id","target_id"]:
 		if fields.has(key) and (typeof(command[key]) != TYPE_INT or command[key] <= 0): return "Invalid " + key
 	for key in ["building_kind","unit_kind"]:
 		if fields.has(key) and typeof(command[key]) != TYPE_STRING: return "Invalid " + key
@@ -100,6 +137,11 @@ func _validate(command: Dictionary, due: bool = false) -> String:
 		if not _owns_all(command.player,command.entity_ids): return "Missing entity or wrong owner"
 	if command.type == "move": return _validate_target(command,due)
 	if command.type == "stop": return ""
+	if command.type in ["attack","attack_move"]:
+		for id in command.entity_ids:
+			if _entities[id].combat == null: return "Attack requires armed units"
+		if command.type == "attack_move": return _validate_target(command,due)
+		return "" if Combat.valid_target(self,command.player,command.target_id) else "Invalid attack target"
 	if not _players.has(command.player): return "Player has no economy"
 	if command.type == "build": return preview_build(command.player,command.builder_id,command.building_kind,Vector2i(command.origin[0],command.origin[1])).error
 	if command.type == "resume_build":
@@ -230,15 +272,26 @@ func _apply_orders() -> void:
 				unit.collection.retry_tick = _tick
 			continue
 		if command.type == "stop":
-			for unit in members: _stop_unit(unit)
+			for unit in members:
+				_stop_unit(unit)
+				_set_intent(unit,"guard")
+			continue
+		if command.type == "attack":
+			if not Combat.valid_target(self,command.player,command.target_id): continue
+			for unit in members:
+				_stop_unit(unit)
+				_set_intent(unit,"attack",command.target_id)
 			continue
 		_assign_move(members, command.target)
+		var attack_move: bool = command.type == "attack_move"
+		for unit in members: _set_intent(unit,"attack_move" if attack_move else "move",null,command.target if attack_move else null)
 
 func _assign_move(members: Array[Dictionary], target: Array) -> void:
 	var point := Vector2(target[0], target[1])
 	var ground: Array[Dictionary] = []
 	for unit in members:
 		if unit.kind != "collector": ground.append(unit)
+	_allocation_calls += 1
 	var goals: Dictionary = Allocation.assign(_navigation, ground, point, _unavailable_cells(ground))
 	for unit in members:
 		unit.route = []
@@ -258,6 +311,13 @@ func _assign_move(members: Array[Dictionary], target: Array) -> void:
 			unit.status = "path_pending"
 			_path_queue.append(unit.id)
 
+func _set_intent(unit: Dictionary, mode: String, target_id: Variant = null, goal: Variant = null) -> void:
+	if unit.combat == null: return
+	unit.combat.mode = mode
+	unit.combat.target_id = target_id
+	unit.combat.goal = goal.duplicate() if goal != null else null
+	unit.combat.repath_tick = _tick
+
 func _stop_unit(unit: Dictionary) -> void:
 	unit.order = null
 	unit.destination = null
@@ -270,21 +330,45 @@ func _service_paths() -> void:
 		var id: int = _path_queue.pop_front()
 		_assign_route(_entities[id])
 
+func combat_work() -> int:
+	return _combat_work
+
+func tick() -> int:
+	return _tick
+
+func allocation_calls() -> int:
+	return _allocation_calls
+
 func step() -> void:
+	if match_over(): return
 	_command_results.clear()
+	_combat_events.clear()
+	_combat_work = 0
+	_allocation_calls = 0
 	_apply_orders()
 	var ids: Array[int] = []
 	ids.assign(_entities.keys())
 	ids.sort()
+	var armed: Array[int] = []
+	for id in ids:
+		if _entities[id].combat != null: armed.append(id)
+	Combat.plan(self,armed)
 	var rates: Dictionary = {}
 	for player in _player_snapshots(): rates[player.id] = player.work_rate
 	Construction.step(self,rates)
 	Production.step(self,rates)
 	Supply.step(self,ids)
 	_service_paths()
+	var before: Dictionary = {}
+	for id in armed: before[id] = _entities[id].position
 	for id in ids:
 		if _entities[id].status == "moving":
 			_advance(_entities[id])
+	var moved: Array[int] = []
+	for id in armed:
+		if _entities[id].position != before[id]: moved.append(id)
+	Combat.fire(self,armed,moved)
+	if _match != null: _evaluate_match()
 	_tick += 1
 
 func _assign_route(unit: Dictionary) -> void:
@@ -335,7 +419,7 @@ func snapshot() -> Dictionary:
 	for player in players:
 		sequences.append({"player": player, "sequence": _last_sequences[player]})
 	return {"tick": _tick, "next_entity_id": _next_entity_id, "entities": entities,
-		"pending_commands": pending, "last_sequences": sequences, "map": _navigation.snapshot(), "path_queue": _path_queue.duplicate(), "players":_player_snapshots(),"buildings":_sorted_copies(_buildings),"sources":_sorted_copies(_sources),"terrain_cells":_terrain_snapshot(),"next_production_id":_next_production_id,"command_results":_command_results.duplicate(true)}
+		"pending_commands": pending, "last_sequences": sequences, "map": _navigation.snapshot(), "path_queue": _path_queue.duplicate(), "players":_player_snapshots(),"buildings":_sorted_copies(_buildings),"sources":_sorted_copies(_sources),"terrain_cells":_terrain_snapshot(),"next_production_id":_next_production_id,"command_results":_command_results.duplicate(true),"combat_events":_combat_events.duplicate(true),"match":_match.duplicate(true) if _match != null else null}
 
 func replace_blocked_cells(cells: Array[Vector2i]) -> Dictionary:
 	var size: Array = _navigation.snapshot().size
@@ -418,6 +502,7 @@ func remove_object(id: int) -> Dictionary:
 		_detach_task(_entities[id])
 		_path_queue.erase(id)
 		_entities.erase(id)
+		Combat.object_removed(self,id)
 	elif _buildings.has(id):
 		_remove_building(id)
 	elif _sources.has(id):
@@ -481,6 +566,7 @@ func _remove_building(id: int) -> void:
 			_detach_task(builder)
 			_stop_unit(builder)
 	_buildings.erase(id)
+	Combat.object_removed(self,id)
 	Construction.rebuild_navigation(self)
 
 func _grant_collector(building: Dictionary) -> void:

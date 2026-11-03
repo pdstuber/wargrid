@@ -40,6 +40,7 @@ jobs:
       PYTHON: ${{ matrix.python }}
       WARGRID_REPLAY_TRACE: ${{ github.workspace }}/replay-${{ matrix.platform }}.tsv
       WARGRID_ECONOMY_REPLAY_TRACE: ${{ github.workspace }}/economy-${{ matrix.platform }}.tsv
+      WARGRID_COMBAT_REPLAY_TRACE: ${{ github.workspace }}/combat-${{ matrix.platform }}.tsv
     steps:
       - uses: actions/checkout@v4
       - name: Install pinned Godot
@@ -74,6 +75,7 @@ jobs:
           path: |
             ${{ env.WARGRID_REPLAY_TRACE }}
             ${{ env.WARGRID_ECONOMY_REPLAY_TRACE }}
+            ${{ env.WARGRID_COMBAT_REPLAY_TRACE }}
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: failure()
@@ -97,3 +99,4 @@ jobs:
         run: |
           python3 tools/compare_replays.py traces/replay-linux.tsv traces/replay-windows.tsv traces/replay-macos.tsv
           python3 tools/compare_replays.py traces/economy-linux.tsv traces/economy-windows.tsv traces/economy-macos.tsv
+          python3 tools/compare_replays.py traces/combat-linux.tsv traces/combat-windows.tsv traces/combat-macos.tsv
