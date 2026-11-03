@@ -4,37 +4,42 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 ## Session
 
-2026-11-03 M3 explicitly kicked off on prepared `m3-base-supplies` at `d7acea9`, after verified [M2 matrix41591616563](https://github.com/pdstuber/wargrid/actions/runs/41591616563), head `4be6b7b`, successful Linux/macOS/Windows/replay jobs. User accepted risk of deferring M2 visible/play/rendered-frame/backlog gates: "yeah let's run with the risk recorded". Gates remain pending, never passed. User initially chose headless-only M3 verification. Subsequently reported positive M3 playtest; see newest dated entry for evidence and limits.
-
-Tasks0–11 implemented sequentially with delegated red/green evidence. Added economy definitions/state/commands, limited air, construction/power, paid FIFO/refunds, finite supplies/docks/recovery, base view/controls/HUD and separate exact economy replay. M2 behavior assertions retained through additive C1/C11 snapshot migration. No dependencies, retail data/code/assets, combat or M4.
-
-Final ordinary suite **95 cases / 101,305 checks / zero failures / exit0**, `TESTS PASSED 101305`. Final outside-root/fresh-cache/third trace variants each95/101,309/zero failures/exit0 with marker; both1200-row scenarios match exactly across three independent same-host runs. Python6 and base headless30-frame smoke pass without diagnostics. Final M2 benchmark repeated after review fixes: open p95/p99/max1.452/1.495/7.803ms; dense1.487/1.548/7.789ms; both budgets pass,300 unique final goals/zero blocked.
-
-Sole completed substantive review was fresh-context fallback after bounded four-minute Grok stall; no Grok report counted. Fixed queue Cancel node lifetime across press/tick/release and lower-ID dock waiter arbitration. Closed four grouped coverage gaps through public API/input scenarios; all37 named tests have production-mutation mapping. Lean-only `/ponytail-review` removed unused constant/test preload/binding; no framework/dependency. [M3 verification](reference/m3-verification.md) owns red/green, final logs/counts, review resolutions and limits. No unresolved substantive findings.
+2026-11-03 M4.1 design session (documentation only, on `main`). Design approved, plan and `prompt.txt` written; no game code, tests or benchmarks run. M3 session detail lives in [M3 verification](reference/m3-verification.md), M4 in [M4 verification](reference/m4-verification.md).
 
 ## Pending user action
 
-- M3 fast-forwarded into local `main` during wrap-up; publishing `main` and any PR need separate approval.
-- User confirmed positive M2 playability and no M3 visual issues; M4 mention corrected to M3. Rendered-frame/backlog measurements and retail parity remain unverified; no itemized visible checklist inferred.
-- M3 cross-OS tests and both exact replay comparisons passed at `303006b`; see [verification](reference/m3-verification.md).
+- Review the [M4.1 plan](superpowers/plans/2026-11-03-m4.1-playtest-polish.md), then invoke `prompt.txt` in a fresh session to start implementation.
+- Push `main` (local commits ahead of `origin/main`); needs separate approval.
+- Check in a fresh session whether the project skill settings shrank the skill listing (baseline 48,567 bytes; revert if not).
 
 ## Deferred experiments and research
 
-- Source/config-supported economy remains RETAIL_UNVERIFIED; geometry, flight speed, docking simplification and work accumulation departures stay explicit in reference/design.
-- M4 planning requested; implementation remains unauthorized. Sale, upgrade, passengers, later factions, multiplayer and art expansion remain excluded.
+- Source/config-supported economy and combat values remain RETAIL_UNVERIFIED; departures stay explicit in reference/design notes.
+- AI moods (Sleep, Alert 1.1, Aggressive 1.5) deferred to M8 bots (user, 2026-11-03).
+- Retail map sizes vs our 48×32 cells: check before choosing the M6 full-scale map.
+- Instrumented `../GeneralsGameCode` build to measure S1–S3 runtime parity; macOS buildability unchecked.
+- Retail idle-chase length unverified (design relies on source reading only).
 
 ## Next action
 
 **M4 complete and merged into local `main` (2026-11-03).** Evidence: [M4 verification](reference/m4-verification.md). Process changes adopted on `main`: [milestone prompt](milestone-prompt.md), [workflow retrospective](reference/2026-11-03-milestone-workflow-retrospective.md). Roadmap re-aimed at the long-term target (3v3 online with friends against bots, USA/China/GLA, Twilight-Flame-like full-scale map): blueprint §1, §7, §11, §14.
 
-- **Next milestone: M4.1 playtest polish** ("soon", user 2026-11-03). Write its `prompt.txt` from the milestone prompt, then design and plan it. The five notes:
+- **M4.1 design approved, plan and `prompt.txt` written (2026-11-03); not started.** Next: user reviews the plan, then explicitly invokes `prompt.txt` in a fresh session. See newest dated entry. Original five notes:
   1. **Rally point per producer.** Zero Hour production exits read a rally point (`AIPlayer.cpp` 500/680, source revision `0a05454`). Today new units stay on the producer's perimeter, which also stalls production at about 8 infantry and 11 tanks. Touches production, a new command and the replay traces.
   2. **Opponent too passive.** Guard units only fire inside weapon range and never move, and the opponent never defends its base. Proposed: base defense (the same rule the scripted human needed in M4 Task 7) and reaction a bit beyond weapon range; check Zero Hour's idle acquisition range in source before choosing the distance. Changes the match outcome, so the scenario pin (tick 9943) must be recalibrated.
   3. **Selecting an enemy should show info.** `WorldView.pick_entity` only returns player 1 units; add read-only kind, owner and HP for enemy objects.
   4. **Collectors on one supply pile are hard to read.** One dock per pile is M3 design (Zero Hour docking); add visibility: pile label "docked 1 · waiting 2", collector state when selected.
   5. **"4: barracks" next to "S: stop".** HUD wording slip: base line says "1/2/3 build", the skirmish appends "4: barracks" elsewhere; make it one "1/2/3/4 build".
 - **After M4.1:** M5 online spike (lockstep over a WebSocket relay on the user's fly.io account, desktop clients first), then M6 teams and full-scale map, M7 China and GLA (gate: Zero Hour spot checks S1–S3 run or deferred), M8 bots, M9 3v3 online.
-- **Pending user action:** push `main` (local only so far); start a fresh session to check whether the project skill settings shrank the skill listing (baseline 48,567 bytes; revert if not).
+
+## 2026-11-03 — M4.1 design and plan
+
+- User: opponent felt passive because their units stood still while user raided before tick 5400. User priority: stay close to the real game; current map acceptable for M4.1.
+- Source (EA `0a05454`, root `INIZH.big` pinned hash): idle and attack-move scan at vision × `GuardOuterModifierHuman 2.2` / `GuardOuterModifierAI 1.333`; Ranger vision 100, Crusader 150. User chose retail values as-is, both sides; moods deferred to M8 ("as long as we add moods later").
+- User decisions: rally replaced by setting a new one (no clear); presentation mockups approved; approach A (one milestone, simulation first); design approved.
+- User cloned TheSuperHackers `GeneralsGameCode` into `../GeneralsGameCode` (head `afc2a103f`): cited scan functions differ only cosmetically from EA source. Deferred research: an instrumented build for S1–S3 runtime parity (macOS buildability unchecked).
+- Deferred to M6: compare retail map sizes with 48×32 before choosing the full-scale map.
+- Not done: nothing implemented, no tests run, nothing committed; `prompt.txt` (M4) moved to `docs/m4-prompt.txt`.
 
 ## 2026-11-03 — Performance open points and real-game verification
 
