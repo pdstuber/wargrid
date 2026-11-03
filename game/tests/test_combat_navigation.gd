@@ -233,8 +233,8 @@ func test_guard_retarget(runner) -> bool:
 	var dropped_shots: bool = false
 	sim.step()
 	for event in _shots_by(_events(sim), guard): dropped_shots = dropped_shots or event.target_id == leaving
-	runner.check(not dropped_shots, "G2 never fires at the target beyond the scan radius")
-	runner.check(Fixture.object(sim, guard).combat.target_id == staying, "G2 retargets on the next planning tick")
+	runner.check(not dropped_shots, "G2 never fires at a target beyond weapon range")
+	runner.check(Fixture.object(sim, guard).combat.target_id == leaving, "G2 keeps the acquired target after it leaves the radius")
 	runner.check(Fixture.object(sim, guard).combat.mode == "guard", "G2 guard stays in guard while chasing")
 	return true
 

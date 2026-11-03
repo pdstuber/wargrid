@@ -53,7 +53,7 @@ static func plan(sim: RefCounted, unit_ids: Array[int]) -> void:
 		if mode != "guard" and mode != "attack_move": continue
 		var combat: Dictionary = unit.combat
 		var kept: Dictionary = record(sim, combat.target_id) if combat.target_id != null else {}
-		if kept.is_empty() or kept.owner == unit.owner or not _within(unit, kept, _scan_reach(sim, unit)):
+		if kept.is_empty() or kept.owner == unit.owner:
 			combat.target_id = null
 			if sim._tick >= combat.repath_tick:
 				if not grid_ready:
