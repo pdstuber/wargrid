@@ -96,7 +96,7 @@ Issue-time eligibility is checked against present world, never speculative queue
 
 ### Internal helper boundaries
 
-`EconomyDefinitions.unit(kind: String) -> Dictionary`, `building(kind: String) -> Dictionary` return fresh copies or `{}` for unknown; `work_rate(supply:int,demand:int)->int`. Definitions keys: unit `{cost,ticks,speed,air,producer}`; building `{cost,ticks,power,footprint:Vector2i,prerequisite,produces}`. Builder definition cost1000/ticks150/producer empty, recorded but not producible; builder/vehicle speed3, collector6. Empty string means none.
+`EconomyDefinitions.unit(kind: String) -> Dictionary`, `building(kind: String) -> Dictionary` return fresh copies or `{}` for unknown; `work_rate(supply:int,demand:int)->int`. Definitions keys: unit `{cost,ticks,speed,air,producer}`; building `{cost,ticks,power,footprint:Vector2i,prerequisite,produces}`. Builder definition cost1000/ticks150/producer empty, recorded but not producible; builder/vehicle speed3 (builder changed to 1.2 on 2026-11-03 per Zero Hour locomotor speed, see [verification plan](../../reference/zero-hour-verification.md); legacy vehicle stays 3), collector6. Empty string means none.
 
 Construction static methods: `preview(sim,player,builder_id,kind,origin)->Dictionary`, `place(sim,command)->Dictionary` (result plus `building_id` and `approach` only on success), `resume(sim,command)->Dictionary` (result plus approach), `cancel(sim,building_id)->void`, `step(sim,rates:Dictionary)->void`, `rebuild_navigation(sim)->void`. Caller validates first; helper still computes placement transaction before charging. Shared `_result` helper only if existing code already warrants one.
 
