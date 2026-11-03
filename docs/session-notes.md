@@ -36,6 +36,16 @@ Read [M4 approved design](superpowers/specs/2026-11-03-m4-combat-design.md) and 
 - Doc consistency sweep: counts (now 97 cases / 101,355 checks), rendered-gate status, speeds, vsync, M4 prompt and design aligned; historical M3 text kept with forward pointers.
 - User approved the integration plan: branch `m4-prep` from `c441a7f` with three commits (benchmark/terrain fix, builder speed, docs), then push for CI, then fast-forward `main`, then fast-forward `m4-combat`. Each code commit passed the suite alone (97 cases / 101,310 then 101,355 checks). [CI run 41676948968](https://github.com/pdstuber/wargrid/actions/runs/41676948968) at `c11bf71`: Linux and Windows passed; the macOS job waited 15 minutes for a free runner and was cancelled with no steps run, so `compare-replays` was skipped. Substitute evidence, not CI: macOS traces generated locally on the same commit (97 cases / 101,359 checks incl. four trace-file checks, exit 0) matched the CI Linux and Windows traces, `REPLAYS MATCHED 1200` for both movement and economy. User approved fast-forwarding `main` on that basis; the macOS CI job was re-queued and remains unverified. Read git log/status and CI for current publication state. No M4 implementation. Code changes: `movement_benchmark.gd` (typed selection, vsync off, draw-call print), `world_view.gd` terrain, `economy_definitions.gd` builder speed, tests in `test_benchmark.gd` and `test_economy.gd`.
 
+## 2026-11-03 — Prep for M4 Tasks 4, 5, 7 (for a Sonnet/medium run)
+
+- User will run Sonnet 5.5 at medium effort on `prompt.txt`; asked for prep on the densest tasks. All four packages done, uncommitted on `m4-combat`:
+  - **Refactor** (`simulation.gd`, behavior-preserving): `_validate_target`, `_assign_move`, target float normalization for any `target` field. Suite unchanged at 97 cases / 101,355 checks; benchmark sim p95 1.498 / 1.529 ms; `/ponytail-review` removed one unreachable guard.
+  - **Envelope spike** (scratch, headless): [note](reference/m4-scenario-envelope.md) with timeline, army sizes, travel, 19-tick building-death stall, allocation cost. Main finding: production stops at 8 infantry / about 11 tanks unless units are moved; armies about 19 per side; attack-start range corrected to 9000..9800.
+  - **Plan**: new "Code anchors and pitfalls" section (11 items), Tasks 4, 5, 7 split into checkpoints with stop conditions and stronger-model review requests.
+  - **Test appendix**: [unrun red-test sketches](superpowers/plans/2026-11-03-m4-tests-4-5.md) for Tasks 4 and 5.
+- User decision: the building-death stall and allocation cost are documented only, not fixed; the executor stops and reports if they block a test or budget.
+- Not verified: the appendix tests (written before the API exists), and whether Sonnet at medium finishes. Nothing committed or pushed.
+
 ## 2026-11-03 — M4 planning
 
 - User confirmed positive M2 playability and no M3 visual issues; corrected M4 playtest mention to M3. Reference notes updated; no M4 playtest or performance measurements inferred.

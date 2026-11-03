@@ -35,6 +35,8 @@ All rows: this Mac, Godot 4.7.2, Compatibility renderer, 64×64 map, 300 units, 
 | 2026-11-03 headless benchmark after terrain/speed changes | sim-only tick p50 / p95 / p99 / max (ms) | 0.979 / 1.500 / 1.573 / 8.031 | 1.007 / 1.526 / 1.601 / 8.058 | `sh tools/run_benchmark.sh`, `BUDGET PASS` both |
 | 2026-11-03 same run | in-scene tick p95 (step + plumbing + label) | 4.56 ms | 4.79 ms | same |
 | 2026-11-03 scratch headless probe | step / snapshot / view copy / sort p50 | 0.32 / 0.69 / 0.67 / 0.57 ms | 0.33 / 0.72 / 0.68 / 0.58 ms | same |
+| 2026-11-03 scratch spike (no combat) | `Allocation.assign` ms per call, 20 / 150 units | 48×32: 2.18 / 2.41; 64×64: 5.98 / 6.25 | same | [M4 envelope](m4-scenario-envelope.md) |
+| 2026-11-03 scratch spike | ticks units wait for routes after one building is removed (150 moving) | 19 | — | same |
 
 M4 rows pending; see the combat benchmark in the [M4 plan](../superpowers/plans/2026-11-03-m4-combat.md) Task9a.
 

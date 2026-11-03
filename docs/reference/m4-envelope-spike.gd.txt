@@ -1,0 +1,176 @@
+extends SceneTree
+
+const Simulation = preload("res://scripts/simulation/simulation.gd")
+const Allocation = preload("res://scripts/simulation/destination_allocation.gd")
+const Navigation = preload("res://scripts/simulation/grid_navigation.gd")
+
+const SITES := {
+	1: {"reactor": [8, 12], "depot": [8, 5], "barracks": [12, 12], "factory": [12, 18]},
+	2: {"reactor": [38, 12], "depot": [37, 5], "barracks": [34, 12], "factory": [33, 18]},
+}
+const ORDER := ["reactor", "depot", "barracks", "factory"]
+const UNIT_FOR := {"barracks": "infantry", "factory": "tank"}
+const COST := {"infantry": 225, "tank": 900}
+const TICKS := 10800
+
+var seq := {1: -1, 2: -1}
+var rejected: Array = []
+
+func _initialize() -> void:
+	_run.call_deferred()
+
+func _send(sim: RefCounted, player: int, payload: Dictionary) -> bool:
+	var command: Dictionary = payload.duplicate(true)
+	command.tick = sim.snapshot().tick if not payload.has("tick") else payload.tick
+	command.player = player
+	command.sequence = seq[player] + 1
+	var result: Dictionary = sim.issue_command(command)
+	if result.ok:
+		seq[player] += 1
+	else:
+		rejected.append("%d t%d %s: %s" % [player, command.tick, payload.type, result.error])
+	return result.ok
+
+func _decide(sim: RefCounted, state: Dictionary) -> void:
+	for player in [1, 2]:
+		var credits: int = 0
+		for p in state.players:
+			if p.id == player: credits = p.credits
+		var builder: int = -1
+		for e in state.entities:
+			if e.owner == player and e.kind == "builder": builder = e.id
+		var mine: Array = []
+		for b in state.buildings:
+			if b.owner == player: mine.append(b)
+		var unfinished: Variant = null
+		var done := {}
+		for b in mine:
+			if b.completed: done[b.kind] = b
+			else: unfinished = b
+		if builder != -1:
+			if unfinished != null:
+				if unfinished.builder_id == null:
+					_send(sim, player, {"type": "resume_build", "builder_id": builder, "building_id": unfinished.id})
+			else:
+				for kind in ORDER:
+					if not done.has(kind):
+						var origin: Array = SITES[player][kind]
+						_send(sim, player, {"type": "build", "builder_id": builder, "building_kind": kind, "origin": origin})
+						break
+		for kind in done:
+			if UNIT_FOR.has(kind) and done[kind].queue.is_empty() and credits >= COST[UNIT_FOR[kind]]:
+				if _send(sim, player, {"type": "produce", "building_id": done[kind].id, "unit_kind": UNIT_FOR[kind]}):
+					credits -= COST[UNIT_FOR[kind]]
+
+func _counts(state: Dictionary, player: int) -> String:
+	var inf: int = 0
+	var tank: int = 0
+	var collectors: int = 0
+	for e in state.entities:
+		if e.owner != player: continue
+		if e.kind == "infantry": inf += 1
+		elif e.kind == "tank": tank += 1
+		elif e.kind == "collector": collectors += 1
+	return "inf=%d tank=%d collectors=%d" % [inf, tank, collectors]
+
+func _economy() -> void:
+	var sim = Simulation.new([], Vector2i(48, 32))
+	sim.add_player(1, 10000)
+	sim.add_player(2, 10000)
+	sim.spawn(1, Vector2(4.5, 14.5), "builder")
+	sim.spawn(2, Vector2(43.5, 14.5), "builder")
+	var src1: int = sim.add_supply_source(Vector2i(5, 3), 200)
+	var src2: int = sim.add_supply_source(Vector2i(40, 3), 200)
+	var completed := {}
+	var first_deposit := {}
+	var depleted := {}
+	var prev_credits := {1: 10000, 2: 10000}
+	var step_us: int = 0
+	var snap_us: int = 0
+	for tick in range(TICKS):
+		var t0: int = Time.get_ticks_usec()
+		var state: Dictionary = sim.snapshot()
+		snap_us += Time.get_ticks_usec() - t0
+		if tick % 30 == 0: _decide(sim, state)
+		for b in state.buildings:
+			var key := "%d %s" % [b.owner, b.kind]
+			if b.completed and not completed.has(key): completed[key] = tick
+		for p in state.players:
+			if p.credits > prev_credits[p.id] and not first_deposit.has(p.id): first_deposit[p.id] = tick
+			prev_credits[p.id] = p.credits
+		for s in state.sources:
+			if s.boxes == 0 and not depleted.has(s.id): depleted[s.id] = tick
+		if tick % 600 == 0:
+			var line := "ENV t=%d" % tick
+			for p in state.players: line += " | P%d credits=%d %s" % [p.id, p.credits, _counts(state, p.id)]
+			for s in state.sources: line += " | src%d boxes=%d" % [s.id, s.boxes]
+			print(line)
+		var t1: int = Time.get_ticks_usec()
+		sim.step()
+		step_us += Time.get_ticks_usec() - t1
+	print("ENV completed_at ", JSON.stringify(completed))
+	print("ENV first_deposit_tick ", JSON.stringify(first_deposit))
+	print("ENV source_depleted_tick ", JSON.stringify(depleted), " src ids ", src1, " ", src2)
+	print("ENV rejected_commands ", rejected.size(), " ", rejected.slice(0, 6))
+	print("ENV wall_ms step_total=%.0f snapshot_total=%.0f over %d ticks (snapshot every tick)" % [step_us / 1000.0, snap_us / 1000.0, TICKS])
+	var final: Dictionary = sim.snapshot()
+	for p in final.players: print("ENV final P%d credits=%d %s" % [p.id, p.credits, _counts(final, p.id)])
+
+func _travel(kind: String) -> void:
+	var sim = Simulation.new([], Vector2i(48, 32))
+	var id: int = sim.spawn(1, Vector2(14.5, 12.5), kind)
+	sim.issue_command({"tick": 0, "player": 1, "sequence": 0, "type": "move", "entity_ids": [id], "target": [33.5, 12.5]})
+	for tick in range(3000):
+		sim.step()
+		var e: Dictionary = sim.snapshot().entities[0]
+		if e.status == "arrived":
+			print("ENV travel kind=", kind, " front_to_front_ticks=", tick + 1, " (empty map, straight line 19 cells)")
+			return
+	print("ENV travel kind=", kind, " did not arrive")
+
+func _stall() -> void:
+	var sim = Simulation.new([], Vector2i(64, 64))
+	var ids: Array = []
+	for y in range(10):
+		for x in range(15):
+			ids.append(sim.spawn(1, Vector2(2.5 + x, 2.5 + y), "infantry"))
+	var source: int = sim.add_supply_source(Vector2i(58, 58), 10)
+	sim.issue_command({"tick": 0, "player": 1, "sequence": 0, "type": "move", "entity_ids": ids, "target": [50.5, 50.5]})
+	for i in range(100): sim.step()
+	var before: Dictionary = sim.snapshot()
+	var moving_before: int = 0
+	for e in before.entities:
+		if e.status == "moving": moving_before += 1
+	sim.remove_object(source)
+	var stalled_ticks: int = 0
+	var peak: int = 0
+	for i in range(400):
+		var pend: int = 0
+		for e in sim.snapshot().entities:
+			if e.status == "path_pending": pend += 1
+		if pend == 0 and i > 0: break
+		stalled_ticks += 1
+		peak = maxi(peak, pend)
+		sim.step()
+	print("ENV stall units=150 moving_before_removal=", moving_before, " ticks_with_pending_paths=", stalled_ticks, " peak_pending=", peak)
+
+func _allocation_cost() -> void:
+	for size in [Vector2i(48, 32), Vector2i(64, 64)]:
+		var nav = Navigation.new([], size)
+		for count in [20, 150]:
+			var units: Array[Dictionary] = []
+			for i in range(count):
+				units.append({"id": i + 1, "position": [2.5 + i % 15, 2.5 + i / 15]})
+			var runs: int = 10
+			var t0: int = Time.get_ticks_usec()
+			for r in range(runs):
+				Allocation.assign(nav, units, Vector2(size.x - 4.5, size.y - 4.5), [])
+			print("ENV allocation map=%dx%d units=%d ms_per_call=%.2f" % [size.x, size.y, count, (Time.get_ticks_usec() - t0) / 1000.0 / runs])
+
+func _run() -> void:
+	_economy()
+	_travel("infantry")
+	_travel("tank")
+	_stall()
+	_allocation_cost()
+	quit(0)

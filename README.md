@@ -16,6 +16,7 @@ A Godot isometric pixel-art RTS preserving Zero Hour's faction identity, strateg
 - [M3 plan](docs/superpowers/plans/2026-11-02-m3-base-supplies.md), [approved design](docs/superpowers/specs/2026-11-02-m3-base-supplies-design.md), [source evidence](docs/reference/m3-economy.md) and [original kickoff prompt](docs/m3-prompt.txt): adopted M3 contracts and source-supported values; runtime parity remains unverified.
 - [M4 plan](docs/superpowers/plans/2026-11-03-m4-combat.md), [approved design](docs/superpowers/specs/2026-11-03-m4-combat-design.md) and [combat evidence](docs/reference/m4-combat.md): source-informed design approved for Sol/Medium execution; implementation not started.
 - [Performance ledger](docs/reference/performance.md): low-end/browser target, derived budgets (assumed 6× slowdown), measurement history; every milestone adds a row.
+- [M4 scenario envelope](docs/reference/m4-scenario-envelope.md) and [Task 4/5 test appendix](docs/superpowers/plans/2026-11-03-m4-tests-4-5.md): measured economy/travel/navigation numbers and unrun red-test sketches that prepare M4 Tasks 4, 5 and 7.
 - [Zero Hour verification plan](docs/reference/zero-hour-verification.md): level 0 source/config speed findings, proposed level 1 observation protocol; gate before M5.
 - [Agent instructions](AGENTS.md): development and verification rules.
 - [Installation reference](docs/reference/installation.md): available game data, archive hashes and unresolved version questions.
