@@ -14,7 +14,7 @@ Sole completed substantive review was fresh-context fallback after bounded four-
 
 ## Pending user action
 
-- Local merge into `main` authorized during wrap-up; publishing `main` and any PR need separate approval.
+- M3 fast-forwarded into local `main` during wrap-up; publishing `main` and any PR need separate approval.
 - M3 user playtest positive; detailed visible checklist coverage, inherited M2 visible gates, rendered-frame/backlog measurements and retail parity remain unverified.
 - M3 cross-OS tests and both exact replay comparisons passed at `303006b`; see [verification](reference/m3-verification.md).
 
@@ -25,13 +25,14 @@ Sole completed substantive review was fresh-context fallback after bounded four-
 
 ## Next action
 
-Inspect Git state after authorized local integration, then offer publication of `main` for approval. No M4 or PR authorized. Review remaining evidence gaps in [M3 verification](reference/m3-verification.md); do not restart completed implementation or reviews. Original prompts below remain historical task contracts.
+Inspect clean local `main`, then offer publication of `main` for approval. No M4 or PR authorized. Review remaining evidence gaps in [M3 verification](reference/m3-verification.md); do not restart completed implementation or reviews. Original prompts below remain historical task contracts.
 
 ## 2026-11-03 — M3 playtest and wrap-up
 
 - Implementation `303006b` already published on `m3-base-supplies`. Verified [M3 matrix](https://github.com/pdstuber/wargrid/actions/runs/41605911340): Linux/macOS/Windows and compare-replays successful at that exact head.
 - Default launcher intentionally opens M2; supplied explicit M3 base-scene command. User then reported “test was looking good”; detailed checklist coverage and rendered measurements were not supplied.
-- User requested documentation consistency and local merge into `main`. Updated current status and preserved historical evidence. No production changes or new implementation review needed; previous substantive review and Ponytail pass remain applicable.
+- User requested documentation consistency and local merge into `main`. Updated current status, preserved historical evidence and fast-forwarded `main` through wrap-up commit `17f2f12`. No production changes or new implementation review needed; previous substantive review and Ponytail pass remain applicable.
+- Post-merge headless verification passed: 95 cases / 101,305 checks / zero failures / exit 0; Python 6 tests / exit 0. Sandbox import needed a retry with macOS settings access; no code fix. Docs: 103 local links, zero missing.
 - Publishing `main` still needs approval. No M4, PR, screenshots or rendered benchmark.
 
 ## 2026-11-01 — M0 local foundation
