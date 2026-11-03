@@ -65,6 +65,10 @@ static func plan(sim: RefCounted, unit_ids: Array[int]) -> void:
 			_end_chase(sim, unit)
 		else:
 			_engage(sim, unit, record(sim, combat.target_id), held)
+			if unit.status == "blocked":
+				combat.target_id = null
+				combat.repath_tick = sim._tick + 4 * REPATH_TICKS
+				_end_chase(sim, unit)
 		if mode != "attack_move": continue
 		var moving: bool = unit.status == "moving" or unit.status == "path_pending"
 		if combat.target_id != null:

@@ -4,7 +4,7 @@ const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Fixture = preload("res://tests/combat_fixture.gd")
 
 func cases() -> Array[Callable]:
-	return [test_attack_chase, test_unreachable_attack, test_attack_move_resumes, test_attack_move_resume_keeps_slots, test_guard_retarget, test_pursuit_respects_reservations, test_new_attack_plans_immediately]
+	return [test_attack_chase, test_unreachable_attack, test_attack_move_resumes, test_attack_move_resume_keeps_slots, test_guard_retarget, test_pursuit_respects_reservations, test_new_attack_plans_immediately, test_unreachable_scan_target_dropped]
 
 func _events(sim) -> Array:
 	return sim.snapshot().combat_events
@@ -278,4 +278,24 @@ func test_new_attack_plans_immediately(runner) -> bool:
 	var unit: Dictionary = Fixture.object(sim, attacker)
 	runner.check(unit.destination != null and Vector2(unit.destination[0], unit.destination[1]).distance_to(Vector2(2.5, 28.5)) <= 4.0, "N1 new attack picks a firing cell on its first tick")
 	runner.check(unit.combat.repath_tick == 20, "N1 new attack restarts the refresh interval")
+	return true
+
+func test_unreachable_scan_target_dropped(runner) -> bool:
+	var wall: Array[Vector2i] = []
+	for y in range(32):
+		wall.append(Vector2i(3, y))
+	var sim = Simulation.new(wall, Vector2i(32, 32))
+	var walker: int = sim.spawn(1, Vector2(2.5, 2.5), "infantry")
+	sim.spawn(2, Vector2(8.5, 2.5), "builder")
+	var goal := [2.5, 20.5]
+	Fixture.send(sim, {"type": "attack_move", "entity_ids": [walker], "target": goal})
+	var stuck: bool = false
+	for tick in range(1500):
+		sim.step()
+		var unit: Dictionary = Fixture.object(sim, walker)
+		stuck = stuck or (unit.status == "blocked" and unit.combat.target_id != null)
+		if Vector2(unit.position[0], unit.position[1]).distance_to(Vector2(goal[0], goal[1])) < 1.0: break
+	var end: Dictionary = Fixture.object(sim, walker)
+	runner.check(not stuck, "U1 a scan target with no firing cell is dropped, not held while blocked")
+	runner.check(Vector2(end.position[0], end.position[1]).distance_to(Vector2(goal[0], goal[1])) < 1.0, "U1 attack_move still reaches its goal past an unreachable enemy")
 	return true
