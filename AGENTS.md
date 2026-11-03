@@ -44,7 +44,7 @@ Current setup and milestone status live in [README](README.md). Milestone scope 
 
 ## Reference handling and Git
 
-- Keep EA source and installation backups outside this repository and unchanged. Record source revision or archive hash, internal path and uncertainty for findings. Do not copy EA code or assets into Wargrid.
+- Keep EA source and installation backups outside this repository and unchanged. Record source revision or archive hash, internal path and uncertainty for findings. Read the source to learn behaviour, values and ideas for a close clone, then write Wargrid's own code: Zero Hour is full of bugs and slow paths. Wargrid is GPL-3.0-or-later (`LICENSE`), so porting GPL code (EA source, OpenRA, GeneralsGameCode) is legally allowed but the exception: only a small algorithm where our own version would be clearly worse, rewritten in typed GDScript, with a comment naming source repo, revision and path; ported EA code keeps EA's copyright line and a pointer to EA's additional terms. No bulk translation. Never copy EA assets, INI/map data, art, audio, text or trademarks into Wargrid.
 - M0 and future ordinary CI must work without sibling projects or retail game data.
 - Preserve user changes. Keep caches, build output, local environment files and temporary analysis out of tracked source.
 - Do not commit, push, open a PR or merge without explicit approval, except local commits pre-authorized by the [milestone prompt](docs/milestone-prompt.md) during a milestone run. Subagents never commit or push. Never set `GITHUB_TOKEN` or `GH_TOKEN` in the shell or print secrets.

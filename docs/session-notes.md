@@ -39,7 +39,8 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 - User decisions: rally replaced by setting a new one (no clear); presentation mockups approved; approach A (one milestone, simulation first); design approved.
 - User cloned TheSuperHackers `GeneralsGameCode` into `../GeneralsGameCode` (head `afc2a103f`): cited scan functions differ only cosmetically from EA source. Deferred research: an instrumented build for S1–S3 runtime parity (macOS buildability unchecked).
 - Deferred to M6: compare retail map sizes with 48×32 before choosing the full-scale map.
-- Not done: nothing implemented, no tests run, nothing committed; `prompt.txt` (M4) moved to `docs/m4-prompt.txt`.
+- Not done: nothing implemented, no tests run; `prompt.txt` (M4) moved to `docs/m4-prompt.txt`. Committed on `main` as `daa5575`.
+- User decided: Wargrid code is GPL-3.0-or-later ("I see nothing speaking against this"); `LICENSE` added, AGENTS porting rule, blueprint §12 and README updated on branch `gpl-license`. Open: licence for original art/audio. User also cloned `../OpenRA` (GPL-3.0-or-later, head `9636b63eae`): read `OpenRA.Game/Network` before planning M5; bot modules are M8 reading. "Smarter bots" is hearsay, unverified.
 
 ## 2026-11-03 — Performance open points and real-game verification
 

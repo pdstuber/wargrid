@@ -74,4 +74,11 @@ Historical M1 visible smoke is supported by user recording/reports. [M1 measurem
 - User-owned game backups: `/Users/pdstuber/CnC`; leave `.tar.gz` files in place. See installation reference for archive selection.
 - Tooling example: `/Users/pdstuber/projects/hells-verdict`; reuse choices are documented in blueprint §3. Specified wrapper and CI patterns adapted; no gameplay code copied.
 
+- OpenRA (GPL-3.0-or-later): `/Users/pdstuber/projects/OpenRA`; reading for M5 lockstep (`OpenRA.Game/Network`: `OrderManager.cs`, `SyncReport.cs`) and M8 bot structure (`OpenRA.Mods.Common/Traits/BotModules`). Reported to have smarter bots; unverified.
+- TheSuperHackers patched Zero Hour source: `/Users/pdstuber/projects/GeneralsGameCode`; cross-check for EA source and known retail bugs.
+
 These sibling projects and backups are research inputs, not future build/test dependencies. Keep original EA source and game assets outside Wargrid. Exact retail executable version, mod status and runtime behavior remain unverified.
+
+## License
+
+Code: GPL-3.0-or-later, see [LICENSE](LICENSE). Not affiliated with or endorsed by Electronic Arts; no EA assets, data or trademarks are included. Licence for original art and audio: undecided.

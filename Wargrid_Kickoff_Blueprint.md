@@ -774,7 +774,7 @@ Authoritative-server simulation stays the fallback if lockstep fails the M5 gate
 
 **Not legal advice.** The source is released under **GPLv3 with additional EA terms**. Notable conditions include restrictions on EA trademarks, notices, accurate attribution and identification of modifications. The source-code license does **not** automatically grant rights to EA trademarks or all game media/content. See the exact license rather than relying on summaries.
 
-- Reusing / closely adapting GPL-covered source into Wargrid can create GPL obligations if Wargrid is distributed.
+- **Decided by user 2026-11-03:** Wargrid code is GPL-3.0-or-later (`LICENSE`), compatible with EA's and OpenRA's "version 3 or later" grants, so small cited ports are allowed under the rule in `AGENTS.md`; ported EA code carries EA's notice and additional terms. Asset licence for original art is undecided.
 - Replicating game mechanics based on observation is different from copying protected code, but a literal remake can still implicate other copyrighted expression and trademarks.
 - Do not ship EA sprites, music, audio, text, map files or logos without the necessary rights.
 - **Noncommercial** or **free** does not automatically equal authorized distribution.
@@ -810,7 +810,7 @@ Deliver docs/reference/movement.md with:
 - an independent Godot design proposal in world-space coordinates.
 Do not reproduce original bugs or slow algorithms for the sake of parity.
 
-Do NOT translate EA C++ into GDScript or paste EA code into Wargrid.
+Do NOT bulk-translate EA C++ into GDScript; small cited ports follow the rule in AGENTS.md (historical prompt, updated 2026-11-03 after the GPL decision).
 Do NOT fabricate movement speed, formation thresholds, exact timing, or
 performance claims. Mark unknowns clearly.
 Do not edit the live gameplay implementation in this research task.
