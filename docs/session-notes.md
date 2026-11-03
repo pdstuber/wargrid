@@ -4,12 +4,12 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 ## Session
 
-2026-11-03 M4.1 design session (documentation only, on `main`). Design approved, plan and `prompt.txt` written; code licence set to GPL-3.0-or-later; no game code, tests or benchmarks run. M3 session detail lives in [M3 verification](reference/m3-verification.md), M4 in [M4 verification](reference/m4-verification.md).
+2026-11-03 M4.1 implementation in progress on `m4.1-polish` (Tasks 0–3 done, Task 3 committed with known red S1 outcome, S1 economy, BM6; local suite 146 cases / 103,948 checks / 3 failures, exit 1). Resume record: [M4.1 verification](reference/m4.1-verification.md). No remote CI or visuals yet for this branch. M3 session detail lives in [M3 verification](reference/m3-verification.md), M4 in [M4 verification](reference/m4-verification.md).
 
 ## Pending user action
 
-- Review the [M4.1 plan](superpowers/plans/2026-11-03-m4.1-playtest-polish.md), then invoke `prompt.txt` in a fresh session to start implementation.
-- `main` pushed at `dde91fa` (user approved 2026-11-03); CI run 41723335566 was in progress at wrap-up, result unchecked. Local branch `gpl-license` is merged and can be deleted.
+- Resume M4.1 with "resume from prompt.txt" in a fresh session (next: Task 4). Stop gates after Tasks 1, 3 (reviewed), 7; rendered rerun and playtest at Task 9.
+- `main` pushed at `dde91fa`; CI run 41723335566 completed with success. Local branch `gpl-license` is merged and can be deleted. `m4.1-polish` is local only, unpushed.
 - Choose a licence for original art and audio (code is GPL-3.0-or-later).
 - Check in a fresh session whether the project skill settings shrank the skill listing (baseline 48,567 bytes; revert if not).
 
@@ -19,19 +19,26 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 - AI moods (Sleep, Alert 1.1, Aggressive 1.5) deferred to M8 bots (user, 2026-11-03).
 - Retail map sizes vs our 48×32 cells: check before choosing the M6 full-scale map.
 - Instrumented `../GeneralsGameCode` build to measure S1–S3 runtime parity; macOS buildability unchecked.
-- Retail idle-chase length unverified (design relies on source reading only).
+- Retail `ForceIdleMSEC` INI value unread (code default 1 frame); `stop` re-acquire delay uses the existing 15-tick stagger instead.
 
 ## Next action
 
 **M4 complete and merged into local `main` (2026-11-03).** Evidence: [M4 verification](reference/m4-verification.md). Process changes adopted on `main`: [milestone prompt](milestone-prompt.md), [workflow retrospective](reference/2026-11-03-milestone-workflow-retrospective.md). Roadmap re-aimed at the long-term target (3v3 online with friends against bots, USA/China/GLA, Twilight-Flame-like full-scale map): blueprint §1, §7, §11, §14.
 
-- **M4.1 design approved, plan and `prompt.txt` written (2026-11-03); not started.** Next: user reviews the plan, then explicitly invokes `prompt.txt` in a fresh session. See newest dated entry. Original five notes:
+- **M4.1 under way (2026-11-03): Tasks 0–3 done.** Next: Task 4 via "resume from prompt.txt"; see the resume record in [M4.1 verification](reference/m4.1-verification.md). Design change today (user-approved): scan radius only acquires, target kept until dead; `stop` delays re-acquire; unreachable scan target dropped. See newest dated entry. Original five notes:
   1. **Rally point per producer.** Zero Hour production exits read a rally point (`AIPlayer.cpp` 500/680, source revision `0a05454`). Today new units stay on the producer's perimeter, which also stalls production at about 8 infantry and 11 tanks. Touches production, a new command and the replay traces.
   2. **Opponent too passive.** Guard units only fire inside weapon range and never move, and the opponent never defends its base. Proposed: base defense (the same rule the scripted human needed in M4 Task 7) and reaction a bit beyond weapon range; check Zero Hour's idle acquisition range in source before choosing the distance. Changes the match outcome, so the scenario pin (tick 9943) must be recalibrated.
   3. **Selecting an enemy should show info.** `WorldView.pick_entity` only returns player 1 units; add read-only kind, owner and HP for enemy objects.
   4. **Collectors on one supply pile are hard to read.** One dock per pile is M3 design (Zero Hour docking); add visibility: pile label "docked 1 · waiting 2", collector state when selected.
   5. **"4: barracks" next to "S: stop".** HUD wording slip: base line says "1/2/3 build", the skirmish appends "4: barracks" elsewhere; make it one "1/2/3/4 build".
 - **After M4.1:** M5 online spike (lockstep over a WebSocket relay on the user's fly.io account, desktop clients first), then M6 teams and full-scale map, M7 China and GLA (gate: Zero Hour spot checks S1–S3 run or deferred), M8 bots, M9 3v3 online.
+
+## 2026-11-03 — M4.1 Tasks 2–3 and scan-rule changes
+
+- Done: controller + vision (Task 2), scan at vision radius (Task 3), gate review of Task 3. Local suite 146 / 103,948 / 3 known red, exit 1; no CI, no rendered run, no benchmark rerun after the keep-target change.
+- User decisions: removed the radius drop after checking Zero Hour (`AIAttackState::update`) and OpenRA (`AttackMoveActivity`): neither drops by distance. `stop` delays re-acquire to the next phase tick (Zero Hour idle `resetNextMoodCheckTime`; OpenRA scan interval 3–8). Unreachable scan target is dropped (reviewer finding).
+- Mistake: first stall analysis came from design text only; user asked for source check, which changed the design. Review ran on the pre-change commit, so its stall advice was superseded.
+- Open: test gaps and `_chases` snapshot question in the resume record; ponytail review and substantive review still due at the exit gate.
 
 ## 2026-11-03 — M4.1 design and plan
 
