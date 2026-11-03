@@ -74,12 +74,33 @@ func _draw() -> void:
 			var point: Vector2 = Iso.world_to_plane(target)
 			draw_line(point - Vector2(6, 0), point + Vector2(6, 0), Color("8cff87"), 2.0)
 			draw_line(point - Vector2(0, 6), point + Vector2(0, 6), Color("8cff87"), 2.0)
+	_draw_focus()
 	_draw_cues()
 
 func _draw_health(top_left: Vector2, object: Dictionary, selected: bool) -> void:
 	if not object.has("hp") or (not selected and object.hp >= object.max_hp): return
 	draw_rect(Rect2(top_left, Vector2(24, 3)), Color(0, 0, 0, 0.7))
 	draw_rect(Rect2(top_left, Vector2(24.0 * hp_fraction(object.hp, object.max_hp), 3)), Color("e0d060"))
+
+func focus_targets() -> Dictionary:
+	var targets := {}
+	for unit in _state.get("entities", []):
+		var combat: Variant = unit.get("combat")
+		if not _selected_ids.has(unit.id) or combat == null or combat.target_id == null: continue
+		targets[combat.target_id] = targets.get(combat.target_id, false) or combat.mode == "attack"
+	return targets
+
+func _draw_focus() -> void:
+	var targets: Dictionary = focus_targets()
+	if targets.is_empty(): return
+	for unit in _state.get("entities", []):
+		if targets.has(unit.id): draw_rect(_vehicle_bounds(unit).grow(4.0), Color("ff3b30"), false, 3.0 if targets[unit.id] else 1.5)
+	for building in _state.get("buildings", []):
+		var definition: Dictionary = Definitions.building(building.kind)
+		if not targets.has(building.id) or definition.is_empty(): continue
+		var polygon := _cell_polygon(Vector2(building.origin[0], building.origin[1]), Vector2(definition.footprint))
+		polygon.append(polygon[0])
+		draw_polyline(polygon, Color("ff3b30"), 3.0 if targets[building.id] else 1.5)
 
 func _draw_cues() -> void:
 	for event in _state.get("combat_events", []):

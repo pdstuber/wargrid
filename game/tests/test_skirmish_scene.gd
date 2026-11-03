@@ -7,7 +7,7 @@ const View = preload("res://scripts/presentation/world_view.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 
 func cases() -> Array[Callable]:
-	return [test_skirmish_ready_and_tick, test_combat_context_input, test_match_hud_and_restart, test_combat_view]
+	return [test_skirmish_ready_and_tick, test_combat_context_input, test_match_hud_and_restart, test_combat_view, test_hud_layout_and_focus]
 
 func _setup(runner):
 	var main = Scene.instantiate()
@@ -180,3 +180,29 @@ func test_combat_view(runner) -> bool:
 	runner.check(View.hp_fraction(-5, 100) == 0.0 and View.hp_fraction(500, 100) == 1.0 and View.hp_fraction(50, 100) == 0.5 and View.hp_fraction(1, 0) == 1.0, "V1 HP fill clamped 0..1")
 	main.free()
 	return true
+
+func test_hud_layout_and_focus(runner) -> bool:
+	var main = await _setup(runner)
+	var ids: Dictionary = _arena(main)
+	main.selected_ids.assign([ids.tank])
+	main._refresh()
+	var status: Label = main.get_node("HUD/Status")
+	var economy: Control = main.get_node("HUD/Economy")
+	runner.check(economy.position.y >= status.position.y + status.get_minimum_size().y, "K5 buttons sit below every status line")
+	var view = main.get_node("WorldView")
+	runner.check(view.focus_targets().is_empty(), "K5 no focus before an order")
+	main._unhandled_input(_right_click(main, Iso.world_to_plane(Vector2(15.5, 10.5)) + Vector2(0, -8)))
+	main._physics_process(0.0)
+	runner.check(view.focus_targets() == {ids.enemy: true}, "K5 explicit attack target is marked strongly, got " + str(view.focus_targets()))
+	main.selected_ids.clear()
+	main._refresh()
+	runner.check(view.focus_targets().is_empty(), "K5 focus shows only for the selection")
+	main.free()
+	return true
+
+func _right_click(main, plane: Vector2) -> InputEventMouseButton:
+	var event := InputEventMouseButton.new()
+	event.position = main.get_node("WorldView").get_global_transform_with_canvas() * plane
+	event.button_index = MOUSE_BUTTON_RIGHT
+	event.pressed = true
+	return event

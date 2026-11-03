@@ -1,13 +1,13 @@
 # Verification against real Zero Hour — 2026-11-03
 
-Status: **LEVEL 0 DONE (SOURCE/CONFIG); LEVEL 1 PROTOCOL PROPOSED, NOT RUN; LEVEL 2 NOT STARTED**. Nothing here measures the running retail game. Never describe level 0 values as measured parity. Scope rule from [AGENTS](../../AGENTS.md): preserve strategic identity and feel; original bugs and slow algorithms are not compatibility requirements. Goal is calibrated constants and feel, not trace parity.
+Status: **LEVEL 0 DONE (SOURCE/CONFIG); LEVEL 0 AUTOMATED (74 values, 0 differ); LEVEL 1 REDUCED TO THREE SPOT CHECKS, NOT RUN; LEVEL 2 NOT STARTED**. Nothing here measures the running retail game. Never describe level 0 values as measured parity. Scope rule from [AGENTS](../../AGENTS.md): preserve strategic identity and feel; original bugs and slow algorithms are not compatibility requirements. Goal is calibrated constants and feel, not trace parity.
 
 ## Levels
 
 | Level | Evidence | State |
 |---|---|---|
 | 0 | Source plus hash-pinned INI reading | done below |
-| 1 | Observe the real game: video frame counts and a World Builder ruler map, scalar results | protocol below, awaiting user session |
+| 1 | Observe the real game: three scripted-map spot checks (speed, range and reload, burst rhythm) | reduced protocol below, awaiting user session |
 | 2 | Instrumented build of EA source logging per logic frame | only if level 1 shows disagreement that matters |
 | 3 | Replay/full-match trace comparison | rejected: Wargrid grid, direct-hit combat and pathing differ by design, so it fails by construction |
 
@@ -46,24 +46,22 @@ Result on the pinned data: **74 rows, 0 differ**; two deliberate departures (leg
 
 Goal is a pixel-art clone that **feels very close**, not mathematical parity. Consequences: level 2 and 3 are out unless level 1 shows a feel problem numbers cannot explain. Ratios drive feel (speed vs range, tank vs infantry pace, time-to-kill, build/economy pacing), so level 1 tolerances widen to about ±20% and V6–V9 become side-by-side feel checks (record impressions plus frame counts) rather than pass/fail. Not covered by numbers: acceleration/turning, unit size relative to a cell, sound and UI responsiveness; only side-by-side play shows those.
 
-## Level 1 protocol (proposed)
+## Level 1 protocol (reduced by user decision, 2026-11-03)
 
-Setup, once: record game version string, install source (Steam Deck copy), mods none, display resolution, and that no unit upgrades or generals powers are active. Use a World Builder map (flat terrain, no obstacles, units placed at exact coordinates) so distances are known. If World Builder is unavailable, stop and ask; do not estimate distances by eye. Record at 60 fps or better and count frames.
+The formula rows of the earlier protocol (build times, low-power slowdown, weapon timing arithmetic, armor percentages, top speeds as configured) are now covered by the automated level 0 check above. Level 1 only has to answer what reading cannot: does the shipped game behave like the released source and data? One short session of three spot checks does that; any one failing reopens the full list (kept in git history).
 
-| Id | Scenario | Measure | Compare against | Tolerance |
+Setup, once: game version string, install source, no mods, no upgrades or generals powers. A World Builder map with scripts that places units at exact coordinates on flat terrain, orders them and shows a frame counter, so nothing is measured by eye. If World Builder or its scripting is unavailable, stop and ask. Record at 60 fps or better.
+
+| Id | Spot check | Measure | Expected (source/data) | Tolerance |
 |---|---|---|---|---|
-| V1 | Ranger moves straight over a known distance | seconds, speed in units/s | 20 | ±10% |
-| V2 | Crusader, Dozer, Humvee, same | speed | 30, 30, 60 | ±10% |
-| V3 | Ranger attacks stationary Ranger-sized target at increasing distance | farthest distance at which it fires | 100 | ±10 units |
-| V4 | Crusader vs stationary tank | farthest firing distance; shot interval in frames | 150; 60 logic frames | ±10 units; ±1 frame |
-| V5 | 10 Rangers vs one stationary Crusader (no upgrades; one Ranger needs about 115 s, too long to time) | shot rhythm of one Ranger, then time to kill | 3-shot burst at 3-frame spacing, 21-frame reload; 1.25 HP per shot, 384 shots for 480 HP, so about 11.5 s for 10 Rangers | ±1 frame; ±15% time to kill |
-| V6 | Crusader vs one Ranger | shots to kill, time to kill | M4 direct hit: 6 HP per shot, 30 shots, first shot to death at least 1740 frames if all hit | report; source has splash and scatter, so large variance is expected, not a failure |
-| V7 | Barracks and war factory production | seconds for Ranger (5 s) and Crusader (10 s) | `AmericaInfantry.ini`/`AmericaVehicle.ini` build time | ±0.5 s |
-| V8 | Supply collection cycle (Chinook) | first deposit time and amount per trip | M3 economy values | report |
-| V9 | Low-power production slowdown | build time at 0.5–0.8 rate | M3 power rule | report |
+| S1 | Ranger walks a known straight distance | speed in units/s | 20 | ±10% |
+| S2 | Crusader against a stationary target moved closer step by step | farthest firing distance; frames between shots | 150 units; 60 frames | ±10 units; ±1 frame |
+| S3 | Ranger firing at a stationary target | burst rhythm | 3 shots 3 frames apart, then 21 frames | ±1 frame |
 
-Output: one results table in a new `docs/reference/zero-hour-level1-results.md` with raw frame counts, video file names (kept outside the repo), version info and a per-row verdict of match, differs, or unclear. Differences feed a decision list; they do not automatically change numbers. Never mark a row verified without recorded frame counts.
+Optional feel notes in the same session, impressions plus frame counts, no pass/fail: acceleration and turning of Dozer, Ranger and Crusader (not modelled by Wargrid), Crusader against infantry (splash and scatter, omitted by Wargrid), one Chinook supply trip.
+
+Output: a short results table in `docs/reference/zero-hour-level1-results.md` with raw frame counts, version info and a verdict per row (match, differs, unclear). Video files stay outside the repo. Differences feed a decision list and never change numbers automatically. Never mark a row verified without recorded frame counts.
 
 ## Gate
 
-M5 (core factions) adds many unverified constants. Treat completion or explicit user deferral of level 1 as a gate before M5 kickoff, recorded in README and the blueprint. Level 2 is optional and only considered after level 1. Any Zero Hour source used for level 2 stays external and read-only: no code copied (AGENTS), and GPL terms make that a hard rule.
+M5 (core factions) adds many unverified constants. Treat completion or explicit user deferral of the reduced level 1 (S1–S3) as a gate before M5 kickoff, recorded in README and the blueprint. Level 2 is optional and only considered after level 1. Any Zero Hour source used for level 2 stays external and read-only: no code copied (AGENTS), and GPL terms make that a hard rule.
