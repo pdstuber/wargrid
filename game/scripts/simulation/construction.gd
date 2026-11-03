@@ -62,7 +62,9 @@ static func preview(sim: RefCounted, player: int, builder_id: int, kind: String,
 	var blocked: Array[Vector2i] = sim._union_cells()
 	blocked.append_array(footprint)
 	var size: Array = sim._navigation.snapshot().size
+	sim._navigation_builds += 1
 	var navigation = Navigation.new(blocked,Vector2i(size[0],size[1]))
+	result.navigation = navigation
 	result.approach = approach(sim,builder_id,kind,origin,navigation)
 	if result.approach == null:
 		result.error = "No reachable builder approach"
@@ -80,7 +82,8 @@ static func place(sim: RefCounted, command: Dictionary) -> Dictionary:
 	sim._next_entity_id += 1
 	sim._players[command.player].credits -= definition.cost
 	sim._buildings[id] = {"id":id,"owner":command.player,"kind":command.building_kind,"hp":CombatDefinitions.profile(command.building_kind).max_hp,"max_hp":CombatDefinitions.profile(command.building_kind).max_hp,"origin":command.origin.duplicate(),"completed":false,"work":0,"paid_cost":definition.cost,"builder_id":null,"approach":null,"queue":[],"active_collector_id":null}
-	rebuild_navigation(sim)
+	sim._replace_union(sim._union_cells(),result.navigation)
+	result.erase("navigation")
 	result.building_id = id
 	return result
 

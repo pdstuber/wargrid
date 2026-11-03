@@ -5,7 +5,7 @@ const Fixture = preload("res://tests/economy_fixture.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 
 func cases() -> Array[Callable]:
-	return [test_base_ready,test_placement_input,test_production_ui,test_context_orders,test_execution_feedback]
+	return [test_base_ready,test_placement_input,test_production_ui,test_context_orders,test_execution_feedback,test_preview_hover_cost]
 
 func setup(runner):
 	var main = Base.instantiate()
@@ -200,5 +200,22 @@ func test_execution_feedback(runner) -> bool:
 	runner.check(main._error == error,"Bs5 unrelated player result preserves immediate error")
 	main._submit({"type":"stop","entity_ids":[1]})
 	runner.check(main._error.is_empty(),"Bs5 accepted clears immediate error")
+	main.free()
+	return true
+
+func test_preview_hover_cost(runner) -> bool:
+	var main = await setup(runner)
+	main.simulation = Fixture.make_world()
+	main.selected_ids.assign([1])
+	main._refresh()
+	key(main,KEY_1)
+	var before: int = main.simulation.navigation_builds()
+	for i in range(5): hover(main,Iso.world_to_plane(Vector2(8.25,4.25)) + Vector2(i * 0.1,0))
+	runner.check(main.simulation.navigation_builds() - before <= 1,"Bs6 hovering one cell builds at most one preview grid")
+	hover(main,Iso.world_to_plane(Vector2(12.25,4.25)))
+	runner.check(main.simulation.navigation_builds() - before <= 2 and main.get_node("WorldView")._preview_cells[0] == Vector2i(12,4),"Bs6 a new cell recomputes the preview")
+	key(main,KEY_ESCAPE)
+	key(main,KEY_1)
+	runner.check(not main.get_node("WorldView")._preview_cells.is_empty(),"Bs6 re-entering placement redraws the preview")
 	main.free()
 	return true

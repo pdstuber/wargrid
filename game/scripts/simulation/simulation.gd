@@ -27,6 +27,7 @@ var _combat_events: Array[Dictionary] = []
 var _match: Variant = null
 var _combat_work: int = 0
 var _allocation_calls: int = 0
+var _navigation_builds: int = 0
 
 func _init(blocked_cells: Array[Vector2i] = [], size: Vector2i = Navigation.SIZE) -> void:
 	_navigation = Navigation.new(blocked_cells, size)
@@ -143,7 +144,8 @@ func _validate(command: Dictionary, due: bool = false) -> String:
 		if command.type == "attack_move": return _validate_target(command,due)
 		return "" if Combat.valid_target(self,command.player,command.target_id) else "Invalid attack target"
 	if not _players.has(command.player): return "Player has no economy"
-	if command.type == "build": return preview_build(command.player,command.builder_id,command.building_kind,Vector2i(command.origin[0],command.origin[1])).error
+	# Due builds are checked once by Construction.place, which reuses that preview grid.
+	if command.type == "build": return "" if due else preview_build(command.player,command.builder_id,command.building_kind,Vector2i(command.origin[0],command.origin[1])).error
 	if command.type == "resume_build":
 		if not _entities.has(command.builder_id) or _entities[command.builder_id].owner != command.player or _entities[command.builder_id].kind != "builder": return "Invalid builder"
 	if command.type in ["resume_build","cancel_build"]:
@@ -333,6 +335,9 @@ func _service_paths() -> void:
 func combat_work() -> int:
 	return _combat_work
 
+func navigation_builds() -> int:
+	return _navigation_builds
+
 func tick() -> int:
 	return _tick
 
@@ -438,9 +443,13 @@ func replace_blocked_cells(cells: Array[Vector2i]) -> Dictionary:
 	_terrain_cells.sort_custom(func(a: Vector2i,b: Vector2i) -> bool: return a.y < b.y or (a.y == b.y and a.x < b.x))
 	return _replace_union(_union_cells())
 
-func _replace_union(cells: Array[Vector2i]) -> Dictionary:
+func _replace_union(cells: Array[Vector2i], prebuilt: RefCounted = null) -> Dictionary:
 	var map: Dictionary = _navigation.snapshot()
-	_navigation.replace_blocked_cells(cells)
+	if prebuilt != null:
+		_navigation = prebuilt
+	else:
+		_navigation_builds += 1
+		_navigation.replace_blocked_cells(cells)
 	if _navigation.snapshot() == map:
 		return {"ok": true, "error": ""}
 	_path_queue.clear()
@@ -495,7 +504,9 @@ func _in_bounds(point: Vector2) -> bool:
 	return point.is_finite() and point.x >= 0 and point.y >= 0 and point.x < size[0] and point.y < size[1]
 
 func preview_build(player: int, builder_id: int, kind: String, origin: Vector2i) -> Dictionary:
-	return Construction.preview(self,player,builder_id,kind,origin)
+	var result: Dictionary = Construction.preview(self,player,builder_id,kind,origin)
+	result.erase("navigation")
+	return result
 
 func remove_object(id: int) -> Dictionary:
 	if _entities.has(id):

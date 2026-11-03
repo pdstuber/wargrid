@@ -4,7 +4,7 @@ const Fixture = preload("res://tests/economy_fixture.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 
 func cases() -> Array[Callable]:
-	return [test_preview_and_placement,test_travel_and_work,test_pause_resume_builder_loss,test_cancel_refund,test_competing_build_commands,test_prerequisites_and_power,test_construction_power_transition]
+	return [test_preview_and_placement,test_travel_and_work,test_pause_resume_builder_loss,test_cancel_refund,test_competing_build_commands,test_prerequisites_and_power,test_construction_power_transition,test_build_navigation_cost]
 
 func place(sim, origin: Array = [8,4]) -> Dictionary:
 	return Fixture.send(sim,{"type":"build","builder_id":1,"building_kind":"reactor","origin":origin})
@@ -204,4 +204,15 @@ func test_construction_power_transition(runner) -> bool:
 	runner.check(Fixture.object(captured,replacement).completed and Fixture.object(captured,factory).work == 500,"Cn7 earlier completion cannot change later rate same tick")
 	captured.step()
 	runner.check(Fixture.object(captured,factory).work == 1500,"Cn7 completion rate starts next tick")
+	return true
+
+func test_build_navigation_cost(runner) -> bool:
+	var sim = Fixture.make_world()
+	var before: int = sim.navigation_builds()
+	runner.check(place(sim).ok,"Cn8 build accepted")
+	runner.check(sim.navigation_builds() == before + 1,"Cn8 issue-time check builds one grid")
+	sim.step()
+	runner.check(sim.snapshot().buildings.size() == 1 and sim.navigation_builds() == before + 2,"Cn8 placement reuses its preview grid, got " + str(sim.navigation_builds() - before))
+	var expected = Simulation.new(sim._union_cells(),Vector2i(32,32))
+	runner.check(sim.snapshot().map == expected.snapshot().map,"Cn8 reused grid equals a rebuilt one")
 	return true

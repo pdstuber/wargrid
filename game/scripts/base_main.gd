@@ -8,6 +8,7 @@ var _pending_placement: String = ""
 var _preview_origin: Vector2i
 var _last_result_tick: int = -1
 var _last_result_sequence: int = -1
+var _preview_key: Array = []
 
 func _ready() -> void:
 	super._ready()
@@ -86,6 +87,7 @@ func _enter_placement(kind: String) -> void:
 	if _builder() == -1: return
 	_placement_kind = kind
 	selected_building_id = -1
+	_preview_key = []
 	_update_preview(_view.get_local_mouse_position())
 	_refresh()
 
@@ -97,6 +99,9 @@ func _clear_placement() -> void:
 
 func _update_preview(plane: Vector2) -> void:
 	_preview_origin = Vector2i(Iso.plane_to_world(plane).floor())
+	var key: Array = [_placement_kind,_preview_origin,simulation.tick()]
+	if key == _preview_key: return
+	_preview_key = key
 	var preview: Dictionary = simulation.preview_build(1,_builder(),_placement_kind,_preview_origin)
 	_view.set_build_preview(Construction.cells(_placement_kind,_preview_origin),preview.ok)
 
