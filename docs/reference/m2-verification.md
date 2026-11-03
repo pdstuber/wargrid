@@ -1,6 +1,6 @@
 # M2 local verification — 2026-11-02
 
-Status: **LOCAL IMPLEMENTATION AND REMOTE MATRIX VERIFIED; VISIBLE/RENDERED/BACKLOG ACCEPTANCE DEFERRED**. Contracts live in [M2 plan](../superpowers/plans/2026-11-01-m2-groups.md). This is not full M2 acceptance or reference parity. User explicitly accepted risk from deferring remaining M2 visible/play/rendered/backlog gates and kicked off M3 on2026-11-03. [Verified matrix41591616563](https://github.com/pdstuber/wargrid/actions/runs/41591616563), head `4be6b7b`, passed Linux/macOS/Windows and replay comparison. No M3 changes covered by that run; [M3 evidence](m3-verification.md) records current work. No window, screenshot or rendered benchmark launched.
+Status: **LOCAL IMPLEMENTATION AND REMOTE MATRIX VERIFIED; POSITIVE USER PLAYABILITY; RENDERED BENCHMARK PASSES WITH VSYNC OFF (frame p95 3.6 / 5.1 ms vs 16.7 ms budget), 19.6 / 19.5 ms WITH VSYNC ON; BACKLOG FIXED (2026-11-03, see end); SIMULATION BUDGETS PASS**. Contracts live in [M2 plan](../superpowers/plans/2026-11-01-m2-groups.md). This is not full M2 acceptance or reference parity. User explicitly accepted risk from deferring remaining M2 visible/play/rendered/backlog gates and kicked off M3 on2026-11-03. [Verified matrix41591616563](https://github.com/pdstuber/wargrid/actions/runs/41591616563), head `4be6b7b`, passed Linux/macOS/Windows and replay comparison. No M3 changes covered by that run; [M3 evidence](m3-verification.md) records current work. No window, screenshot or rendered benchmark launched.
 
 ## Recovery and behavioral evidence
 
@@ -51,7 +51,7 @@ Latest measured run:
 
 Both satisfy proposed simulation p95 ≤8 ms and p99 ≤16 ms on recorded Mac. Worst ticks remain shown. Each layout: post-service path-queue peak 292, initial queue drain 38 ticks, three completed legs after final drain. At timed endpoint all 300 moving, zero pending/blocked/arrived; active motion did not disappear into idle timing. Post-sample drain: 576 ticks. Final: 300 arrived, zero moving/pending/blocked, 300 unique destination cells. Benchmark fails on blocked units, missing samples/destinations or leg exceeding 3000 ticks; no autonomous blocked restart.
 
-Visible probe is implemented in `movement_benchmark.gd` / `movement_benchmark.tscn`: same workload/view, one step per 30 Hz physics callback, 10 wall-clock seconds warmup then 60 sampled per layout, frame intervals separate from tick including snapshot/view refresh, expected resolution 1280×720 and zoom0.5, actual ticks/elapsed and cumulative lag in 10-second windows. **Not executed.** No growing-backlog or rendered p95≤16.7 ms result exists. Group feel, temporary overlap acceptability, pan/zoom/resize and selection legibility remain unverified.
+Visible probe is implemented in `movement_benchmark.gd` / `movement_benchmark.tscn`: same workload/view, one step per 30 Hz physics callback, 10 wall-clock seconds warmup then 60 sampled per layout, frame intervals separate from tick including snapshot/view refresh, expected resolution 1280×720 and zoom0.5, actual ticks/elapsed and cumulative lag in 10-second windows. **Not executed.** No growing-backlog or rendered p95≤16.7 ms result exists. At this measurement checkpoint, manual playability remained unverified; subsequent user evidence is recorded below.
 
 ## Review and remaining gates
 
@@ -105,3 +105,90 @@ Inspection-based mappings from completed substantive reviewer; not executed muta
 Historical local checkpoint above preceded publication. Current Linux/Windows/macOS M2 matrix success is linked in status; no new publication performed in M3 task. Same-host native/Rosetta exact replay does not prove cross-OS determinism. Historical successful M1 runs on `7b70a61`: [M1 branch](https://github.com/pdstuber/wargrid/actions/runs/41322464510), [M2 branch baseline](https://github.com/pdstuber/wargrid/actions/runs/41466145349), neither verifies current M2 tree.
 
 [Group reference](group-movement.md), [movement gaps](zero-hour-movement-gaps.md) and [M1 validation](m1-validation.md) preserve `UNVERIFIED_REFERENCE` / historical labels. Distinct goals and eight whole queries differ from EA implementation; no retail runtime parity, physical collision, formation or numeric calibration claim. No new EA source/assets copied. M3 was subsequently explicitly kicked off with deferred-gate risk accepted; current checkpoint linked above.
+
+## User playability confirmation — 2026-11-03
+
+User explicitly reported M2 playability check was positive. Manual playability is supported by this report; no itemized checklist or timing data supplied. Rendered frame-time and real-time backlog measurements remain pending. Earlier deferred/unknown manual labels describe historical checkpoints, not this current evidence. No new agent-launched window or test run.
+
+## Rendered benchmark — 2026-11-03
+
+Two user-authorized visible runs of `sh tools/run_game.sh res://scenes/movement_benchmark.tscn`, Apple M6 (12 cores, 32 GiB), macOS 27.2, Godot 4.7.2, Compatibility renderer over OpenGL-on-Metal, 1280×720, zoom 0.5. Logs are temporary scratch outside the repo.
+
+**Attempt 1: invalid, measured nothing.** `movement_benchmark.gd` passed an untyped `[]` to `WorldView.set_state(…, Array[int])` (bug since M2 commit `a23f697`). Every physics tick raised SCRIPT ERROR after `step()`, so tick counters stayed at 0 and the reported "backlog" (300 ticks per window) was an artifact. The run exited 0 because `run_game.sh` checks no marker. Regression `test_rendered_probe_ticks` (instantiates the benchmark scene, awaits two physics frames, requires the HUD status text) failed red, then passed after typing the empty selection: 96 cases / 101,306 checks / zero failures / exit 0, 4.4 s wall including import.
+
+**Attempt 2: completed, `RENDERED BENCHMARK PASSED 2`, exit 0, zero ERROR lines. Completion does not mean budgets pass.**
+
+| Layout | Rendered frames in 60 s | Frame interval p50 / p95 / max (ms) | Sim tick p95 (ms) | Physics ticks in 60 s (1800 expected) | Cumulative lag after final 10 s window |
+|---|---:|---|---:|---:|---:|
+| open | 205 | 291.0 / 320.2 / 325.6 | 4.67 | 1640 | 140 ticks |
+| dense | 189 | 319.5 / 340.0 / 352.6 | 4.76 | 1512 | 244 ticks |
+
+- **Frame budget (p95 ≤ 16.7 ms) FAILED by about 20×.** About 3 frames per second.
+- **Backlog grows:** lag climbs in every 10 s window, and simulated time ran at roughly 0.84–0.91× real time. Cause: Godot runs at most 8 physics steps per rendered frame (default); at about 0.3 s per frame that caps simulation near 27 ticks/s.
+- Simulation cost is unchanged and fine (tick p95 under 5 ms, including snapshot and view update), so this is a presentation problem. It does not change the passing headless simulation budgets.
+
+**Investigation (headless, no window; scratch script, not committed).** `_draw` does run headless. Time spent inside `WorldView._draw` (20 redraws, same 300-unit workload): open 3.2 ms, dense 5.5 ms; with the 64×64 terrain loop removed 0.35 ms; terrain polygons only 3.0 ms (open), 4.6 ms (dense); `set_state` (deep copy plus sort) 1.7–1.9 ms. So GDScript-side drawing is a few ms and cannot explain the ~260 ms per frame (frame ≈ 290 ms minus 8 ticks × 3 ms). Remaining cost sits on the renderer side. **Rendered probe (user-approved one-off visible window, same machine, scratch script not committed; vsync off, one forced redraw per frame, 20 frames per variant, default zoom, no camera/HUD):**
+
+| Variant | Frame p50 open / dense (ms) | Time inside `_draw` open / dense (ms) |
+|---|---|---|
+| current `_draw` | 78.3 / 82.3 | 16.8 / 19.7 |
+| terrain only (current loop) | 76.8 / 79.6 | 16.5 / 19.4 |
+| terrain polygons only (no outlines) | 42.0 / 44.6 | 10.2 / 12.7 |
+| no terrain (units only) | 1.7 / 1.7 | 0.24 / 0.24 |
+| candidate: one base polygon, polygons for solid cells only, one `draw_multiline` for the grid | 1.8 / 2.6 | 0.26 / 0.46 |
+
+Finding (measured): the per-tile terrain loop is the cost. About 8,200 canvas commands per redraw, with the renderer side adding roughly 60 ms beyond the time spent in `_draw`; units cost almost nothing. Outlines account for about half. The candidate cuts frame cost by about 30-45× and renders the same terrain (same colors, grid and solid cells) by construction; visual equivalence not yet looked at. Absolute probe numbers (about 80 ms) are lower than the benchmark's 290 ms, which also runs 8 physics steps per frame with `set_state` calls, zoom 0.5, camera and HUD; the gap is unexplained, so the fix must be confirmed by rerunning the real rendered benchmark, not by this probe. Fix applied afterwards; see next section.
+
+**Impact on M3/M4:** the base scene draws the same terrain loop on its smaller map; user reported no visual issues there, but its frame rate was never measured. M4's 48×32 map has 1,536 tiles (37% of 64×64); the same loop would cost about 30 ms per frame by linear scaling of the probe numbers (unmeasured), already beyond the 16.7 ms budget.
+
+### Terrain fix and rerun — 2026-11-03
+
+`WorldView._draw_terrain` now draws one base polygon, polygons for solid cells and one `draw_multiline` for the grid (same colors and cells) instead of two canvas commands per tile. Headless suite after the change: 96 cases / 101,351 checks / zero failures / exit 0 (101,306 before the builder speed change to 1.2, 101,351 after; the +45 checks are probably per-tick check loops running longer with a slower builder, not confirmed; see [verification plan](zero-hour-verification.md)). Visual equivalence not yet looked at by a person.
+
+Third visible run of the real benchmark, same machine and settings (attempt 3): exit 0, `RENDERED BENCHMARK PASSED 2`, zero ERROR lines.
+
+| Layout | Rendered frames in 60 s | Frame interval p50 / p95 / p99 / max (ms) | Sim tick p95 (ms) | Physics ticks in 60 s | Cumulative lag, final window |
+|---|---:|---|---:|---:|---:|
+| open | 7,177 | 7.5 / 19.6 / 20.8 / 40.8 | 5.70 | 1800 | +0.07 ticks |
+| dense | 7,054 | 8.1 / 19.5 / 21.8 / 28.2 | 4.71 | 1800 | -0.11 ticks |
+
+- **Backlog budget: passes.** All 1800 expected ticks ran; lag stays within ±0.5 ticks in every window.
+- **Frame-interval budget (p95 ≤ 16.7 ms): still FAILS by about 3 ms.** Typical frames are fast (p50 about 8 ms). The p95 tail is probably the frames that also run a physics tick (tick 3.4-4.3 ms median including snapshot and view `duplicate(true)` plus redraw), at about one frame in four. Not profiled; vsync quantization on the display's refresh rate could also contribute and is unchecked. Budget unchanged, no tuning.
+- Worst command-tick spike 26.6 ms (open): present before the fix, not investigated.
+
+### Frame-tail investigation — 2026-11-03
+
+Question: why does frame p95 stay at 19.5 ms after the terrain fix. Scratch probes only (not committed); same machine, two more user-approved visible windows (the first being the vsync-off terrain probe above, the second a 30 s frame probe on the real benchmark scene, vsync at the project default).
+
+- **Simulation plumbing is cheap and not the tail.** Headless per-tick breakdown over 1,800 ticks, 300 units: `step` p50 0.32 ms (one spike 7.3 ms on a command tick), `snapshot` 0.69 ms, `duplicate(true)` in `set_state` 0.67 ms, entity sort 0.57 ms, `issue_leg` 0.5 ms. About 2.3 ms per tick, 30 ticks/s. M4 snapshots add combat fields, so expect this to grow; unmeasured.
+- **The engine reported 60 Hz display, vsync on, scale 2.0, 1280×720; actual frame rate about 120 fps** (3,599 frames in 30 s; 900 of them physics-tick frames).
+- **Tick frames dominate the tail.** Frame interval p50/p95/p99: tick frames 17.7 / 20.1 / 21.0 ms; idle frames (no tick, no redraw) 3.3 / 11.1 / 12.2 ms. Splitting at the engine's own `frame_pre_draw` / `frame_post_draw` signals: tick frames spend 13.4 ms (p95 13.9) inside the render submission step, idle frames 3.3 ms. Render CPU time is about 1 ms in both, and the next frame's physics tick (about 4.4 ms) shows up in the following gap. So the extra time is spent waiting, not computing. GPU time is not reported by this renderer (0.00).
+- **Likely cause (not proven):** vsync pacing, not drawing cost. Earlier probe with vsync disabled and a forced redraw every frame: the full units-plus-candidate-terrain frame cost 1.8 ms open / 2.6 ms dense. The same content costs 13 ms in a tick frame with vsync on. Not yet tested directly: rerun the benchmark with vsync disabled and compare; also check what a 60 Hz versus 120 Hz display pacing does to "p95 ≤ 16.7 ms" as a budget (with vsync on, the interval is quantized to display refresh multiples, so the budget may not measure render cost at all).
+- Monitors `TIME_PROCESS` / `TIME_PHYSICS_PROCESS` update once per second and were useless per frame; probe `script` bucket is zero because `process_frame` fires after physics; neither is evidence.
+
+### Vsync-off rerun — 2026-11-03
+
+Fourth visible run of the real benchmark, `sh tools/run_game.sh --disable-vsync res://scenes/movement_benchmark.tscn` (engine flag; no repo change), same machine and settings. Exit 0, `RENDERED BENCHMARK PASSED 2`, zero ERROR lines. The flag's help says it does not override driver-level vsync enforcement; the numbers below show it took effect.
+
+| Layout | Rendered frames in 60 s | Frame interval p50 / p95 / p99 / max (ms) | Sim tick p95 (ms) | Physics ticks | Cumulative lag, final window |
+|---|---:|---|---:|---:|---:|
+| open | 46,662 | 1.2 / 3.6 / 6.6 / 14.7 | 4.48 | 1801 | +0.07 ticks |
+| dense | 32,890 | 1.5 / 5.1 / 9.0 / 15.8 | 4.73 | 1800 | +0.10 ticks |
+
+- **Frame budget (p95 ≤ 16.7 ms): passes in both layouts with vsync off; max frame 15.8 ms also under 16.7.** Backlog budget passes as before.
+- **Conclusion:** the 19.5 ms tail with vsync on was display pacing, not drawing or simulation cost. Likely mechanism, consistent with every measurement but not directly verified: Godot presents a frame only when something redrew, and a presented frame waits for the next vblank, so tick frames (the only ones that redraw) absorb up to one refresh interval, while idle frames skip presenting.
+- **Caveats:** one Apple M6 machine, one display. Whether a vsynced run feels smooth was not assessed here (user reported no visual issues in earlier playtests, which ran with vsync on). Linux/Windows and other refresh rates unmeasured.
+- **Open decision:** make the benchmark scene disable vsync itself, so the gate measures render cost reproducibly, or keep the default and document the flag. Not changed; the budget text is unchanged.
+
+### Benchmark scene disables vsync itself — 2026-11-03
+
+User decided the rendered benchmark should run without vsync. `movement_benchmark.gd` now calls `DisplayServer.window_set_vsync_mode(VSYNC_DISABLED)` in `_ready` and prints `vsync=off` in its header. No automated check: the headless dummy display driver does not report the mode back (a test asserting it failed even after the fix, so it was removed rather than kept unfalsifiable); evidence is the header plus the frame numbers. Suite after the change: 96 cases / 101,351 checks / zero failures / exit 0.
+
+Fifth visible run, plain `sh tools/run_game.sh res://scenes/movement_benchmark.tscn` (no flag), same machine: exit 0, `RENDERED BENCHMARK PASSED 2`, zero ERROR lines, header shows `vsync=off`, physics ticks 1800/1800 per layout, final-window lag +0.10 ticks.
+
+| Layout | Rendered frames in 60 s | Frame interval p50 / p95 / p99 / max (ms) | Sim tick p95 (ms) |
+|---|---:|---|---:|
+| open | 44,871 | 1.2 / 4.1 / 6.4 / 13.1 | 4.56 |
+| dense | 30,005 | 1.6 / 6.5 / 10.2 / 19.5 | 4.79 |
+
+p95 budget (≤ 16.7 ms) passes in both layouts. **Dense max frame 19.5 ms exceeds 16.7 ms** in one frame; the budget is defined on p95, so this is not a failure, but it is recorded. Single machine and display; a fast machine, so margin on slower hardware is unknown.

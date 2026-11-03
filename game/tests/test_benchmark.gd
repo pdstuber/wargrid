@@ -4,9 +4,10 @@ const Stats = preload("res://scripts/debug/timing_stats.gd")
 const Workload = preload("res://scripts/debug/movement_workload.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Navigation = preload("res://scripts/simulation/grid_navigation.gd")
+const Probe = preload("res://scenes/movement_benchmark.tscn")
 
 func cases() -> Array[Callable]:
-	return [test_statistics, test_fixtures, test_progression]
+	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling]
 
 func test_statistics(runner) -> bool:
 	runner.check(Stats.summary(PackedFloat64Array()) == {"n": 0, "p50": 0.0, "p95": 0.0, "p99": 0.0, "max": 0.0}, "BM1 empty")
@@ -62,3 +63,38 @@ func test_progression(runner) -> bool:
 	sim.step()
 	runner.check(sim.snapshot().entities[0].status == "blocked" and not Workload.settled(sim), "BM3 blocked is failure")
 	return true
+
+func test_rendered_probe_ticks(runner) -> bool:
+	var probe = Probe.instantiate()
+	runner.root.add_child(probe)
+	await runner.physics_frame
+	await runner.physics_frame
+	runner.check(probe.get_node("HUD/Status").text.contains("tick"), "BM4 probe reaches view update")
+	probe.free()
+	return true
+
+func test_snapshot_size_ceiling(runner) -> bool:
+	# Step 38 is the peak (routes full, queue just drained). The snapshot is copied twice per tick; raise a ceiling only deliberately and add a performance-ledger row.
+	var ceilings := {"open": 79481, "dense": 80345}
+	for layout in ceilings:
+		var sim: RefCounted = Workload.create(layout)
+		Workload.issue_leg(sim, 0)
+		for i in range(38):
+			sim.step()
+		var state: Dictionary = sim.snapshot()
+		var busiest: int = 0
+		for unit in state.entities:
+			busiest = maxi(busiest, _nodes(unit))
+		runner.check(_nodes(state) <= ceilings[layout], "BM5 snapshot node ceiling " + layout)
+		runner.check(busiest <= 322, "BM5 per-unit node ceiling " + layout)
+	return true
+
+func _nodes(value: Variant) -> int:
+	var count: int = 1
+	if value is Dictionary:
+		for key in value:
+			count += 1 + _nodes(value[key])
+	elif value is Array:
+		for item in value:
+			count += _nodes(item)
+	return count

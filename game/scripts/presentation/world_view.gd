@@ -27,17 +27,7 @@ func pick_entity(plane_point: Vector2) -> int:
 func _draw() -> void:
 	if not _state.has("map"):
 		return
-	for y in range(_state.map.size[1]):
-		for x in range(_state.map.size[0]):
-			var origin := Vector2(x, y)
-			var corners := PackedVector2Array([
-				Iso.world_to_plane(origin), Iso.world_to_plane(origin + Vector2.RIGHT),
-				Iso.world_to_plane(origin + Vector2.ONE), Iso.world_to_plane(origin + Vector2.DOWN),
-			])
-			var solid: bool = _state.map.blocked_cells.has([x, y])
-			draw_colored_polygon(corners, Color("665744") if solid else Color("c4a568"))
-			corners.append(corners[0])
-			draw_polyline(corners, Color("a88b55"), 1.0)
+	_draw_terrain()
 	for source in _state.get("sources",[]):
 		_draw_footprint(source.origin,Vector2i(3,3),Color("9f8045"),_selected_ids.has(source.id))
 		_draw_text(source.origin,"Boxes %d" % source.boxes)
@@ -60,6 +50,24 @@ func _draw() -> void:
 			var point: Vector2 = Iso.world_to_plane(target)
 			draw_line(point - Vector2(6, 0), point + Vector2(6, 0), Color("8cff87"), 2.0)
 			draw_line(point - Vector2(0, 6), point + Vector2(0, 6), Color("8cff87"), 2.0)
+
+func _draw_terrain() -> void:
+	var size := Vector2(_state.map.size[0], _state.map.size[1])
+	draw_colored_polygon(_cell_polygon(Vector2.ZERO, size), Color("c4a568"))
+	for cell in _state.map.blocked_cells:
+		draw_colored_polygon(_cell_polygon(Vector2(cell[0], cell[1]), Vector2.ONE), Color("665744"))
+	var lines := PackedVector2Array()
+	for x in range(int(size.x) + 1):
+		lines.append(Iso.world_to_plane(Vector2(x, 0)))
+		lines.append(Iso.world_to_plane(Vector2(x, size.y)))
+	for y in range(int(size.y) + 1):
+		lines.append(Iso.world_to_plane(Vector2(0, y)))
+		lines.append(Iso.world_to_plane(Vector2(size.x, y)))
+	draw_multiline(lines, Color("a88b55"), 1.0)
+
+func _cell_polygon(origin: Vector2, size: Vector2) -> PackedVector2Array:
+	return PackedVector2Array([Iso.world_to_plane(origin), Iso.world_to_plane(origin + Vector2(size.x, 0)),
+		Iso.world_to_plane(origin + size), Iso.world_to_plane(origin + Vector2(0, size.y))])
 
 func _draw_before(a: Dictionary, b: Dictionary) -> bool:
 	var depth_a: float = a.position[0] + a.position[1]
@@ -100,7 +108,7 @@ func set_build_preview(cells: Array[Vector2i], valid: bool) -> void:
 
 func _draw_footprint(origin: Array, size: Vector2i, color: Color, selected: bool) -> void:
 	var point := Vector2(origin[0],origin[1])
-	var polygon := PackedVector2Array([Iso.world_to_plane(point),Iso.world_to_plane(point + Vector2(size.x,0)),Iso.world_to_plane(point + Vector2(size)),Iso.world_to_plane(point + Vector2(0,size.y))])
+	var polygon := _cell_polygon(point, Vector2(size))
 	draw_colored_polygon(polygon,color)
 	if selected:
 		polygon.append(polygon[0])

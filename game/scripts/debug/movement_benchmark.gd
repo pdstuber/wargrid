@@ -20,16 +20,19 @@ var _queue_drain: int = 0
 var _tick_times := PackedFloat64Array()
 var _frame_times := PackedFloat64Array()
 var _command_times := PackedFloat64Array()
+var _draw_calls := PackedFloat64Array()
 var _sampling_done: bool = false
 @onready var _view: Node2D = $WorldView
 @onready var _status: Label = $HUD/Status
 
 func _ready() -> void:
+	# Vsync would quantize frame intervals to display refresh and hide render cost.
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	$Camera2D.position = Iso.world_to_plane(Vector2(32, 32))
 	$Camera2D.zoom = Vector2(0.5, 0.5)
 	print("M2 RENDERED engine=", Engine.get_version_info().string, " os=", OS.get_name(),
 		" cpu=", OS.get_processor_name(), " resolution=", get_viewport().get_visible_rect().size,
-		" zoom=0.5 map=64x64 units=300 seed=none warmup_wall_seconds=10 sample_wall_seconds=60")
+		" zoom=0.5 map=64x64 units=300 seed=none vsync=off warmup_wall_seconds=10 sample_wall_seconds=60")
 	_begin_layout()
 
 func _begin_layout() -> void:
@@ -48,6 +51,7 @@ func _begin_layout() -> void:
 	_tick_times.clear()
 	_frame_times.clear()
 	_command_times.clear()
+	_draw_calls.clear()
 	_sampling_done = false
 
 func _physics_process(_delta: float) -> void:
@@ -63,7 +67,8 @@ func _physics_process(_delta: float) -> void:
 	_simulation.step()
 	_leg_ticks += 1
 	var state: Dictionary = _simulation.snapshot()
-	_view.set_state(state, [])
+	var no_selection: Array[int] = []
+	_view.set_state(state, no_selection)
 	_status.text = "%s | %s | tick %d | leg %d | Esc: quit" % [["open", "dense"][_layout_index],
 		"draining" if _sampling_done else ("sampling" if _sample_started > 0 else "warmup"), state.tick, _leg]
 	var elapsed: float = (Time.get_ticks_usec() - started) / 1000.0
@@ -95,6 +100,7 @@ func _process(_delta: float) -> void:
 		_last_frame = now
 	elif _sample_started > 0 and not _sampling_done:
 		_frame_times.append((now - _last_frame) / 1000.0)
+		_draw_calls.append(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))
 		_last_frame = now
 		if now - _window_started >= 10000000:
 			var seconds: float = (now - _window_started) / 1000000.0
@@ -108,7 +114,8 @@ func _process(_delta: float) -> void:
 			print("RENDERED SAMPLE ", ["open", "dense"][_layout_index], " wall_seconds=", (now - _sample_started) / 1000000.0,
 				" physics_ticks=", _sample_ticks, " tick_ms=", JSON.stringify(Stats.summary(_tick_times)),
 				" frame_interval_ms=", JSON.stringify(Stats.summary(_frame_times)),
-				" command_tick_ms=", JSON.stringify(Stats.summary(_command_times)))
+				" command_tick_ms=", JSON.stringify(Stats.summary(_command_times)),
+				" draw_calls=", JSON.stringify(Stats.summary(_draw_calls)))
 
 func _finish_layout(state: Dictionary) -> void:
 	var goals: Dictionary = {}
