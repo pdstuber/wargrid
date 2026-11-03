@@ -1,6 +1,6 @@
 # M4 — combat and USA mini-match design
 
-Status: **DESIGN APPROVED; IMPLEMENTATION NOT STARTED**. User requested a plan executable by Sol at Medium reasoning, selected source-informed stats with provisional geometry, and explicitly approved this design on2026-11-03. No game code changed. [Blueprint](../../../Wargrid_Kickoff_Blueprint.md) §7/§10 owns scope; [research](../../reference/m4-combat.md) owns evidence; [plan](../plans/2026-11-03-m4-combat.md) owns implementation contracts.
+Status: **DESIGN APPROVED; IMPLEMENTATION IN PROGRESS** (Tasks 0–4 done, 2026-11-03; see plan status). User requested a plan executable by Sol at Medium reasoning, selected source-informed stats with provisional geometry, and explicitly approved this design on2026-11-03. No game code changed. [Blueprint](../../../Wargrid_Kickoff_Blueprint.md) §7/§10 owns scope; [research](../../reference/m4-combat.md) owns evidence; [plan](../plans/2026-11-03-m4-combat.md) owns implementation contracts.
 
 ## Intent and approaches
 
@@ -17,6 +17,14 @@ Rifle5000 milliHP SMALL_ARMS; range4 cells;3 shots per clip;3 ticks between shot
 Range is inclusive squared distance. Mobile targets use center; buildings/foundations use nearest point on closed footprint rectangle. No visibility/LOS blockage, splash, scatter, physical projectile, friendly fire, crushing, firing while moving, upgrades, veterancy, air combat or repairs. Rendering may flash shots but never applies damage. Collector immunity to this roster is explicit; collectors don't determine victory.
 
 Orders: explicit attack chases selected enemy ground unit/building; guard holds position and auto-fires only in range; attack-move advances to ground point, halts for in-range enemy, resumes when clear; ordinary move suppresses acquisition until arrival, then guards. Stop clears movement/target and guards. Explicit target has priority; auto choice nearest squared range distance then global ID, retaining a legal in-range target. Dead explicit target returns attacker to guard; no automatic map-wide chase. Attack-move acquisition never chases beyond range. Noncombatants continue existing tasks. Both attack and attack-move accept mixed infantry/tank groups; reject the whole command if any selected member is unarmed or the target is illegal.
+
+**Approved change, 2026-11-03 (performance; user approved):**
+- A guard or attack-move unit that has no target and finds none waits for its next 15-tick phase, staggered by unit ID, before scanning again.
+- It scans immediately on spawn, on any new order, and when its target is lost (dead, removed or out of range).
+- A halted attack-move unit keeps its reserved destination while it fights, and resumes by re-pathing to that destination without reallocating.
+- Source basis: Zero Hour throttles idle auto-acquire (`MoodAttackCheckRate`, default 2 s), retargets immediately after a target loss, and re-paths attack-move to its existing goal. Wargrid uses 0.5 s with a deterministic stagger instead of random offsets.
+- Measured motivation: a 150 v 150 scratch spike went from tick p95 12.5 / 15.3 ms to 1.41 / 1.69 ms ([ledger](../../reference/performance.md)).
+- Contract: plan step 4d.
 
 Explicit chase chooses reachable free cell centers within range of target, nearest squared distance from attacker then y/x; excludes ground occupancy/reservations except self. Reuse component cache, path queue and eight-query budget. Reconsider at most every15 ticks, or immediately when first ordered; never enqueue duplicate ID or replace unchanged valid destination. No firing position => hold blocked/retry, no teleport. Range checks occur again after movement. Stop for a tick before firing if any movement happened that tick.
 
