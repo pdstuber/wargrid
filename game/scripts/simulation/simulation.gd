@@ -53,7 +53,7 @@ func issue_command(command: Dictionary) -> Dictionary:
 	var normalized := {"tick":command.tick,"player":command.player,"sequence":command.sequence,"type":command.type}
 	for key in _payload_fields(command.type):
 		normalized[key] = command[key].duplicate(true) if command[key] is Array else command[key]
-	if command.type == "move":
+	if normalized.has("target"):
 		normalized.target = [float(command.target[0]),float(command.target[1])]
 	_pending.append(normalized)
 	_last_sequences[command.player] = command.sequence
@@ -98,17 +98,7 @@ func _validate(command: Dictionary, due: bool = false) -> String:
 			if typeof(id) != TYPE_INT or id <= 0 or seen.has(id): return "Invalid or duplicate entity ID"
 			seen[id] = true
 		if not _owns_all(command.player,command.entity_ids): return "Missing entity or wrong owner"
-	if command.type == "move":
-		if not command.target is Array or command.target.size() != 2: return "Expected two target coordinates"
-		for coordinate in command.target:
-			if typeof(coordinate) != TYPE_INT and typeof(coordinate) != TYPE_FLOAT: return "Target coordinates must be numbers"
-			if not is_finite(float(coordinate)): return "Target coordinates must be finite"
-		var target := Vector2(command.target[0],command.target[1])
-		if not _in_bounds(target): return "Target outside map"
-		if not due:
-			for id in command.entity_ids:
-				if _entities[id].kind != "collector" and not _navigation.is_walkable(target): return "Target must be walkable and within map"
-		return ""
+	if command.type == "move": return _validate_target(command,due)
 	if command.type == "stop": return ""
 	if not _players.has(command.player): return "Player has no economy"
 	if command.type == "build": return preview_build(command.player,command.builder_id,command.building_kind,Vector2i(command.origin[0],command.origin[1])).error
@@ -139,6 +129,18 @@ func _validate(command: Dictionary, due: bool = false) -> String:
 			if _sources[command.source_id].boxes == 0 and _entities[id].collection.cargo == 0: return "Source is empty"
 		return ""
 	return "Economic command unavailable"
+
+func _validate_target(command: Dictionary, due: bool) -> String:
+	if not command.target is Array or command.target.size() != 2: return "Expected two target coordinates"
+	for coordinate in command.target:
+		if typeof(coordinate) != TYPE_INT and typeof(coordinate) != TYPE_FLOAT: return "Target coordinates must be numbers"
+		if not is_finite(float(coordinate)): return "Target coordinates must be finite"
+	var target := Vector2(command.target[0],command.target[1])
+	if not _in_bounds(target): return "Target outside map"
+	if not due:
+		for id in command.entity_ids:
+			if _entities[id].kind != "collector" and not _navigation.is_walkable(target): return "Target must be walkable and within map"
+	return ""
 
 func _owns_all(player: int, ids: Array) -> bool:
 	for id in ids:
@@ -230,28 +232,31 @@ func _apply_orders() -> void:
 		if command.type == "stop":
 			for unit in members: _stop_unit(unit)
 			continue
-		var target := Vector2(command.target[0], command.target[1])
-		var ground: Array[Dictionary] = []
-		for unit in members:
-			if unit.kind != "collector": ground.append(unit)
-		var goals: Dictionary = Allocation.assign(_navigation, ground, target, _unavailable_cells(ground))
-		for unit in members:
-			unit.route = []
-			if unit.kind == "collector":
-				unit.order = {"type":"move","target":command.target.duplicate()}
-				unit.destination = command.target.duplicate()
-				unit.route = [command.target.duplicate()]
-				unit.status = "moving"
-				continue
-			if goals[unit.id] == null:
-				unit.order = null
-				unit.status = "blocked"
-			else:
-				var goal: Vector2 = goals[unit.id]
-				unit.order = {"type": "move", "target": command.target.duplicate()}
-				unit.destination = [goal.x, goal.y]
-				unit.status = "path_pending"
-				_path_queue.append(unit.id)
+		_assign_move(members, command.target)
+
+func _assign_move(members: Array[Dictionary], target: Array) -> void:
+	var point := Vector2(target[0], target[1])
+	var ground: Array[Dictionary] = []
+	for unit in members:
+		if unit.kind != "collector": ground.append(unit)
+	var goals: Dictionary = Allocation.assign(_navigation, ground, point, _unavailable_cells(ground))
+	for unit in members:
+		unit.route = []
+		if unit.kind == "collector":
+			unit.order = {"type":"move","target":target.duplicate()}
+			unit.destination = target.duplicate()
+			unit.route = [target.duplicate()]
+			unit.status = "moving"
+			continue
+		if goals[unit.id] == null:
+			unit.order = null
+			unit.status = "blocked"
+		else:
+			var goal: Vector2 = goals[unit.id]
+			unit.order = {"type": "move", "target": target.duplicate()}
+			unit.destination = [goal.x, goal.y]
+			unit.status = "path_pending"
+			_path_queue.append(unit.id)
 
 func _stop_unit(unit: Dictionary) -> void:
 	unit.order = null
