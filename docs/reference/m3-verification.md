@@ -1,12 +1,12 @@
 # M3 verification — 2026-11-03
 
-Status: **IMPLEMENTATION VERIFIED HEADLESS; VISIBLE/REMOTE/PARITY GATES PENDING**.
+Status: **HEADLESS AND CROSS-OS CI VERIFIED; POSITIVE USER PLAYTEST; DETAILED VISIBLE/PERFORMANCE/PARITY GAPS REMAIN**.
 
 ## Authorization and inherited gates
 
 User explicitly kicked off M3 on prepared `m3-base-supplies` at `d7acea9` and accepted risk from deferring remaining M2 visible play, rendered-frame and real-time backlog gates: "yeah let's run with the risk recorded". Gates remain pending, never passed. [M2 evidence](m2-verification.md) retains local correctness/review/performance. Parent independently verified [M2 matrix41591616563](https://github.com/pdstuber/wargrid/actions/runs/41591616563), head `4be6b7b`: Linux, macOS, Windows and replay comparison successful. That run covers M2, not M3 changes.
 
-User chose headless M3 checks after one batched visible request. No window, screenshot or rendering-dependent check authorized. M3 visible base-loop/placement/UI/feel, rendered-frame and backlog gates remain pending. No M3 commit, push, PR or merge authorized. No M4.
+During implementation, user chose headless M3 checks after one batched visible request; no agent window, screenshot or rendering-dependent check was performed. Subsequent publication, user playtest and local merge approval are recorded below. No M4.
 
 ## Sequential execution evidence
 
@@ -61,7 +61,7 @@ Final exact production/test tree after review fixes and lean cuts:
 
 All suites emit no engine diagnostics. Both trace outputs add four checked file operations, explaining101309 versus ordinary101305. Final logs: `final-normal.log`, `final-outside.log`, `final-fresh.log`, `final-traces.log`, `final-compare-movement.log`, `final-compare-economy.log`, `final-python.log`, `final-smoke-post-review.log`. Final fresh copy path recorded in ignored `final-fresh-path.txt`; scratch not required by repository.
 
-Runner behavior and wrapper behavior unchanged; only suite registration grows, so historical runner failure probes not repeated. Same-host replay comparison does not establish cross-OS determinism. Actual M3 remote matrix awaits approved publication.
+Runner behavior and wrapper behavior unchanged; only suite registration grows, so historical runner failure probes not repeated. Same-host replay comparison does not establish cross-OS determinism. Subsequent M3 cross-OS matrix evidence is recorded below.
 
 ## M2 workload regression
 
@@ -143,4 +143,13 @@ Source/config provenance and deliberate work/geometry/docking changes remain [SO
 
 ## Final handoff
 
-Tasks0–12 implementation/headless verification complete. Single substantive review findings resolved; lean pass complete. M3 remains **implementation ready with visible, remote and parity gates pending**, not full acceptance. User explicitly deferred M2/M3 visible gates; no permission request repeated. No M4, commit, push, PR or merge. Final documentation-only whitespace/status/link check passed:75 local links across9 changed/new Markdown files, zero failures/exit0, no unresolved current status (`final-docs.log`). Game test results above remain exact code-tree evidence.
+Tasks0–12 implementation/headless verification complete. Single substantive review findings resolved; lean pass complete. At the pre-publication checkpoint, visible, remote and parity gates remained pending. Subsequent evidence and authorizations follow; no M4 work. Final documentation-only whitespace/status/link check passed:75 local links across9 changed/new Markdown files, zero failures/exit0, no unresolved current status (`final-docs.log`). Game test results above remain exact code-tree evidence.
+
+
+## Publication and user playtest — 2026-11-03
+
+Implementation committed and published as `303006b58bbfc83541d5fb44bb34862b86cd36f8` on `m3-base-supplies`. [M3 matrix 41605911340](https://github.com/pdstuber/wargrid/actions/runs/41605911340) completed successfully: Linux, Windows, macOS and compare-replays jobs. Queried run head, conclusion and individual job conclusions with `gh run view`; workflow compares both movement and economy traces. Cross-OS gate passes for these scenarios at this code revision.
+
+Default launcher still selects M2; M3 uses `sh tools/run_game.sh res://scenes/base.tscn`. After receiving that command and playtest steps, user reported “test was looking good”. This is positive user-reported M3 play evidence, without recording, measurements or itemized checklist results; it does not establish every Task 12 visible case. No screenshots or agent-launched windows.
+
+User requested wrap-up and local merge into `main`. Documentation updated to match this evidence; no production code changes. Publishing `main` and any PR require separate approval. Remaining gaps: detailed visible checklist coverage, inherited M2 visible gates, rendered-frame/backlog measurements and retail timing/feel parity. Stop at M3.

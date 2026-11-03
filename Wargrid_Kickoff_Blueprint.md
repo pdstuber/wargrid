@@ -3,7 +3,7 @@
 **Version:** 0.4
 
 **Date:** 2026-11-02
-**Status:** Design specification; M0–M2 implemented; M3 headless implementation verified; visible/remote/parity gates pending. [README](README.md) owns current verification status.
+**Status:** Design specification; M0–M2 implemented; M3 headless implementation and cross-OS CI verified; positive user playtest reported; detailed visible coverage, rendered/backlog measurements and parity pending. [README](README.md) owns current verification status.
 
 **Working title:** Wargrid
 
@@ -511,7 +511,7 @@ Adopted execution contracts: [M2 groups plan](docs/superpowers/plans/2026-11-01-
 
 Construction vehicle, supply resource, Chinook-like collector, resource drop-off, basic power plant, production building, construction queue. USA economy requires limited collector flight now: ground obstacles do not block its cruise path; pickup, cargo, deposit and destroyed-destination behavior need explicit rules. Combat aircraft, passenger transport and advanced air interactions remain deferred.
 
-**Adopted contracts:** [approved M3 design](docs/superpowers/specs/2026-11-02-m3-base-supplies-design.md), [source/config evidence](docs/reference/m3-economy.md), and [execution plan](docs/superpowers/plans/2026-11-02-m3-base-supplies.md). Source-informed economy slice implemented after explicit2026-11-03 kickoff and accepted risk from deferred M2 visible/rendered/backlog gates. [M3 verification](docs/reference/m3-verification.md) separates automated accounting evidence from pending visual/remote/parity gates.
+**Adopted contracts:** [approved M3 design](docs/superpowers/specs/2026-11-02-m3-base-supplies-design.md), [source/config evidence](docs/reference/m3-economy.md), and [execution plan](docs/superpowers/plans/2026-11-02-m3-base-supplies.md). Source-informed economy slice implemented after explicit2026-11-03 kickoff and accepted risk from deferred M2 visible/rendered/backlog gates. [M3 verification](docs/reference/m3-verification.md) records automated accounting, cross-OS CI and user playtest evidence separately from remaining visible/performance/parity gaps.
 
 **Exit gate:** fully automated supply and construction sequence with resource accounting assertions; observed timing parity as evidence becomes available.
 

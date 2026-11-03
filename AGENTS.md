@@ -4,7 +4,7 @@
 
 Wargrid is a Godot isometric pixel-art RTS inspired by Zero Hour's game design. Preserve strategic identity and feel; original bugs and slow algorithms are not compatibility requirements.
 
-Current setup and milestone status live in [README](README.md). Milestone scope lives in [the blueprint](Wargrid_Kickoff_Blueprint.md). M0/M1 are implemented; M2 is in progress. Implement only the explicitly requested milestone and stop at its exit gate; do not automatically expand into later milestones, factions or multiplayer.
+Current setup and milestone status live in [README](README.md). Milestone scope lives in [the blueprint](Wargrid_Kickoff_Blueprint.md). M0–M3 are implemented; remaining acceptance evidence lives in README. Implement only the explicitly requested milestone and stop at its exit gate; do not automatically expand into later milestones, factions or multiplayer.
 
 ## Read before changing
 
@@ -12,7 +12,7 @@ Current setup and milestone status live in [README](README.md). Milestone scope 
 - Start with [README](README.md) for actual project state and commands, then relevant blueprint sections for scope and acceptance criteria.
 - For M1, read [vehicle execution plan](docs/superpowers/plans/2026-11-01-m1-vehicle.md) fully. It defines movement and the intentional updates to M0 tests; do not retain a stationary compatibility mode. Editing the plan does not start implementation.
 - For M2, read [groups execution plan](docs/superpowers/plans/2026-11-01-m2-groups.md) fully and its linked M1 contracts. Resume from the recorded checkpoint after inspecting live changes; do not restart completed tasks or treat partial UI stubs as implemented behavior.
-- For M3, read [approved design](docs/superpowers/specs/2026-11-02-m3-base-supplies-design.md), [source evidence](docs/reference/m3-economy.md) and [execution plan](docs/superpowers/plans/2026-11-02-m3-base-supplies.md) fully. Planning/branch preparation does not start M3; explicit kickoff and completed M2 gates are required.
+- For M3, read [approved design](docs/superpowers/specs/2026-11-02-m3-base-supplies-design.md), [source evidence](docs/reference/m3-economy.md) and [execution plan](docs/superpowers/plans/2026-11-02-m3-base-supplies.md) fully. M3 was explicitly kicked off with remaining M2 visible/performance gates deferred by user approval; see verification evidence. Planning/branch preparation alone never starts implementation.
 - For M0 history, read [execution plan](docs/superpowers/plans/2026-11-01-m0-foundation.md) fully. It fixes API/data shapes and acceptance cases; follow its order instead of redesigning the foundation. Resume completed steps; mark them complete only with verification evidence.
 - Use [installation reference](docs/reference/installation.md) and other reference notes for evidence. Preserve confirmed, proposed, provisional and deferred labels; never invent approvals or playtests.
 - Keep setup/current status in README, design decisions in the blueprint, milestone implementation contracts in their execution plans, evidence in reference notes. Link rather than duplicate rules and numeric values.

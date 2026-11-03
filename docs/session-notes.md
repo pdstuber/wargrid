@@ -4,7 +4,7 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 ## Session
 
-2026-11-03 M3 explicitly kicked off on prepared `m3-base-supplies` at `d7acea9`, after verified [M2 matrix41591616563](https://github.com/pdstuber/wargrid/actions/runs/41591616563), head `4be6b7b`, successful Linux/macOS/Windows/replay jobs. User accepted risk of deferring M2 visible/play/rendered-frame/backlog gates: "yeah let's run with the risk recorded". Gates remain pending, never passed. User separately chose headless-only M3 verification; no visible launch/screenshots/rendering checks.
+2026-11-03 M3 explicitly kicked off on prepared `m3-base-supplies` at `d7acea9`, after verified [M2 matrix41591616563](https://github.com/pdstuber/wargrid/actions/runs/41591616563), head `4be6b7b`, successful Linux/macOS/Windows/replay jobs. User accepted risk of deferring M2 visible/play/rendered-frame/backlog gates: "yeah let's run with the risk recorded". Gates remain pending, never passed. User initially chose headless-only M3 verification. Subsequently reported positive M3 playtest; see newest dated entry for evidence and limits.
 
 Tasks0–11 implemented sequentially with delegated red/green evidence. Added economy definitions/state/commands, limited air, construction/power, paid FIFO/refunds, finite supplies/docks/recovery, base view/controls/HUD and separate exact economy replay. M2 behavior assertions retained through additive C1/C11 snapshot migration. No dependencies, retail data/code/assets, combat or M4.
 
@@ -14,9 +14,9 @@ Sole completed substantive review was fresh-context fallback after bounded four-
 
 ## Pending user action
 
-- M3 visible base loop/UI/feel, rendered-frame and real-time backlog gates remain pending by headless-only choice. Do not ask again in current task or infer historical M1 permission.
-- M3 cross-OS economy replay requires approved publication and actual matrix result. Same-host exact comparison is narrower; M2 remote success does not cover new M3 code.
-- User explicitly authorized M3 commit and push after final verification. Publish `m3-base-supplies`; no PR or merge authorized.
+- Local merge into `main` authorized during wrap-up; publishing `main` and any PR need separate approval.
+- M3 user playtest positive; detailed visible checklist coverage, inherited M2 visible gates, rendered-frame/backlog measurements and retail parity remain unverified.
+- M3 cross-OS tests and both exact replay comparisons passed at `303006b`; see [verification](reference/m3-verification.md).
 
 ## Deferred experiments and research
 
@@ -25,7 +25,14 @@ Sole completed substantive review was fresh-context fallback after bounded four-
 
 ## Next action
 
-M3 implementation ready with visible/remote/parity gates pending. User authorized commit and push of reviewed `m3-base-supplies`; await actual remote CI result after publication. Visible base-loop/measurement still needs separate authorization; no M4 or merge. Inspect [M3 evidence](reference/m3-verification.md) before follow-up. Original root prompt records task contract; do not restart completed tasks. Entries below are history.
+Inspect Git state after authorized local integration, then offer publication of `main` for approval. No M4 or PR authorized. Review remaining evidence gaps in [M3 verification](reference/m3-verification.md); do not restart completed implementation or reviews. Original prompts below remain historical task contracts.
+
+## 2026-11-03 — M3 playtest and wrap-up
+
+- Implementation `303006b` already published on `m3-base-supplies`. Verified [M3 matrix](https://github.com/pdstuber/wargrid/actions/runs/41605911340): Linux/macOS/Windows and compare-replays successful at that exact head.
+- Default launcher intentionally opens M2; supplied explicit M3 base-scene command. User then reported “test was looking good”; detailed checklist coverage and rendered measurements were not supplied.
+- User requested documentation consistency and local merge into `main`. Updated current status and preserved historical evidence. No production changes or new implementation review needed; previous substantive review and Ponytail pass remain applicable.
+- Publishing `main` still needs approval. No M4, PR, screenshots or rendered benchmark.
 
 ## 2026-11-01 — M0 local foundation
 
