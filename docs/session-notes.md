@@ -4,12 +4,13 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 ## Session
 
-2026-11-03 M4.1 design session (documentation only, on `main`). Design approved, plan and `prompt.txt` written; no game code, tests or benchmarks run. M3 session detail lives in [M3 verification](reference/m3-verification.md), M4 in [M4 verification](reference/m4-verification.md).
+2026-11-03 M4.1 design session (documentation only, on `main`). Design approved, plan and `prompt.txt` written; code licence set to GPL-3.0-or-later; no game code, tests or benchmarks run. M3 session detail lives in [M3 verification](reference/m3-verification.md), M4 in [M4 verification](reference/m4-verification.md).
 
 ## Pending user action
 
 - Review the [M4.1 plan](superpowers/plans/2026-11-03-m4.1-playtest-polish.md), then invoke `prompt.txt` in a fresh session to start implementation.
-- Push `main` (local commits ahead of `origin/main`); needs separate approval.
+- `main` pushed at `dde91fa` (user approved 2026-11-03); CI run 41723335566 was in progress at wrap-up, result unchecked. Local branch `gpl-license` is merged and can be deleted.
+- Choose a licence for original art and audio (code is GPL-3.0-or-later).
 - Check in a fresh session whether the project skill settings shrank the skill listing (baseline 48,567 bytes; revert if not).
 
 ## Deferred experiments and research
@@ -40,7 +41,7 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 - User cloned TheSuperHackers `GeneralsGameCode` into `../GeneralsGameCode` (head `afc2a103f`): cited scan functions differ only cosmetically from EA source. Deferred research: an instrumented build for S1–S3 runtime parity (macOS buildability unchecked).
 - Deferred to M6: compare retail map sizes with 48×32 before choosing the full-scale map.
 - Not done: nothing implemented, no tests run; `prompt.txt` (M4) moved to `docs/m4-prompt.txt`. Committed on `main` as `daa5575`.
-- User decided: Wargrid code is GPL-3.0-or-later ("I see nothing speaking against this"); `LICENSE` added, AGENTS porting rule, blueprint §12 and README updated on branch `gpl-license`. Open: licence for original art/audio. User also cloned `../OpenRA` (GPL-3.0-or-later, head `9636b63eae`): read `OpenRA.Game/Network` before planning M5; bot modules are M8 reading. "Smarter bots" is hearsay, unverified.
+- User decided: Wargrid code is GPL-3.0-or-later ("I see nothing speaking against this"); `LICENSE` added, AGENTS porting rule, blueprint §12 and README updated (`dde91fa`, on `main`; AGENTS reworded per user: own code by default, source read for ideas, ports only as exception). Open: licence for original art/audio. User also cloned `../OpenRA` (GPL-3.0-or-later, head `9636b63eae`): read `OpenRA.Game/Network` before planning M5; bot modules are M8 reading. "Smarter bots" is hearsay, unverified.
 
 ## 2026-11-03 — Performance open points and real-game verification
 
