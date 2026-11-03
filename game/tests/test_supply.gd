@@ -1,0 +1,274 @@
+extends RefCounted
+
+const Fixture = preload("res://tests/economy_fixture.gd")
+const Simulation = preload("res://scripts/simulation/simulation.gd")
+
+func cases() -> Array[Callable]:
+	return [test_source_and_gather_validation,test_dock_timing,test_partial_load_and_conservation,test_dock_competition_and_lookup,test_collection_interruptions,test_dock_loss_recovery]
+
+func ready(runner, boxes: int = 8) -> Dictionary:
+	var sim = Fixture.make_world(50000)
+	var source: int = sim.add_supply_source(Vector2i(24,4),boxes)
+	var reactor: int = Fixture.build(runner,sim,"reactor",Vector2i(5,5))
+	var depot: int = Fixture.build(runner,sim,"depot",Vector2i(10,4))
+	var collector: int = -1
+	for unit in sim.snapshot().entities:
+		if unit.kind == "collector": collector = unit.id
+	return {"sim":sim,"source":source,"reactor":reactor,"depot":depot,"collector":collector}
+
+func until_phase(sim, id: int, phase: String, maximum: int = 1000) -> bool:
+	for index in range(maximum):
+		if Fixture.object(sim,id).collection.phase == phase: return true
+		sim.step()
+	return false
+
+func test_source_and_gather_validation(runner) -> bool:
+	var sim = Fixture.make_world()
+	var before: Dictionary = sim.snapshot()
+	for row in [[Vector2i(-1,0),8],[Vector2i(31,31),8],[Vector2i(4,4),8],[Vector2i(24,4),-1]]:
+		runner.check(sim.add_supply_source(row[0],row[1]) == -1 and sim.snapshot() == before,"Su1 invalid source unchanged")
+	var source: int = sim.add_supply_source(Vector2i(24,4),200)
+	runner.check(source == 2 and sim.snapshot().map.blocked_cells.size() == 9,"Su1 source footprint")
+	var empty: int = sim.add_supply_source(Vector2i(24,10),0)
+	var air: int = sim.spawn(1,Vector2(2.5,2.5),"collector")
+	before = sim.snapshot()
+	runner.check(not Fixture.send(sim,{"type":"gather","entity_ids":[air],"source_id":empty}).ok and sim.snapshot() == before,"Su1 empty source invalid empty cargo")
+	runner.check(not Fixture.send(sim,{"type":"gather","entity_ids":[1,air],"source_id":source}).ok and sim.snapshot() == before,"Su1 mixed gather atomic")
+	runner.check(Fixture.send(sim,{"type":"gather","entity_ids":[air],"source_id":source}).ok,"Su1 collector gathers")
+	return true
+
+func test_dock_timing(runner) -> bool:
+	var sim = Fixture.make_world()
+	var source: int = sim.add_supply_source(Vector2i(24,4),8)
+	if source == -1:
+		runner.check(false,"Su2 source created")
+		return true
+	var air: int = sim.spawn(1,Vector2(25.5,5.5),"collector")
+	runner.check(Fixture.send(sim,{"type":"gather","entity_ids":[air],"source_id":source}).ok,"Su2 gather stationary")
+	sim.step()
+	var unit: Dictionary = Fixture.object(sim,air)
+	runner.check(unit.collection.phase == "loading" and unit.collection.remaining_ticks == 36 and unit.collection.cargo == 0,"Su2 admit36 no decrement")
+	Fixture.steps(sim,35)
+	unit = Fixture.object(sim,air)
+	runner.check(unit.collection.remaining_ticks == 1 and unit.collection.cargo == 0,"Su2 wait35")
+	sim.step()
+	unit = Fixture.object(sim,air)
+	runner.check(unit.collection.cargo == 1 and unit.collection.remaining_ticks == 36 and Fixture.object(sim,source).boxes == 7,"Su2 first box36")
+	Fixture.steps(sim,252)
+	unit = Fixture.object(sim,air)
+	runner.check(unit.collection.cargo == 8 and unit.collection.phase == "seeking" and Fixture.object(sim,source).boxes == 0,"Su2 capacity departs no extra delay")
+	runner.check(sim.snapshot().players[0].credits == 10000,"Su2 no dock no credits")
+	var world: Dictionary = ready(runner)
+	if world.collector == -1:
+		runner.check(false,"Su2 free collector")
+		return true
+	sim = world.sim
+	runner.check(until_phase(sim,world.collector,"unloading"),"Su2 reaches unloading")
+	unit = Fixture.object(sim,world.collector)
+	var credits: int = sim.snapshot().players[0].credits
+	runner.check(unit.collection.remaining_ticks == 87 and unit.collection.cargo == 8,"Su2 admit87")
+	Fixture.steps(sim,86)
+	runner.check(sim.snapshot().players[0].credits == credits and Fixture.object(sim,world.collector).collection.remaining_ticks == 1,"Su2 wait86")
+	sim.step()
+	runner.check(sim.snapshot().players[0].credits == credits + 600 and Fixture.object(sim,world.collector).collection.cargo == 0,"Su2 deposit87 exact")
+	return true
+
+func test_partial_load_and_conservation(runner) -> bool:
+	for boxes in [9,3]:
+		var world: Dictionary = ready(runner,boxes)
+		var sim = world.sim
+		if world.source == -1:
+			runner.check(false,"Su3 source created")
+			continue
+		var credits: int = sim.snapshot().players[0].credits
+		for index in range(2000):
+			sim.step()
+			var cargo: int = Fixture.object(sim,world.collector).collection.cargo
+			var stock: int = Fixture.object(sim,world.source).boxes
+			var earned: int = sim.snapshot().players[0].credits - credits
+			runner.check(stock >= 0 and cargo >= 0 and stock + cargo + int(earned / 75) == boxes,"Su3 conservation every tick")
+			if earned == boxes * 75: break
+		runner.check(sim.snapshot().players[0].credits == credits + boxes * 75 and Fixture.object(sim,world.source).boxes == 0 and Fixture.object(sim,world.collector).collection.cargo == 0,"Su3 partial load fully deposited")
+		Fixture.steps(sim,100)
+		runner.check(sim.snapshot().players[0].credits == credits + boxes * 75,"Su3 idle no earnings")
+	return true
+
+func test_dock_competition_and_lookup(runner) -> bool:
+	var world: Dictionary = ready(runner,1)
+	var sim = world.sim
+	if world.source == -1:
+		runner.check(false,"Su4 source created")
+		return true
+	var second: int = sim.spawn(1,Vector2(25.5,5.5),"collector")
+	Fixture.send(sim,{"type":"gather","entity_ids":[world.collector,second],"source_id":world.source})
+	var credits: int = sim.snapshot().players[0].credits
+	for index in range(1500):
+		sim.step()
+		var source: Dictionary = Fixture.object(sim,world.source)
+		var cargo: int = Fixture.object(sim,world.collector).collection.cargo + Fixture.object(sim,second).collection.cargo
+		runner.check(source.boxes + cargo + int((sim.snapshot().players[0].credits - credits) / 75) == 1,"Su4 last box atomic")
+		if sim.snapshot().players[0].credits == credits + 75: break
+	runner.check(sim.snapshot().players[0].credits == credits + 75 and Fixture.object(sim,world.source).active_collector_id == null,"Su4 exactly75 dock released")
+	var lone = Fixture.make_world()
+	var air: int = lone.spawn(1,Vector2(2.5,2.5),"collector")
+	var source: int = lone.add_supply_source(Vector2i(8,8),0)
+	runner.check(not Fixture.send(lone,{"type":"gather","entity_ids":[air],"source_id":source}).ok,"Su4 empty rejection")
+	runner.check(lone.snapshot().path_queue.is_empty(),"Su4 no ground route for air")
+	var waiting = Fixture.make_world()
+	var dock: int = waiting.add_supply_source(Vector2i(8,8),10)
+	var low: int = waiting.spawn(1,Vector2(9.5,9.5),"collector")
+	var active: int = waiting.spawn(1,Vector2(9.5,9.5),"collector")
+	var high: int = waiting.spawn(1,Vector2(9.5,9.5),"collector")
+	Fixture.send(waiting,{"type":"gather","entity_ids":[active],"source_id":dock})
+	waiting.step()
+	Fixture.send(waiting,{"type":"gather","entity_ids":[low,high],"source_id":dock})
+	waiting.step()
+	Fixture.steps(waiting,286)
+	runner.check(Fixture.object(waiting,active).collection.cargo == 7 and Fixture.object(waiting,active).collection.remaining_ticks == 1,"Su4 middle-ID active at release boundary")
+	waiting.step()
+	runner.check(Fixture.object(waiting,active).collection.cargo == 8 and Fixture.object(waiting,dock).active_collector_id != high,"Su4 higher waiter cannot bypass earlier lower waiter on release")
+	waiting.step()
+	runner.check(Fixture.object(waiting,dock).active_collector_id == low and Fixture.object(waiting,low).collection.remaining_ticks == 36,"Su4 lower waiting ID admits once next phase")
+	var preferred = Fixture.make_world()
+	var near: int = preferred.add_supply_source(Vector2i(8,8),8)
+	var far: int = preferred.add_supply_source(Vector2i(24,4),8)
+	var probe: int = preferred.spawn(1,Vector2(1.5,1.5),"collector")
+	Fixture.send(preferred,{"type":"gather","entity_ids":[probe],"source_id":far})
+	preferred.step()
+	runner.check(Fixture.object(preferred,probe).collection.target_id == far,"Su4 preferred source beats nearer source")
+	preferred.remove_object(far)
+	Fixture.steps(preferred,2)
+	runner.check(Fixture.object(preferred,probe).collection.target_id == near,"Su4 removed preference falls back to nearest source")
+	var retry_world: Dictionary = ready(runner,0)
+	var retry = retry_world.sim
+	retry.step()
+	var idle: Dictionary = Fixture.object(retry,retry_world.collector).collection
+	runner.check(idle.phase == "idle" and idle.retry_tick == retry.snapshot().tick + 29,"Su4 exact30-tick retry scheduled")
+	var fresh: int = retry.add_supply_source(Vector2i(20,12),8)
+	Fixture.steps(retry,29)
+	runner.check(Fixture.object(retry,retry_world.collector).collection.phase == "idle","Su4 no early target retry")
+	retry.step()
+	runner.check(Fixture.object(retry,retry_world.collector).collection.target_id == fresh,"Su4 target lookup at retry boundary")
+	var choices = Fixture.make_world(50000)
+	var stock: int = choices.add_supply_source(Vector2i(24,4),1)
+	Fixture.build(runner,choices,"reactor",Vector2i(5,5))
+	var first_depot: int = Fixture.build(runner,choices,"depot",Vector2i(18,4))
+	stop_collectors(choices)
+	var second_depot: int = Fixture.build(runner,choices,"depot",Vector2i(24,10))
+	stop_collectors(choices)
+	choices.add_player(2,50000)
+	var enemy_builder: int = choices.spawn(2,Vector2(14.5,12.5),"builder")
+	owned_build(runner,choices,2,enemy_builder,"reactor",Vector2i(10,16))
+	var enemy_depot: int = owned_build(runner,choices,2,enemy_builder,"depot",Vector2i(21,4))
+	stop_collectors(choices)
+	Fixture.send(choices,{"type":"build","builder_id":1,"building_kind":"depot","origin":[27,4]})
+	choices.step()
+	var unfinished: int = choices.snapshot().buildings.back().id
+	var loaded: int = choices.spawn(1,Vector2(25.5,5.5),"collector")
+	Fixture.send(choices,{"type":"gather","entity_ids":[loaded],"source_id":stock})
+	Fixture.steps(choices,37)
+	choices.step()
+	runner.check(Fixture.object(choices,loaded).collection.cargo == 1 and Fixture.object(choices,loaded).collection.target_id == first_depot and first_depot < second_depot,"Su4 equal nearest depot chooses lower ID")
+	runner.check(not Fixture.object(choices,unfinished).completed and Fixture.object(choices,loaded).collection.target_id != unfinished and Fixture.object(choices,loaded).collection.target_id != enemy_depot,"Su4 closer unfinished and enemy depots excluded")
+	var tied = Simulation.new([],Vector2i(32,32))
+	tied.add_player(1,10000)
+	var preferred_source: int = tied.add_supply_source(Vector2i(4,4),8)
+	var first_source: int = tied.add_supply_source(Vector2i(8,4),8)
+	var second_source: int = tied.add_supply_source(Vector2i(4,8),8)
+	var tied_air: int = tied.spawn(1,Vector2(5.5,5.5),"collector")
+	Fixture.send(tied,{"type":"gather","entity_ids":[tied_air],"source_id":preferred_source})
+	tied.step()
+	tied.remove_object(preferred_source)
+	Fixture.steps(tied,2)
+	runner.check(first_source < second_source and Fixture.object(tied,tied_air).collection.target_id == first_source,"Su4 equal nearest source chooses lower ID")
+	return true
+
+func test_collection_interruptions(runner) -> bool:
+	for phase in ["flying_source","loading","unloading"]:
+		var world: Dictionary = ready(runner,8)
+		var sim = world.sim
+		runner.check(until_phase(sim,world.collector,phase),"Su5 reaches " + phase)
+		if phase == "loading": Fixture.steps(sim,36)
+		var unit: Dictionary = Fixture.object(sim,world.collector)
+		var cargo: int = unit.collection.cargo
+		var before: Dictionary = sim.snapshot()
+		runner.check(not Fixture.send(sim,{"type":"gather","entity_ids":[1,world.collector],"source_id":world.source}).ok and sim.snapshot() == before,"Su5 invalid replacement unchanged")
+		var payload: Dictionary = {"type":"stop","entity_ids":[world.collector]}
+		if phase == "loading": payload = {"type":"move","entity_ids":[world.collector],"target":[20.5,20.5]}
+		runner.check(Fixture.send(sim,payload).ok,"Su5 interruption accepted")
+		sim.step()
+		unit = Fixture.object(sim,world.collector)
+		runner.check(not unit.collection.enabled and unit.collection.cargo == cargo and Fixture.object(sim,world.source).active_collector_id == null and Fixture.object(sim,world.depot).active_collector_id == null,"Su5 dock released cargo retained")
+		runner.check(Fixture.send(sim,{"type":"gather","entity_ids":[world.collector],"source_id":world.source}).ok,"Su5 resume including exhausted loaded source")
+		sim.step()
+		if cargo > 0: runner.check(Fixture.object(sim,world.collector).collection.target_id == world.depot,"Su5 cargo delivers first")
+	return true
+
+func test_dock_loss_recovery(runner) -> bool:
+	for phase in ["flying_source","waiting_source","loading","loading_final","flying_depot","waiting_depot","unloading"]:
+		var world: Dictionary = ready(runner,9 if phase == "waiting_depot" else 16)
+		var sim = world.sim
+		if phase == "waiting_source":
+			var holder: int = sim.spawn(1,Vector2(25.5,5.5),"collector")
+			Fixture.send(sim,{"type":"gather","entity_ids":[holder],"source_id":world.source})
+			sim.step()
+		if phase == "waiting_depot":
+			runner.check(until_phase(sim,world.collector,"flying_depot"),"Su6 first full collector returning")
+			world.collector = sim.spawn(1,Vector2(25.5,5.5),"collector")
+			Fixture.send(sim,{"type":"gather","entity_ids":[world.collector],"source_id":world.source})
+		var observed: String = "loading" if phase == "loading_final" else phase
+		runner.check(until_phase(sim,world.collector,observed),"Su6 reaches " + phase)
+		if phase == "loading": Fixture.steps(sim,36)
+		if phase == "loading_final": Fixture.steps(sim,35)
+		if phase == "unloading": Fixture.steps(sim,86)
+		var cargo: int = Fixture.object(sim,world.collector).collection.cargo
+		var target: int = world.depot if phase in ["flying_depot","waiting_depot","unloading"] else world.source
+		var credits_before: int = sim.snapshot().players[0].credits
+		runner.check(sim.remove_object(target).ok,"Su6 target removed " + phase)
+		runner.check(Fixture.object(sim,world.collector).collection.cargo == cargo and Fixture.object(sim,world.collector).collection.target_id == null,"Su6 lost target retains cargo " + phase)
+		var before: Dictionary = sim.snapshot()
+		runner.check(not sim.remove_object(target).ok and sim.snapshot() == before,"Su6 removal once")
+		if cargo > 0 and target == world.depot:
+			Fixture.steps(sim,40)
+			runner.check(Fixture.object(sim,world.collector).collection.cargo == cargo and sim.snapshot().players[0].credits == credits_before,"Su6 no depot preserves load")
+			var depot: int = Fixture.build(runner,sim,"depot",Vector2i(10,10))
+			runner.check(depot != -1 and until_phase(sim,world.collector,"unloading"),"Su6 replacement depot recovered")
+			for other in sim.snapshot().entities:
+				if other.kind == "collector" and other.id != world.collector: Fixture.send(sim,{"type":"stop","entity_ids":[other.id]})
+			sim.step()
+			var before_deposit: int = sim.snapshot().players[0].credits
+			Fixture.steps(sim,86)
+			runner.check(Fixture.object(sim,world.collector).collection.cargo == 0 and sim.snapshot().players[0].credits == before_deposit + cargo * 75,"Su6 surviving cargo credited exactly")
+		else:
+			Fixture.steps(sim,500)
+			runner.check(Fixture.object(sim,world.collector).collection.cargo == 0,"Su6 partial delivered or empty retry")
+		runner.check(sim.remove_object(world.collector).ok,"Su6 collector removal")
+		for source in sim.snapshot().sources: runner.check(source.active_collector_id != world.collector,"Su6 no source dangling ID")
+		for building in sim.snapshot().buildings: runner.check(building.active_collector_id != world.collector,"Su6 no depot dangling ID")
+	var active_world: Dictionary = ready(runner,16)
+	var active_sim = active_world.sim
+	runner.check(until_phase(active_sim,active_world.collector,"loading"),"Su6 active destruction setup")
+	Fixture.steps(active_sim,36)
+	var lost: int = Fixture.object(active_sim,active_world.collector).collection.cargo
+	var stock: int = Fixture.object(active_sim,active_world.source).boxes
+	var credits: int = active_sim.snapshot().players[0].credits
+	runner.check(lost == 1 and Fixture.object(active_sim,active_world.source).active_collector_id == active_world.collector,"Su6 known active cargo")
+	active_sim.remove_object(active_world.collector)
+	runner.check(Fixture.object(active_sim,active_world.source).active_collector_id == null and Fixture.object(active_sim,active_world.source).boxes == stock and active_sim.snapshot().players[0].credits == credits,"Su6 active collector death loses only carried box and releases dock")
+	return true
+
+func stop_collectors(sim) -> void:
+	for unit in sim.snapshot().entities:
+		if unit.kind == "collector": Fixture.send(sim,{"type":"stop","entity_ids":[unit.id],"player":unit.owner})
+	sim.step()
+
+func owned_build(runner, sim, owner: int, builder: int, kind: String, origin: Vector2i) -> int:
+	var id: int = sim.snapshot().next_entity_id
+	var result: Dictionary = Fixture.send(sim,{"type":"build","player":owner,"builder_id":builder,"building_kind":kind,"origin":[origin.x,origin.y]})
+	runner.check(result.ok,"Su4 owned fixture accepted " + kind)
+	if not result.ok: return -1
+	for index in range(3000):
+		sim.step()
+		if Fixture.object(sim,id).get("completed",false): return id
+	runner.check(false,"Su4 owned fixture completes " + kind)
+	return -1

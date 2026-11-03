@@ -3,7 +3,7 @@
 **Version:** 0.4
 
 **Date:** 2026-11-02
-**Status:** Design specification; M0/M1 implemented, M2 in progress. [README](README.md) owns current verification status.
+**Status:** Design specification; M0–M2 implemented; M3 headless implementation verified; visible/remote/parity gates pending. [README](README.md) owns current verification status.
 
 **Working title:** Wargrid
 
@@ -503,7 +503,7 @@ Adopted concrete scope and execution details: [M1 vehicle plan](docs/superpowers
 
 Select 10–30 vehicles; group move; building as obstacle; destination allocation; no pile-up that makes play unusable; basic benchmarks.
 
-Adopted execution contracts: [M2 groups plan](docs/superpowers/plans/2026-11-01-m2-groups.md). Temporary travel overlap and distinct reserved destinations are deliberate prototype choices. Current implementation/verification status lives in [README](README.md); [verification evidence](docs/reference/m2-verification.md) records local correctness/simulation measurements and pending visible, rendered/backlog and remote gates.
+Adopted execution contracts: [M2 groups plan](docs/superpowers/plans/2026-11-01-m2-groups.md). Temporary travel overlap and distinct reserved destinations are deliberate prototype choices. Current implementation/verification status lives in [README](README.md); [verification evidence](docs/reference/m2-verification.md) records local correctness/simulation measurements and deferred visible/rendered/backlog gates and verified M2 remote matrix.
 
 **Exit gate:** automated scenarios for open ground, blocking, group destinations and repathing; measured performance gates in §11 before expanding scope.
 
@@ -511,7 +511,7 @@ Adopted execution contracts: [M2 groups plan](docs/superpowers/plans/2026-11-01-
 
 Construction vehicle, supply resource, Chinook-like collector, resource drop-off, basic power plant, production building, construction queue. USA economy requires limited collector flight now: ground obstacles do not block its cruise path; pickup, cargo, deposit and destroyed-destination behavior need explicit rules. Combat aircraft, passenger transport and advanced air interactions remain deferred.
 
-**Planning:** [approved M3 design](docs/superpowers/specs/2026-11-02-m3-base-supplies-design.md), [source/config evidence](docs/reference/m3-economy.md), and [execution plan](docs/superpowers/plans/2026-11-02-m3-base-supplies.md). Source-informed economy slice; M2 gates and explicit M3 kickoff still precede implementation.
+**Adopted contracts:** [approved M3 design](docs/superpowers/specs/2026-11-02-m3-base-supplies-design.md), [source/config evidence](docs/reference/m3-economy.md), and [execution plan](docs/superpowers/plans/2026-11-02-m3-base-supplies.md). Source-informed economy slice implemented after explicit2026-11-03 kickoff and accepted risk from deferred M2 visible/rendered/backlog gates. [M3 verification](docs/reference/m3-verification.md) separates automated accounting evidence from pending visual/remote/parity gates.
 
 **Exit gate:** fully automated supply and construction sequence with resource accounting assertions; observed timing parity as evidence becomes available.
 
@@ -741,7 +741,7 @@ Keep the working title **Wargrid** independently of EA branding; also check name
 
 ## 13. Kickoff prompt for Codex CLI / Claude Code
 
-Use [prompt.txt](prompt.txt) in a new session in the Wargrid repository with Sol at Medium reasoning. It resumes the [M2 groups plan](docs/superpowers/plans/2026-11-01-m2-groups.md) from unfinished task 5; M0/M1 already exist. The prompt limits work to M2, requires verification/review and preserves Git/window approval rules. Keep the current handoff prompt in that one file rather than maintaining a second copy here.
+Use [prompt.txt](prompt.txt) in a new session in the Wargrid repository with Sol at Medium reasoning. It records the [M3 base/supplies task](docs/superpowers/plans/2026-11-02-m3-base-supplies.md); resume recorded checkpoint in session notes after inspecting live changes. M0–M2 already exist. The prompt limits work to M3, requires verification/review and preserves Git/window approval rules. Keep the current handoff prompt in that one file rather than maintaining a second copy here.
 
 ### Follow-up prompt for a dedicated research agent
 

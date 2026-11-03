@@ -1,6 +1,9 @@
 extends Node2D
 
+const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
+var _preview_cells: Array[Vector2i] = []
+var _preview_valid: bool = false
 var _state: Dictionary = {}
 var _selected_ids: Array[int] = []
 
@@ -12,7 +15,7 @@ func set_state(state: Dictionary, selected_ids: Array[int]) -> void:
 
 func _vehicle_bounds(unit: Dictionary) -> Rect2:
 	var point := Vector2(unit.position[0], unit.position[1])
-	return Rect2(Iso.world_to_plane(point) + Vector2(-12, -16), Vector2(24, 16))
+	return Rect2(Iso.world_to_plane(point) + Vector2(-12, -34 if unit.get("kind") == "collector" else -16), Vector2(24, 16))
 
 func pick_entity(plane_point: Vector2) -> int:
 	for i in range(_state.get("entities", []).size() - 1, -1, -1):
@@ -22,7 +25,7 @@ func pick_entity(plane_point: Vector2) -> int:
 	return -1
 
 func _draw() -> void:
-	if _state.is_empty():
+	if not _state.has("map"):
 		return
 	for y in range(_state.map.size[1]):
 		for x in range(_state.map.size[0]):
@@ -35,7 +38,19 @@ func _draw() -> void:
 			draw_colored_polygon(corners, Color("665744") if solid else Color("c4a568"))
 			corners.append(corners[0])
 			draw_polyline(corners, Color("a88b55"), 1.0)
-	for unit in _state.entities:
+	for source in _state.get("sources",[]):
+		_draw_footprint(source.origin,Vector2i(3,3),Color("9f8045"),_selected_ids.has(source.id))
+		_draw_text(source.origin,"Boxes %d" % source.boxes)
+	for building in _state.get("buildings",[]):
+		var definition: Dictionary = Definitions.building(building.kind)
+		if definition.is_empty(): continue
+		_draw_footprint(building.origin,definition.footprint,Color("687b8c") if building.completed else Color("887966"),_selected_ids.has(building.id))
+		var label: String = building.kind if building.completed else "%s %d%%" % [building.kind,building.work * 100 / (definition.ticks * 1000)]
+		_draw_text(building.origin,label)
+	for cell in _preview_cells:
+		_draw_footprint([cell.x,cell.y],Vector2i.ONE,Color(0.2,0.9,0.3,0.55) if _preview_valid else Color(0.9,0.2,0.2,0.55),false)
+	for unit in _state.get("entities",[]):
+		if unit.get("kind") == "collector": draw_circle(Iso.world_to_plane(Vector2(unit.position[0],unit.position[1])),8,Color(0,0,0,.35))
 		var bounds: Rect2 = _vehicle_bounds(unit)
 		draw_rect(bounds, Color("376eac"))
 		if _selected_ids.has(unit.id):
@@ -60,3 +75,36 @@ func pick_entities(plane_rect: Rect2) -> Array[int]:
 			ids.append(unit.id)
 	ids.sort()
 	return ids
+
+func pick_object(plane_point: Vector2) -> int:
+	var mobile: int = pick_entity(plane_point)
+	if mobile != -1: return mobile
+	var point: Vector2 = Iso.plane_to_world(plane_point)
+	var objects: Array = _state.get("buildings",[]).duplicate()
+	objects.append_array(_state.get("sources",[]))
+	objects.sort_custom(func(a: Dictionary,b: Dictionary) -> bool: return a.id < b.id)
+	for object in objects:
+		var size := Vector2i(3,3)
+		if object.has("kind"):
+			var definition: Dictionary = Definitions.building(object.kind)
+			if definition.is_empty(): continue
+			size = definition.footprint
+		var origin := Vector2(object.origin[0],object.origin[1])
+		if point.x >= origin.x and point.y >= origin.y and point.x <= origin.x + size.x and point.y <= origin.y + size.y: return object.id
+	return -1
+
+func set_build_preview(cells: Array[Vector2i], valid: bool) -> void:
+	_preview_cells = cells.duplicate()
+	_preview_valid = valid
+	queue_redraw()
+
+func _draw_footprint(origin: Array, size: Vector2i, color: Color, selected: bool) -> void:
+	var point := Vector2(origin[0],origin[1])
+	var polygon := PackedVector2Array([Iso.world_to_plane(point),Iso.world_to_plane(point + Vector2(size.x,0)),Iso.world_to_plane(point + Vector2(size)),Iso.world_to_plane(point + Vector2(0,size.y))])
+	draw_colored_polygon(polygon,color)
+	if selected:
+		polygon.append(polygon[0])
+		draw_polyline(polygon,Color("8cff87"),2.0)
+
+func _draw_text(origin: Array, text: String) -> void:
+	draw_string(ThemeDB.fallback_font,Iso.world_to_plane(Vector2(origin[0],origin[1])) + Vector2(0,-8),text,HORIZONTAL_ALIGNMENT_LEFT,-1,14,Color.WHITE)

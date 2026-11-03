@@ -10,7 +10,7 @@ func equal(runner, actual: Variant, expected: Variant, label: String) -> void:
 
 func test_spawn(runner) -> bool:
 	var sim = Simulation.new()
-	equal(runner, sim.snapshot(), {"tick": 0, "next_entity_id": 1, "entities": [], "pending_commands": [], "last_sequences": [], "map": {"size": [16, 16], "blocked_cells": []}, "path_queue": []}, "C1 fresh")
+	equal(runner, sim.snapshot(), {"tick": 0, "next_entity_id": 1, "entities": [], "pending_commands": [], "last_sequences": [], "map": {"size": [16, 16], "blocked_cells": []}, "path_queue": [], "players":[],"buildings":[],"sources":[],"terrain_cells":[],"next_production_id":1,"command_results":[]}, "C1 fresh")
 	equal(runner, sim.spawn(1, Vector2(1, 2)), 1, "C1 first ID")
 	equal(runner, sim.spawn(2, Vector2.ZERO), 2, "C1 second ID")
 	var before: Dictionary = sim.snapshot()
@@ -19,9 +19,9 @@ func test_spawn(runner) -> bool:
 		equal(runner, sim.snapshot(), before, "C1 rejection unchanged")
 	equal(runner, sim.spawn(1, Vector2(0.5, 2.5)), 3, "C1 next ID")
 	equal(runner, sim.snapshot().entities, [
-		{"id": 1, "owner": 1, "position": [1.0, 2.0], "order": null, "status": "idle", "route": [], "destination": null},
-		{"id": 2, "owner": 2, "position": [0.0, 0.0], "order": null, "status": "idle", "route": [], "destination": null},
-		{"id": 3, "owner": 1, "position": [0.5, 2.5], "order": null, "status": "idle", "route": [], "destination": null},
+		{"id": 1, "owner": 1, "position": [1.0, 2.0], "order": null, "status": "idle", "route": [], "destination": null,"kind":"vehicle","construction_id":null,"collection":null},
+		{"id": 2, "owner": 2, "position": [0.0, 0.0], "order": null, "status": "idle", "route": [], "destination": null,"kind":"vehicle","construction_id":null,"collection":null},
+		{"id": 3, "owner": 1, "position": [0.5, 2.5], "order": null, "status": "idle", "route": [], "destination": null,"kind":"vehicle","construction_id":null,"collection":null},
 	], "C1 entities in ID order")
 	return true
 
@@ -209,9 +209,10 @@ func test_repeatability(runner) -> bool:
 	equal(runner, a.snapshot(), b.snapshot(), "C11 equal worlds")
 	equal(runner, a.snapshot(), {
 		"tick": 1000, "next_entity_id": 2,
-		"entities": [{"id": 1, "owner": 1, "position": [8.0, 9.0], "order": null, "status": "arrived", "route": [], "destination": [8.0, 9.0]}],
+		"entities": [{"id": 1, "owner": 1, "position": [8.0, 9.0], "order": null, "status": "arrived", "route": [], "destination": [8.0, 9.0],"kind":"vehicle","construction_id":null,"collection":null}],
 		"map": {"size": [16, 16], "blocked_cells": []}, "path_queue": [],
 		"pending_commands": [], "last_sequences": [{"player": 1, "sequence": 1}],
+		"players":[],"buildings":[],"sources":[],"terrain_cells":[],"next_production_id":1,"command_results":[],
 	}, "C11 full final state")
 	return true
 

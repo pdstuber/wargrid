@@ -1,6 +1,6 @@
 # M2 local verification — 2026-11-02
 
-Status: **LOCAL IMPLEMENTATION VERIFIED; VISIBLE/RENDERED/BACKLOG ACCEPTANCE PENDING**. Contracts live in [M2 plan](../superpowers/plans/2026-11-01-m2-groups.md). This is not full M2 acceptance or reference parity. User requested headless checks only; no window, screenshot or rendered benchmark was launched. Local Git handoff is authorized with these limits recorded; M3 implementation remains blocked on its own explicit kickoff and remaining M2 gates.
+Status: **LOCAL IMPLEMENTATION AND REMOTE MATRIX VERIFIED; VISIBLE/RENDERED/BACKLOG ACCEPTANCE DEFERRED**. Contracts live in [M2 plan](../superpowers/plans/2026-11-01-m2-groups.md). This is not full M2 acceptance or reference parity. User explicitly accepted risk from deferring remaining M2 visible/play/rendered/backlog gates and kicked off M3 on2026-11-03. [Verified matrix41591616563](https://github.com/pdstuber/wargrid/actions/runs/41591616563), head `4be6b7b`, passed Linux/macOS/Windows and replay comparison. No M3 changes covered by that run; [M3 evidence](m3-verification.md) records current work. No window, screenshot or rendered benchmark launched.
 
 ## Recovery and behavioral evidence
 
@@ -102,6 +102,6 @@ Inspection-based mappings from completed substantive reviewer; not executed muta
 | Python invalid tick/digest | Accept duplicate/skipped ticks or nonhex digest. |
 | Python three platforms | Accept only two files. |
 
-Remote Linux/Windows/macOS M2 matrix remains unpublished/unrun; no push/PR authorized. Same-host native/Rosetta exact replay does not prove cross-OS determinism. Historical successful M1 runs on `7b70a61`: [M1 branch](https://github.com/pdstuber/wargrid/actions/runs/41322464510), [M2 branch baseline](https://github.com/pdstuber/wargrid/actions/runs/41466145349), neither verifies current M2 tree.
+Historical local checkpoint above preceded publication. Current Linux/Windows/macOS M2 matrix success is linked in status; no new publication performed in M3 task. Same-host native/Rosetta exact replay does not prove cross-OS determinism. Historical successful M1 runs on `7b70a61`: [M1 branch](https://github.com/pdstuber/wargrid/actions/runs/41322464510), [M2 branch baseline](https://github.com/pdstuber/wargrid/actions/runs/41466145349), neither verifies current M2 tree.
 
-[Group reference](group-movement.md), [movement gaps](zero-hour-movement-gaps.md) and [M1 validation](m1-validation.md) preserve `UNVERIFIED_REFERENCE` / historical labels. Distinct goals and eight whole queries differ from EA implementation; no retail runtime parity, physical collision, formation or numeric calibration claim. No new EA source/assets copied. M3 files remain preparation only.
+[Group reference](group-movement.md), [movement gaps](zero-hour-movement-gaps.md) and [M1 validation](m1-validation.md) preserve `UNVERIFIED_REFERENCE` / historical labels. Distinct goals and eight whole queries differ from EA implementation; no retail runtime parity, physical collision, formation or numeric calibration claim. No new EA source/assets copied. M3 was subsequently explicitly kicked off with deferred-gate risk accepted; current checkpoint linked above.

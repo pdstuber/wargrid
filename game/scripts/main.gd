@@ -21,13 +21,7 @@ var _camera_bounds: Rect2
 @onready var _selection_box: ReferenceRect = $HUD/SelectionBox
 
 func _ready() -> void:
-	for y in range(4, 10):
-		for x in range(6, 9):
-			_base_blocked.append(Vector2i(x, y))
-	simulation = Simulation.new(_base_blocked)
-	for y in range(1, 5):
-		for x in range(1, 6):
-			simulation.spawn(1, Vector2(x + 0.5, y + 0.5))
+	simulation = _create_simulation()
 	var size: Array = simulation.snapshot().map.size
 	_camera_bounds = Rect2(Vector2.ZERO, Vector2.ZERO)
 	for corner in [Vector2(size[0], 0), Vector2(0, size[1]), Vector2(size[0], size[1])]:
@@ -126,19 +120,24 @@ func _toggle_obstacle() -> void:
 	_refresh()
 
 func _move(target: Vector2) -> void:
-	var state: Dictionary = simulation.snapshot()
-	var result: Dictionary = simulation.issue_command({
-		"tick": state.tick, "player": 1, "sequence": _sequence, "type": "move",
-		"entity_ids": selected_ids.duplicate(), "target": [target.x, target.y],
-	})
-	if result.ok:
-		_sequence += 1
-	_error = result.error
-	_refresh()
+	_submit({"type":"move","entity_ids":selected_ids.duplicate(),"target":[target.x,target.y]})
 
 func _refresh() -> void:
 	var state: Dictionary = simulation.snapshot()
-	_view.set_state(state, selected_ids)
+	_view.set_state(state, _view_selection())
+	_refresh_hud(state)
+
+func _create_simulation() -> RefCounted:
+	for y in range(4, 10):
+		for x in range(6, 9):
+			_base_blocked.append(Vector2i(x, y))
+	simulation = Simulation.new(_base_blocked)
+	for y in range(1, 5):
+		for x in range(1, 6):
+			simulation.spawn(1, Vector2(x + 0.5, y + 0.5))
+	return simulation
+
+func _refresh_hud(state: Dictionary) -> void:
 	var counts := {"moving": 0, "path_pending": 0, "arrived": 0, "blocked": 0}
 	for unit in state.entities:
 		if counts.has(unit.status):
@@ -146,3 +145,22 @@ func _refresh() -> void:
 	_status.text = "Left/drag: select | Shift: add | Right: move | WASD/arrows: pan | Wheel: zoom | Esc: clear | B: obstacle\nSelected: %d | Tick: %d | Moving: %d | Pending: %d | Arrived: %d | Blocked: %d\n%s" % [
 		selected_ids.size(), state.tick, counts.moving, counts.path_pending, counts.arrived, counts.blocked, _error,
 	]
+
+func _view_selection() -> Array[int]:
+	return selected_ids.duplicate()
+
+func is_selecting() -> bool:
+	return _selecting
+
+func _submit(payload: Dictionary) -> void:
+	var state: Dictionary = simulation.snapshot()
+	var command: Dictionary = payload.duplicate(true)
+	command.tick = command.get("tick",state.tick)
+	command.player = 1
+	for entry in state.last_sequences:
+		if entry.player == 1: _sequence = maxi(_sequence,entry.sequence + 1)
+	command.sequence = _sequence
+	var result: Dictionary = simulation.issue_command(command)
+	if result.ok: _sequence += 1
+	_error = result.error
+	_refresh()

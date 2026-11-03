@@ -4,28 +4,28 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 ## Session
 
-2026-11-02 local handoff: M2 committed as `a23f697` on preserved `m2-groups`; local `main` fast-forwarded to same commit. Created `m3-base-supplies` from that complete tree, carrying all four M3 preparation files. Installed `docs/m3-prompt.txt` verbatim as root prompt for a later user-invoked task. Post-merge delegated suite: 58 cases / 96,953 checks / zero failures / exit 0, `TESTS PASSED 96953`. M3 implementation has not started; no push/PR performed.
+2026-11-03 M3 explicitly kicked off on prepared `m3-base-supplies` at `d7acea9`, after verified [M2 matrix41591616563](https://github.com/pdstuber/wargrid/actions/runs/41591616563), head `4be6b7b`, successful Linux/macOS/Windows/replay jobs. User accepted risk of deferring M2 visible/play/rendered-frame/backlog gates: "yeah let's run with the risk recorded". Gates remain pending, never passed. User separately chose headless-only M3 verification; no visible launch/screenshots/rendering checks.
 
-M2 continuation: existing task 5 completed in place, task 6 shared workload/statistics/headless and visible-probe files implemented. Local normal suite **58 cases / 96,953 checks / zero failures / exit0**, success marker present. Outside-root/fresh-cache/Rosetta trace suites each **58 / 96,955 / zero failures / exit0**, exact1,200-tick traces match three files. Python comparator6 tests/exit0; headless smoke/shell syntax pass. [M2 evidence](reference/m2-verification.md) owns commands, red/green and full measurements. Grok stalled without report and was terminated exit143; single fresh-context fallback M2 review complete, no consequential findings. Ponytail cuts pass complete, no warranted cuts. Added S8 exact rejection-reason assertion after coverage caveat; scratch lost-error mutation failed exactly S8, then final normal/trace suites passed.
+Tasks0–11 implemented sequentially with delegated red/green evidence. Added economy definitions/state/commands, limited air, construction/power, paid FIFO/refunds, finite supplies/docks/recovery, base view/controls/HUD and separate exact economy replay. M2 behavior assertions retained through additive C1/C11 snapshot migration. No dependencies, retail data/code/assets, combat or M4.
 
-Headless300-unit simulation budgets pass: open p95/p99/max1.310/1.369/7.954ms; dense1.330/1.385/7.458ms. Far-coordinate M9 regression exposed float32 accumulation; scalar float motion fixes it with unchanged1e-5 tolerance/speed/snapshot shape. No assertion deletion or compatibility modes. Historical precision trace values change intentionally; exact native/Rosetta equality verified.
+Final ordinary suite **95 cases / 101,305 checks / zero failures / exit0**, `TESTS PASSED 101305`. Final outside-root/fresh-cache/third trace variants each95/101,309/zero failures/exit0 with marker; both1200-row scenarios match exactly across three independent same-host runs. Python6 and base headless30-frame smoke pass without diagnostics. Final M2 benchmark repeated after review fixes: open p95/p99/max1.452/1.495/7.803ms; dense1.487/1.548/7.789ms; both budgets pass,300 unique final goals/zero blocked.
+
+Sole completed substantive review was fresh-context fallback after bounded four-minute Grok stall; no Grok report counted. Fixed queue Cancel node lifetime across press/tick/release and lower-ID dock waiter arbitration. Closed four grouped coverage gaps through public API/input scenarios; all37 named tests have production-mutation mapping. Lean-only `/ponytail-review` removed unused constant/test preload/binding; no framework/dependency. [M3 verification](reference/m3-verification.md) owns red/green, final logs/counts, review resolutions and limits. No unresolved substantive findings.
 
 ## Pending user action
 
-- User chose **headless only** after one batched M2 visible/play/rendered request. No window/screenshots/rendered run. Play feel, rendered-frame p95 and real-time backlog gates remain pending; do not label full M2 accepted or start M3.
-- Authorized local M2 commit/main fast-forward/M3 branch preparation performed; `m2-groups` preserved. No push/PR/remote merge authorized.
-- M2 remote matrix remains unpublished/unverified. Historical M1 successful CI does not cover current tree.
+- M3 visible base loop/UI/feel, rendered-frame and real-time backlog gates remain pending by headless-only choice. Do not ask again in current task or infer historical M1 permission.
+- M3 cross-OS economy replay requires approved publication and actual matrix result. Same-host exact comparison is narrower; M2 remote success does not cover new M3 code.
+- User explicitly authorized M3 commit and push after final verification. Publish `m3-base-supplies`; no PR or merge authorized.
 
 ## Deferred experiments and research
 
-- Run separately authorized M2 visible play/rendered probe later; command and expected setup in README. Do not infer any approval from historical M1 play.
-- Cross-OS replay awaits authorized publication/remote runs. Same-host native/Rosetta check is narrower.
-- Travel overlap intentional; no hard collision/formations, economy/combat, polished art, M3 implementation or multiplayer.
-- Source labels remain `UNVERIFIED_REFERENCE`; no retail parity claim. M3 source/design/plan remain preparation.
+- Source/config-supported economy remains RETAIL_UNVERIFIED; geometry, flight speed, docking simplification and work accumulation departures stay explicit in reference/design.
+- No M4, combat, sale, upgrade, passengers, factions, AI, multiplayer or art expansion.
 
 ## Next action
 
-Resolve remaining M2 visible/play/rendered-frame/backlog gates in a separately authorized session before M3 implementation. Remote CI remains pending publication approval. Current `m3-base-supplies` branch and [root prompt](../prompt.txt) are preparation only; explicit later kickoff still required. Four M3 preparation files are inherited from main. Entries below are history.
+M3 implementation ready with visible/remote/parity gates pending. User authorized commit and push of reviewed `m3-base-supplies`; await actual remote CI result after publication. Visible base-loop/measurement still needs separate authorization; no M4 or merge. Inspect [M3 evidence](reference/m3-verification.md) before follow-up. Original root prompt records task contract; do not restart completed tasks. Entries below are history.
 
 ## 2026-11-01 — M0 local foundation
 

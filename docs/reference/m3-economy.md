@@ -52,4 +52,4 @@ Source clock is 30 logic frames/second: [GameCommon.h:72–78](https://github.co
 - Scenario removal specifies cargo loss on collector destruction; instance-local source cargo supports this inference, but all retail death modules were not audited.
 - Spatial scale, effective overrides/mod/version, full build legality, approach/exit animations, exact retail timing and feel remain unknown. Source/config evidence cannot close runtime parity gate.
 
-Temporary source reports and decoded selected text: `/tmp/wargrid-m3-plan/`; not repository dependencies. Research was read-only. Planning approval does not authorize M3 implementation.
+Temporary source reports and decoded selected text: `/tmp/wargrid-m3-plan/`; not repository dependencies. Research was read-only. Implementation subsequently authorized2026-11-03; [M3 verification](m3-verification.md) records accepted deferrals and current evidence. Research limits remain unchanged.

@@ -2,10 +2,11 @@ extends RefCounted
 
 const View = preload("res://scripts/presentation/world_view.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
+const Fixture = preload("res://tests/economy_fixture.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 
 func cases() -> Array[Callable]:
-	return [test_pick, test_box_and_order]
+	return [test_pick, test_box_and_order,test_economy_picking,test_build_preview]
 
 func test_pick(runner) -> bool:
 	var view = View.new()
@@ -51,5 +52,45 @@ func test_box_and_order(runner) -> bool:
 	state.entities.reverse()
 	view.set_state(state, [])
 	runner.check(view.pick_entity(Vector2(0, 74)) == 1, "V2 ground depth precedes ID/input order")
+	view.free()
+	return true
+
+func test_economy_picking(runner) -> bool:
+	var sim = Fixture.make_world()
+	var source: int = sim.add_supply_source(Vector2i(24,4),8)
+	var building: int = Fixture.build(runner,sim,"reactor",Vector2i(8,4))
+	var view = View.new()
+	view.set_state(sim.snapshot(),[building])
+	runner.check(view.pick_object(Iso.world_to_plane(Vector2(8,4))) == building,"V3 footprint inclusive origin")
+	runner.check(view.pick_object(Iso.world_to_plane(Vector2(10,6))) == building,"V3 footprint inclusive far edge")
+	runner.check(view.pick_object(Iso.world_to_plane(Vector2(25.5,5.5))) == source,"V3 neutral source")
+	var air: int = sim.spawn(1,Vector2(25.5,5.5),"collector")
+	view.set_state(sim.snapshot(),[air])
+	runner.check(view.pick_object(Iso.world_to_plane(Vector2(25.5,5.5)) + Vector2(0,-26)) == air,"V3 air unit precedence over source")
+	view.set_state({},[])
+	runner.check(view.pick_object(Vector2.ZERO) == -1,"V3 empty safe")
+	view.free()
+	return true
+
+func test_build_preview(runner) -> bool:
+	var view = View.new()
+	var cells: Array[Vector2i] = [Vector2i(8,4),Vector2i(9,4)]
+	var sim = Fixture.make_world()
+	var before: Dictionary = sim.snapshot()
+	view.set_state(before,[])
+	view.set_build_preview(cells,true)
+	cells.clear()
+	runner.check(view.get("_preview_cells") == [Vector2i(8,4),Vector2i(9,4)],"V4 preview copied")
+	runner.check(sim.snapshot() == before,"V4 preview no simulation mutation")
+	view.set_build_preview([],false)
+	runner.check(view.get("_preview_cells") == [],"V4 preview clear")
+	var main = preload("res://scripts/main.gd").new()
+	var ids: Array[int] = [1]
+	main.selected_ids = ids
+	runner.check(main._view_selection() == [1],"V4 default selection hook")
+	var selected: Array[int] = main._view_selection()
+	selected.clear()
+	runner.check(main.selected_ids == [1],"V4 hook selection copied")
+	main.free()
 	view.free()
 	return true
