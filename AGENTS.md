@@ -4,7 +4,7 @@
 
 Wargrid is a Godot isometric pixel-art RTS inspired by Zero Hour's game design. Preserve strategic identity and feel; original bugs and slow algorithms are not compatibility requirements. The goal is a pixel-art clone that feels very close, not mathematical parity; see [Zero Hour verification](docs/reference/zero-hour-verification.md).
 
-Current setup and milestone status live in [README](README.md). Milestone scope lives in [the blueprint](Wargrid_Kickoff_Blueprint.md). M0–M3 are implemented; remaining acceptance evidence lives in README. Implement only the explicitly requested milestone and stop at its exit gate; do not automatically expand into later milestones, factions or multiplayer.
+Current setup and milestone status live in [README](README.md). Milestone scope lives in [the blueprint](Wargrid_Kickoff_Blueprint.md). M0–M4 are implemented; the next milestones are M4.1 (playtest polish), then M5 (online spike); see the blueprint §7 and the long-term 3v3 target. Remaining acceptance evidence lives in README. Implement only the explicitly requested milestone and stop at its exit gate; do not automatically expand into later milestones, factions or multiplayer.
 
 ## Read before changing
 

@@ -25,17 +25,16 @@ Sole completed substantive review was fresh-context fallback after bounded four-
 
 ## Next action
 
-**M4 in progress (2026-11-03, uncommitted on `m4-combat`).**
-- **Done:** Tasks 1–4 plus 4c are green: 113 cases / 101,543 checks / exit 0. Evidence: [M4 verification](reference/m4-verification.md); ledger: `.superpowers/sdd/2026-11-03-m4-combat/progress.md`.
-- **Reviewed:** the Tasks 1–4 checkpoint got an Opus in-session review plus a Grok review. One Grok finding was fixed; the rest went into the plan.
-- **Update 3 (end of M4 implementation session):** Tasks 8–10 done. 135 cases / 103,899 checks, benchmarks pass (combat margins 2–4% on open/dense). Final review: Grok returned nothing, Opus fresh-context review fixed (contact layout, budget gate, A/S vs pan, tests). Lean review done. **Next: user authorizes one batched visible check** (`sh tools/run_game.sh res://scenes/skirmish.tscn` plus the rendered benchmark rerun); after approval switch the launcher default; commits, push and CI for the third trace need separate approval. Exit gate NOT met until then.
-- **Update 2:** Tasks 6–7 green (127 cases / 101,696 checks, suite 14.6 s). Scenario pinned at terminal tick 9943, winner 1 (scripted human). 7c review done and fixed; pin is now terminal tick 9943, winner 1. Task 8 next.
-- **Decision:** `tools/run_game.sh` with no args will default to the skirmish scene at the M4 gate, after the user approves playability (script change, `project.godot` untouched). Recorded in plan Task 10.
-- **Update:** 4d and Task 5 are green (118 cases / 101,605 checks); stopped at the 5b review gate. Next is Task 6 after review. Older line follows: Sonnet/medium resumes with plan **step 4d**: user-approved P1 throttled acquisition and P2 halted attack-move keeps its slot; exact contract, tests and mutations are in the plan.
-- **Then Task 5:** read its "Pre-checked against live code" block first. `test_target_removed_cleanup` is a known genuine red: unit removal lacks `Combat.object_removed`.
-- **Prompt stop points:** stop after 5b and after 7c for stronger-model review.
+**M4 complete and merged into local `main` (2026-11-03).** Evidence: [M4 verification](reference/m4-verification.md). Process changes adopted on `main`: [milestone prompt](milestone-prompt.md), [workflow retrospective](reference/2026-11-03-milestone-workflow-retrospective.md). Roadmap re-aimed at the long-term target (3v3 online with friends against bots, USA/China/GLA, Twilight-Flame-like full-scale map): blueprint §1, §7, §11, §14.
 
-Read [M4 approved design](superpowers/specs/2026-11-03-m4-combat-design.md) and [Sol/Medium execution plan](superpowers/plans/2026-11-03-m4-combat.md). User approved M4 design on2026-11-03. Do not ask for design approval again. Implementation kickoff remains pending (inherited rendered-frame/backlog measurements were completed 2026-11-03; see [performance ledger](reference/performance.md)); Git publication and visible checks require explicit authorization. Review remaining evidence gaps in [M3 verification](reference/m3-verification.md); do not restart completed implementation or reviews. Original prompts below remain historical task contracts.
+- **Next milestone: M4.1 playtest polish** ("soon", user 2026-11-03). Write its `prompt.txt` from the milestone prompt, then design and plan it. The five notes:
+  1. **Rally point per producer.** Zero Hour production exits read a rally point (`AIPlayer.cpp` 500/680, source revision `0a05454`). Today new units stay on the producer's perimeter, which also stalls production at about 8 infantry and 11 tanks. Touches production, a new command and the replay traces.
+  2. **Opponent too passive.** Guard units only fire inside weapon range and never move, and the opponent never defends its base. Proposed: base defense (the same rule the scripted human needed in M4 Task 7) and reaction a bit beyond weapon range; check Zero Hour's idle acquisition range in source before choosing the distance. Changes the match outcome, so the scenario pin (tick 9943) must be recalibrated.
+  3. **Selecting an enemy should show info.** `WorldView.pick_entity` only returns player 1 units; add read-only kind, owner and HP for enemy objects.
+  4. **Collectors on one supply pile are hard to read.** One dock per pile is M3 design (Zero Hour docking); add visibility: pile label "docked 1 · waiting 2", collector state when selected.
+  5. **"4: barracks" next to "S: stop".** HUD wording slip: base line says "1/2/3 build", the skirmish appends "4: barracks" elsewhere; make it one "1/2/3/4 build".
+- **After M4.1:** M5 online spike (lockstep over a WebSocket relay on the user's fly.io account, desktop clients first), then M6 teams and full-scale map, M7 China and GLA (gate: Zero Hour spot checks S1–S3 run or deferred), M8 bots, M9 3v3 online.
+- **Pending user action:** push `main` (local only so far); start a fresh session to check whether the project skill settings shrank the skill listing (baseline 48,567 bytes; revert if not).
 
 ## 2026-11-03 — Performance open points and real-game verification
 

@@ -64,4 +64,4 @@ Output: a short results table in `docs/reference/zero-hour-level1-results.md` wi
 
 ## Gate
 
-M5 (core factions) adds many unverified constants. Treat completion or explicit user deferral of the reduced level 1 (S1–S3) as a gate before M5 kickoff, recorded in README and the blueprint. Level 2 is optional and only considered after level 1. Any Zero Hour source used for level 2 stays external and read-only: no code copied (AGENTS), and GPL terms make that a hard rule.
+M7 (China and GLA core; renumbered from M5 on 2026-11-03) adds many unverified constants. Treat completion or explicit user deferral of the reduced level 1 (S1–S3) as a gate before M7 kickoff, recorded in README and the blueprint. Level 2 is optional and only considered after level 1. Any Zero Hour source used for level 2 stays external and read-only: no code copied (AGENTS), and GPL terms make that a hard rule.

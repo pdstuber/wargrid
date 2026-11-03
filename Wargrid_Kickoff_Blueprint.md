@@ -19,6 +19,10 @@ Wargrid is a passion/learning project: a modern, scriptable, testable, pixel-art
 
 **Target: Zero Hour-inspired game design, with reliable behavior and responsive performance.** Preserve faction identity, strategic tradeoffs, economy and combat pacing. Original bugs, exploits, stuck units, command failures and slowdowns are not compatibility requirements. Reference measurements inform design; they do not override an explicitly chosen correction. Start with a constrained playable subset.
 
+### Long-term target (user, 2026-11-03)
+
+**Three friends play 3v3 against three bots over the internet**, as USA, China and GLA, on a map that roughly resembles the classic Twilight Flame. Zero Hour generals are not needed for that goal. Colored-rectangle graphics are acceptable until play shows they are not. The milestone sequence in §7 is ordered toward this target.
+
 ### What to preserve
 
 - **Faction identity and asymmetric mechanics:** USA, China, GLA; later the nine Zero Hour general variants.
@@ -36,7 +40,7 @@ Wargrid is a passion/learning project: a modern, scriptable, testable, pixel-art
 ### What is *not* the initial goal
 
 - An exact frame-for-frame visual remake.
-- All campaigns, maps, online matchmaking or all nine general variants.
+- All campaigns, maps, public online matchmaking or all nine general variants. (Private online play with friends is a goal; see the long-term target.)
 - A production-grade networking backend on day one.
 - Overengineering a fully generic ECS/framework before a playable slice exists.
 - A polished asset pipeline before gameplay correctness can be measured.
@@ -142,7 +146,7 @@ Replay runner ──────────► same command queue
 1. **Fixed simulation timestep: start at 30 Hz.** The checked-out Zero Hour source defines `LOGICFRAMES_PER_SECOND = 30` (§4). Matching this time grid simplifies comparisons; it does not require copying engine scheduling or bugs. Store deadlines as integer ticks; document rounding for each mechanic.
 2. **Stable entity IDs**, explicit ownership/team, and serializable commands (e.g. `move`, `attack`, `build`, `train`, `cancel`).
 3. **Seeded randomness** and state capture of RNG seed/state where relevant.
-4. **Deterministic command processing within the same environment** as an immediate requirement. Cross-platform deterministic lockstep is **not** assumed automatically; floats, physics, ordering and runtime differences require explicit verification or different numerical representations later.
+4. **Deterministic command processing within the same environment** as an immediate requirement. Cross-platform deterministic lockstep is **not** assumed automatically; floats, physics, ordering and runtime differences require explicit verification or different numerical representations later. Evidence so far: movement, economy and combat traces match exactly across Linux x86, Windows x86 and macOS ARM (CI run 41713005327 plus the local macOS comparison). From M5 cross-platform determinism becomes a requirement, checked by trace comparison and in-match hash exchange.
 5. **Authoritative simulation state.** Sprites and scene effects should represent state, not own the rules.
 6. **Save/replay-friendly state model.** A test should be able to set up a world, issue commands over ticks, then inspect a canonical state snapshot.
 7. **No dependence on render frame rate for rule outcomes.** Rendering can interpolate between ticks.
@@ -519,23 +523,51 @@ Construction vehicle, supply resource, Chinook-like collector, resource drop-off
 
 Infantry, one or two vehicles, targeting, health/damage, basic AI, victory/defeat, build/selection HUD; a **small single-player skirmish**.
 
-**Approved design (2026-11-03):** [combat and mini-match design](docs/superpowers/specs/2026-11-03-m4-combat-design.md), [execution plan for Sol/Medium](docs/superpowers/plans/2026-11-03-m4-combat.md), and [source/config evidence](docs/reference/m4-combat.md). Design approved; implementation not started. Remaining inherited verification gaps stay open.
+**Approved design (2026-11-03):** [combat and mini-match design](docs/superpowers/specs/2026-11-03-m4-combat-design.md), [execution plan for Sol/Medium](docs/superpowers/plans/2026-11-03-m4-combat.md), and [source/config evidence](docs/reference/m4-combat.md). Implemented, verified and merged 2026-11-03; evidence in [M4 verification](docs/reference/m4-verification.md).
 
 **Exit gate:** reproducible scenario test for a scripted 5–10 minute match plus combat reference fixtures and manual playability review. This is the first true vertical slice.
 
-**Pre-M5 gate (proposed 2026-11-03):** run or explicitly defer the level 1 observation protocol in [Zero Hour verification](docs/reference/zero-hour-verification.md) before kickoff of M5, which multiplies unverified constants. Level 0 found ground-unit speeds 2.5–3.75× faster than the range scale implies; scale decision pending.
+### M4.1 — Polish from the first playtest (next)
 
-### M5 — Core factions
+User playtest notes, 2026-11-03: a rally point per producer (also fixes production stalling once a producer's perimeter is full), opponent base defense and reaction to enemies just beyond weapon range, read-only info for selected enemy objects, visible collector dock/waiting state at supply piles, and one HUD line "1/2/3/4 build".
 
-Add China and GLA distinct rules, units and economy differences using data definitions and behavior-specific tests.
+**Exit gate:** a behavior test per note, the six-minute scenario recalibrated and re-pinned, benchmarks unchanged within budget, a user playtest.
+
+### M5 — Online spike (two machines, lockstep)
+
+Today's 1v1 skirmish played between two machines: deterministic lockstep with a small input delay, a minimal self-hosted WebSocket relay, periodic snapshot-hash exchange that stops the match on desync, waiting when a peer lags. No lobby, reconnect or matchmaking. See §11.
+
+**Exit gate:** a complete match between macOS and Windows without desync, both clients' replay hashes equal, measured command latency against a budget, relay hosting decided and documented.
+
+### M6 — Teams and a full-scale map
+
+Matches with up to eight players in teams with team victory; a hand-authored map whose layout is inspired by Twilight Flame (an official 8-player Zero Hour map, 4,900 × 4,900 world units, about 196 × 196 cells at 25 units per cell; no EA map data copied); navigation, allocation and snapshot costs scaled for that size (measure first; candidate fixes: incremental navigation updates, local destination search). Still USA only.
+
+**Exit gate:** a deterministic headless 3v3 bots-vs-bots match on the full map within the [performance ledger](docs/reference/performance.md) budgets, with new ledger rows.
+
+### M7 — China and GLA core
+
+Add China and GLA distinct rules, core units and economy differences (for example GLA without power) using data definitions, behavior-specific tests and `tools/check_reference.py`.
+
+**Pre-M7 gate (proposed 2026-11-03):** run or explicitly defer the reduced level 1 spot checks (S1–S3) in [Zero Hour verification](docs/reference/zero-hour-verification.md) before kickoff, because factions multiply unverified constants.
 
 **Exit gate:** three playable faction prototypes; economy/production/combat parity tracked by faction.
 
-### M6 — Expanded Zero Hour scope (later)
+### M8 — Bots worth playing
 
-Subfactions/generals, superweapons, advanced unit interactions, more environments/maps, campaign/scenario tooling, sophisticated AI and multiplayer research.
+Per-faction build orders, base defense, attack waves and sensible target choice; one difficulty. Bots stay deterministic functions of the snapshot so they run identically on every lockstep client.
 
-**Exit gate:** prioritize by player-visible fidelity, not by total checklist completeness.
+**Exit gate:** scripted tests show bots defend and beat a passive player; a user playtest against them.
+
+### M9 — 3v3 online
+
+Lobby with slots, faction, team and bot choice; three humans plus three bots through the relay; handling a dropped player (pause, or the player becomes a bot); optional browser export over the same WebSocket transport.
+
+**Exit gate:** a real 3v3 match with friends without desync.
+
+### Later
+
+Zero Hour generals, superweapons, air combat, fog of war (open: likely needed for fun in multiplayer; candidate for M8 or M9), more maps, art beyond colored rectangles, campaign tooling. Prioritize by what play shows, not by checklist completeness.
 
 ### 7.1 M0 implementation plan — stop before movement
 
@@ -723,9 +755,16 @@ Use profiling before shifting code to C#, C++ or GDExtension. **Do not infer tha
 
 ### Multiplayer
 
-Eventually compare lockstep deterministic simulation versus authoritative-server approaches. The original game can inspire research, but don't lock Wargrid into an architecture solely because Generals used one.
+**Proposed direction (2026-11-03; the M5 spike decides):**
 
-For now, keep commands serializable, state inspectable and simulation repeatable. Those are useful for single player, AI agents, debugging, savegames, replay playback and future multiplayer.
+- **Deterministic lockstep.** Every client runs the full simulation; only commands travel. Commands already carry tick, player and sequence, and snapshots already hash exactly; trace comparison already shows identical results across three platforms.
+- **Bots run inside the simulation on every client.** The opponent policy is a deterministic function of the snapshot, so all clients compute identical bot commands without extra traffic.
+- **Transport: WebSocket through a small relay server** (user choice: relay rather than one player hosting). Godot's high-level multiplayer API works over a WebSocket peer on desktop and in web exports, while ENet is not available in browsers, so one transport keeps the later browser build open. The relay forwards per-tick command batches and hashes and holds no game logic. Hosting: the user's existing fly.io account (sample config in the sibling `sb-watcher` project: `fly.toml`, region `fra`, shared 256 MB VM). Unlike that always-on worker, the relay accepts inbound WebSocket connections, so it needs an `[http_service]` section; letting fly stop idle machines and start them on connection keeps cost near zero between matches. Details belong to the M5 design.
+- **Clients:** desktop builds first (user choice), browser later.
+- **Desync detection:** clients exchange the per-tick snapshot hash periodically; a mismatch stops the match with a report.
+- **Map scale drives cost:** the target map is about 196 × 196 cells; navigation rebuilds and destination allocation measured at 64 × 64 (see the [performance ledger](docs/reference/performance.md)) would grow roughly 9×, so M6 measures and scales them before content depends on the map.
+
+Authoritative-server simulation stays the fallback if lockstep fails the M5 gate. Keep commands serializable, state inspectable and simulation repeatable; that serves single player, AI agents, debugging, savegames, replays and multiplayer alike.
 
 ---
 
@@ -793,7 +832,11 @@ Do not edit the live gameplay implementation in this research task.
 | Project layout/tooling | **Adapt Hell's Verdict's `game/` boundary and wrappers** | Familiar commands and CI; small system-specific suites. |
 | Desktop checks | **Headless by default** | Visible play on request; ask before rendering-dependent checks. |
 | First slice | **Small USA skirmish** | End-to-end playable loop without giant initial scope. |
-| Multiplayer | **Deferred** | Simulation/replay architecture first. |
+| Multiplayer | **Planned: deterministic lockstep over a WebSocket relay (proposed; M5 spike decides)** | Long-term target is 3v3 with friends; simulation, command and hash design already fit lockstep. |
+| Online clients | **Desktop first, browser later** (user, 2026-11-03) | Same WebSocket transport serves both. |
+| Online connection | **Small relay server on the user's fly.io account** (user, 2026-11-03) | Easiest for friends; relay holds no game logic; existing account and deployment pattern. |
+| Target map | **Full scale, Twilight-Flame-inspired, about 196 × 196 cells** (user, 2026-11-03) | Recognizable travel times; requires M6 scaling work. |
+| Art | **Colored rectangles acceptable for now** (user, 2026-11-03) | Gameplay and online play first. |
 | Public release | **Undecided; legal review required** | Source and content rights must be distinguished. |
 
 ---
