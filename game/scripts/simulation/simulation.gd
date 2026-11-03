@@ -34,10 +34,11 @@ func _init(blocked_cells: Array[Vector2i] = [], size: Vector2i = Navigation.SIZE
 	for cell in _navigation.snapshot().blocked_cells:
 		_terrain_cells.append(Vector2i(cell[0],cell[1]))
 
-func add_player(player: int, credits: int) -> Dictionary:
+func add_player(player: int, credits: int, controller: String = "human") -> Dictionary:
+	if controller != "human" and controller != "ai": return {"ok": false, "error": "Invalid controller"}
 	if player <= 0 or credits < 0 or _players.has(player):
 		return {"ok": false, "error": "Invalid or duplicate player"}
-	_players[player] = {"id":player,"credits":credits}
+	_players[player] = {"id":player,"credits":credits,"controller":controller}
 	return {"ok":true,"error":""}
 
 func spawn(owner: int, position: Vector2, kind: String = "vehicle") -> int:

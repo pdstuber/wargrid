@@ -4,11 +4,12 @@ const Definitions = preload("res://scripts/simulation/combat_definitions.gd")
 const Economy = preload("res://scripts/simulation/economy_definitions.gd")
 const Construction = preload("res://scripts/simulation/construction.gd")
 const Combat = preload("res://scripts/simulation/combat.gd")
+const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 const Fixture = preload("res://tests/combat_fixture.gd")
 const EconomyFixture = preload("res://tests/economy_fixture.gd")
 
 func cases() -> Array[Callable]:
-	return [test_combat_definitions, test_health_snapshot_isolation, test_weapon_range_boundary, test_damage_armor_matrix, test_weapon_cooldown, test_guard_priority, test_attack_validation_atomic, test_combat_intent_order, test_orders_preserve_reload, test_acquisition_throttle, test_mutual_lethal_fire, test_target_removed_cleanup, test_destroyed_unit_no_actions, test_destroyed_producer_accounting, test_same_tick_attack_and_cancel, test_removed_target_rescans]
+	return [test_combat_definitions, test_health_snapshot_isolation, test_weapon_range_boundary, test_damage_armor_matrix, test_weapon_cooldown, test_guard_priority, test_attack_validation_atomic, test_combat_intent_order, test_orders_preserve_reload, test_acquisition_throttle, test_mutual_lethal_fire, test_target_removed_cleanup, test_destroyed_unit_no_actions, test_destroyed_producer_accounting, test_same_tick_attack_and_cancel, test_removed_target_rescans, test_controller_and_scan_radius]
 
 func test_combat_definitions(runner) -> bool:
 	runner.check(Definitions.profile("infantry") == {"max_hp": 180000, "armor": "human", "weapon": "rifle"}, "D1 infantry")
@@ -489,4 +490,26 @@ func test_removed_target_rescans(runner) -> bool:
 	sim.step()
 	sim.remove_object(target)
 	runner.check(_first_shot_tick(sim, 1, 30, runner, "S1") == 1, "S1 a chaser whose target vanished rescans at once")
+	return true
+
+func test_controller_and_scan_radius(runner) -> bool:
+	var sim = Fixture.world()
+	runner.check(not sim.add_player(3, 0, "bot").ok, "C1 unknown controller is rejected")
+	runner.check(sim.add_player(3, 0, "bot").error == "Invalid controller", "C1 rejection names the controller")
+	var skirmish = Skirmish.create()
+	var players: Array = skirmish.snapshot().players
+	runner.check(players[0].id == 1 and players[0].controller == "human", "C2 player 1 is human")
+	runner.check(players[1].id == 2 and players[1].controller == "ai", "C2 player 2 is ai")
+	var infantry: int = skirmish.spawn(1, Vector2(10.5, 10.5), "infantry")
+	var tank: int = skirmish.spawn(1, Vector2(12.5, 10.5), "tank")
+	var ai_infantry: int = skirmish.spawn(2, Vector2(20.5, 10.5), "infantry")
+	var ai_tank: int = skirmish.spawn(2, Vector2(22.5, 10.5), "tank")
+	runner.check(is_equal_approx(Combat.scan_radius(skirmish, skirmish._entities[infantry]), 8.8), "C3 human infantry radius")
+	runner.check(is_equal_approx(Combat.scan_radius(skirmish, skirmish._entities[tank]), 13.2), "C3 human tank radius")
+	runner.check(is_equal_approx(Combat.scan_radius(skirmish, skirmish._entities[ai_infantry]), 5.332), "C3 ai infantry radius")
+	runner.check(is_equal_approx(Combat.scan_radius(skirmish, skirmish._entities[ai_tank]), 7.998), "C3 ai tank radius")
+	var orphan: int = sim.spawn(9, Vector2(5.5, 5.5), "infantry")
+	runner.check(is_equal_approx(Combat.scan_radius(sim, sim._entities[orphan]), 8.8), "C4 owner without player record is human")
+	var builder: int = skirmish.spawn(1, Vector2(14.5, 10.5), "builder")
+	runner.check(Combat.scan_radius(skirmish, skirmish._entities[builder]) == 0.0, "C5 unarmed unit has no scan radius")
 	return true

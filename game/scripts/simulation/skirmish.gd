@@ -21,7 +21,7 @@ static func origin(kind: String, player: int) -> Vector2i:
 static func create(with_match: bool = true) -> RefCounted:
 	var sim = Simulation.new([], SIZE)
 	sim.add_player(1, START_CREDITS)
-	sim.add_player(2, START_CREDITS)
+	sim.add_player(2, START_CREDITS, "ai")
 	sim.spawn(1, Vector2(4.5, 14.5), "builder")
 	sim.spawn(2, Vector2(43.5, 14.5), "builder")
 	sim.add_supply_source(Vector2i(5, 3), 200)

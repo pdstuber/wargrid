@@ -19,6 +19,15 @@ static func distance_squared(position: Vector2, target: Dictionary) -> float:
 	var nearest := Vector2(clampf(position.x, target.origin[0], target.origin[0] + size.x), clampf(position.y, target.origin[1], target.origin[1] + size.y))
 	return position.distance_squared_to(nearest)
 
+# Source: retail AIData.ini GuardOuterModifierHuman / GuardOuterModifierAI.
+const GUARD_OUTER_HUMAN: float = 2.2
+const GUARD_OUTER_AI: float = 1.333
+
+static func scan_radius(sim: RefCounted, unit: Dictionary) -> float:
+	var player: Variant = sim._players.get(unit.owner)
+	var ai: bool = player != null and player.controller == "ai"
+	return CombatDefinitions.vision(unit.kind) * (GUARD_OUTER_AI if ai else GUARD_OUTER_HUMAN)
+
 static var _reach_by_kind: Dictionary = {}
 
 static func _reach(kind: String) -> float:

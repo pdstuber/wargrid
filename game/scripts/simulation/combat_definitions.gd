@@ -27,6 +27,13 @@ static func weapon(kind: String) -> Dictionary:
 		"cannon": return {"damage": 60000, "damage_type": "armor_piercing", "range": 6.0, "delay_ticks": 60, "clip_size": 0, "reload_ticks": 0}
 	return {}
 
+# Source: Zero Hour AmericaInfantryRanger/AmericaTankCrusader VisionRange 100/150 at 25 units per cell.
+static func vision(kind: String) -> float:
+	match kind:
+		"infantry": return 4.0
+		"tank": return 6.0
+	return 0.0
+
 static func armor_percent(armor: String, damage_type: String) -> int:
 	return ARMOR.get(armor, {}).get(damage_type, 0)
 
