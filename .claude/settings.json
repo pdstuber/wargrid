@@ -1,0 +1,15 @@
+{
+  "skillOverrides": {
+    "dataviz": "off",
+    "artifact-design": "off",
+    "artifact-diagramming": "off",
+    "artifact-capabilities": "off",
+    "claude-in-chrome": "off",
+    "claude-api": "off",
+    "schedule": "off",
+    "loop": "off",
+    "plugin-authoring": "off",
+    "keybindings-help": "off",
+    "fewer-permission-prompts": "off"
+  }
+}

@@ -27,9 +27,13 @@ Current setup and milestone status live in [README](README.md). Milestone scope 
 - Use typed GDScript. Keep authoritative simulation separate from scenes, rendering, wall-clock time and networking callbacks. Advance it explicitly by ticks; inject randomness when needed.
 - Adapt Hell's Verdict's wrappers and CI patterns without modifying that project. Keep Wargrid's planned renderer and tick rate; do not inherit FPS settings or server assumptions.
 - Follow personal code-style, Superpowers, review and model-routing instructions. Do not import another project's agent models or workflow exceptions.
+- Milestone runs follow [milestone prompt](docs/milestone-prompt.md): start each session from the verification file's resume record, end it at every stop gate, and restart fresh instead of continuing a long session.
+- Edit files with the Edit tool or asserted replacements only; an unasserted replacement once dropped a cleanup call silently. Agent shells use BSD `sed` (`sed -i ''`). Scratch Godot scripts must `quit()` on every path, or a script error hangs until the shell timeout.
 
 ## Verification and desktop use
 
+- Test output (Wargrid override of the global delegate-to-subagent rule): redirect suite and benchmark output to a file and read only the summary lines; on failure read only the failing lines. Use subagents for reviews, not for running tests.
+- Plans list same-tick interaction cases for every new command (against every existing command and against removal) and a spec-worded test for every AI rule. Benchmarks assert that their mechanics run inside the timed window. HUD changes get a headless layout test. Report every check with the tree it ran on.
 - Write meaningful behavior tests alongside mechanics. Keep small suites per system; fail on zero checks, parse errors, failed expectations and incomplete suites. Require successful exit plus final completion marker.
 - Rendered benchmarks (`sh tools/run_game.sh res://scenes/movement_benchmark.tscn`) open a window: ask first, batch with other visible checks. They disable vsync themselves (header shows `vsync=off`) so frame intervals measure render cost, not display refresh.
 - Run commands before claiming they work. Report counts, exit status, unverified checks and reference gaps. Planned commands in README are not implemented until M0 creates and verifies them.
@@ -42,4 +46,4 @@ Current setup and milestone status live in [README](README.md). Milestone scope 
 - Keep EA source and installation backups outside this repository and unchanged. Record source revision or archive hash, internal path and uncertainty for findings. Do not copy EA code or assets into Wargrid.
 - M0 and future ordinary CI must work without sibling projects or retail game data.
 - Preserve user changes. Keep caches, build output, local environment files and temporary analysis out of tracked source.
-- Do not commit, push, open a PR or merge without explicit approval. Subagents never commit or push. Never set `GITHUB_TOKEN` or `GH_TOKEN` in the shell or print secrets.
+- Do not commit, push, open a PR or merge without explicit approval, except local commits pre-authorized by the [milestone prompt](docs/milestone-prompt.md) during a milestone run. Subagents never commit or push. Never set `GITHUB_TOKEN` or `GH_TOKEN` in the shell or print secrets.

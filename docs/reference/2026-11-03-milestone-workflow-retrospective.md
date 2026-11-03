@@ -1,6 +1,6 @@
 # Milestone workflow retrospective (M0–M4)
 
-Status: **PROPOSED, not adopted.** Nothing in AGENTS, prompts, plans or tooling has changed. Written 2026-11-03 by merging two independent reviews of the session transcripts:
+Status: **PARTLY ADOPTED (2026-11-03, branch `workflow-improvements`).** Adopted: items 1, 2, 3, 4, 6, 7, 12 and 15 via [milestone prompt](../milestone-prompt.md), `AGENTS.md`, `tools/session_usage.py`; item 11 via project skill settings (effect to be measured next session); macOS CI replaced by a local comparison. Not adopted yet: 5 (already the default), 8, 9 (wording only in AGENTS), 10, 13, 14. Written 2026-11-03 by merging two independent reviews of the session transcripts:
 
 - **Codex** reviewed the M0–M3 Codex sessions plus the M4 Claude sessions. It ran out of usage before measuring tokens.
 - **Claude Code** reviewed the M4 Claude sessions, measured their tokens, then measured the Codex sessions too (see [measured usage](#measured-usage-per-milestone)).
