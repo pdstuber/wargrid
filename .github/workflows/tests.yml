@@ -94,7 +94,9 @@ jobs:
           merge-multiple: true
           path: traces
       - name: Test trace validation
-        run: python3 tools/test_compare_replays.py
+        run: |
+          python3 tools/test_compare_replays.py
+          python3 tools/test_check_reference.py
       - name: Compare all platform ticks
         run: |
           python3 tools/compare_replays.py traces/replay-linux.tsv traces/replay-windows.tsv traces/replay-macos.tsv

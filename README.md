@@ -43,9 +43,11 @@ CI pins matching Linux archive and SHA-256 from [official release metadata](http
 ```sh
 godot --version
 sh tools/run_tests.sh
-python3 -m unittest discover -s tools -p 'test_compare_replays.py'
+python3 -m unittest discover -s tools -p 'test_*.py'
 sh tools/run_benchmark.sh
 ```
+
+Local reference check (needs the retail backup, never runs in CI): `python3 tools/check_reference.py "/path/Command & Conquer Generals - Zero Hour.tar.gz"` compares Wargrid's unit, building, weapon and armor values with the pinned Zero Hour INI data; see [Zero Hour verification](docs/reference/zero-hour-verification.md).
 
 Test wrapper imports headlessly before tests, checks exit codes and engine diagnostics, then requires positive completion marker. `GODOT_BIN` accepts one executable path, including spaces. Both wrappers resolve project path from script location.
 
