@@ -32,7 +32,7 @@ text = "Play offline"
 
 [node name="RelayUrl" type="LineEdit" parent="Center/Box"]
 layout_mode = 2
-text = "wss://wargrid-relay.fly.dev/ws"
+text = "wss://wargrid-relay-jvm.fly.dev/ws"
 placeholder_text = "Relay URL"
 
 [node name="Create" type="Button" parent="Center/Box"]

@@ -73,17 +73,16 @@ Historical M1 visible smoke is supported by user recording/reports. [M1 measurem
 
 ## Relay hosting
 
-The relay runs on fly.io, region `fra`, one shared-cpu-1x 256 MB machine that stops when idle. Rooms live in memory, so deploy exactly one machine (`--ha=false`; `fly machine list` must show one). Status: JVM relay deployed at `wss://wargrid-relay-jvm.fly.dev/ws` (cold 3.4 s p50, warm 78 ms); native build fails, see the verification file; final app name pending.
+The relay runs on fly.io, region `fra`, one shared-cpu-1x 256 MB machine that stops when idle. Rooms live in memory, so deploy exactly one machine (`--ha=false`; `fly machine list` must show one). Status: JVM relay deployed at `wss://wargrid-relay-jvm.fly.dev/ws` (cold 3.4 s p50, warm 78 ms); native dropped (build failed, see the verification file); app name stays `wargrid-relay-jvm`.
 
 ```sh
 fly apps create wargrid-relay-jvm
-fly deploy relay -c relay/fly.toml -a wargrid-relay-jvm --dockerfile relay/Dockerfile --ha=false
-fly deploy relay -c relay/fly.toml -a wargrid-relay-native --dockerfile relay/Dockerfile.native --ha=false
+fly deploy relay -c $PWD/relay/fly.toml -a wargrid-relay-jvm --dockerfile $PWD/relay/Dockerfile --ha=false
 godot --headless --path game -- --probe-relay wss://wargrid-relay-jvm.fly.dev/ws   # prints RELAY WELCOME <ms>
 WARGRID_RELAY_URL=wss://wargrid-relay-jvm.fly.dev/ws WARGRID_MATCH_WAIT=600 sh tools/run_netplay.sh match
 ```
 
-JVM-versus-native decision and measurements: [M5 verification](docs/reference/m5-verification.md).
+Measurements and the native decision: [M5 verification](docs/reference/m5-verification.md).
 
 ## Local references
 
