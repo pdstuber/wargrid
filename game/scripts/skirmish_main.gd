@@ -131,7 +131,7 @@ func _enemy_summary(state: Dictionary) -> String:
 	if object.is_empty(): return ""
 	var line: String = "Enemy (P%d) %s #%d HP %d/%d" % [object.owner, object.kind, object.id, object.hp / 1000, object.max_hp / 1000]
 	var combat: Variant = object.get("combat")
-	if combat != null and combat.target_id != null: line += " | %s -> #%d" % [combat.mode, combat.target_id]
+	if combat != null: line += " | " + combat.mode + ("" if combat.target_id == null else " -> #%d" % combat.target_id)
 	return line + "\n"
 
 func _result_text(match_state: Dictionary) -> String:

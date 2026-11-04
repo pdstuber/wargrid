@@ -70,7 +70,11 @@ func _measure(layout: String) -> bool:
 			push_error("Combat stress ceiling exceeded for " + layout)
 			return false
 	else:
-		print("COMBAT BUDGET ", "PASS" if summary.p95 <= 1.67 and summary.p99 <= 3.3 else "FAIL", " ", layout, " simulation_only")
+		var within_budget: bool = summary.p95 <= 1.67 and summary.p99 <= 3.3
+		print("COMBAT BUDGET ", "PASS" if within_budget else "FAIL", " ", layout, " simulation_only")
+		if not within_budget:
+			push_error("Combat budget exceeded for " + layout)
+			return false
 	if window_chases == 0 and layout != "contact":
 		push_error("Combat benchmark never chased inside the timed window for " + layout)
 		return false

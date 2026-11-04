@@ -641,6 +641,8 @@ func test_scan_same_tick_orders(runner) -> bool:
 	marching[0].step()
 	var marcher: Dictionary = Fixture.object(marching[0], marching[1])
 	runner.check(marcher.combat.mode == "attack_move" and marcher.combat.goal == [2.5, 20.5], "O4 attack_move replaces the chase")
+	var resume: Variant = marching[0]._chases.get(marching[1])
+	runner.check(resume == null or Vector2(resume[0], resume[1]).distance_to(Vector2(2.5, 20.5)) < 1.5, "O4 any chase now resumes to the new attack_move goal, not the old one")
 	var removed: Array = _chasing_world()
 	removed[0].remove_object(removed[2])
 	removed[0].remove_object(removed[3])

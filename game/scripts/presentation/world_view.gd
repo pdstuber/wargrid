@@ -123,7 +123,7 @@ func _draw_inspected() -> void:
 
 func rally_marker() -> Array:
 	for building in _state.get("buildings", []):
-		if _selected_ids.has(building.id) and building.owner == 1 and building.has("rally"): return building.rally
+		if _selected_ids.has(building.id) and building.owner == 1 and building.kind in ["barracks", "factory"] and building.has("rally"): return building.rally
 	return []
 
 func _draw_rally() -> void:

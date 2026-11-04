@@ -243,6 +243,7 @@ func test_enemy_selection_read_only(runner) -> bool:
 	var text: String = main.get_node("HUD/Status").text
 	runner.check(main.inspected_id == ids.enemy and main.selected_ids.is_empty(), "E1 left-click selects the enemy read-only and replaces own selection")
 	runner.check(text.contains("Enemy (P2) tank #%d HP 480/480" % ids.enemy), "E1 enemy line, got " + text)
+	runner.check(text.contains("HP 480/480 | guard"), "E1 idle enemy shows its mode, got " + text)
 	var before: Dictionary = main.simulation.snapshot()
 	helper.key(main, KEY_E)
 	helper.key(main, KEY_A)
@@ -283,6 +284,11 @@ func test_rally_input_and_marker(runner) -> bool:
 	runner.check(view.rally_marker() == [20.5, 14.5], "R1 marker follows the new rally")
 	helper.key(main, KEY_ESCAPE)
 	runner.check(view.rally_marker().is_empty(), "R1 marker absent when deselected")
+	var reactor: int = Fixture.build(runner, sim, "reactor", Vector2i(20, 20))
+	main.selected_building_id = reactor
+	main.selected_ids.assign([reactor])
+	main._refresh()
+	runner.check(view.rally_marker().is_empty(), "R1 no marker for a reactor, which cannot take a rally")
 	main.free()
 	return true
 
