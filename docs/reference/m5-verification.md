@@ -7,9 +7,9 @@ Last green task / next incomplete task: Task 9 measured / Task 9 gate review (pr
 Changed paths since last commit: none after the record commit
 Last command / cases / checks / failures / exit / marker: editor suite 190 / 104,426 / 0 / exit 0 (580920e); relay gradlew test buildFatJar exit 0; remote match (stop-cold relay) NETPLAY PASSED 43.4 s; lobby-across-suspend match_over TICK 10914 both seats
 Known red case or blocker: native dropped (user, 2026-11-04). Unverified: memory use on the machine, health-check effect on autosuspend, idle autosuspend (only manual `fly machine suspend` tested), clock-lag effect after resume (no false timeout seen in one run)
-Approved decisions, pre-authorizations used, deferred gates: User playtest of M4.1 pending. Native dropped, app name stays wargrid-relay-jvm (user). Redeploy with AppCDS + suspend approved and done. `fly apps destroy wargrid-relay-native` NOT yet approved. Push needs approval.
+Approved decisions, pre-authorizations used, deferred gates: User playtest of M4.1 pending. Native dropped, app name stays wargrid-relay-jvm (user). Redeploy with AppCDS + suspend approved and done. `wargrid-relay-native` destroyed (user approved 2026-11-04). Push needs approval.
 Usage so far (python3 tools/session_usage.py <session files>): not recorded
-Next exact action: dispatch Task 9 gate review; ask user about destroying wargrid-relay-native
+Next exact action: dispatch Task 9 gate review; restart after review
 ```text
 Resume record (updated 2026-11-04, Task 9 local files done, deploy pending approval)
 Branch / base commit / working-tree state: m5-online / fcbc43a + Task 9 local commit / clean after commit; origin/m5-online behind (push needs approval)
