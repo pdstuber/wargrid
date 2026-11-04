@@ -1,15 +1,15 @@
 # M5 verification
 
 ```text
-Resume record (updated 2026-11-04, Task 6 written, CI not yet run)
-Branch / base commit / working-tree state: m5-online / 23d862f + Task 6 commit / clean after commit, nothing pushed
-Last green task / next incomplete task: Task 5 (gated) + Task 6 locally verified; Task 6 CI run pending user push approval / then Task 7
+Resume record (updated 2026-11-04, Task 6 verified)
+Branch / base commit / working-tree state: m5-online / 23d862f + Task 6 commit c61efaf / clean after docs commit, pushed to origin/m5-online (approved)
+Last green task / next incomplete task: Task 6 (CI run 41835343802 green) / Task 7
 Changed paths since last commit: none after the Task 6 commit
 Last command / cases / checks / failures / exit / marker: editor suite 185 / 104,343 / 0 / exit 0; exported macOS test build 185 / 104,343 / 0 / exit 0 (WARGRID_VECTORS set); exported macOS release `match` PASSED tick 10914, `perturb`, `relay-down` PASSED
-Known red case or blocker: none locally. Linux/Windows exported runs, template cache path on Windows, MSYS path handling in run_netplay.sh on Windows are unverified until CI runs. Client silence timeout (gate I4) approved for Task 7 (5 s, `ended_relay` "connection to relay lost", with a test).
+Known red case or blocker: none. Client silence timeout (gate I4) approved for Task 7 (5 s, `ended_relay` "connection to relay lost", with a test).
 Approved decisions, pre-authorizations used, deferred gates: User playtest of M4.1 pending. Local commit pre-authorized. Push needs approval (asked at end of this session).
 Usage so far (python3 tools/session_usage.py <session files>): not recorded
-Next exact action: user approves push -> CI green on Linux+Windows -> `sh tools/compare_local_traces.sh <run id>` (four matched lines, record run id) -> Task 7
+Next exact action: Task 7 (read plan Task 7 first)
 ```
 
 ## Evidence
@@ -50,3 +50,5 @@ Wire format investigation (Opus, 2026-11-04, user request): keep JSON. Typical p
 Gate review (Task 5, Opus, fresh context, tree 7865fb0): no Critical. Fixed test-first or with mutation in one pass: I1 `ping_due` pure and unit-tested; I2 `relay-down` asserts end tick > 0; I3 oracle capped at 30,000 ticks (`oracle_overrun`) and its END checked; M1 width test now asserts "width"; M2 empty logs rejected; M4 match pins tick 10914, stall checks hook ran, version checks seat 1 has no END; M6 desync_diff type-strict (int vs float differs); M7 log writers tolerate unopenable paths; M9 evidence text. Relay grace delay verified by reviewer (version fails 3/3 without it; DoS sound, server closes TCP itself). Deferred rulings: M3 (`--hash-every 1` logs start at tick 0 vs `--interval 1` rows from 1; use `diff` for first-tick narrowing), M5 (200 ms grace is a heuristic; alternative is the close-frame reason via `get_close_reason()`, revisit in Task 7 if the message is lost), M8 (commit stamp in the build string: Task 6/7), `relay-term` asserts nothing by design (record-once). I4 silence timeout: user approved 2026-11-04, implement in Task 7 (5 s, tested).
 
 | Task 6 CI exported builds | local macOS | `WargridTestRunner` (class_name on `run_tests.gd`) + `run/main_loop_type.wargrid_tests`; presets 3-5 `* Tests` with feature `wargrid_tests`; exported suite needs `WARGRID_VECTORS` (exports have no ../protocol). Release exports reject a scene path argument ("compiled without support for path overrides"), so `main.gd` redirects to `net_headless.tscn` on `--netclient` and `run_netplay.sh` passes it. Exported macOS release: `match` tick 10914 equal to oracle, `perturb`, `relay-down` pass. Templates installer `tools/install_export_templates.py` (SHA-256 pinned, extracts the 4 needed files). CI wiring written, **not run**. | `m5-online` |
+
+| Task 6 CI | run 41835343802 on c61efaf | relay, godot (linux, windows), compare-replays all success on first run (exported suite, exported match/perturb/relay-down, Windows console exe). `compare_local_traces.sh 41835343802`: replay/economy/combat MATCHED 1200, netplay MATCHED 364 (linux, windows, macOS export). | `m5-online` c61efaf |
