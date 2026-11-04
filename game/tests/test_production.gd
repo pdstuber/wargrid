@@ -2,9 +2,12 @@ extends RefCounted
 
 const Fixture = preload("res://tests/economy_fixture.gd")
 const Construction = preload("res://scripts/simulation/construction.gd")
+const Skirmish = preload("res://scripts/simulation/skirmish.gd")
+const Production = preload("res://scripts/simulation/production.gd")
+const Simulation = preload("res://scripts/simulation/simulation.gd")
 
 func cases() -> Array[Callable]:
-	return [test_producer_and_free_collector,test_fifo_payment_and_cancel,test_blocked_exit,test_production_power_and_removal]
+	return [test_producer_and_free_collector,test_fifo_payment_and_cancel,test_blocked_exit,test_production_power_and_removal,test_default_rally_mirrored,test_production_never_stalls,test_set_rally_applies_to_next_spawn,test_rally_blocked_cell_falls_back,test_set_rally_same_tick_cases]
 
 func ready(runner) -> Dictionary:
 	var sim = Fixture.make_world(50000)
@@ -93,7 +96,9 @@ func test_blocked_exit(runner) -> bool:
 	Fixture.steps(sim,10)
 	runner.check(sim.snapshot().next_entity_id == next,"P3 blocked allocates no ID")
 	Fixture.send(sim,{"type":"move","entity_ids":[first],"target":[24.5,24.5]})
-	Fixture.steps(sim,20)
+	for tick in range(20):
+		sim.step()
+		if sim.snapshot().next_entity_id != next: break
 	runner.check(sim.snapshot().next_entity_id == next + 1 and Fixture.object(sim,next).position == [16.5,3.5],"P3 first free exit spawns once")
 	Fixture.send(sim,{"type":"cancel_production","building_id":world.factory,"production_id":queue[1].id})
 	sim.step()
@@ -157,3 +162,127 @@ func test_production_power_and_removal(runner) -> bool:
 	retained.step()
 	runner.check(Fixture.object(retained,retained_world.factory).queue.is_empty() and retained.snapshot().entities.filter(func(unit: Dictionary) -> bool: return unit.kind == "vehicle").size() == 1 and retained.snapshot().players[0].credits == paid_credits,"P4 retained queue completes without refund or second charge")
 	return true
+
+func skirmish_barracks(runner) -> Dictionary:
+	var sim = Skirmish.create()
+	var barracks: int = Fixture.build(runner,sim,"barracks",Vector2i(12,12))
+	return {"sim":sim,"barracks":barracks}
+
+func rally(sim, id: int, target: Array, extra: Dictionary = {}) -> Dictionary:
+	var payload := {"type":"set_rally","building_id":id,"target":target}
+	payload.merge(extra)
+	return Fixture.send(sim,payload)
+
+func test_default_rally_mirrored(runner) -> bool:
+	var world: Dictionary = skirmish_barracks(runner)
+	var sim = world.sim
+	runner.check(Fixture.object(sim,world.barracks).rally == [16.5,13.5],"R1 barracks rally in snapshot")
+	runner.check(Production.default_rally(sim,"barracks",Vector2i(34,12)) == [31.5,13.5],"R1 barracks mirrored")
+	runner.check(Production.default_rally(sim,"factory",Vector2i(12,18)) == [17.5,19.5],"R1 factory left")
+	runner.check(Production.default_rally(sim,"factory",Vector2i(33,18)) == [30.5,19.5],"R1 factory right")
+	runner.check(Production.default_rally(sim,"barracks",Vector2i(44,0)) == [41.5,1.5],"R1 right edge origin")
+	runner.check(Production.default_rally(sim,"barracks",Vector2i(0,30)) == [4.5,31.5],"R1 bottom clamp")
+	return true
+
+func test_production_never_stalls(runner) -> bool:
+	var world: Dictionary = skirmish_barracks(runner)
+	var sim = world.sim
+	var produced: int = 0
+	for tick in range(2400):
+		if Fixture.object(sim,world.barracks).queue.size() < 2 and sim.snapshot().players[0].credits >= 225 and produced < 12:
+			produced += 1 if produce(sim,world.barracks,"infantry").ok else 0
+		sim.step()
+	var units: Array = sim.snapshot().entities.filter(func(unit: Dictionary) -> bool: return unit.kind == "infantry")
+	runner.check(produced == 12 and units.size() == 12,"R2 twelve infantry produced")
+	for unit in units:
+		runner.check(unit.status == "arrived" and unit.combat.mode == "guard","R2 unit parked in guard")
+	return true
+
+func test_set_rally_applies_to_next_spawn(runner) -> bool:
+	var world: Dictionary = skirmish_barracks(runner)
+	var sim = world.sim
+	runner.check(rally(sim,world.barracks,[20.5,20.5]).ok and rally(sim,world.barracks,[20.5,22.5]).ok,"R3 set accepted twice")
+	sim.spawn(2,Vector2(12.5,14.5),"builder")
+	runner.check(produce(sim,world.barracks,"infantry").ok,"R3 queued")
+	var next: int = sim.snapshot().next_entity_id
+	Fixture.steps(sim,152)
+	var unit: Dictionary = Fixture.object(sim,next)
+	runner.check(not unit.is_empty() and unit.combat.mode == "move" and unit.combat.target_id == null,"R3 spawned moving")
+	runner.check(not unit.is_empty() and unit.destination != null and Vector2(unit.destination[0],unit.destination[1]).distance_to(Vector2(20.5,22.5)) < 1.5,"R3 destination follows last rally")
+	runner.check(unit.position != [20.5,22.5] and unit.status != "arrived","R3 not yet arrived")
+	Fixture.steps(sim,900)
+	unit = Fixture.object(sim,next)
+	runner.check(unit.combat.mode == "guard" and unit.status == "arrived","R3 guard on arrival")
+	return true
+
+func spawn_one(sim, world: Dictionary) -> Dictionary:
+	var next: int = sim.snapshot().next_entity_id
+	produce(sim,world.barracks,"infantry")
+	Fixture.steps(sim,152)
+	return Fixture.object(sim,next)
+
+func test_rally_blocked_cell_falls_back(runner) -> bool:
+	var world: Dictionary = skirmish_barracks(runner)
+	var sim = world.sim
+	var reactor: int = Fixture.build(runner,sim,"reactor",Vector2i(20,12))
+	runner.check(rally(sim,world.barracks,[20.5,12.5]).ok,"R4 rally on reactor footprint accepted")
+	var unit: Dictionary = spawn_one(sim,world)
+	var goal := Vector2i(Vector2(unit.destination[0],unit.destination[1]).floor()) if unit.get("destination") != null else Vector2i(-1,-1)
+	runner.check(not unit.is_empty() and unit.destination != null and sim._navigation.is_walkable(Vector2(goal) + Vector2(.5,.5)),"R4 footprint rally falls back to walkable cell")
+	runner.check(not unit.is_empty() and unit.destination != null and Vector2(unit.destination[0],unit.destination[1]).distance_to(Vector2(20.5,12.5)) < 3.0,"R4 fallback is near the rally")
+	var walled: Array[Vector2i] = []
+	for y in range(32): walled.append(Vector2i(30,y))
+	var split = Simulation.new(walled,Vector2i(48,32))
+	split.add_player(1,5000)
+	split.spawn(1,Vector2(4.5,4.5),"builder")
+	var barracks: int = Fixture.build(runner,split,"barracks",Vector2i(12,12))
+	runner.check(rally(split,barracks,[40.5,12.5]).ok,"R4 far-side rally accepted")
+	var other: Dictionary = spawn_one(split,{"barracks":barracks})
+	runner.check(not other.is_empty() and other.destination != null and other.destination[0] < 30.0,"R4 other component falls back to reachable side")
+	return true
+
+func test_set_rally_same_tick_cases(runner) -> bool:
+	var world: Dictionary = skirmish_barracks(runner)
+	var sim = world.sim
+	var id: int = world.barracks
+	var tick: int = sim.snapshot().tick + 1
+	var results: Array = [
+		rally(sim,id,[18.5,14.5],{"tick":tick}),
+		produce(sim,id,"infantry"),
+		rally(sim,id,[19.5,15.5],{"tick":tick}),
+	]
+	for index in range(results.size()): runner.check(results[index].ok,"R5 accepted " + str(index))
+	Fixture.steps(sim,2)
+	runner.check(Fixture.object(sim,id).rally == [19.5,15.5],"R5 last same-tick set wins")
+	runner.check(Fixture.send(sim,{"type":"set_rally","building_id":id,"target":[21.5,15.5],"tick":sim.snapshot().tick + 150}).ok,"R5 queued for spawn tick")
+	Fixture.steps(sim,160)
+	runner.check(Fixture.object(sim,id).rally == [21.5,15.5],"R5 rally applied by spawn")
+	produce(sim,id,"infantry")
+	sim.step()
+	var queued: int = Fixture.object(sim,id).queue[0].id
+	var same: int = sim.snapshot().tick + 1
+	runner.check(Fixture.send(sim,{"type":"cancel_production","building_id":id,"production_id":queued,"tick":same}).ok and rally(sim,id,[22.5,15.5],{"tick":same}).ok,"R5 cancel_production and set_rally accepted")
+	Fixture.steps(sim,2)
+	runner.check(Fixture.object(sim,id).queue.is_empty() and Fixture.object(sim,id).rally == [22.5,15.5],"R5 both applied same tick")
+	var cancel: Dictionary = Fixture.send(sim,{"type":"set_rally","building_id":id,"target":[1.5,1.5],"tick":sim.snapshot().tick + 1})
+	var removed: Dictionary = Fixture.send(sim,{"type":"set_rally","building_id":id,"target":[2.5,2.5],"tick":sim.snapshot().tick + 1})
+	runner.check(cancel.ok and removed.ok,"R5 accepted before removal")
+	sim.remove_object(id)
+	Fixture.steps(sim,2)
+	var outcomes: Array = sim.snapshot().command_results.filter(func(row: Dictionary) -> bool: return row.error == "Missing producer")
+	runner.check(outcomes.size() == 2 and sim.snapshot().buildings.is_empty(),"R5 removed producer rejected, nothing orphaned")
+	var fresh: Dictionary = skirmish_barracks(runner)
+	var other = fresh.sim
+	var depot_world = Economy_depot(runner)
+	runner.check(not rally(depot_world.sim,depot_world.depot,[5.5,5.5]).ok,"R5 depot rejected")
+	for row in [[[999.5,1.5],"out of map"],[[INF,1.5],"non-finite"],[[1.5],"short"]]:
+		var before_state: Dictionary = other.snapshot()
+		runner.check(not rally(other,fresh.barracks,row[0]).ok and other.snapshot() == before_state,"R5 invalid target " + row[1])
+	runner.check(not Fixture.send(other,{"type":"set_rally","building_id":fresh.barracks,"target":[5.5,5.5],"player":2,"sequence":0}).ok,"R5 enemy rejected")
+	runner.check(not rally(other,999,[5.5,5.5]).ok,"R5 missing producer rejected")
+	return true
+
+func Economy_depot(runner) -> Dictionary:
+	var sim = Fixture.make_world(50000)
+	Fixture.build(runner,sim,"reactor",Vector2i(5,5))
+	return {"sim":sim,"depot":Fixture.build(runner,sim,"depot",Vector2i(10,4))}

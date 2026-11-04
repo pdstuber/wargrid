@@ -107,6 +107,7 @@ func _payload_fields(type: String) -> Array:
 		"cancel_build": return ["building_id"]
 		"produce": return ["building_id","unit_kind"]
 		"cancel_production": return ["building_id","production_id"]
+		"set_rally": return ["building_id","target"]
 		"gather": return ["entity_ids","source_id"]
 		"attack": return ["entity_ids","target_id"]
 		"attack_move": return ["entity_ids","target"]
@@ -155,6 +156,11 @@ func _validate(command: Dictionary, due: bool = false) -> String:
 		if not _buildings.has(command.building_id) or _buildings[command.building_id].owner != command.player or _buildings[command.building_id].completed: return "Missing owned foundation"
 		if command.type == "resume_build": return Construction.resume(self,command).error
 		return ""
+	if command.type == "set_rally":
+		if not _buildings.has(command.building_id): return "Missing producer"
+		var producer: Dictionary = _buildings[command.building_id]
+		if producer.owner != command.player or not producer.kind in ["barracks","factory"]: return "Invalid owned producer"
+		return _validate_target(command,due)
 	if command.type in ["produce","cancel_production"]:
 		if not _buildings.has(command.building_id): return "Missing producer"
 		var building: Dictionary = _buildings[command.building_id]
@@ -184,7 +190,7 @@ func _validate_target(command: Dictionary, due: bool) -> String:
 		if not is_finite(float(coordinate)): return "Target coordinates must be finite"
 	var target := Vector2(command.target[0],command.target[1])
 	if not _in_bounds(target): return "Target outside map"
-	if not due:
+	if not due and command.has("entity_ids"):
 		for id in command.entity_ids:
 			if _entities[id].kind != "collector" and not _navigation.is_walkable(target): return "Target must be walkable and within map"
 	return ""
@@ -236,11 +242,13 @@ func _apply_orders() -> void:
 					error = placed.error
 					if placed.ok:
 						command.building_id = placed.building_id
+						_buildings[placed.building_id].rally = Production.default_rally(self,command.building_kind,Vector2i(command.origin[0],command.origin[1]))
 						command.goal = placed.approach
 				"resume_build": command.goal = Construction.resume(self,command).approach
 				"cancel_build": Construction.cancel(self,command.building_id)
 				"produce": Production.enqueue(self,command.building_id,command.unit_kind)
 				"cancel_production": Production.cancel(self,command.building_id,command.production_id)
+				"set_rally": _buildings[command.building_id].rally = command.target.duplicate()
 		if command.type != "move":
 			_command_results.append({"tick":_tick,"player":command.player,"sequence":command.sequence,"ok":error.is_empty(),"error":error})
 		if not error.is_empty(): continue
@@ -280,7 +288,7 @@ func _apply_orders() -> void:
 			for unit in members:
 				_stop_unit(unit)
 				_set_intent(unit,"guard")
-				unit.combat.repath_tick = _tick + Combat.REPATH_TICKS - (_tick + unit.id) % Combat.REPATH_TICKS
+				if unit.combat != null: unit.combat.repath_tick = _tick + Combat.REPATH_TICKS - (_tick + unit.id) % Combat.REPATH_TICKS
 			continue
 		if command.type == "attack":
 			if not Combat.valid_target(self,command.player,command.target_id): continue
