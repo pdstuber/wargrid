@@ -83,7 +83,7 @@ Blueprint M5 gate plus the user-approved additions:
 4. Version check, desync report and tool, relay-announced disconnect, and automated tests 1–5 passing (CI green on Linux and Windows; local macOS comparison matched).
 5. `sh tools/run_benchmark.sh` passes, a new ledger row, a rendered rerun if presentation changed.
 6. A match with one friend from their own location, on exported builds (hard gate, user 2026-11-04).
-7. **Findings report** in `docs/reference/` (new M5 note): how hard it was, what broke, measured latency and bytes, cold-start result, and the M9 list (lobby, reconnect, dropped player becomes bot, dynamic delay, more seats, browser).
+7. **Findings report** in `docs/reference/` (new M5 note): how hard it was, what broke, measured latency and bytes, cold-start result, and the M9 list (lobby, reconnect, dropped player becomes bot, dynamic delay, more seats, browser) plus a hosting follow-up (user, 2026-11-04): fly.io no longer offers fixed monthly plans, so cost may become a problem; investigate railway.com for the backend later (investigation only, not part of M5 scope).
 
 ## Constraints
 
