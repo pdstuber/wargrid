@@ -25,13 +25,19 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 **M4 complete and merged into local `main` (2026-11-03).** Evidence: [M4 verification](reference/m4-verification.md). Process changes adopted on `main`: [milestone prompt](milestone-prompt.md), [workflow retrospective](reference/2026-11-03-milestone-workflow-retrospective.md). Roadmap re-aimed at the long-term target (3v3 online with friends against bots, USA/China/GLA, Twilight-Flame-like full-scale map): blueprint §1, §7, §11, §14.
 
-- **M4.1 under way (2026-11-03): Tasks 0–3 done.** Next: Task 4 via "resume from prompt.txt"; see the resume record in [M4.1 verification](reference/m4.1-verification.md). Design change today (user-approved): scan radius only acquires, target kept until dead; `stop` delays re-acquire; unreachable scan target dropped. See newest dated entry. Original five notes:
+- **M4.1 implemented on `m4.1-polish` (2026-11-04), awaiting playtest and merge.** Next: user playtest (rally, enemy info, pile labels, opponent defence, 5–10 minute match) and merge approval, then M5 only on explicit kickoff. Evidence: [M4.1 verification](reference/m4.1-verification.md). The five items below are the original playtest notes, now all implemented:
   1. **Rally point per producer.** Zero Hour production exits read a rally point (`AIPlayer.cpp` 500/680, source revision `0a05454`). Today new units stay on the producer's perimeter, which also stalls production at about 8 infantry and 11 tanks. Touches production, a new command and the replay traces.
   2. **Opponent too passive.** Guard units only fire inside weapon range and never move, and the opponent never defends its base. Proposed: base defense (the same rule the scripted human needed in M4 Task 7) and reaction a bit beyond weapon range; check Zero Hour's idle acquisition range in source before choosing the distance. Changes the match outcome, so the scenario pin (tick 9943) must be recalibrated.
   3. **Selecting an enemy should show info.** `WorldView.pick_entity` only returns player 1 units; add read-only kind, owner and HP for enemy objects.
   4. **Collectors on one supply pile are hard to read.** One dock per pile is M3 design (Zero Hour docking); add visibility: pile label "docked 1 · waiting 2", collector state when selected.
   5. **"4: barracks" next to "S: stop".** HUD wording slip: base line says "1/2/3 build", the skirmish appends "4: barracks" elsewhere; make it one "1/2/3/4 build".
 - **After M4.1:** M5 online spike (lockstep over a WebSocket relay on the user's fly.io account, desktop clients first), then M6 teams and full-scale map, M7 China and GLA (gate: Zero Hour spot checks S1–S3 run or deferred), M8 bots, M9 3v3 online.
+
+## 2026-11-04 — M4.1 exit gate
+
+- Done: Tasks 4–9. Grok branch review (0 bugs) fixed marker kinds, idle enemy mode, O4 assertion, gated budget failure; `/ponytail-review` Ship. Pushed with approval; CI green, macOS traces matched, rendered movement rerun passed. User could not playtest today; window use for the rendered rerun was approved.
+- Not verified: rally marker, enemy line and pile labels were never viewed by a person; reactor-marker and O4 assertions were not seen red.
+- Deferred minors: BM7 lane pin, R5 other-command coverage.
 
 ## 2026-11-03 — M4.1 Tasks 2–3 and scan-rule changes
 
