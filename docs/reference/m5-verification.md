@@ -1,15 +1,17 @@
 # M5 verification
 
 ```text
-Resume record (updated 2026-11-04, Task 9 measured, gate review next)
-Branch / base commit / working-tree state: m5-online / 580920e + suspend + record commit / clean after commit; origin/m5-online behind (push needs approval)
-Last green task / next incomplete task: Task 9 measured / Task 9 gate review (pre-authorized), then restart; Task 10 needs user + friend
-Changed paths since last commit: none after the record commit
-Last command / cases / checks / failures / exit / marker: editor suite 190 / 104,426 / 0 / exit 0 (580920e); relay gradlew test buildFatJar exit 0; remote match (stop-cold relay) NETPLAY PASSED 43.4 s; lobby-across-suspend match_over TICK 10914 both seats
-Known red case or blocker: native dropped (user, 2026-11-04). Unverified: memory use on the machine, health-check effect on autosuspend, idle autosuspend (only manual `fly machine suspend` tested), clock-lag effect after resume (no false timeout seen in one run)
-Approved decisions, pre-authorizations used, deferred gates: User playtest of M4.1 pending. Native dropped, app name stays wargrid-relay-jvm (user). Redeploy with AppCDS + suspend approved and done. `wargrid-relay-native` destroyed (user approved 2026-11-04). Push needs approval.
+Resume record (updated 2026-11-04, Task 9 review applied; restart, then Task 10)
+Branch / base commit / working-tree state: m5-online / 42342a8 + uncommitted Task 9 review fixes (docs, Dockerfile loop bound) / commit pending; origin/m5-online behind (push needs approval)
+Last green task / next incomplete task: Task 9 (review applied) / Task 10 human matches (user at home + one friend), then Tasks 11
+Changed paths since last commit: README.md, docs/session-notes.md, docs/reference/m5-verification.md, docs/superpowers/plans/2026-11-04-m5-online-spike.md, relay/Dockerfile
+Last command / cases / checks / failures / exit / marker: editor suite 190 / 104,426 / 0 / exit 0 (42342a8, before doc edits); Dockerfile change not built (no docker, needs deploy)
+Known red case or blocker: none. Unverified: AppCDS archive actually maps on fly (I1), idle autosuspend, suspend during a live match or lobby (M2), launcher lobby across a suspend over 5 s (M3), cost, `RELAY WELCOME` has no automated check
+Approved decisions, pre-authorizations used, deferred gates: User playtest of M4.1 pending. Native dropped, app name wargrid-relay-jvm. Push, deploy need approval.
 Usage so far (python3 tools/session_usage.py <session files>): not recorded
-Next exact action: dispatch Task 9 gate review; restart after review
+Next exact action: commit review fixes, restart fresh session; before Task 10 watch `fly logs` for autosuspend during the lobby/match; optionally deploy with `-Xlog:cds` (needs approval)
+```
+
 ```text
 Resume record (updated 2026-11-04, Task 9 local files done, deploy pending approval)
 Branch / base commit / working-tree state: m5-online / fcbc43a + Task 9 local commit / clean after commit; origin/m5-online behind (push needs approval)
@@ -20,6 +22,8 @@ Known red case or blocker: no docker locally (remote builder only); native build
 Approved decisions, pre-authorizations used, deferred gates: User playtest of M4.1 pending. Local commit pre-authorized. Push, fly apps create, fly deploy, fly apps destroy need explicit approval.
 Usage so far (python3 tools/session_usage.py <session files>): not recorded
 Next exact action: ask user to approve `fly apps create wargrid-relay-jvm` / `wargrid-relay-native` and one deploy each
+```
+
 ```text
 Resume record (updated 2026-11-04, Task 8 verified)
 Branch / base commit / working-tree state: m5-online / 18a0f62 + Task 8 commit "Add lockstep benchmark and ledger row" / clean after commit; origin/m5-online is behind (push needs approval)
@@ -84,3 +88,7 @@ Task 9 Opus preflight (12 findings, rulings): (1) two machines by default would 
 Task 9 native experiment: `wargrid-relay-native` created, no machine running. 4 remote builds failed: (1) no `xargs` in the GraalVM image, fixed with `microdnf install findutils`; (2-4) native-image "Classes that should be initialized at run time got initialized during image building" for `kotlinx.coroutines.*`, `kotlinx.io.files.*`; trace shows `io.ktor.utils.io.jvm.javaio.ReadingKt` initialised at build time (through the sample's `io.ktor` entry) pulling in `Dispatchers`; adding `--initialize-at-run-time` for those packages still fails. Never reached WebSocket serving. Recommendation: stop, continue with JVM (3.4 s cold p50 acceptable for the spike). Decision on keeping native work and on final app naming/destroying apps is the user's.
 
 | Task 9 AppCDS + suspend | redeploy of `wargrid-relay-jvm` (user approved), `auto_stop_machines = "suspend"`, Dockerfile with AppCDS archive + SerialGC/C1/-UsePerfData | Local time to first /health 200 (5 runs): baseline 221 ms, flags 208, AppCDS 115, AppCDS + flags 95. On fly the AppCDS cold start (stop, wait, probe x5): 4087 / 3197 / 3143 / 3203 / 3467 ms, p50 3203: no clear gain over 3363 p50 before (shared-cpu, other costs dominate; machine start itself about 0.6 s, proxy "machine became reachable" 2.4 s in the earlier log). Manual `fly machine suspend` + probe x5: 485 / 498 / 458 / 1224 / 417 ms, p50 485. Lobby test: seat 1 waiting, machine suspended and resumed, seat 2 joined, both `match_over TICK 10914`. Earlier log also showed idle autostop after about 6 min. Docs (docs.fly.io reference/suspend-resume): resume "a few hundred ms", snapshot discarded on deploy, "design for both resume and cold start paths"; sockets and clock caveats. | `m5-online` 580920e + fly.toml suspend |
+
+Task 9 memory (user's fly Grafana screenshot, 2026-11-04, values read off the plot): used about 100 MiB idle/serving, about 128 MiB peak during a Claude-run match (not the user's), total about 215 MiB usable of 256 MB. Gaps in the series are suspended/stopped time; they do not show whether idle autosuspend fired (manual suspends were also run). Not measured by command.
+
+Gate review (Task 9, Opus, fresh context, tree 42342a8): no Critical. Fixed: I2 cost assumptions now stated as not researched in README; I3 README and records now say idle autosuspend is unverified (the "about 6 min" autostop came from an earlier unrecorded log); M1 stale README/session-notes wording; M8 plan note; M9 unclosed fences; M6 Dockerfile training loop bounded (not built, no docker). Rulings: I1 AppCDS has no measured gain on fly and may not map (default `-Xshare:auto` falls back silently): kept, comment reworded, check with `-Xlog:cds` on the next approved deploy or drop it. M2 an open WebSocket should count as load per fly docs (inferred, untested): watch in Task 10. M3 the lobby-across-suspend test used the headless client; the launcher fails after 5 s silence. M4 remote-mode code wait fixed at 20 s (false fail only). M5 `--probe-relay` has no overall timeout. M6 root user and floating image tags kept for the spike. M7 no heap flag. M10 launcher URL untested. The 43.4 s oracle-checked remote match ran on the pre-AppCDS image; the final image only has the lobby test's tick 10914.

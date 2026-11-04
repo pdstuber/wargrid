@@ -17,7 +17,7 @@ A Godot isometric pixel-art RTS preserving Zero Hour's faction identity, strateg
 - [M1 execution plan](docs/superpowers/plans/2026-11-01-m1-vehicle.md): adopted single-vehicle slice, exact movement/input contracts and acceptance cases.
 - [M2 execution plan](docs/superpowers/plans/2026-11-01-m2-groups.md): group movement contracts, implemented benchmarks and remaining acceptance gates.
 - [Session prompt](prompt.txt): M5 execution handoff; preparation is not implementation approval. Historical prompts: [M3](docs/m3-prompt.txt), [M4](docs/m4-prompt.txt), [M4.1](docs/m4.1-prompt.txt).
-- [M5 design](docs/superpowers/specs/2026-11-04-m5-online-spike-design.md) and [plan](docs/superpowers/plans/2026-11-04-m5-online-spike.md) (both approved 2026-11-04): lockstep over a Ktor relay on fly.io; not started.
+- [M5 design](docs/superpowers/specs/2026-11-04-m5-online-spike-design.md) and [plan](docs/superpowers/plans/2026-11-04-m5-online-spike.md) (both approved 2026-11-04): lockstep over a Ktor relay on fly.io; in progress (Tasks 0–9 done, Task 9 review applied; Task 10 human matches next).
 - [M4.1 design](docs/superpowers/specs/2026-11-03-m4.1-playtest-polish-design.md) (approved 2026-11-03) and [plan](docs/superpowers/plans/2026-11-03-m4.1-playtest-polish.md): idle scan, base defence, rally points, presentation fixes; not started.
 - [M3 plan](docs/superpowers/plans/2026-11-02-m3-base-supplies.md), [approved design](docs/superpowers/specs/2026-11-02-m3-base-supplies-design.md), [source evidence](docs/reference/m3-economy.md) and [original kickoff prompt](docs/m3-prompt.txt): adopted M3 contracts and source-supported values; runtime parity remains unverified.
 - [M4 plan](docs/superpowers/plans/2026-11-03-m4-combat.md), [approved design](docs/superpowers/specs/2026-11-03-m4-combat-design.md) and [combat evidence](docs/reference/m4-combat.md): implemented, verified and merged; see [M4 verification](docs/reference/m4-verification.md).
@@ -73,7 +73,7 @@ Historical M1 visible smoke is supported by user recording/reports. [M1 measurem
 
 ## Relay hosting
 
-The relay runs on fly.io, region `fra`, one shared-cpu-1x 256 MB machine that suspends when idle (resume about 0.5 s; cold start about 3.2 s after a deploy). Rooms live in memory, so deploy exactly one machine (`--ha=false`; `fly machine list` must show one). Status: JVM relay deployed at `wss://wargrid-relay-jvm.fly.dev/ws` (cold 3.4 s p50, warm 78 ms); native dropped (build failed, see the verification file); app name stays `wargrid-relay-jvm`.
+The relay runs on fly.io, region `fra`, one shared-cpu-1x 256 MB machine configured to suspend when idle (resume about 0.5 s after a manual suspend; cold start about 3.2 s p50 after a stop or deploy; idle autosuspend and suspend during a live match are unverified). Rooms live in memory, so deploy exactly one machine (`--ha=false`; `fly machine list` must show one). Status: JVM relay deployed at `wss://wargrid-relay-jvm.fly.dev/ws` (warm 78 ms); native dropped (build failed, see the verification file); app name stays `wargrid-relay-jvm`. Memory on the machine (fly Grafana): about 100 MiB used, about 128 MiB peak during a match. Cost: not researched; fly.io has no fixed monthly plan, so check current shared-cpu-1x 256 MB pricing and the stopped/suspended storage charge before leaving it running.
 
 ```sh
 fly apps create wargrid-relay-jvm

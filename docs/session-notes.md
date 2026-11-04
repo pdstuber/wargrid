@@ -4,7 +4,7 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 ## Session
 
-2026-11-04 M5 online spike designed and planned (both approved by user); handoff in root `prompt.txt`; not started. Before that: M4.1 implemented on `m4.1-polish` (Tasks 0–9, pushed at `ee9e63c`), merged to `main` at `f2c5f9e`. Suite 160 cases / 104,024 checks / 0 failures; `run_benchmark.sh` passes; CI run 41806514021 green (Linux, Windows, compare-replays) and `compare_local_traces.sh` matches macOS (`REPLAYS MATCHED 1200` x3); Grok gate review and `/ponytail-review` done. Rendered movement rerun passed. Resume record: [M4.1 verification](reference/m4.1-verification.md). M3 session detail lives in [M3 verification](reference/m3-verification.md), M4 in [M4 verification](reference/m4-verification.md).
+2026-11-04 M5 online spike designed and planned (both approved by user); handoff in root `prompt.txt`; implementation in progress on `m5-online` (resume record: [M5 verification](reference/m5-verification.md)). Before that: M4.1 implemented on `m4.1-polish` (Tasks 0–9, pushed at `ee9e63c`), merged to `main` at `f2c5f9e`. Suite 160 cases / 104,024 checks / 0 failures; `run_benchmark.sh` passes; CI run 41806514021 green (Linux, Windows, compare-replays) and `compare_local_traces.sh` matches macOS (`REPLAYS MATCHED 1200` x3); Grok gate review and `/ponytail-review` done. Rendered movement rerun passed. Resume record: [M4.1 verification](reference/m4.1-verification.md). M3 session detail lives in [M3 verification](reference/m3-verification.md), M4 in [M4 verification](reference/m4-verification.md).
 
 ## Pending user action
 

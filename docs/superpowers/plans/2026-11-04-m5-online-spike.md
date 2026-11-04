@@ -212,6 +212,8 @@ Task: deploy the relay and decide JVM vs native. Owns: `relay/Dockerfile`, `rela
 - [ ] Decide with the user: keep one, rename to `wargrid-relay` or keep the name, **ask before** `fly apps destroy` of the other. Record the decision, image, cost assumptions and commands in README (hosting) and the verification file; set the launcher default URL.
 - [ ] Commit `Host relay on fly.io`. **Stop gate.**
 
+Task 9 deviations (user-approved, see verification file): native dropped, no `Dockerfile.native`; app is `wargrid-relay-jvm`; `auto_stop_machines = "suspend"`; Dockerfile adds AppCDS.
+
 ### Task 10: Human matches
 
 Task: the exit-gate matches. Owns: verification notes, `docs/reference/m5-online.md` (measurements section). Stop: any desync or crash → systematic-debugging with the desync report before anything else.
