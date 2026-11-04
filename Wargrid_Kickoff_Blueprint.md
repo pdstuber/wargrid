@@ -527,11 +527,11 @@ Infantry, one or two vehicles, targeting, health/damage, basic AI, victory/defea
 
 **Exit gate:** reproducible scenario test for a scripted 5–10 minute match plus combat reference fixtures and manual playability review. This is the first true vertical slice.
 
-### M4.1 — Polish from the first playtest (next)
+### M4.1 — Polish from the first playtest (implemented, awaiting playtest and merge)
 
 User playtest notes, 2026-11-03: a rally point per producer (also fixes production stalling once a producer's perimeter is full), opponent base defense and reaction to enemies just beyond weapon range, read-only info for selected enemy objects, visible collector dock/waiting state at supply piles, and one HUD line "1/2/3/4 build".
 
-**Approved design (2026-11-03):** [playtest polish design](docs/superpowers/specs/2026-11-03-m4.1-playtest-polish-design.md) and [execution plan](docs/superpowers/plans/2026-11-03-m4.1-playtest-polish.md): retail idle scan (vision × guard-outer modifier, both sides), opponent base defence, rally points with a default; AI moods deferred to M8. Not started.
+**Approved design (2026-11-03):** [playtest polish design](docs/superpowers/specs/2026-11-03-m4.1-playtest-polish-design.md) and [execution plan](docs/superpowers/plans/2026-11-03-m4.1-playtest-polish.md): retail idle scan (vision × guard-outer modifier, both sides), opponent base defence, rally points with a default; AI moods deferred to M8. Implemented on `m4.1-polish` (2026-11-04): suite 160 cases / 104,024 checks, benchmarks and CI green; user playtest pending. Evidence: [M4.1 verification](docs/reference/m4.1-verification.md).
 
 **Exit gate:** a behavior test per note, the six-minute scenario recalibrated and re-pinned, benchmarks unchanged within budget, a user playtest.
 
