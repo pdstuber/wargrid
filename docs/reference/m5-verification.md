@@ -1,7 +1,18 @@
 # M5 verification
 
 ```text
-Resume record (updated 2026-11-04, Task 10 prep; CI export-suite fix local, relay match-stats log local)
+Resume record (updated 2026-11-04, Task 11 local exit gate done; reviews and CI pending)
+Branch / base commit / working-tree state: m5-online / fd1c914 pushed? origin level at session start / uncommitted: findings report m5-online.md, status docs, ledger row, playtest-done edits; commit pending
+Last green task / next incomplete task: Task 10 (friend rematch deferred by user) / Task 11 remainder
+Last command / cases / checks / failures / exit / marker: editor suite 192 / 104,432 / 0 / exit 0; benchmark exit 0; relay gradlew test exit 0; nine run_netplay scenarios PASSED
+Known red case or blocker: none known. Pending: /ponytail-review, push approval then CI on the final tree + compare_local_traces.sh, rendered benchmark rerun + HUD look (user approval), Mac vs Mac end-screen text unconfirmed
+Approved decisions, pre-authorizations used, deferred gates: M4.1 playtest declared done by user 2026-11-04 (findings open). Friend rematch on fixed build deferred. Grok gate review done: ruling 1 (closed() before advance) rejected, only our own transport closes, a peer leaving arrives as `left`; 2, 3 fixed.
+Usage so far: not recorded
+Next exact action: /ponytail-review on the branch diff, commit, ask user to approve push
+```
+
+```text
+Resume record (updated 2026-11-04, Task 10 prep (superseded); CI export-suite fix local, relay match-stats log local)
 Branch / base commit / working-tree state: m5-online / 90fca8d (pushed by user) + two local commits (exported-suite fix, relay MATCH END log) / clean after commit; push of these needs approval
 Last green task / next incomplete task: Task 9 / Task 10 human matches
 Last command / cases / checks / failures / exit / marker: editor suite 190 / 104,426 / 0 / exit 0; local macOS exported suite 190 / 104,426 / 0 / exit 0 (before the fix 13 failures, same as CI Linux and Windows on 90fca8d); relay gradlew test 15 tests / 0 failures
@@ -117,3 +128,6 @@ Task 9 native experiment: `wargrid-relay-native` created, no machine running. 4 
 Task 9 memory (user's fly Grafana screenshot, 2026-11-04, values read off the plot): used about 100 MiB idle/serving, about 128 MiB peak during a Claude-run match (not the user's), total about 215 MiB usable of 256 MB. Gaps in the series are suspended/stopped time; they do not show whether idle autosuspend fired (manual suspends were also run). Not measured by command.
 
 Gate review (Task 9, Opus, fresh context, tree 42342a8): no Critical. Fixed: I2 cost assumptions now stated as not researched in README; I3 README and records now say idle autosuspend is unverified (the "about 6 min" autostop came from an earlier unrecorded log); M1 stale README/session-notes wording; M8 plan note; M9 unclosed fences; M6 Dockerfile training loop bounded (not built, no docker). Rulings: I1 AppCDS has no measured gain on fly and may not map (default `-Xshare:auto` falls back silently): kept, comment reworded, check with `-Xlog:cds` on the next approved deploy or drop it. M2 an open WebSocket should count as load per fly docs (inferred, untested): watch in Task 10. M3 the lobby-across-suspend test used the headless client; the launcher fails after 5 s silence. M4 remote-mode code wait fixed at 20 s (false fail only). M5 `--probe-relay` has no overall timeout. M6 root user and floating image tags kept for the spike. M7 no heap flag. M10 launcher URL untested. The 43.4 s oracle-checked remote match ran on the pre-AppCDS image; the final image only has the lobby test's tick 10914.
+
+| Task 11 exit gate, local (2026-11-04, tree fd1c914 + docs) | `sh tools/run_tests.sh`; `sh tools/run_benchmark.sh`; relay `./gradlew test`; `sh tools/run_netplay.sh <s>` | Suite 192 / 104,432 / 0 / exit 0; benchmark exit 0, lockstep p99 0.060 ms; relay tests exit 0 (up to date); all nine scenarios PASSED (match 17.6 s, kill, stall, silent, spike, perturb, version, relay-down, relay-term). Findings: [m5-online.md](m5-online.md). **Pending:** Grok review, `/ponytail-review`, CI on the final tree (needs push approval) and `compare_local_traces.sh`, rendered benchmark rerun and HUD look (user approval), repeat friend match (deferred), real fly bill. |
+- User declared the M4.1 playtest done on 2026-11-04 (supersedes every 'playtest pending' line above in this file).

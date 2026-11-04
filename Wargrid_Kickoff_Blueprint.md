@@ -527,7 +527,7 @@ Infantry, one or two vehicles, targeting, health/damage, basic AI, victory/defea
 
 **Exit gate:** reproducible scenario test for a scripted 5–10 minute match plus combat reference fixtures and manual playability review. This is the first true vertical slice.
 
-### M4.1 — Polish from the first playtest (implemented and merged, awaiting playtest)
+### M4.1 — Polish from the first playtest (implemented and merged, playtest done, findings open)
 
 User playtest notes, 2026-11-03: a rally point per producer (also fixes production stalling once a producer's perimeter is full), opponent base defense and reaction to enemies just beyond weapon range, read-only info for selected enemy objects, visible collector dock/waiting state at supply piles, and one HUD line "1/2/3/4 build".
 
@@ -540,6 +540,8 @@ User playtest notes, 2026-11-03: a rally point per producer (also fixes producti
 Today's 1v1 skirmish played between two machines: deterministic lockstep with a small input delay, a minimal self-hosted WebSocket relay, periodic snapshot-hash exchange that stops the match on desync, waiting when a peer lags. No lobby, reconnect or matchmaking. See §11.
 
 **Exit gate:** a complete match between macOS and Windows without desync, both clients' replay hashes equal, measured command latency against a budget, relay hosting decided and documented.
+
+**M5 status (2026-11-04):** implemented on `m5-online`, not merged; the macOS-Windows match ran on the pre-pacing-fix build and the repeat on the fixed build is a user-accepted deferral. Findings: [M5 findings](docs/reference/m5-online.md).
 
 ### M6 — Teams and a full-scale map
 
