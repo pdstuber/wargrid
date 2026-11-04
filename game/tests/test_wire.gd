@@ -59,6 +59,8 @@ func test_decode_rejects(runner) -> bool:
 		"bad hash value": '{"type":"tick","seat":1,"tick":1,"commands":[],"hash":{"tick":30,"value":"XYZ"}}',
 		"missing field": '{"type":"welcome","seat":1}',
 		"oversize": long_text,
+		"huge integer": '{"type":"ping","t":1e300}',
+		"non-string reason": '{"type":"error","reason":5}',
 	}
 	for name in bad:
 		var decoded: Dictionary = Wire.decode(bad[name])
@@ -76,6 +78,11 @@ func test_vectors(runner) -> bool:
 		var decoded: Dictionary = Wire.decode(vector.text)
 		if vector.get("valid", true):
 			runner.check(decoded.ok and _same(decoded.message, vector.message), "W3 vector decodes " + file)
+			if decoded.ok:
+				for key in Wire._INT_FIELDS.get(decoded.message.type, []):
+					runner.check(typeof(decoded.message[key]) == TYPE_INT, "W3 %s.%s is int" % [file, key])
+				if decoded.message.type == "start":
+					for seat in decoded.message.seats: runner.check(typeof(seat) == TYPE_INT, "W3 start seats are int")
 		else:
 			runner.check(not decoded.ok, "W3 vector invalid " + file)
 	return true

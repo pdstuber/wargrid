@@ -1,15 +1,15 @@
 # M5 verification
 
 ```text
-Resume record (updated 2026-11-04, Task 3 done, at stop gate)
+Resume record (updated 2026-11-04, Task 3 gate review applied, at stop gate)
 Branch / base commit / working-tree state: m5-online / 6111929 + Task 3 commit / clean after commit, nothing pushed
-Last green task / next incomplete task: Task 3 / gate review of Task 3 (Opus, fresh context), then Task 4
+Last green task / next incomplete task: Task 3 (gate review applied) / Task 4 (relay)
 Changed paths since last commit: none after the Task 3 commit
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 177 / 104,308 / 0 / 0 / TESTS PASSED 104308
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 180 / 104,331 / 0 / 0 / TESTS PASSED 104331
 Known red case or blocker: none
 Approved decisions, pre-authorizations used, deferred gates: Task 3 preflight rulings below. User playtest of M4.1 still pending. Railway investigation added as a later follow-up (user 2026-11-04, plan Task 11, design M9 list).
 Usage so far (python3 tools/session_usage.py <session files>): not recorded
-Next exact action: gate review (Opus, fresh context) of Task 3, then restart session; resume at Task 4 (relay)
+Next exact action: restart session; resume at Task 4 (relay). Task 4 must make `left.after_tick` mean the last tick actually forwarded; Task 5 transport filters pong, converts start.seats with Array[int].assign; Task 7 reads `Lockstep.rejections()` for own-command errors and checks sim.match_over() before showing waiting_for()
 ```
 
 ## Evidence
@@ -32,3 +32,5 @@ Task 3 Opus preflight (15 findings, all accepted as rulings): (1) hash compare m
 Process note: Task 3 tests were written together with the implementation, not as a separately observed red run; the first run of the suite had two script-compile errors only, then 177 / 104,308 / 0. Suite exits 0; Lockstep closures that capture their owner form reference cycles (tests clear `send`/hooks; Task 5/7 owners must do the same).
 
 | Task 3 lockstep core | `sh tools/run_tests.sh` | 177 cases / 104,308 checks / 0 failures / exit 0, `TESTS PASSED 104308`; offline `TERMINAL_TICK 10667 / WINNER 1` and replay traces untouched and green | `m5-online` |
+
+Gate review (Task 3, Opus, fresh context, tree fca6843): no Critical. Fixed in one pass (suite 180 / 104,331 / 0, exit 0): Important 1 wire-form test now submits integral target `[.., 3]` and asserts float (was vacuous); 2 `advance` ends `ended_left` when the left seat's packet for the tick is missing (test `test_left_with_missing_packets`); 3 `Lockstep.rejections()` records own commands rejected at issue (test `test_rejections_reported`). Minor fixed: 4 left test supplies packets only to 20; 5 delay test asserts an accepted `stop` result at tick 15 on both clients and both at tick 20 running; 6 vectors check int type for every int field; 7 core_check tests both position axes; 8 `Wire._to_int` rejects |x| > 2^53; 9 `_submit_times` erased on apply; 10 `_last_sent` set in `_init`; 11 `wants_snapshot(tick)`; 12 seats sorted; 15 non-string `error.reason` rejected. Ruling (14): the "building destroyed the same tick it is cancelled" case stays un-arranged (`cancel_build` x `attack` pair only) and `accepted > 60` counts scripted commands too; cost if wrong: a removal-race bug would not show until Task 5/10. Not red-run first: fixes were written with their tests in one edit, then the suite; not mutation-tested. Minor 13 (match_over HUD) carried to Task 7.

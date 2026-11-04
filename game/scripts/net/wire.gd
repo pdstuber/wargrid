@@ -2,6 +2,7 @@ extends RefCounted
 
 const PROTOCOL: int = 1
 const MAX_FRAME_BYTES: int = 65536
+const MAX_SAFE_INT: float = 9007199254740992.0
 const _INT_FIELDS := {
 	"hello": ["protocol"], "welcome": ["seat"], "start": ["delay"], "tick": ["seat", "tick"],
 	"ping": ["t"], "pong": ["t"], "left": ["seat", "after_tick"], "error": [],
@@ -35,6 +36,7 @@ static func decode(text: String) -> Dictionary:
 		if not message.has(key): return _fail("missing " + key)
 	for key in _INT_FIELDS[type]:
 		if not _to_int(message, key): return _fail("non-integer " + key)
+	if type == "error" and message.reason is not String: return _fail("non-string reason")
 	if type == "start" and not _ints_in(message, "seats"): return _fail("non-integer seats")
 	if type == "tick" and not _tick_extras(message): return _fail("invalid tick message")
 	return {"ok": true, "error": "", "message": message}
@@ -45,7 +47,7 @@ static func _fail(reason: String) -> Dictionary:
 static func _to_int(container: Variant, key: Variant) -> bool:
 	var value: Variant = container[key]
 	if value is int: return true
-	if value is not float or not is_finite(value) or value != floorf(value): return false
+	if value is not float or absf(value) > MAX_SAFE_INT or value != floorf(value): return false
 	container[key] = int(value)
 	return true
 

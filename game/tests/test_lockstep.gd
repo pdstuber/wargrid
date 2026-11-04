@@ -61,7 +61,7 @@ class Net extends RefCounted:
 					c.hook.call(c, tick)
 				if c.ls.advance(c.sim):
 					var after: int = c.sim.tick()
-					c.ls.finish_tick(after, c.sim.snapshot() if after % 30 == 0 else null)
+					c.ls.finish_tick(after, c.sim.snapshot() if c.ls.wants_snapshot(after) else null)
 					c.results.append(c.sim.snapshot().command_results)
 			now += 1
 			if not active: break
@@ -79,7 +79,7 @@ func _pair(runner, max_delay: int = 0) -> Net:
 	return net
 
 func cases() -> Array[Callable]:
-	return [test_delay_and_prefill, test_two_clients_equal_hashes, test_own_command_uses_wire_form, test_cross_seat_same_tick, test_many_commands_one_tick, test_desync_detected, test_left_after_tick, test_protocol_errors, test_latency_samples]
+	return [test_delay_and_prefill, test_two_clients_equal_hashes, test_own_command_uses_wire_form, test_cross_seat_same_tick, test_many_commands_one_tick, test_desync_detected, test_left_after_tick, test_protocol_errors, test_latency_samples, test_left_with_missing_packets, test_rejections_reported, test_submit_before_start]
 
 func _scripts(net: Net) -> void:
 	net.clients[0].behavior = func(c) -> void: ScriptedHuman.issue(c.seat_sim)
@@ -100,13 +100,17 @@ func test_delay_and_prefill(runner) -> bool:
 	runner.check(not ls.advance(sim) and ls.status() == "waiting" and ls.waiting_for() == [2] and sim.tick() == 4, "L1 tick 4 waits for seat 2")
 	var net := _pair(runner)
 	net.clients[0].hook = func(c, tick: int) -> void:
-		if tick == 10 and c.seat == 1: c.ls.submit(_move())
+		if tick == 10 and c.seat == 1: c.ls.submit({"type": "stop", "entity_ids": [1]})
 	net.clients[0].target = 20
 	net.clients[1].target = 20
 	net.connect_all()
 	net.run()
-	var applied: Array = net.clients[0].ls.command_log().filter(func(m: Dictionary) -> bool: return m.type == "move")
-	runner.check(applied.size() == 1 and applied[0].tick == 15, "L1 command from tick 10 executes at tick 15")
+	for c in net.clients:
+		var at_15: Array = []
+		for tick_results in c.results:
+			for r in tick_results:
+				if r.tick == 15 and r.ok and r.sequence == 0 and r.player == 1: at_15.append(r)
+		runner.check(at_15.size() == 1 and c.sim.tick() == 20 and c.ls.status() == "running", "L1 seat %d: command from tick 10 accepted in the step at tick 15" % c.seat)
 	return true
 
 func test_two_clients_equal_hashes(runner) -> bool:
@@ -134,7 +138,7 @@ func test_two_clients_equal_hashes(runner) -> bool:
 func test_own_command_uses_wire_form(runner) -> bool:
 	var net := _pair(runner)
 	net.clients[0].hook = func(c, tick: int) -> void:
-		if tick == 3: c.ls.submit({"type": "move", "entity_ids": [1], "target": [0.1 + 0.2, 3.0]})
+		if tick == 3: c.ls.submit({"type": "move", "entity_ids": [1], "target": [0.1 + 0.2, 3]})
 	for c in net.clients: c.target = 12
 	net.connect_all()
 	net.run()
@@ -143,6 +147,7 @@ func test_own_command_uses_wire_form(runner) -> bool:
 	runner.check(log.size() == 1 and log[0].target[0] == 0.30000000000000004, "L3 target keeps full precision")
 	var sent: Dictionary = Wire.decode(net.clients[0].sent.filter(func(t: String) -> bool: return t.contains('"move"'))[0]).message
 	runner.check(sent.commands[0] == log[0], "L3 applied equals decoded sent form")
+	runner.check(typeof(log[0].target[1]) == TYPE_FLOAT, "L3 integral target stays float after the wire")
 	return true
 
 func _own(state: Dictionary, owner: int) -> Dictionary:
@@ -249,7 +254,7 @@ func test_desync_detected(runner) -> bool:
 
 func test_left_after_tick(runner) -> bool:
 	var net := _pair(runner)
-	net.clients[1].target = 21
+	net.clients[1].target = 16
 	net.connect_all()
 	net.clients[0].inbox.append([0, Wire.encode({"type": "left", "seat": 2, "after_tick": 20})])
 	net.run()
@@ -309,4 +314,36 @@ func test_latency_samples(runner) -> bool:
 	net.run()
 	var samples: PackedInt64Array = net.clients[0].ls.latency_samples()
 	runner.check(samples.size() == 1 and samples[0] == 5 * 33333, "L9 latency sample is 5 ticks (%s)" % str(samples))
+	return true
+
+func test_left_with_missing_packets(runner) -> bool:
+	var net := _pair(runner)
+	net.clients[1].target = 16
+	net.connect_all()
+	net.clients[0].inbox.append([0, Wire.encode({"type": "left", "seat": 2, "after_tick": 40})])
+	net.run()
+	var a: Client = net.clients[0]
+	runner.check(a.ls.status() == "ended_left" and a.sim.tick() == 21, "L10 a never-delivered packet ends the match instead of hanging (tick %d)" % a.sim.tick())
+	return true
+
+func test_rejections_reported(runner) -> bool:
+	var net := _pair(runner)
+	net.clients[0].hook = func(c, tick: int) -> void:
+		if tick == 3: c.ls.submit({"type": "move", "entity_ids": [2], "target": [10.5, 10.5]})
+	for c in net.clients: c.target = 12
+	net.connect_all()
+	net.run()
+	var rejected: Array = net.clients[0].ls.rejections()
+	runner.check(rejected.size() == 1 and rejected[0].sequence == 0 and not rejected[0].error.is_empty(), "L11 own rejected command is reported with its error")
+	runner.check(net.clients[1].ls.rejections().is_empty(), "L11 peer commands are not reported as own rejections")
+	return true
+
+func test_submit_before_start(runner) -> bool:
+	var sim = Skirmish.create(true, "human")
+	var seats: Array[int] = [2, 1]
+	var ls = Lockstep.new(1, seats)
+	ls.submit({"type": "stop", "entity_ids": [1]})
+	ls.start(sim.snapshot())
+	runner.check(ls.wants_snapshot(30) and not ls.wants_snapshot(31), "L12 wants_snapshot follows hash_interval")
+	runner.check(ls.waiting_for_tick(4) == [2], "L12 seat order does not matter")
 	return true

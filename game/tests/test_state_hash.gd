@@ -47,7 +47,11 @@ func test_core_check_scope(runner) -> bool:
 			"id": changed.entities[0].id += 1
 			"owner": changed.entities[0].owner += 1
 			"hp": changed.entities[0].hp -= 1
-			"position": changed.entities[0].position[1] += 1.0 / 1024.0
+			"position":
+				changed.entities[0].position[1] += 1.0 / 1024.0
+				var other: Dictionary = state.duplicate(true)
+				other.entities[0].position[0] += 1.0 / 1024.0
+				runner.check(StateHash.core_check(other) != base, "H3 core_check covers position x")
 			"credits": changed.players[0].credits += 1
 		runner.check(StateHash.core_check(changed) != base, "H3 core_check covers " + name)
 	var changed: Dictionary = state.duplicate(true)

@@ -27,10 +27,13 @@ var _left_seat: int = 0
 var _left_after: int = 0
 var _end_reason: String = ""
 var _desync_tick: int = -1
+var _rejections: Array[Dictionary] = []
 
 func _init(seat: int, seats: Array[int], delay: int = 4, hash_interval: int = 30, clock: Callable = Time.get_ticks_usec) -> void:
 	_seat = seat
 	_seats = seats.duplicate()
+	_seats.sort()
+	_last_sent = delay - 1
 	_delay = delay
 	_hash_interval = hash_interval
 	_clock = clock
@@ -81,7 +84,7 @@ func waiting_for_tick(sim_tick: int) -> Array[int]:
 func advance(sim: RefCounted) -> bool:
 	if _ended() or sim.match_over(): return false
 	var tick: int = sim.tick()
-	if _left_seat != 0 and tick > _left_after: return _end("ended_left", "player %d disconnected" % _left_seat)
+	if _left_seat != 0 and (tick > _left_after or not _packets[_left_seat].has(tick)): return _end("ended_left", "player %d disconnected" % _left_seat)
 	if not can_step(tick):
 		_status = "waiting"
 		return false
@@ -89,9 +92,12 @@ func advance(sim: RefCounted) -> bool:
 	var now: int = _clock.call()
 	for s in _seats:
 		for command in _packets[s][tick].commands:
-			if s == _seat: _latency.append(now - _submit_times[command.sequence])
+			var result: Dictionary = sim.issue_command(command)
 			_command_log.append(command)
-			sim.issue_command(command)
+			if s != _seat: continue
+			_latency.append(now - _submit_times[command.sequence])
+			_submit_times.erase(command.sequence)
+			if not result.ok: _rejections.append({"tick": tick, "sequence": command.sequence, "error": result.error})
 	for s in _seats: _packets[s].erase(tick)
 	sim.step()
 	_next_tick = tick + 1
@@ -113,6 +119,12 @@ func finish_tick(tick: int, state: Variant) -> void:
 	_packets[_seat][packet_tick] = Wire.decode(text).message
 	_last_sent = packet_tick
 	send.call(text)
+
+func wants_snapshot(tick: int) -> bool:
+	return tick % _hash_interval == 0
+
+func rejections() -> Array[Dictionary]:
+	return _rejections
 
 func status() -> String:
 	return _status
