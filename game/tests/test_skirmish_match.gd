@@ -56,6 +56,7 @@ func test_mirror_match_script(runner) -> bool:
 	var b = Skirmish.create()
 	var first := {"deposit": -1, "shot": -1, "death": -1, "infantry": -1, "tank": -1}
 	var completed := {}
+	var kinds := {}
 	var deposits := {1: 0, 2: 0}
 	var credits := {1: 10000, 2: 10000}
 	var cargo_before := {}
@@ -80,6 +81,7 @@ func test_mirror_match_script(runner) -> bool:
 		known_buildings = building_ids
 		for building in state.buildings:
 			if building.completed and not completed.has(building.id): completed[building.id] = tick
+			if building.completed: kinds.get_or_add(building.owner, {})[building.kind] = true
 		for event in state.combat_events:
 			if event.type == "shot" and first.shot == -1: first.shot = tick
 			if event.type == "death" and first.death == -1: first.death = tick
@@ -116,6 +118,6 @@ func test_mirror_match_script(runner) -> bool:
 	runner.check(diverged == -1, "S1 two fresh worlds stay identical, first divergence " + str(diverged))
 	runner.check(terminal == TERMINAL_TICK and end.match.winner == WINNER and end.match.ended_tick == TERMINAL_TICK and end.tick == TERMINAL_TICK + 1, "S1 pinned outcome, got " + str(terminal) + " " + str(end.match))
 	runner.check(terminal >= 9000 and terminal <= TICK_LIMIT - 1, "S1 terminal inside the six-minute window")
-	runner.check(completed.size() == 9 and not first.values().has(-1) and first.values().all(func(tick: int) -> bool: return tick < terminal), "S1 economy, production and combat all happened before the end, got " + str(first) + " " + str(completed.size()))
+	runner.check([1, 2].all(func(owner: int) -> bool: return Skirmish.BUILD_ORDER.all(func(kind: String) -> bool: return kinds.get(owner, {}).has(kind))) and not first.values().has(-1) and first.values().all(func(tick: int) -> bool: return tick < terminal), "S1 economy, production and combat all happened before the end, got " + str(first) + " " + str(kinds))
 	runner.check(deposits[1] > 0 and deposits[2] > 0 and boxes_ok and negatives == 0, "S1 both owners deposited, supply conserved, nothing negative: " + str(deposits))
 	return true
