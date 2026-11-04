@@ -9,7 +9,7 @@ const Fixture = preload("res://tests/combat_fixture.gd")
 const EconomyFixture = preload("res://tests/economy_fixture.gd")
 
 func cases() -> Array[Callable]:
-	return [test_combat_definitions, test_health_snapshot_isolation, test_weapon_range_boundary, test_damage_armor_matrix, test_weapon_cooldown, test_guard_priority, test_attack_validation_atomic, test_combat_intent_order, test_orders_preserve_reload, test_acquisition_throttle, test_mutual_lethal_fire, test_target_removed_cleanup, test_destroyed_unit_no_actions, test_destroyed_producer_accounting, test_same_tick_attack_and_cancel, test_removed_target_rescans, test_controller_and_scan_radius, test_scan_acquires_beyond_weapon_range, test_scan_radius_by_controller, test_scan_keeps_target_leaving_radius, test_attack_move_resumes_after_chase, test_scan_same_tick_orders, test_scan_includes_buildings]
+	return [test_combat_definitions, test_health_snapshot_isolation, test_weapon_range_boundary, test_damage_armor_matrix, test_weapon_cooldown, test_guard_priority, test_attack_validation_atomic, test_combat_intent_order, test_orders_preserve_reload, test_acquisition_throttle, test_mutual_lethal_fire, test_target_removed_cleanup, test_destroyed_unit_no_actions, test_destroyed_producer_accounting, test_same_tick_attack_and_cancel, test_removed_target_rescans, test_controller_and_scan_radius, test_scan_acquires_beyond_weapon_range, test_scan_radius_by_controller, test_scan_radius_boundary, test_removed_chaser_clears_chase, test_scan_keeps_target_leaving_radius, test_attack_move_resumes_after_chase, test_scan_same_tick_orders, test_scan_includes_buildings]
 
 func test_combat_definitions(runner) -> bool:
 	runner.check(Definitions.profile("infantry") == {"max_hp": 180000, "armor": "human", "weapon": "rifle"}, "D1 infantry")
@@ -549,6 +549,25 @@ func test_scan_radius_by_controller(runner) -> bool:
 	far.spawn(1, Vector2(7.9, 2.5), "builder")
 	far.step()
 	runner.check(Fixture.object(far, blind).combat.target_id == null, "R1 ai infantry ignores an enemy at 5.4 cells")
+	return true
+
+func test_scan_radius_boundary(runner) -> bool:
+	for case in [[11.29, true], [11.31, false]]:
+		var sim = Fixture.world()
+		var guard: int = sim.spawn(1, Vector2(2.5, 2.5), "infantry")
+		sim.spawn(2, Vector2(case[0], 2.5), "builder")
+		sim.step()
+		runner.check((Fixture.object(sim, guard).combat.target_id != null) == case[1], "R2 enemy at x=" + str(case[0]) + " (radius 8.8): acquired=" + str(case[1]))
+	return true
+
+func test_removed_chaser_clears_chase(runner) -> bool:
+	var sim = Fixture.world()
+	var guard: int = sim.spawn(1, Vector2(2.5, 2.5), "infantry")
+	sim.spawn(2, Vector2(10.5, 2.5), "builder")
+	sim.step()
+	runner.check(sim._chases.has(guard), "R3 chase started")
+	sim.remove_object(guard)
+	runner.check(not sim._chases.has(guard), "R3 removing the chaser clears its chase")
 	return true
 
 func test_scan_keeps_target_leaving_radius(runner) -> bool:
