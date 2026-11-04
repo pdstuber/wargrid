@@ -3,10 +3,11 @@ extends RefCounted
 const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 const Economy = preload("res://tests/economy_fixture.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
+const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
 const Fixture = preload("res://tests/combat_fixture.gd")
 
 func cases() -> Array[Callable]:
-	return [test_skirmish_initial_state, test_roster_production, test_opponent_pays_and_retries, test_opponent_attack_policy, test_match_lifecycle, test_restart_state]
+	return [test_skirmish_initial_state, test_roster_production, test_opponent_pays_and_retries, test_opponent_attack_policy, test_opponent_defends_base, test_defence_skips_busy_units, test_match_lifecycle, test_restart_state]
 
 func _owned(items: Array, player: int) -> Array:
 	return items.filter(func(item: Dictionary) -> bool: return item.owner == player)
@@ -146,6 +147,58 @@ func test_opponent_attack_policy(runner) -> bool:
 	var before: Dictionary = lone.snapshot()
 	Skirmish.issue_opponent(lone)
 	runner.check(lone.snapshot() == before, "A3 an eliminated opponent submits nothing")
+	return true
+
+func _defence_world(runner) -> Array:
+	var sim = Skirmish.create(false)
+	Economy.build(runner, sim, "reactor", Skirmish.origin("reactor", 1))
+	var edge: float = Skirmish.origin("reactor", 1).x + Definitions.building("reactor").footprint.x
+	return [sim, edge]
+
+func _decide_now(sim: RefCounted) -> void:
+	_to_tick(sim, (sim.snapshot().tick / 30 + 1) * 30)
+	Skirmish.issue_opponent(sim, 1)
+	sim.step()
+
+func _mode(sim: RefCounted, id: int) -> Dictionary:
+	return Economy.object(sim, id).combat
+
+func test_opponent_defends_base(runner) -> bool:
+	for case in [[9.0, true], [10.0, true], [10.5, false]]:
+		var world: Array = _defence_world(runner)
+		var sim = world[0]
+		var y: float = Skirmish.origin("reactor", 1).y + 0.5
+		var intruder: int = sim.spawn(2, Vector2(world[1] + case[0], y), "infantry")
+		var tank: int = sim.spawn(1, Vector2(30.5, 28.5), "tank")
+		_decide_now(sim)
+		var combat: Dictionary = _mode(sim, tank)
+		runner.check((combat.mode == "attack" and combat.target_id == intruder) == case[1], "D1 intruder at " + str(case[0]) + " cells: defended=" + str(case[1]) + ", got " + str(combat))
+	return true
+
+func test_defence_skips_busy_units(runner) -> bool:
+	var world: Array = _defence_world(runner)
+	var sim = world[0]
+	var y: float = Skirmish.origin("reactor", 1).y + 0.5
+	var intruder: int = sim.spawn(2, Vector2(world[1] + 9.0, y), "infantry")
+	var far: int = sim.spawn(2, Vector2(46.5, 28.5), "infantry")
+	var attacker: int = sim.spawn(1, Vector2(30.5, 28.5), "tank")
+	var walker: int = sim.spawn(1, Vector2(30.5, 26.5), "tank")
+	var idle: int = sim.spawn(1, Vector2(30.5, 24.5), "tank")
+	Economy.send(sim, {"type": "attack", "entity_ids": [attacker], "target_id": far})
+	Economy.send(sim, {"type": "move", "entity_ids": [walker], "target": [30.5, 20.5]})
+	sim.step()
+	_decide_now(sim)
+	runner.check(_mode(sim, attacker).target_id == far and _mode(sim, walker).mode == "move" and _mode(sim, idle).target_id == intruder, "D2 busy units keep their orders, the idle one defends")
+	sim.remove_object(intruder)
+	sim.remove_object(far)
+	sim.step()
+	runner.check(_mode(sim, idle).mode == "guard" and _mode(sim, attacker).mode == "guard", "D2 after the intruder dies defenders guard where they stand")
+	_decide_now(sim)
+	runner.check(_attack_targets(sim, [attacker, idle]).is_empty(), "D2 no wave before ATTACK_TICK")
+	_to_tick(sim, Skirmish.ATTACK_TICK)
+	Skirmish.issue_opponent(sim, 1)
+	sim.step()
+	runner.check(_attack_targets(sim, [idle]).size() == 1, "D2 the wave picks up idle units after ATTACK_TICK")
 	return true
 
 func _start(runner, sim: RefCounted, players: Array[int], ok: bool, label: String) -> void:

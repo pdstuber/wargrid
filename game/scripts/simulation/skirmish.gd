@@ -8,6 +8,7 @@ const SIZE := Vector2i(48, 32)
 const START_CREDITS: int = 10000
 const DECISION_TICKS: int = 30
 const ATTACK_TICK: int = 5400
+const DEFENCE_RADIUS: float = 10.0
 const BUILD_ORDER: Array[String] = ["reactor", "depot", "barracks", "factory"]
 const LEFT_ORIGINS := {"reactor": Vector2i(8, 12), "depot": Vector2i(8, 5), "barracks": Vector2i(12, 12), "factory": Vector2i(12, 18)}
 const UNIT_FOR := {"barracks": "infantry", "factory": "tank"}
@@ -42,7 +43,8 @@ static func issue_opponent(sim: RefCounted, player: int = 2, attack_tick: int = 
 	var buildings: Array = state.buildings.filter(func(building: Dictionary) -> bool: return building.owner == player)
 	_build(ctx, state, buildings)
 	_produce(ctx, buildings)
-	if state.tick >= attack_tick: _attack(ctx, state)
+	var defending: Dictionary = _defend(ctx, state, buildings)
+	if state.tick >= attack_tick: _attack(ctx, state, defending)
 
 static func _send(ctx: Dictionary, payload: Dictionary) -> bool:
 	payload.tick = ctx.tick
@@ -76,12 +78,12 @@ static func _produce(ctx: Dictionary, buildings: Array) -> void:
 		var cost: int = Definitions.unit(UNIT_FOR[building.kind]).cost
 		if ctx.credits >= cost and _send(ctx, {"type": "produce", "building_id": building.id, "unit_kind": UNIT_FOR[building.kind]}): ctx.credits -= cost
 
-static func _attack(ctx: Dictionary, state: Dictionary) -> void:
+static func _attack(ctx: Dictionary, state: Dictionary, skip: Dictionary = {}) -> void:
 	var enemies: Array = state.entities.filter(func(unit: Dictionary) -> bool: return unit.owner != ctx.player and unit.kind != "collector")
 	enemies.append_array(state.buildings.filter(func(building: Dictionary) -> bool: return building.owner != ctx.player))
 	var groups := {}
 	for unit in state.entities:
-		if unit.owner != ctx.player or unit.combat == null or unit.combat.mode != "guard" or unit.combat.target_id != null: continue
+		if unit.owner != ctx.player or skip.has(unit.id) or not _idle(unit): continue
 		var target: Variant = _pick(unit, enemies)
 		if target == null: continue
 		if not groups.has(target): groups[target] = []
@@ -89,6 +91,29 @@ static func _attack(ctx: Dictionary, state: Dictionary) -> void:
 	var targets: Array = groups.keys()
 	targets.sort()
 	for target in targets: _send(ctx, {"type": "attack", "entity_ids": groups[target], "target_id": target})
+
+static func _idle(unit: Dictionary) -> bool:
+	return unit.combat != null and unit.combat.mode == "guard" and unit.combat.target_id == null
+
+static func _defend(ctx: Dictionary, state: Dictionary, buildings: Array) -> Dictionary:
+	var intruders: Array = state.entities.filter(func(unit: Dictionary) -> bool:
+		if unit.owner == ctx.player or unit.kind == "collector": return false
+		var at := Vector2(unit.position[0], unit.position[1])
+		return buildings.any(func(building: Dictionary) -> bool: return Combat.distance_squared(at, building) <= DEFENCE_RADIUS * DEFENCE_RADIUS))
+	var sent := {}
+	if intruders.is_empty(): return sent
+	var groups := {}
+	for unit in state.entities:
+		if unit.owner != ctx.player or not _idle(unit): continue
+		var target: Variant = _nearest(unit, intruders)
+		if not groups.has(target): groups[target] = []
+		groups[target].append(unit.id)
+	var targets: Array = groups.keys()
+	targets.sort()
+	for target in targets:
+		if not _send(ctx, {"type": "attack", "entity_ids": groups[target], "target_id": target}): continue
+		for id in groups[target]: sent[id] = true
+	return sent
 
 static func _pick(unit: Dictionary, enemies: Array) -> Variant:
 	var position := Vector2(unit.position[0], unit.position[1])
@@ -103,3 +128,14 @@ static func _pick(unit: Dictionary, enemies: Array) -> Variant:
 				best_distance = distance
 		if best != null: return best
 	return null
+
+static func _nearest(unit: Dictionary, enemies: Array) -> int:
+	var position := Vector2(unit.position[0], unit.position[1])
+	var best: int = -1
+	var best_distance: float = INF
+	for enemy in enemies:
+		var distance: float = Combat.distance_squared(position, enemy)
+		if distance < best_distance or (distance == best_distance and enemy.id < best):
+			best = enemy.id
+			best_distance = distance
+	return best
