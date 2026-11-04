@@ -4,11 +4,11 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 ## Session
 
-2026-11-03 M4.1 implementation in progress on `m4.1-polish` (Tasks 0–3 done, Task 3 committed with known red S1 outcome, S1 economy, BM6; local suite 146 cases / 103,948 checks / 3 failures, exit 1). Resume record: [M4.1 verification](reference/m4.1-verification.md). No remote CI or visuals yet for this branch. M3 session detail lives in [M3 verification](reference/m3-verification.md), M4 in [M4 verification](reference/m4-verification.md).
+2026-11-03 M4.1 implementation in progress on `m4.1-polish` (Tasks 0–6 done and committed; known red S1 outcome, S1 economy, BM6 until Tasks 7–8; local suite 159 cases / 104,038 checks / 3 failures, exit 1). Resume record: [M4.1 verification](reference/m4.1-verification.md). No remote CI or visuals yet for this branch. M3 session detail lives in [M3 verification](reference/m3-verification.md), M4 in [M4 verification](reference/m4-verification.md).
 
 ## Pending user action
 
-- Resume M4.1 with "resume from prompt.txt" in a fresh session (next: Task 4). Stop gates after Tasks 1, 3 (reviewed), 7; rendered rerun and playtest at Task 9.
+- Resume M4.1 with "resume from prompt.txt" in a fresh session (next: Task 7). Stop gates after Tasks 1 and 3 (both reviewed), 7; rendered rerun and playtest at Task 9.
 - `main` pushed at `dde91fa`; CI run 41723335566 completed with success. Local branch `gpl-license` is merged and can be deleted. `m4.1-polish` is local only, unpushed.
 - Choose a licence for original art and audio (code is GPL-3.0-or-later).
 - Check in a fresh session whether the project skill settings shrank the skill listing (baseline 48,567 bytes; revert if not).
