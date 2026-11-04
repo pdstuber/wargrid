@@ -16,6 +16,8 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 ## Deferred experiments and research
 
+- Relay scaling (user, 2026-11-04): the single-machine `--ha=false` relay is accepted for M5 only; user is not happy with it as the long-term approach. Revisit after M5 with a load test (N synthetic rooms) and room-affine routing (`fly-replay`, machine id in the room code, code in the URL; unverified on WebSocket upgrade) or another multi-machine design.
+- Project goal (user, 2026-11-04): also an architecture exploration. Over-engineering is acceptable; explore very scalable architectures from the start, from M6 on. M5 design stays as approved.
 - Source/config-supported economy and combat values remain RETAIL_UNVERIFIED; departures stay explicit in reference/design notes.
 - AI moods (Sleep, Alert 1.1, Aggressive 1.5) deferred to M8 bots (user, 2026-11-03).
 - Retail map sizes vs our 48×32 cells: check before choosing the M6 full-scale map.
