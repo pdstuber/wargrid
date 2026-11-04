@@ -37,6 +37,11 @@ func _view_selection() -> Array[int]:
 	else: ids.assign(selected_ids)
 	return ids
 
+func _local_state(state: Dictionary) -> Dictionary:
+	for player in state.players:
+		if player.id == local_player: return player
+	return state.players[0]
+
 func _building(state: Dictionary, id: int) -> Dictionary:
 	for building in state.buildings:
 		if building.id == id: return building
@@ -49,11 +54,11 @@ func _refresh() -> void:
 
 func _refresh_hud(state: Dictionary) -> void:
 	for result in state.command_results:
-		if result.player == 1 and (result.tick > _last_result_tick or (result.tick == _last_result_tick and result.sequence > _last_result_sequence)):
+		if result.player == local_player and (result.tick > _last_result_tick or (result.tick == _last_result_tick and result.sequence > _last_result_sequence)):
 			_error = result.error
 			_last_result_tick = result.tick
 			_last_result_sequence = result.sequence
-	var player: Dictionary = state.players[0]
+	var player: Dictionary = _local_state(state)
 	var building: Dictionary = _building(state,selected_building_id)
 	var detail: String = "Units: " + str(selected_ids)
 	if not building.is_empty(): detail = "%s #%d | Work %d/%d" % [building.kind,building.id,building.work,Definitions.building(building.kind).ticks * 1000]
@@ -84,7 +89,7 @@ func change_zoom(direction: int) -> void:
 func _builder() -> int:
 	if selected_ids.size() != 1: return -1
 	for unit in simulation.snapshot().entities:
-		if unit.id == selected_ids[0] and unit.kind == "builder" and unit.owner == 1: return unit.id
+		if unit.id == selected_ids[0] and unit.kind == "builder" and unit.owner == local_player: return unit.id
 	return -1
 
 func _enter_placement(kind: String) -> void:
@@ -106,7 +111,7 @@ func _update_preview(plane: Vector2) -> void:
 	var key: Array = [_placement_kind,_preview_origin,simulation.tick()]
 	if key == _preview_key: return
 	_preview_key = key
-	var preview: Dictionary = simulation.preview_build(1,_builder(),_placement_kind,_preview_origin)
+	var preview: Dictionary = simulation.preview_build(local_player,_builder(),_placement_kind,_preview_origin)
 	_view.set_build_preview(Construction.cells(_placement_kind,_preview_origin),preview.ok)
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -142,7 +147,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.button_index == MOUSE_BUTTON_LEFT and not event.pressed and is_selecting():
 			_update_drag(event.position)
 			var building: Dictionary = _building(simulation.snapshot(),_view.pick_object(plane))
-			if not _dragged and not building.is_empty() and building.owner == 1:
+			if not _dragged and not building.is_empty() and building.owner == local_player:
 				selected_building_id = building.id
 				selected_ids.clear()
 				_selecting = false
@@ -170,7 +175,7 @@ func _context_order(id: int) -> bool:
 			_refresh()
 		return true
 	var building: Dictionary = _building(state,id)
-	if not building.is_empty() and building.owner == 1 and not building.completed:
+	if not building.is_empty() and building.owner == local_player and not building.completed:
 		if _builder() != -1: _submit({"type":"resume_build","builder_id":_builder(),"building_id":id})
 		else:
 			_error = "Choose one builder"
@@ -180,7 +185,7 @@ func _context_order(id: int) -> bool:
 
 func _set_rally(plane: Vector2) -> bool:
 	var building: Dictionary = _building(simulation.snapshot(),selected_building_id)
-	if building.is_empty() or building.owner != 1 or not building.kind in ["barracks","factory"]: return false
+	if building.is_empty() or building.owner != local_player or not building.kind in ["barracks","factory"]: return false
 	var cell: Vector2 = Iso.plane_to_world(plane).floor() + Vector2(.5,.5)
 	_submit({"type":"set_rally","building_id":building.id,"target":[cell.x,cell.y]})
 	return true

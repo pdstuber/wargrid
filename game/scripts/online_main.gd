@@ -1,0 +1,92 @@
+extends "res://scripts/skirmish_main.gd"
+
+const TimingStats = preload("res://scripts/debug/timing_stats.gd")
+const CATCH_UP_STEPS: int = 2
+const DESYNC_DIR: String = "user://desync"
+const LATENCY_FILE: String = "user://netplay-latency.txt"
+var _transport: RefCounted
+var _lockstep: RefCounted
+var _report_path: String = ""
+var _finished: bool = false
+
+func setup(transport: RefCounted, lockstep: RefCounted, seat: int) -> void:
+	_transport = transport
+	_lockstep = lockstep
+	local_player = seat
+
+func _ready() -> void:
+	super._ready()
+	_lockstep.send = _transport.send_text
+	_lockstep.start(simulation.snapshot())
+
+func _exit_tree() -> void:
+	if _lockstep != null: _lockstep.send = Callable()
+
+func _create_simulation() -> RefCounted:
+	return Skirmish.create(true, "human")
+
+func _step_simulation() -> void:
+	for text in _transport.poll(): _lockstep.receive(text)
+	if _transport.closed() or _transport.silent(Time.get_ticks_usec()): _lockstep.set_relay_lost()
+	for i in CATCH_UP_STEPS:
+		if not _lockstep.advance(simulation): break
+		var tick: int = simulation.tick()
+		_lockstep.finish_tick(tick, simulation.snapshot() if _lockstep.wants_snapshot(tick) else null)
+	if not _finished and (simulation.match_over() or _lockstep.status().begins_with("ended")): _finish()
+
+func _submit(payload: Dictionary) -> void:
+	_error = ""
+	_lockstep.submit(payload)
+	_refresh()
+
+func _restart() -> void:
+	pass
+
+func _finish() -> void:
+	_finished = true
+	if _lockstep.status() == "ended_desync": _report_path = _write_report()
+	_write_latency()
+	_transport.close()
+
+func _write_report() -> String:
+	DirAccess.make_dir_recursive_absolute(DESYNC_DIR)
+	var report: Dictionary = _lockstep.desync_report()
+	var path: String = "%s/desync-seat%d.json" % [DESYNC_DIR, report.seat]
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	if file == null: return ""
+	file.store_string(JSON.stringify(report, "", true, true))
+	file.close()
+	return ProjectSettings.globalize_path(path)
+
+func _write_latency() -> void:
+	var line: String = latency_line()
+	print(line)
+	var file := FileAccess.open(LATENCY_FILE, FileAccess.WRITE)
+	if file == null: return
+	file.store_string(line + "\n")
+	file.close()
+
+func latency_line() -> String:
+	var latency: Dictionary = TimingStats.summary(_ms(_lockstep.latency_samples()))
+	var rtt: Dictionary = TimingStats.summary(_ms(_transport.rtt_samples()))
+	return "NETPLAY LATENCY command n=%d p50=%.1f ms p95=%.1f ms | RTT n=%d p95=%.1f ms" % [latency.n, latency.p50, latency.p95, rtt.n, rtt.p95]
+
+func _ms(microseconds: PackedInt64Array) -> PackedFloat64Array:
+	var out := PackedFloat64Array()
+	for value in microseconds: out.append(float(value) / 1000.0)
+	return out
+
+func notice() -> String:
+	match _lockstep.status():
+		"waiting": return "Waiting for player %d" % _lockstep.waiting_for()[0]
+		"ended_left": return "Player %d disconnected" % _lockstep.left_seat()
+		"ended_relay": return "Connection to relay lost" if _lockstep.end_reason() == "connection to relay lost" else "Relay: " + _lockstep.end_reason()
+		"ended_desync": return "Desync — report saved to %s" % _report_path
+		"ended_protocol": return "Protocol error: " + _lockstep.end_reason()
+	return ""
+
+func _refresh_hud(state: Dictionary) -> void:
+	super._refresh_hud(state)
+	var line: String = notice()
+	if not line.is_empty(): _status.text += "\n" + line
+	$HUD/Restart.hide()

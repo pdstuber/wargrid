@@ -1,15 +1,15 @@
 # M5 verification
 
 ```text
-Resume record (updated 2026-11-04, Task 6 verified)
-Branch / base commit / working-tree state: m5-online / 23d862f + Task 6 commit c61efaf / clean after docs commit, pushed to origin/m5-online (approved)
-Last green task / next incomplete task: Task 6 (CI run 41835343802 green) / Task 7
-Changed paths since last commit: none after the Task 6 commit
-Last command / cases / checks / failures / exit / marker: editor suite 185 / 104,343 / 0 / exit 0; exported macOS test build 185 / 104,343 / 0 / exit 0 (WARGRID_VECTORS set); exported macOS release `match` PASSED tick 10914, `perturb`, `relay-down` PASSED
-Known red case or blocker: none. Client silence timeout (gate I4) approved for Task 7 (5 s, `ended_relay` "connection to relay lost", with a test).
-Approved decisions, pre-authorizations used, deferred gates: User playtest of M4.1 pending. Local commit pre-authorized. Push needs approval (asked at end of this session).
+Resume record (updated 2026-11-04, Task 7 verified)
+Branch / base commit / working-tree state: m5-online / 3d0f4b9 + Task 7 commit "Add online match flow" / clean after commit; origin/m5-online is behind by the docs commit 3d0f4b9 and Task 7 (push needs approval)
+Last green task / next incomplete task: Task 7 (local) / Task 8
+Changed paths since last commit: none after the Task 7 commit
+Last command / cases / checks / failures / exit / marker: editor suite 190 / 104,426 / 0 / exit 0; `run_netplay.sh match` PASSED tick 10914 via launcher redirect
+Known red case or blocker: none. Unverified: visible launcher + online window (needs user approval, batch with Task 10), Gatekeeper wording on current macOS, exported-build run of the launcher.
+Approved decisions, pre-authorizations used, deferred gates: User playtest of M4.1 pending. Local commit pre-authorized. Push needs approval. Client silence timeout implemented (gate I4).
 Usage so far (python3 tools/session_usage.py <session files>): not recorded
-Next exact action: Task 7 (read plan Task 7 first)
+Next exact action: Task 8 (read plan Task 8 first)
 ```
 
 ## Evidence
@@ -52,3 +52,5 @@ Gate review (Task 5, Opus, fresh context, tree 7865fb0): no Critical. Fixed test
 | Task 6 CI exported builds | local macOS | `WargridTestRunner` (class_name on `run_tests.gd`) + `run/main_loop_type.wargrid_tests`; presets 3-5 `* Tests` with feature `wargrid_tests`; exported suite needs `WARGRID_VECTORS` (exports have no ../protocol). Release exports reject a scene path argument ("compiled without support for path overrides"), so `main.gd` redirects to `net_headless.tscn` on `--netclient` and `run_netplay.sh` passes it. Exported macOS release: `match` tick 10914 equal to oracle, `perturb`, `relay-down` pass. Templates installer `tools/install_export_templates.py` (SHA-256 pinned, extracts the 4 needed files). CI wiring written, **not run**. | `m5-online` |
 
 | Task 6 CI | run 41835343802 on c61efaf | relay, godot (linux, windows), compare-replays all success on first run (exported suite, exported match/perturb/relay-down, Windows console exe). `compare_local_traces.sh 41835343802`: replay/economy/combat MATCHED 1200, netplay MATCHED 364 (linux, windows, macOS export). | `m5-online` c61efaf |
+
+| Task 7 online game | `sh tools/run_tests.sh`; `sh tools/run_netplay.sh match` | Local player is a variable (`main.gd`, `base_main.gd`, `skirmish_main.gd`, `world_view.gd`; HUD reads the local player's economy row, was `players[0]`). `online_main.gd` (2 catch-up steps per physics frame, as the headless client), `launcher.gd` as `run/main_scene` and it also redirects `--netclient/--relay/--replay-log/--probe-relay` to the headless client (moved out of `main.gd`). Client silence timeout: `RelayTransport.silent` (5 s without any frame incl. pong, only after the first send) -> `ended_relay` "connection to relay lost". Suite 190 / 104,426 / 0 / exit 0; `match` PASSED tick 10914 through the launcher redirect. Mutation: `pick_entity` back to owner 1 fails 2 N1 checks. Tests written with the implementation, not red-run first. `Play offline` test checks the scene constant, not a scene change; the desync test writes and deletes a file under `user://desync`. Gatekeeper wording in `docs/playing-online.md` unverified on current macOS. Visible launcher/online window not run (needs approval). | `m5-online` |

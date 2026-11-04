@@ -3,12 +3,14 @@ extends RefCounted
 const Wire = preload("res://scripts/net/wire.gd")
 const PING_INTERVAL_USEC: int = 1_000_000
 const BUFFER_BYTES: int = 1 << 17
+const SILENCE_USEC: int = 5_000_000
 
 var _peer := WebSocketPeer.new()
 var _clock: Callable
 var _called: bool = false
 var _sent_any: bool = false
 var _last_ping: int = 0
+var _last_rx: int = 0
 var _rtt := PackedInt64Array()
 
 func _init(clock: Callable = Time.get_ticks_usec) -> void:
@@ -25,6 +27,7 @@ func poll() -> PackedStringArray:
 	if not _called: return frames
 	_peer.poll()
 	while _peer.get_available_packet_count() > 0:
+		_last_rx = _clock.call()
 		var text: String = _peer.get_packet().get_string_from_utf8()
 		if not _take_pong(text): frames.append(text)
 	var ping: String = take_ping(_clock.call())
@@ -33,6 +36,7 @@ func poll() -> PackedStringArray:
 
 func send_text(text: String) -> void:
 	if not is_open(): return
+	if not _sent_any: _last_rx = _clock.call()
 	_sent_any = true
 	_peer.send_text(text)
 
@@ -50,6 +54,9 @@ func rtt_samples() -> PackedInt64Array:
 
 func ping_due(now: int) -> bool:
 	return _sent_any and now - _last_ping >= PING_INTERVAL_USEC
+
+func silent(now: int) -> bool:
+	return _sent_any and now - _last_rx >= SILENCE_USEC
 
 func take_ping(now: int) -> String:
 	if not is_open() or not ping_due(now): return ""

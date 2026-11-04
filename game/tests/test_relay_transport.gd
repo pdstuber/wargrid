@@ -4,7 +4,7 @@ const RelayTransport = preload("res://scripts/net/relay_transport.gd")
 const Wire = preload("res://scripts/net/wire.gd")
 
 func cases() -> Array[Callable]:
-	return [test_never_connected, test_ping_due, test_pong_recorded, test_buffers_fit_frame_cap]
+	return [test_never_connected, test_ping_due, test_pong_recorded, test_buffers_fit_frame_cap, test_silence]
 
 func test_never_connected(runner) -> bool:
 	var transport = RelayTransport.new()
@@ -36,4 +36,14 @@ func test_pong_recorded(runner) -> bool:
 func test_buffers_fit_frame_cap(runner) -> bool:
 	var transport = RelayTransport.new()
 	runner.check(transport._peer.inbound_buffer_size >= Wire.MAX_FRAME_BYTES and transport._peer.outbound_buffer_size >= Wire.MAX_FRAME_BYTES, "T4 WebSocket buffers hold a 65,536-byte frame")
+	return true
+
+func test_silence(runner) -> bool:
+	var transport = RelayTransport.new()
+	runner.check(not transport.silent(60_000_000), "T5 never sent is never silent")
+	transport._sent_any = true
+	transport._last_rx = 1_000_000
+	runner.check(not transport.silent(5_999_999) and transport.silent(6_000_000), "T5 silent after exactly 5 s without a frame")
+	transport._last_rx = 6_000_000
+	runner.check(not transport.silent(10_999_999), "T5 a received frame restarts the window")
 	return true
