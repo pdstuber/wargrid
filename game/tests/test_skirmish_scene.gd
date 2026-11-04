@@ -5,9 +5,10 @@ const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 const BaseScene = preload("res://tests/test_base_scene.gd")
 const View = preload("res://scripts/presentation/world_view.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
+const Fixture = preload("res://tests/economy_fixture.gd")
 
 func cases() -> Array[Callable]:
-	return [test_skirmish_ready_and_tick, test_combat_context_input, test_match_hud_and_restart, test_combat_view, test_hud_layout_and_focus]
+	return [test_skirmish_ready_and_tick, test_combat_context_input, test_match_hud_and_restart, test_combat_view, test_hud_layout_and_focus, test_hud_build_line, test_enemy_selection_read_only, test_rally_input_and_marker, test_supply_pile_labels]
 
 func _setup(runner):
 	var main = Scene.instantiate()
@@ -197,6 +198,108 @@ func test_hud_layout_and_focus(runner) -> bool:
 	main.selected_ids.clear()
 	main._refresh()
 	runner.check(view.focus_targets().is_empty(), "K5 focus shows only for the selection")
+	main.inspected_id = ids.enemy
+	main._refresh()
+	runner.check(economy.position.y >= status.position.y + status.get_minimum_size().y, "K5 buttons below an inspected enemy line")
+	var pile: Dictionary = _pile_world(main)
+	main.selected_ids.assign([pile.waiting])
+	main._refresh()
+	runner.check(economy.position.y >= status.position.y + status.get_minimum_size().y, "K5 buttons below a queued collector line")
+	main.free()
+	return true
+
+func _pile_world(main) -> Dictionary:
+	var sim = Skirmish.create(false)
+	var source: int = sim.add_supply_source(Vector2i(8, 8), 10)
+	var first: int = sim.spawn(1, Vector2(9.5, 9.5), "collector")
+	var second: int = sim.spawn(1, Vector2(9.5, 9.5), "collector")
+	Fixture.send(sim, {"type": "gather", "entity_ids": [first, second], "source_id": source})
+	Fixture.steps(sim, 3)
+	sim.start_match([1, 2] as Array[int])
+	main.simulation = sim
+	main.selected_ids.clear()
+	main._refresh()
+	return {"source": source, "docked": first, "waiting": second}
+
+func test_hud_build_line(runner) -> bool:
+	var main = await _setup(runner)
+	var text: String = main.get_node("HUD/Status").text
+	runner.check(text.contains("1/2/3/4 build") and not text.contains("4: barracks"), "H1 skirmish build line, got " + text)
+	var base_helper = BaseScene.new()
+	var base = await base_helper.setup(runner)
+	var base_text: String = base.get_node("HUD/Status").text
+	runner.check(base_text.contains("1/2/3 build") and not base_text.contains("1/2/3/4"), "H1 base scene keeps 1/2/3 build")
+	base.free()
+	main.free()
+	return true
+
+func test_enemy_selection_read_only(runner) -> bool:
+	var helper = BaseScene.new()
+	var main = await _setup(runner)
+	var ids: Dictionary = _arena(main)
+	var enemy_point: Vector2 = Iso.world_to_plane(Vector2(15.5, 10.5)) + Vector2(0, -8)
+	helper.pointer(main, enemy_point, MOUSE_BUTTON_LEFT, true)
+	helper.pointer(main, enemy_point, MOUSE_BUTTON_LEFT, false)
+	var text: String = main.get_node("HUD/Status").text
+	runner.check(main.inspected_id == ids.enemy and main.selected_ids.is_empty(), "E1 left-click selects the enemy read-only and replaces own selection")
+	runner.check(text.contains("Enemy (P2) tank #%d HP 480/480" % ids.enemy), "E1 enemy line, got " + text)
+	var before: Dictionary = main.simulation.snapshot()
+	helper.key(main, KEY_E)
+	helper.key(main, KEY_A)
+	helper.key(main, KEY_S)
+	helper.pointer(main, enemy_point, MOUSE_BUTTON_RIGHT, true)
+	helper.pointer(main, Iso.world_to_plane(Vector2(20.5, 12.5)), MOUSE_BUTTON_RIGHT, true)
+	runner.check(main.simulation.snapshot() == before and not main._attack_move_mode and main.inspected_id == ids.enemy, "E1 E, A, S and right-clicks send nothing")
+	var own_point: Vector2 = Iso.world_to_plane(Vector2(10.5, 10.5)) + Vector2(0, -8)
+	helper.pointer(main, own_point, MOUSE_BUTTON_LEFT, true)
+	helper.pointer(main, own_point, MOUSE_BUTTON_LEFT, false)
+	runner.check(main.selected_ids == [ids.infantry] and main.inspected_id == -1, "E1 own click selects own unit and clears inspection")
+	helper.pointer(main, enemy_point, MOUSE_BUTTON_LEFT, true)
+	helper.pointer(main, enemy_point, MOUSE_BUTTON_LEFT, false)
+	main.simulation.remove_object(ids.enemy)
+	main._refresh()
+	runner.check(main.inspected_id == -1, "E1 dead enemy clears inspection")
+	main.free()
+	return true
+
+func test_rally_input_and_marker(runner) -> bool:
+	var helper = BaseScene.new()
+	var main = await _setup(runner)
+	var sim = Skirmish.create()
+	var barracks: int = Fixture.build(runner, sim, "barracks", Vector2i(12, 12))
+	main.simulation = sim
+	main.selected_ids.clear()
+	main._refresh()
+	var view = main.get_node("WorldView")
+	runner.check(view.rally_marker().is_empty(), "R1 no marker without a selection")
+	var click: Vector2 = Iso.world_to_plane(Vector2(13.5, 13.5))
+	helper.pointer(main, click, MOUSE_BUTTON_LEFT, true)
+	helper.pointer(main, click, MOUSE_BUTTON_LEFT, false)
+	runner.check(main.selected_building_id == barracks and view.rally_marker() == [16.5, 13.5], "R1 marker shows the default rally while selected")
+	helper.pointer(main, Iso.world_to_plane(Vector2(20.5, 14.5)), MOUSE_BUTTON_RIGHT, true)
+	var orders: Array = sim.snapshot().pending_commands.filter(func(command: Dictionary) -> bool: return command.type == "set_rally")
+	runner.check(orders.size() == 1 and orders[0].building_id == barracks and orders[0].target == [20.5, 14.5], "R1 right-click on ground issues set_rally for that cell")
+	main._physics_process(0.0)
+	runner.check(view.rally_marker() == [20.5, 14.5], "R1 marker follows the new rally")
+	helper.key(main, KEY_ESCAPE)
+	runner.check(view.rally_marker().is_empty(), "R1 marker absent when deselected")
+	main.free()
+	return true
+
+func test_supply_pile_labels(runner) -> bool:
+	var main = await _setup(runner)
+	var pile: Dictionary = _pile_world(main)
+	var view = main.get_node("WorldView")
+	var source: Dictionary = Fixture.object(main.simulation, pile.source)
+	runner.check(Fixture.object(main.simulation, pile.docked).collection.phase in ["loading"] and Fixture.object(main.simulation, pile.waiting).collection.phase == "waiting_source", "S1 fixture: one collector docked, one waiting")
+	runner.check(view.pile_lines(source) == PackedStringArray(["Boxes %d" % source.boxes, "docked 1 · waiting 1"]), "S1 pile label, got " + str(view.pile_lines(source)))
+	main.selected_ids.assign([pile.waiting])
+	main._refresh()
+	runner.check(main.get_node("HUD/Status").text.contains("waiting_source (1st in line)"), "S1 waiting collector shows its place in line")
+	main.selected_ids.assign([pile.docked])
+	main._refresh()
+	var text: String = main.get_node("HUD/Status").text
+	runner.check(text.contains("| loading") and not text.contains("in line"), "S1 docked collector shows its phase only")
 	main.free()
 	return true
 

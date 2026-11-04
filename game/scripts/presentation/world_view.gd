@@ -7,6 +7,7 @@ var _preview_valid: bool = false
 var _state: Dictionary = {}
 var _selected_ids: Array[int] = []
 var _last_points: Dictionary = {}
+var _inspected_id: int = -1
 const OwnerColors := {1: Color("376eac"), 2: Color("b04a3a")}
 
 static func owner_color(owner: int) -> Color:
@@ -38,10 +39,10 @@ func pick_target(plane_point: Vector2, own: int) -> int:
 		if Rect2(Vector2(building.origin[0], building.origin[1]), Vector2(definition.footprint)).has_point(point): return building.id
 	return -1
 
-func pick_entity(plane_point: Vector2) -> int:
+func pick_entity(plane_point: Vector2, any_owner: bool = false) -> int:
 	for i in range(_state.get("entities", []).size() - 1, -1, -1):
 		var unit: Dictionary = _state.entities[i]
-		if unit.owner == 1 and _vehicle_bounds(unit).has_point(plane_point):
+		if (any_owner or unit.owner == 1) and _vehicle_bounds(unit).has_point(plane_point):
 			return unit.id
 	return -1
 
@@ -51,7 +52,9 @@ func _draw() -> void:
 	_draw_terrain()
 	for source in _state.get("sources",[]):
 		_draw_footprint(source.origin,Vector2i(3,3),Color("9f8045"),_selected_ids.has(source.id))
-		_draw_text(source.origin,"Boxes %d" % source.boxes)
+		var lines: PackedStringArray = pile_lines(source)
+		_draw_text(source.origin,lines[0])
+		_draw_text([source.origin[0],source.origin[1] + 0.8],lines[1])
 	for building in _state.get("buildings",[]):
 		var definition: Dictionary = Definitions.building(building.kind)
 		if definition.is_empty(): continue
@@ -75,6 +78,8 @@ func _draw() -> void:
 			draw_line(point - Vector2(6, 0), point + Vector2(6, 0), Color("8cff87"), 2.0)
 			draw_line(point - Vector2(0, 6), point + Vector2(0, 6), Color("8cff87"), 2.0)
 	_draw_focus()
+	_draw_inspected()
+	_draw_rally()
 	_draw_cues()
 
 func _draw_health(top_left: Vector2, object: Dictionary, selected: bool) -> void:
@@ -101,6 +106,44 @@ func _draw_focus() -> void:
 		var polygon := _cell_polygon(Vector2(building.origin[0], building.origin[1]), Vector2(definition.footprint))
 		polygon.append(polygon[0])
 		draw_polyline(polygon, Color("ff3b30"), 3.0 if targets[building.id] else 1.5)
+
+func set_inspected(id: int) -> void:
+	_inspected_id = id
+	queue_redraw()
+
+func _draw_inspected() -> void:
+	for unit in _state.get("entities", []):
+		if unit.id == _inspected_id: draw_rect(_vehicle_bounds(unit).grow(2.0), Color("ff3b30"), false, 2.0)
+	for building in _state.get("buildings", []):
+		var definition: Dictionary = Definitions.building(building.kind)
+		if building.id != _inspected_id or definition.is_empty(): continue
+		var polygon := _cell_polygon(Vector2(building.origin[0], building.origin[1]), Vector2(definition.footprint))
+		polygon.append(polygon[0])
+		draw_polyline(polygon, Color("ff3b30"), 2.0)
+
+func rally_marker() -> Array:
+	for building in _state.get("buildings", []):
+		if _selected_ids.has(building.id) and building.owner == 1 and building.has("rally"): return building.rally
+	return []
+
+func _draw_rally() -> void:
+	var marker: Array = rally_marker()
+	if marker.is_empty(): return
+	var point: Vector2 = Iso.world_to_plane(Vector2(marker[0], marker[1]))
+	draw_line(point, point + Vector2(0, -22), Color("8cff87"), 2.0)
+	draw_colored_polygon(PackedVector2Array([point + Vector2(0, -22), point + Vector2(12, -18), point + Vector2(0, -14)]), Color("8cff87"))
+
+func pile_lines(source: Dictionary) -> PackedStringArray:
+	var waiting: int = 0
+	for unit in _state.get("entities", []):
+		if unit.get("collection") != null and unit.collection.target_id == source.id and unit.collection.phase == "waiting_source": waiting += 1
+	return PackedStringArray(["Boxes %d" % source.boxes, "docked %d · waiting %d" % [0 if source.active_collector_id == null else 1, waiting]])
+
+static func line_position(entities: Array, unit: Dictionary) -> int:
+	var place: int = 1
+	for other in entities:
+		if other.get("collection") != null and other.id < unit.id and other.collection.target_id == unit.collection.target_id and other.collection.phase.begins_with("waiting_"): place += 1
+	return place
 
 func _draw_cues() -> void:
 	for event in _state.get("combat_events", []):

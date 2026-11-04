@@ -25,6 +25,9 @@ func _create_simulation() -> RefCounted:
 func _placement_kinds() -> Dictionary:
 	return {KEY_1:"reactor",KEY_2:"depot",KEY_3:"factory"}
 
+func _build_hint() -> String:
+	return "1/2/3 build"
+
 func _production_kind(building: Dictionary) -> String:
 	return Definitions.building(building.kind).produces
 
@@ -54,7 +57,7 @@ func _refresh_hud(state: Dictionary) -> void:
 	var building: Dictionary = _building(state,selected_building_id)
 	var detail: String = "Units: " + str(selected_ids)
 	if not building.is_empty(): detail = "%s #%d | Work %d/%d" % [building.kind,building.id,building.work,Definitions.building(building.kind).ticks * 1000]
-	_status.text = "Credits: %d | Power: %d/%d | Tick: %d\n%s | Place: %s\n1/2/3 build | Right: context/move | E: produce | Esc: cancel\n%s" % [player.credits,player.power_supply,player.power_demand,state.tick,detail,_placement_kind,_error]
+	_status.text = "Credits: %d | Power: %d/%d | Tick: %d\n%s | Place: %s\n%s | Right: context/move | E: produce | Esc: cancel\n%s" % [player.credits,player.power_supply,player.power_demand,state.tick,detail,_placement_kind,_build_hint(),_error]
 	$HUD/Economy/Produce.visible = not building.is_empty() and building.completed and not _production_kind(building).is_empty()
 	$HUD/Economy/CancelBuild.visible = not building.is_empty() and not building.completed
 	_refresh_queue(building.get("queue",[]))
@@ -135,7 +138,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var plane: Vector2 = _view.make_canvas_position_local(event.position)
 		if event.button_index == MOUSE_BUTTON_RIGHT and event.pressed and not is_selecting():
-			if _context_order(_view.pick_object(plane)): return
+			if _context_order(_view.pick_object(plane)) or _set_rally(plane): return
 		if event.button_index == MOUSE_BUTTON_LEFT and not event.pressed and is_selecting():
 			_update_drag(event.position)
 			var building: Dictionary = _building(simulation.snapshot(),_view.pick_object(plane))
@@ -174,6 +177,13 @@ func _context_order(id: int) -> bool:
 			_refresh()
 		return true
 	return false
+
+func _set_rally(plane: Vector2) -> bool:
+	var building: Dictionary = _building(simulation.snapshot(),selected_building_id)
+	if building.is_empty() or building.owner != 1 or not building.kind in ["barracks","factory"]: return false
+	var cell: Vector2 = Iso.plane_to_world(plane).floor() + Vector2(.5,.5)
+	_submit({"type":"set_rally","building_id":building.id,"target":[cell.x,cell.y]})
+	return true
 
 func _produce_selected() -> void:
 	var building: Dictionary = _building(simulation.snapshot(),selected_building_id)
