@@ -21,6 +21,10 @@ var _camera_bounds: Rect2
 @onready var _selection_box: ReferenceRect = $HUD/SelectionBox
 
 func _ready() -> void:
+	# Release exports reject a scene path argument, so CI and Task 10 reach the headless client through this flag.
+	if "--netclient" in OS.get_cmdline_user_args():
+		get_tree().change_scene_to_file.call_deferred("res://scenes/net_headless.tscn")
+		return
 	simulation = _create_simulation()
 	_reset_camera()
 	_refresh()

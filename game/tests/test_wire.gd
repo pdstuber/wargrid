@@ -68,7 +68,8 @@ func test_decode_rejects(runner) -> bool:
 	return true
 
 func test_vectors(runner) -> bool:
-	var dir: String = ProjectSettings.globalize_path("res://").path_join("../protocol/vectors")
+	# Exports have no ../protocol next to res://, so CI points the exported suite at the checkout.
+	var dir: String = OS.get_environment("WARGRID_VECTORS") if OS.has_environment("WARGRID_VECTORS") else ProjectSettings.globalize_path("res://").path_join("../protocol/vectors")
 	var files: PackedStringArray = DirAccess.get_files_at(dir)
 	runner.check(files.size() >= 12, "W3 vector files found")
 	for file in files:
