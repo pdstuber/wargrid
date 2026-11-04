@@ -16,7 +16,7 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 ## Deferred experiments and research
 
-- Relay scaling (user, 2026-11-04): the single-machine `--ha=false` relay is accepted for M5 only; user is not happy with it as the long-term approach. Revisit after M5 with a load test (N synthetic rooms) and room-affine routing (`fly-replay`, machine id in the room code, code in the URL; unverified on WebSocket upgrade) or another multi-machine design.
+- Relay scaling (user, 2026-11-04): the single-machine `--ha=false` relay is accepted for M5 only; user is not happy with it as the long-term approach. Placed in M9 (user, 2026-11-04): cloud-agnostic multi-machine relay (no provider-only routing, so no `fly-replay`), fly.io stays the host for now, Railway evaluated in M5 Task 11; load test (N synthetic rooms) first. Proposal review and options: [relay scaling](reference/relay-scaling.md).
 - Project goal (user, 2026-11-04): also an architecture exploration. Over-engineering is acceptable; explore very scalable architectures from the start, from M6 on. M5 design stays as approved.
 - Source/config-supported economy and combat values remain RETAIL_UNVERIFIED; departures stay explicit in reference/design notes.
 - AI moods (Sleep, Alert 1.1, Aggressive 1.5) deferred to M8 bots (user, 2026-11-03).
@@ -43,7 +43,7 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 ## 2026-11-04 — M5 design and plan
 
-- User intent: the spike shows how hard multiplayer is, as the thin foundation M9 builds on (not throwaway). Target: user and two friends (all in Bavaria) vs three bots over the internet; lobby later. User is a backend developer; richer fly.io services are fine.
+- User intent: the spike shows how hard multiplayer is, as the thin foundation M9 builds on (not throwaway). Target: user and two friends (all in Bavaria) vs three bots over the internet; lobby later. User is a backend developer; richer fly.io services are fine in deploy config, but routing, discovery and placement stay cloud-agnostic (user, 2026-11-04).
 - User decisions: approach A (dumb relay, clients stamp ticks) plus relay-owned membership, version check, desync report and tool, automated failure tests (after user recalled Generals online as unreliable; source shows P2P UDP with firewall probing and 42 "mismatch" fix commits in GeneralsGameCode `afc2a103f`); Kotlin + Ktor (CIO, required for GraalVM per ktor.io/docs/graalvm.html) with a GraalVM cold-start experiment; latency ≤ 250 ms p95 through fly `fra`; lockstep overhead 10% of a tick (0.55 ms p99 dev); exported builds in scope; friend match is a hard gate; implementation by Sonnet 5.5 medium with Opus preflights.
 - Done: `flyctl` v0.5.3 installed (Homebrew), `fly auth login --code` completed from the user's phone. Godot probe: plain `JSON.stringify` drops float precision (`0.30000000000000004` → `0.3`); `JSON.parse_string` returns ints as floats; both handled in the plan. One builder check on the design (macOS CI dropped, offline path, cross-OS desync diff, budgets) folded in.
 - Not done: no implementation, no tests run, no export templates installed, no fly app created or deployed. Unverified: export-template determinism vs editor binary, `--script`/`--headless` in release templates, Ktor WebSockets in a native image (all Task 1 or Task 9).
