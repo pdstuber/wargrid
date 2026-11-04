@@ -2,7 +2,9 @@ extends RefCounted
 
 const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
 const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
-const REPATH_TICKS: int = 15
+const REPATH_TICKS: int = 8
+# Fixed in ticks: a shorter wait lets attack_move dither at a wall (U1, cadence 8 vs 15).
+const UNREACHABLE_BACKOFF_TICKS: int = 60
 
 static func record(sim: RefCounted, id: int) -> Dictionary:
 	if sim._entities.has(id): return sim._entities[id]
@@ -60,6 +62,7 @@ static func plan(sim: RefCounted, unit_ids: Array[int]) -> void:
 					grid = _build_grid(sim)
 					grid_ready = true
 				combat.target_id = _nearest(sim, unit, grid)
+				if combat.target_id != null and not _within(unit, record(sim, combat.target_id), _reach(unit.kind)): sim._scan_chases += 1
 				if combat.target_id == null: combat.repath_tick = sim._tick + REPATH_TICKS - (sim._tick + unit.id) % REPATH_TICKS
 		if combat.target_id == null:
 			_end_chase(sim, unit)
@@ -67,7 +70,7 @@ static func plan(sim: RefCounted, unit_ids: Array[int]) -> void:
 			_engage(sim, unit, record(sim, combat.target_id), held)
 			if unit.status == "blocked":
 				combat.target_id = null
-				combat.repath_tick = sim._tick + 4 * REPATH_TICKS
+				combat.repath_tick = sim._tick + UNREACHABLE_BACKOFF_TICKS
 				_end_chase(sim, unit)
 		if mode != "attack_move": continue
 		var moving: bool = unit.status == "moving" or unit.status == "path_pending"
@@ -95,7 +98,6 @@ static func _engage(sim: RefCounted, unit: Dictionary, target: Dictionary, held:
 		return
 	if not sim._chases.has(unit.id):
 		sim._chases[unit.id] = unit.destination.duplicate() if unit.combat.mode == "attack_move" and unit.destination != null else null
-		sim._scan_chases += 1
 	_approach(sim, unit, target, held)
 
 static func _end_chase(sim: RefCounted, unit: Dictionary) -> void:

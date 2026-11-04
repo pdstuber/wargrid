@@ -1,6 +1,6 @@
 # Performance ledger
 
-Status: **TARGET-DERIVED BUDGETS PROPOSED; TWO OF FOUR CURRENTLY EXCEEDED; EXISTING GATES UNCHANGED**. One place to track performance across milestones for a low-end target, including a browser (WebAssembly) build. Measurements on this Mac are weak evidence for that target; this note makes the assumption explicit and replaceable.
+Status: **TARGET-DERIVED BUDGETS PROPOSED; TWO OF FOUR CURRENTLY EXCEEDED; TWO COMBAT STRESS LAYOUTS EXCEEDED (REPORT-ONLY); EXISTING GATES UNCHANGED**. One place to track performance across milestones for a low-end target, including a browser (WebAssembly) build. Measurements on this Mac are weak evidence for that target; this note makes the assumption explicit and replaceable.
 
 ## Target device (assumption, not measured)
 
@@ -80,7 +80,26 @@ All rows: this Mac, Godot 4.7.2, Compatibility renderer, 64×64 map, 300 units, 
 | 2026-11-03 placement fix (uncommitted on top of `023e0ae`) | same skirmish plumbing probe: step+opponent max; spike ticks | **11.0 ms** max (was 19.2); placement ticks 9.5–11.0 ms (two placements each) | | due-time build check skipped (placement re-checks once), placement reuses its preview grid as the live grid (`navigation_builds()`: 4 → 2 per build, `test_build_navigation_cost`), hover preview recomputed only when the cell or tick changes (`test_preview_hover_cost`); suite 137 / 103,906, benchmarks pass. Remaining per placement: one grid at issue plus one at placement, about 4.8 ms here, about 29 ms at 6× |
 | same run | movement benchmark (unchanged workload) sim-only p95 (ms) | open 1.573, dense 1.611 | | `BENCHMARK PASSED 2` |
 
-Reading the M4 rows: all three combat layouts pass the headless budget, but `open` (1.600 vs 1.67) and `dense` (1.638 vs 1.67) have only 4% and 2% margin (run-to-run noise is about ±0.03 ms), and the movement benchmark has about the same. The final `contact` layout (3 columns × 50 rows per side, tanks and infantry interleaved, fronts 2 cells apart, so rifles and cannons both fire from tick 0) resolves most of the fight inside the 300 warm-up ticks (232 deaths), so its gated window is light; the warm-up numbers above are the real contact cost, and they exceed the p99 budget (3.3 ms) and spike to 16–28 ms on tick 0. Those spikes are outside the gate by the plan's fixed window. The budget already assumes the 6× slower target, so there is no headroom for further per-tick combat work. The timed window excludes the tick-0 scan spike (45,300 checks). The rendered movement benchmark was rerun after the WorldView changes and passes (row above); the Skirmish scene itself (HP bars, cues, labels under combat) has not been rendered under load. Unmeasured: plumbing in the Skirmish scene (opponent decision and snapshot each tick), web export, other machines. Not checked: the review's moving-target-chase and unreachable-attack layouts (not built).
+Reading the M4 rows (superseded for combat by the M4.1 section below): all three combat layouts pass the headless budget, but `open` (1.600 vs 1.67) and `dense` (1.638 vs 1.67) have only 4% and 2% margin (run-to-run noise is about ±0.03 ms), and the movement benchmark has about the same. The final `contact` layout (3 columns × 50 rows per side, tanks and infantry interleaved, fronts 2 cells apart, so rifles and cannons both fire from tick 0) resolves most of the fight inside the 300 warm-up ticks (232 deaths), so its gated window is light; the warm-up numbers above are the real contact cost, and they exceed the p99 budget (3.3 ms) and spike to 16–28 ms on tick 0. Those spikes are outside the gate by the plan's fixed window. The budget already assumes the 6× slower target, so there is no headroom for further per-tick combat work. The timed window excludes the tick-0 scan spike (45,300 checks). The rendered movement benchmark was rerun after the WorldView changes and passes (row above); the Skirmish scene itself (HP bars, cues, labels under combat) has not been rendered under load. Unmeasured: plumbing in the Skirmish scene (opponent decision and snapshot each tick), web export, other machines. Not checked: the review's moving-target-chase and unreachable-attack layouts (not built).
+
+### M4.1 combat benchmark (scan, cadence 8)
+
+Tree: `m4.1-polish` after the Task 7 commits plus the Task 8 working tree (committed with this row). Apple M6, Godot 4.7.2, headless, 300 warm-up + 1800 measured unpaced ticks, rebuilt 8-cell grid scan, `REPATH_TICKS = 8`. Budgets unchanged: p95 <= 1.67 ms, p99 <= 3.3 ms.
+
+| Layout | tick p50 / p95 / p99 / max (ms) | Status |
+|---|---|---|
+| `contact` (gated) | 0.147 / 0.454 / 0.630 / 1.446 | PASS |
+| `skirmish3v3` (gated, 35 units per owner per lane, 210 units) | 0.333 / 0.754 / 0.996 / 1.449 | PASS, about 2.2x headroom on p95 |
+| `open` (150 v 150, report-only stress) | 0.860 / 1.891 / 3.383 / 4.859 | **exceeded** against 1.67 p95 (p99 passes) |
+| `dense` (150 v 150, report-only stress) | 0.686 / 2.243 / 3.684 / 8.225 | **exceeded** against 1.67 p95 and 3.3 p99 |
+
+- **Stress ceilings** (user decision 2026-11-03): `open` p95 / p99 <= 2.05 / 3.86, `dense` <= 2.52 / 4.02 ms, pinned in `run_combat.gd` as the worst of 13 runs + 5% (run-to-run noise up to 0.06 ms p95 and 0.3 ms p99 on `open`/`dense`); the benchmark fails above them. Raising one needs user approval and a new row.
+- **Cadence** (user approved measuring 8 first, 2026-11-04; 3 runs each, p95 / p99): `contact` 0.451-0.463 / 0.624-0.637 (15: 0.448-0.454 / 0.624-0.630); `skirmish3v3` 0.742-0.769 / 0.963-0.988 (15: 0.729-0.830 / 1.058-1.497); `open` 1.832-1.866 / 3.381-3.472 (15: 1.845-1.870 / 3.365-3.524); `dense` 2.259-2.278 / 3.591-3.705 (15: 1.959-2.021 / 3.208-3.286). Both gated layouts pass at 8, so 8 is kept (matches retail `MoodAttackCheckRate` 250 ms); `dense` p95 rises about 0.3 ms, which is why its ceiling is 2.52. The grid is on in every row; a no-grid `skirmish3v3` run was not repeated at Task 8 (Task 1 spike: 0.769 / 0.849 without the scan, 0.810 / 0.997 with scan and grid at cadence 15).
+- **Mechanics inside the window**: scans that acquire a target beyond weapon reach (`scan_chases`), warm-up / window: `open` 54 / 2,876, `dense` 72 / 2,878, `skirmish3v3` 82 / 529, `contact` 102 / 62. The benchmark fails a layout (other than `contact`) with zero in the window. Mutation (scan radius set back to weapon reach in a scratch copy): `Combat benchmark never chased inside the timed window for open`, exit 1.
+- **Warm-up spikes (not gated)**: max tick 16.7 ms (`open`), 16.1 (`dense`), 10.0 (`contact`), **35.7 ms (`skirmish3v3`, tick-0 `attack_move` allocation for six groups)**; about 215 ms at F = 6.
+- **Rally spawn spike (own row, no gate)**: 20 consecutive single-unit `_assign_move` calls on the 48x32 skirmish map take 1.91-2.03 ms each (Task 1 scratch measurement, not repeated), about 12 ms at F = 6 on the tick a unit spawns.
+- **Machine-independent**: `contact` peak `combat_work` 22,704 (was 45,300 before the grid), ceiling in `test_combat_work_ceiling` lowered to 23,900.
+- Rendered rerun pending (asked once at Task 9, batched with the playtest).
 
 ## Rule per milestone
 

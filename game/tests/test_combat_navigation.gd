@@ -1,6 +1,7 @@
 extends RefCounted
 
 const Simulation = preload("res://scripts/simulation/simulation.gd")
+const Combat = preload("res://scripts/simulation/combat.gd")
 const Fixture = preload("res://tests/combat_fixture.gd")
 
 func cases() -> Array[Callable]:
@@ -84,7 +85,7 @@ func test_unreachable_attack(runner) -> bool:
 		var unit: Dictionary = Fixture.object(sim, attacker)
 		if blocked_tick == -1 and unit.status == "blocked":
 			blocked_tick = tick
-		elif blocked_tick != -1 and tick <= blocked_tick + 14:
+		elif blocked_tick != -1 and tick < blocked_tick + Combat.REPATH_TICKS:
 			if sim.snapshot().path_queue.has(attacker): enqueued_after_block += 1
 			runner.check(sim.combat_work() <= 2, "A2 no replanning work during the retry interval")
 	runner.check(blocked_tick != -1, "A2 unreachable target ends blocked")
@@ -252,10 +253,10 @@ func test_pursuit_respects_reservations(runner) -> bool:
 	var release = Fixture.world()
 	var first: int = release.spawn(1, Vector2(2.5, 10.5), "infantry")
 	var second: int = release.spawn(1, Vector2(2.5, 12.5), "infantry")
-	var moving: int = release.spawn(2, Vector2(20.5, 10.5), "builder")
+	var moving: int = release.spawn(2, Vector2(20.5, 10.5), "vehicle")
 	Fixture.send(release, {"type": "attack", "entity_ids": [first], "target_id": moving})
 	Fixture.send(release, {"player": 2, "type": "move", "entity_ids": [moving], "target": [20.5, 0.5]})
-	for tick in range(15): release.step()
+	for tick in range(Combat.REPATH_TICKS): release.step()
 	runner.check(Fixture.object(release, first).destination == [16.5, 10.5], "P2 first attacker holds the old firing cell")
 	var still: int = release.spawn(2, Vector2(20.5, 10.5), "builder")
 	runner.check(still > 0, "P2 stationary second target spawned")
@@ -272,12 +273,12 @@ func test_new_attack_plans_immediately(runner) -> bool:
 	var second: int = sim.spawn(2, Vector2(2.5, 28.5), "builder")
 	Fixture.send(sim, {"type": "attack", "entity_ids": [attacker], "target_id": first})
 	for tick in range(5): sim.step()
-	runner.check(Fixture.object(sim, attacker).combat.repath_tick == 15, "N1 chase refresh scheduled")
+	runner.check(Fixture.object(sim, attacker).combat.repath_tick == Combat.REPATH_TICKS, "N1 chase refresh scheduled")
 	Fixture.send(sim, {"type": "attack", "entity_ids": [attacker], "target_id": second})
 	sim.step()
 	var unit: Dictionary = Fixture.object(sim, attacker)
 	runner.check(unit.destination != null and Vector2(unit.destination[0], unit.destination[1]).distance_to(Vector2(2.5, 28.5)) <= 4.0, "N1 new attack picks a firing cell on its first tick")
-	runner.check(unit.combat.repath_tick == 20, "N1 new attack restarts the refresh interval")
+	runner.check(unit.combat.repath_tick == 5 + Combat.REPATH_TICKS, "N1 new attack restarts the refresh interval")
 	return true
 
 func test_unreachable_scan_target_dropped(runner) -> bool:

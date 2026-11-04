@@ -8,7 +8,7 @@ const Navigation = preload("res://scripts/simulation/grid_navigation.gd")
 const Probe = preload("res://scenes/movement_benchmark.tscn")
 
 func cases() -> Array[Callable]:
-	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_combat_work_ceiling]
+	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_skirmish3v3_fixture, test_combat_work_ceiling]
 
 func test_statistics(runner) -> bool:
 	runner.check(Stats.summary(PackedFloat64Array()) == {"n": 0, "p50": 0.0, "p95": 0.0, "p99": 0.0, "max": 0.0}, "BM1 empty")
@@ -129,6 +129,22 @@ func test_combat_fixtures(runner) -> bool:
 			runner.check(kinds_fired.has("infantry") and kinds_fired.has("tank"), "BM5 contact exercises both rifles and cannons")
 	return true
 
+func test_skirmish3v3_fixture(runner) -> bool:
+	var sim: RefCounted = CombatWorkload.create("skirmish3v3")
+	var state: Dictionary = sim.snapshot()
+	sim.step()
+	var tanks := {1: 0, 2: 0}
+	var idle := {1: 0, 2: 0}
+	var cells := {}
+	for unit in sim.snapshot().entities:
+		if unit.kind == "tank": tanks[unit.owner] += 1
+		if unit.status == "idle": idle[unit.owner] += 1
+		cells[Vector2i(Vector2(unit.position[0], unit.position[1]).floor())] = true
+	runner.check(state.entities.size() == 210 and cells.size() == 210, "BM7 210 units on unique cells")
+	runner.check(tanks == {1: 36, 2: 36} and idle == {1: 27, 2: 27}, "BM7 12 tanks and 9 idle units per lane and owner ")
+	runner.check(CombatWorkload.create("skirmish3v3").snapshot() == state, "BM7 deterministic creation")
+	return true
+
 func test_combat_work_ceiling(runner) -> bool:
 	# Machine-independent cost: target and distance checks per step in the 'contact' layout (tick 0 is the peak, every unit scans once). Raise only deliberately and add a performance-ledger row.
 	var sim: RefCounted = CombatWorkload.create("contact")
@@ -136,5 +152,5 @@ func test_combat_work_ceiling(runner) -> bool:
 	for tick in range(120):
 		sim.step()
 		peak = maxi(peak, sim.combat_work())
-	runner.check(peak <= 45300 and peak > 40000, "BM6 combat work ceiling, got " + str(peak))
+	runner.check(peak <= 23900 and peak > 20000, "BM6 combat work ceiling, got " + str(peak))
 	return true

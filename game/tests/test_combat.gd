@@ -311,15 +311,15 @@ func test_acquisition_throttle(runner) -> bool:
 	var sim = Fixture.world()
 	var guard: int = sim.spawn(1, Vector2(10.5, 10.5), "infantry")
 	sim.step()
-	runner.check(Fixture.object(sim, guard).combat.repath_tick == 14, "T1 idle scan schedules the unit's next phase tick")
+	runner.check(Fixture.object(sim, guard).combat.repath_tick == Combat.REPATH_TICKS - 1, "T1 idle scan schedules the unit's next phase tick")
 	sim.spawn(2, Vector2(12.5, 10.5), "builder")
-	runner.check(_first_shot_tick(sim, 1, 30, runner, "T1") == 14, "T1 throttled guard first fires at its phase tick")
+	runner.check(_first_shot_tick(sim, 1, 30, runner, "T1") == Combat.REPATH_TICKS - 1, "T1 throttled guard first fires at its phase tick")
 	var fresh = Fixture.world()
 	var other: int = fresh.spawn(1, Vector2(10.5, 10.5), "infantry")
 	fresh.step()
 	fresh.spawn(2, Vector2(12.5, 10.5), "builder")
 	Fixture.send(fresh, {"type": "stop", "entity_ids": [other]})
-	runner.check(_first_shot_tick(fresh, 1, 30, runner, "T2") == 14, "T2 stop delays the next scan to the unit's phase tick like Zero Hour idle")
+	runner.check(_first_shot_tick(fresh, 1, 30, runner, "T2") == Combat.REPATH_TICKS - 1, "T2 stop delays the next scan to the unit's phase tick like Zero Hour idle")
 	return true
 
 func _events(sim: RefCounted) -> Array:

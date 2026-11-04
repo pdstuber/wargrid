@@ -5,7 +5,7 @@ const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 const TICK_LIMIT: int = 10800
 const HUMAN_ATTACK_TICK: int = 9000
 const STAGE := Vector2(18.5, 14.5)
-const TERMINAL_TICK: int = 9979
+const TERMINAL_TICK: int = 10667
 const WINNER: int = 1
 
 func cases() -> Array[Callable]:
@@ -24,7 +24,7 @@ func _threat(state: Dictionary) -> Variant:
 	for building in state.buildings:
 		if building.owner == 1: home.append(Vector2(building.origin[0] + 1.0, building.origin[1] + 1.0))
 	var best: Variant = null
-	var best_distance: float = 12.0
+	var best_distance: float = 16.0
 	for unit in state.entities:
 		if unit.owner != 2 or unit.combat == null: continue
 		for point in home:

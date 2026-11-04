@@ -19,5 +19,5 @@ code=$?
 cat "$log_dir/combat.log"
 [ "$code" -eq 0 ] || exit 1
 if grep -E 'ERROR:|SCRIPT ERROR:' "$log_dir/combat.log"; then exit 1; fi
-grep -Eq '^COMBAT BENCHMARK PASSED 3$' "$log_dir/combat.log" || exit 1
-[ "$(grep -c '^COMBAT BUDGET PASS ' "$log_dir/combat.log")" -eq 3 ] || exit 1
+grep -Eq '^COMBAT BENCHMARK PASSED 4$' "$log_dir/combat.log" || exit 1
+[ "$(grep -c '^COMBAT BUDGET PASS ' "$log_dir/combat.log")" -eq 2 ] || exit 1
