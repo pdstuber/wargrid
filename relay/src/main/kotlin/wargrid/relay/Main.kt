@@ -52,6 +52,9 @@ class Outbox {
     }
 }
 
+// Godot drops frames still queued when it sees the close, so the error must land before the close frame.
+private const val CLOSE_GRACE_MILLIS = 200L
+
 fun main() {
     val config = RelayConfig(
         port = System.getenv("PORT")?.toInt() ?: 8080,
@@ -97,6 +100,7 @@ fun Application.relay(config: RelayConfig = RelayConfig(), codes: () -> String =
 
 private suspend fun reject(out: Outbox, writer: kotlinx.coroutines.Job, reason: String) {
     out.send("""{"type":"error","reason":"$reason"}""")
+    delay(CLOSE_GRACE_MILLIS)
     out.close()
     writer.join()
 }

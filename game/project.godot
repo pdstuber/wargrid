@@ -2,7 +2,9 @@ config_version=5
 
 [application]
 config/name="Wargrid"
+config/version="0.5.0"
 run/main_scene="res://scenes/main.tscn"
+run/flush_stdout_on_print=true
 
 [display]
 window/size/viewport_width=1280

@@ -130,6 +130,7 @@ func status() -> String:
 	return _status
 
 func set_relay_lost() -> void:
+	if _ended(): return
 	_end("ended_relay", "connection to relay lost")
 
 func left_seat() -> int:

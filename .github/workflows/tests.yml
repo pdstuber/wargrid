@@ -109,6 +109,7 @@ jobs:
       - name: Test trace validation
         run: |
           python3 tools/test_compare_replays.py
+          python3 tools/test_desync_diff.py
           python3 tools/test_check_reference.py
           python3 tools/test_session_usage.py
       - name: Compare all platform ticks

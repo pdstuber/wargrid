@@ -79,7 +79,7 @@ func _pair(runner, max_delay: int = 0) -> Net:
 	return net
 
 func cases() -> Array[Callable]:
-	return [test_delay_and_prefill, test_two_clients_equal_hashes, test_own_command_uses_wire_form, test_cross_seat_same_tick, test_many_commands_one_tick, test_desync_detected, test_left_after_tick, test_protocol_errors, test_latency_samples, test_left_with_missing_packets, test_rejections_reported, test_submit_before_start]
+	return [test_delay_and_prefill, test_two_clients_equal_hashes, test_own_command_uses_wire_form, test_cross_seat_same_tick, test_many_commands_one_tick, test_desync_detected, test_left_after_tick, test_protocol_errors, test_latency_samples, test_left_with_missing_packets, test_rejections_reported, test_submit_before_start, test_relay_lost_keeps_earlier_end]
 
 func _scripts(net: Net) -> void:
 	net.clients[0].behavior = func(c) -> void: ScriptedHuman.issue(c.seat_sim)
@@ -346,4 +346,15 @@ func test_submit_before_start(runner) -> bool:
 	ls.start(sim.snapshot())
 	runner.check(ls.wants_snapshot(30) and not ls.wants_snapshot(31), "L12 wants_snapshot follows hash_interval")
 	runner.check(ls.waiting_for_tick(4) == [2], "L12 seat order does not matter")
+	return true
+
+func test_relay_lost_keeps_earlier_end(runner) -> bool:
+	var seats: Array[int] = [1, 2]
+	var ls = Lockstep.new(1, seats)
+	ls.receive(Wire.encode({"type": "error", "reason": "build mismatch"}))
+	ls.set_relay_lost()
+	runner.check(ls.status() == "ended_relay" and ls.end_reason() == "build mismatch", "L13 socket close after an error keeps the error reason")
+	var other = Lockstep.new(1, seats)
+	other.set_relay_lost()
+	runner.check(other.status() == "ended_relay" and other.end_reason() == "connection to relay lost", "L13 close on a running match reports relay lost")
 	return true
