@@ -4,12 +4,13 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 ## Session
 
-2026-11-04 M4.1 implemented on `m4.1-polish` (Tasks 0–9, pushed at `ee9e63c`). Suite 160 cases / 104,024 checks / 0 failures; `run_benchmark.sh` passes; CI run 41806514021 green (Linux, Windows, compare-replays) and `compare_local_traces.sh` matches macOS (`REPLAYS MATCHED 1200` x3); Grok gate review and `/ponytail-review` done. Rendered movement rerun passed. Resume record: [M4.1 verification](reference/m4.1-verification.md). M3 session detail lives in [M3 verification](reference/m3-verification.md), M4 in [M4 verification](reference/m4-verification.md).
+2026-11-04 M5 online spike designed and planned (both approved by user); handoff in root `prompt.txt`; not started. Before that: M4.1 implemented on `m4.1-polish` (Tasks 0–9, pushed at `ee9e63c`), merged to `main` at `f2c5f9e`. Suite 160 cases / 104,024 checks / 0 failures; `run_benchmark.sh` passes; CI run 41806514021 green (Linux, Windows, compare-replays) and `compare_local_traces.sh` matches macOS (`REPLAYS MATCHED 1200` x3); Grok gate review and `/ponytail-review` done. Rendered movement rerun passed. Resume record: [M4.1 verification](reference/m4.1-verification.md). M3 session detail lives in [M3 verification](reference/m3-verification.md), M4 in [M4 verification](reference/m4-verification.md).
 
 ## Pending user action
 
-- M4.1 needs the user playtest (user could not play on 2026-11-04) and a merge decision. Deferred minors: BM7 lane pin, R5 other-command coverage.
-- `main` pushed at `dde91fa`; CI run 41723335566 completed with success. Local branch `gpl-license` is merged and can be deleted. `m4.1-polish` is pushed (`ee9e63c`), not merged.
+- M4.1 needs the user playtest ("I did not play test 4.1 yet, will do so later", 2026-11-04). Deferred minors: BM7 lane pin, R5 other-command coverage.
+- `main`, `origin/main` and `m4.1-polish` all at `f2c5f9e` (M4.1 merged). Local branch `gpl-license` is merged and can be deleted.
+- M5 kickoff: fresh session, "follow prompt.txt". Human matches (Task 10) need the user at home with a Windows machine, and one friend.
 - Choose a licence for original art and audio (code is GPL-3.0-or-later).
 - Check in a fresh session whether the project skill settings shrank the skill listing (baseline 48,567 bytes; revert if not).
 
@@ -25,13 +26,21 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 **M4 complete and merged into local `main` (2026-11-03).** Evidence: [M4 verification](reference/m4-verification.md). Process changes adopted on `main`: [milestone prompt](milestone-prompt.md), [workflow retrospective](reference/2026-11-03-milestone-workflow-retrospective.md). Roadmap re-aimed at the long-term target (3v3 online with friends against bots, USA/China/GLA, Twilight-Flame-like full-scale map): blueprint §1, §7, §11, §14.
 
-- **M4.1 implemented on `m4.1-polish` (2026-11-04), awaiting playtest and merge.** Next: user playtest (rally, enemy info, pile labels, opponent defence, 5–10 minute match) and merge approval, then M5 only on explicit kickoff. Evidence: [M4.1 verification](reference/m4.1-verification.md). The five items below are the original playtest notes, now all implemented:
+- **M5 online spike planned (2026-11-04), not started.** [Design](superpowers/specs/2026-11-04-m5-online-spike-design.md), [plan](superpowers/plans/2026-11-04-m5-online-spike.md), handoff `prompt.txt` (Sonnet 5.5 medium implements; Opus for Task 1, preflights at Tasks 1/3/5/9, gate reviews). Start only on explicit kickoff.
+- **M4.1 implemented and merged to `main` (2026-11-04), awaiting playtest.** Next: user playtest (rally, enemy info, pile labels, opponent defence, 5–10 minute match). Evidence: [M4.1 verification](reference/m4.1-verification.md). The five items below are the original playtest notes, now all implemented:
   1. **Rally point per producer.** Zero Hour production exits read a rally point (`AIPlayer.cpp` 500/680, source revision `0a05454`). Today new units stay on the producer's perimeter, which also stalls production at about 8 infantry and 11 tanks. Touches production, a new command and the replay traces.
   2. **Opponent too passive.** Guard units only fire inside weapon range and never move, and the opponent never defends its base. Proposed: base defense (the same rule the scripted human needed in M4 Task 7) and reaction a bit beyond weapon range; check Zero Hour's idle acquisition range in source before choosing the distance. Changes the match outcome, so the scenario pin (tick 9943) must be recalibrated.
   3. **Selecting an enemy should show info.** `WorldView.pick_entity` only returns player 1 units; add read-only kind, owner and HP for enemy objects.
   4. **Collectors on one supply pile are hard to read.** One dock per pile is M3 design (Zero Hour docking); add visibility: pile label "docked 1 · waiting 2", collector state when selected.
   5. **"4: barracks" next to "S: stop".** HUD wording slip: base line says "1/2/3 build", the skirmish appends "4: barracks" elsewhere; make it one "1/2/3/4 build".
-- **After M4.1:** M5 online spike (lockstep over a WebSocket relay on the user's fly.io account, desktop clients first), then M6 teams and full-scale map, M7 China and GLA (gate: Zero Hour spot checks S1–S3 run or deferred), M8 bots, M9 3v3 online.
+- **After M5:** M6 teams and full-scale map, M7 China and GLA (gate: Zero Hour spot checks S1–S3 run or deferred), M8 bots, M9 3v3 online.
+
+## 2026-11-04 — M5 design and plan
+
+- User intent: the spike shows how hard multiplayer is, as the thin foundation M9 builds on (not throwaway). Target: user and two friends (all in Bavaria) vs three bots over the internet; lobby later. User is a backend developer; richer fly.io services are fine.
+- User decisions: approach A (dumb relay, clients stamp ticks) plus relay-owned membership, version check, desync report and tool, automated failure tests (after user recalled Generals online as unreliable; source shows P2P UDP with firewall probing and 42 "mismatch" fix commits in GeneralsGameCode `afc2a103f`); Kotlin + Ktor (CIO, required for GraalVM per ktor.io/docs/graalvm.html) with a GraalVM cold-start experiment; latency ≤ 250 ms p95 through fly `fra`; lockstep overhead 10% of a tick (0.55 ms p99 dev); exported builds in scope; friend match is a hard gate; implementation by Sonnet 5.5 medium with Opus preflights.
+- Done: `flyctl` v0.5.3 installed (Homebrew), `fly auth login --code` completed from the user's phone. Godot probe: plain `JSON.stringify` drops float precision (`0.30000000000000004` → `0.3`); `JSON.parse_string` returns ints as floats; both handled in the plan. One builder check on the design (macOS CI dropped, offline path, cross-OS desync diff, budgets) folded in.
+- Not done: no implementation, no tests run, no export templates installed, no fly app created or deployed. Unverified: export-template determinism vs editor binary, `--script`/`--headless` in release templates, Ktor WebSockets in a native image (all Task 1 or Task 9).
 
 ## 2026-11-04 — M4.1 exit gate
 

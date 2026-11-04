@@ -527,7 +527,7 @@ Infantry, one or two vehicles, targeting, health/damage, basic AI, victory/defea
 
 **Exit gate:** reproducible scenario test for a scripted 5–10 minute match plus combat reference fixtures and manual playability review. This is the first true vertical slice.
 
-### M4.1 — Polish from the first playtest (implemented, awaiting playtest and merge)
+### M4.1 — Polish from the first playtest (implemented and merged, awaiting playtest)
 
 User playtest notes, 2026-11-03: a rally point per producer (also fixes production stalling once a producer's perimeter is full), opponent base defense and reaction to enemies just beyond weapon range, read-only info for selected enemy objects, visible collector dock/waiting state at supply piles, and one HUD line "1/2/3/4 build".
 
@@ -788,7 +788,7 @@ Keep the working title **Wargrid** independently of EA branding; also check name
 
 ## 13. Kickoff prompt for Codex CLI / Claude Code
 
-Use [prompt.txt](prompt.txt) in a new session in the Wargrid repository. It records the current milestone handoff ([M4.1 plan](docs/superpowers/plans/2026-11-03-m4.1-playtest-polish.md)) and follows the [milestone prompt](docs/milestone-prompt.md); earlier handoffs live in `docs/m3-prompt.txt` and `docs/m4-prompt.txt`. The prompt limits work to one milestone, requires verification/review and preserves Git/window approval rules. Keep the current handoff prompt in that one file rather than maintaining a second copy here.
+Use [prompt.txt](prompt.txt) in a new session in the Wargrid repository. It records the current milestone handoff ([M5 plan](docs/superpowers/plans/2026-11-04-m5-online-spike.md)) and follows the [milestone prompt](docs/milestone-prompt.md); earlier handoffs live in `docs/m3-prompt.txt`, `docs/m4-prompt.txt` and `docs/m4.1-prompt.txt`. The prompt limits work to one milestone, requires verification/review and preserves Git/window approval rules. Keep the current handoff prompt in that one file rather than maintaining a second copy here.
 
 ### Follow-up prompt for a dedicated research agent
 
