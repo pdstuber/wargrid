@@ -5,3 +5,6 @@ local.env
 __pycache__/
 .claude/settings.local.json
 .superpowers/
+relay/build/
+relay/.gradle/
+relay/.kotlin/

@@ -76,6 +76,25 @@ jobs:
         with:
           name: test-results-${{ matrix.platform }}
           path: test-results.log
+  relay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: relay
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+      - run: ./gradlew test buildFatJar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: relay-jar
+          path: relay/build/libs/relay-all.jar
+          if-no-files-found: error
   compare-replays:
     needs: godot
     runs-on: ubuntu-latest
