@@ -13,6 +13,8 @@ Next exact action: push the fix (approval), watch CI, then run step 2 (two Macs)
 
 CI finding (2026-11-04): exported test builds also load the project main scene (the launcher), whose `Center` CenterContainer swallowed right clicks in the click-driven scene tests (13 failures, editor runs unaffected because `--script` loads no main scene). Fix: `tests/run_tests.gd` frees `current_scene` first.
 
+Task 10 friend match 1 (2026-11-04, 19:39-19:46 local): user Mac (Apple Silicon, `run_game.sh res://scenes/launcher.tscn`, Godot 4.7.2 editor) vs friend near Kulmbach (Frankonia), Windows 11, exported `Wargrid.exe` from CI run on 2bd5b6b, through `wargrid-relay-jvm` (fra). Both clients finished with no desync report; user saw Defeat, friend Victory. Latency: user command n=71 p50 74.9 ms p95 96.0 ms, RTT n=421 p95 36.5 ms; friend command n=56 p50 77.4 ms p95 84.6 ms, RTT n=401 p95 34.4 ms (budget p95 <= 250 ms). Relay: `MATCH END SNLAAG seat1=24306f/1276303B seat2=24306f/1273363B`. **Not accepted as the gate match:** 24,306 ticks in about 428 s is about 57 ticks/s against the 30 Hz design, because `online_main.gd` `_step_simulation` runs up to `CATCH_UP_STEPS` = 2 ticks per frame whenever packets are available and nothing paces it to wall-clock time (match ran at about 2x speed). Bytes/s not recorded (per-frame size about 52 B; rate depends on the fix). Second finding: after match end both clients show "Connection to relay lost" because `_finish()` closes the transport and the next step treats `closed()` as a relay loss. Fixes pending, then the match is replayed.
+
 Relay: a `MATCH END <code> seatN=<frames>f/<bytes>B` log line is written when a room empties (unit-tested); counts tick frames and bytes received from each seat.
 
 ```text
