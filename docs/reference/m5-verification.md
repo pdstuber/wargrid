@@ -1,15 +1,15 @@
 # M5 verification
 
 ```text
-Resume record (updated 2026-11-04, Task 7 verified)
-Branch / base commit / working-tree state: m5-online / 3d0f4b9 + Task 7 commit "Add online match flow" / clean after commit; origin/m5-online is behind by the docs commit 3d0f4b9 and Task 7 (push needs approval)
-Last green task / next incomplete task: Task 7 (local) / Task 8
-Changed paths since last commit: none after the Task 7 commit
-Last command / cases / checks / failures / exit / marker: editor suite 190 / 104,426 / 0 / exit 0; `run_netplay.sh match` PASSED tick 10914 via launcher redirect
-Known red case or blocker: none. Unverified: visible launcher + online window (needs user approval, batch with Task 10), Gatekeeper wording on current macOS, exported-build run of the launcher.
+Resume record (updated 2026-11-04, Task 8 verified)
+Branch / base commit / working-tree state: m5-online / 18a0f62 + Task 8 commit "Add lockstep benchmark and ledger row" / clean after commit; origin/m5-online is behind (push needs approval)
+Last green task / next incomplete task: Task 8 (local) / Task 9 (stop gate; Opus preflight first, then fly.io + GraalVM; fly apps create and deploy need explicit approval)
+Changed paths since last commit: none after the Task 8 commit
+Last command / cases / checks / failures / exit / marker: editor suite 190 / 104,426 / 0 / exit 0 (baseline at session start); `sh tools/run_benchmark.sh` exit 0, `LOCKSTEP BUDGET PASS p99 0.06`, `LOCKSTEP BENCHMARK PASSED 1`
+Known red case or blocker: none. Unverified: visible launcher + online window and rendered benchmark rerun (need user approval, batch with Task 10), Gatekeeper wording on current macOS, exported-build run of the launcher.
 Approved decisions, pre-authorizations used, deferred gates: User playtest of M4.1 pending. Local commit pre-authorized. Push needs approval. Client silence timeout implemented (gate I4).
 Usage so far (python3 tools/session_usage.py <session files>): not recorded
-Next exact action: Task 8 (read plan Task 8 first)
+Next exact action: Task 9 (read plan Task 9 first; Opus preflight)
 ```
 
 ## Evidence
@@ -54,3 +54,5 @@ Gate review (Task 5, Opus, fresh context, tree 7865fb0): no Critical. Fixed test
 | Task 6 CI | run 41835343802 on c61efaf | relay, godot (linux, windows), compare-replays all success on first run (exported suite, exported match/perturb/relay-down, Windows console exe). `compare_local_traces.sh 41835343802`: replay/economy/combat MATCHED 1200, netplay MATCHED 364 (linux, windows, macOS export). | `m5-online` c61efaf |
 
 | Task 7 online game | `sh tools/run_tests.sh`; `sh tools/run_netplay.sh match` | Local player is a variable (`main.gd`, `base_main.gd`, `skirmish_main.gd`, `world_view.gd`; HUD reads the local player's economy row, was `players[0]`). `online_main.gd` (2 catch-up steps per physics frame, as the headless client), `launcher.gd` as `run/main_scene` and it also redirects `--netclient/--relay/--replay-log/--probe-relay` to the headless client (moved out of `main.gd`). Client silence timeout: `RelayTransport.silent` (5 s without any frame incl. pong, only after the first send) -> `ended_relay` "connection to relay lost". Suite 190 / 104,426 / 0 / exit 0; `match` PASSED tick 10914 through the launcher redirect. Mutation: `pick_entity` back to owner 1 fails 2 N1 checks. Tests written with the implementation, not red-run first. `Play offline` test checks the scene constant, not a scene change; the desync test writes and deletes a file under `user://desync`. Gatekeeper wording in `docs/playing-online.md` unverified on current macOS. Visible launcher/online window not run (needs approval). | `m5-online` |
+
+| Task 8 lockstep benchmark | `sh tools/run_benchmark.sh` | exit 0; overhead (`finish_tick` + `receive`) p50 / p95 / p99 / max 0.007 / 0.014 / 0.060 / 0.164 ms vs 0.55 ms budget; snapshot on hash ticks p99 0.179 ms (reported); 60 hash ticks and 60/60 busy thirty-tick windows asserted; existing benchmark outputs unchanged. Ledger budget and history rows added. Written with the implementation, not red-run first; not mutation-tested (the workload-invalid guard is the only assertion on the window). Peer-side digest not timed; rendered rerun pending user approval. | `m5-online` 18a0f62 + Task 8 |

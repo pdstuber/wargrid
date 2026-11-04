@@ -17,6 +17,7 @@ Existing gates (unchanged, in `game/benchmarks/run_movement.gd` and the rendered
 | Sim-only tick p99 | 60% of a tick | 20 ms | 3.3 ms | 1.57 / 1.60 | passes |
 | Presentation plumbing per tick (`snapshot` + view deep copy + sort) | 15% of a tick | 5 ms | 0.83 ms | about 1.9 ms (0.69 + 0.67 + 0.57, scratch probe, not a repo tool yet); snapshot size is gated by node count below | **exceeded** |
 | Rendered frame interval p95 (300 units, vsync off, includes tick frames) | full frame | 16.7 ms | 2.8 ms | 4.1 open / 6.5 dense | **exceeded** |
+| Lockstep overhead per tick p99 (`finish_tick` + `receive`: encode, decode, digest on hash ticks; excludes sim step and snapshot) | 10% of a tick | 3.3 ms | 0.55 ms | 0.060 (contact) | passes |
 
 Watch items, no gate: worst sim tick 7.8 ms on the dev machine (command ticks, path queue burst), which would be about 47 ms on the target, longer than a tick. Dense-map worst rendered frame 19.5 ms.
 
@@ -125,3 +126,4 @@ Not feasible or not done:
 ## Not covered yet
 
 CI does not run any benchmark; trend logging on the Linux/Windows/macOS runners (slower than the dev machine) is a candidate. A web export under CPU throttling would replace F with a measurement.
+| 2026-11-04 M5 Task 8 lockstep benchmark (`m5-online`, Apple M6, headless, `contact` layout, 300 warmup + 1800 sample ticks, delay 4, hash every 30) | lockstep overhead per tick p50 / p95 / p99 / max (ms); snapshot on the 60 hash ticks p50 / p95 / p99 (ms, reported, presentation cost) | 0.007 / 0.014 / 0.060 / 0.164; 0.059 / 0.140 / 0.179 | | `sh tools/run_benchmark.sh`, `LOCKSTEP BUDGET PASS`, `LOCKSTEP BENCHMARK PASSED 1`; window asserts 60 hash ticks and a non-empty packet in all 60 thirty-tick windows; 32 of 300 units alive at end. Two instances, one sim stepped; peer-side digest not timed. Rendered rerun pending user approval (batch with Task 10) |
