@@ -3,7 +3,7 @@ import sys
 
 
 def _walk(a, b, path):
-    if type(a) is not type(b) and not (isinstance(a, (int, float)) and isinstance(b, (int, float))):
+    if type(a) is not type(b):
         return f"{path}: {a!r} != {b!r}"
     if isinstance(a, dict):
         for key in sorted(set(a) | set(b)):

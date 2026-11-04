@@ -48,8 +48,11 @@ func close() -> void:
 func rtt_samples() -> PackedInt64Array:
 	return _rtt
 
+func ping_due(now: int) -> bool:
+	return _sent_any and now - _last_ping >= PING_INTERVAL_USEC
+
 func take_ping(now: int) -> String:
-	if not is_open() or not _sent_any or now - _last_ping < PING_INTERVAL_USEC: return ""
+	if not is_open() or not ping_due(now): return ""
 	_last_ping = now
 	return Wire.encode({"type": "ping", "t": now})
 

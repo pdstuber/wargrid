@@ -74,8 +74,15 @@ class ReplayComparisonTests(unittest.TestCase):
     def test_mixed_digest_width_rejected(self):
         wide = self._netplay("a.tsv", range(0, 91, 30), "a" * 64)
         narrow = self._netplay("b.tsv", range(0, 91, 30))
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(ValueError, "width"):
             compare_traces([wide, narrow], interval=30, rows=0)
+
+    def test_empty_logs_rejected(self):
+        paths = [Path(self.directory.name) / n for n in ["a.tsv", "b.tsv"]]
+        for path in paths:
+            path.write_text("")
+        with self.assertRaisesRegex(ValueError, "no rows"):
+            compare_traces(paths, interval=30, rows=0)
 
     def test_interval_row_tick_must_be_multiple(self):
         paths = [self._netplay(n, [0, 30, 61]) for n in ["a.tsv", "b.tsv"]]

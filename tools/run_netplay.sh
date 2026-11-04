@@ -69,6 +69,7 @@ same_hashes() { python3 "$repo_root/tools/compare_replays.py" --interval 30 --ro
 oracle() {
   # shellcheck disable=SC2086
   $client -- --replay-log "$out/s1.cmd" --hash-log "$out/oracle.tsv" >"$out/oracle.log" 2>&1 || fail "oracle failed"
+  expect_end oracle match_over
 }
 
 case $scenario in
@@ -77,6 +78,7 @@ case $scenario in
     wait_exit "$pid1" 180; wait_exit "$pid2" 180
     expect_end s1 match_over; expect_end s2 match_over
     [ "$(end_tick s1)" = "$(end_tick s2)" ] || fail "terminal ticks differ"
+    [ "$(end_tick s1)" = 10914 ] || fail "terminal tick $(end_tick s1), pinned 10914"
     oracle; same_hashes "$out/s1.tsv" "$out/s2.tsv" "$out/oracle.tsv"
     echo "match terminal tick $(end_tick s1)" ;;
   kill)
@@ -88,6 +90,7 @@ case $scenario in
     start_relay; start_pair "" "--stall-at-tick 300 --stall-seconds 3"
     wait_exit "$pid1" 180; wait_exit "$pid2" 180
     expect_end s1 match_over; expect_end s2 match_over
+    grep -q '^NETCLIENT STALL' "$out/s2.log" || fail "stall hook never ran"
     same_hashes "$out/s1.tsv" "$out/s2.tsv" ;;
   silent)
     start_relay; start_pair "" "--stall-at-tick 300 --stall-seconds 15"
@@ -121,6 +124,7 @@ PY
     expect_end s2 ended_relay
     case "$(end_line s2)" in *"build mismatch") ;; *) fail "seat 2 reason: $(end_line s2)" ;; esac
     kill -0 "$pid1" 2>/dev/null || fail "seat 1 should still be waiting"
+    ! grep -q '^NETCLIENT END' "$out/s1.log" || fail "seat 1 ended"
     kill -9 "$pid1" ;;
   relay-down|relay-term)
     start_relay; start_pair "" ""
@@ -132,6 +136,7 @@ PY
       echo "$name: $(end_line $name) $(($(log_ms $name TIME) - down)) ms after relay stop"
       if [ "$scenario" = relay-down ]; then
         expect_end $name ended_relay
+        [ "$(end_tick $name)" -gt 0 ] || fail "$name never started the match"
         [ $(($(log_ms $name TIME) - down)) -le 2000 ] || fail "$name took too long"
       fi
     done ;;

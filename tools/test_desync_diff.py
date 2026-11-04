@@ -34,6 +34,10 @@ class DesyncDiffTests(unittest.TestCase):
         other = report(snapshot={"players": {"1": {"credits": 6}}, "entities": [{"position": [14.1, 2.0]}]})
         self.assertIn("players", first_difference(report(), other))
 
+    def test_int_versus_float(self):
+        other = report(snapshot={"players": {"1": {"credits": 5.0}}, "entities": [{"position": [14.1, 2.0]}]})
+        self.assertIsNotNone(first_difference(report(), other))
+
     def test_missing_key(self):
         other = report(snapshot={"players": {}, "entities": []})
         self.assertIsNotNone(first_difference(report(), other))

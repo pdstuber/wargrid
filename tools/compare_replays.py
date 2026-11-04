@@ -10,6 +10,8 @@ def _tick(i: int, interval: int) -> int:
 
 def read_trace(path: Path, interval: int, rows: int) -> tuple[list[str], int]:
     lines = path.read_text().splitlines()
+    if not lines:
+        raise ValueError(f"{path}: no rows")
     if rows and len(lines) != rows:
         raise ValueError(f"{path}: expected {rows} rows, got {len(lines)}")
     digests = []

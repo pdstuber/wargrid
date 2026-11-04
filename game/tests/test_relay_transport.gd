@@ -4,7 +4,7 @@ const RelayTransport = preload("res://scripts/net/relay_transport.gd")
 const Wire = preload("res://scripts/net/wire.gd")
 
 func cases() -> Array[Callable]:
-	return [test_never_connected, test_pong_recorded, test_buffers_fit_frame_cap]
+	return [test_never_connected, test_ping_due, test_pong_recorded, test_buffers_fit_frame_cap]
 
 func test_never_connected(runner) -> bool:
 	var transport = RelayTransport.new()
@@ -13,6 +13,15 @@ func test_never_connected(runner) -> bool:
 	transport.send_text("x")
 	transport.close()
 	runner.check(transport.take_ping(10_000_000) == "", "T1 no ping without an open socket")
+	return true
+
+func test_ping_due(runner) -> bool:
+	var transport = RelayTransport.new()
+	runner.check(not transport.ping_due(5_000_000), "T2 no ping before the first send")
+	transport._sent_any = true
+	runner.check(transport.ping_due(1_000_000), "T2 first ping due after 1 s")
+	transport._last_ping = 1_000_000
+	runner.check(not transport.ping_due(1_999_999) and transport.ping_due(2_000_000), "T2 pings are 1 s apart")
 	return true
 
 func test_pong_recorded(runner) -> bool:

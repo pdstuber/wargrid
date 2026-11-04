@@ -1,15 +1,15 @@
 # M5 verification
 
 ```text
-Resume record (updated 2026-11-04, Task 5 implemented, gate review pending)
-Branch / base commit / working-tree state: m5-online / 1516e61 + Task 5 commit / clean after commit, nothing pushed
-Last green task / next incomplete task: Task 5 (transport, headless client, nine netplay scenarios) / Task 5 gate review, then Task 6 (CI with exported builds)
-Changed paths since last commit: none after the Task 5 commit
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh 184 cases / 104,340 checks / 0 failures / exit 0; relay ./gradlew test buildFatJar green; run_netplay.sh match, kill, stall, silent, spike, perturb, version, relay-down, relay-term all NETPLAY PASSED
-Known red case or blocker: none. Unverified: positional scene path in a release export (preflight 18, do in Task 6)
-Approved decisions, pre-authorizations used, deferred gates: Task 5 preflight rulings below. User playtest of M4.1 pending. Wire format: keep JSON (investigation below). Local commit pre-authorized.
+Resume record (updated 2026-11-04, Task 5 gate review applied)
+Branch / base commit / working-tree state: m5-online / 7865fb0 + gate-fix commit / clean after commit, nothing pushed
+Last green task / next incomplete task: Task 5 (gated) / Task 6 (CI with exported builds)
+Changed paths since last commit: none after the gate-fix commit
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh 185 cases / 104,343 checks / 0 failures / exit 0; python tools tests OK; netplay match (tick 10914), stall, relay-down, version PASSED after fixes
+Known red case or blocker: none. OPEN USER DECISION: client silence timeout (gate I4). Unverified: positional scene path in a release export (do in Task 6)
+Approved decisions, pre-authorizations used, deferred gates: Task 5 rulings below. User playtest of M4.1 pending. Wire format: keep JSON. Local commit pre-authorized.
 Usage so far (python3 tools/session_usage.py <session files>): not recorded
-Next exact action: dispatch Task 5 gate review (Opus, fresh context), fix findings test-first, record, restart session; then Task 6
+Next exact action: ask user about I4 (client "no frame for N s -> ended_relay"); then Task 6 (read plan Task 6 first; Opus preflight not required)
 ```
 
 ## Evidence
@@ -43,6 +43,8 @@ Task 5 Opus preflight (22 findings, all accepted as rulings, 15 and 18 verified 
 
 | Task 5 netplay | `sh tools/run_netplay.sh <scenario>` (local macOS, editor binary, JVM relay) | match 15.0 s, terminal tick 10914 both seats, hash logs equal each other and the oracle; kill 1.3 s; stall 16.1 s (hashes equal); silent 11.2 s (`left` 10,038 ms after stall start); spike 39.0 s (stop at tick 900); perturb 1.0 s (report tick 60, diff `snapshot.players[1].credits: 9200 != 9201`); version 0.9 s; relay-down 2.7 s (both ended_relay within 2 s of `kill -9`); relay-term 3.6 s (SIGTERM: both `ended_relay` ~989 ms after stop, NOT `ended_left`; preflight 15 resolved, no relay change). Suite 184 / 104,340 / 0 | `m5-online` |
 
-Task 5 findings during implementation: relay create-match is `match: ""` (client maps `new`); Godot drops frames still queued when it sees the close, so the relay `reject` now waits 200 ms between the `error` frame and the close (relay tests green); transport reads packets regardless of state; the stall hook must feed polled frames to `receive`. Tests: transport (4 cases, no socket), lockstep `test_relay_lost_keeps_earlier_end`, `test_desync_diff.py`, 5 new `test_compare_replays.py` cases; scenarios are the integration tests. Not red-run first for the GDScript transport/client; ping-when-open path covered by scenarios only.
+Task 5 findings during implementation: relay create-match is `match: ""` (client maps `new`); Godot drops frames still queued when it sees the close, so the relay `reject` now waits 200 ms between the `error` frame and the close (no relay unit test; the `version` scenario guards it, mutation-checked by the reviewer); transport reads packets regardless of state; the stall hook must feed polled frames to `receive`. Tests: transport (4 cases, no socket, incl. `ping_due`), lockstep `test_relay_lost_keeps_earlier_end`, `test_desync_diff.py`, 5 new `test_compare_replays.py` cases; scenarios are the integration tests. Not red-run first for the GDScript transport/client; ping-when-open path covered by scenarios only.
 
 Wire format investigation (Opus, 2026-11-04, user request): keep JSON. Typical packet (1 move, 6 ids) 178 B JSON vs 63 B hand binary, Wire encode+decode 9 us p99 (1.6% of the 0.55 ms budget); 50-command packet 214 us p99, 5.6 KB. 40-65% of Wire cost is per-field validation, not JSON. 3v3 relay egress about 220 KiB/s per room JSON vs 120 binary (fly pricing unverified). Godot has no built-in protobuf/msgpack/CBOR/BSON/FlatBuffers; FlatBuffers needs a GDExtension (fails web constraint); others are third-party GDScript libs of unverified 4.7 compatibility. Revisit at M6 3v3 benchmarks only if relay egress cost or a 5-peer decode loop misses budget. Unverified: release/WASM timings, permessage-deflate support, fly pricing. Bench: scratchpad `wire_bench.gd`.
+
+Gate review (Task 5, Opus, fresh context, tree 7865fb0): no Critical. Fixed test-first or with mutation in one pass: I1 `ping_due` pure and unit-tested; I2 `relay-down` asserts end tick > 0; I3 oracle capped at 30,000 ticks (`oracle_overrun`) and its END checked; M1 width test now asserts "width"; M2 empty logs rejected; M4 match pins tick 10914, stall checks hook ran, version checks seat 1 has no END; M6 desync_diff type-strict (int vs float differs); M7 log writers tolerate unopenable paths; M9 evidence text. Relay grace delay verified by reviewer (version fails 3/3 without it; DoS sound, server closes TCP itself). Deferred rulings: M3 (`--hash-every 1` logs start at tick 0 vs `--interval 1` rows from 1; use `diff` for first-tick narrowing), M5 (200 ms grace is a heuristic; alternative is the close-frame reason via `get_close_reason()`, revisit in Task 7 if the message is lost), M8 (commit stamp in the build string: Task 6/7), `relay-term` asserts nothing by design (record-once). Open: I4 silence timeout is a design addition, asked of the user.

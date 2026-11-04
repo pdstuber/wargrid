@@ -10,6 +10,7 @@ const ScriptedHuman = preload("res://scripts/simulation/scripted_human.gd")
 const UNCAPPED_STEPS: int = 64
 const CAPPED_STEPS: int = 2
 const CLOSE_WAIT_MSEC: int = 1000
+const ORACLE_MAX_TICKS: int = 30000
 
 var _args: Dictionary = {}
 var _transport: RefCounted
@@ -169,6 +170,7 @@ func _write_logs() -> void:
 	if _args.has("command-log"): _write_lines(_args["command-log"], _command_lines(_lockstep.command_log()))
 	if _status == "ended_desync" and _args.has("report-dir"):
 		var file := FileAccess.open("%s/desync-seat%d.json" % [_args["report-dir"], _seat], FileAccess.WRITE)
+		if file == null: return
 		file.store_string(JSON.stringify(_lockstep.desync_report(), "", true, true))
 		file.close()
 
@@ -198,16 +200,17 @@ func _replay_oracle() -> void:
 	var sim = Skirmish.create(true, "human")
 	_sim = sim
 	var rows := PackedStringArray(["0\t" + StateHash.digest(sim.snapshot())])
-	while not sim.match_over():
+	while not sim.match_over() and sim.tick() < ORACLE_MAX_TICKS:
 		for command in by_tick.get(sim.tick(), []): sim.issue_command(command)
 		sim.step()
 		if sim.tick() % every == 0: rows.append("%d\t%s" % [sim.tick(), StateHash.digest(sim.snapshot())])
 	if _args.has("hash-log"): _write_lines(_args["hash-log"], rows)
-	_status = "match_over"
+	_status = "match_over" if sim.match_over() else "oracle_overrun"
 	_exit()
 
 func _write_lines(path: String, lines: PackedStringArray) -> void:
 	var file := FileAccess.open(path, FileAccess.WRITE)
+	if file == null: return
 	file.store_string("\n".join(lines) + "\n")
 	file.close()
 
