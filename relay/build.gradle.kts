@@ -18,7 +18,7 @@ graalvmNative {
         imageName.set("relay")
         buildArgs.addAll(
             "--initialize-at-build-time=ch.qos.logback,io.ktor,kotlin,org.slf4j.LoggerFactory,org.slf4j.helpers.Reporter,kotlinx.io.bytestring.ByteString,kotlinx.io.SegmentPool,kotlinx.serialization.json.Json,kotlinx.serialization.json.JsonImpl,kotlinx.serialization.json.ClassDiscriminatorMode,kotlinx.serialization.modules.SerializersModuleKt",
-            "-H:+InstallExitHandlers", "-H:+ReportUnsupportedElementsAtRuntime", "-H:+ReportExceptionStackTraces",
+            "--initialize-at-run-time=kotlinx.coroutines,kotlinx.io.files,io.ktor.utils.io.jvm.javaio", "-H:+InstallExitHandlers", "-H:+ReportUnsupportedElementsAtRuntime", "-H:+ReportExceptionStackTraces",
         )
     }
 }
