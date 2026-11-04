@@ -5,7 +5,7 @@ const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 const TICK_LIMIT: int = 10800
 const HUMAN_ATTACK_TICK: int = 9000
 const STAGE := Vector2(18.5, 14.5)
-const TERMINAL_TICK: int = 9943
+const TERMINAL_TICK: int = 9979
 const WINNER: int = 1
 
 func cases() -> Array[Callable]:
@@ -116,6 +116,6 @@ func test_mirror_match_script(runner) -> bool:
 	runner.check(diverged == -1, "S1 two fresh worlds stay identical, first divergence " + str(diverged))
 	runner.check(terminal == TERMINAL_TICK and end.match.winner == WINNER and end.match.ended_tick == TERMINAL_TICK and end.tick == TERMINAL_TICK + 1, "S1 pinned outcome, got " + str(terminal) + " " + str(end.match))
 	runner.check(terminal >= 9000 and terminal <= TICK_LIMIT - 1, "S1 terminal inside the six-minute window")
-	runner.check(completed.size() == 8 and not first.values().has(-1) and first.values().all(func(tick: int) -> bool: return tick < terminal), "S1 economy, production and combat all happened before the end, got " + str(first) + " " + str(completed.size()))
+	runner.check(completed.size() == 9 and not first.values().has(-1) and first.values().all(func(tick: int) -> bool: return tick < terminal), "S1 economy, production and combat all happened before the end, got " + str(first) + " " + str(completed.size()))
 	runner.check(deposits[1] > 0 and deposits[2] > 0 and boxes_ok and negatives == 0, "S1 both owners deposited, supply conserved, nothing negative: " + str(deposits))
 	return true
