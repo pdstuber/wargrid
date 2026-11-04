@@ -21,3 +21,10 @@ cat "$log_dir/combat.log"
 if grep -E 'ERROR:|SCRIPT ERROR:' "$log_dir/combat.log"; then exit 1; fi
 grep -Eq '^COMBAT BENCHMARK PASSED 4$' "$log_dir/combat.log" || exit 1
 [ "$(grep -c '^COMBAT BUDGET PASS ' "$log_dir/combat.log")" -eq 2 ] || exit 1
+"$engine" --headless --path "$repo_root/game" --script res://benchmarks/run_lockstep.gd >"$log_dir/lockstep.log" 2>&1
+code=$?
+cat "$log_dir/lockstep.log"
+[ "$code" -eq 0 ] || exit 1
+if grep -E 'ERROR:|SCRIPT ERROR:' "$log_dir/lockstep.log"; then exit 1; fi
+grep -Eq '^LOCKSTEP BENCHMARK PASSED 1$' "$log_dir/lockstep.log" || exit 1
+[ "$(grep -c '^LOCKSTEP BUDGET PASS ' "$log_dir/lockstep.log")" -eq 1 ] || exit 1

@@ -1,0 +1,8 @@
+{
+ "text": "{\"type\":\"welcome\",\"seat\":1,\"match\":\"ABC234\"}",
+ "message": {
+  "type": "welcome",
+  "seat": 1,
+  "match": "ABC234"
+ }
+}

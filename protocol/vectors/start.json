@@ -1,0 +1,11 @@
+{
+ "text": "{\"type\":\"start\",\"seats\":[1,2],\"delay\":4}",
+ "message": {
+  "type": "start",
+  "seats": [
+   1,
+   2
+  ],
+  "delay": 4
+ }
+}

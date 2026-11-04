@@ -1,0 +1,7 @@
+{
+ "text": "{\"type\":\"ping\",\"t\":123}",
+ "message": {
+  "type": "ping",
+  "t": 123
+ }
+}

@@ -527,7 +527,7 @@ Infantry, one or two vehicles, targeting, health/damage, basic AI, victory/defea
 
 **Exit gate:** reproducible scenario test for a scripted 5–10 minute match plus combat reference fixtures and manual playability review. This is the first true vertical slice.
 
-### M4.1 — Polish from the first playtest (implemented and merged, awaiting playtest)
+### M4.1 — Polish from the first playtest (implemented and merged, playtest done, findings open)
 
 User playtest notes, 2026-11-03: a rally point per producer (also fixes production stalling once a producer's perimeter is full), opponent base defense and reaction to enemies just beyond weapon range, read-only info for selected enemy objects, visible collector dock/waiting state at supply piles, and one HUD line "1/2/3/4 build".
 
@@ -540,6 +540,8 @@ User playtest notes, 2026-11-03: a rally point per producer (also fixes producti
 Today's 1v1 skirmish played between two machines: deterministic lockstep with a small input delay, a minimal self-hosted WebSocket relay, periodic snapshot-hash exchange that stops the match on desync, waiting when a peer lags. No lobby, reconnect or matchmaking. See §11.
 
 **Exit gate:** a complete match between macOS and Windows without desync, both clients' replay hashes equal, measured command latency against a budget, relay hosting decided and documented.
+
+**M5 status (2026-11-04):** implemented on `m5-online`, not merged; the macOS-Windows match ran on the pre-pacing-fix build and the repeat on the fixed build is a user-accepted deferral, to be played later. Findings: [M5 findings](docs/reference/m5-online.md).
 
 ### M6 — Teams and a full-scale map
 
@@ -564,6 +566,8 @@ Per-faction build orders, base defense, attack waves and sensible target choice;
 ### M9 — 3v3 online
 
 Lobby with slots, faction, team and bot choice; three humans plus three bots through the relay; handling a dropped player (pause, or the player becomes a bot); optional browser export over the same WebSocket transport.
+
+**Relay beyond one machine (user, 2026-11-04; design proposed):** rooms on several machines with the owner encoded in the match code, region-aware placement, deploys that drain live rooms, and reconnect by replaying the room's command log. Cloud-agnostic (user decision): no routing, discovery or placement feature that exists on one provider only. fly.io stays the host for now; Railway is evaluated in M5 Task 11. Options and host evidence: [relay scaling](docs/reference/relay-scaling.md).
 
 **Exit gate:** a real 3v3 match with friends without desync.
 
@@ -764,6 +768,7 @@ Use profiling before shifting code to C#, C++ or GDExtension. **Do not infer tha
 - **Transport: WebSocket through a small relay server** (user choice: relay rather than one player hosting). Godot's high-level multiplayer API works over a WebSocket peer on desktop and in web exports, while ENet is not available in browsers, so one transport keeps the later browser build open. The relay forwards per-tick command batches and hashes and holds no game logic. Hosting: the user's existing fly.io account (sample config in the sibling `sb-watcher` project: `fly.toml`, region `fra`, shared 256 MB VM). Unlike that always-on worker, the relay accepts inbound WebSocket connections, so it needs an `[http_service]` section; letting fly stop idle machines and start them on connection keeps cost near zero between matches. Details belong to the M5 design.
 - **Clients:** desktop builds first (user choice), browser later.
 - **Desync detection:** clients exchange the per-tick snapshot hash periodically; a mismatch stops the match with a report.
+- **More than one relay machine (proposed 2026-11-04, M9):** M5 runs one machine because rooms live in memory. Scaling keeps rooms in memory and routes by an owner encoded in the match code, without provider-specific features; see [relay scaling](docs/reference/relay-scaling.md).
 - **Map scale drives cost:** the target map is about 196 × 196 cells; navigation rebuilds and destination allocation measured at 64 × 64 (see the [performance ledger](docs/reference/performance.md)) would grow roughly 9×, so M6 measures and scales them before content depends on the map.
 
 Authoritative-server simulation stays the fallback if lockstep fails the M5 gate. Keep commands serializable, state inspectable and simulation repeatable; that serves single player, AI agents, debugging, savegames, replays and multiplayer alike.

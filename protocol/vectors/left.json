@@ -1,0 +1,8 @@
+{
+ "text": "{\"type\":\"left\",\"seat\":2,\"after_tick\":77}",
+ "message": {
+  "type": "left",
+  "seat": 2,
+  "after_tick": 77
+ }
+}

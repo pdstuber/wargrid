@@ -8,6 +8,7 @@ var _state: Dictionary = {}
 var _selected_ids: Array[int] = []
 var _last_points: Dictionary = {}
 var _inspected_id: int = -1
+var local_player: int = 1
 const OwnerColors := {1: Color("376eac"), 2: Color("b04a3a")}
 
 static func owner_color(owner: int) -> Color:
@@ -42,7 +43,7 @@ func pick_target(plane_point: Vector2, own: int) -> int:
 func pick_entity(plane_point: Vector2, any_owner: bool = false) -> int:
 	for i in range(_state.get("entities", []).size() - 1, -1, -1):
 		var unit: Dictionary = _state.entities[i]
-		if (any_owner or unit.owner == 1) and _vehicle_bounds(unit).has_point(plane_point):
+		if (any_owner or unit.owner == local_player) and _vehicle_bounds(unit).has_point(plane_point):
 			return unit.id
 	return -1
 
@@ -123,7 +124,7 @@ func _draw_inspected() -> void:
 
 func rally_marker() -> Array:
 	for building in _state.get("buildings", []):
-		if _selected_ids.has(building.id) and building.owner == 1 and building.kind in ["barracks", "factory"] and building.has("rally"): return building.rally
+		if _selected_ids.has(building.id) and building.owner == local_player and building.kind in ["barracks", "factory"] and building.has("rally"): return building.rally
 	return []
 
 func _draw_rally() -> void:
@@ -192,7 +193,7 @@ func pick_entities(plane_rect: Rect2) -> Array[int]:
 	var ids: Array[int] = []
 	for unit in _state.get("entities", []):
 		var point: Vector2 = Iso.world_to_plane(Vector2(unit.position[0], unit.position[1]))
-		if unit.owner == 1 and point.x >= rect.position.x and point.y >= rect.position.y and point.x <= rect.end.x and point.y <= rect.end.y:
+		if unit.owner == local_player and point.x >= rect.position.x and point.y >= rect.position.y and point.x <= rect.end.x and point.y <= rect.end.y:
 			ids.append(unit.id)
 	ids.sort()
 	return ids

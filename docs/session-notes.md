@@ -4,18 +4,20 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 ## Session
 
-2026-11-04 M5 online spike designed and planned (both approved by user); handoff in root `prompt.txt`; not started. Before that: M4.1 implemented on `m4.1-polish` (Tasks 0–9, pushed at `ee9e63c`), merged to `main` at `f2c5f9e`. Suite 160 cases / 104,024 checks / 0 failures; `run_benchmark.sh` passes; CI run 41806514021 green (Linux, Windows, compare-replays) and `compare_local_traces.sh` matches macOS (`REPLAYS MATCHED 1200` x3); Grok gate review and `/ponytail-review` done. Rendered movement rerun passed. Resume record: [M4.1 verification](reference/m4.1-verification.md). M3 session detail lives in [M3 verification](reference/m3-verification.md), M4 in [M4 verification](reference/m4-verification.md).
+2026-11-04 M5 online spike on `m5-online` (pushed, HEAD fe1a039 locally 3 commits ahead of origin c5d9d19): Tasks 0–9 done; Task 10 partly done: friend match macOS-Windows (ran at 2x speed, found and fixed at `f82114f`), Mac vs Mac at 30 Hz (both Apple Silicon), relay `MATCH END` logging deployed; repeat friend match on the fixed build deferred by the user (hard gate not met, recorded as deferral); Task 11 findings report and exit gate next (resume record: [M5 verification](reference/m5-verification.md)). Verified at `c5d9d19`: editor suite 192 cases / 104,432 checks / 0 failures, nine `run_netplay.sh` scenarios passed, relay `gradlew test` passed, CI green on `894104b` (Linux, Windows, compare-replays). Before that: M4.1 implemented on `m4.1-polish` (Tasks 0–9, pushed at `ee9e63c`), merged to `main` at `f2c5f9e`. Suite 160 cases / 104,024 checks / 0 failures; `run_benchmark.sh` passes; CI run 41806514021 green (Linux, Windows, compare-replays) and `compare_local_traces.sh` matches macOS (`REPLAYS MATCHED 1200` x3); Grok gate review and `/ponytail-review` done. Rendered movement rerun passed. Resume record: [M4.1 verification](reference/m4.1-verification.md). M3 session detail lives in [M3 verification](reference/m3-verification.md), M4 in [M4 verification](reference/m4-verification.md).
 
 ## Pending user action
 
 - M4.1 needs the user playtest ("I did not play test 4.1 yet, will do so later", 2026-11-04). Deferred minors: BM7 lane pin, R5 other-command coverage.
-- `main`, `origin/main` and `m4.1-polish` all at `f2c5f9e` (M4.1 merged). Local branch `gpl-license` is merged and can be deleted.
-- M5 kickoff: fresh session, "follow prompt.txt". Human matches (Task 10) need the user at home with a Windows machine, and one friend.
+- `main` and `origin/main` at `d66e4b1` (M5 plan on top of the M4.1 merge `f2c5f9e`); `m5-online` branches from it. Local branch `gpl-license` is merged and can be deleted.
+- M5: fresh session, "resume from prompt.txt" (Task 11). Push of the three local docs commits needs approval. Optional deploy with `-Xlog:cds` to check AppCDS needs approval. The M4.1 playtest now has informal notes (see [M4.1 verification](reference/m4.1-verification.md)); the formal playtest is still pending.
 - Choose a licence for original art and audio (code is GPL-3.0-or-later).
 - Check in a fresh session whether the project skill settings shrank the skill listing (baseline 48,567 bytes; revert if not).
 
 ## Deferred experiments and research
 
+- Relay scaling (user, 2026-11-04): the single-machine `--ha=false` relay is accepted for M5 only; user is not happy with it as the long-term approach. Placed in M9 (user, 2026-11-04): cloud-agnostic multi-machine relay (no provider-only routing, so no `fly-replay`), fly.io stays the host for now, Railway evaluated in M5 Task 11; load test (N synthetic rooms) first. Proposal review and options: [relay scaling](reference/relay-scaling.md).
+- Project goal (user, 2026-11-04): also an architecture exploration. Over-engineering is acceptable; explore very scalable architectures from the start, from M6 on. M5 design stays as approved.
 - Source/config-supported economy and combat values remain RETAIL_UNVERIFIED; departures stay explicit in reference/design notes.
 - AI moods (Sleep, Alert 1.1, Aggressive 1.5) deferred to M8 bots (user, 2026-11-03).
 - Retail map sizes vs our 48×32 cells: check before choosing the M6 full-scale map.
@@ -26,8 +28,8 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 **M4 complete and merged into local `main` (2026-11-03).** Evidence: [M4 verification](reference/m4-verification.md). Process changes adopted on `main`: [milestone prompt](milestone-prompt.md), [workflow retrospective](reference/2026-11-03-milestone-workflow-retrospective.md). Roadmap re-aimed at the long-term target (3v3 online with friends against bots, USA/China/GLA, Twilight-Flame-like full-scale map): blueprint §1, §7, §11, §14.
 
-- **M5 online spike planned (2026-11-04), not started.** [Design](superpowers/specs/2026-11-04-m5-online-spike-design.md), [plan](superpowers/plans/2026-11-04-m5-online-spike.md), handoff `prompt.txt` (Sonnet 5.5 medium implements; Opus for Task 1, preflights at Tasks 1/3/5/9, gate reviews). Start only on explicit kickoff.
-- **M4.1 implemented and merged to `main` (2026-11-04), awaiting playtest.** Next: user playtest (rally, enemy info, pile labels, opponent defence, 5–10 minute match). Evidence: [M4.1 verification](reference/m4.1-verification.md). The five items below are the original playtest notes, now all implemented:
+- **M5 online spike: Tasks 0–10 done except the deferred repeat friend match (2026-11-04); Task 11: findings report [m5-online.md](reference/m5-online.md) written and local exit-gate runs green (2026-11-04); Grok review, `/ponytail-review`, CI (bba5482) and the HUD look are done; only the repeat friend match (user: later) remains open. Merge awaits user approval.** Also owed: rendered benchmark rerun and HUD look (batched visible request), M9 list (dynamic delay: p95 ~190-205 ms against the 250 ms budget at a 4-tick delay), railway.com cost follow-up. Suspend during a live match is still unobserved. [Design](superpowers/specs/2026-11-04-m5-online-spike-design.md), [plan](superpowers/plans/2026-11-04-m5-online-spike.md), handoff `prompt.txt` (Sonnet 5.5 medium implements; Opus for Task 1, preflights at Tasks 1/3/5/9, gate reviews). Start only on explicit kickoff.
+- **M4.1 implemented and merged to `main` (2026-11-04); user declared the playtest done 2026-11-04, findings open (see M4.1 verification).** Formerly next: user playtest (rally, enemy info, pile labels, opponent defence, 5–10 minute match). Evidence: [M4.1 verification](reference/m4.1-verification.md). The five items below are the original playtest notes, now all implemented:
   1. **Rally point per producer.** Zero Hour production exits read a rally point (`AIPlayer.cpp` 500/680, source revision `0a05454`). Today new units stay on the producer's perimeter, which also stalls production at about 8 infantry and 11 tanks. Touches production, a new command and the replay traces.
   2. **Opponent too passive.** Guard units only fire inside weapon range and never move, and the opponent never defends its base. Proposed: base defense (the same rule the scripted human needed in M4 Task 7) and reaction a bit beyond weapon range; check Zero Hour's idle acquisition range in source before choosing the distance. Changes the match outcome, so the scenario pin (tick 9943) must be recalibrated.
   3. **Selecting an enemy should show info.** `WorldView.pick_entity` only returns player 1 units; add read-only kind, owner and HP for enemy objects.
@@ -35,9 +37,24 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
   5. **"4: barracks" next to "S: stop".** HUD wording slip: base line says "1/2/3 build", the skirmish appends "4: barracks" elsewhere; make it one "1/2/3/4 build".
 - **After M5:** M6 teams and full-scale map, M7 China and GLA (gate: Zero Hour spot checks S1–S3 run or deferred), M8 bots, M9 3v3 online.
 
+## 2026-11-04 — M5 human matches
+
+- Friend match (macOS editor run vs friend's Windows 11 export, Kulmbach): no desync, command p95 96.0 / 84.6 ms, but ticks ran at about 57/s: `online_main.gd` catch-up ran 2 ticks per frame permanently. Fixed with a bounded per-frame credit (`f82114f`, test first) plus the false "Connection to relay lost" after match end.
+- Mac mini vs MacBook Air M1 at 30 Hz: 6,001 ticks, about 1.55 KB/s per client, command p95 191.4 / 205.0 ms (n=30 / 13), RTT p95 41.9 / 33.7 ms. End-screen text not confirmed by the user.
+- User decisions: step 2 used two Macs; repeat friend match deferred ("confident they work"); play feedback filed as informal M4.1 playtest notes in [M4.1 verification](reference/m4.1-verification.md) (formal playtest still pending). Unreproduced: attack-move leaves units in the base standing when part of the army is engaged.
+- Fly: idle autosuspend observed 71 s to about 7 min after last activity; resume 193-463 ms; no relay errors in the logs. AppCDS mapping unverified.
+
+## 2026-11-04 — Relay scaling review
+
+- Reviewed the user's rendezvous-hashing proposal (docs only, no relay code changed). User decisions: multi-machine relay and reconnect go into M9 (option a, not a separate milestone); fly.io stays the host for now; design is cloud-agnostic. Railway evaluation stays in M5 Task 11 (Claude's recommendation after the user chose to stay on fly; hands-on deploy needs a Railway account and approval). Recommended routing (app redirect, static worker list, client RTT placement, relay-side drain) is Claude's proposal, not decided. Evidence and unverified items: [relay scaling](reference/relay-scaling.md).
+
+## 2026-11-04 — M5 Tasks 8–9
+
+- Lockstep benchmark passes; relay deployed to `wargrid-relay-jvm` (fra, one machine, suspend). Native GraalVM build failed 4 times and was dropped (user); native app destroyed (user approved). Cold p50 about 3.2 s, manual suspend resume about 0.5 s, warm 78 ms, memory about 100 MiB (peak 128). Task 9 gate review rulings and unverified items: [M5 verification](reference/m5-verification.md).
+
 ## 2026-11-04 — M5 design and plan
 
-- User intent: the spike shows how hard multiplayer is, as the thin foundation M9 builds on (not throwaway). Target: user and two friends (all in Bavaria) vs three bots over the internet; lobby later. User is a backend developer; richer fly.io services are fine.
+- User intent: the spike shows how hard multiplayer is, as the thin foundation M9 builds on (not throwaway). Target: user and two friends (all in Bavaria) vs three bots over the internet; lobby later. User is a backend developer; richer fly.io services are fine in deploy config, but routing, discovery and placement stay cloud-agnostic (user, 2026-11-04).
 - User decisions: approach A (dumb relay, clients stamp ticks) plus relay-owned membership, version check, desync report and tool, automated failure tests (after user recalled Generals online as unreliable; source shows P2P UDP with firewall probing and 42 "mismatch" fix commits in GeneralsGameCode `afc2a103f`); Kotlin + Ktor (CIO, required for GraalVM per ktor.io/docs/graalvm.html) with a GraalVM cold-start experiment; latency ≤ 250 ms p95 through fly `fra`; lockstep overhead 10% of a tick (0.55 ms p99 dev); exported builds in scope; friend match is a hard gate; implementation by Sonnet 5.5 medium with Opus preflights.
 - Done: `flyctl` v0.5.3 installed (Homebrew), `fly auth login --code` completed from the user's phone. Godot probe: plain `JSON.stringify` drops float precision (`0.30000000000000004` → `0.3`); `JSON.parse_string` returns ints as floats; both handled in the plan. One builder check on the design (macOS CI dropped, offline path, cross-OS desync diff, budgets) folded in.
 - Not done: no implementation, no tests run, no export templates installed, no fly app created or deployed. Unverified: export-template determinism vs editor binary, `--script`/`--headless` in release templates, Ktor WebSockets in a native image (all Task 1 or Task 9).
@@ -210,3 +227,4 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 - Added M3 design, detailed sequential Sol/Medium execution plan, source/config record and separate docs/m3-prompt.txt. One fresh design builder check found no consequential gaps; plan self-review mapped scope, signatures, tests and lifecycle boundaries. Planning only; M2 gates precede M3 execution.
 - User authorized future local M2 completion commits, local main merge and creation of m3-base-supplies carrying full repo/preparation documents. Root prompt includes exact handoff and installs M3 root prompt only after branch switch; no push/PR or M3 implementation during that run. No Git action performed here.
 - Documentation verification delegated: diff whitespace and local Markdown link targets checked; final result recorded in response. No game rerun after documentation-only changes, no rendered checks, no M2 implementation review claimed.
+- Informal M4.1 playtest notes from the M5 friend match (user, 2026-11-04) now live in [M4.1 verification](reference/m4.1-verification.md); user later declared the playtest done (2026-11-04); findings open.

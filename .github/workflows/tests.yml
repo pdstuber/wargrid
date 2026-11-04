@@ -5,6 +5,7 @@ on:
   workflow_dispatch:
 jobs:
   godot:
+    needs: relay
     strategy:
       fail-fast: false
       matrix:
@@ -15,14 +16,20 @@ jobs:
             zip: Godot_v4.7.2-stable_linux.x86_64.zip
             executable: Godot_v4.7.2-stable_linux.x86_64
             sha256: cadd3204e728a35d3f13adb7fd0d7902636b79f6b95c40c265eb73b6c35329e4
+            templates: ~/.local/share/godot/export_templates/4.7.2.stable
+            preset: Linux
+            test_preset: Linux Tests
           - platform: windows
             runner: windows-latest
             python: python
             zip: Godot_v4.7.2-stable_win64.exe.zip
             executable: Godot_v4.7.2-stable_win64_console.exe
             sha256: 731980f9608d61333e5baf54a2ef17210acc7a538446c0cb9969f002aca1e953
+            templates: ~/AppData/Roaming/Godot/export_templates/4.7.2.stable
+            preset: Windows Desktop
+            test_preset: Windows Tests
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 10
+    timeout-minutes: 25
     defaults:
       run:
         shell: bash
@@ -31,12 +38,21 @@ jobs:
       GODOT_ZIP: ${{ matrix.zip }}
       GODOT_SHA256: ${{ matrix.sha256 }}
       GODOT_EXECUTABLE: ${{ matrix.executable }}
+      TEMPLATES_SHA256: f298490b8d44d934be425a5a65a51bf15f422428b229a06a6e11d9ffea248011
       PYTHON: ${{ matrix.python }}
       WARGRID_REPLAY_TRACE: ${{ github.workspace }}/replay-${{ matrix.platform }}.tsv
       WARGRID_ECONOMY_REPLAY_TRACE: ${{ github.workspace }}/economy-${{ matrix.platform }}.tsv
       WARGRID_COMBAT_REPLAY_TRACE: ${{ github.workspace }}/combat-${{ matrix.platform }}.tsv
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: actions/download-artifact@v4
+        with:
+          name: relay-jar
+          path: relay-jar
       - name: Install pinned Godot
         run: |
           "$PYTHON" - <<'PY'
@@ -63,6 +79,39 @@ jobs:
         run: |
           set -o pipefail
           sh tools/run_tests.sh 2>&1 | tee test-results.log
+      - uses: actions/cache@v4
+        with:
+          path: ${{ matrix.templates }}
+          key: export-templates-${{ runner.os }}-${{ env.TEMPLATES_SHA256 }}
+      - name: Install pinned export templates
+        run: '"$PYTHON" tools/install_export_templates.py "$TEMPLATES_SHA256" "$GODOT_VERSION"'
+      - name: Export test build and game
+        run: |
+          sh tools/export_build.sh "${{ matrix.test_preset }}" "build/test/${{ matrix.platform }}/WargridTests${{ matrix.platform == 'windows' && '.exe' || '' }}"
+          sh tools/export_build.sh "${{ matrix.preset }}" "build/game/${{ matrix.platform }}/Wargrid${{ matrix.platform == 'windows' && '.exe' || '.x86_64' }}"
+      - name: Exported suite and replay traces
+        env:
+          WARGRID_VECTORS: ${{ github.workspace }}/protocol/vectors
+          WARGRID_REPLAY_TRACE: ${{ github.workspace }}/export-replay-${{ matrix.platform }}.tsv
+          WARGRID_ECONOMY_REPLAY_TRACE: ${{ github.workspace }}/export-economy-${{ matrix.platform }}.tsv
+          WARGRID_COMBAT_REPLAY_TRACE: ${{ github.workspace }}/export-combat-${{ matrix.platform }}.tsv
+        run: |
+          set -o pipefail
+          exe="build/test/${{ matrix.platform }}/WargridTests${{ matrix.platform == 'windows' && '.console.exe' || '' }}"
+          "$exe" --headless 2>&1 | tee exported-results.log
+          grep -Eq '^TESTS PASSED [1-9][0-9]*$' exported-results.log
+      - name: Exported netplay scenarios
+        env:
+          WARGRID_RELAY_JAR: ${{ github.workspace }}/relay-jar/relay-all.jar
+        run: |
+          set -o pipefail
+          root=$(pwd -W 2>/dev/null || pwd)
+          exe="build/game/${{ matrix.platform }}/Wargrid${{ matrix.platform == 'windows' && '.console.exe' || '.x86_64' }}"
+          export WARGRID_CLIENT="$root/$exe --headless"
+          for scenario in match perturb relay-down; do
+            NETPLAY_OUT="$root/netplay/$scenario" sh tools/run_netplay.sh $scenario 2>&1 | tee -a netplay.log
+          done
+          cp netplay/match/s1.tsv netplay-${{ matrix.platform }}.tsv
       - uses: actions/upload-artifact@v4
         with:
           name: replay-${{ matrix.platform }}
@@ -70,12 +119,52 @@ jobs:
             ${{ env.WARGRID_REPLAY_TRACE }}
             ${{ env.WARGRID_ECONOMY_REPLAY_TRACE }}
             ${{ env.WARGRID_COMBAT_REPLAY_TRACE }}
+            ${{ github.workspace }}/export-replay-${{ matrix.platform }}.tsv
+            ${{ github.workspace }}/export-economy-${{ matrix.platform }}.tsv
+            ${{ github.workspace }}/export-combat-${{ matrix.platform }}.tsv
           if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: netplay-${{ matrix.platform }}
+          path: netplay-${{ matrix.platform }}.tsv
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: matrix.platform == 'windows'
+        with:
+          name: wargrid-windows
+          path: |
+            build/game/windows/Wargrid.exe
+            build/game/windows/Wargrid.console.exe
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: logs-netplay-${{ matrix.platform }}
+          path: netplay/
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: test-results-${{ matrix.platform }}
           path: test-results.log
+  relay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: relay
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+      - run: ./gradlew test buildFatJar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: relay-jar
+          path: relay/build/libs/relay-all.jar
+          if-no-files-found: error
   compare-replays:
     needs: godot
     runs-on: ubuntu-latest
@@ -84,12 +173,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          pattern: replay-*
+          pattern: "{replay,netplay}-*"
           merge-multiple: true
           path: traces
       - name: Test trace validation
         run: |
           python3 tools/test_compare_replays.py
+          python3 tools/test_desync_diff.py
           python3 tools/test_check_reference.py
           python3 tools/test_session_usage.py
       - name: Compare all platform ticks
@@ -97,3 +187,7 @@ jobs:
           python3 tools/compare_replays.py traces/replay-linux.tsv traces/replay-windows.tsv
           python3 tools/compare_replays.py traces/economy-linux.tsv traces/economy-windows.tsv
           python3 tools/compare_replays.py traces/combat-linux.tsv traces/combat-windows.tsv
+          python3 tools/compare_replays.py traces/replay-linux.tsv traces/replay-windows.tsv traces/export-replay-linux.tsv traces/export-replay-windows.tsv
+          python3 tools/compare_replays.py traces/economy-linux.tsv traces/economy-windows.tsv traces/export-economy-linux.tsv traces/export-economy-windows.tsv
+          python3 tools/compare_replays.py traces/combat-linux.tsv traces/combat-windows.tsv traces/export-combat-linux.tsv traces/export-combat-windows.tsv
+          python3 tools/compare_replays.py --interval 30 --rows 0 traces/netplay-linux.tsv traces/netplay-windows.tsv

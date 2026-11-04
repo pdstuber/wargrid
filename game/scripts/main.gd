@@ -5,6 +5,7 @@ const Iso = preload("res://scripts/presentation/isometric.gd")
 const Zooms: Array[float] = [0.5, 1.0, 2.0]
 var simulation = Simulation.new()
 var selected_ids: Array[int] = []
+var local_player: int = 1
 var _sequence: int = 0
 var _error: String = ""
 var _selecting: bool = false
@@ -21,6 +22,7 @@ var _camera_bounds: Rect2
 @onready var _selection_box: ReferenceRect = $HUD/SelectionBox
 
 func _ready() -> void:
+	_view.local_player = local_player
 	simulation = _create_simulation()
 	_reset_camera()
 	_refresh()
@@ -162,9 +164,9 @@ func _submit(payload: Dictionary) -> void:
 	var state: Dictionary = simulation.snapshot()
 	var command: Dictionary = payload.duplicate(true)
 	command.tick = command.get("tick",state.tick)
-	command.player = 1
+	command.player = local_player
 	for entry in state.last_sequences:
-		if entry.player == 1: _sequence = maxi(_sequence,entry.sequence + 1)
+		if entry.player == local_player: _sequence = maxi(_sequence,entry.sequence + 1)
 	command.sequence = _sequence
 	var result: Dictionary = simulation.issue_command(command)
 	if result.ok: _sequence += 1

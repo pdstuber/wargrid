@@ -66,9 +66,9 @@ func _finish_selection(point: Vector2) -> void:
 
 func _enemy_at(plane: Vector2) -> int:
 	var id: int = _view.pick_entity(plane, true)
-	if id == -1: return _view.pick_target(plane, 1)
+	if id == -1: return _view.pick_target(plane, local_player)
 	for unit in simulation.snapshot().entities:
-		if unit.id == id: return id if unit.owner != 1 else -1
+		if unit.id == id: return id if unit.owner != local_player else -1
 	return -1
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -95,7 +95,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_submit({"type":"attack_move","entity_ids":selected_ids.duplicate(),"target":[target.x,target.y]})
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed and not is_selecting() and not selected_ids.is_empty():
-		var enemy: int = _view.pick_target(_view.make_canvas_position_local(event.position), 1)
+		var enemy: int = _view.pick_target(_view.make_canvas_position_local(event.position), local_player)
 		if enemy != -1:
 			_submit({"type":"attack","entity_ids":selected_ids.duplicate(),"target_id":enemy})
 			return
@@ -137,7 +137,7 @@ func _enemy_summary(state: Dictionary) -> String:
 func _result_text(match_state: Dictionary) -> String:
 	if match_state.status == "ongoing": return ""
 	if match_state.status == "draw": return "Draw"
-	return "Victory" if match_state.winner == 1 else "Defeat"
+	return "Victory" if match_state.winner == local_player else "Defeat"
 
 func _refresh_hud(state: Dictionary) -> void:
 	super._refresh_hud(state)
@@ -146,7 +146,7 @@ func _refresh_hud(state: Dictionary) -> void:
 	if _inspected(state).is_empty(): inspected_id = -1
 	_view.set_inspected(inspected_id)
 	$HUD/Economy/Produce.text = "Produce %s (E)" % _production_kind(building) if not building.is_empty() else "Produce (E)"
-	_status.text += "\n" + (_selected_summary(state) + _enemy_summary(state)) + ("A: attack-move click | S: stop | You are blue (P1)" if result.is_empty() else "")
+	_status.text += "\n" + (_selected_summary(state) + _enemy_summary(state)) + ("A: attack-move click | S: stop | You are %s (P%d)" % [("blue" if local_player == 1 else "red"), local_player] if result.is_empty() else "")
 	$HUD/Result.text = result
 	$HUD/Result.visible = not result.is_empty()
 	$HUD/Restart.visible = not result.is_empty()
