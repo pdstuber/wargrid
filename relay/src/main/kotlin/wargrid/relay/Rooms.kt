@@ -11,11 +11,14 @@ fun randomCode(): String {
 
 class Seat(val number: Int, val out: Outbox) {
     var lastTick: Int? = null
+    var frames = 0
+    var bytes = 0L
 }
 
 class Room(val build: String) {
     val seats = mutableMapOf<Int, Seat>()
     var started = false
+    val stats = mutableMapOf<Int, String>()
 }
 
 sealed interface Join {
@@ -23,7 +26,11 @@ sealed interface Join {
     data class Refused(val reason: String) : Join
 }
 
-class Rooms(private val config: RelayConfig, private val codes: () -> String = ::randomCode) {
+class Rooms(
+    private val config: RelayConfig,
+    private val codes: () -> String = ::randomCode,
+    private val log: (String) -> Unit = ::println,
+) {
     private val rooms = mutableMapOf<String, Room>()
 
     @Synchronized
@@ -56,6 +63,8 @@ class Rooms(private val config: RelayConfig, private val codes: () -> String = :
         val expected = (seat.lastTick ?: (config.delay - 1)) + 1
         if (!room.started || tick.seat != seat.number || tick.tick != expected) return false
         seat.lastTick = expected
+        seat.frames++
+        seat.bytes += text.toByteArray(Charsets.UTF_8).size
         room.seats.values.filter { it !== seat }.forEach { it.out.sendDelayed(text, config.testDelayMillis) }
         return true
     }
@@ -66,7 +75,11 @@ class Rooms(private val config: RelayConfig, private val codes: () -> String = :
         room.seats.remove(seat.number)
         val after = seat.lastTick ?: (config.delay - 1)
         room.seats.values.forEach { it.out.send("""{"type":"left","seat":${seat.number},"after_tick":$after}""") }
-        if (room.seats.isEmpty()) rooms.remove(code)
+        room.stats[seat.number] = "${seat.frames}f/${seat.bytes}B"
+        if (room.seats.isEmpty()) {
+            rooms.remove(code)
+            log("MATCH END $code ${room.stats.entries.sortedBy { it.key }.joinToString(" ") { "seat${it.key}=${it.value}" }}")
+        }
     }
 
     private fun welcome(seat: Int, code: String) = """{"type":"welcome","seat":$seat,"match":"$code"}"""

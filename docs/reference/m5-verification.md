@@ -1,6 +1,21 @@
 # M5 verification
 
 ```text
+Resume record (updated 2026-11-04, Task 10 prep; CI export-suite fix local, relay match-stats log local)
+Branch / base commit / working-tree state: m5-online / 90fca8d (pushed by user) + two local commits (exported-suite fix, relay MATCH END log) / clean after commit; push of these needs approval
+Last green task / next incomplete task: Task 9 / Task 10 human matches
+Last command / cases / checks / failures / exit / marker: editor suite 190 / 104,426 / 0 / exit 0; local macOS exported suite 190 / 104,426 / 0 / exit 0 (before the fix 13 failures, same as CI Linux and Windows on 90fca8d); relay gradlew test 15 tests / 0 failures
+Known red case or blocker: CI on 90fca8d red (exported suite, 13 click-test failures) until the fix is pushed and CI rerun; Windows artifact `wargrid-windows` for the friend match comes only from a green CI run
+Approved decisions, pre-authorizations used, deferred gates: User playtest of M4.1 pending. User decision 2026-11-04: Task 10 step 2 uses two Macs (no Windows machine, no VM); cross-OS determinism is covered by step 3 (user Mac vs friend's Windows), which must be a Mac-Windows match. Push, deploy need approval.
+Usage so far: not recorded
+Next exact action: push the fix (approval), watch CI, then run step 2 (two Macs) and step 3 (friend, Windows)
+```
+
+CI finding (2026-11-04): exported test builds also load the project main scene (the launcher), whose `Center` CenterContainer swallowed right clicks in the click-driven scene tests (13 failures, editor runs unaffected because `--script` loads no main scene). Fix: `tests/run_tests.gd` frees `current_scene` first.
+
+Relay: a `MATCH END <code> seatN=<frames>f/<bytes>B` log line is written when a room empties (unit-tested); counts tick frames and bytes received from each seat.
+
+```text
 Resume record (updated 2026-11-04, Task 9 review applied; restart, then Task 10)
 Branch / base commit / working-tree state: m5-online / 42342a8 + uncommitted Task 9 review fixes (docs, Dockerfile loop bound) / commit pending; origin/m5-online behind (push needs approval)
 Last green task / next incomplete task: Task 9 (review applied) / Task 10 human matches (user at home + one friend), then Tasks 11

@@ -220,3 +220,18 @@ class RelayTest {
 
     private fun ping(t: Int) = """{"type":"ping","t":$t}"""
 }
+
+class MatchStatsTest {
+    @Test fun logsFramesAndBytesPerSeatWhenRoomEmpties() {
+        val lines = mutableListOf<String>()
+        val rooms = Rooms(RelayConfig(), { "ABCDEF" }, lines::add)
+        val first = rooms.join(Envelope(type = "hello", protocol = 1, build = "b", match = ""), Outbox()) as Join.Ok
+        val second = rooms.join(Envelope(type = "hello", protocol = 1, build = "b", match = "ABCDEF"), Outbox()) as Join.Ok
+        val frame = tick(1, 4)
+        assertTrue(rooms.forward(first.room, first.seat, frame, Envelope(type = "tick", seat = 1, tick = 4)))
+        rooms.leave("ABCDEF", first.room, first.seat)
+        assertTrue(lines.isEmpty())
+        rooms.leave("ABCDEF", second.room, second.seat)
+        assertEquals(listOf("MATCH END ABCDEF seat1=1f/${frame.length}B seat2=0f/0B"), lines)
+    }
+}
