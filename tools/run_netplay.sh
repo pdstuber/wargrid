@@ -7,7 +7,8 @@ mkdir -p "$out" || exit 1
 client=${WARGRID_CLIENT:-"godot --headless --path $repo_root/game"}
 jar=${WARGRID_RELAY_JAR:-$repo_root/relay/build/libs/relay-all.jar}
 port=$(${PYTHON:-python3} -c 'import socket;s=socket.socket();s.bind(("",0));print(s.getsockname()[1])')
-url=ws://127.0.0.1:$port/ws
+url=${WARGRID_RELAY_URL:-ws://127.0.0.1:$port/ws}
+remote=${WARGRID_RELAY_URL:+1}
 pids=""
 started=$(${PYTHON:-python3} -c 'import time;print(time.time())')
 
@@ -17,6 +18,7 @@ fail() { echo "NETPLAY FAILED $scenario: $*"; echo "logs: $out"; exit 1; }
 ms() { ${PYTHON:-python3} -c 'import time;print(int(time.time()*1000))'; }
 
 start_relay() {
+  [ -z "$remote" ] || return 0
   env PORT=$port "$@" java -jar "$jar" >"$out/relay.log" 2>&1 &
   relay_pid=$!
   pids="$pids $relay_pid"
@@ -72,10 +74,13 @@ oracle() {
   expect_end oracle match_over
 }
 
+[ -z "$remote" ] || [ "$scenario" = match ] || fail "WARGRID_RELAY_URL supports only match"
+match_wait=${WARGRID_MATCH_WAIT:-180}
+
 case $scenario in
   match)
     start_relay; start_pair "" ""
-    wait_exit "$pid1" 180; wait_exit "$pid2" 180
+    wait_exit "$pid1" "$match_wait"; wait_exit "$pid2" "$match_wait"
     expect_end s1 match_over; expect_end s2 match_over
     [ "$(end_tick s1)" = "$(end_tick s2)" ] || fail "terminal ticks differ"
     [ "$(end_tick s1)" = 10914 ] || fail "terminal tick $(end_tick s1), pinned 10914"

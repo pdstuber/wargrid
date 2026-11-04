@@ -71,6 +71,20 @@ Historical M1 suite: **32 cases, 1,089 checks, zero failures, exit 0**, `TESTS P
 
 Historical M1 visible smoke is supported by user recording/reports. [M1 measurements](docs/reference/m1-validation.md) record limited headless performance and same-host ARM64/Rosetta replay evidence; these do not establish M2 performance, rendered frame times or cross-OS determinism. User confirmed positive M2 playability and no M3 visual issues; the full visible checklist was not reported item by item. Rendered frame time and backlog were measured 2026-11-03 on a fast development Mac: zero backlog, frame p95 4.1/6.5 ms with vsync off. Budgets for a low-end/browser target are stricter and two are currently exceeded: see the [performance ledger](docs/reference/performance.md). Headless measurements do not establish feel or frame timing. Zero Hour parity remains unverified. Stop at M3; no M4 expansion.
 
+## Relay hosting
+
+The relay runs on fly.io, region `fra`, one shared-cpu-1x 256 MB machine that stops when idle. Rooms live in memory, so deploy exactly one machine (`--ha=false`; `fly machine list` must show one). Status: files written, nothing deployed yet (needs user approval).
+
+```sh
+fly apps create wargrid-relay-jvm
+fly deploy relay -c relay/fly.toml -a wargrid-relay-jvm --dockerfile relay/Dockerfile --ha=false
+fly deploy relay -c relay/fly.toml -a wargrid-relay-native --dockerfile relay/Dockerfile.native --ha=false
+godot --headless --path game -- --probe-relay wss://wargrid-relay-jvm.fly.dev/ws   # prints RELAY WELCOME <ms>
+WARGRID_RELAY_URL=wss://wargrid-relay-jvm.fly.dev/ws WARGRID_MATCH_WAIT=600 sh tools/run_netplay.sh match
+```
+
+JVM-versus-native decision and measurements: [M5 verification](docs/reference/m5-verification.md).
+
 ## Local references
 
 - EA source: `/Users/pdstuber/projects/CnC_Generals_Zero_Hour`; research Zero Hour under `GeneralsMD/`.

@@ -1,0 +1,9 @@
+FROM ghcr.io/graalvm/native-image-community:21 AS build
+WORKDIR /src
+COPY . .
+RUN ./gradlew --no-daemon nativeCompile
+
+FROM debian:bookworm-slim
+COPY --from=build /src/build/native/nativeCompile/relay /relay
+EXPOSE 8080
+CMD ["/relay"]

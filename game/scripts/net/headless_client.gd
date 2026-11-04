@@ -23,6 +23,7 @@ var _status: String = ""
 var _reason: String = ""
 var _closing_since: int = 0
 var _ending: bool = false
+var _connect_msec: int = 0
 
 func _ready() -> void:
 	_args = _parse(OS.get_cmdline_user_args())
@@ -31,6 +32,7 @@ func _ready() -> void:
 		return
 	_transport = RelayTransport.new()
 	var url: String = _args.get("relay", _args.get("probe-relay", ""))
+	_connect_msec = Time.get_ticks_msec()
 	if url == "" or _transport.connect_to(url) != OK:
 		_finish("ended_relay", "cannot connect")
 
@@ -80,6 +82,7 @@ func _welcome(message: Dictionary) -> void:
 	_seat = message.seat
 	print("NETCLIENT WELCOME SEAT ", _seat, " CODE ", message.match, " AT ", _now_ms())
 	if _args.has("probe-relay"):
+		print("RELAY WELCOME ", Time.get_ticks_msec() - _connect_msec)
 		_finish("probed", "")
 		return
 	if _args.has("code-file"):
