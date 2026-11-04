@@ -133,3 +133,5 @@ Gate review (Task 9, Opus, fresh context, tree 42342a8): no Critical. Fixed: I2 
 - User declared the M4.1 playtest done on 2026-11-04 (supersedes every 'playtest pending' line above in this file).
 
 | Task 11 CI and rendered (2026-11-04, tree bba5482) | `gh run 41899652762`; `sh tools/compare_local_traces.sh 41899652762`; `sh tools/run_game.sh res://scenes/movement_benchmark.tscn` (user approved) | CI relay, Linux, Windows, compare-replays all success; replay, economy, combat MATCHED 1200, netplay MATCHED 364 (macOS vs CI). Rendered benchmark PASSED 2, numbers in the ledger. User statement: Mac vs Mac end screens "worked as expected" (no wording recorded). Launcher and online HUD not looked at yet (needs the user at a visible window). User decisions: fly bill and Railway check deferred; M4.1 findings handled outside M5. |
+
+Task 11 HUD (2026-11-04): user looked at the launcher and online HUD: "that looks fine". User decision: repeat the friend match later (open item, not met).

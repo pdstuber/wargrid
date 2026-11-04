@@ -54,7 +54,7 @@ No desync in any test that was not deliberately perturbed, across both human mat
 
 ## Exit-gate deviation
 
-The plan's hard gate (macOS-Windows human match on the fixed build) is a **user-accepted deferral**: the only such match ran on the pre-fix build. Windows on the fixed build is covered only by CI netplay scenarios.
+The plan's hard gate (macOS-Windows human match on the fixed build) is a **user-accepted deferral**: the only such match ran on the pre-fix build. Windows on the fixed build is covered only by CI netplay scenarios. User decision 2026-11-04: repeat this match later; it stays open until then. User looked at the launcher and online HUD and said "that looks fine" (statement, no screenshot).
 
 ## M9 list
 

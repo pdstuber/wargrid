@@ -83,7 +83,7 @@ godot --headless --path game -- --probe-relay wss://wargrid-relay-jvm.fly.dev/ws
 WARGRID_RELAY_URL=wss://wargrid-relay-jvm.fly.dev/ws WARGRID_MATCH_WAIT=600 sh tools/run_netplay.sh match
 ```
 
-Measurements and the native decision: [M5 verification](docs/reference/m5-verification.md). Findings and M9 list: [M5 findings](docs/reference/m5-online.md). M5 status: implemented and locally verified (Tasks 0–11); exit-gate review, CI on the final tree and the repeat friend match on the fixed build are pending (see verification file).
+Measurements and the native decision: [M5 verification](docs/reference/m5-verification.md). Findings and M9 list: [M5 findings](docs/reference/m5-online.md). M5 status: implemented and locally verified (Tasks 0–11); reviews, CI on the final tree and the HUD look are done; the repeat friend match on the fixed build is deferred by the user to a later date and remains open (see verification file).
 
 ## Local references
 

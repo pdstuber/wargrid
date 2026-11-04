@@ -541,7 +541,7 @@ Today's 1v1 skirmish played between two machines: deterministic lockstep with a 
 
 **Exit gate:** a complete match between macOS and Windows without desync, both clients' replay hashes equal, measured command latency against a budget, relay hosting decided and documented.
 
-**M5 status (2026-11-04):** implemented on `m5-online`, not merged; the macOS-Windows match ran on the pre-pacing-fix build and the repeat on the fixed build is a user-accepted deferral. Findings: [M5 findings](docs/reference/m5-online.md).
+**M5 status (2026-11-04):** implemented on `m5-online`, not merged; the macOS-Windows match ran on the pre-pacing-fix build and the repeat on the fixed build is a user-accepted deferral, to be played later. Findings: [M5 findings](docs/reference/m5-online.md).
 
 ### M6 — Teams and a full-scale map
 
