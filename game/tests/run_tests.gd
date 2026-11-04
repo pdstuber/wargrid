@@ -17,6 +17,8 @@ func _initialize() -> void:
 	_run.call_deferred()
 
 func _run() -> void:
+	if current_scene != null: # exported builds also load the main scene (the launcher), whose UI swallows test clicks
+		current_scene.free()
 	create_timer(60.0).timeout.connect(_timeout)
 	for suite_script in Suites:
 		var suite = suite_script.new()
