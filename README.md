@@ -73,7 +73,7 @@ Historical M1 visible smoke is supported by user recording/reports. [M1 measurem
 
 ## Relay hosting
 
-The relay runs on fly.io, region `fra`, one shared-cpu-1x 256 MB machine that stops when idle. Rooms live in memory, so deploy exactly one machine (`--ha=false`; `fly machine list` must show one). Status: JVM relay deployed at `wss://wargrid-relay-jvm.fly.dev/ws` (cold 3.4 s p50, warm 78 ms); native dropped (build failed, see the verification file); app name stays `wargrid-relay-jvm`.
+The relay runs on fly.io, region `fra`, one shared-cpu-1x 256 MB machine that suspends when idle (resume about 0.5 s; cold start about 3.2 s after a deploy). Rooms live in memory, so deploy exactly one machine (`--ha=false`; `fly machine list` must show one). Status: JVM relay deployed at `wss://wargrid-relay-jvm.fly.dev/ws` (cold 3.4 s p50, warm 78 ms); native dropped (build failed, see the verification file); app name stays `wargrid-relay-jvm`.
 
 ```sh
 fly apps create wargrid-relay-jvm
