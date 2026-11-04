@@ -2,12 +2,14 @@ extends "res://scripts/skirmish_main.gd"
 
 const TimingStats = preload("res://scripts/debug/timing_stats.gd")
 const CATCH_UP_STEPS: int = 2
+const MAX_CATCH_UP_CREDIT: int = 4
 const DESYNC_DIR: String = "user://desync"
 const LATENCY_FILE: String = "user://netplay-latency.txt"
 var _transport: RefCounted
 var _lockstep: RefCounted
 var _report_path: String = ""
 var _finished: bool = false
+var _credit: int = 0
 
 func setup(transport: RefCounted, lockstep: RefCounted, seat: int) -> void:
 	_transport = transport
@@ -27,9 +29,11 @@ func _create_simulation() -> RefCounted:
 
 func _step_simulation() -> void:
 	for text in _transport.poll(): _lockstep.receive(text)
-	if _transport.closed() or _transport.silent(Time.get_ticks_usec()): _lockstep.set_relay_lost()
+	if not _finished and (_transport.closed() or _transport.silent(Time.get_ticks_usec())): _lockstep.set_relay_lost()
+	_credit = mini(_credit + 1, MAX_CATCH_UP_CREDIT)
 	for i in CATCH_UP_STEPS:
-		if not _lockstep.advance(simulation): break
+		if _credit < 1 or not _lockstep.advance(simulation): break
+		_credit -= 1
 		var tick: int = simulation.tick()
 		_lockstep.finish_tick(tick, simulation.snapshot() if _lockstep.wants_snapshot(tick) else null)
 	if not _finished and (simulation.match_over() or _lockstep.status().begins_with("ended")): _finish()

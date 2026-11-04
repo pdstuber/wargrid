@@ -21,11 +21,13 @@ class FakeTransport extends RefCounted:
 	func send_text(text: String) -> void: sent.append(text)
 	func closed() -> bool: return is_closed
 	func silent(_now: int) -> bool: return is_silent
-	func close() -> void: close_calls += 1
+	func close() -> void:
+		close_calls += 1
+		is_closed = true
 	func rtt_samples() -> PackedInt64Array: return PackedInt64Array([40000])
 
 func cases() -> Array[Callable]:
-	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_match_end_reports_latency, test_launcher_layout]
+	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_launcher_layout]
 
 func _online(runner, seat: int) -> Dictionary:
 	var transport := FakeTransport.new()
@@ -134,7 +136,31 @@ func test_match_end_reports_latency(runner) -> bool:
 	runner.check(online.transport.close_calls == 1, "N4 transport closed once at match end")
 	runner.check(main.latency_line().contains("RTT n=1 p95=40.0 ms"), "N4 latency line carries RTT p95, got " + main.latency_line())
 	runner.check(FileAccess.file_exists("user://netplay-latency.txt"), "N4 latency file written")
+	_run(main, 2)
+	runner.check(online.lockstep.status() != "ended_relay" and main.notice() == "", "N4 own close after the match is not a relay loss, got " + main.notice())
 	main.free()
+	return true
+
+func test_runs_at_tick_rate(runner) -> bool:
+	var online: Dictionary = await _online(runner, 2)
+	_peer_packets(online.transport, 1, 4, PEER_TICKS)
+	_run(online.main, 20)
+	runner.check(online.main.simulation.tick() <= 20, "N5 never faster than one tick per physics frame, got %d" % online.main.simulation.tick())
+	runner.check(online.main.simulation.tick() >= 19, "N5 keeps pace when packets are available, got %d" % online.main.simulation.tick())
+	online.main.free()
+	return true
+
+func test_catch_up_is_bounded(runner) -> bool:
+	var online: Dictionary = await _online(runner, 2)
+	_run(online.main, 10)
+	runner.check(online.main.simulation.tick() == 4, "N5 waits for the first peer packet, got %d" % online.main.simulation.tick())
+	_peer_packets(online.transport, 1, 4, PEER_TICKS)
+	_run(online.main, 1)
+	runner.check(online.main.simulation.tick() == 6, "N5 catch-up is two ticks per frame, got %d" % online.main.simulation.tick())
+	_run(online.main, 19)
+	var tick: int = online.main.simulation.tick()
+	runner.check(tick > 24 and tick <= 24 + online.main.MAX_CATCH_UP_CREDIT, "N5 catch-up debt is capped, got %d" % tick)
+	online.main.free()
 	return true
 
 func test_launcher_layout(runner) -> bool:
