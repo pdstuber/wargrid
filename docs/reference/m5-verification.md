@@ -8,7 +8,7 @@ Last command / cases / checks / failures / exit / marker: editor suite 192 / 104
 Known red case or blocker: none known. Pending: /ponytail-review, push approval then CI on the final tree + compare_local_traces.sh, rendered benchmark rerun + HUD look (user approval), Mac vs Mac end-screen text unconfirmed
 Approved decisions, pre-authorizations used, deferred gates: M4.1 playtest declared done by user 2026-11-04 (findings open). Friend rematch on fixed build deferred. Grok gate review done: ruling 1 (closed() before advance) rejected, only our own transport closes, a peer leaving arrives as `left`; 2, 3 fixed.
 Usage so far: not recorded
-Next exact action: /ponytail-review on the branch diff, commit, ask user to approve push
+Next exact action: none for M5 (merged to main at 55beae4; pushed). Open: repeat friend match, real fly bill, Railway check. Pending lines above are superseded by the rows at the end of this file.
 ```
 
 ```text
