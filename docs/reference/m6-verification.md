@@ -3,15 +3,15 @@
 Plan: [M6 plan](../superpowers/plans/2026-11-05-m6-teams-full-map.md). Run rules: [milestone prompt](../milestone-prompt.md).
 
 ```text
-Resume record (updated 2026-11-05, after Task 7 gate review)
-Branch / base commit / working-tree state: m6-teams-map / 0730fe3 / Task 7 + review fixes committed on top
-Last green task / next incomplete task: Task 7 / Task 8 after a restart
+Resume record (updated 2026-11-05, after Task 8)
+Branch / base commit / working-tree state: m6-teams-map / c050326 / Task 8 committed on top
+Last green task / next incomplete task: Task 8 / Task 9 (heading and turning; stop gate after it)
 Changed paths since last commit: none
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 248 cases, 104,634 checks, 0 failures, exit 0, TESTS PASSED; seven netplay scenarios passed (s1 re-pinned 9876)
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 253 cases, 105,800 checks, 0 failures, exit 0, TESTS PASSED; nine netplay scenarios passed (s1 re-pinned 9989)
 Known red case or blocker: none. Pending: test_maps_load in the CI export job (Review Focus 1); team-*.tsv CI comparison unrun until CI
 Approved decisions, pre-authorizations used, deferred gates: as before; local commit per milestone prompt; no push/PR/merge/window/BM6 re-pin without approval
 Usage so far (python3 tools/session_usage.py <session files>): not measured
-Next exact action: start Task 8 in a fresh session; baseline 248 cases / 104,634 checks
+Next exact action: start Task 9 in a fresh session; baseline 253 cases / 105,800 checks
 ```
 
 ## Task 0: baseline (2026-11-05, tree 9ea11bc + Task 0 test)
@@ -190,3 +190,19 @@ Start metrics (resampled routes in world units; buildable = open cells in the 25
   - `test_benchmark.gd` / BM5 snapshot node ceiling / open 81285 → 81287, dense 82149 → 82151 / Task 7 (`rng` = +2 nodes; ledger row added). **Not named in the plan's pin list: flag at the gate.**
   - `tools/run_netplay.sh` / s1 (`match`) terminal tick / 9383 → 9876 / Task 7 (splash); all seven netplay scenarios pass
 - Gate review (fresh Opus): code matches spec. Fixed: cause text above, draw order pinned (105 hits), attacker-adjacent check, netplay re-pin. Left: collector exclusion and id-order have no dedicated test; secondary radius/damage and `neutrals` unread (0 / no owners).
+
+## Task 8: start delay, acceleration and braking (2026-11-05, tree c050326 + Task 8)
+
+- `Locomotion.step` (new): `speed = min(speed + accel/30, cap, sqrt(2·brake·remaining))`; collector (no `accel` key) stays instant. `move_after = tick + 2` is set in `_assign_route` when the unit is at speed 0 (g = 1, so command tick + 3 for a move). `speed` resets to 0 in `step()` for any unit not `moving`/`path_pending`, on arrival and when a wall blocks it.
+- Vehicle accel 40 cells/s² ramps in 3 ticks (1.33, 2.67, 3.0), so a vehicle's first moving steps are shorter than 0.1.
+- Provisional re-pins and assertion changes (`test / assertion / old → new / cause`):
+  - `test_skirmish_match.gd` / `TERMINAL_TICK` / 10368 → 10610 (window 9000–10799, winner 1) / Task 8; `S1_CORE_SERIES` 9208518222819811099 → 5089508861246357371
+  - `test_state_hash.gd` / `PINNED` / cf05a1d315bcc43b → 04b65da94bdd4dfb / Task 8 (`speed`, `move_after`)
+  - `tools/run_netplay.sh` / s1 terminal tick / 9876 → 9989 / Task 8; all nine scenarios pass
+  - `test_benchmark.gd` / BM5 ceilings / open 81287 → 82703, dense 82151 → 83567, busiest 328 → 332 / Task 8 (+4 nodes per unit; ledger row added). **Not named in the plan's pin list: flag at the gate.**
+  - `test_simulation.gd` / C1, C11 gain `speed`, `move_after`; C2–C4 "one budget" → "waits out the start delay"; C12 moves checked 2 steps later / Task 8
+  - `test_movement.gd` / M1–M9: +2 step delay; first budget 0.1 → 4/90, ten budgets 2.5 → 2.5 − 1/15 (ramp), arrival step counts raised (M1 20→22, M5 40→44, M6 10→14, M7 27→30, M9 20→22) / Task 8
+  - `test_groups.gd` / G7 movers: "one budget (0.1)" → "within one budget" / Task 8
+  - `test_economy.gd` / E6 move wins: 1 → 4 steps; `test_benchmark.gd` / BM3 settle: 10 → 14 steps; `test_combat.gd` / D1 economy rows gain `accel`, `brake` / Task 8
+  - `test_combat_navigation.gd` / A1 pursuit refresh: ≤ 16 → ≤ 22 ticks (measured 22; the target's start delay and infantry ramp add 6) / Task 8
+- New `test_locomotion.gd`: L1 start delay (move, attack-move, chase, production exit), L2 acceleration curve, L3 short hop, L4 group arrival, L5 re-order keeps speed and `braking_distance`.

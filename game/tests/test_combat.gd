@@ -33,8 +33,8 @@ func test_combat_definitions(runner) -> bool:
 	weapon.damage = 1
 	runner.check(Definitions.profile("tank").max_hp == 480000 and Definitions.weapon("rifle").damage == 5000, "D1 fresh dictionaries")
 	var infantry: Dictionary = Economy.unit("infantry")
-	runner.check(infantry == {"cost": 225, "ticks": 150, "speed": 0.8, "air": false, "producer": "barracks"}, "D1 infantry economy")
-	runner.check(Economy.unit("tank") == {"cost": 900, "ticks": 300, "speed": 1.2, "air": false, "producer": "factory"}, "D1 tank economy")
+	runner.check(infantry == {"cost": 225, "ticks": 150, "speed": 0.8, "accel": 4.0, "brake": 4.0, "air": false, "producer": "barracks"}, "D1 infantry economy")
+	runner.check(Economy.unit("tank") == {"cost": 900, "ticks": 300, "speed": 1.2, "accel": 40.0, "brake": 40.0, "air": false, "producer": "factory"}, "D1 tank economy")
 	runner.check(Economy.building("barracks") == {"cost": 600, "ticks": 300, "power": 0, "footprint": Vector2i(2, 2), "prerequisite": "", "produces": "infantry"}, "D1 barracks economy")
 	runner.check(Economy.unit("vehicle").cost == 700 and Economy.building("factory").produces == "vehicle", "D1 legacy vehicle unchanged")
 	return true

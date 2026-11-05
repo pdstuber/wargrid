@@ -6,10 +6,12 @@ const Construction = preload("res://scripts/simulation/construction.gd")
 const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
 const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
 const Combat = preload("res://scripts/simulation/combat.gd")
+const Locomotion = preload("res://scripts/simulation/locomotion.gd")
 const Allocation = preload("res://scripts/simulation/destination_allocation.gd")
 const Navigation = preload("res://scripts/simulation/grid_navigation.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
 const PATH_REQUESTS_PER_TICK: int = 8
+const START_DELAY_TICKS: int = 2
 var _navigation: RefCounted
 
 var _players: Dictionary = {}
@@ -71,7 +73,7 @@ func spawn(owner: int, position: Vector2, kind: String = "vehicle") -> int:
 		if _cell(unit.position) == cell or (unit.destination != null and _cell(unit.destination) == cell):
 			return -1
 	var id: int = _next_entity_id
-	_entities[id] = {"id": id, "owner": owner, "position": [position.x, position.y], "order": null, "status": "idle", "route": [], "destination": null, "kind":kind,"hp":CombatDefinitions.profile(kind).max_hp,"max_hp":CombatDefinitions.profile(kind).max_hp,"combat":CombatDefinitions.initial_combat(kind),"construction_id":null,"collection": {"enabled":false,"preferred_source_id":null,"target_id":null,"phase":"idle","remaining_ticks":0,"retry_tick":0,"cargo":0} if kind == "collector" else null}
+	_entities[id] = {"id": id, "owner": owner, "position": [position.x, position.y], "order": null, "status": "idle", "route": [], "destination": null, "kind":kind,"hp":CombatDefinitions.profile(kind).max_hp,"max_hp":CombatDefinitions.profile(kind).max_hp,"combat":CombatDefinitions.initial_combat(kind),"speed":0.0,"move_after":0,"construction_id":null,"collection": {"enabled":false,"preferred_source_id":null,"target_id":null,"phase":"idle","remaining_ticks":0,"retry_tick":0,"cargo":0} if kind == "collector" else null}
 	_next_entity_id += 1
 	return id
 
@@ -448,8 +450,9 @@ func step() -> void:
 	var before: Dictionary = {}
 	for id in armed: before[id] = _entities[id].position
 	for id in ids:
-		if _entities[id].status == "moving":
-			_advance(_entities[id])
+		var unit: Dictionary = _entities[id]
+		if unit.status == "moving": _advance(unit)
+		elif unit.status != "path_pending": unit.speed = 0.0
 	var moved: Array[int] = []
 	for id in armed:
 		if _entities[id].position != before[id]: moved.append(id)
@@ -470,12 +473,13 @@ func _assign_route(unit: Dictionary) -> void:
 	for point in _navigation.route(from, to):
 		unit.route.append([point.x, point.y])
 	unit.status = "blocked" if unit.route.is_empty() else "moving"
+	if unit.status == "moving" and unit.speed == 0.0: unit.move_after = _tick + START_DELAY_TICKS
 	if unit.status == "blocked":
 		unit.order = null
 		unit.destination = null
 
 func _advance(unit: Dictionary) -> void:
-	var remaining: float = Definitions.unit(unit.kind).speed / 30.0
+	var remaining: float = Locomotion.step(unit, Definitions.unit(unit.kind), _tick)
 	var x: float = unit.position[0]
 	var y: float = unit.position[1]
 	while not unit.route.is_empty():
@@ -495,6 +499,7 @@ func _advance(unit: Dictionary) -> void:
 	unit.position = [x, y]
 	if unit.route.is_empty():
 		unit.order = null
+		unit.speed = 0.0
 		unit.status = "arrived"
 
 func snapshot() -> Dictionary:
@@ -559,6 +564,7 @@ func _replace_union(cells: Array[Vector2i], prebuilt: RefCounted = null) -> Dict
 		if not _navigation.is_walkable(destination) or _navigation.component_at(position) != _navigation.component_at(destination):
 			unit.order = null
 			unit.destination = null
+			unit.speed = 0.0
 			unit.status = "blocked"
 		else:
 			unit.status = "path_pending"

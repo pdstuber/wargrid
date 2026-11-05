@@ -54,7 +54,7 @@ func test_progression(runner) -> bool:
 	var before: Dictionary = sim.snapshot()
 	Workload.issue_leg(sim, 1)
 	runner.check(sim.snapshot() == before, "BM3 no early restart")
-	for i in range(10):
+	for i in range(14):
 		sim.step()
 	runner.check(Workload.settled(sim), "BM3 arrival settles")
 	Workload.issue_leg(sim, 1)
@@ -76,7 +76,7 @@ func test_rendered_probe_ticks(runner) -> bool:
 
 func test_snapshot_size_ceiling(runner) -> bool:
 	# Step 38 is the peak (routes full, queue just drained). The snapshot is copied twice per tick; raise a ceiling only deliberately and add a performance-ledger row.
-	var ceilings := {"open": 81287, "dense": 82151}
+	var ceilings := {"open": 82703, "dense": 83567}
 	for layout in ceilings:
 		var sim: RefCounted = Workload.create(layout)
 		Workload.issue_leg(sim, 0)
@@ -87,7 +87,7 @@ func test_snapshot_size_ceiling(runner) -> bool:
 		for unit in state.entities:
 			busiest = maxi(busiest, _nodes(unit))
 		runner.check(_nodes(state) <= ceilings[layout], "BM5 snapshot node ceiling " + layout)
-		runner.check(busiest <= 328, "BM5 per-unit node ceiling " + layout)
+		runner.check(busiest <= 332, "BM5 per-unit node ceiling " + layout)
 	return true
 
 func _nodes(value: Variant) -> int:

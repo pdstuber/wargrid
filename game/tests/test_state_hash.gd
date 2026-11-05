@@ -2,7 +2,7 @@ extends RefCounted
 
 const Replay = preload("res://tests/test_replay.gd")
 const StateHash = preload("res://scripts/simulation/state_hash.gd")
-const PINNED: String = "cf05a1d315bcc43b"
+const PINNED: String = "04b65da94bdd4dfb"
 
 func cases() -> Array[Callable]:
 	return [test_pinned_digest, test_digest_sensitivity, test_core_check_scope, test_nonfinite_stable]

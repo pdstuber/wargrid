@@ -19,9 +19,9 @@ func test_spawn(runner) -> bool:
 		equal(runner, sim.snapshot(), before, "C1 rejection unchanged")
 	equal(runner, sim.spawn(1, Vector2(0.5, 2.5)), 3, "C1 next ID")
 	equal(runner, sim.snapshot().entities, [
-		{"id": 1, "owner": 1, "position": [1.0, 2.0], "order": null, "status": "idle", "route": [], "destination": null,"kind":"vehicle","hp":240000,"max_hp":240000,"combat":null,"construction_id":null,"collection":null},
-		{"id": 2, "owner": 2, "position": [0.0, 0.0], "order": null, "status": "idle", "route": [], "destination": null,"kind":"vehicle","hp":240000,"max_hp":240000,"combat":null,"construction_id":null,"collection":null},
-		{"id": 3, "owner": 1, "position": [0.5, 2.5], "order": null, "status": "idle", "route": [], "destination": null,"kind":"vehicle","hp":240000,"max_hp":240000,"combat":null,"construction_id":null,"collection":null},
+		{"id": 1, "owner": 1, "position": [1.0, 2.0], "order": null, "status": "idle", "route": [], "destination": null,"kind":"vehicle","hp":240000,"max_hp":240000,"combat":null,"speed":0.0,"move_after":0,"construction_id":null,"collection":null},
+		{"id": 2, "owner": 2, "position": [0.0, 0.0], "order": null, "status": "idle", "route": [], "destination": null,"kind":"vehicle","hp":240000,"max_hp":240000,"combat":null,"speed":0.0,"move_after":0,"construction_id":null,"collection":null},
+		{"id": 3, "owner": 1, "position": [0.5, 2.5], "order": null, "status": "idle", "route": [], "destination": null,"kind":"vehicle","hp":240000,"max_hp":240000,"combat":null,"speed":0.0,"move_after":0,"construction_id":null,"collection":null},
 	], "C1 entities in ID order")
 	return true
 
@@ -209,7 +209,7 @@ func test_repeatability(runner) -> bool:
 	equal(runner, a.snapshot(), b.snapshot(), "C11 equal worlds")
 	equal(runner, a.snapshot(), {
 		"tick": 1000, "next_entity_id": 2,
-		"entities": [{"id": 1, "owner": 1, "position": [8.0, 9.0], "order": null, "status": "arrived", "route": [], "destination": [8.0, 9.0],"kind":"vehicle","hp":240000,"max_hp":240000,"combat":null,"construction_id":null,"collection":null}],
+		"entities": [{"id": 1, "owner": 1, "position": [8.0, 9.0], "order": null, "status": "arrived", "route": [], "destination": [8.0, 9.0],"kind":"vehicle","hp":240000,"max_hp":240000,"combat":null,"speed":0.0,"move_after":2,"construction_id":null,"collection":null}],
 		"map": {"size": [16, 16], "blocked_cells": []}, "path_queue": [],
 		"pending_commands": [], "last_sequences": [{"player": 1, "sequence": 1}],
 		"players":[],"buildings":[],"sources":[],"terrain_cells":[],"next_production_id":1,"command_results":[],"combat_events":[],"match":null,"rng":625341585,
@@ -237,14 +237,18 @@ func test_group_move(runner) -> bool:
 		equal(runner, unit.status, "moving", "C12 status")
 		equal(runner, unit.destination, [3.5, 4.0] if i == 0 else [3.5, 3.5], "C12 distinct destination")
 		runner.check(not unit.route.is_empty(), "C12 remaining route")
+	sim.step()
+	sim.step()
+	for i in range(2):
+		var unit: Dictionary = sim.snapshot().entities[i]
 		var start := Vector2(1, 2) if i == 0 else Vector2(5, 6)
 		var distance: float = Vector2(unit.position[0], unit.position[1]).distance_to(start)
-		runner.check(distance > 0 and distance <= 0.1 + 1e-5, "C12 each member moves one budget")
+		runner.check(distance > 0 and distance <= 0.1 + 1e-5, "C12 each member moves within one budget after the start delay")
 	state.entities[0].order.target[0] = 99
 	equal(runner, sim.snapshot().entities[1].order.target, [3.5, 4.0], "C12 targets independent")
 	return true
 
 func check_first_motion(runner, unit: Dictionary, label: String) -> void:
 	var point := Vector2(unit.position[0], unit.position[1])
-	runner.check(absf(point.distance_to(Vector2(1, 2)) - 0.1) <= 1e-5, label + " one budget")
+	runner.check(point == Vector2(1, 2), label + " waits out the start delay")
 	equal(runner, unit.get("status"), "moving", label + " status")

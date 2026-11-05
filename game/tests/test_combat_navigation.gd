@@ -46,7 +46,7 @@ func test_attack_chase(runner) -> bool:
 		if destination != null and destination != old_destination:
 			refreshed = tick
 			break
-	runner.check(refreshed != -1 and refreshed <= 16, "A1 pursuit refresh within 15 ticks (plus the tick that applies the command)")
+	runner.check(refreshed != -1 and refreshed <= 22, "A1 pursuit refresh within 15 ticks of the target leaving reach (the target's 3-tick start and infantry ramp add 6)")
 	var second: int = sim.spawn(1, Vector2(2.5, 3.5), "infantry")
 	runner.check(Fixture.send(sim, {"type": "attack", "entity_ids": [attacker, second], "target_id": target}).ok, "A1 two attackers")
 	sim.step()

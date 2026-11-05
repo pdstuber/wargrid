@@ -5,10 +5,10 @@ const ScriptedHuman = preload("res://scripts/simulation/scripted_human.gd")
 const StateHash = preload("res://scripts/simulation/state_hash.gd")
 
 const TICK_LIMIT: int = 10800
-const TERMINAL_TICK: int = 10368
+const TERMINAL_TICK: int = 10610
 const WINNER: int = 1
 
-const S1_CORE_SERIES: int = 9208518222819811099
+const S1_CORE_SERIES: int = 5089508861246357371
 
 func cases() -> Array[Callable]:
 	return [test_mirror_match_script, test_skirmish_core_series]

@@ -2,11 +2,11 @@ extends RefCounted
 
 static func unit(kind: String) -> Dictionary:
 	match kind:
-		"builder": return {"cost":1000,"ticks":150,"speed":1.2,"air":false,"producer":""}
-		"vehicle": return {"cost":700,"ticks":300,"speed":3.0,"air":false,"producer":"factory"}
+		"builder": return {"cost":1000,"ticks":150,"speed":1.2,"accel":1.2,"brake":2.0,"air":false,"producer":""}
+		"vehicle": return {"cost":700,"ticks":300,"speed":3.0,"accel":40.0,"brake":40.0,"air":false,"producer":"factory"}
 		"collector": return {"cost":1200,"ticks":300,"speed":6.0,"air":true,"producer":"depot"}
-		"infantry": return {"cost":225,"ticks":150,"speed":0.8,"air":false,"producer":"barracks"}
-		"tank": return {"cost":900,"ticks":300,"speed":1.2,"air":false,"producer":"factory"}
+		"infantry": return {"cost":225,"ticks":150,"speed":0.8,"accel":4.0,"brake":4.0,"air":false,"producer":"barracks"}
+		"tank": return {"cost":900,"ticks":300,"speed":1.2,"accel":40.0,"brake":40.0,"air":false,"producer":"factory"}
 	return {}
 
 static func building(kind: String) -> Dictionary:

@@ -158,7 +158,7 @@ func test_stop_and_intent_order(runner) -> bool:
 	Fixture.send(sim,{"type":"move","entity_ids":[1],"target":[12.5,4.5]})
 	var before: Dictionary = sim.snapshot()
 	runner.check(not Fixture.send(sim,{"type":"stop","entity_ids":[999]}).ok and sim.snapshot() == before,"E6 invalid retains intent")
-	sim.step()
+	for i in range(4): sim.step()
 	runner.check(sim.snapshot().entities[0].position[0] > 4.5,"E6 move wins")
 	return true
 
