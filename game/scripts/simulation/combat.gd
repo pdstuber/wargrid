@@ -11,9 +11,15 @@ static func record(sim: RefCounted, id: int) -> Dictionary:
 	if sim._entities.has(id): return sim._entities[id]
 	return sim._buildings.get(id, {})
 
+static func hostile(sim: RefCounted, a: int, b: int) -> bool:
+	if a == b: return false
+	var team_a: int = sim.team_of(a)
+	var team_b: int = sim.team_of(b)
+	return team_a == 0 or team_b == 0 or team_a != team_b
+
 static func valid_target(sim: RefCounted, owner: int, target_id: int) -> bool:
 	var target: Dictionary = record(sim, target_id)
-	return not target.is_empty() and target.owner != owner and target.kind != "collector"
+	return not target.is_empty() and hostile(sim, owner, target.owner) and target.kind != "collector"
 
 static func distance_squared(position: Vector2, target: Dictionary) -> float:
 	if not target.has("origin"):
@@ -68,10 +74,10 @@ static func plan(sim: RefCounted, unit_ids: Array[int]) -> void:
 		var combat: Dictionary = unit.combat
 		var kept: Dictionary = record(sim, combat.target_id) if combat.target_id != null else {}
 		var human: bool = not is_ai(sim, unit.owner)
-		if not kept.is_empty() and kept.owner != unit.owner and human and _left_range(unit, kept, mode):
+		if not kept.is_empty() and hostile(sim, unit.owner, kept.owner) and human and _left_range(unit, kept, mode):
 			combat.retarget = mode == "attack_move"
 			kept = {}
-		if kept.is_empty() or kept.owner == unit.owner:
+		if kept.is_empty() or not hostile(sim, unit.owner, kept.owner):
 			combat.target_id = null
 			if sim._tick >= combat.repath_tick or combat.retarget:
 				var grid: Dictionary = _grid(sim, grid_box)
@@ -234,7 +240,7 @@ static func _nearest(sim: RefCounted, unit: Dictionary, grid: Dictionary, radius
 	for y in range(int(floorf((position.y - radius) / GRID_CELL)), int(floorf((position.y + radius) / GRID_CELL)) + 1):
 		for x in range(int(floorf((position.x - radius) / GRID_CELL)), int(floorf((position.x + radius) / GRID_CELL)) + 1):
 			for target in grid.get(Vector2i(x, y), []):
-				if target.owner == unit.owner or (units_only and target.has("origin")): continue
+				if not hostile(sim, unit.owner, target.owner) or (units_only and target.has("origin")): continue
 				sim._combat_work += 1
 				var distance: float = distance_squared(position, target)
 				if distance > radius * radius: continue
@@ -254,7 +260,7 @@ static func fire(sim: RefCounted, unit_ids: Array[int], moved_ids: Array[int]) -
 		var combat: Dictionary = unit.combat
 		if combat.target_id == null or sim._tick < combat.next_fire_tick: continue
 		var target: Dictionary = record(sim, combat.target_id)
-		if target.is_empty() or target.owner == unit.owner or not _in_range(sim, unit, target): continue
+		if target.is_empty() or not hostile(sim, unit.owner, target.owner) or not _in_range(sim, unit, target): continue
 		var weapon: Dictionary = CombatDefinitions.weapon(CombatDefinitions.profile(unit.kind).weapon)
 		var amount: int = weapon.damage * CombatDefinitions.armor_percent(CombatDefinitions.profile(target.kind).armor, weapon.damage_type) / 100
 		shots.append({"type": "shot", "tick": sim._tick, "attacker_id": unit_id, "target_id": target.id, "damage": amount})
@@ -314,7 +320,7 @@ static func _retaliate_trigger(sim: RefCounted, shots: Array[Dictionary]) -> voi
 	for shot in shots:
 		var victim: Dictionary = record(sim, shot.target_id)
 		var attacker: Dictionary = record(sim, shot.attacker_id)
-		if victim.is_empty() or attacker.is_empty() or is_ai(sim, victim.owner): continue
+		if victim.is_empty() or attacker.is_empty() or is_ai(sim, victim.owner) or not hostile(sim, victim.owner, attacker.owner): continue
 		if distance_squared(Vector2(attacker.position[0], attacker.position[1]), victim) > RETALIATION_DISTANCE * RETALIATION_DISTANCE: continue
 		if not built:
 			built = true

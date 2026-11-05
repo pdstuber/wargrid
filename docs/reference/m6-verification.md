@@ -3,15 +3,15 @@
 Plan: [M6 plan](../superpowers/plans/2026-11-05-m6-teams-full-map.md). Run rules: [milestone prompt](../milestone-prompt.md).
 
 ```text
-Resume record (updated 2026-11-05, after Task 3)
-Branch / base commit / working-tree state: m6-teams-map / 34a8081 / clean after the Task 3 commit
-Last green task / next incomplete task: Task 3 / Task 4 (stop gate after Task 4: Opus gate review, then restart)
-Changed paths since last commit: none (Task 3 commit: map_data.gd, test_map.gd, skirmish.json, Skirmish.create via MapData, Simulation.map_data, SeatSim.map_data, converter source clamp, ashfall.json one source)
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 228 cases, 104,570 checks, 0 failures, exit 0, TESTS PASSED; test_skirmish_core_series unchanged (S1_CORE_SERIES pin held); python3 tools/zh_map/test_zh_map.py 11 tests OK
+Resume record (updated 2026-11-05, after Task 4 code, before gate review)
+Branch / base commit / working-tree state: m6-teams-map / 308bb4b / clean after the Task 4 commit
+Last green task / next incomplete task: Task 4 / Task 5 (Task 4 stop gate: Opus review pending, then restart)
+Changed paths since last commit: none
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 233 cases, 104,592 checks, 0 failures, exit 0, TESTS PASSED; all 9 run_netplay.sh scenarios passed unchanged; S1_CORE_SERIES and TERMINAL_TICK unchanged
 Known red case or blocker: none. Pending: test_maps_load in the CI export job (Review Focus 1)
-Approved decisions, pre-authorizations used, deferred gates: as before; local commits per milestone prompt; no push/PR/merge/window/BM6 re-pin without approval
-Usage so far (python3 tools/session_usage.py <session files>): Task 3 not measured
-Next exact action: start Task 4 (Sonnet medium); baseline is 228 cases / 104,570 checks
+Approved decisions, pre-authorizations used, deferred gates: as before; local commit per milestone prompt; no push/PR/merge/window/BM6 re-pin without approval
+Usage so far (python3 tools/session_usage.py <session files>): not measured
+Next exact action: Opus gate review of Task 4 (diff 308bb4b..HEAD), fix findings test-first, then restart; Task 5 baseline 233 cases / 104,592 checks
 ```
 
 ## Task 0: baseline (2026-11-05, tree 9ea11bc + Task 0 test)
@@ -146,3 +146,11 @@ Start metrics (resampled routes in world units; buildable = open cells in the 25
 ## Task 3: map loader (2026-11-05, tree 34a8081 + Task 3)
 
 `sh tools/run_tests.sh`: 228 cases, 104,570 checks, 0 failures (+3 cases, +8 checks from `test_map.gd` vs 225 / 104,562). S1 core series pin unchanged. Rulings: `MapData.load` pushes an error on a bad file, but the red test uses `MapData.parse` (no push) because the runner treats any `ERROR:` line as failure. Converter bug found by the loader's bounds check: the Ashfall source at the south-east edge had origin (188, 185), whose 3x3 footprint ended outside the 187-row map. Converter now clamps source origins into the map (test `test_edge_source_stays_inside_map`); that source is now (188, 184). `SeatSim` forwards `map_data()` so lockstep bots keep working. Unused `Skirmish.SIZE` removed.
+
+## Task 4: seats, teams, team victory (2026-11-05)
+
+- `test_teams.gd` adds 5 cases / 22 checks. Suite 233 cases, 104,592 checks, 0 failures; nine netplay scenarios pass.
+- Re-pin: `test_state_hash.gd` / `H1 pinned digest` / `15df35ca15bcc43b` → `5fd6ce7215bcc43b` / Task 4 (snapshot `players[].team`, `players[].alive`).
+- Ruling: bots read team from `state.players` (`Skirmish._hostile`), not `Combat.hostile`, because `SeatSim` has no `team_of`.
+- Ruling: `add_player` team 0 means "default to seat id" (the plan's `team` ≥ 1 default).
+- Gap: `_retaliate_trigger`'s non-hostile-attacker skip is only reachable by friendly fire (Task 7); it is untested until then.

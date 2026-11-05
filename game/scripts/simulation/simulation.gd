@@ -42,12 +42,15 @@ func _init(blocked_cells: Array[Vector2i] = [], size: Vector2i = Navigation.SIZE
 func map_data() -> Dictionary:
 	return _map
 
-func add_player(player: int, credits: int, controller: String = "human") -> Dictionary:
+func add_player(player: int, credits: int, controller: String = "human", team: int = 0) -> Dictionary:
 	if controller != "human" and controller != "ai": return {"ok": false, "error": "Invalid controller"}
-	if player <= 0 or credits < 0 or _players.has(player):
+	if player <= 0 or credits < 0 or _players.has(player) or team < 0:
 		return {"ok": false, "error": "Invalid or duplicate player"}
-	_players[player] = {"id":player,"credits":credits,"controller":controller}
+	_players[player] = {"id":player,"credits":credits,"controller":controller,"team":team if team > 0 else player}
 	return {"ok":true,"error":""}
+
+func team_of(player: int) -> int:
+	return _players[player].team if _players.has(player) else 0
 
 func spawn(owner: int, position: Vector2, kind: String = "vehicle") -> int:
 	if Definitions.unit(kind).is_empty() or owner <= 0 or not _in_bounds(position) or (kind != "collector" and not _navigation.is_walkable(position)):
@@ -65,9 +68,13 @@ func spawn(owner: int, position: Vector2, kind: String = "vehicle") -> int:
 func start_match(players: Array[int]) -> Dictionary:
 	var ids: Array[int] = players.duplicate()
 	ids.sort()
-	if _match != null or ids.size() != 2 or ids[0] == ids[1] or ids[0] <= 0: return {"ok":false,"error":"Invalid match players"}
-	for id in ids:
-		if not _players.has(id) or not _survives(id): return {"ok":false,"error":"Player cannot start a match"}
+	if _match != null or ids.size() < 2 or ids.size() > 8 or ids[0] <= 0: return {"ok":false,"error":"Invalid match players"}
+	var teams: Dictionary = {}
+	for i in ids.size():
+		if i > 0 and ids[i] == ids[i - 1]: return {"ok":false,"error":"Invalid match players"}
+		if not _players.has(ids[i]) or not _survives(ids[i]): return {"ok":false,"error":"Player cannot start a match"}
+		teams[team_of(ids[i])] = true
+	if teams.size() < 2: return {"ok":false,"error":"Invalid match players"}
 	_match = {"players":ids,"status":"ongoing","winner":null,"ended_tick":null}
 	return {"ok":true,"error":""}
 
@@ -79,12 +86,12 @@ func _survives(player: int) -> bool:
 	return false
 
 func _evaluate_match() -> void:
-	var alive: Array[int] = []
+	var alive: Dictionary = {}
 	for player in _match.players:
-		if _survives(player): alive.append(player)
-	if alive.size() == 2: return
+		if _survives(player): alive[team_of(player)] = true
+	if alive.size() > 1: return
 	_match.status = "draw" if alive.is_empty() else "won"
-	_match.winner = alive[0] if alive.size() == 1 else null
+	_match.winner = alive.keys()[0] if alive.size() == 1 else null
 	_match.ended_tick = _tick
 
 func match_over() -> bool:
@@ -567,6 +574,7 @@ func _player_snapshots() -> Array:
 			if power > 0: player.power_supply += power
 			else: player.power_demand -= power
 		player.work_rate = Definitions.work_rate(player.power_supply,player.power_demand)
+		player.alive = _survives(player.id)
 	return result
 
 func _terrain_snapshot() -> Array:

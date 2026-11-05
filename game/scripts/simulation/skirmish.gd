@@ -50,7 +50,9 @@ static func _decide(sim: RefCounted, player: int, attack_tick: int) -> void:
 	var credits: int = 0
 	for entry in state.players:
 		if entry.id == player: credits = entry.credits
-	var ctx := {"sim": sim, "player": player, "tick": state.tick, "sequence": sequence, "credits": credits}
+	var teams := {}
+	for entry in state.players: teams[entry.id] = entry.team
+	var ctx := {"sim": sim, "player": player, "tick": state.tick, "sequence": sequence, "credits": credits, "teams": teams}
 	var buildings: Array = state.buildings.filter(func(building: Dictionary) -> bool: return building.owner == player)
 	_build(ctx, state, buildings)
 	_produce(ctx, buildings)
@@ -90,8 +92,8 @@ static func _produce(ctx: Dictionary, buildings: Array) -> void:
 		if ctx.credits >= cost and _send(ctx, {"type": "produce", "building_id": building.id, "unit_kind": UNIT_FOR[building.kind]}): ctx.credits -= cost
 
 static func _attack(ctx: Dictionary, state: Dictionary, skip: Dictionary = {}) -> void:
-	var enemies: Array = state.entities.filter(func(unit: Dictionary) -> bool: return unit.owner != ctx.player and unit.kind != "collector")
-	enemies.append_array(state.buildings.filter(func(building: Dictionary) -> bool: return building.owner != ctx.player))
+	var enemies: Array = state.entities.filter(func(unit: Dictionary) -> bool: return _hostile(ctx, unit.owner) and unit.kind != "collector")
+	enemies.append_array(state.buildings.filter(func(building: Dictionary) -> bool: return _hostile(ctx, building.owner)))
 	var groups := {}
 	for unit in state.entities:
 		if unit.owner != ctx.player or skip.has(unit.id) or not _idle(unit): continue
@@ -103,12 +105,15 @@ static func _attack(ctx: Dictionary, state: Dictionary, skip: Dictionary = {}) -
 	targets.sort()
 	for target in targets: _send(ctx, {"type": "attack", "entity_ids": groups[target], "target_id": target})
 
+static func _hostile(ctx: Dictionary, owner: int) -> bool:
+	return owner != ctx.player and ctx.teams.get(owner, 0) != ctx.teams.get(ctx.player, -1)
+
 static func _idle(unit: Dictionary) -> bool:
 	return unit.combat != null and unit.combat.mode == "guard" and unit.combat.target_id == null
 
 static func _defend(ctx: Dictionary, state: Dictionary, buildings: Array) -> Dictionary:
 	var intruders: Array = state.entities.filter(func(unit: Dictionary) -> bool:
-		if unit.owner == ctx.player or unit.kind == "collector": return false
+		if not _hostile(ctx, unit.owner) or unit.kind == "collector": return false
 		var at := Vector2(unit.position[0], unit.position[1])
 		return buildings.any(func(building: Dictionary) -> bool: return Combat.distance_squared(at, building) <= DEFENCE_RADIUS * DEFENCE_RADIUS))
 	var sent := {}

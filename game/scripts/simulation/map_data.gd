@@ -41,7 +41,7 @@ static func blocked_cells(map: Dictionary) -> Array[Vector2i]:
 static func create(map: Dictionary, seats: Array[Dictionary]) -> RefCounted:
 	var sim = Simulation.new(blocked_cells(map), Vector2i(int(map.size[0]), int(map.size[1])))
 	sim._map = map
-	for seat in seats: sim.add_player(seat.seat, seat.credits, seat.controller)
+	for seat in seats: sim.add_player(seat.seat, seat.credits, seat.controller, seat.get("team", 0))
 	for seat in seats:
 		var cell := start_cell(map, seat.seat)
 		sim.spawn(seat.seat, Vector2(cell) + Vector2(0.5, 0.5), "builder")
