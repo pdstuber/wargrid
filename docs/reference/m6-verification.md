@@ -11,7 +11,7 @@ Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh,
 Known red case or blocker: none. OPEN FINDING for the user: re-order from mid-cell makes the unit turn back to the cell centre it passed (route[0] is behind); tanks stall up to ~23 ticks. A skip-waypoint fix moved S1 to 8168, outside the 9000-10799 window, so it was reverted
 Approved decisions, pre-authorizations used, deferred gates: as before; local commit per milestone prompt; no push/PR/merge/window/BM6 re-pin without approval
 Usage so far (python3 tools/session_usage.py <session files>): not measured
-Next exact action: Task 9 gate review result, then restart; Task 10 in a fresh session
+Next exact action: user decides C1 (below); then fix I1-I4 test-first in a fresh session before Task 10
 ```
 
 ## Task 0: baseline (2026-11-05, tree 9ea11bc + Task 0 test)
@@ -220,3 +220,12 @@ Start metrics (resampled routes in world units; buildable = open cells in the 25
   - `test_movement.gd` / M3 first step 4/90 → 0.8/30 (wheels, 90° turn); M5 arrival 44 → 73 steps; M6 recovery 14 → 22 steps / Task 9
   - `test_locomotion.gd` / L5 re-order: asserts no new start delay instead of `speed == 0.8` (a mid-cell re-order starts with a turn back, see the open finding) / Task 9
   - `test_simulation.gd` / C1, C11 gain `heading`; `test_combat.gd` / D1 economy rows gain `locomotor`, `turn_cos`, `turn_sin` / Task 9
+
+### Task 9 gate review (fresh Opus, tree 1e11107)
+
+- **C1 (stop, user decision):** the mid-cell re-order turn-back is real and worse than first recorded: tank up to 46 ticks without moving and 0.47 cells backwards, infantry 18 ticks, Dozer 0.45 cells backwards. Chase repaths trigger it constantly. Fix (~4 lines in `_assign_route`): drop `route[0]` when `(route[0] - from)·(route[1] - route[0]) < 0`; no walkability check needed (`DIAGONAL_MODE_NEVER`). It ends S1 at 8168 (variants 8089–8542), outside 9000–10799, so the window or the bug must change.
+- **I1:** L5 weakened without approval; after C1, restore `after.speed == 0.8` and keep the `move_after` check.
+- **I2:** replace engine `Vector2.dot`/`cross` and the `/ sqrt` in `turn` with GDScript scalar expressions (FMA risk on arm64); CI tick comparison is the arbiter.
+- **I3:** `test_reorder_mid_turn` checks 1 and 3 are empty; add heading-delta check (6°), `move_after` for moving and turning re-orders, mid-cell straight case.
+- **I4:** BM5 ledger row missing (not in the plan's re-pin list); user approval at the gate.
+- Minor: scanner gaps (`**`, `.rotated(`, `.angle`, `from_angle`, `slerp`); V2 cannot catch a mark ignoring heading; wheels `speed/4` branch dead; air heading ruling (snap, plan contradicts itself); L6 uses computed angles, not a literal table.
