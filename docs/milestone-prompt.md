@@ -67,7 +67,7 @@ At each stop gate, dispatch one fresh-context reviewer on the strongest availabl
 - the instruction to name, for each new test, the production change that makes it fail;
 - read-only scratch copies only for mutations.
 
-An empty or one-line report is a failed review. Record it and fall back at once to the next route: Grok if it was not the one that failed, otherwise a fresh-context Claude reviewer. Fix critical and important findings test-first, record rulings for the rest, then restart.
+An empty or one-line report is a failed review. Record it and dispatch a second fresh-context reviewer at once with a narrower brief. Fix critical and important findings test-first, record rulings for the rest, then restart.
 
 ## Exit gate
 
