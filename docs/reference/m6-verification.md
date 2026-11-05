@@ -3,15 +3,15 @@
 Plan: [M6 plan](../superpowers/plans/2026-11-05-m6-teams-full-map.md). Run rules: [milestone prompt](../milestone-prompt.md).
 
 ```text
-Resume record (updated 2026-11-05, Task 11 stop gate, after perf fixes)
-Branch / base commit / working-tree state: m6-teams-map / Task 11 committed on top of 76bbfc9 (11a-11i, A-C, F, integer-key normalize, D, gate review record) / clean
-Last green task / next incomplete task: Task 11 done pending user decision on the rows below / Task 12 (Confirm final pins)
+Resume record (updated 2026-11-05, Task 11 gate closed)
+Branch / base commit / working-tree state: m6-teams-map / Task 11 committed on top of 76bbfc9 / clean
+Last green task / next incomplete task: Task 11 (gate review done, user accepted the remaining rows) / Task 12 (Confirm final pins)
 Changed paths since last commit: none
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 270 cases, 112,693 checks, 0 failures, exit 0; team-match fold 7406935539604104369 tick 20000 winner 1; idle benchmarks recorded in the Task 11.9 idle table
-Known red case or blocker: team-match step wall p95/p99 3.27/5.72 ms vs 1.67/3.3; movement plumbing 0.855 vs 0.83; COMBAT STRESS open p95 2.45 vs ceiling 2.05 (run_benchmark.sh exits 1; combat dense/contact/skirmish3v3 never measured because run_combat.gd stops at the first push_error). Open for user: I4 BM5 ledger row
-Approved decisions, pre-authorizations used, deferred gates: local commits per milestone prompt; user approved .duplicate() in D1/E1 (11f), fixes A, B, C, F, integer-key normalize, D; E rejected, G not taken; no push/PR/merge/window/BM6 re-pin without approval
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 270 cases, 112,693 checks, 0 failures, exit 0; team-match fold 7406935539604104369 tick 20000 winner 1; run_team_match exit 0
+Known red case or blocker: none. Accepted by the user 2026-11-05 as known over-budget rows (not loosened, to report at the exit gate): team-match step wall p95/p99 2.39/5.56 ms vs 1.67/3.3 (path-finding bursts, PATH_REQUESTS_PER_TICK 8; design options open: fewer requests per tick, shared routes, G, live-state presentation); movement plumbing 0.855 vs 0.83; COMBAT STRESS open p95 2.41 vs ceiling 2.05 (run_benchmark.sh exits 1 on it; combat dense/contact/skirmish3v3 never measured because run_combat.gd stops at the first push_error). Open for user: I4 BM5 ledger row; BM6 re-pin needs approval at Task 12
+Approved decisions, pre-authorizations used, deferred gates: local commits per milestone prompt; user approved .duplicate() in D1/E1 (11f), fixes A, B, C, F, integer-key normalize, D, production occupied set, ring cache, merge diff; E rejected, G not taken; no push/PR/merge/window/BM6 re-pin without approval
 Usage so far (python3 tools/session_usage.py <session files>): not measured
-Next exact action: user decides on the remaining over-budget rows; then Task 12
+Next exact action: Task 12 (read the plan range '### Task 12'); confirm every provisional pin against its window and cause, ask the user to approve the BM6 values
 ```
 
 ## Task 0: baseline (2026-11-05, tree 9ea11bc + Task 0 test)
