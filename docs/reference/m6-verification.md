@@ -332,3 +332,11 @@ Earlier rows in this file (the 11.9 table above, the perf-investigation numbers)
 - `run_combat.gd` stops at the first `push_error`, so combat dense, contact and skirmish3v3 are still not measured. Open item.
 - The trace after 11i is a different match (tick 20000), so the 11.0 team-match numbers are not like-for-like; the profile above is the reference from here on.
 - Still over budget: team-match `step` p95/p99, movement plumbing (by 3 %), COMBAT open p95. Remaining candidates (not approved): ring cache for `_firing_cell`, profiling `production`, G (stagger rescans after target loss; changes the approved P1 rule and every match pin), presentation reading live state.
+
+## Task 11 follow-up: production exits and firing-cell rings (user chose option 1, 2026-11-05; idle machine)
+
+- **Production** (profiled with temporary sub-zones, not committed): `sim.spawn` dominated `step.production`. A building with a blocked exit retried every perimeter cell every tick, 2.84 calls per tick, each scanning all entities. `rally_target` (3.3 ms, 0.02 calls per tick) and `_assign_move` were not the cause. Fix: `Simulation.occupied_cells()` is built once per production step and `spawn(..., occupied)` tests it (kept current after each spawn). `step.production` p95 0.776 to 0.119 ms, mean 0.125 to 0.040; wall p95 3.268 to 2.686.
+- **Ring cache**: `_firing_cell` takes the reach-ring cells (per target and attacker kind, shared within a tick in `held.rings`); `sim._combat_work` still counts the whole window. `combat.firing_cell` mean 0.50 (loaded, before F) / p95 0.654 now.
+- Both: suite `CASES 270 CHECKS 112693 FAILURES 0`; team-match fold `7406935539604104369` tick 20000 unchanged.
+- Idle result after both: team-match `step` wall p95 / p99 (profiler off) 3.268 / 5.717 to **2.378 / 5.521** (budget 1.67 / 3.3, still **exceeded**); `step` zone mean 1.197, p95 2.261; COMBAT open p95 / p99 2.453 / 3.542 to **2.412 / 3.425** (ceiling 2.05 / 3.86, p95 still **exceeded**); movement plumbing unchanged at 0.855 (budget 0.83).
+- The slowest ticks: `step.apply_orders` 10-11 ms on ticks 90, 480, 930 (bot order waves), then 9-10 ms ticks around 14163/14164, 15450, 19295 (not yet attributed). The p99 is made of these bursts; `combat_plan` p95 1.25 ms is the largest steady cost.
