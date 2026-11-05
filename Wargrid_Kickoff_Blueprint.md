@@ -591,15 +591,40 @@ Give the game a deliberate look instead of placeholder rectangles and text label
 
 **Proposed exit gate:** the user's chosen direction recorded (blueprint §2 updated if it changes), a rendered benchmark row in the [performance ledger](docs/reference/performance.md) with the chosen look and effects on, inside the same budgets and assumed slowdown; no simulation, replay or netplay trace change; user playtest of the look.
 
+### M7.9 — Fog of war (placement and need decided by the user 2026-11-05; scope proposed, not approved)
+
+Fair bots only mean something when a human and a bot see the same limited picture, so fog of war lands before the bots. Starting point is the Zero Hour model: shroud (never seen), fog (explored, not visible now) and live vision from units and buildings, shared inside a team.
+
+**Proposed scope (not approved):** first audit how retail Zero Hour handles shroud and record departures; then visibility as deterministic simulation state per team, included in the snapshot hash; the renderer and minimap only display it (§2). Vision values come from the existing unit definitions (M4.1 already uses Ranger 100 and Crusader 150).
+
+**Proposed exit gate:** visibility tests (own, allied, enemy, explored versus live), replay and netplay traces still matching, ledger rows for six players on Ashfall inside the budgets, and a user playtest.
+
 ### M8 — Bots worth playing
 
-Per-faction build orders, base defense, attack waves and sensible target choice; one difficulty. Bots stay deterministic functions of the snapshot so they run identically on every lockstep client.
+**Deliberate departure from Zero Hour (user, 2026-11-05):** fairness and challenge over parity. Zero Hour has three difficulties (`GameDifficulty`: easy, normal, hard); Wargrid bots follow the fair-play rules in the [fair bots research](docs/reference/fair-bots-research.md) (user-supplied input, partly unverified; read it with its status note). A bot plays by the same rules, sees only what its team could see, and is held to a human-plausible command budget. No reference bot is a fairness model: checked 2026-11-05, OpenRA's squad targeting ignores shroud and fog, and Zero-K CAI marks its own threat check `FIXME: … maphax` (details in the research note), so the invariance test below is the real gate.
 
-**Exit gate:** scripted tests show bots defend and beat a passive player; a user playtest against them.
+**Proposed scope (not approved), one full-strength fair bot:**
+
+- One observation entry point: own state, what its team currently sees, public information and its own timestamped last-seen memory. Nothing else from the snapshot. Commands only through `issue_command`.
+- A human-plausible attention budget (order changes per interval, squads under fine control); numbers chosen at planning from evidence, never guessed in this section.
+- Economy, per-faction production from the M7.1 roster with counters chosen from observed evidence, base defence, scouting, squads with missions, a combat estimate before committing and retreat with hysteresis, team coordination between bot seats through team-shared vision only.
+- AI moods (Sleep, Alert 1.1, Aggressive 1.5), deferred from M4.1, and the parked chokepoint analysis from the M6 map-analyzer notes.
+- A headless decision trace (goal, evidence, alternatives rejected).
+- Deterministic on every lockstep client: simulation RNG only, a per-tick CPU budget in the [performance ledger](docs/reference/performance.md).
+
+**Proposed exit gate:** the fairness suite (research §9) with zero violations, including a hidden-state invariance test (changing hidden enemy state leaves the bot's commands identical); the bot beats the M4 skirmish policy and a passive player across seeded matches in both slots, and defends; a ledger row for three bots on Ashfall; a local user playtest (online 3v3 needs M9).
+
+### M8.1 — Difficulty levels and play styles (proposed 2026-11-05, scope not approved)
+
+**User decisions (2026-11-05):** about five levels, the hardest should beat the user and friends regularly, every level keeps a human-plausible command budget (larger at higher levels), play styles are selectable next to difficulty with "random" as an option.
+
+**Proposed scope (not approved):** five levels cut from the M8 bot by removing competence (opening repertoire, scouting, prediction quality, counters, fight judgement, retreat, multi-front play, team coordination, budget size), never by changing economy or rules and never by fake weakness such as idle workers or cancelled units. Five, not finer: every level must be measurably stronger than the one below, and finer steps are neither distinguishable by players nor cheap to test. Styles (aggressive, economic, defensive, raider, adaptive) are separate from skill; scenario or command-line setting until the M9 lobby.
+
+**Proposed exit gate:** a ladder test (each level beats the one below in most seeded matches, both slots; threshold set at planning), styles of one level inside a strength band, the fairness suite still at zero violations, and a user playtest at two or more levels.
 
 ### M9 — 3v3 online
 
-Lobby with slots, faction, team and bot choice; three humans plus three bots through the relay; handling a dropped player (pause, or the player becomes a bot); optional browser export over the same WebSocket transport.
+Lobby with slots, faction, team, bot difficulty and play style; three humans plus three bots through the relay; handling a dropped player (pause, or the player becomes a bot); optional browser export over the same WebSocket transport.
 
 **Relay beyond one machine (user, 2026-11-04; design proposed):** rooms on several machines with the owner encoded in the match code, region-aware placement, deploys that drain live rooms, and reconnect by replaying the room's command log. Cloud-agnostic (user decision): no routing, discovery or placement feature that exists on one provider only. fly.io stays the host for now; Railway was evaluated in the 2026-11-05 [relay stack spike](docs/reference/relay-stack-spike.md) instead of M5 Task 11 (fly kept). Options and host evidence: [relay scaling](docs/reference/relay-scaling.md).
 
@@ -607,7 +632,7 @@ Lobby with slots, faction, team and bot choice; three humans plus three bots thr
 
 ### Later
 
-Zero Hour generals, superweapons, air combat, fog of war (open: likely needed for fun in multiplayer; candidate for M8 or M9), more maps, campaign tooling. Prioritize by what play shows, not by checklist completeness.
+Zero Hour generals, superweapons, air combat, more maps, campaign tooling. Prioritize by what play shows, not by checklist completeness.
 
 ### 7.1 M0 implementation plan — stop before movement
 
@@ -798,7 +823,7 @@ Use profiling before shifting code to C#, C++ or GDExtension. **Do not infer tha
 **Proposed direction (2026-11-03; the M5 spike decides):**
 
 - **Deterministic lockstep.** Every client runs the full simulation; only commands travel. Commands already carry tick, player and sequence, and snapshots already hash exactly; trace comparison already shows identical results across three platforms.
-- **Bots run inside the simulation on every client.** The opponent policy is a deterministic function of the snapshot, so all clients compute identical bot commands without extra traffic.
+- **Bots run inside the simulation on every client.** The opponent policy is a deterministic function of the snapshot, so all clients compute identical bot commands without extra traffic. From M8 it reads only that player's observation (own state, team vision, its own memory), not the full snapshot; the code rule is enforced by tests, since lockstep gives every client the full state.
 - **Transport: WebSocket through a small relay server** (user choice: relay rather than one player hosting). Godot's high-level multiplayer API works over a WebSocket peer on desktop and in web exports, while ENet is not available in browsers, so one transport keeps the later browser build open. The relay forwards per-tick command batches and hashes and holds no game logic. Hosting: the user's existing fly.io account (sample config in the sibling `sb-watcher` project: `fly.toml`, region `fra`, shared 256 MB VM). Unlike that always-on worker, the relay accepts inbound WebSocket connections, so it needs an `[http_service]` section; letting fly stop idle machines and start them on connection keeps cost near zero between matches. Details belong to the M5 design.
 - **Clients:** desktop builds first (user choice), browser later.
 - **Desync detection:** clients exchange the per-tick snapshot hash periodically; a mismatch stops the match with a report.
@@ -879,6 +904,9 @@ Do not edit the live gameplay implementation in this research task.
 | Online connection | **Small relay server on the user's fly.io account** (user, 2026-11-03) | Easiest for friends; relay holds no game logic; existing account and deployment pattern. |
 | Target map | **Full scale, Twilight-Flame-inspired, about 196 × 196 cells** (user, 2026-11-03) | Recognizable travel times; requires M6 scaling work. |
 | Map source | **Converted from EA's GPL Twilight Flame map, own name "Ashfall"** (user, 2026-11-05) | Exact scale, elevation, starts and routes; EA notice and terms kept. |
+| Bots | **Fair: same rules, same information, human-plausible command budget at every level** (user, 2026-11-05) | Challenge through decisions, not bonuses or machine-speed micro; deliberate departure from Zero Hour. |
+| Difficulty | **About five competence levels plus selectable play styles; strong bot first (M8), ladder after (M8.1)** (user, 2026-11-05) | Levels cut once from the finished bot; finer steps are not distinguishable by players. |
+| Fog of war | **M7.9, before the bots** (user, 2026-11-05) | Fair information limits need fog; otherwise bots would be built twice. |
 | Art | **Colored rectangles acceptable for now** (user, 2026-11-03) | Gameplay and online play first. |
 | Public release | **Undecided; legal review required** | Source and content rights must be distinguished. |
 
