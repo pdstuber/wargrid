@@ -571,6 +571,16 @@ Add China and GLA distinct rules, core units and economy differences (for exampl
 
 **Exit gate:** three playable faction prototypes; economy/production/combat parity tracked by faction.
 
+### M7.5 — Art pass (placement decided by the user 2026-11-05; scope proposed, not approved)
+
+Give the game a deliberate look instead of placeholder rectangles and text labels. Placed after M7 so each of the three factions is styled once, and before M8 so the bot playtests are played on the real look.
+
+**User note (2026-11-05):** the coloured-rectangle look is more fun than expected, so a stylised geometric direction is explored before sprites are committed to. Blueprint §2 chose pixel-art sprites; switching is a design change the user decides after the comparison below.
+
+**Proposed scope (not approved):** Task 1 is an art-direction spike on one scene with two candidates: (A) USA unit and building sprites (asset source decided first; no EA assets, see §1) and (B) the current geometry pushed further with per-faction shape language, outlines, shading and effects, kept varied at full-match unit counts. Each gets a rendered benchmark row. The user picks one (or a mix); the rest of M7.5 applies it to terrain, selection and health feedback, shot and death effects, and the other factions. Visuals only represent simulation state and never own rules (§2).
+
+**Proposed exit gate:** the user's chosen direction recorded (blueprint §2 updated if it changes), a rendered benchmark row in the [performance ledger](docs/reference/performance.md) with the chosen look and effects on, inside the same budgets and assumed slowdown; no simulation, replay or netplay trace change; user playtest of the look.
+
 ### M8 — Bots worth playing
 
 Per-faction build orders, base defense, attack waves and sensible target choice; one difficulty. Bots stay deterministic functions of the snapshot so they run identically on every lockstep client.
@@ -587,7 +597,7 @@ Lobby with slots, faction, team and bot choice; three humans plus three bots thr
 
 ### Later
 
-Zero Hour generals, superweapons, air combat, fog of war (open: likely needed for fun in multiplayer; candidate for M8 or M9), more maps, art beyond colored rectangles, campaign tooling. Prioritize by what play shows, not by checklist completeness.
+Zero Hour generals, superweapons, air combat, fog of war (open: likely needed for fun in multiplayer; candidate for M8 or M9), more maps, campaign tooling. Prioritize by what play shows, not by checklist completeness.
 
 ### 7.1 M0 implementation plan — stop before movement
 
