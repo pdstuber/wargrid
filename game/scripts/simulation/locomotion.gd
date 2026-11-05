@@ -7,13 +7,13 @@ static func step(unit: Dictionary, kind_def: Dictionary, tick: int) -> float:
 		return cap / 30.0
 	var desired := _desired(unit)
 	var factor: float = 1.0
-	if desired != Vector2.ZERO:
+	if desired != Vector2.ZERO and (desired.x != unit.heading[0] or desired.y != unit.heading[1]):
 		var heading := Vector2(unit.heading[0], unit.heading[1])
 		factor = heading_factor(kind_def.locomotor, angle_between(heading, desired), kind_def)
 		var turned := turn(heading, desired, kind_def.turn_cos, kind_def.turn_sin)
 		unit.heading = [turned.x, turned.y]
 	if tick < unit.move_after: return 0.0
-	var remaining: float = route_length(unit)
+	var remaining: float = _route_length_until(unit, 2.0 * kind_def.brake, cap * cap, cap / 30.0)
 	var stoppable: float = sqrt(2.0 * kind_def.brake * remaining)
 	unit.speed = minf(minf(unit.speed + kind_def.accel / 30.0, cap * factor), stoppable)
 	return minf(unit.speed / 30.0, remaining)
@@ -58,6 +58,20 @@ static func _snap_heading(unit: Dictionary) -> void:
 
 static func braking_distance(speed: float, brake: float) -> float:
 	return speed * speed / (2.0 * brake)
+
+# Stops once the braking cap can no longer bind, so the caller's min() is unchanged.
+static func _route_length_until(unit: Dictionary, two_brake: float, cap_squared: float, step_cap: float) -> float:
+	var x: float = unit.position[0]
+	var y: float = unit.position[1]
+	var total: float = 0.0
+	for waypoint in unit.route:
+		var dx: float = waypoint[0] - x
+		var dy: float = waypoint[1] - y
+		total += sqrt(dx * dx + dy * dy)
+		if two_brake * total >= cap_squared and total >= step_cap: return total
+		x = waypoint[0]
+		y = waypoint[1]
+	return total
 
 static func route_length(unit: Dictionary) -> float:
 	var x: float = unit.position[0]

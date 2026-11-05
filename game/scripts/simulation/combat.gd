@@ -220,10 +220,11 @@ static func _firing_cell(sim: RefCounted, unit: Dictionary, target: Dictionary, 
 			var cell := Vector2i(x, y)
 			var center := Vector2(cell) + Vector2(0.5, 0.5)
 			sim._combat_work += 1
+			var distance: float = position.distance_squared_to(center)
+			if best != null and distance > best_distance: continue
 			if cell == occupied or component < 0 or sim._navigation.component_at(center) != component: continue
 			if held.has(cell) and cell != own and cell != own_goal: continue
 			if _gap_at(center.x, center.y, unit.kind, target) > reach + EDGE_EPS: continue
-			var distance: float = position.distance_squared_to(center)
 			if best == null or distance < best_distance or (distance == best_distance and (cell.y < Vector2i(best.floor()).y or (cell.y == Vector2i(best.floor()).y and cell.x < Vector2i(best.floor()).x))):
 				best = center
 				best_distance = distance

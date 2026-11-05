@@ -305,3 +305,8 @@ Important (open, to do before Task 12; measure only when no other benchmark is r
 3. The 11.9 team-match wall numbers were taken with the profiler on, and after 11i the trace is a different match. Take one profiler-off wall run.
 
 Minor (rulings): N1 "restarts the refresh interval" no longer discriminates (both values 7 for attacker id 1); the neighbouring destination check still covers it. A2 compares the loop index with an absolute tick (works because the sim starts at 0). VW2 does not exercise the 1/1024 quantization (plan-mandated, sub-pixel). NI2 only catches a wrong ring rule through the build count. 11a scan cost scales with the scanned area, so a target in a long thin component can scan up to the whole map (about 38k cells at 196x196, same order as the old sort).
+
+## Task 11 perf fixes A-C (user approved 2026-11-05, from the perf investigation)
+
+- **A** `Locomotion._route_length_until` (stops summing once the braking cap cannot bind), **B** skip turn/heading math when the heading already equals the desired direction, **C** `_firing_cell` tests distance before the reachability checks. All trace-preserving by construction.
+- Tree after A-C: suite `CASES 269 CHECKS 112690 FAILURES 0`; team-match fold `7406935539604104369` tick 20000 unchanged. Timing not yet re-measured (machine was loaded by another app; idle rerun pending, together with the three gate-review measurement gaps).
