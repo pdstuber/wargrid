@@ -3,15 +3,15 @@
 Plan: [M6 plan](../superpowers/plans/2026-11-05-m6-teams-full-map.md). Run rules: [milestone prompt](../milestone-prompt.md).
 
 ```text
-Resume record (updated 2026-11-05, after Task 9)
-Branch / base commit / working-tree state: m6-teams-map / 71cbae4 / Task 9 committed on top
-Last green task / next incomplete task: Task 9 (stop gate: review pending) / Task 10 (Chinook supply scenario)
+Resume record (updated 2026-11-05, after Task 9 gate fixes)
+Branch / base commit / working-tree state: m6-teams-map / d8ca772 / gate fixes C1, I1-I3 committed on top
+Last green task / next incomplete task: Task 9 gate fixes done (C1 approved by user: fix bug, widen S1 window to 8000-10799) / Task 10 (Chinook supply scenario)
 Changed paths since last commit: none
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 258 cases, 112,678 checks, 0 failures, exit 0, TESTS PASSED; nine netplay scenarios passed (s1 re-pinned 10791); python3 tools/test_sim_math.py OK
-Known red case or blocker: none. OPEN FINDING for the user: re-order from mid-cell makes the unit turn back to the cell centre it passed (route[0] is behind); tanks stall up to ~23 ticks. A skip-waypoint fix moved S1 to 8168, outside the 9000-10799 window, so it was reverted
-Approved decisions, pre-authorizations used, deferred gates: as before; local commit per milestone prompt; no push/PR/merge/window/BM6 re-pin without approval
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 259 cases, 112,666 checks, 0 failures, exit 0, TESTS PASSED; nine netplay scenarios passed (s1 re-pinned 8244); python3 tools/test_sim_math.py OK
+Known red case or blocker: none. Open for user at gate: I4 BM5 ledger row (not in the plan's re-pin list)
+Approved decisions, pre-authorizations used, deferred gates: C1 fix + S1 window floor 9000 -> 8000 (user 2026-11-05); local commit per milestone prompt; no push/PR/merge/window/BM6 re-pin without approval
 Usage so far (python3 tools/session_usage.py <session files>): not measured
-Next exact action: user decides C1 (below); then fix I1-I4 test-first in a fresh session before Task 10
+Next exact action: Task 10 (Chinook supply scenario)
 ```
 
 ## Task 0: baseline (2026-11-05, tree 9ea11bc + Task 0 test)
@@ -229,3 +229,8 @@ Start metrics (resampled routes in world units; buildable = open cells in the 25
 - **I3:** `test_reorder_mid_turn` checks 1 and 3 are empty; add heading-delta check (6°), `move_after` for moving and turning re-orders, mid-cell straight case.
 - **I4:** BM5 ledger row missing (not in the plan's re-pin list); user approval at the gate.
 - Minor: scanner gaps (`**`, `.rotated(`, `.angle`, `from_angle`, `slerp`); V2 cannot catch a mark ignoring heading; wheels `speed/4` branch dead; air heading ruling (snap, plan contradicts itself); L6 uses computed angles, not a literal table.
+
+### Task 9 gate fixes (2026-11-05, tree d8ca772 + fixes)
+
+- C1: `_assign_route` drops `route[0]` when it lies behind the unit relative to `route[1]` (`Simulation._behind`). User approved the fix and lowering the S1 window floor 9000 -> 8000 (plan text updated). Provisional re-pins: `TERMINAL_TICK` 10502 -> 8168 (winner 1), `S1_CORE_SERIES` -> 9160721353698121349, netplay s1 10791 -> 8244. `PINNED` unchanged.
+- I1: L5 asserts `after.speed == 0.8` again plus no new delay. I2: engine `dot`/`cross` replaced by scalar expressions in `angle_between` and `turn`; sqrt in `turn` stays (IEEE-exact); CI tick comparison is the arbiter. I3: L9 now checks the 6 degree step and that a re-order while still turning (speed 0) restarts the delay; new L10 mid-cell straight re-order never goes backwards. I4 still open for the user.

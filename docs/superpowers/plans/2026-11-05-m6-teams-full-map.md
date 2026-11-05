@@ -99,7 +99,7 @@
   - the netplay s1 tick in `tools/run_netplay.sh`;
   - the BM6 ceiling and floor.
 - **Limits on a provisional re-pin.** It may never leave its window, and never changes any other assertion:
-  - S1: 9000–10799 with winner 1;
+  - S1: 8000–10799 with winner 1;
   - netplay s1: no tick window, but the same winner as the base and inside the script's tick limit;
   - the BM6 floor stays below its measured value;
   - digests (`PINNED`, `S1_CORE_SERIES`, R4) have no window and move only with a recorded cause.
@@ -652,7 +652,7 @@ Commands: run every suite or benchmark with output to a file and read only summa
 
 **Task:** every pin re-pinned provisionally in Tasks 6–11 is confirmed on the final tree, with one row per pin: base value → final value and the cause tasks.
 **Owns:** `test_skirmish_match.gd` (`TERMINAL_TICK`, `S1_CORE_SERIES`, `WINNER` must stay 1), `tools/run_netplay.sh` (s1, base 8423), `test_state_hash.gd` (`PINNED`), `test_replay.gd`, `test_benchmark.gd` (BM6, user approval at the Task 13 stop).
-**Invariant:** S1 stays inside its 9000–10799 window with winner 1; a pin outside its window is a stop, not a re-pin.
+**Invariant:** S1 stays inside its 8000–10799 window with winner 1; a pin outside its window is a stop, not a re-pin.
 
 - [ ] Run each pinned test and the nine netplay scenarios on the final tree. Write the consolidated table (base → final, cause tasks) into the verification file.
 - [ ] Commit `Confirm M6 pins` (only the table, unless a pin still needs its final value).

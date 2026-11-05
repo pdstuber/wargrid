@@ -472,11 +472,15 @@ func _assign_route(unit: Dictionary) -> void:
 	unit.route = []
 	for point in _navigation.route(from, to):
 		unit.route.append([point.x, point.y])
+	if unit.route.size() > 1 and _behind(from, unit.route[0], unit.route[1]): unit.route.pop_front()
 	unit.status = "blocked" if unit.route.is_empty() else "moving"
 	if unit.status == "moving" and unit.speed == 0.0: unit.move_after = _tick + START_DELAY_TICKS
 	if unit.status == "blocked":
 		unit.order = null
 		unit.destination = null
+
+func _behind(from: Vector2, first: Array, second: Array) -> bool:
+	return (first[0] - from.x) * (second[0] - first[0]) + (first[1] - from.y) * (second[1] - first[1]) < 0.0
 
 func _advance(unit: Dictionary) -> void:
 	var remaining: float = Locomotion.step(unit, Definitions.unit(unit.kind), _tick)

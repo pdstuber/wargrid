@@ -6,7 +6,7 @@ const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
 const Locomotion = preload("res://scripts/simulation/locomotion.gd")
 
 func cases() -> Array[Callable]:
-	return [test_start_delay_three_ticks, test_acceleration_curve, test_short_hop_no_overshoot, test_group_arrival_unchanged, test_reorder_keeps_speed, test_angle_between_accuracy, test_measured_turn_then_move, test_heading_factors, test_reorder_mid_turn]
+	return [test_start_delay_three_ticks, test_acceleration_curve, test_short_hop_no_overshoot, test_group_arrival_unchanged, test_reorder_keeps_speed, test_angle_between_accuracy, test_measured_turn_then_move, test_heading_factors, test_reorder_mid_turn, test_reorder_mid_cell_straight]
 
 func unit_of(sim, id: int) -> Dictionary:
 	return Economy.object(sim, id)
@@ -127,7 +127,7 @@ func test_reorder_keeps_speed(runner) -> bool:
 	sim.step()
 	sim.step()
 	var after: Dictionary = unit_of(sim, id)
-	runner.check(before.speed == 0.8 and after.move_after == before.move_after and after.status == "moving", "L5 re-order while moving gets no new start delay")
+	runner.check(before.speed == 0.8 and after.speed == 0.8 and after.move_after == before.move_after and after.status == "moving", "L5 re-order while moving keeps speed and gets no new start delay")
 	runner.check(is_equal_approx(Locomotion.braking_distance(0.8, 4.0), 0.08), "L5 braking distance")
 	return true
 
@@ -190,6 +190,24 @@ func test_reorder_mid_turn(runner) -> bool:
 	sim.step()
 	var after: Dictionary = unit_of(sim, id)
 	runner.check(after.position == before.position, "L9 position does not jump")
-	runner.check(Locomotion.angle_between(Vector2(before.heading[0], before.heading[1]), Vector2(after.heading[0], after.heading[1])) < 6.5, "L9 heading turns on from where it was")
+	runner.check(Locomotion.angle_between(Vector2(before.heading[0], before.heading[1]), Vector2(after.heading[0], after.heading[1])) < 6.5 and Locomotion.angle_between(Vector2(before.heading[0], before.heading[1]), Vector2(after.heading[0], after.heading[1])) > 5.5, "L9 heading turns one 6 degree step from where it was")
+	runner.check(before.speed == 0.0 and after.move_after == before.move_after + 8, "L9 re-order while still turning in place restarts the start delay")
 	runner.check(Locomotion.angle_between(Vector2(after.heading[0], after.heading[1]), Vector2(0, 1)) < 175.0, "L9 heading follows the new route")
+	return true
+
+func test_reorder_mid_cell_straight(runner) -> bool:
+	var sim = Simulation.new([], Vector2i(64, 16))
+	sim.add_player(1, 1000)
+	var id: int = sim.spawn(1, Vector2(5.5, 8.5), "tank")
+	Economy.send(sim, {"type": "move", "entity_ids": [id], "target": [40.5, 8.5]})
+	for index in range(40): sim.step()
+	var before: Dictionary = unit_of(sim, id)
+	Economy.send(sim, {"type": "move", "entity_ids": [id], "target": [50.5, 8.5]})
+	var minimum: float = before.position[0]
+	for index in range(30):
+		sim.step()
+		minimum = minf(minimum, unit_of(sim, id).position[0])
+	var after: Dictionary = unit_of(sim, id)
+	runner.check(minimum >= before.position[0] and after.heading[0] > 0.99, "L10 mid-cell re-order ahead never goes backwards or turns back")
+	runner.check(after.speed > 0.0 and after.move_after == before.move_after, "L10 mid-cell re-order keeps moving without a new delay")
 	return true

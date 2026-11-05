@@ -19,20 +19,21 @@ static func step(unit: Dictionary, kind_def: Dictionary, tick: int) -> float:
 	return minf(unit.speed / 30.0, remaining)
 
 static func angle_between(a: Vector2, b: Vector2) -> float:
-	var x: float = absf(a.dot(b))
-	var y: float = absf(a.cross(b))
+	var dot: float = a.x * b.x + a.y * b.y
+	var x: float = absf(dot)
+	var y: float = absf(a.x * b.y - a.y * b.x)
 	var high: float = maxf(x, y)
 	if high == 0.0: return 0.0
 	var z: float = minf(x, y) / high
 	var z2: float = z * z
 	var t: float = z * (0.99997726 + z2 * (-0.33262347 + z2 * (0.19354346 + z2 * (-0.11643287 + z2 * (0.05265332 - 0.01172120 * z2)))))
 	if y > x: t = 1.5707963267948966 - t
-	if a.dot(b) < 0.0: t = 3.141592653589793 - t
+	if dot < 0.0: t = 3.141592653589793 - t
 	return t * 57.295779513082323
 
 static func turn(heading: Vector2, desired: Vector2, cos_step: float, sin_step: float) -> Vector2:
-	if heading.dot(desired) >= cos_step: return desired
-	var sign: float = -1.0 if heading.cross(desired) < 0.0 else 1.0
+	if heading.x * desired.x + heading.y * desired.y >= cos_step: return desired
+	var sign: float = -1.0 if heading.x * desired.y - heading.y * desired.x < 0.0 else 1.0
 	var turned := Vector2(heading.x * cos_step - sign * heading.y * sin_step, sign * heading.x * sin_step + heading.y * cos_step)
 	return turned / sqrt(turned.x * turned.x + turned.y * turned.y)
 
