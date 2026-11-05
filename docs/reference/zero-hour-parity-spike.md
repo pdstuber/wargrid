@@ -47,7 +47,7 @@ Each scenario starts a fresh headless skirmish on `Killing Fields`, spawns USA t
 | Ranger duel time-to-kill | 339 frames, 36 shots (winner fired 1 frame earlier) | Wargrid 303 (36 hits at 3/3/21) | **differs** +12% (the +1 cadence) |
 | Crusader duel time-to-kill | 428 frames, 8 shots; both reached 0 health at frame 435 (removed at 450 and 452) | Wargrid 420 | +8 frames shell flight at 140 units |
 | Crusader vs Ranger in a 5-Ranger cluster (15 apart) | 30 shots, 30 direct hits of 6 HP, 1750 frames; **9 splash hits of 6 HP (54 HP) on neighbours** | Wargrid 30 direct 6 HP hits, 1740 ticks, no splash | splash differs; no scatter miss seen |
-| Chinook supply trip | see [Unverified](#unverified) | 8 × 75 = 600 per trip; 6 cells/s flight (provisional) | peak flight 150.5 u/s (= 6 cells/s); deposits not observed yet |
+| Chinook supply trip | see [Unverified](#unverified) | 8 × 75 = 600 per trip; 6 cells/s flight (provisional) | 4 deposits, each exactly 600 (= 8 × 75); peak flight 150.2 u/s (= 6 cells/s); cycle 773 frames vs Wargrid's ≈535 (8 × 36 load + 87 unload + 2 × 80 flight) |
 
 ## Assessment (Claude, not a user decision)
 
@@ -61,13 +61,18 @@ Each scenario starts a fresh headless skirmish on `Killing Fields`, spawns USA t
 2. Ranger cadence: 3/3/21 (INI arithmetic) or 4/4/22 (measured source-build behaviour).
 3. Tank splash against infantry (radius and damage), currently omitted.
 4. Start delay, acceleration and turn-in-place, currently instant.
+5. Collector cycle: measured 773 frames per trip (≈26 s; 600 per trip, 6 cells/s confirmed) against Wargrid's ≈535 ticks; the extra ≈240 frames sit in the dock and centre stops. Keep the faster provisional timing or lengthen load/unload.
 
 Numbers stay unchanged until each item is decided.
+
+### Chinook trip method (2026-11-05)
+
+The API player's faction is random and a raw `AmericaSupplyCenter` spawn never runs `onBuildComplete`; instant placement (`build_structure` without a dozer) leaves it under construction, so no Chinook and `train_unit` is refused. A spawned `AmericaVehicleDozer` (ordered 10 frames after spawn; in its spawn frame `buildObjectNow` fails) builds an `AmericaPowerPlant`, then the supply centre once `/buildable` shows it `ok`; the centre's Chinook appears 1257 frames in. Headless, `-noaudio`, fork `eb595cfc9`; trace `supply_chinook.tsv` (12,057 rows).
 
 ## Unverified
 
 - Shipped binary behaviour (see assessment); a retail cross-check would still need Windows or Wine.
-- Chinook supply trip: with a spawned `SupplyDock` (400 boxes) 400 units from a spawned `AmericaSupplyCenter`, the centre's own Chinook flies to the dock and back but no money arrives within 3600 frames; cause not found yet (civilian and neutral warehouse owner tried, same result, so not owner-dependent). M3 collector timing stays provisional.
+- Chinook load and unload times are not separated: the trace gives time in the dock zone (≈438 frames per trip, including descent) and in the centre zone (≈175 frames, deposit about 122 frames after entering), not the per-box load time.
 - Whether the Crusader lurch and the +1 cadence also occur in a VC6 build.
 - Scatter against infantry in other geometries, damaged speed (`SpeedDamaged`); not run.
 - The fork's other changes outside game logic (audio/video shims) were not reviewed for timing effects; logic stepping is explicit, so wall-clock timing does not enter the traces.
