@@ -30,6 +30,7 @@ func _measure(layout: String) -> bool:
 	var allocations := PackedFloat64Array()
 	var warmup_chases: int = 0
 	var window_chases: int = 0
+	var window_retaliations: int = 0
 	var shots: int = 0
 	var deaths: int = 0
 	var first_shot: int = -1
@@ -56,12 +57,13 @@ func _measure(layout: String) -> bool:
 			work.append(sim.combat_work())
 			allocations.append(sim.allocation_calls())
 			window_chases += sim.scan_chases()
+			window_retaliations += sim.retaliations()
 	var alive: int = sim.snapshot().entities.size()
 	var summary: Dictionary = Stats.summary(samples)
 	print("COMBAT ", layout, " tick_ms=", JSON.stringify(summary), " warmup_tick_ms=", JSON.stringify(Stats.summary(warmup)), " snapshot_ms=", JSON.stringify(Stats.summary(snapshots)),
 		" combat_work=", JSON.stringify(Stats.summary(work)), " allocation_calls=", JSON.stringify(Stats.summary(allocations)),
 		" shots=", shots, " deaths=", deaths, " first_shot=", first_shot, " alive_start=", start_units, " alive_end=", alive,
-		" scan_chases_warmup=", warmup_chases, " scan_chases_window=", window_chases)
+		" scan_chases_warmup=", warmup_chases, " scan_chases_window=", window_chases, " retaliations_window=", window_retaliations)
 	if STRESS_CEILING.has(layout):
 		var ceiling: Array = STRESS_CEILING[layout]
 		var within: bool = summary.p95 <= ceiling[0] and summary.p99 <= ceiling[1]
@@ -77,6 +79,9 @@ func _measure(layout: String) -> bool:
 			return false
 	if window_chases == 0 and layout != "contact":
 		push_error("Combat benchmark never chased inside the timed window for " + layout)
+		return false
+	if window_retaliations == 0 and (layout == "contact" or layout == "skirmish3v3"):
+		push_error("Combat benchmark never retaliated inside the timed window for " + layout)
 		return false
 	if deaths == 0 or alive + deaths != start_units or (layout == "contact" and (first_shot == -1 or first_shot >= 60)):
 		push_error("Combat benchmark workload invalid for " + layout)

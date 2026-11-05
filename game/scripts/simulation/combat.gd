@@ -298,26 +298,32 @@ static func _friends_radius(victim: Dictionary) -> float:
 	if not victim.has("origin"): return RETALIATION_FRIENDS_RADIUS
 	return RETALIATION_FRIENDS_RADIUS + 0.5 * Vector2(Definitions.building(victim.kind).footprint).length()
 
-# shortcut: joiners found by scanning all armed units per trigger, grid it if triggers x units shows in the ledger.
+# shortcut: joiners are scanned per shot among units that can still join (idle guards, target-less retaliators); grid them if idle guards x shots shows in the ledger.
 static func _retaliate_trigger(sim: RefCounted, shots: Array[Dictionary]) -> void:
 	var armed: Array = []
+	var built: bool = false
 	for shot in shots:
 		var victim: Dictionary = record(sim, shot.target_id)
 		var attacker: Dictionary = record(sim, shot.attacker_id)
 		if victim.is_empty() or attacker.is_empty() or is_ai(sim, victim.owner): continue
 		if distance_squared(Vector2(attacker.position[0], attacker.position[1]), victim) > RETALIATION_DISTANCE * RETALIATION_DISTANCE: continue
-		if armed.is_empty():
+		if not built:
+			built = true
 			for unit in sim._entities.values():
-				if unit.combat != null: armed.append(unit)
+				if unit.combat != null and _can_join(unit): armed.append(unit)
 			armed.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.id < b.id)
 		var centre := _victim_centre(victim)
 		var radius: float = _friends_radius(victim)
 		for unit in armed:
+			sim._combat_work += 1
 			if unit.owner != victim.owner or unit.hp <= 0: continue
 			if unit.id == victim.id and unit.combat.mode == "retaliate" and unit.combat.target_id == null:
 				_retarget_retaliation(sim, unit, attacker)
 			elif _is_idle_guard(unit) and Vector2(unit.position[0], unit.position[1]).distance_squared_to(centre) <= radius * radius:
 				_join_retaliation(sim, unit, attacker)
+
+static func _can_join(unit: Dictionary) -> bool:
+	return _is_idle_guard(unit) or (unit.combat.mode == "retaliate" and unit.combat.target_id == null)
 
 static func _retarget_retaliation(sim: RefCounted, unit: Dictionary, attacker: Dictionary) -> void:
 	unit.combat.target_id = attacker.id

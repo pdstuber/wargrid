@@ -5,7 +5,7 @@ const Navigation = preload("res://scripts/simulation/grid_navigation.gd")
 const Allocation = preload("res://scripts/simulation/destination_allocation.gd")
 
 func cases() -> Array[Callable]:
-	return [test_allocation, test_partial_and_copy, test_thirty_arrivals, test_reservations, test_replacement_release, test_partition, test_path_budget, test_queued_retarget, test_queue_replay]
+	return [test_allocation, test_partial_and_copy, test_thirty_arrivals, test_reservations, test_replacement_release, test_partition, test_path_budget, test_queued_retarget, test_queue_replay, test_small_group_matches_brute_force]
 
 func command(sim, ids: Array, target: Array, sequence: int = 0, player: int = 1, tick: int = -1) -> Dictionary:
 	return {"tick": sim.snapshot().tick if tick < 0 else tick, "player": player, "sequence": sequence, "type": "move", "entity_ids": ids, "target": target}
@@ -231,3 +231,38 @@ func test_queue_replay(runner) -> bool:
 	for batch in [1, 3, 10]:
 		runner.check(_queue_replay(batch, true) == expected, "G9 exact queue replay batch %d" % batch)
 	return true
+
+func test_small_group_matches_brute_force(runner) -> bool:
+	var nav = Navigation.new([Vector2i(5, 5), Vector2i(6, 5), Vector2i(5, 6)], Vector2i(12, 12))
+	var target := Vector2(5.5, 5.5)
+	var unavailable: Array[Vector2i] = [Vector2i(4, 4), Vector2i(7, 7), Vector2i(5, 4)]
+	var ok: bool = true
+	for size in [1, 2, 3, 5, 8]:
+		var units: Array[Dictionary] = []
+		for i in range(size):
+			units.append({"id": 10 - i, "position": [4.5 + (i % 3), 7.5 + (i % 2)]})
+		var expected: Dictionary = {}
+		var taken: Dictionary = {}
+		var ordered: Array[Dictionary] = units.duplicate()
+		ordered.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.id < b.id)
+		for unit in ordered:
+			var best: Variant = null
+			for cell in nav.cells_in_component(nav.component_at(target)):
+				if taken.has(cell) or unavailable.has(cell): continue
+				var own: bool = Vector2i(Vector2(unit.position[0], unit.position[1]).floor()) == cell
+				var held: bool = false
+				for other in units:
+					if other.id != unit.id and Vector2i(Vector2(other.position[0], other.position[1]).floor()) == cell: held = true
+				if held and not own: continue
+				if best == null or _closer(cell, best, target): best = cell
+			expected[unit.id] = Vector2(best) + Vector2(0.5, 0.5) if best != null else null
+			if best != null: taken[best] = true
+		ok = ok and Allocation.assign(nav, units, target, unavailable) == expected
+	runner.check(ok, "G6 small groups equal the brute-force nearest-free-cell assignment")
+	return true
+
+func _closer(a: Vector2i, b: Vector2i, target: Vector2) -> bool:
+	var da: float = (Vector2(a) + Vector2(0.5, 0.5)).distance_squared_to(target)
+	var db: float = (Vector2(b) + Vector2(0.5, 0.5)).distance_squared_to(target)
+	if da != db: return da < db
+	return a.y < b.y or (a.y == b.y and a.x < b.x)

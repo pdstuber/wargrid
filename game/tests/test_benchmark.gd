@@ -8,7 +8,7 @@ const Navigation = preload("res://scripts/simulation/grid_navigation.gd")
 const Probe = preload("res://scenes/movement_benchmark.tscn")
 
 func cases() -> Array[Callable]:
-	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_skirmish3v3_fixture, test_combat_work_ceiling]
+	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_skirmish3v3_fixture, test_combat_work_ceiling, test_volley_retaliation_work]
 
 func test_statistics(runner) -> bool:
 	runner.check(Stats.summary(PackedFloat64Array()) == {"n": 0, "p50": 0.0, "p95": 0.0, "p99": 0.0, "max": 0.0}, "BM1 empty")
@@ -153,4 +153,18 @@ func test_combat_work_ceiling(runner) -> bool:
 		sim.step()
 		peak = maxi(peak, sim.combat_work())
 	runner.check(peak <= 23900 and peak > 20000, "BM6 combat work ceiling, got " + str(peak))
+	return true
+
+func test_volley_retaliation_work(runner) -> bool:
+	# A full volley (about 150 shots) must not rescan every armed unit per shot; no unit is an idle guard here.
+	var sim: RefCounted = CombatWorkload.create("contact")
+	sim.step()
+	var peak: int = 0
+	var shots: int = 0
+	for tick in range(120):
+		sim.step()
+		peak = maxi(peak, sim.combat_work())
+		shots += sim.snapshot().combat_events.size()
+	runner.check(shots > 100, "BM6b volleys happen in the window, got " + str(shots))
+	runner.check(peak <= 1500, "BM6b joiner query work per tick after tick 0, got " + str(peak))
 	return true
