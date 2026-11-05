@@ -543,6 +543,18 @@ Today's 1v1 skirmish played between two machines: deterministic lockstep with a 
 
 **M5 status (2026-11-04):** implemented and merged to `main` (`55beae4`); the macOS-Windows match ran on the pre-pacing-fix build and the repeat on the fixed build is a user-accepted deferral, to be played later. Findings: [M5 findings](docs/reference/m5-online.md).
 
+### M5.1 — Fixes from the friend-match playtest (planned)
+
+Fixes the four notes from the 2026-11-04 friend match:
+
+- Human units acquire like Zero Hour: only in weapon range, no chase, plus retaliation when hit.
+- Group orders skip dead and unarmed members.
+- A hint marks each ground click, and the resume order has feedback.
+
+**Exit gate:** the [milestone prompt](docs/milestone-prompt.md) exit gate, with both match pins recalibrated.
+
+Approved design (2026-11-05): [findings design](docs/superpowers/specs/2026-11-05-m5.1-playtest-findings-design.md), [execution plan](docs/superpowers/plans/2026-11-05-m5.1-playtest-findings.md).
+
 ### M6 — Teams and a full-scale map
 
 Matches with up to eight players in teams with team victory; a hand-authored map whose layout is inspired by Twilight Flame (an official 8-player Zero Hour map, 4,900 × 4,900 world units, about 196 × 196 cells at 25 units per cell; no EA map data copied); navigation, allocation and snapshot costs scaled for that size (measure first; candidate fixes: incremental navigation updates, local destination search). Still USA only.
@@ -793,7 +805,7 @@ Keep the working title **Wargrid** independently of EA branding; also check name
 
 ## 13. Kickoff prompt for Codex CLI / Claude Code
 
-Use [prompt.txt](prompt.txt) in a new session in the Wargrid repository. It records the current milestone handoff ([M5 plan](docs/superpowers/plans/2026-11-04-m5-online-spike.md)) and follows the [milestone prompt](docs/milestone-prompt.md); earlier handoffs live in `docs/m3-prompt.txt`, `docs/m4-prompt.txt` and `docs/m4.1-prompt.txt`. The prompt limits work to one milestone, requires verification/review and preserves Git/window approval rules. Keep the current handoff prompt in that one file rather than maintaining a second copy here.
+Use [prompt.txt](prompt.txt) in a new session in the Wargrid repository. It records the current milestone handoff ([M5.1 plan](docs/superpowers/plans/2026-11-05-m5.1-playtest-findings.md)) and follows the [milestone prompt](docs/milestone-prompt.md); earlier handoffs live in `docs/m3-prompt.txt`, `docs/m4-prompt.txt`, `docs/m4.1-prompt.txt` and `docs/m5-prompt.txt`. The prompt limits work to one milestone, requires verification/review and preserves Git/window approval rules. Keep the current handoff prompt in that one file rather than maintaining a second copy here.
 
 ### Follow-up prompt for a dedicated research agent
 

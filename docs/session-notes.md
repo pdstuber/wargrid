@@ -30,7 +30,7 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 ## Next action
 
-**Next session (proposed):** pick between M6 planning (teams and full-scale map; blueprint §7), the open M4.1 playtest findings, or the repeat macOS-vs-Windows friend match on the Go relay. The relay is done for now; M9 owns its next changes.
+**Next session:** M5.1 kickoff from root `prompt.txt` when the user starts it. The design was approved and the plan written on 2026-11-05; no code has changed. Still open separately: the repeat macOS-vs-Windows friend match on the Go relay. The relay is done for now; M9 owns its next changes.
 
 **M4 complete and merged into local `main` (2026-11-03).** Evidence: [M4 verification](reference/m4-verification.md). Process changes adopted on `main`: [milestone prompt](milestone-prompt.md), [workflow retrospective](reference/2026-11-03-milestone-workflow-retrospective.md). Roadmap re-aimed at the long-term target (3v3 online with friends against bots, USA/China/GLA, Twilight-Flame-like full-scale map): blueprint §1, §7, §11, §14.
 

@@ -1,0 +1,15 @@
+Implement Wargrid M5 (online spike) only, in /Users/pdstuber/projects/wargrid, following docs/milestone-prompt.md. Model: Sonnet 5.5, medium effort, for implementation (user, 2026-11-04); Opus for Task 1, for the "Opus preflight" steps at the start of Tasks 1, 3, 5 and 9, and for gate reviews. This is an execution handoff: reading or preparing this file does not authorize implementation. Start only when the user explicitly invokes it. M0–M4.1 exist; do not restart them or begin M6.
+
+Milestone files:
+- Design (approved by user 2026-11-04; do not ask again): docs/superpowers/specs/2026-11-04-m5-online-spike-design.md
+- Plan (approved by user 2026-11-04): docs/superpowers/plans/2026-11-04-m5-online-spike.md (Tasks 0–11, stop gates after Tasks 1, 3, 5, 9, 11)
+- Verification file and resume record: docs/reference/m5-verification.md (Task 0 creates it)
+- Budgets: docs/reference/performance.md. Reference reading (ideas only, own code): ../OpenRA OpenRA.Game/Network/OrderManager.cs, SyncReport.cs; ../GeneralsGameCode Core/GameEngine/Source/GameNetwork/ConnectionManager.cpp.
+
+First session: read AGENTS.md, the design and the plan in full once, then start Task 0 on a new branch m5-online from local main. Later sessions: start from the resume record as the milestone prompt says.
+
+Settled decisions (user, 2026-11-04): thin foundation M9 builds on, not throwaway; approach A (dumb relay, clients stamp ticks) plus relay-owned membership, version check, desync report and tool, automated failure tests; Kotlin + Ktor relay on fly.io fra with a GraalVM-vs-JVM cold-start experiment; latency budget 250 ms p95 through fra; lockstep overhead budget 10% of a tick (0.55 ms p99 dev machine); exported builds in scope; a match with one friend is a hard exit gate. M4.1: merged to main at f2c5f9e; user playtest still pending (user will do it later), so record it as pending, never as done. Calls marked "my call" in the design are planning defaults, not user approvals; a conflict with them is a design question for the user, not a silent change.
+
+Milestone-specific stop conditions, in addition to the milestone prompt: Task 1 shows exported builds diverge from editor traces, or the digest p99 exceeds 0.55 ms; any desync in a test that is not deliberately perturbed; a GraalVM native build that cannot serve WebSockets after two attempts (record, continue with JVM); a Review Focus scenario that hangs instead of ending.
+
+Use superpowers:executing-plans sequentially in the main session with test-driven-development; systematic-debugging for unexpected failures. Routine checks stay headless. Explicit user approval is required for every push, PR, merge, visible window, fly apps create/destroy and fly deploy. Local commits after green checkpoints are pre-authorized by the milestone prompt. Human matches (Task 10) need the user at home and one friend. Stop at the M5 exit gate.
