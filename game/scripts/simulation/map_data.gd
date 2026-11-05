@@ -1,0 +1,79 @@
+extends RefCounted
+
+const Simulation = preload("res://scripts/simulation/simulation.gd")
+const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
+
+const KINDS: Array[String] = ["reactor", "depot", "barracks", "factory"]
+const SOURCE_FOOTPRINT := Vector2i(3, 3)
+
+static func load(path: String) -> Dictionary:
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		push_error("Map file unreadable: " + path)
+		return {}
+	var map := parse(file.get_as_text())
+	if map.is_empty(): push_error("Map file invalid: " + path)
+	return map
+
+static func parse(text: String) -> Dictionary:
+	var parsed: Variant = JSON.parse_string(text)
+	if parsed is not Dictionary or not _valid(parsed): return {}
+	return parsed
+
+static func slot(map: Dictionary, seat: int, kind: String) -> Vector2i:
+	for start in map.starts:
+		if int(start.seat) == seat: return _cell(start.slots[kind])
+	return Vector2i(-1, -1)
+
+static func start_cell(map: Dictionary, seat: int) -> Vector2i:
+	for start in map.starts:
+		if int(start.seat) == seat: return _cell(start.cell)
+	return Vector2i(-1, -1)
+
+static func blocked_cells(map: Dictionary) -> Array[Vector2i]:
+	var cells: Array[Vector2i] = []
+	for y in map.cells.size():
+		var row: String = map.cells[y]
+		for x in row.length():
+			if row[x] != ".": cells.append(Vector2i(x, y))
+	return cells
+
+static func create(map: Dictionary, seats: Array[Dictionary]) -> RefCounted:
+	var sim = Simulation.new(blocked_cells(map), Vector2i(int(map.size[0]), int(map.size[1])))
+	sim._map = map
+	for seat in seats: sim.add_player(seat.seat, seat.credits, seat.controller)
+	for seat in seats:
+		var cell := start_cell(map, seat.seat)
+		sim.spawn(seat.seat, Vector2(cell) + Vector2(0.5, 0.5), "builder")
+	for source in map.sources: sim.add_supply_source(_cell(source.origin), int(source.boxes))
+	return sim
+
+static func _cell(pair: Array) -> Vector2i:
+	return Vector2i(int(pair[0]), int(pair[1]))
+
+static func _valid(map: Dictionary) -> bool:
+	for key in ["name", "notice", "size", "cells", "starts", "sources"]:
+		if not map.has(key): return false
+	if map.size is not Array or map.size.size() != 2: return false
+	var size := Vector2i(int(map.size[0]), int(map.size[1]))
+	if size.x <= 0 or size.y <= 0 or map.cells is not Array or map.cells.size() != size.y: return false
+	for row in map.cells:
+		if row is not String or row.length() != size.x: return false
+	for start in map.starts:
+		if not _start_valid(map, start, size): return false
+	for source in map.sources:
+		if not _open(map, size, _cell(source.origin), SOURCE_FOOTPRINT): return false
+	return true
+
+static func _start_valid(map: Dictionary, start: Dictionary, size: Vector2i) -> bool:
+	if not _open(map, size, _cell(start.cell), Vector2i.ONE): return false
+	for kind in KINDS:
+		if not start.slots.has(kind) or not _open(map, size, _cell(start.slots[kind]), Definitions.building(kind).footprint): return false
+	return true
+
+static func _open(map: Dictionary, size: Vector2i, origin: Vector2i, footprint: Vector2i) -> bool:
+	if origin.x < 0 or origin.y < 0 or origin.x + footprint.x > size.x or origin.y + footprint.y > size.y: return false
+	for y in range(origin.y, origin.y + footprint.y):
+		for x in range(origin.x, origin.x + footprint.x):
+			if map.cells[y][x] != ".": return false
+	return true

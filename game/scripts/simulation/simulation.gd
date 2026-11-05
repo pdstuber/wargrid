@@ -32,11 +32,15 @@ var _scan_chases: int = 0
 var _retaliations: int = 0
 var _allocation_calls: int = 0
 var _navigation_builds: int = 0
+var _map: Dictionary = {}
 
 func _init(blocked_cells: Array[Vector2i] = [], size: Vector2i = Navigation.SIZE) -> void:
 	_navigation = Navigation.new(blocked_cells, size)
 	for cell in _navigation.snapshot().blocked_cells:
 		_terrain_cells.append(Vector2i(cell[0],cell[1]))
+
+func map_data() -> Dictionary:
+	return _map
 
 func add_player(player: int, credits: int, controller: String = "human") -> Dictionary:
 	if controller != "human" and controller != "ai": return {"ok": false, "error": "Invalid controller"}

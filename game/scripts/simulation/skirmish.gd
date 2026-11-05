@@ -4,30 +4,35 @@ const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
 const Combat = preload("res://scripts/simulation/combat.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
+const MapData = preload("res://scripts/simulation/map_data.gd")
 
-const SIZE := Vector2i(48, 32)
 const START_CREDITS: int = 10000
 const DECISION_TICKS: int = 30
 const ATTACK_TICK: int = 5400
 const DEFENCE_RADIUS: float = 10.0
 const BUILD_ORDER: Array[String] = ["reactor", "depot", "barracks", "factory"]
-const LEFT_ORIGINS := {"reactor": Vector2i(8, 12), "depot": Vector2i(8, 5), "barracks": Vector2i(12, 12), "factory": Vector2i(12, 18)}
+const MAP_PATH := "res://data/maps/skirmish.json"
 const UNIT_FOR := {"barracks": "infantry", "factory": "tank"}
 const TARGET_CATEGORIES: Array = [["builder"], ["barracks", "factory"], ["depot"], ["reactor"]]
 
+static var _skirmish_map: Dictionary = {}
+
 static func origin(kind: String, player: int) -> Vector2i:
-	var left: Vector2i = LEFT_ORIGINS[kind]
-	if player == 1: return left
-	return Vector2i(SIZE.x - left.x - Definitions.building(kind).footprint.x, left.y)
+	return MapData.slot(_default_map(), player, kind)
+
+static func _default_map() -> Dictionary:
+	if _skirmish_map.is_empty(): _skirmish_map = MapData.load(MAP_PATH)
+	return _skirmish_map
+
+static func _slot(sim: RefCounted, kind: String, player: int) -> Vector2i:
+	var map: Dictionary = sim.map_data()
+	return MapData.slot(map if not map.is_empty() else _default_map(), player, kind)
 
 static func create(with_match: bool = true, second_controller: String = "ai") -> RefCounted:
-	var sim = Simulation.new([], SIZE)
-	sim.add_player(1, START_CREDITS)
-	sim.add_player(2, START_CREDITS, second_controller)
-	sim.spawn(1, Vector2(4.5, 14.5), "builder")
-	sim.spawn(2, Vector2(43.5, 14.5), "builder")
-	sim.add_supply_source(Vector2i(5, 3), 200)
-	sim.add_supply_source(Vector2i(40, 3), 200)
+	var seats: Array[Dictionary] = [
+		{"seat": 1, "team": 1, "controller": "human", "credits": START_CREDITS},
+		{"seat": 2, "team": 2, "controller": second_controller, "credits": START_CREDITS}]
+	var sim = MapData.create(_default_map(), seats)
 	if with_match: sim.start_match([1, 2] as Array[int])
 	return sim
 
@@ -74,7 +79,7 @@ static func _build(ctx: Dictionary, state: Dictionary, buildings: Array) -> void
 	for kind in BUILD_ORDER:
 		if buildings.any(func(building: Dictionary) -> bool: return building.kind == kind): continue
 		var cost: int = Definitions.building(kind).cost
-		var site: Vector2i = origin(kind, ctx.player)
+		var site: Vector2i = _slot(ctx.sim, kind, ctx.player)
 		if ctx.credits >= cost and _send(ctx, {"type": "build", "builder_id": builder, "building_kind": kind, "origin": [site.x, site.y]}): ctx.credits -= cost
 		return
 

@@ -16,3 +16,6 @@ func tick() -> int:
 func issue_command(command: Dictionary) -> Dictionary:
 	_lockstep.submit(command)
 	return {"ok": true, "error": ""}
+
+func map_data() -> Dictionary:
+	return _sim.map_data()

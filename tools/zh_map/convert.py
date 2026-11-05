@@ -239,7 +239,9 @@ def place(grid, raw):
     for o in raw["objects"]:
         if o["template"] in BOXES:
             c = (int(o["x"] // CELL), int(o["y"] // CELL))
-            sources.append(dict(origin=[c[0] - 1, c[1] - 1], boxes=BOXES[o["template"]]))
+            w, h = grid["size"]
+            origin = [min(max(c[0] - 1, 0), w - 3), min(max(c[1] - 1, 0), h - 3)]
+            sources.append(dict(origin=origin, boxes=BOXES[o["template"]]))
     source_cells = set().union(*(_box(s["origin"][0], s["origin"][1], 3) for s in sources)) if sources else set()
     seats = sorted((_seat_of(o), o) for o in raw["objects"] if _seat_of(o))
     starts = []

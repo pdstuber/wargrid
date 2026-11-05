@@ -3,15 +3,15 @@
 Plan: [M6 plan](../superpowers/plans/2026-11-05-m6-teams-full-map.md). Run rules: [milestone prompt](../milestone-prompt.md).
 
 ```text
-Resume record (updated 2026-11-05, after Task 2)
-Branch / base commit / working-tree state: m6-teams-map / 9ea11bc (main) / clean after the Task 2 commit
-Last green task / next incomplete task: Task 2 / Task 3 (not a stop gate; next gate after Task 4)
-Changed paths since last commit: none (Task 2 commit: tools/zh_map/, game/data/maps/ashfall.json, game/data/maps/NOTICE.md, CI line)
-Last command / cases / checks / failures / exit / marker: python3 tools/zh_map/test_zh_map.py, 10 tests OK; sh tools/run_tests.sh unchanged (222 cases, 104,554 checks, 0 failures before the spike merge; 225 cases, 104,562 checks, 0 failures on d2e27d5 (merge of spike-performance: +3 cases, +8 checks, test_profiler.gd))
-Known red case or blocker: none
-Approved decisions, pre-authorizations used, deferred gates: as before; Task 3 asserts Ashfall exactly 194 x 187; local commits per milestone prompt; no push/PR/merge/window/BM6 re-pin without approval
-Usage so far (python3 tools/session_usage.py <session files>): Task 1 session 37b12bfa, 50 requests before the review, max context 170,834, output 36,877 (opus); Task 2 not measured
-Next exact action: start Task 3 (Sonnet medium) on this branch; baseline is now 225 cases / 104,562 checks; Task 11 is the spike-performance version plus conditional 11i (user, 2026-11-05)
+Resume record (updated 2026-11-05, after Task 3)
+Branch / base commit / working-tree state: m6-teams-map / 34a8081 / clean after the Task 3 commit
+Last green task / next incomplete task: Task 3 / Task 4 (stop gate after Task 4: Opus gate review, then restart)
+Changed paths since last commit: none (Task 3 commit: map_data.gd, test_map.gd, skirmish.json, Skirmish.create via MapData, Simulation.map_data, SeatSim.map_data, converter source clamp, ashfall.json one source)
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 228 cases, 104,570 checks, 0 failures, exit 0, TESTS PASSED; test_skirmish_core_series unchanged (S1_CORE_SERIES pin held); python3 tools/zh_map/test_zh_map.py 11 tests OK
+Known red case or blocker: none. Pending: test_maps_load in the CI export job (Review Focus 1)
+Approved decisions, pre-authorizations used, deferred gates: as before; local commits per milestone prompt; no push/PR/merge/window/BM6 re-pin without approval
+Usage so far (python3 tools/session_usage.py <session files>): Task 3 not measured
+Next exact action: start Task 4 (Sonnet medium); baseline is 228 cases / 104,570 checks
 ```
 
 ## Task 0: baseline (2026-11-05, tree 9ea11bc + Task 0 test)
@@ -142,3 +142,7 @@ Route lengths in world units, source grid (10-unit samples) vs resampled (25-uni
 Route widths (Chebyshev clearance t, width >= 2t - 1 cells) for each start and its two nearest starts: 1-2 6, 1-8 3, 2-3 4, 3-4 4, 4-5 4, 5-6 4, 6-7 3, 7-8 7.
 
 Start metrics (resampled routes in world units; buildable = open cells in the 25 x 25 window): every start 625 buildable. Supply Chebyshev distance to the nearest source origin: seats 1-8 = 16, 17, 18, 15, 18, 16, 15, 18. Route length to the nearest other start: 1-2 1625, 2-3 1491, 3-4 1579, 5-6 1806, 6-7 1325, 7-8 1776 (full rows in the converter output). Task 5 picks `TeamMatch.SEATS` with these in view.
+
+## Task 3: map loader (2026-11-05, tree 34a8081 + Task 3)
+
+`sh tools/run_tests.sh`: 228 cases, 104,570 checks, 0 failures (+3 cases `test_map.gd`, +8 checks... net +8 vs 225/104,562). S1 core series pin unchanged. Rulings: `MapData.load` pushes an error on a bad file, but the red test uses `MapData.parse` (no push) because the runner treats any `ERROR:` line as failure. Converter bug found by the loader's bounds check: the Ashfall source at the south-east edge had origin (188, 185), whose 3x3 footprint ended outside the 187-row map. Converter now clamps source origins into the map (test `test_edge_source_stays_inside_map`); that source is now (188, 184). `SeatSim` forwards `map_data()` so lockstep bots keep working. Unused `Skirmish.SIZE` removed.

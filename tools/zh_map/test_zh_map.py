@@ -151,6 +151,12 @@ class PlaceTest(unittest.TestCase):
         self.assertEqual(out["sources"][0], {"origin": [15, 14], "boxes": 400})
 
 
+    def test_edge_source_stays_inside_map(self):
+        raw = raw_map(80, 30, starts=[(10, 15), (70, 15)], sources=[(16, 15), (79, 29)])
+        out = convert.convert(raw, "T", "n")
+        self.assertEqual(out["sources"][1]["origin"], [77, 27])
+
+
 class RouteTest(unittest.TestCase):
     def test_route_matrix_straight_and_diagonal(self):
         open_grid = [[True] * 20 for _ in range(20)]
