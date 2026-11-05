@@ -9,7 +9,7 @@ const Fixture = preload("res://tests/combat_fixture.gd")
 const EconomyFixture = preload("res://tests/economy_fixture.gd")
 
 func cases() -> Array[Callable]:
-	return [test_combat_definitions, test_health_snapshot_isolation, test_weapon_range_boundary, test_damage_armor_matrix, test_weapon_cooldown, test_guard_priority, test_attack_validation_atomic, test_combat_intent_order, test_orders_preserve_reload, test_acquisition_throttle, test_mutual_lethal_fire, test_target_removed_cleanup, test_destroyed_unit_no_actions, test_destroyed_producer_accounting, test_same_tick_attack_and_cancel, test_removed_target_rescans, test_controller_and_scan_radius, test_scan_acquires_beyond_weapon_range, test_scan_radius_by_controller, test_scan_radius_boundary, test_removed_chaser_clears_chase, test_scan_keeps_target_leaving_radius, test_attack_move_resumes_after_chase, test_scan_same_tick_orders, test_scan_includes_buildings]
+	return [test_combat_definitions, test_health_snapshot_isolation, test_weapon_range_boundary, test_damage_armor_matrix, test_weapon_cooldown, test_guard_priority, test_attack_validation_atomic, test_combat_intent_order, test_orders_preserve_reload, test_acquisition_throttle, test_mutual_lethal_fire, test_target_removed_cleanup, test_destroyed_unit_no_actions, test_destroyed_producer_accounting, test_same_tick_attack_and_cancel, test_removed_target_rescans, test_controller_and_scan_radius, test_scan_acquires_beyond_weapon_range, test_scan_radius_by_controller, test_scan_radius_boundary, test_removed_chaser_clears_chase, test_scan_keeps_target_leaving_radius, test_attack_move_resumes_after_chase, test_scan_same_tick_orders, test_scan_includes_buildings, test_human_guard_in_range_only, test_human_guard_holds_against_kiting, test_ai_guard_unchanged, test_human_attack_move_marches_in_range, test_human_attack_move_post_kill_rescan, test_human_attack_move_follows_retreat, test_rescan_same_tick_orders, test_human_attack_move_drops_target_out_of_range, test_human_attack_move_first_approach_has_no_leash, test_retarget_only_for_attack_move, test_missing_id_skipped, test_due_tick_death_skips_member, test_foreign_id_rejects, test_attack_move_mixed_selection, test_retaliate_trigger_distance, test_retaliate_joiners, test_retaliate_leash_and_return, test_retaliate_return_scan_and_rehit, test_retaliate_same_tick_cases, test_retaliate_go_home_queues_once]
 
 func test_combat_definitions(runner) -> bool:
 	runner.check(Definitions.profile("infantry") == {"max_hp": 180000, "armor": "human", "weapon": "rifle"}, "D1 infantry")
@@ -45,7 +45,7 @@ func test_health_snapshot_isolation(runner) -> bool:
 	var builder: int = sim.spawn(1, Vector2(4.5, 2.5), "builder")
 	var unit: Dictionary = Fixture.object(sim, rifle)
 	runner.check(unit.hp == 180000 and unit.max_hp == 180000, "H1 full infantry health")
-	runner.check(unit.combat == {"mode": "guard", "target_id": null, "goal": null, "next_fire_tick": 0, "shots_left": 3, "repath_tick": 0}, "H1 combat record")
+	runner.check(unit.combat == {"mode": "guard", "target_id": null, "goal": null, "next_fire_tick": 0, "shots_left": 3, "repath_tick": 0, "retarget": false, "until": 0}, "H1 combat record")
 	var worker: Dictionary = Fixture.object(sim, builder)
 	runner.check(worker.hp == 250000 and worker.combat == null, "H1 unarmed has no combat")
 	var tank: Dictionary = Fixture.object(sim, sim.spawn(2, Vector2(8.5, 2.5), "tank"))
@@ -196,11 +196,10 @@ func test_attack_validation_atomic(runner) -> bool:
 		["missing target", {"type": "attack", "entity_ids": [rifle], "target_id": 999}],
 		["bool target", {"type": "attack", "entity_ids": [rifle], "target_id": true}],
 		["enemy member", {"type": "attack", "entity_ids": [enemy_unit], "target_id": enemy}],
-		["unarmed member", {"type": "attack", "entity_ids": [rifle, worker], "target_id": enemy}],
+		["unarmed only", {"type": "attack", "entity_ids": [worker], "target_id": enemy}],
 		["friend target", {"type": "attack", "entity_ids": [rifle], "target_id": friend}],
 		["source target", {"type": "attack", "entity_ids": [rifle], "target_id": source}],
 		["collector target", {"type": "attack", "entity_ids": [rifle], "target_id": air}],
-		["attack_move unarmed", {"type": "attack_move", "entity_ids": [rifle, worker], "target": [9.5, 9.5]}],
 		["attack_move off map", {"type": "attack_move", "entity_ids": [rifle], "target": [99.5, 9.5]}],
 		["attack_move string", {"type": "attack_move", "entity_ids": [rifle], "target": ["a", 9.5]}],
 		["attack_move missing target", {"type": "attack_move", "entity_ids": [rifle]}],
@@ -219,6 +218,79 @@ func test_attack_validation_atomic(runner) -> bool:
 	for command in sim.snapshot().pending_commands:
 		if command.type == "attack_move": pending = command
 	runner.check(pending.get("entity_ids") == [rifle] and pending.get("target") == [9.5, 9.5], "V1 future command deep copied")
+	return true
+
+func _group_world() -> Dictionary:
+	var sim = Fixture.world()
+	return {"sim": sim, "a": sim.spawn(1, Vector2(2.5, 2.5), "infantry"), "b": sim.spawn(1, Vector2(2.5, 4.5), "infantry"),
+		"worker": sim.spawn(1, Vector2(2.5, 6.5), "builder"), "enemy": sim.spawn(2, Vector2(20.5, 2.5), "builder"),
+		"foe": sim.spawn(2, Vector2(20.5, 4.5), "infantry")}
+
+func _step(sim: RefCounted, ticks: int) -> void:
+	for i in ticks: sim.step()
+
+func test_missing_id_skipped(runner) -> bool:
+	for type in ["move", "stop", "attack", "attack_move"]:
+		var w: Dictionary = _group_world()
+		var sim = w.sim
+		var payload: Dictionary = {"type": type, "entity_ids": [w.a, 999, w.b]}
+		if type == "attack": payload.target_id = w.enemy
+		elif type != "stop": payload.target = [9.5, 9.5]
+		runner.check(Fixture.send(sim, payload).ok, "G1 " + type + " with a missing id accepted")
+		_step(sim, 2)
+		var applied: bool = _mode(sim, w.a).mode != "guard" or type == "stop"
+		if type == "move": applied = Fixture.object(sim, w.a).destination != null and Fixture.object(sim, w.b).destination != null
+		runner.check(applied and (type == "move" or _mode(sim, w.b).mode == _mode(sim, w.a).mode), "G1 " + type + " applies to the remaining ids")
+	var econ = EconomyFixture.make_world()
+	var collector: int = econ.spawn(1, Vector2(6.5, 4.5), "collector")
+	var source: int = econ.add_supply_source(Vector2i(10, 10), 5)
+	var gathered: Dictionary = Fixture.send(econ, {"type": "gather", "entity_ids": [collector, 999], "source_id": source})
+	runner.check(gathered.ok, "G1 gather with a missing id accepted " + gathered.error)
+	return true
+
+func test_due_tick_death_skips_member(runner) -> bool:
+	var w: Dictionary = _group_world()
+	var sim = w.sim
+	var tick: int = sim.snapshot().tick + 4
+	var seq: int = 1
+	runner.check(sim.issue_command({"tick": tick, "player": 1, "sequence": seq, "type": "attack_move", "entity_ids": [w.a, w.b], "target": [9.5, 9.5]}).ok, "G2 future order accepted")
+	_step(sim, 2)
+	sim.remove_object(w.a)
+	_step(sim, 3)
+	runner.check(_mode(sim, w.b).mode == "attack_move", "G2 live member gets the order after the other died")
+	var w2: Dictionary = _group_world()
+	var sim2 = w2.sim
+	runner.check(sim2.issue_command({"tick": sim2.snapshot().tick + 2, "player": 1, "sequence": 1, "type": "attack_move", "entity_ids": [w2.a], "target": [9.5, 9.5]}).ok, "G2 single-unit order accepted")
+	sim2.remove_object(w2.a)
+	var results: Array = []
+	for i in 3:
+		sim2.step()
+		results.append_array(sim2.snapshot().command_results)
+	runner.check(results.size() == 1 and not results[0].ok and results[0].error == "No units left", "G2 all members gone gives No units left " + str(results))
+	return true
+
+func test_foreign_id_rejects(runner) -> bool:
+	var w: Dictionary = _group_world()
+	_rejected(runner, w.sim, {"type": "move", "entity_ids": [w.a, w.foe], "target": [9.5, 9.5]}, "G3 foreign id move")
+	var result: Dictionary = Fixture.send(w.sim, {"type": "stop", "entity_ids": [w.a, w.foe]})
+	runner.check(not result.ok and result.error == "Missing entity or wrong owner", "G3 foreign id error text")
+	return true
+
+func test_attack_move_mixed_selection(runner) -> bool:
+	var w: Dictionary = _group_world()
+	var sim = w.sim
+	runner.check(Fixture.send(sim, {"type": "attack_move", "entity_ids": [w.a, w.worker], "target": [9.5, 9.5]}).ok, "G4 mixed attack_move accepted")
+	_step(sim, 2)
+	var builder: Dictionary = Fixture.object(sim, w.worker)
+	runner.check(builder.combat == null and builder.destination != null and _mode(sim, w.a).mode == "attack_move", "G4 builder moves plainly, rifle attack-moves")
+	var w2: Dictionary = _group_world()
+	runner.check(Fixture.send(w2.sim, {"type": "attack_move", "entity_ids": [w2.worker], "target": [9.5, 9.5]}).ok, "G4 builder alone accepted")
+	_step(w2.sim, 2)
+	runner.check(Fixture.object(w2.sim, w2.worker).destination != null, "G4 builder alone moves")
+	var w3: Dictionary = _group_world()
+	runner.check(Fixture.send(w3.sim, {"type": "attack", "entity_ids": [w3.a, w3.worker], "target_id": w3.enemy}).ok, "G4 attack with builder accepted")
+	_step(w3.sim, 2)
+	runner.check(_mode(w3.sim, w3.a).mode == "attack" and Fixture.object(w3.sim, w3.worker).combat == null, "G4 only the rifle attacks")
 	return true
 
 func _mode(sim: RefCounted, id: int) -> Dictionary:
@@ -520,20 +592,25 @@ func _scan_shot_within(sim: RefCounted, limit: int) -> bool:
 		if not _shots(sim).is_empty(): return true
 	return false
 
-func test_scan_acquires_beyond_weapon_range(runner) -> bool:
+func _ai_world() -> RefCounted:
 	var sim = Fixture.world()
+	sim.add_player(1, 0, "ai")
+	return sim
+
+func test_scan_acquires_beyond_weapon_range(runner) -> bool:
+	var sim = _ai_world()
 	var guard: int = sim.spawn(1, Vector2(2.5, 2.5), "infantry")
-	var builder: int = sim.spawn(2, Vector2(10.5, 2.5), "builder")
+	var builder: int = sim.spawn(2, Vector2(7.5, 2.5), "builder")
 	sim.step()
 	var unit: Dictionary = Fixture.object(sim, guard)
-	runner.check(unit.combat.target_id == builder and unit.combat.mode == "guard", "X1 guard acquires an enemy 8 cells away and stays in guard")
+	runner.check(unit.combat.target_id == builder and unit.combat.mode == "guard", "X1 ai guard acquires an enemy 5 cells away and stays in guard")
 	runner.check(unit.status != "idle", "X1 guard approaches the out-of-range target")
 	runner.check(_scan_shot_within(sim, 300), "X1 chasing guard later fires")
-	var far = Fixture.world()
+	var far = _ai_world()
 	var idle: int = far.spawn(1, Vector2(2.5, 2.5), "infantry")
-	far.spawn(2, Vector2(11.5, 2.5), "builder")
+	far.spawn(2, Vector2(8.5, 2.5), "builder")
 	far.step()
-	runner.check(Fixture.object(far, idle).combat.target_id == null, "X2 enemy 9 cells away is outside the 8.8 radius")
+	runner.check(Fixture.object(far, idle).combat.target_id == null, "X2 enemy 6 cells away is outside the ai 5.332 radius")
 	return true
 
 func test_scan_radius_by_controller(runner) -> bool:
@@ -552,18 +629,18 @@ func test_scan_radius_by_controller(runner) -> bool:
 	return true
 
 func test_scan_radius_boundary(runner) -> bool:
-	for case in [[11.29, true], [11.31, false]]:
-		var sim = Fixture.world()
+	for case in [[7.82, true], [7.84, false]]:
+		var sim = _ai_world()
 		var guard: int = sim.spawn(1, Vector2(2.5, 2.5), "infantry")
 		sim.spawn(2, Vector2(case[0], 2.5), "builder")
 		sim.step()
-		runner.check((Fixture.object(sim, guard).combat.target_id != null) == case[1], "R2 enemy at x=" + str(case[0]) + " (radius 8.8): acquired=" + str(case[1]))
+		runner.check((Fixture.object(sim, guard).combat.target_id != null) == case[1], "R2 enemy at x=" + str(case[0]) + " (ai radius 5.332): acquired=" + str(case[1]))
 	return true
 
 func test_removed_chaser_clears_chase(runner) -> bool:
-	var sim = Fixture.world()
+	var sim = _ai_world()
 	var guard: int = sim.spawn(1, Vector2(2.5, 2.5), "infantry")
-	sim.spawn(2, Vector2(10.5, 2.5), "builder")
+	sim.spawn(2, Vector2(7.5, 2.5), "builder")
 	sim.step()
 	runner.check(sim._chases.has(guard), "R3 chase started")
 	sim.remove_object(guard)
@@ -571,9 +648,9 @@ func test_removed_chaser_clears_chase(runner) -> bool:
 	return true
 
 func test_scan_keeps_target_leaving_radius(runner) -> bool:
-	var sim = Fixture.world()
+	var sim = _ai_world()
 	var guard: int = sim.spawn(1, Vector2(2.5, 2.5), "infantry")
-	var builder: int = sim.spawn(2, Vector2(10.5, 2.5), "builder")
+	var builder: int = sim.spawn(2, Vector2(7.5, 2.5), "builder")
 	sim.step()
 	runner.check(Fixture.object(sim, guard).combat.target_id == builder, "K1 chase started")
 	sim._entities[builder].position = [30.5, 2.5]
@@ -587,11 +664,11 @@ func test_scan_keeps_target_leaving_radius(runner) -> bool:
 	return true
 
 func test_attack_move_resumes_after_chase(runner) -> bool:
-	var sim = Fixture.world()
+	var sim = _ai_world()
 	var walker: int = sim.spawn(1, Vector2(2.5, 2.5), "infantry")
 	var goal := [2.5, 20.5]
 	Fixture.send(sim, {"type": "attack_move", "entity_ids": [walker], "target": goal})
-	var prey: int = sim.spawn(2, Vector2(10.5, 8.5), "builder")
+	var prey: int = sim.spawn(2, Vector2(7.5, 8.5), "builder")
 	sim._entities[prey].hp = 1
 	var killed: bool = false
 	for tick in range(600):
@@ -611,10 +688,10 @@ func test_attack_move_resumes_after_chase(runner) -> bool:
 	return true
 
 func _chasing_world() -> Array:
-	var sim = Fixture.world()
+	var sim = _ai_world()
 	var guard: int = sim.spawn(1, Vector2(2.5, 2.5), "infantry")
-	var builder: int = sim.spawn(2, Vector2(10.5, 2.5), "builder")
-	var other: int = sim.spawn(2, Vector2(2.5, 11.5), "builder")
+	var builder: int = sim.spawn(2, Vector2(7.5, 2.5), "builder")
+	var other: int = sim.spawn(2, Vector2(2.5, 7.5), "builder")
 	sim.step()
 	return [sim, guard, builder, other]
 
@@ -658,8 +735,387 @@ func test_scan_includes_buildings(runner) -> bool:
 	runner.check(placed.ok, "B1 foundation placement accepted")
 	EconomyFixture.steps(sim, 2)
 	sim.remove_object(1)
-	var scanner: int = sim.spawn(2, Vector2(6.0, 4.5), "infantry")
+	var scanner: int = sim.spawn(2, Vector2(11.0, 4.5), "infantry")
 	sim.step()
 	var foundation: Array = sim.snapshot().buildings
-	runner.check(not foundation.is_empty() and Fixture.object(sim, scanner).combat.target_id == foundation[0].id, "B1 an enemy foundation 8 cells away is acquired")
+	runner.check(not foundation.is_empty() and Fixture.object(sim, scanner).combat.target_id == foundation[0].id, "B1 an enemy foundation 3 cells away is acquired")
+	return true
+
+func test_human_guard_in_range_only(runner) -> bool:
+	var near = Fixture.world()
+	var guard: int = near.spawn(1, Vector2(2.5, 2.5), "infantry")
+	var builder: int = near.spawn(2, Vector2(6.5, 2.5), "builder")
+	near.step()
+	runner.check(Fixture.object(near, guard).combat.target_id == builder, "G1 human guard acquires an enemy at exactly weapon range")
+	runner.check(_scan_shot_within(near, 20), "G1 and fires")
+	runner.check(Fixture.object(near, guard).position == [2.5, 2.5], "G1 the shot needs no movement")
+	var far = Fixture.world()
+	var idle: int = far.spawn(1, Vector2(2.5, 2.5), "infantry")
+	far.spawn(2, Vector2(7.0, 2.5), "builder")
+	for tick in range(40): far.step()
+	var unit: Dictionary = Fixture.object(far, idle)
+	runner.check(unit.combat.target_id == null and unit.position == [2.5, 2.5] and unit.destination == null, "G2 human guard ignores an enemy 4.5 cells away and never approaches")
+	return true
+
+func test_human_guard_holds_against_kiting(runner) -> bool:
+	var sim = Fixture.world()
+	var guard: int = sim.spawn(1, Vector2(2.5, 2.5), "infantry")
+	var builder: int = sim.spawn(2, Vector2(6.0, 2.5), "builder")
+	sim.step()
+	runner.check(Fixture.object(sim, guard).combat.target_id == builder, "G3 target at 3.5 cells acquired")
+	sim._entities[builder].position = [7.5, 2.5]
+	sim.step()
+	var unit: Dictionary = Fixture.object(sim, guard)
+	runner.check(unit.combat.target_id == null and unit.position == [2.5, 2.5], "G3 target moved to 5 cells is dropped, the unit does not follow")
+	sim._entities[builder].position = [6.0, 2.5]
+	for tick in range(8): sim.step()
+	runner.check(Fixture.object(sim, guard).combat.target_id == builder, "G3 target back at 3.5 cells is re-acquired by the next cadence tick")
+	return true
+
+func test_ai_guard_unchanged(runner) -> bool:
+	var sim = _ai_world()
+	var guard: int = sim.spawn(1, Vector2(2.5, 2.5), "infantry")
+	var builder: int = sim.spawn(2, Vector2(7.3, 2.5), "builder")
+	sim.step()
+	var unit: Dictionary = Fixture.object(sim, guard)
+	runner.check(unit.combat.target_id == builder and unit.status != "idle", "G4 ai guard acquires an enemy 4.8 cells away and approaches")
+	return true
+
+func _died(sim: RefCounted, id: int) -> bool:
+	for event in sim.snapshot().combat_events:
+		if event.type == "death" and event.object_id == id: return true
+	return false
+
+func _kill_first(sim: RefCounted, id: int) -> bool:
+	for tick in range(200):
+		sim.step()
+		if _died(sim, id): return true
+	return false
+
+func _attack_move_world(first_x: float) -> Array:
+	var sim = Fixture.world()
+	var walker: int = sim.spawn(1, Vector2(2.5, 2.5), "infantry")
+	var first: int = sim.spawn(2, Vector2(first_x, 2.5), "builder")
+	sim._entities[first].hp = 1
+	Fixture.send(sim, {"type": "attack_move", "entity_ids": [walker], "target": [2.5, 20.5]})
+	return [sim, walker, first]
+
+func test_human_attack_move_marches_in_range(runner) -> bool:
+	var far = Fixture.world()
+	var walker: int = far.spawn(1, Vector2(2.5, 2.5), "infantry")
+	var off: int = far.spawn(2, Vector2(8.5, 10.5), "builder")
+	Fixture.send(far, {"type": "attack_move", "entity_ids": [walker], "target": [2.5, 20.5]})
+	var acquired: bool = false
+	for tick in range(1500):
+		far.step()
+		acquired = acquired or Fixture.object(far, walker).combat.target_id == off
+	var end: Dictionary = Fixture.object(far, walker)
+	runner.check(not acquired, "A1 human attack-move never acquires an enemy 6 cells off the route")
+	runner.check(Vector2(end.position[0], end.position[1]).distance_to(Vector2(2.5, 20.5)) < 1.0, "A1 and arrives")
+	var near = Fixture.world()
+	var marcher: int = near.spawn(1, Vector2(2.5, 2.5), "infantry")
+	var close: int = near.spawn(2, Vector2(6.0, 10.5), "builder")
+	Fixture.send(near, {"type": "attack_move", "entity_ids": [marcher], "target": [2.5, 20.5]})
+	var halted: bool = false
+	for tick in range(400):
+		near.step()
+		var unit: Dictionary = Fixture.object(near, marcher)
+		if unit.combat.target_id == close and unit.status == "idle": halted = true
+		if halted and not _shots(near).is_empty(): break
+	runner.check(halted and not _shots(near).is_empty(), "A2 an enemy 3.5 cells off the route halts the march and is fired on")
+	return true
+
+func test_human_attack_move_post_kill_rescan(runner) -> bool:
+	for case in [[8.5, true], [9.0, false]]:
+		var world: Array = _attack_move_world(5.5)
+		var sim = world[0]
+		runner.check(_kill_first(sim, world[2]), "A3 first enemy killed")
+		var unit: Dictionary = Fixture.object(sim, world[1])
+		var second: int = sim.spawn(2, Vector2(unit.position[0] + case[0], unit.position[1]), "builder")
+		sim.step()
+		unit = Fixture.object(sim, world[1])
+		if case[1]:
+			runner.check(unit.combat.target_id == second and unit.status != "idle", "A3 enemy " + str(case[0]) + " cells away is taken in the next plan and approached")
+			var fired: bool = false
+			for tick in range(300):
+				sim.step()
+				fired = fired or _shots(sim).any(func(e: Dictionary) -> bool: return e.target_id == second)
+				if fired: break
+			runner.check(fired, "A3 and fired on")
+		else:
+			runner.check(unit.combat.target_id == null and unit.combat.goal == [2.5, 20.5] and unit.destination != null, "A3 enemy " + str(case[0]) + " cells away is ignored and the march resumes")
+	return true
+
+func test_human_attack_move_follows_retreat(runner) -> bool:
+	var sim = Fixture.world()
+	var walker: int = sim.spawn(1, Vector2(2.5, 2.5), "infantry")
+	var prey: int = sim.spawn(2, Vector2(5.5, 2.5), "builder")
+	Fixture.send(sim, {"type": "attack_move", "entity_ids": [walker], "target": [2.5, 20.5]})
+	var dropped: bool = false
+	var started: bool = false
+	for tick in range(120):
+		sim.step()
+		started = started or not _shots(sim).is_empty()
+		if not started: continue
+		var unit: Dictionary = Fixture.object(sim, walker)
+		var gap: float = Vector2(unit.position[0], unit.position[1]).distance_to(Vector2(sim._entities[prey].position[0], sim._entities[prey].position[1]))
+		if tick % 8 == 0 and gap + 1.0 < 8.5: sim._entities[prey].position[0] += 1.0
+		dropped = dropped or unit.combat.target_id != prey
+	var end: Dictionary = Fixture.object(sim, walker)
+	runner.check(started and not dropped, "A4 attack-move keeps following a target that retreats inside the scan radius")
+	runner.check(end.combat.goal == [2.5, 20.5] and end.combat.mode == "attack_move", "A4 the combat goal is unchanged")
+	return true
+
+func test_rescan_same_tick_orders(runner) -> bool:
+	for order in ["move", "stop", "attack", "attack_move"]:
+		var world: Array = _attack_move_world(5.5)
+		var sim = world[0]
+		var walker: int = world[1]
+		var decoy: int = sim.spawn(2, Vector2(2.5, 2.5 + 4.5), "builder")
+		runner.check(_kill_first(sim, world[2]) and Fixture.object(sim, walker).combat.retarget, "A5 " + order + ": retarget set by the kill")
+		var payload := {"type": order, "entity_ids": [walker]}
+		if order == "move" or order == "attack_move": payload.target = [2.5, 20.5]
+		if order == "attack": payload.target_id = decoy
+		Fixture.send(sim, payload)
+		sim.step()
+		var unit: Dictionary = Fixture.object(sim, walker)
+		runner.check(not unit.combat.retarget, "A5 " + order + " replaces the pending retarget")
+		runner.check(unit.combat.target_id == (decoy if order == "attack" else null), "A5 " + order + " leaves no scanned target")
+	return true
+
+func test_human_attack_move_drops_target_out_of_range(runner) -> bool:
+	for case in [[9.5, false], [6.0, true]]:
+		var sim = Fixture.world()
+		var walker: int = sim.spawn(1, Vector2(2.5, 2.5), "infantry")
+		var prey: int = sim.spawn(2, Vector2(5.5, 2.5), "builder")
+		var other: int = sim.spawn(2, Vector2(2.5, 8.5), "builder")
+		Fixture.send(sim, {"type": "attack_move", "entity_ids": [walker], "target": [2.5, 20.5]})
+		runner.check(_scan_shot_within(sim, 40) and Fixture.object(sim, walker).combat.target_id == prey, "A6 the unit fires on the near enemy")
+		sim._entities[prey].position = [2.5 + case[0], 2.5]
+		sim.step()
+		var unit: Dictionary = Fixture.object(sim, walker)
+		if case[1]:
+			runner.check(unit.combat.target_id == prey, "A6 a target 6 cells away, inside the scan radius, is re-chased after the drop")
+		else:
+			runner.check(unit.combat.target_id == other or unit.combat.target_id == null, "A6 a target beyond the scan radius is not re-taken")
+			runner.check(unit.combat.target_id != prey and not unit.combat.retarget, "A6 the drop rescans in the same plan and clears the flag")
+	return true
+
+func test_human_attack_move_first_approach_has_no_leash(runner) -> bool:
+	var world: Array = _attack_move_world(5.5)
+	var sim = world[0]
+	runner.check(_kill_first(sim, world[2]), "A8 first enemy killed")
+	var unit: Dictionary = Fixture.object(sim, world[1])
+	var second: int = sim.spawn(2, Vector2(unit.position[0] + 8.0, unit.position[1]), "builder")
+	sim.step()
+	unit = Fixture.object(sim, world[1])
+	runner.check(unit.combat.target_id == second and unit.status != "idle", "A8 the unit approaches the enemy beyond weapon range")
+	sim._entities[second].position = [unit.position[0] + 20.0, unit.position[1]]
+	sim.step()
+	runner.check(Fixture.object(sim, world[1]).combat.target_id == second, "A8 the first approach keeps a target that left the scan radius")
+	return true
+
+func test_retarget_only_for_attack_move(runner) -> bool:
+	var guard = Fixture.world()
+	var shooter: int = guard.spawn(1, Vector2(2.5, 2.5), "infantry")
+	var first: int = guard.spawn(2, Vector2(5.5, 2.5), "builder")
+	guard._entities[first].hp = 1
+	runner.check(_kill_first(guard, first), "A7 guard kills its target")
+	guard.spawn(2, Vector2(8.5, 2.5), "builder")
+	for tick in range(16): guard.step()
+	var unit: Dictionary = Fixture.object(guard, shooter)
+	runner.check(not unit.combat.retarget and unit.combat.target_id == null and unit.position == [2.5, 2.5], "A7 a human guard never rescans wide or moves after a kill")
+	var world: Array = _attack_move_world(5.5)
+	runner.check(_kill_first(world[0], world[2]), "A7 attack-move kills its target")
+	world[0].step()
+	runner.check(not Fixture.object(world[0], world[1]).combat.retarget, "A7 retarget is cleared once served")
+	return true
+
+func _ret_world() -> Array:
+	var sim = Fixture.world()
+	sim.add_player(2, 0, "ai")
+	var victim: int = sim.spawn(1, Vector2(10.5, 10.5), "infantry")
+	var attacker: int = sim.spawn(2, Vector2(15.5, 10.5), "tank")
+	return [sim, victim, attacker]
+
+func _shot(attacker: int, victim: int) -> Array[Dictionary]:
+	return [{"attacker_id": attacker, "target_id": victim}] as Array[Dictionary]
+
+func _mode_of(sim: RefCounted, id: int) -> String:
+	return sim._entities[id].combat.mode
+
+func test_retaliate_trigger_distance(runner) -> bool:
+	for case in [[8.0, true], [8.01, false]]:
+		var world: Array = _ret_world()
+		var sim = world[0]
+		var far: int = sim.spawn(2, Vector2(10.5 + case[0], 10.5), "tank")
+		Combat._retaliate_trigger(sim, _shot(far, world[1]))
+		runner.check((_mode_of(sim, world[1]) == "retaliate") == case[1], "RT1 attacker at %s cells" % case[0])
+	var ai_victim: Array = _ret_world()
+	ai_victim[0]._players[1] = {"id": 1, "credits": 0, "controller": "ai"}
+	Combat._retaliate_trigger(ai_victim[0], _shot(ai_victim[2], ai_victim[1]))
+	runner.check(_mode_of(ai_victim[0], ai_victim[1]) == "guard", "RT1 ai-owned victim never triggers")
+	var kill: Array = _ret_world()
+	var neighbour: int = kill[0].spawn(1, Vector2(12.5, 10.5), "infantry")
+	kill[0]._entities[kill[1]].hp = 0
+	Combat._retaliate_trigger(kill[0], _shot(kill[2], kill[1]))
+	runner.check(_mode_of(kill[0], neighbour) == "retaliate" and _mode_of(kill[0], kill[1]) == "guard", "RT1 killing hit triggers the neighbour, not the dead victim")
+	runner.check(kill[0].retaliations() == 1 and kill[0]._entities[neighbour].combat.target_id == kill[2], "RT1 counter and target")
+	return true
+
+func test_retaliate_joiners(runner) -> bool:
+	var world: Array = _ret_world()
+	var sim = world[0]
+	var near: int = sim.spawn(1, Vector2(5.75, 10.5), "infantry")
+	var out: int = sim.spawn(1, Vector2(10.5, 5.6), "infantry")
+	var mover: int = sim.spawn(1, Vector2(9.5, 10.5), "infantry")
+	var attacking: int = sim.spawn(1, Vector2(9.5, 11.5), "infantry")
+	var builder: int = sim.spawn(1, Vector2(9.5, 9.5), "builder")
+	sim._entities[mover].status = "moving"
+	sim._entities[attacking].combat.mode = "attack"
+	Combat._retaliate_trigger(sim, _shot(world[2], world[1]))
+	runner.check(_mode_of(sim, world[1]) == "retaliate" and _mode_of(sim, near) == "retaliate", "RJ1 victim and unit at 4.75 join")
+	runner.check(_mode_of(sim, out) == "guard", "RJ1 unit at 4.9 does not")
+	runner.check(_mode_of(sim, mover) == "guard" and _mode_of(sim, attacking) == "attack" and sim._entities[builder].combat == null, "RJ1 moving, attacking and unarmed do not join")
+	runner.check(sim._entities[near].combat.goal == sim._entities[near].position and sim._entities[near].combat.until == sim.tick() + 300, "RJ1 home and leash tick")
+	var shop = Fixture.world()
+	shop.add_player(2, 0, "ai")
+	shop._buildings[900] = {"id": 900, "owner": 1, "kind": "barracks", "origin": [10, 10], "hp": 1000000, "max_hp": 1000000, "completed": true, "queue": []}
+	var inside: int = shop.spawn(1, Vector2(17.0, 11.0), "infantry")
+	var outside: int = shop.spawn(1, Vector2(11.0, 17.4), "infantry")
+	var raider: int = shop.spawn(2, Vector2(15.0, 11.0), "infantry")
+	Combat._retaliate_trigger(shop, _shot(raider, 900))
+	runner.check(_mode_of(shop, inside) == "retaliate" and _mode_of(shop, outside) == "guard", "RJ2 building radius 4.8 + half diagonal from the centre")
+	return true
+
+func _trigger_at(sim: RefCounted, victim: int, attacker: int) -> void:
+	Combat._retaliate_trigger(sim, _shot(attacker, victim))
+
+func test_retaliate_leash_and_return(runner) -> bool:
+	var sim = Fixture.world()
+	sim.add_player(2, 0, "ai")
+	var rifle: int = sim.spawn(1, Vector2(5.5, 5.5), "infantry")
+	var bait: int = sim.spawn(2, Vector2(10.0, 5.5), "builder")
+	_trigger_at(sim, rifle, bait)
+	var farthest: float = 0.0
+	for tick in range(900):
+		if _mode_of(sim, rifle) == "retaliate" and sim._entities[rifle].combat.target_id != null:
+			sim._entities[rifle].combat.until = sim.tick() + 1000
+			sim._entities[bait].position = [minf(sim._entities[rifle].position[0] + 5.0, 30.0), 5.5]
+		sim.step()
+		farthest = maxf(farthest, absf(sim._entities[rifle].position[0] - 5.5))
+		if _mode_of(sim, rifle) == "guard": break
+	var unit: Dictionary = sim._entities[rifle]
+	runner.check(farthest > 7.0 and farthest < 8.5, "RL1 chase stops at the 7.2 unit leash, farthest %s" % farthest)
+	runner.check(unit.combat.mode == "guard" and unit.combat.goal == null and absf(unit.position[0] - 5.5) < 1.5, "RL1 walks home and ends in guard")
+	var far = _ret_world()
+	var rifle2: int = far[1]
+	_trigger_at(far[0], rifle2, far[2])
+	far[0]._entities[far[2]].position = [28.5, 10.5]
+	far[0].step()
+	runner.check(far[0]._entities[rifle2].combat.target_id == null and _mode_of(far[0], rifle2) == "retaliate", "RL2 attacker beyond 16 cells from home: back home")
+	var timed = _ret_world()
+	_trigger_at(timed[0], timed[1], timed[2])
+	timed[0]._entities[timed[1]].combat.until = timed[0].tick() + 1
+	timed[0].step()
+	timed[0].step()
+	runner.check(timed[0]._entities[timed[1]].combat.target_id == null, "RL3 leash tick reached: back home")
+	return true
+
+func test_retaliate_return_scan_and_rehit(runner) -> bool:
+	var sim = Fixture.world()
+	sim.add_player(2, 0, "ai")
+	var rifle: int = sim.spawn(1, Vector2(5.5, 5.5), "infantry")
+	var bait: int = sim.spawn(2, Vector2(9.0, 5.5), "builder")
+	_trigger_at(sim, rifle, bait)
+	sim._entities[rifle].position = [13.5, 5.5]
+	sim._entities[bait].position = [28.5, 5.5]
+	sim.step()
+	runner.check(sim._entities[rifle].combat.target_id == null and sim._entities[rifle].status != "idle", "RS1 returning")
+	var enemy: int = sim.spawn(2, Vector2(5.5, 12.0), "builder")
+	var seen: bool = false
+	for tick in range(31):
+		sim.step()
+		seen = seen or sim._entities[rifle].combat.target_id == enemy
+	runner.check(seen, "RS1 enemy unit within 7.2 cells of home becomes the target")
+	var rehit = _ret_world()
+	_trigger_at(rehit[0], rehit[1], rehit[2])
+	rehit[0]._entities[rehit[1]].position = [14.5, 10.5]
+	rehit[0]._entities[rehit[2]].position = [28.5, 10.5]
+	rehit[0].step()
+	runner.check(rehit[0]._entities[rehit[1]].combat.target_id == null, "RS2 returning")
+	for tick in range(5): rehit[0].step()
+	var tank: int = rehit[0].spawn(2, Vector2(18.0, 11.0), "tank")
+	_trigger_at(rehit[0], rehit[1], tank)
+	var unit: Dictionary = rehit[0]._entities[rehit[1]]
+	runner.check(unit.combat.target_id == tank and unit.combat.until == rehit[0].tick() + 300 and rehit[0].retaliations() == 0, "RS2 hit while returning restarts the chase, leash refreshed")
+	var shop = Fixture.world()
+	var guard: int = shop.spawn(1, Vector2(5.5, 5.5), "infantry")
+	shop._entities[guard].combat.mode = "retaliate"
+	shop._entities[guard].combat.goal = [5.5, 5.5]
+	shop._entities[guard].position = [10.5, 5.5]
+	shop._entities[guard].status = "moving"
+	shop._entities[guard].destination = [5.5, 5.5]
+	shop._buildings[900] = {"id": 900, "owner": 2, "kind": "barracks", "origin": [4, 8], "hp": 1000000, "max_hp": 1000000, "completed": true, "queue": []}
+	for tick in range(31): shop.step()
+	runner.check(shop._entities[guard].combat.target_id == null, "RS3 an enemy building is never a return target")
+	return true
+
+func test_retaliate_same_tick_cases(runner) -> bool:
+	var expected := {"move": "move", "attack": "attack", "attack_move": "attack_move", "stop": "retaliate"}
+	for type in expected:
+		var world: Array = _ret_world()
+		var sim = world[0]
+		var payload := {"type": type, "entity_ids": [world[1]]}
+		if type == "move" or type == "attack_move": payload.target = [20.5, 20.5]
+		if type == "attack": payload.target_id = world[2]
+		Fixture.send(sim, payload)
+		sim.step()
+		runner.check(_mode_of(sim, world[1]) == expected[type], "RC1 %s due in the trigger tick leaves %s" % [type, expected[type]])
+	for type in ["move", "stop", "attack", "attack_move"]:
+		var world: Array = _ret_world()
+		var sim = world[0]
+		for tick in range(10):
+			if _mode_of(sim, world[1]) == "retaliate": break
+			sim.step()
+		runner.check(_mode_of(sim, world[1]) == "retaliate", "RC2 %s: unit retaliating after the first shot" % type)
+		var payload := {"type": type, "entity_ids": [world[1]]}
+		if type == "move" or type == "attack_move": payload.target = [20.5, 20.5]
+		if type == "attack": payload.target_id = world[2]
+		Fixture.send(sim, payload)
+		sim.step()
+		runner.check(_mode_of(sim, world[1]) == ("guard" if type == "stop" else type), "RC2 %s replaces retaliate" % type)
+	var gone: Array = _ret_world()
+	_trigger_at(gone[0], gone[1], gone[2])
+	gone[0]._entities[gone[1]].position = [15.5, 10.5]
+	gone[0]._entities[gone[2]].position = [25.5, 10.5]
+	gone[0].remove_object(gone[2])
+	runner.check(gone[0]._entities[gone[1]].combat.target_id == null and gone[0]._entities[gone[1]].status == "path_pending", "RC3 attacker removed: unit sent home")
+	gone[0].step()
+	var dead_order: Dictionary = Fixture.send(gone[0], {"type": "attack", "entity_ids": [gone[1]], "target_id": gone[2]})
+	gone[0].step()
+	runner.check(_mode_of(gone[0], gone[1]) == "retaliate" and gone[0]._entities[gone[1]].combat.target_id == null, "RC3 attack on a dead target changes nothing, no crash")
+	var joiner: Array = _ret_world()
+	_trigger_at(joiner[0], joiner[1], joiner[2])
+	joiner[0].remove_object(joiner[1])
+	joiner[0].step()
+	var swap: Array = _ret_world()
+	var second: int = swap[0].spawn(2, Vector2(14.0, 11.5), "infantry")
+	_trigger_at(swap[0], swap[1], swap[2])
+	swap[0].remove_object(swap[2])
+	_trigger_at(swap[0], swap[1], second)
+	swap[0].step()
+	runner.check(swap[0]._entities[swap[1]].combat.target_id == second, "RC4 target dies as a new hit lands: restarts against the new attacker")
+	return true
+
+func test_retaliate_go_home_queues_once(runner) -> bool:
+	var world: Array = _ret_world()
+	var sim = world[0]
+	_trigger_at(sim, world[1], world[2])
+	sim._entities[world[1]].status = "path_pending"
+	sim._path_queue.append(world[1])
+	sim.remove_object(world[2])
+	runner.check(sim._path_queue.count(world[1]) == 1, "RG1 going home replaces the queued path request")
+	sim.remove_object(world[1])
+	runner.check(not sim._path_queue.has(world[1]), "RG1 no stale id after the unit dies")
 	return true

@@ -40,4 +40,4 @@ static func armor_percent(armor: String, damage_type: String) -> int:
 static func initial_combat(kind: String) -> Variant:
 	var weapon_kind: String = profile(kind).get("weapon", "")
 	if weapon_kind.is_empty(): return null
-	return {"mode": "guard", "target_id": null, "goal": null, "next_fire_tick": 0, "shots_left": weapon(weapon_kind).clip_size, "repath_tick": 0}
+	return {"mode": "guard", "target_id": null, "goal": null, "next_fire_tick": 0, "shots_left": weapon(weapon_kind).clip_size, "repath_tick": 0, "retarget": false, "until": 0}

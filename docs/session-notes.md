@@ -4,6 +4,8 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 ## Session
 
+2026-11-05 **M5.1 implemented on `m5.1-findings`, not merged; user playtest done (2026-11-05: "I just did a playtest, the rest look good", plus a production-queue label fix `294e20e`).** Tasks 0-9 done except the playtest and the merge. Branch pushed to origin through `8588f85`; local-only after that: the merge of `main` (relay hardening `c5205da`) and later doc commits. Verified: suite 220 cases / 104,551 checks / 0 failures on the merged tree; CI run 42017965845 green on `8588f85` (relay, relay-lint, Linux, Windows, compare-replays); `compare_local_traces.sh` MATCHED (netplay 281); rendered benchmark rerun passed (open, dense); relay `go test -race`, lint, conformance 33 and all nine netplay scenarios on the merged tree. Opus review (4 important findings fixed) and `/ponytail-review` done. Not verified: hint ring, paused label and resume outline on screen. Evidence and rulings: [M5.1 verification](reference/m5.1-verification.md).
+
 2026-11-05 relay hardening **merged to `main`** (merge `58d13f2`, pushed) and deployed to fly `wargrid-relay-jvm`: drain on SIGINT/SIGTERM, per-room crash isolation, fail-fast config, `log/slog`. Verified on the final tree: `go test -race`, golangci-lint 0 issues, `run_conformance.sh` 33 cases, `run_netplay.sh` relay-term, relay-down and match passed; on fly the new binary logs `relay started … drain=3.5s` and the probe got `RELAY WELCOME`. Live drain on fly not yet observed (the machine was suspended at deploy). Detail below.
 
 2026-11-05 Zero Hour parity harness spike **merged to `main`** (`c7497cc`, since pushed): docs, `tools/zh_parity/` and one CI line, no game code; level 1 done by harness, decision list open ([spike](reference/zero-hour-parity-spike.md)). M5.1 (branch `m5.1-findings`, separate session) can measure Zero Hour mechanics such as retaliation with the [parity harness](reference/zero-hour-parity-harness.md).
@@ -14,6 +16,8 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 ## Pending user action
 
+- M5.1: approve push of the unpushed commits (CI reruns on the final tree) and the merge of `m5.1-findings` into `main`.
+- M5.1 parity item open: Zero Hour joined a Ranger at 70 units, Wargrid radius is 48; bisect with `retaliate_ranger` before any change. Return-home timing unmeasured.
 - M4.1 playtest findings (user, 2026-11-04) are open; to be tackled outside M5, see [M4.1 verification](reference/m4.1-verification.md). Deferred minors: BM7 lane pin, R5 other-command coverage.
 - `main` and `origin/main` at the relay hardening merge (`58d13f2`) plus doc follow-ups. Local branches `gpl-license`, `m5-online`, `spike-relay-improvements` (also on origin) and older milestone branches are merged and can be deleted (not done).
 - Global agent rules: grok removed from the review route in `~/dotfiles/config/agents/AGENTS.md` (user, 2026-11-05); that dotfiles change is uncommitted and is the user's to commit. `grok` can be uninstalled.
@@ -29,12 +33,12 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 - Source/config-supported economy and combat values remain RETAIL_UNVERIFIED; departures stay explicit in reference/design notes.
 - AI moods (Sleep, Alert 1.1, Aggressive 1.5) deferred to M8 bots (user, 2026-11-03).
 - Retail map sizes vs our 48×32 cells: check before choosing the M6 full-scale map.
-- Runtime parity harness: adopted 2026-11-05 ([spike](reference/zero-hour-parity-spike.md)); counts as level 1 with the source-build caveat; open: its decision list and the Chinook supply scenario.
+- Runtime parity harness: adopted 2026-11-05 ([spike](reference/zero-hour-parity-spike.md)); counts as level 1 with the source-build caveat; open: its decision list and the Chinook supply scenario. Decided 2026-11-05: M5.1 adds a retaliation parity scenario at Task 9; the combat-feel list (edge-to-edge range, Ranger cadence 4/4/22, tank splash, start delay and turning) and the Chinook scenario go to M6 planning, because range and cadence change every weapon number and would invalidate the skirmish and netplay pins and BM6 again.
 - Retail `ForceIdleMSEC` INI value unread (code default 1 frame); `stop` re-acquire delay uses the existing 15-tick stagger instead.
 
 ## Next action
 
-**Next session:** M5.1 kickoff from root `prompt.txt` when the user starts it. The design was approved and the plan written on 2026-11-05; no code has changed. Still open separately: the repeat macOS-vs-Windows friend match on the Go relay. Relay hardening (drain, crash isolation) is done and deployed; M9 owns its next changes (multi-machine drain, rate limits, bounded queues, reconnect).
+**Next session:** M5.1 push, CI and merge to `main` on approval. Then M6 planning (it also takes the combat-feel parity list). Still open separately: the repeat macOS-vs-Windows friend match on the Go relay.
 
 **M4 complete and merged into local `main` (2026-11-03).** Evidence: [M4 verification](reference/m4-verification.md). Process changes adopted on `main`: [milestone prompt](milestone-prompt.md), [workflow retrospective](reference/2026-11-03-milestone-workflow-retrospective.md). Roadmap re-aimed at the long-term target (3v3 online with friends against bots, USA/China/GLA, Twilight-Flame-like full-scale map): blueprint §1, §7, §11, §14.
 

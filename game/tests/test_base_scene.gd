@@ -5,7 +5,7 @@ const Fixture = preload("res://tests/economy_fixture.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 
 func cases() -> Array[Callable]:
-	return [test_base_ready,test_placement_input,test_production_ui,test_context_orders,test_execution_feedback,test_preview_hover_cost]
+	return [test_base_ready,test_placement_input,test_production_ui,test_context_orders,test_execution_feedback,test_preview_hover_cost,test_resume_status,test_queue_label]
 
 func setup(runner):
 	var main = Base.instantiate()
@@ -218,4 +218,31 @@ func test_preview_hover_cost(runner) -> bool:
 	key(main,KEY_1)
 	runner.check(not main.get_node("WorldView")._preview_cells.is_empty(),"Bs6 re-entering placement redraws the preview")
 	main.free()
+	return true
+
+func test_resume_status(runner) -> bool:
+	var main = await setup(runner)
+	main.simulation = Fixture.make_world()
+	Fixture.send(main.simulation,{"type":"build","builder_id":1,"building_kind":"reactor","origin":[8,4]})
+	main.simulation.step()
+	Fixture.send(main.simulation,{"type":"stop","entity_ids":[1]})
+	main.simulation.step()
+	main.selected_ids.assign([1])
+	main._refresh()
+	var status: Label = main.get_node("HUD/Status")
+	hover(main,Iso.world_to_plane(Vector2(8.5,4.5)))
+	main._refresh()
+	runner.check(status.text.contains("Right-click: resume"),"H6 resume hint shown while hovering")
+	var economy: Control = main.get_node("HUD/Economy")
+	runner.check(economy.position.y >= status.position.y + status.get_minimum_size().y,"H6 buttons below the resume line")
+	hover(main,Iso.world_to_plane(Vector2(20.5,20.5)))
+	main._refresh()
+	runner.check(not status.text.contains("Right-click: resume"),"H6 hint gone off the building")
+	main.free()
+	return true
+
+func test_queue_label(runner) -> bool:
+	var BaseMain = load("res://scripts/base_main.gd")
+	runner.check(BaseMain.queue_label({"id":10,"kind":"tank","work":270000}) == "Cancel tank (90%)","Bs5 started entry shows percent, no id or raw work")
+	runner.check(BaseMain.queue_label({"id":12,"kind":"tank","work":0}) == "Cancel tank (queued)","Bs5 unstarted entry shows queued")
 	return true

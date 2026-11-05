@@ -9,6 +9,9 @@ var _selected_ids: Array[int] = []
 var _last_points: Dictionary = {}
 var _inspected_id: int = -1
 var local_player: int = 1
+var _hints: Array[Dictionary] = []
+var _hovered_id: int = -1
+const HINT_TICKS: int = 40
 const OwnerColors := {1: Color("376eac"), 2: Color("b04a3a")}
 
 static func owner_color(owner: int) -> Color:
@@ -20,9 +23,44 @@ static func hp_fraction(hp: int, max_hp: int) -> float:
 func set_state(state: Dictionary, selected_ids: Array[int]) -> void:
 	_state = state.duplicate(true)
 	_selected_ids = selected_ids.duplicate()
+	_prune_hints()
 	_state.get("entities", []).sort_custom(_draw_before)
 	_remember_points()
 	queue_redraw()
+
+func add_hint(point: Vector2, tick: int) -> void:
+	_hints.append({"point": point, "tick": tick})
+	queue_redraw()
+
+func hints() -> Array:
+	_prune_hints()
+	return _hints.duplicate()
+
+func _prune_hints() -> void:
+	var tick: int = _state.get("tick", 0)
+	_hints = _hints.filter(func(hint: Dictionary) -> bool: return tick < hint.tick + HINT_TICKS)
+
+func hovered_id() -> int:
+	return _hovered_id
+
+func set_hovered(id: int) -> void:
+	if id != _hovered_id: queue_redraw()
+	_hovered_id = id
+
+static func building_label(building: Dictionary) -> String:
+	var definition: Dictionary = Definitions.building(building.kind)
+	if building.completed: return "P%d %s" % [building.owner,building.kind]
+	var label: String = "P%d %s %d%%" % [building.owner,building.kind,building.work * 100 / (definition.ticks * 1000)]
+	return label + " paused" if building.builder_id == null else label
+
+func resume_candidate() -> int:
+	var builders: int = 0
+	for unit in _state.get("entities", []):
+		if _selected_ids.has(unit.id) and unit.owner == local_player and unit.kind == "builder": builders += 1
+	if builders != 1 or _selected_ids.size() != 1: return -1
+	for building in _state.get("buildings", []):
+		if building.id == _hovered_id and building.owner == local_player and not building.completed and building.builder_id == null: return building.id
+	return -1
 
 func _vehicle_bounds(unit: Dictionary) -> Rect2:
 	var point := Vector2(unit.position[0], unit.position[1])
@@ -61,8 +99,7 @@ func _draw() -> void:
 		if definition.is_empty(): continue
 		var tint: Color = owner_color(building.owner)
 		_draw_footprint(building.origin,definition.footprint,tint.lerp(Color("687b8c"),0.4) if building.completed else tint.lerp(Color("887966"),0.6),_selected_ids.has(building.id))
-		var label: String = "P%d %s" % [building.owner,building.kind] if building.completed else "P%d %s %d%%" % [building.owner,building.kind,building.work * 100 / (definition.ticks * 1000)]
-		_draw_text(building.origin,label)
+		_draw_text(building.origin,building_label(building))
 		_draw_health(Iso.world_to_plane(Vector2(building.origin[0],building.origin[1]) + Vector2(definition.footprint) / 2.0) + Vector2(-16,-26),building,_selected_ids.has(building.id))
 	for cell in _preview_cells:
 		_draw_footprint([cell.x,cell.y],Vector2i.ONE,Color(0.2,0.9,0.3,0.55) if _preview_valid else Color(0.9,0.2,0.2,0.55),false)
@@ -80,7 +117,9 @@ func _draw() -> void:
 			draw_line(point - Vector2(0, 6), point + Vector2(0, 6), Color("8cff87"), 2.0)
 	_draw_focus()
 	_draw_inspected()
+	_draw_resume_outline()
 	_draw_rally()
+	_draw_hints()
 	_draw_cues()
 
 func _draw_health(top_left: Vector2, object: Dictionary, selected: bool) -> void:
@@ -121,6 +160,21 @@ func _draw_inspected() -> void:
 		var polygon := _cell_polygon(Vector2(building.origin[0], building.origin[1]), Vector2(definition.footprint))
 		polygon.append(polygon[0])
 		draw_polyline(polygon, Color("ff3b30"), 2.0)
+
+func _draw_resume_outline() -> void:
+	var id: int = resume_candidate()
+	if id == -1: return
+	for building in _state.get("buildings", []):
+		if building.id != id: continue
+		var polygon := _cell_polygon(Vector2(building.origin[0], building.origin[1]), Vector2(Definitions.building(building.kind).footprint))
+		polygon.append(polygon[0])
+		draw_polyline(polygon, Color("8cff87"), 2.0)
+
+func _draw_hints() -> void:
+	for hint in _hints:
+		var age: float = float(_state.tick - hint.tick) / HINT_TICKS
+		var center: Vector2 = Iso.world_to_plane(hint.point)
+		draw_arc(center, 14.0 * age + 4.0, 0.0, TAU, 16, Color("8cff87"), 2.0)
 
 func rally_marker() -> Array:
 	for building in _state.get("buildings", []):

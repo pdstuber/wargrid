@@ -8,7 +8,7 @@ const Iso = preload("res://scripts/presentation/isometric.gd")
 const Fixture = preload("res://tests/economy_fixture.gd")
 
 func cases() -> Array[Callable]:
-	return [test_skirmish_ready_and_tick, test_combat_context_input, test_match_hud_and_restart, test_combat_view, test_hud_layout_and_focus, test_hud_build_line, test_enemy_selection_read_only, test_rally_input_and_marker, test_supply_pile_labels]
+	return [test_skirmish_ready_and_tick, test_combat_context_input, test_match_hud_and_restart, test_combat_view, test_hud_layout_and_focus, test_hud_build_line, test_enemy_selection_read_only, test_rally_input_and_marker, test_supply_pile_labels, test_attack_move_hint_and_rejection, test_selection_prunes_dead]
 
 func _setup(runner):
 	var main = Scene.instantiate()
@@ -70,7 +70,7 @@ func test_combat_context_input(runner) -> bool:
 	main.selected_ids.assign([1, ids.infantry])
 	var pending: int = _pending(main)
 	helper.pointer(main, enemy_point, MOUSE_BUTTON_RIGHT, true)
-	runner.check(_pending(main) == pending and _pending(main, "move") == 0 and not main._error.is_empty(), "K3 an unarmed member rejects the whole click without a move")
+	runner.check(_pending(main) == pending + 1 and _pending(main, "move") == 0 and main._error.is_empty(), "K3 an unarmed member no longer rejects the click")
 	main.selected_ids.assign([ids.infantry, ids.tank])
 	pending = _pending(main)
 	helper.key(main, KEY_A)
@@ -315,3 +315,29 @@ func _right_click(main, plane: Vector2) -> InputEventMouseButton:
 	event.button_index = MOUSE_BUTTON_RIGHT
 	event.pressed = true
 	return event
+
+func test_attack_move_hint_and_rejection(runner) -> bool:
+	var helper = BaseScene.new()
+	var main = await _setup(runner)
+	var ids: Dictionary = _arena(main)
+	var view = main.get_node("WorldView")
+	helper.key(main, KEY_A)
+	helper.pointer(main, Iso.world_to_plane(Vector2(20.5, 12.5)), MOUSE_BUTTON_LEFT, true)
+	helper.pointer(main, Iso.world_to_plane(Vector2(20.5, 12.5)), MOUSE_BUTTON_LEFT, false)
+	runner.check(view.hints().size() == 1, "H3 attack-move click leaves one hint")
+	main.selected_ids.assign([ids.infantry])
+	var before: int = view.hints().size()
+	main.simulation.remove_object(ids.infantry)
+	helper.pointer(main, Iso.world_to_plane(Vector2(8.5, 8.5)), MOUSE_BUTTON_RIGHT, true)
+	runner.check(view.hints().size() == before + 1, "H3 move on a dead unit still shows the click")
+	main.free()
+	return true
+
+func test_selection_prunes_dead(runner) -> bool:
+	var main = await _setup(runner)
+	var ids: Dictionary = _arena(main)
+	main.simulation.remove_object(ids.tank)
+	main._refresh()
+	runner.check(main.selected_ids == [ids.infantry], "H4 selection keeps only live ids, got " + str(main.selected_ids))
+	main.free()
+	return true

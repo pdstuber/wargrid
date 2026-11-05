@@ -132,6 +132,8 @@ func _move(target: Vector2) -> void:
 
 func _refresh() -> void:
 	var state: Dictionary = simulation.snapshot()
+	var live: Array = state.entities.map(func(unit: Dictionary) -> int: return unit.id)
+	selected_ids.assign(selected_ids.filter(func(id: int) -> bool: return live.has(id)))
 	_view.set_state(state, _view_selection())
 	_refresh_hud(state)
 
@@ -160,7 +162,16 @@ func _view_selection() -> Array[int]:
 func is_selecting() -> bool:
 	return _selecting
 
+func _show_hint(payload: Dictionary) -> void:
+	var point: Variant = _hint_point(payload)
+	if point != null: _view.add_hint(point, simulation.tick())
+
+func _hint_point(payload: Dictionary) -> Variant:
+	if payload.type in ["move", "attack_move", "set_rally"]: return Vector2(payload.target[0], payload.target[1])
+	return null
+
 func _submit(payload: Dictionary) -> void:
+	_show_hint(payload)
 	var state: Dictionary = simulation.snapshot()
 	var command: Dictionary = payload.duplicate(true)
 	command.tick = command.get("tick",state.tick)

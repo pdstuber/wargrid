@@ -238,6 +238,24 @@ def supply():
     return run
 
 
+def retaliate(gap=140):
+    """Crusader hits one idle enemy Ranger; do the others join, how far do they chase, do they walk home?"""
+    def run(g):
+        x, y = g.clear_strip(gap + 160, width=200)
+        aid = g.spawn("AmericaTankCrusader", x + 20, y)
+        vx = x + 20 + gap
+        # (dx, dy) from the victim: two inside the Wargrid joiner radius (48 units), one just outside, one far.
+        offsets = ((0, 0), (0, 25), (0, -25), (0, 70), (0, -140))
+        tids = [g.spawn("AmericaInfantryRanger", vx + dx, y + dy, angle=math.pi, owner=g.enemy) for dx, dy in offsets]
+        rows = []
+        g.record([aid] + tids, 5, rows)
+        g.command("attack_target", [aid], targetId=tids[0])
+        meta = {"order_frame": g.frame, "unit": aid, "victim": tids[0], "group": tids[1:], "offsets": offsets}
+        g.record([aid] + tids, 900, rows)
+        return rows, meta
+    return run
+
+
 SCENARIOS = {
     "move_ranger": move("AmericaInfantryRanger", 300),
     "move_crusader": move("AmericaTankCrusader", 400),
@@ -253,6 +271,7 @@ SCENARIOS = {
     "duel_crusader": fire("AmericaTankCrusader", "AmericaTankCrusader", 140, 1200),
     "splash_crusader": splash(),
     "supply_chinook": supply(),
+    "retaliate_ranger": retaliate(),
 }
 # name -> (attacker, target, gap that fires, gap that does not)
 REACH = {

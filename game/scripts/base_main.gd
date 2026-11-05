@@ -25,6 +25,12 @@ func _create_simulation() -> RefCounted:
 func _placement_kinds() -> Dictionary:
 	return {KEY_1:"reactor",KEY_2:"depot",KEY_3:"factory"}
 
+func _hint_point(payload: Dictionary) -> Variant:
+	if payload.type != "resume_build": return super._hint_point(payload)
+	var building: Dictionary = _building(simulation.snapshot(),payload.building_id)
+	if building.is_empty(): return null
+	return Vector2(building.origin[0],building.origin[1]) + Vector2(Definitions.building(building.kind).footprint) / 2.0
+
 func _build_hint() -> String:
 	return "1/2/3 build"
 
@@ -62,7 +68,8 @@ func _refresh_hud(state: Dictionary) -> void:
 	var building: Dictionary = _building(state,selected_building_id)
 	var detail: String = "Units: " + str(selected_ids)
 	if not building.is_empty(): detail = "%s #%d | Work %d/%d" % [building.kind,building.id,building.work,Definitions.building(building.kind).ticks * 1000]
-	_status.text = "Credits: %d | Power: %d/%d | Tick: %d\n%s | Place: %s\n%s | Right: context/move | E: produce | Esc: cancel\n%s" % [player.credits,player.power_supply,player.power_demand,state.tick,detail,_placement_kind,_build_hint(),_error]
+	var resume: String = "Right-click: resume\n" if _view.resume_candidate() != -1 else ""
+	_status.text = "Credits: %d | Power: %d/%d | Tick: %d\n%s | Place: %s\n%s | Right: context/move | E: produce | Esc: cancel\n%s%s" % [player.credits,player.power_supply,player.power_demand,state.tick,detail,_placement_kind,_build_hint(),resume,_error]
 	$HUD/Economy/Produce.visible = not building.is_empty() and building.completed and not _production_kind(building).is_empty()
 	$HUD/Economy/CancelBuild.visible = not building.is_empty() and not building.completed
 	_refresh_queue(building.get("queue",[]))
@@ -78,7 +85,11 @@ func _refresh_queue(queue: Array) -> void:
 			button.name = str(entry.id)
 			button.pressed.connect(_cancel_entry.bind(entry.id))
 			$HUD/Economy/Queue.add_child(button)
-		button.text = "Cancel #%d %s (%d/%d)" % [entry.id,entry.kind,entry.work,Definitions.unit(entry.kind).ticks * 1000]
+		button.text = queue_label(entry)
+
+static func queue_label(entry: Dictionary) -> String:
+	if entry.work == 0: return "Cancel %s (queued)" % entry.kind
+	return "Cancel %s (%d%%)" % [entry.kind,entry.work * 100 / (Definitions.unit(entry.kind).ticks * 1000)]
 
 func pan_camera(direction: Vector2, delta: float) -> void:
 	if _placement_kind.is_empty(): super.pan_camera(direction,delta)
@@ -115,6 +126,11 @@ func _update_preview(plane: Vector2) -> void:
 	_view.set_build_preview(Construction.cells(_placement_kind,_preview_origin),preview.ok)
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion:
+		var hovered: int = _view.pick_object(_view.make_canvas_position_local(event.position))
+		if hovered != _view.hovered_id():
+			_view.set_hovered(hovered)
+			_refresh()
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.physical_keycode == KEY_B: return
 		var kind: String = _placement_kinds().get(event.physical_keycode,"")

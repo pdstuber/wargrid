@@ -6,7 +6,7 @@ const Fixture = preload("res://tests/economy_fixture.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 
 func cases() -> Array[Callable]:
-	return [test_pick, test_box_and_order,test_economy_picking,test_build_preview]
+	return [test_pick, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint]
 
 func test_pick(runner) -> bool:
 	var view = View.new()
@@ -92,5 +92,51 @@ func test_build_preview(runner) -> bool:
 	selected.clear()
 	runner.check(main.selected_ids == [1],"V4 hook selection copied")
 	main.free()
+	view.free()
+	return true
+
+func _tick_state(sim, ticks: int) -> Dictionary:
+	for i in ticks: sim.step()
+	return sim.snapshot()
+
+func test_click_hint_lifetime(runner) -> bool:
+	var view = View.new()
+	var sim = Simulation.new()
+	sim.spawn(1, Vector2(2.5, 2.5))
+	var state: Dictionary = sim.snapshot()
+	view.set_state(state, [])
+	view.add_hint(Vector2(5, 5), state.tick)
+	view.set_state(state, [])
+	runner.check(view.hints().size() == 1, "H1 one click is one hint, stalled tick keeps exactly one")
+	view.set_state(_tick_state(sim, 39), [])
+	runner.check(view.hints().size() == 1, "H1 hint alive at +39")
+	view.set_state(_tick_state(sim, 1), [])
+	runner.check(view.hints().is_empty(), "H1 hint gone at +40")
+	view.free()
+	return true
+
+func test_resume_hint(runner) -> bool:
+	var view = View.new()
+	var sim = Fixture.make_world()
+	Fixture.send(sim, {"type":"build","builder_id":1,"building_kind":"reactor","origin":[8,4]})
+	sim.step()
+	Fixture.send(sim, {"type":"stop","entity_ids":[1]})
+	sim.step()
+	var state: Dictionary = sim.snapshot()
+	var building: Dictionary = state.buildings[0]
+	runner.check(building.builder_id == null, "H2 fixture: foundation has no builder")
+	view.set_state(state, [1])
+	view.set_hovered(building.id)
+	runner.check(view.resume_candidate() == building.id, "H2 one builder selected over an unattended foundation")
+	runner.check(View.building_label(building).ends_with(" paused"), "H2 label ends paused, got " + View.building_label(building))
+	view.set_state(state, [])
+	runner.check(view.resume_candidate() == -1, "H2 no builder selected")
+	var second: int = sim.spawn(1, Vector2(5.5, 5.5), "builder")
+	state = sim.snapshot()
+	view.set_state(state, [1, second])
+	runner.check(view.resume_candidate() == -1, "H2 two builders selected")
+	state.buildings[0].builder_id = 1
+	view.set_state(state, [1])
+	runner.check(view.resume_candidate() == -1 and not View.building_label(state.buildings[0]).ends_with(" paused"), "H2 attached builder: no candidate, no paused")
 	view.free()
 	return true

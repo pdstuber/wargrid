@@ -225,6 +225,7 @@ func test_attack_move_resume_keeps_slots(runner) -> bool:
 
 func test_guard_retarget(runner) -> bool:
 	var sim = Fixture.world()
+	sim.add_player(1, 0, "ai")
 	var guard: int = sim.spawn(1, Vector2(10.5, 10.5), "infantry")
 	var leaving: int = sim.spawn(2, Vector2(13.5, 10.5), "builder")
 	var staying: int = sim.spawn(2, Vector2(10.5, 13.9), "builder")
@@ -286,8 +287,9 @@ func test_unreachable_scan_target_dropped(runner) -> bool:
 	for y in range(32):
 		wall.append(Vector2i(3, y))
 	var sim = Simulation.new(wall, Vector2i(32, 32))
+	sim.add_player(1, 0, "ai")
 	var walker: int = sim.spawn(1, Vector2(2.5, 2.5), "infantry")
-	sim.spawn(2, Vector2(8.5, 2.5), "builder")
+	sim.spawn(2, Vector2(7.5, 2.5), "builder")
 	var goal := [2.5, 20.5]
 	Fixture.send(sim, {"type": "attack_move", "entity_ids": [walker], "target": goal})
 	var stuck: bool = false

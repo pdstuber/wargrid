@@ -4,7 +4,7 @@ const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 const ScriptedHuman = preload("res://scripts/simulation/scripted_human.gd")
 
 const TICK_LIMIT: int = 10800
-const TERMINAL_TICK: int = 10667
+const TERMINAL_TICK: int = 9938
 const WINNER: int = 1
 
 func cases() -> Array[Callable]:
