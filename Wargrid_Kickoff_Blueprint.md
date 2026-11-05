@@ -543,7 +543,7 @@ Today's 1v1 skirmish played between two machines: deterministic lockstep with a 
 
 **M5 status (2026-11-04):** implemented and merged to `main` (`55beae4`); the macOS-Windows match ran on the pre-pacing-fix build and the repeat on the fixed build is a user-accepted deferral, to be played later. Findings: [M5 findings](docs/reference/m5-online.md).
 
-### M5.1 — Fixes from the friend-match playtest (planned)
+### M5.1 — Fixes from the friend-match playtest (implemented on `m5.1-findings`, user playtest pending)
 
 Fixes the four notes from the 2026-11-04 friend match:
 
