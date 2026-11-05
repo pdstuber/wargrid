@@ -65,7 +65,7 @@
 - Unchanged and centre-based: the AI scan radius (vision × modifier), retaliation distance and friends radius, leash, and every movement distance.
 - `_nearest`'s grid search bounds grow by `radius(attacker) + max radius` so no candidate in edge range is skipped.
 - Rifle: `delay_ticks` 4, `clip_size` 3, `reload_ticks` 22.
-- Cannon splash: step function, no falloff, victims by `centre distance − r_victim`, mask from INI `RadiusDamageAffects`. The primary victim always takes primary damage.
+- Cannon splash: step function, no falloff, victims by `centre distance − r_victim`, mask from INI `RadiusDamageAffects`. Against a vehicle or building target the impact is the target and the primary victim always takes primary damage (INI radius 0.2). **Against an infantry target** (user, 2026-11-05, scaled scatter): the impact is scattered up to `SCATTER_VS_INFANTRY = 2/3` cells and the blast is `INFANTRY_BLAST = 0.52` cells, with no primary victim (Task 7). Departure: Zero Hour's 10-unit scatter and 12-unit reach (5 blast + 7 Ranger radius) scaled by 25/15 for Wargrid's one-unit-per-cell spacing (Zero Hour's measured cluster stood 15 units apart): 10 × 5/3 / 25 = 2/3; (12 × 5/3 − 7) / 25 = 0.52.
 
 **Movement.**
 - Classes: `infantry` legs, `tank` treads, `builder` and `vehicle` wheels, `collector` air (unchanged, instant).
@@ -76,7 +76,7 @@
   - **Effect:** the first snapshot with a changed position is exactly 2 snapshots after the first snapshot showing `moving`. This covers orders, chase starts (`Combat._approach`) and production exits alike.
 - **Initial heading:** every unit spawns with `heading = [1, 0]`, production exits included (departure, recorded: Zero Hour exits face out of the door). When `desired` has zero length (the unit is exactly on a waypoint), the heading is kept and the factor is 1.
 - **Float boundaries:** range and splash tests compare with `EDGE_EPS = 1e-6` cells (`gap ≤ reach + EDGE_EPS`), defined once in `combat.gd`. Boundary tests use exactly `max` (hit) and `max + 0.01` (miss).
-- Treads turn in place when the error is ≥ 45°; the goal speed is `(1 − error/45°) × speed`. Wheels never turn in place. Legs turn in place.
+- Treads and legs turn in place when the error is ≥ 45°; the goal speed is `(1 − error/45°) × speed`, with the error measured before the tick's turn (source order; user, 2026-11-05). Wheels never turn in place.
 
 **Determinism.** No `sin`, `cos`, `tan`, `atan`, `atan2`, `acos`, `asin`, `exp`, `log` or `pow` with a non-integer exponent anywhere in `game/scripts/simulation/` (Task 9 adds `tools/test_sim_math.py`, run in CI). Allowed: `+ − × ÷`, `sqrt`, comparisons. Angles come from `Locomotion.angle_between(a, b)` (algorithm in Task 9), and turn steps use per-kind `cos`/`sin` constants written as literals (computed once offline, printed with 17 significant digits).
 
@@ -88,6 +88,7 @@
 - `players[].team: int`, `players[].alive: bool`.
 - Entity `heading: [x, y]` (unit vector; air units `[1, 0]`), `speed: float` (cells/s), `move_after: int` (tick).
 - Shot events gain `splash: bool` (`false` for the direct hit). A splash victim gets its own shot event with the same `attacker_id`, its own `target_id` and `splash: true`.
+- Top-level `rng: int` (the splash scatter state, Task 7; user, 2026-11-05).
 - Anything further needs a design question.
 
 **Assertions.** No budget, tolerance or assertion is relaxed.
@@ -229,7 +230,7 @@ Format per the milestone prompt. Stop gates (fresh-context Opus review, then res
 - Bots read slots through `map_data()`, so `issue_opponent(sim, player, attack_tick)` keeps its signature and every caller stays unchanged. `Skirmish.create` always attaches `skirmish.json`. On a sim with no map, the bot uses the skirmish map's slots (`Skirmish.origin`), exactly today's placement.
 - Produces `MapData.slot(map: Dictionary, seat: int, kind: String) -> Vector2i`. It replaces `Skirmish.origin`.
 
-- [ ] Red `test_maps_load` (Review Focus 1): both files load, `skirmish.json` is 48×32 with the seat-1 slots equal to today's `LEFT_ORIGINS` and the seat-2 slots equal to today's mirror, and Ashfall is 196×196 ±4 per side (exact size from Task 1).
+- [ ] Red `test_maps_load` (Review Focus 1): both files load, `skirmish.json` is 48×32 with the seat-1 slots equal to today's `LEFT_ORIGINS` and the seat-2 slots equal to today's mirror, and Ashfall is exactly 194×187 (Task 1 decode; user, 2026-11-05).
 - [ ] Red `test_bad_map_rejected`: a slot on a `#` cell gives `{}`.
 - [ ] Red `test_skirmish_identical`: `Skirmish.create()` matches Task 0's S1 `core_check` series digest.
 - [ ] Implement until green. Suite green. Commit `Load maps from data`.
@@ -290,17 +291,25 @@ Format per the milestone prompt. Stop gates (fresh-context Opus review, then res
 
 ### Task 7: Tank splash
 
-**Task:** cannon hits damage nearby objects per Zero Hour's step rule and mask.
-**Owns:** `combat_definitions.gd` (cannon `primary_radius`, `secondary_radius`, `secondary_damage`, `affects`), `combat.gd` (`fire` damage application), `test_combat.gd`.
-**Invariant:** the primary victim's damage is unchanged; splash goes through armour like a direct hit. Splash victims are ground units and buildings within the secondary radius, excluding the attacker and collectors (air, untargetable today), filtered by the `cannon.affects` mask: own and allied owners count as ALLIES, hostile as ENEMIES. Victims are processed in ascending id order.
-**Boundary:** a victim exactly at the secondary radius edge (by `centre distance − r_victim`) is hit.
+**Task:** cannon hits damage nearby objects per Zero Hour's step rule and mask; shells at infantry scatter (scaled, Global Constraints).
+**Owns:** `combat_definitions.gd` (cannon `primary_radius`, `secondary_radius`, `secondary_damage`, `affects`, `SCATTER_VS_INFANTRY`, `INFANTRY_BLAST`), `combat.gd` (`fire` damage application, `splash_victims`), `simulation.gd` (`_rng` field, `next_random`, snapshot `rng`), `test_combat.gd`.
+
+**Scatter (decided, user 2026-11-05):**
+- RNG: xorshift32 held in `Simulation._rng`, initialised to `RNG_SEED = 0x2545F491` in `_init`. `next_random() -> int`: `x ^= (x << 13) & 0xFFFFFFFF; x ^= x >> 17; x ^= (x << 5) & 0xFFFFFFFF`, store and return `x`. Snapshot field `rng` = `_rng`. No other code draws from it.
+- Per cannon shot whose target is infantry, in this order: direction by rejection: repeat `dx = next_random() / 2147483648.0 − 1`, `dy` the same, until `1e-12 < dx² + dy² ≤ 1`, then divide by `sqrt(dx² + dy²)`; distance `= next_random() / 4294967296.0 × SCATTER_VS_INFANTRY`; impact = target position + direction × distance. This reproduces Zero Hour's uniform angle and uniform radius without trigonometry.
+- Victims of a scattered shot: every ground unit and building with `centre distance from the impact − r_victim ≤ INFANTRY_BLAST + EDGE_EPS`, filtered by the mask; the aimed infantry gets `splash: false`, every other victim `splash: true`. The aimed infantry is always inside (2/3 − 0.28 < 0.52), so the primary damage is unchanged.
+- Vehicle and building targets: no draw; the impact is the target as below.
+**Invariant:** the primary victim's damage is unchanged; splash goes through armour like a direct hit. Splash victims are ground units and buildings within the blast radius (`primary_radius`, or `INFANTRY_BLAST` for a scattered shot; `secondary_radius` is 0), excluding the attacker and collectors (air, untargetable today), filtered by the `cannon.affects` mask: own and allied owners count as ALLIES, hostile as ENEMIES. Victims are processed in ascending id order.
+**Boundary:** a victim exactly at the blast radius edge (by `centre distance − r_victim`) is hit; 0.01 beyond is not.
 
 Damage per victim: within `cannon.primary_radius` (by `centre distance from the impact − r_victim`) it takes `primary_damage`, else within `secondary_radius` it takes `secondary_damage`. The impact is the target's position, or `_victim_centre` for a building. Splash shots feed `_retaliate_trigger` like any shot, which Task 4 limits to hostile attackers.
 
-- [ ] Red `test_splash_cluster`: five P2 infantry in a row 0.6 cells apart (15 units), with no orders. One P1 Crusader 5 cells from the middle one fires one shell at it (explicit `attack`). Assert that exactly the infantry the radii cover take damage, with the expected amounts after armour, each with `splash: true`, and the middle one with `splash: false`. Record in the verification file how many splash hits per shell this implies, against the measured 9 hits in 30 shells.
+- [ ] Red `test_rng_sequence`: a fresh simulation's first four `next_random()` values are 3777279546, 2342155435, 1692513196, 1525286 (Python reference), and `snapshot().rng` equals the last one.
+- [ ] Red `test_splash_victims_boundary`: `Combat.splash_victims` with an explicit impact and radius hits an infantry at exactly `radius + 0.28` from the impact and misses it at `+ 0.01`.
+- [ ] Red `test_splash_cluster`: five P2 infantry in a row 1 cell apart (Wargrid's spacing), with no orders and HP high enough to survive (set `hp` directly). One P1 Crusader 5 cells from the middle one fires 300 shells at it (explicit `attack`, run until 300 shot events at the middle one). Assert the middle one is hit by every shell with `splash: false`, every other hit has `splash: true` with the cannon's damage after armour, and neighbour hits per shell lie in 0.30–0.42 (the rule's expectation is 0.36 by Task 1's Monte Carlo; Zero Hour measured 9 in 30 = 0.30). Record the exact count in the verification file.
 - [ ] Red `test_splash_mask`: with the INI mask, own and allied infantry next to the target are damaged (if the mask excludes allies, they are not, and the test says which). The attacker itself is never damaged.
 - [ ] Red `test_splash_last_builder_same_tick` (Review Focus 4).
-- [ ] Red `test_splash_event_flag`: damage events carry `splash: true` only for secondary victims.
+- [ ] Red `test_splash_event_flag`: shot events carry `splash: true` only for victims other than the aimed target; a shell at a tank with no neighbours inside 0.2 + r produces exactly one event, `splash: false`, and draws nothing from the RNG (`rng` unchanged).
 - [ ] Implement until green. Commit `Add Crusader splash damage`. **Stop gate: review, restart.**
 
 ### Task 8: Start delay, acceleration and braking
@@ -345,14 +354,14 @@ Damage per victim: within `cannon.primary_radius` (by `centre distance from the 
 
 **`turn(heading, desired, c, s)`:** if `heading·desired ≥ c`, return `desired`. Otherwise rotate `heading` by ±step (sign of `heading × desired`, with 0 meaning +) using `c`, `s`, then normalize with `sqrt`.
 
-**Per-tick rule, added to Task 8's:** each tick runs 1) turn, 2) factor, 3) Task 8 steps 1–7.
+**Per-tick rule, added to Task 8's:** each tick runs 1) factor from the angle between the current heading and `desired` (before turning), 2) turn, 3) Task 8 steps 1–7. Source order (`Locomotor.cpp` 1649–1650 legs, 1178 treads); user decision 2026-11-05.
 - `desired` = the direction to the next waypoint.
 - While `path_pending` (no route yet), the heading is unchanged.
 - Once `moving`, the heading turns every tick, including during the start delay.
 
 The heading factor in Task 8 step 3, where `speed` is the kind's maximum speed and `min_turn_speed` comes from the values table (`min_turn_speed.builder` for the Dozer):
 - treads: `max(0, 1 − angle_between/45)`;
-- legs: 1 when `angle_between ≤ turn rate / 30` (one tick's turn), else 0;
+- legs: `max(0, 1 − angle_between/45)`, the same ramp as treads (`moveTowardsPositionLegs`, user decision 2026-11-05);
 - wheels: 1 when `angle_between ≤ 9`, else `max(min_turn_speed, speed / 4) / speed`;
 - air: 1, and the heading snaps to `desired`.
 
@@ -364,10 +373,10 @@ Departure, recorded: wheels follow the route instead of arcing or reversing.
 - Produces `Locomotion.heading_factor(locomotor: String, angle: float, kind_def: Dictionary) -> float` (the class factor below). `Locomotion.step` reads `unit.heading` and `unit.route[0]` itself, turns, calls `heading_factor`, then applies Task 8's steps.
 
 - [ ] Red `test_angle_between_accuracy`: across 3600 directions the error against a precomputed table literal is ≤ 0.1°.
-- [ ] Red `test_measured_turn_then_move`: for a 180° order, assert the rule-derived first-move tick for the Ranger, Crusader and Dozer (compute it by hand from the values table and write it into the test with the arithmetic in a comment). Each must lie within ±1 of the measured 11, 24 and 3, else stop (Global Constraints, measured ticks). The Dozer turns while driving.
+- [ ] Red `test_measured_turn_then_move`: for a 180° order, assert the rule-derived first-move tick for the Ranger, Crusader and Dozer (compute it by hand from the values table and write it into the test with the arithmetic in a comment; Task 1's hand arithmetic, first move = smallest k with 180 − step × (k − 1) < 45, gives Ranger 10 and Crusader 24 counted from the first `moving` tick, Dozer at the end of the start delay). Each must lie within ±1 of the measured 11, 24 and 3, else stop (Global Constraints, measured ticks). The Dozer turns while driving.
 - [ ] Red `test_heading_factors`:
   - `heading_factor("treads", 22.5, tank)` is 0.5, and at 45 it is 0;
-  - `heading_factor("legs", 17, infantry)` is 0, and at 16 it is 1;
+  - `heading_factor("legs", 22.5, infantry)` is 0.5, and at 45 it is 0;
   - `heading_factor("wheels", 30, builder)` equals `max(min_turn_speed.builder, 1.2/4)/1.2`.
 - [ ] Red `test_measured_turn_then_move` setup: spawn the unit (heading `[1, 0]`), then order a move to a point due west, which is a 180° turn.
 - [ ] Red `test_reorder_mid_turn` (Review Focus 3).
