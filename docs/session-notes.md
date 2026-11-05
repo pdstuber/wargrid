@@ -4,6 +4,8 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 ## Session
 
+2026-11-05 Zero Hour parity harness spike **merged to local `main`** (`c7497cc`, not pushed; `main` ahead of `origin/main`): docs, `tools/zh_parity/` and one CI line, no game code; level 1 done by harness, decision list open ([spike](reference/zero-hour-parity-spike.md)). M5.1 (branch `m5.1-findings`, separate session) can measure Zero Hour mechanics such as retaliation with the [parity harness](reference/zero-hour-parity-harness.md).
+
 2026-11-05 relay stack spike between milestones, then the relay was **replaced by a Go port on `main`** (`4f38ce8`, pushed; `main` = `origin/main`). CI run 41950491714 green on `4f38ce8` (relay, relay-lint, Linux, Windows, compare-replays). Locally on the final tree: relay `go test -race`, golangci-lint 0 issues, `run_conformance.sh` 33 cases, all nine `run_netplay.sh` scenarios passed; fly `wargrid-relay-jvm` redeployed from that tree (remote match passed). Evidence: [relay stack spike](reference/relay-stack-spike.md), host comparison in [relay scaling](reference/relay-scaling.md#flyio-vs-railway-measured-2026-11-0405).
 
 2026-11-04 M5 online spike **implemented and merged to `main`** (merge `55beae4`, pushed; `main` = `origin/main`). Tasks 0–11 done; exit gate met except the repeat friend match on the fixed build, which the user deferred to later (open, not met). Verified on `bba5482`: editor suite 192 cases / 104,432 checks / 0 failures, benchmark exit 0 (lockstep p99 0.060 ms vs 0.55), relay `gradlew test`, nine `run_netplay.sh` scenarios, CI green (relay, Linux, Windows, compare-replays), `compare_local_traces.sh` MATCHED (netplay 364), rendered benchmark passed (frame p95 4.3 / 5.9 ms, about 0.7 ms above M4.1, one run), Grok review and `/ponytail-review` done; HUD look is a user statement ("that looks fine"). Findings: [M5 findings](reference/m5-online.md); evidence: [M5 verification](reference/m5-verification.md). Earlier: M4.1 merged at `f2c5f9e` (playtest declared done by the user 2026-11-04, findings open); M3 detail in [M3 verification](reference/m3-verification.md), M4 in [M4 verification](reference/m4-verification.md).
@@ -25,7 +27,7 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 - Source/config-supported economy and combat values remain RETAIL_UNVERIFIED; departures stay explicit in reference/design notes.
 - AI moods (Sleep, Alert 1.1, Aggressive 1.5) deferred to M8 bots (user, 2026-11-03).
 - Retail map sizes vs our 48×32 cells: check before choosing the M6 full-scale map.
-- Instrumented `../GeneralsGameCode` build to measure S1–S3 runtime parity; macOS buildability unchecked.
+- Runtime parity harness: adopted 2026-11-05 ([spike](reference/zero-hour-parity-spike.md)); counts as level 1 with the source-build caveat; open: its decision list and the Chinook supply scenario.
 - Retail `ForceIdleMSEC` INI value unread (code default 1 frame); `stop` re-acquire delay uses the existing 15-tick stagger instead.
 
 ## Next action
@@ -42,6 +44,10 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
   4. **Collectors on one supply pile are hard to read.** One dock per pile is M3 design (Zero Hour docking); add visibility: pile label "docked 1 · waiting 2", collector state when selected.
   5. **"4: barracks" next to "S: stop".** HUD wording slip: base line says "1/2/3 build", the skirmish appends "4: barracks" elsewhere; make it one "1/2/3/4 build".
 - **After M5:** M6 teams and full-scale map, M7 China and GLA (gate: Zero Hour spot checks S1–S3 run or deferred), M8 bots, M9 3v3 online.
+
+## 2026-11-05 — Zero Hour parity harness spike
+
+Branch `spike-parity` (docs, `tools/zh_parity/`, one CI line; no game code). Upstream source cannot build on macOS and Wine fails under Rosetta for Linux in Apple `container`; the native fork `../GeneralsGameCode-macOS` (local branch `wargrid-parity`, `eb595cfc9`, never pushed) builds with Command Line Tools and runs headless and silent. User decisions ("go with your recommendations"): route adopted, counts as level 1 (M7 gate met, source-build caveat), harness in `tools/zh_parity/` for any milestone ([how-to](reference/zero-hour-parity-harness.md)), container/MinGW/Wine leftovers removed. Measured (source build): cruise speeds, turn rates, Ranger/Dozer acceleration match INI within 0.15% (Crusader lurches on its first frame); Crusader 60-frame interval matches; range is edge-to-edge (stationary maxima 122 and 183, +22%), Ranger burst 4/4/22 (time-to-kill +12%), tank shells splash neighbouring infantry, orders start moving after 3 frames. Open: the [decision list](reference/zero-hour-parity-spike.md#decision-list-proposal-for-the-next-combat-feel-work); Chinook supply scenario delivers no money (cause unknown). Rule learned: always `-headless -noaudio` (a windowed run blasted sound).
 
 ## 2026-11-05 — Relay stack spike and Go relay
 

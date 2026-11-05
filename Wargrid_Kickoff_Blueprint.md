@@ -565,7 +565,7 @@ Matches with up to eight players in teams with team victory; a hand-authored map
 
 Add China and GLA distinct rules, core units and economy differences (for example GLA without power) using data definitions, behavior-specific tests and `tools/check_reference.py`.
 
-**Pre-M7 gate (proposed 2026-11-03):** run or explicitly defer the reduced level 1 spot checks (S1–S3) in [Zero Hour verification](docs/reference/zero-hour-verification.md) before kickoff, because factions multiply unverified constants.
+**Pre-M7 gate (proposed 2026-11-03):** run or explicitly defer the reduced level 1 spot checks (S1–S3) in [Zero Hour verification](docs/reference/zero-hour-verification.md) before kickoff, because factions multiply unverified constants. **Met 2026-11-05 (user decision):** S1–S3 measured by the [parity harness](docs/reference/zero-hour-parity-harness.md) on a source build; the differences found are a decision list in the [spike](docs/reference/zero-hour-parity-spike.md#decision-list-proposal-for-the-next-combat-feel-work), not yet decided. New factions in M7 can measure their units with the same harness.
 
 **Exit gate:** three playable faction prototypes; economy/production/combat parity tracked by faction.
 

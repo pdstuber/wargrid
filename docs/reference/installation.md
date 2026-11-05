@@ -7,6 +7,8 @@ Inspected 2026-11-01. User supplied Steam Deck installation copies in:
 
 These are compressed installation backups, not unpacked directories. Read their tar members and selected BIG payloads in memory; no original installation files were changed and no game assets were copied into Wargrid.
 
+Working copy (user approval, 2026-11-05): both tarballs extracted unchanged to `/Users/pdstuber/CnC/run/` (Zero Hour 2.7 GB, Generals 1.6 GB) so the [parity harness](zero-hour-parity-spike.md) can run the game; tarballs untouched. `tools/check_reference.py` on the extracted root `INIZH.big` matches the pinned hash below.
+
 ## Verified archive identities
 
 Hashes identify the embedded BIG bytes, not the outer tarball. Entry counts include all indexed files/markers, not only gameplay INIs.

@@ -43,6 +43,7 @@ Current setup and milestone status live in [README](README.md). Milestone scope 
 - Run commands before claiming they work. Report counts, exit status, unverified checks and reference gaps. Planned commands in README are not implemented until M0 creates and verifies them.
 - Keep tests, replays and simulation benchmarks headless. Open a visible game window only when the user asks to play. Ask before screenshots or other rendering-dependent checks; batch such checks into one request.
 - Separate internal correctness from reference fidelity. Record intentional fixes with regression tests; never silently widen tolerances or change expected results to hide failures.
+- In any milestone, a mechanic Zero Hour also has can be measured with the [parity harness](docs/reference/zero-hour-parity-harness.md) (headless, silent, source build). Results are evidence for a decision list, never an automatic number change.
 - For documentation-only changes, check links, paths, status labels and consistency. Automated tests do not establish game feel or measured performance.
 
 ## Reference handling and Git

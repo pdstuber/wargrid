@@ -1,13 +1,13 @@
 # Verification against real Zero Hour — 2026-11-03
 
-Status: **LEVEL 0 DONE (SOURCE/CONFIG); LEVEL 0 AUTOMATED (74 values, 0 differ); LEVEL 1 REDUCED TO THREE SPOT CHECKS, NOT RUN; LEVEL 2 NOT STARTED**. Nothing here measures the running retail game. Never describe level 0 values as measured parity. Scope rule from [AGENTS](../../AGENTS.md): preserve strategic identity and feel; original bugs and slow algorithms are not compatibility requirements. Goal is calibrated constants and feel, not trace parity.
+Status: **LEVEL 0 DONE (SOURCE/CONFIG); LEVEL 0 AUTOMATED (74 values, 0 differ); LEVEL 1 DONE 2026-11-05 BY THE PARITY HARNESS ON A SOURCE BUILD (user decision); LEVEL 2 NOT STARTED**. Nothing here measures the shipped retail binary; level 1 measured a native source build ([spike](zero-hour-parity-spike.md)). Never describe level 0 values as measured parity. Scope rule from [AGENTS](../../AGENTS.md): preserve strategic identity and feel; original bugs and slow algorithms are not compatibility requirements. Goal is calibrated constants and feel, not trace parity.
 
 ## Levels
 
 | Level | Evidence | State |
 |---|---|---|
 | 0 | Source plus hash-pinned INI reading | done below |
-| 1 | Observe the real game: three scripted-map spot checks (speed, range and reload, burst rhythm) | reduced protocol below, awaiting user session |
+| 1 | Observe the real game: three spot checks (speed, range and reload, burst rhythm) | done by the [parity harness](zero-hour-parity-harness.md) on a source build, see below |
 | 2 | Instrumented build of EA source logging per logic frame | only if level 1 shows disagreement that matters |
 | 3 | Replay/full-match trace comparison | rejected: Wargrid grid, direct-hit combat and pathing differ by design, so it fails by construction |
 
@@ -61,6 +61,8 @@ Setup, once: game version string, install source, no mods, no upgrades or genera
 Optional feel notes in the same session, impressions plus frame counts, no pass/fail: acceleration and turning of Dozer, Ranger and Crusader (not modelled by Wargrid), Crusader against infantry (splash and scatter, omitted by Wargrid), one Chinook supply trip.
 
 Output: a short results table in `docs/reference/zero-hour-level1-results.md` with raw frame counts, version info and a verdict per row (match, differs, unclear). Video files stay outside the repo. Differences feed a decision list and never change numbers automatically. Never mark a row verified without recorded frame counts.
+
+**Level 1 done by harness (user decision, 2026-11-05):** the [parity harness spike](zero-hour-parity-spike.md) measured S1–S3 and the feel notes frame by frame on a native macOS source build instead of this manual session; caveat: a source build, not the shipped binary. S1 and the S2 interval match; S2 distance and S3 differ by definition (range edge-to-edge, +1 frame per burst gap) and go to the spike's decision list. The [parity harness](zero-hour-parity-harness.md) replaces the manual protocol for later checks.
 
 ## Gate
 
