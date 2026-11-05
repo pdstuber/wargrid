@@ -132,7 +132,9 @@ func _move(target: Vector2) -> void:
 	_submit({"type":"move","entity_ids":selected_ids.duplicate(),"target":[target.x,target.y]})
 
 func _refresh() -> void:
-	var state: Dictionary = simulation.snapshot()
+	_show(simulation.snapshot())
+
+func _show(state: Dictionary) -> void:
 	var zone: int = Profiler.begin()
 	var live: Array = state.entities.map(func(unit: Dictionary) -> int: return unit.id)
 	selected_ids.assign(selected_ids.filter(func(id: int) -> bool: return live.has(id)))
