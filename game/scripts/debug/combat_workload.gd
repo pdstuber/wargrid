@@ -63,3 +63,31 @@ static func _skirmish3v3() -> RefCounted:
 			var result: Dictionary = sim.issue_command({"tick": 0, "player": player, "sequence": index, "type": "attack_move", "entity_ids": ids, "target": target})
 			assert(result.ok, result.error)
 	return sim
+
+# Profiling-only M6-scale probe: 196x196 with 8x8 mesas every 20 cells (10.5 % blocked), 3 lanes x 60 units per owner.
+const LARGE := Vector2i(196, 196)
+
+static func create_large() -> RefCounted:
+	var solids: Array[Vector2i] = []
+	for top in range(10, 186, 20):
+		for left in range(30, 166, 20):
+			for y in range(top, top + 8):
+				for x in range(left, left + 8): solids.append(Vector2i(x, y))
+	var sim = Simulation.new(solids, LARGE)
+	sim.add_player(1, 0)
+	sim.add_player(2, 0)
+	var lanes := [38, 98, 158]
+	for index in range(lanes.size()):
+		for player in [1, 2]:
+			var front: int = 14 if player == 1 else 181
+			var direction: int = -1 if player == 1 else 1
+			var ids: Array[int] = []
+			for placed in range(60):
+				var position := Vector2(front + direction * (placed / 6) + 0.5, lanes[index] - 3 + placed % 6 + 0.5)
+				var id: int = sim.spawn(player, position, "tank" if placed % 3 == 0 else "infantry")
+				assert(id > 0)
+				ids.append(id)
+			var target: Array = [190.5 if player == 1 else 5.5, lanes[index] + 0.5]
+			var result: Dictionary = sim.issue_command({"tick": 0, "player": player, "sequence": index, "type": "attack_move", "entity_ids": ids, "target": target})
+			assert(result.ok, result.error)
+	return sim

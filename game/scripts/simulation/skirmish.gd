@@ -3,6 +3,7 @@ extends RefCounted
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
 const Combat = preload("res://scripts/simulation/combat.gd")
+const Profiler = preload("res://scripts/debug/profiler.gd")
 
 const SIZE := Vector2i(48, 32)
 const START_CREDITS: int = 10000
@@ -32,6 +33,11 @@ static func create(with_match: bool = true, second_controller: String = "ai") ->
 
 static func issue_opponent(sim: RefCounted, player: int = 2, attack_tick: int = ATTACK_TICK) -> void:
 	if sim.tick() % DECISION_TICKS != 0: return
+	var zone: int = Profiler.begin()
+	_decide(sim, player, attack_tick)
+	Profiler.end(&"opponent.decide", zone)
+
+static func _decide(sim: RefCounted, player: int, attack_tick: int) -> void:
 	var state: Dictionary = sim.snapshot()
 	var sequence: int = -1
 	for entry in state.last_sequences:

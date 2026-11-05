@@ -3,6 +3,11 @@ extends Node
 const Workload = preload("res://scripts/debug/movement_workload.gd")
 const Stats = preload("res://scripts/debug/timing_stats.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
+const Profiler = preload("res://scripts/debug/profiler.gd")
+const CombatWorkload = preload("res://scripts/debug/combat_workload.gd")
+# `-- --profile` adds profiling zones and a third, 196x196 combat leg (spike-performance only).
+var _profile: bool = OS.get_cmdline_user_args().has("--profile")
+var _large: bool = false
 var _simulation: RefCounted
 var _layout_index: int = 0
 var _layout_started: int
@@ -55,6 +60,9 @@ func _begin_layout() -> void:
 	_sampling_done = false
 
 func _physics_process(_delta: float) -> void:
+	if _large:
+		_large_tick()
+		return
 	var started: int = Time.get_ticks_usec()
 	var command_tick: bool = _leg == -1 or Workload.settled(_simulation)
 	if command_tick:
@@ -78,6 +86,7 @@ func _physics_process(_delta: float) -> void:
 		_tick_times.append(elapsed)
 	if command_tick:
 		_command_times.append(elapsed)
+	Profiler.end_tick()
 	_queue_peak = maxi(_queue_peak, state.path_queue.size())
 	if state.path_queue.is_empty() and _queue_start >= 0:
 		_queue_drain = maxi(_queue_drain, state.tick - _queue_start)
@@ -98,24 +107,31 @@ func _process(_delta: float) -> void:
 		_sample_started = now
 		_window_started = now
 		_last_frame = now
+		Profiler.reset()
+		Profiler.enabled = _profile
 	elif _sample_started > 0 and not _sampling_done:
 		_frame_times.append((now - _last_frame) / 1000.0)
 		_draw_calls.append(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))
 		_last_frame = now
 		if now - _window_started >= 10000000:
 			var seconds: float = (now - _window_started) / 1000000.0
-			print("BACKLOG ", ["open", "dense"][_layout_index], " wall_seconds=", seconds,
+			print("BACKLOG ", _layout_name(), " wall_seconds=", seconds,
 				" physics_ticks=", _window_ticks, " expected_ticks=", seconds * 30.0,
 				" cumulative_lag_ticks=", (now - _sample_started) / 1000000.0 * 30.0 - _sample_ticks)
 			_window_started = now
 			_window_ticks = 0
 		if now - _sample_started >= 60000000:
 			_sampling_done = true
-			print("RENDERED SAMPLE ", ["open", "dense"][_layout_index], " wall_seconds=", (now - _sample_started) / 1000000.0,
+			print("RENDERED SAMPLE ", _layout_name(), " wall_seconds=", (now - _sample_started) / 1000000.0,
 				" physics_ticks=", _sample_ticks, " tick_ms=", JSON.stringify(Stats.summary(_tick_times)),
 				" frame_interval_ms=", JSON.stringify(Stats.summary(_frame_times)),
 				" command_tick_ms=", JSON.stringify(Stats.summary(_command_times)),
 				" draw_calls=", JSON.stringify(Stats.summary(_draw_calls)))
+			for line in Profiler.report("rendered_" + _layout_name(), &"draw"): print(line)
+			Profiler.enabled = false
+			if _large:
+				print("RENDERED PROFILE COMPLETE")
+				get_tree().quit(0)
 
 func _finish_layout(state: Dictionary) -> void:
 	var goals: Dictionary = {}
@@ -132,6 +148,9 @@ func _finish_layout(state: Dictionary) -> void:
 	_layout_index += 1
 	if _layout_index == 2:
 		print("RENDERED BENCHMARK PASSED 2")
+		if _profile:
+			_begin_large()
+			return
 		get_tree().quit(0)
 	else:
 		_begin_layout()
@@ -145,3 +164,30 @@ func _fail(message: String) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("deselect"):
 		get_tree().quit(1)
+
+func _layout_name() -> String:
+	return "large_196" if _large else ["open", "dense"][_layout_index]
+
+func _begin_large() -> void:
+	_large = true
+	_simulation = CombatWorkload.create_large()
+	$Camera2D.position = Iso.world_to_plane(Vector2(98, 98))
+	_layout_started = Time.get_ticks_usec()
+	_sample_started = 0
+	_sample_ticks = 0
+	_window_ticks = 0
+	_tick_times.clear()
+	_frame_times.clear()
+	_draw_calls.clear()
+	_sampling_done = false
+
+func _large_tick() -> void:
+	var started: int = Time.get_ticks_usec()
+	_simulation.step()
+	var no_selection: Array[int] = []
+	_view.set_state(_simulation.snapshot(), no_selection)
+	if _sample_started > 0 and not _sampling_done:
+		_sample_ticks += 1
+		_window_ticks += 1
+		_tick_times.append((Time.get_ticks_usec() - started) / 1000.0)
+	Profiler.end_tick()

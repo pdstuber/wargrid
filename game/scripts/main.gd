@@ -2,6 +2,7 @@ extends Node
 
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
+const Profiler = preload("res://scripts/debug/profiler.gd")
 const Zooms: Array[float] = [0.5, 1.0, 2.0]
 var simulation = Simulation.new()
 var selected_ids: Array[int] = []
@@ -132,10 +133,14 @@ func _move(target: Vector2) -> void:
 
 func _refresh() -> void:
 	var state: Dictionary = simulation.snapshot()
+	var zone: int = Profiler.begin()
 	var live: Array = state.entities.map(func(unit: Dictionary) -> int: return unit.id)
 	selected_ids.assign(selected_ids.filter(func(id: int) -> bool: return live.has(id)))
+	Profiler.end(&"refresh.selection", zone)
 	_view.set_state(state, _view_selection())
+	zone = Profiler.begin()
 	_refresh_hud(state)
+	Profiler.end(&"refresh.hud", zone)
 
 func _create_simulation() -> RefCounted:
 	for y in range(4, 10):

@@ -2,6 +2,7 @@ extends RefCounted
 
 const Wire = preload("res://scripts/net/wire.gd")
 const StateHash = preload("res://scripts/simulation/state_hash.gd")
+const Profiler = preload("res://scripts/debug/profiler.gd")
 
 var send: Callable = func(_frame: String) -> void: pass
 
@@ -58,7 +59,9 @@ func submit(payload: Dictionary) -> void:
 
 func receive(text: String) -> void:
 	if _ended(): return
+	var zone: int = Profiler.begin()
 	var decoded: Dictionary = Wire.decode(text)
+	Profiler.end(&"lockstep.decode", zone)
 	if not decoded.ok:
 		_end("ended_protocol", decoded.error)
 		return
@@ -115,8 +118,10 @@ func finish_tick(tick: int, state: Variant) -> void:
 	var packet_tick: int = tick + _delay
 	var commands: Array = _queue
 	_queue = []
+	var zone: int = Profiler.begin()
 	var text: String = Wire.encode(Wire.tick_message(_seat, packet_tick, commands, hash))
 	_packets[_seat][packet_tick] = Wire.decode(text).message
+	Profiler.end(&"lockstep.encode", zone)
 	_last_sent = packet_tick
 	send.call(text)
 

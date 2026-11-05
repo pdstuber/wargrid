@@ -1,5 +1,7 @@
 extends RefCounted
 
+const Profiler = preload("res://scripts/debug/profiler.gd")
+
 static func assign(navigation: RefCounted, units: Array[Dictionary], target: Vector2, unavailable: Array[Vector2i]) -> Dictionary:
 	var ordered: Array[Dictionary] = units.duplicate()
 	ordered.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.id < b.id)
@@ -25,7 +27,9 @@ static func assign(navigation: RefCounted, units: Array[Dictionary], target: Vec
 	if ordered.size() <= SCAN_MAX_UNITS:
 		_assign_by_scan(navigation, component, ordered, candidates, target, target_cell, occupants, goals)
 		return goals
+	var zone: int = Profiler.begin()
 	candidates.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return _before(a, b, target, target_cell))
+	Profiler.end(&"allocation.sort", zone)
 	for unit in ordered:
 		if navigation.component_at(Vector2(unit.position[0], unit.position[1])) != component:
 			continue
