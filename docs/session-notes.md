@@ -25,7 +25,7 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 - Source/config-supported economy and combat values remain RETAIL_UNVERIFIED; departures stay explicit in reference/design notes.
 - AI moods (Sleep, Alert 1.1, Aggressive 1.5) deferred to M8 bots (user, 2026-11-03).
 - Retail map sizes vs our 48×32 cells: check before choosing the M6 full-scale map.
-- Instrumented `../GeneralsGameCode` build to measure S1–S3 runtime parity; macOS buildability unchecked.
+- Runtime parity harness: adopted 2026-11-05 ([spike](reference/zero-hour-parity-spike.md)); counts as level 1 with the source-build caveat; open: its decision list and the Chinook supply scenario.
 - Retail `ForceIdleMSEC` INI value unread (code default 1 frame); `stop` re-acquire delay uses the existing 15-tick stagger instead.
 
 ## Next action
@@ -42,6 +42,10 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
   4. **Collectors on one supply pile are hard to read.** One dock per pile is M3 design (Zero Hour docking); add visibility: pile label "docked 1 · waiting 2", collector state when selected.
   5. **"4: barracks" next to "S: stop".** HUD wording slip: base line says "1/2/3 build", the skirmish appends "4: barracks" elsewhere; make it one "1/2/3/4 build".
 - **After M5:** M6 teams and full-scale map, M7 China and GLA (gate: Zero Hour spot checks S1–S3 run or deferred), M8 bots, M9 3v3 online.
+
+## 2026-11-05 — Zero Hour parity harness spike
+
+Branch `spike-parity` (docs, `tools/zh_parity/`, one CI line; no game code). Upstream source cannot build on macOS and Wine fails under Rosetta for Linux in Apple `container`; the native fork `../GeneralsGameCode-macOS` (local branch `wargrid-parity`, `eb595cfc9`, never pushed) builds with Command Line Tools and runs headless and silent. User decisions ("go with your recommendations"): route adopted, counts as level 1 (M7 gate met, source-build caveat), harness in `tools/zh_parity/` for any milestone ([how-to](reference/zero-hour-parity-harness.md)), container/MinGW/Wine leftovers removed. Measured (source build): cruise speeds, turn rates, Ranger/Dozer acceleration match INI within 0.15% (Crusader lurches on its first frame); Crusader 60-frame interval matches; range is edge-to-edge (stationary maxima 122 and 183, +22%), Ranger burst 4/4/22 (time-to-kill +12%), tank shells splash neighbouring infantry, orders start moving after 3 frames. Open: the [decision list](reference/zero-hour-parity-spike.md#decision-list-proposal-for-the-next-combat-feel-work); Chinook supply scenario delivers no money (cause unknown). Rule learned: always `-headless -noaudio` (a windowed run blasted sound).
 
 ## 2026-11-05 — Relay stack spike and Go relay
 
