@@ -334,6 +334,7 @@ static func _go_home(sim: RefCounted, unit: Dictionary) -> void:
 	unit.combat.target_id = null
 	unit.combat.repath_tick = sim._tick + RETURN_SCAN_TICKS
 	var members: Array[Dictionary] = [unit]
+	sim._path_queue.erase(unit.id)
 	sim._assign_move(members, unit.combat.goal)
 
 static func _plan_retaliate(sim: RefCounted, unit: Dictionary, held: Dictionary, grid_box: Dictionary) -> void:
