@@ -104,7 +104,7 @@ func _replay(batch: int, reads: bool):
 				sim.issue_command(helper.command(sim, range(1, 21), [12.5, 12.5], 1))
 			sim.step()
 			if reads:
-				var changed: Dictionary = sim.snapshot()
+				var changed: Dictionary = sim.snapshot().duplicate(true)
 				changed.path_queue.clear()
 				changed.map.blocked_cells.clear()
 	return sim.snapshot()

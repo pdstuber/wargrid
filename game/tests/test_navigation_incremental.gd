@@ -5,7 +5,7 @@ const Fixture = preload("res://tests/economy_fixture.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 
 func cases() -> Array[Callable]:
-	return [test_incremental_matches_rebuild, test_pinch_build_falls_back, test_death_updates_locally]
+	return [test_map_lists_shared_read_only, test_incremental_matches_rebuild, test_pinch_build_falls_back, test_death_updates_locally]
 
 func test_incremental_matches_rebuild(runner) -> bool:
 	var rng := RandomNumberGenerator.new()
@@ -87,4 +87,18 @@ func test_death_updates_locally(runner) -> bool:
 	runner.check(sim.navigation_builds() == builds and sim.navigation_local_updates() == local + 1, "NI3 removal updates in place")
 	var rebuilt = Simulation.new(sim._union_cells(), Vector2i(32, 32))
 	runner.check(sim.snapshot().map == rebuilt.snapshot().map, "NI3 map equals a rebuilt simulation's")
+	return true
+
+func test_map_lists_shared_read_only(runner) -> bool:
+	var sim = Fixture.make_world()
+	var a: Dictionary = sim.snapshot()
+	var b: Dictionary = sim.snapshot()
+	runner.check(is_same(a.map.blocked_cells, b.map.blocked_cells) and is_same(a.terrain_cells, b.terrain_cells), "SM1 map lists are shared between snapshots")
+	runner.check(a.map.blocked_cells.is_read_only() and a.terrain_cells.is_read_only(), "SM1 map lists are read-only")
+	runner.check(Fixture.send(sim, {"type":"build","builder_id":1,"building_kind":"reactor","origin":[8,4]}).ok, "SM1 build accepted")
+	sim.step()
+	var rebuilt = Simulation.new(sim._union_cells(), Vector2i(32, 32))
+	runner.check(sim.snapshot().map == rebuilt.snapshot().map, "SM1 map after placement equals a rebuilt simulation's")
+	var wall: Array[Vector2i] = [Vector2i(20, 20)]
+	runner.check(sim.replace_blocked_cells(wall).ok and sim.snapshot().terrain_cells == [[20, 20]], "SM1 terrain cache follows replace_blocked_cells")
 	return true

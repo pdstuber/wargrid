@@ -18,6 +18,8 @@ var _players: Dictionary = {}
 var _buildings: Dictionary = {}
 var _sources: Dictionary = {}
 var _terrain_cells: Array[Vector2i] = []
+var _terrain_cache: Array = []
+var _terrain_cached: bool = false
 var _command_results: Array[Dictionary] = []
 var _next_production_id: int = 1
 var _tick: int = 0
@@ -547,6 +549,7 @@ func replace_blocked_cells(cells: Array[Vector2i]) -> Dictionary:
 	for cell in cells: unique[cell] = true
 	_terrain_cells.assign(unique.keys())
 	_terrain_cells.sort_custom(func(a: Vector2i,b: Vector2i) -> bool: return a.y < b.y or (a.y == b.y and a.x < b.x))
+	_terrain_cached = false
 	return _replace_union(_union_cells())
 
 func _replace_union(cells: Array[Vector2i], prebuilt: RefCounted = null) -> Dictionary:
@@ -603,10 +606,16 @@ func _player_snapshots(with_alive: bool = false) -> Array:
 	return result
 
 func _terrain_snapshot() -> Array:
-	var result: Array = []
-	for cell in _terrain_cells:
-		result.append([cell.x,cell.y])
-	return result
+	if not _terrain_cached:
+		var result: Array = []
+		for cell in _terrain_cells:
+			var pair: Array = [cell.x,cell.y]
+			pair.make_read_only()
+			result.append(pair)
+		result.make_read_only()
+		_terrain_cache = result
+		_terrain_cached = true
+	return _terrain_cache
 
 func _in_bounds(point: Vector2) -> bool:
 	var size: Array = _navigation.snapshot().size

@@ -161,7 +161,7 @@ func test_snapshot_copy(runner) -> bool:
 	var sim = world()
 	accepted(runner, sim, command(), "C9 accepted")
 	var before: Dictionary = sim.snapshot()
-	var changed: Dictionary = sim.snapshot()
+	var changed: Dictionary = sim.snapshot().duplicate(true)
 	if changed.entities.is_empty() or changed.pending_commands.is_empty() or changed.last_sequences.is_empty():
 		return false
 	changed.entities[0].position[0] = 99
@@ -171,7 +171,7 @@ func test_snapshot_copy(runner) -> bool:
 	equal(runner, sim.snapshot(), before, "C9 queued snapshot isolation")
 	sim.step()
 	before = sim.snapshot()
-	changed = sim.snapshot()
+	changed = sim.snapshot().duplicate(true)
 	changed.entities[0].order.target[0] = 99
 	if not changed.entities[0].route.is_empty():
 		changed.entities[0].route[0][0] = 99

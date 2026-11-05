@@ -137,7 +137,7 @@ func replay(batch: int, reads: bool = false):
 	for group in range(300 / batch):
 		for tick in range(batch):
 			if reads:
-				var state: Dictionary = sim.snapshot()
+				var state: Dictionary = sim.snapshot().duplicate(true)
 				if not state.map.blocked_cells.is_empty():
 					state.map.blocked_cells[0][0] = 9
 				state.map.size[0] = 9

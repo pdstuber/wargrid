@@ -55,7 +55,7 @@ func test_copy(runner) -> bool:
 	solids.clear()
 	var expected := {"size": [16, 16], "blocked_cells": [[4, 0], [0, 2], [2, 2]]}
 	runner.check(nav.snapshot() == expected, "N5 copy deduplicate sort")
-	var state: Dictionary = nav.snapshot()
+	var state: Dictionary = nav.snapshot().duplicate(true)
 	if not state.blocked_cells.is_empty():
 		state.blocked_cells[0][0] = 9
 	state.blocked_cells.clear()

@@ -6,6 +6,7 @@ var _grid := AStarGrid2D.new()
 var _blocked: Array[Vector2i] = []
 
 var _map_size: Vector2i
+var _snapshot_cache: Dictionary = {}
 var _components := PackedInt32Array()
 var _component_cells: Array[Array] = []
 const Neighbors: Array[Vector2i] = [Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT, Vector2i.UP]
@@ -42,6 +43,7 @@ func _normalize(cells: Array[Vector2i]) -> Array[Vector2i]:
 	return normalized
 
 func _apply_blocked(cells: Array[Vector2i]) -> void:
+	_snapshot_cache = {}
 	for cell in _blocked:
 		_grid.set_point_solid(cell, false)
 	_blocked = cells
@@ -119,10 +121,18 @@ func route(from: Vector2, to: Vector2) -> Array[Vector2]:
 	return points
 
 func snapshot() -> Dictionary:
-	var cells: Array = []
-	for cell in _blocked:
-		cells.append([cell.x, cell.y])
-	return {"size": [_map_size.x, _map_size.y], "blocked_cells": cells}
+	if _snapshot_cache.is_empty():
+		var cells: Array = []
+		for cell in _blocked:
+			var pair: Array = [cell.x, cell.y]
+			pair.make_read_only()
+			cells.append(pair)
+		cells.make_read_only()
+		var size: Array = [_map_size.x, _map_size.y]
+		size.make_read_only()
+		_snapshot_cache = {"size": size, "blocked_cells": cells}
+		_snapshot_cache.make_read_only()
+	return _snapshot_cache
 
 func component_at(point: Vector2) -> int:
 	if not is_walkable(point):
@@ -211,6 +221,7 @@ func replace_blocked_cells(cells: Array[Vector2i]) -> String:
 			local = true
 	if local:
 		_blocked = normalized
+		_snapshot_cache = {}
 	else:
 		_apply_blocked(normalized)
 	Profiler.end(&"navigation.replace", zone)

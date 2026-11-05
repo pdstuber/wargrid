@@ -44,7 +44,7 @@ func test_economy_snapshot_isolation(runner) -> bool:
 	if not before.has("players") or not before.entities[0].has("collection"):
 		runner.check(false,"E3 economy fields exist")
 		return true
-	var changed: Dictionary = sim.snapshot()
+	var changed: Dictionary = sim.snapshot().duplicate(true)
 	changed.players[0].credits = 0
 	changed.entities[0].kind = "vehicle"
 	changed.entities[0].collection.cargo = 8
