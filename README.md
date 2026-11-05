@@ -96,6 +96,7 @@ Status: Go relay deployed at `wss://wargrid-relay-jvm.fly.dev/ws` (2026-11-05):
 - Godot probe `RELAY WELCOME 64`; warm 55–78 ms.
 - Cold start after a stop 1.3–1.8 s; resume after a suspend 0.33–0.51 s.
 - Remote `run_netplay.sh match` PASSED.
+- Redeployed 2026-11-05 with shutdown drain and crash isolation (`58d13f2`); log shows `relay started … drain=3.5s`, probe `RELAY WELCOME` 1837 ms (cold start). A live drain on fly is not yet observed.
 
 Capacity: a shared vCPU's 6.25 % baseline holds about one 3v3 room ([relay scaling](docs/reference/relay-scaling.md#flyio-vs-railway-measured-2026-11-0405)).
 

@@ -4,7 +4,9 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 ## Session
 
-2026-11-05 Zero Hour parity harness spike **merged to local `main`** (`c7497cc`, not pushed; `main` ahead of `origin/main`): docs, `tools/zh_parity/` and one CI line, no game code; level 1 done by harness, decision list open ([spike](reference/zero-hour-parity-spike.md)). M5.1 (branch `m5.1-findings`, separate session) can measure Zero Hour mechanics such as retaliation with the [parity harness](reference/zero-hour-parity-harness.md).
+2026-11-05 relay hardening **merged to `main`** (merge `58d13f2`, pushed) and deployed to fly `wargrid-relay-jvm`: drain on SIGINT/SIGTERM, per-room crash isolation, fail-fast config, `log/slog`. Verified on the final tree: `go test -race`, golangci-lint 0 issues, `run_conformance.sh` 33 cases, `run_netplay.sh` relay-term, relay-down and match passed; on fly the new binary logs `relay started … drain=3.5s` and the probe got `RELAY WELCOME`. Live drain on fly not yet observed (the machine was suspended at deploy). Detail below.
+
+2026-11-05 Zero Hour parity harness spike **merged to `main`** (`c7497cc`, since pushed): docs, `tools/zh_parity/` and one CI line, no game code; level 1 done by harness, decision list open ([spike](reference/zero-hour-parity-spike.md)). M5.1 (branch `m5.1-findings`, separate session) can measure Zero Hour mechanics such as retaliation with the [parity harness](reference/zero-hour-parity-harness.md).
 
 2026-11-05 relay stack spike between milestones, then the relay was **replaced by a Go port on `main`** (`4f38ce8`, pushed; `main` = `origin/main`). CI run 41950491714 green on `4f38ce8` (relay, relay-lint, Linux, Windows, compare-replays). Locally on the final tree: relay `go test -race`, golangci-lint 0 issues, `run_conformance.sh` 33 cases, all nine `run_netplay.sh` scenarios passed; fly `wargrid-relay-jvm` redeployed from that tree (remote match passed). Evidence: [relay stack spike](reference/relay-stack-spike.md), host comparison in [relay scaling](reference/relay-scaling.md#flyio-vs-railway-measured-2026-11-0405).
 
@@ -13,7 +15,7 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 ## Pending user action
 
 - M4.1 playtest findings (user, 2026-11-04) are open; to be tackled outside M5, see [M4.1 verification](reference/m4.1-verification.md). Deferred minors: BM7 lane pin, R5 other-command coverage.
-- `main` and `origin/main` at `4f38ce8` (Go relay). Local branches `gpl-license`, `m5-online` and older milestone branches are merged and can be deleted (not done).
+- `main` and `origin/main` at the relay hardening merge (`58d13f2`) plus doc follow-ups. Local branches `gpl-license`, `m5-online`, `spike-relay-improvements` (also on origin) and older milestone branches are merged and can be deleted (not done).
 - Global agent rules: grok removed from the review route in `~/dotfiles/config/agents/AGENTS.md` (user, 2026-11-05); that dotfiles change is uncommitted and is the user's to commit. `grok` can be uninstalled.
 - Spike harness (other ports, load driver, raw results) copied to `~/projects/wargrid-relay-spike`, outside git; delete when no longer wanted.
 - M5 open items: repeat the friend match (macOS vs Windows on the fixed build) later; real fly bill later (user: "fine for now"); Railway check done in the 2026-11-05 [relay stack spike](reference/relay-stack-spike.md) (comparison in [relay scaling](reference/relay-scaling.md#flyio-vs-railway-measured-2026-11-0405); sleep/wake still untested); suspend during a live match unobserved.
@@ -32,7 +34,7 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 ## Next action
 
-**Next session:** M5.1 kickoff from root `prompt.txt` when the user starts it. The design was approved and the plan written on 2026-11-05; no code has changed. Still open separately: the repeat macOS-vs-Windows friend match on the Go relay. The relay is done for now; M9 owns its next changes.
+**Next session:** M5.1 kickoff from root `prompt.txt` when the user starts it. The design was approved and the plan written on 2026-11-05; no code has changed. Still open separately: the repeat macOS-vs-Windows friend match on the Go relay. Relay hardening (drain, crash isolation) is done and deployed; M9 owns its next changes (multi-machine drain, rate limits, bounded queues, reconnect).
 
 **M4 complete and merged into local `main` (2026-11-03).** Evidence: [M4 verification](reference/m4-verification.md). Process changes adopted on `main`: [milestone prompt](milestone-prompt.md), [workflow retrospective](reference/2026-11-03-milestone-workflow-retrospective.md). Roadmap re-aimed at the long-term target (3v3 online with friends against bots, USA/China/GLA, Twilight-Flame-like full-scale map): blueprint §1, §7, §11, §14.
 
@@ -44,6 +46,13 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
   4. **Collectors on one supply pile are hard to read.** One dock per pile is M3 design (Zero Hour docking); add visibility: pile label "docked 1 · waiting 2", collector state when selected.
   5. **"4: barracks" next to "S: stop".** HUD wording slip: base line says "1/2/3 build", the skirmish appends "4: barracks" elsewhere; make it one "1/2/3/4 build".
 - **After M5:** M6 teams and full-scale map, M7 China and GLA (gate: Zero Hour spot checks S1–S3 run or deferred), M8 bots, M9 3v3 online.
+
+## 2026-11-05 — Relay shutdown and crash isolation
+
+- User request (branch `spike-relay-improvements`): signal handling and a production-readiness pass. Plan: `~/.claude/plans/i-ve-created-a-branch-declarative-wilkes.md`.
+- Facts checked: fly sends SIGINT by default, `kill_timeout` 5 s default, 300 s max (docs.fly.io/reference/configuration); `http.Server.Shutdown` does not wait for WebSockets, so the registry tracks rooms. Old fly logs show the previous binary simply "exited with signal SIGINT".
+- Built: on the first signal the listener closes, unfilled lobbies close, started matches run `WARGRID_DRAIN_MS` (3500, user: "4s is fine", lowered so drain + 1 s close grace stays under 5 s), then forced close; every room logs `MATCH END`; a second signal exits at once. `recover` per room plus gws `Recovery`; `room.post` never blocks on a dead room; non-integer env knobs exit 2. Tests in `relay/shutdown_test.go` (mutation-checked); `run_netplay.sh relay-term` now asserts end reason, timing, exit 0 and `MATCH END`.
+- Not done (named, M9 or no payoff now): join rate limit, connection caps, bounded outbound queues, metrics endpoint, close frame for sockets that never sent `hello`. A second SIGINT from a non-interactive `sh` background job is ignored (shell starts it with SIGINT ignored; Go restores that); SIGTERM verified.
 
 ## 2026-11-05 — Zero Hour parity harness spike
 

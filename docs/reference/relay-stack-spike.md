@@ -101,12 +101,12 @@ M9 needs ([blueprint](../../Wargrid_Kickoff_Blueprint.md#m9--3v3-online), [M5 li
 
 Independent of language, M9 design inputs: batch per tick (option B), compact command log, size per-machine capacity at the fly baseline (~1 room per shared-cpu-1x) or evaluate a non-shared CPU, and keep fly `fra` over Railway Amsterdam for latency unless capacity forces otherwise.
 
-### Patterns from the Elixir port worth carrying into Go for M9 (proposal, not implemented)
+### Patterns from the Elixir port worth carrying into Go for M9 (proposal; two implemented 2026-11-05)
 
-- **Crash isolation per room:** a panic in one room goroutine kills the whole relay; `recover` in `room.run()` should end only that room (notify its seats, log) and gws `Recovery` should guard handlers, like a crashing GenServer taking down only its match.
+- **Crash isolation per room:** a panic in one room goroutine kills the whole relay; `recover` in `room.run()` should end only that room (notify its seats, log) and gws `Recovery` should guard handlers, like a crashing GenServer taking down only its match. **Implemented 2026-11-05** (`58d13f2`, `relay/room.go` `recoverCrash`).
 - **Monitor + timer for reconnect:** on disconnect keep the seat reserved with a grace timer in the room's `select`, replay the command log on rejoin, announce `left` or hand the seat to a bot only when the timer fires.
 - **Everything is a message to the room:** the per-room 30 Hz ticker (server-stamped ticks), lobby slot changes, drop timeouts and drain become more `select` cases in the one goroutine that owns the room; no locks.
-- **Supervised shutdown as drain:** on SIGTERM refuse new rooms, let live rooms finish (`http.Server.Shutdown` plus a live-room count), then exit.
+- **Supervised shutdown as drain:** on SIGTERM refuse new rooms, let live rooms finish (`http.Server.Shutdown` plus a live-room count), then exit. **Implemented 2026-11-05 for one process** (`58d13f2`): drain bounded by `WARGRID_DRAIN_MS` under fly's `kill_timeout`, so hour-long matches still end on deploy; multi-machine drain stays M9.
 - **Bounded mailboxes:** cap each connection's outbound queue and drop a peer that cannot keep up, so one slow link cannot exhaust a 256 MB machine (both the BEAM mailbox and today's Go queue are unbounded).
 
 Not worth copying: distributed Erlang and hot code upgrade (the R2 redirect and drain cover the need), and the Elixir port's synchronous call per tick.
