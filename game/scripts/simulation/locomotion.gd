@@ -72,15 +72,3 @@ static func _route_length_until(unit: Dictionary, two_brake: float, cap_squared:
 		x = waypoint[0]
 		y = waypoint[1]
 	return total
-
-static func route_length(unit: Dictionary) -> float:
-	var x: float = unit.position[0]
-	var y: float = unit.position[1]
-	var total: float = 0.0
-	for waypoint in unit.route:
-		var dx: float = waypoint[0] - x
-		var dy: float = waypoint[1] - y
-		total += sqrt(dx * dx + dy * dy)
-		x = waypoint[0]
-		y = waypoint[1]
-	return total

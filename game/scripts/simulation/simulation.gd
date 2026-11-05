@@ -71,13 +71,7 @@ func spawn(owner: int, position: Vector2, kind: String = "vehicle", occupied: Va
 	if Definitions.unit(kind).is_empty() or owner <= 0 or not _in_bounds(position) or (kind != "collector" and not _navigation.is_walkable(position)):
 		return -1
 	var cell := Vector2i(position.floor())
-	if occupied != null:
-		if kind != "collector" and occupied.has(cell): return -1
-	else:
-		for unit in _entities.values():
-			if kind == "collector" or unit.kind == "collector": continue
-			if _cell(unit.position) == cell or (unit.destination != null and _cell(unit.destination) == cell):
-				return -1
+	if kind != "collector" and (occupied if occupied != null else occupied_cells()).has(cell): return -1
 	var id: int = _next_entity_id
 	_entities[id] = {"id": id, "owner": owner, "position": [position.x, position.y], "order": null, "status": "idle", "route": [], "destination": null, "kind":kind,"hp":CombatDefinitions.profile(kind).max_hp,"max_hp":CombatDefinitions.profile(kind).max_hp,"combat":CombatDefinitions.initial_combat(kind),"speed":0.0,"move_after":0,"heading":[1.0,0.0],"construction_id":null,"collection": {"enabled":false,"preferred_source_id":null,"target_id":null,"phase":"idle","remaining_ticks":0,"retry_tick":0,"cargo":0} if kind == "collector" else null}
 	_next_entity_id += 1
