@@ -59,12 +59,16 @@ static func preview(sim: RefCounted, player: int, builder_id: int, kind: String,
 	var footprint: Array[Vector2i] = cells(kind,origin)
 	result.error = footprint_error(sim,footprint)
 	if not result.error.is_empty(): return result
-	var blocked: Array[Vector2i] = sim._union_cells()
-	blocked.append_array(footprint)
-	var size: Array = sim._navigation.snapshot().size
-	sim._navigation_builds += 1
-	var navigation = Navigation.new(blocked,Vector2i(size[0],size[1]))
-	result.navigation = navigation
+	var navigation: RefCounted = sim._navigation
+	if navigation.blocks_locally(footprint):
+		result.navigation = null
+	else:
+		var blocked: Array[Vector2i] = sim._union_cells()
+		blocked.append_array(footprint)
+		var size: Array = sim._navigation.snapshot().size
+		sim._navigation_builds += 1
+		navigation = Navigation.new(blocked,Vector2i(size[0],size[1]))
+		result.navigation = navigation
 	result.approach = approach(sim,builder_id,kind,origin,navigation)
 	if result.approach == null:
 		result.error = "No reachable builder approach"

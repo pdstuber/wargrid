@@ -134,9 +134,101 @@ func cells_in_component(component: int) -> Array[Vector2i]:
 		return []
 	return _component_cells[component].duplicate()
 
-func replace_blocked_cells(cells: Array[Vector2i]) -> void:
+func _is_rectangle(cells: Array[Vector2i]) -> bool:
+	if cells.is_empty():
+		return false
+	var bounds: Array[Vector2i] = _bounds(cells)
+	return (bounds[1].x - bounds[0].x + 1) * (bounds[1].y - bounds[0].y + 1) == cells.size()
+
+func _open(cell: Vector2i) -> bool:
+	return _grid.region.has_point(cell) and not _grid.is_point_solid(cell)
+
+func _bounds(cells: Array[Vector2i]) -> Array[Vector2i]:
+	var low: Vector2i = cells[0]
+	var high: Vector2i = cells[0]
+	for cell in cells:
+		low = Vector2i(mini(low.x, cell.x), mini(low.y, cell.y))
+		high = Vector2i(maxi(high.x, cell.x), maxi(high.y, cell.y))
+	return [low, high]
+
+func _ring(low: Vector2i, high: Vector2i) -> Array[Vector2i]:
+	var ring: Array[Vector2i] = []
+	for x in range(low.x - 1, high.x + 2):
+		ring.append(Vector2i(x, low.y - 1))
+	for y in range(low.y, high.y + 2):
+		ring.append(Vector2i(high.x + 1, y))
+	for x in range(high.x, low.x - 2, -1):
+		ring.append(Vector2i(x, high.y + 1))
+	for y in range(high.y, low.y - 1, -1):
+		ring.append(Vector2i(low.x - 1, y))
+	return ring
+
+func _ring_arcs(cells: Array[Vector2i]) -> int:
+	var bounds: Array[Vector2i] = _bounds(cells)
+	var ring: Array[Vector2i] = _ring(bounds[0], bounds[1])
+	var arcs: int = 0
+	for i in range(ring.size()):
+		if _open(ring[i]) and not _open(ring[i - 1]):
+			arcs += 1
+	return arcs
+
+func blocks_locally(cells: Array[Vector2i]) -> bool:
+	return _is_rectangle(cells) and cells.all(_open) and _ring_arcs(cells) <= 1
+
+func replace_blocked_cells(cells: Array[Vector2i]) -> String:
 	var zone: int = Profiler.begin()
 	var normalized: Array[Vector2i] = _normalize(cells)
-	if normalized != _blocked:
+	if normalized == _blocked:
+		Profiler.end(&"navigation.replace", zone)
+		return "none"
+	var old: Dictionary = {}
+	for cell in _blocked:
+		old[cell] = true
+	var new: Dictionary = {}
+	for cell in normalized:
+		new[cell] = true
+	var added: Array[Vector2i] = []
+	for cell in normalized:
+		if not old.has(cell): added.append(cell)
+	var removed: Array[Vector2i] = []
+	for cell in _blocked:
+		if not new.has(cell): removed.append(cell)
+	var local: bool = false
+	if removed.is_empty() and blocks_locally(added):
+		for cell in added:
+			_grid.set_point_solid(cell, true)
+			_component_cells[_components[_index(cell)]].erase(cell)
+			_components[_index(cell)] = -1
+		local = true
+	elif added.is_empty() and _is_rectangle(removed):
+		var label: int = _single_neighbor_label(removed)
+		if label >= 0:
+			for cell in removed:
+				_grid.set_point_solid(cell, false)
+				_components[_index(cell)] = label
+				var list: Array = _component_cells[label]
+				list.insert(list.bsearch_custom(cell, _cell_before), cell)
+			local = true
+	if local:
+		_blocked = normalized
+	else:
 		_apply_blocked(normalized)
 	Profiler.end(&"navigation.replace", zone)
+	return "local" if local else "full"
+
+# -1 unless every open cell 4-adjacent to the rectangle carries one label.
+func _single_neighbor_label(rectangle: Array[Vector2i]) -> int:
+	var inside: Dictionary = {}
+	for cell in rectangle:
+		inside[cell] = true
+	var label: int = -1
+	for cell in rectangle:
+		for offset in Neighbors:
+			var neighbor: Vector2i = cell + offset
+			if inside.has(neighbor) or not _open(neighbor):
+				continue
+			var found: int = _components[_index(neighbor)]
+			if label != -1 and found != label:
+				return -1
+			label = found
+	return label

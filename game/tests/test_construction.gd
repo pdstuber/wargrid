@@ -209,10 +209,11 @@ func test_construction_power_transition(runner) -> bool:
 func test_build_navigation_cost(runner) -> bool:
 	var sim = Fixture.make_world()
 	var before: int = sim.navigation_builds()
+	var local: int = sim.navigation_local_updates()
 	runner.check(place(sim).ok,"Cn8 build accepted")
-	runner.check(sim.navigation_builds() == before + 1,"Cn8 issue-time check builds one grid")
+	runner.check(sim.navigation_builds() == before,"Cn8 issue-time check builds no grid on open ground")
 	sim.step()
-	runner.check(sim.snapshot().buildings.size() == 1 and sim.navigation_builds() == before + 2,"Cn8 placement reuses its preview grid, got " + str(sim.navigation_builds() - before))
+	runner.check(sim.snapshot().buildings.size() == 1 and sim.navigation_builds() == before and sim.navigation_local_updates() == local + 1,"Cn8 placement updates in place, got " + str(sim.navigation_builds() - before))
 	var expected = Simulation.new(sim._union_cells(),Vector2i(32,32))
 	runner.check(sim.snapshot().map == expected.snapshot().map,"Cn8 reused grid equals a rebuilt one")
 	return true

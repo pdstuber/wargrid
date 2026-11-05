@@ -34,6 +34,7 @@ var _scan_chases: int = 0
 var _retaliations: int = 0
 var _allocation_calls: int = 0
 var _navigation_builds: int = 0
+var _navigation_local: int = 0
 var _map: Dictionary = {}
 const RNG_SEED: int = 0x2545F491
 var _rng: int = RNG_SEED
@@ -401,6 +402,9 @@ func retaliations() -> int:
 func navigation_builds() -> int:
 	return _navigation_builds
 
+func navigation_local_updates() -> int:
+	return _navigation_local
+
 func tick() -> int:
 	return _tick
 
@@ -550,8 +554,9 @@ func _replace_union(cells: Array[Vector2i], prebuilt: RefCounted = null) -> Dict
 	if prebuilt != null:
 		_navigation = prebuilt
 	else:
-		_navigation_builds += 1
-		_navigation.replace_blocked_cells(cells)
+		var how: String = _navigation.replace_blocked_cells(cells)
+		if how == "full": _navigation_builds += 1
+		elif how == "local": _navigation_local += 1
 	if _navigation.snapshot() == map:
 		return {"ok": true, "error": ""}
 	_path_queue.clear()
