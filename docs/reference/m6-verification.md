@@ -3,15 +3,15 @@
 Plan: [M6 plan](../superpowers/plans/2026-11-05-m6-teams-full-map.md). Run rules: [milestone prompt](../milestone-prompt.md).
 
 ```text
-Resume record (updated 2026-11-05, after Task 4 code, before gate review)
+Resume record (updated 2026-11-05, after Task 4 gate review fixes)
 Branch / base commit / working-tree state: m6-teams-map / 308bb4b / clean after the Task 4 commit
-Last green task / next incomplete task: Task 4 / Task 5 (Task 4 stop gate: Opus review pending, then restart)
+Last green task / next incomplete task: Task 4 (gate review done, fixes in) / Task 5
 Changed paths since last commit: none
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 233 cases, 104,592 checks, 0 failures, exit 0, TESTS PASSED; all 9 run_netplay.sh scenarios passed unchanged; S1_CORE_SERIES and TERMINAL_TICK unchanged
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 234 cases, 104,594 checks, 0 failures, exit 0, TESTS PASSED; all 9 run_netplay.sh scenarios passed unchanged; S1_CORE_SERIES and TERMINAL_TICK unchanged
 Known red case or blocker: none. Pending: test_maps_load in the CI export job (Review Focus 1)
 Approved decisions, pre-authorizations used, deferred gates: as before; local commit per milestone prompt; no push/PR/merge/window/BM6 re-pin without approval
 Usage so far (python3 tools/session_usage.py <session files>): not measured
-Next exact action: Opus gate review of Task 4 (diff 308bb4b..HEAD), fix findings test-first, then restart; Task 5 baseline 233 cases / 104,592 checks
+Next exact action: start Task 5; baseline 234 cases / 104,594 checks
 ```
 
 ## Task 0: baseline (2026-11-05, tree 9ea11bc + Task 0 test)
@@ -154,3 +154,5 @@ Start metrics (resampled routes in world units; buildable = open cells in the 25
 - Ruling: bots read team from `state.players` (`Skirmish._hostile`), not `Combat.hostile`, because `SeatSim` has no `team_of`.
 - Ruling: `add_player` team 0 means "default to seat id" (the plan's `team` ≥ 1 default).
 - Gap: `_retaliate_trigger`'s non-hostile-attacker skip is only reachable by friendly fire (Task 7); it is untested until then.
+- Gate review (Opus, 505a4ee): no Critical. I1 (winner = team id untested) and I2 (duplicate-seat check vacuous) fixed by `test_winner_is_team_id` and `[1, 1, 2]` in TM9; M1 (`alive` cost in the per-tick rate path) fixed by computing `alive` only in `snapshot()`.
+- Gap (I3): the bot team filter (`Skirmish._hostile`) has no test until Task 5's 3v3. Minor M2 (defensive hostility checks in `fire`/`plan` unreachable today) and M3 (world_view right-click on allies; presentation out of scope) noted, not fixed.

@@ -5,7 +5,7 @@ const Economy = preload("res://tests/economy_fixture.gd")
 const Combat = preload("res://scripts/simulation/combat.gd")
 
 func cases() -> Array[Callable]:
-	return [test_allies_never_target, test_team_victory, test_same_tick_team_cases, test_start_match_validation, test_team_defaults]
+	return [test_allies_never_target, test_team_victory, test_same_tick_team_cases, test_start_match_validation, test_team_defaults, test_winner_is_team_id]
 
 func _shots(sim: RefCounted) -> Array:
 	return sim.snapshot().combat_events.filter(func(event: Dictionary) -> bool: return event.type == "shot")
@@ -116,7 +116,7 @@ func test_start_match_validation(runner) -> bool:
 	var sim = _teamed([[1, 1], [2, 2]])
 	sim.spawn(1, Vector2(4.5, 4.5), "builder")
 	runner.check(not sim.start_match([1] as Array[int]).ok, "TM9 one seat rejected")
-	runner.check(not sim.start_match([1, 1] as Array[int]).ok, "TM9 duplicate seat rejected")
+	runner.check(not sim.start_match([1, 1, 2] as Array[int]).ok, "TM9 duplicate seat rejected")
 	var nine = Fixture.world()
 	var seats: Array[int] = []
 	for seat in range(1, 10):
@@ -130,4 +130,19 @@ func test_start_match_validation(runner) -> bool:
 	runner.check(not one_team.start_match([1, 2] as Array[int]).ok, "TM9 all seats on one team rejected")
 	sim.spawn(2, Vector2(6.5, 4.5), "builder")
 	runner.check(sim.start_match([1, 2] as Array[int]).ok, "TM9 valid two-seat match starts")
+	return true
+
+func test_winner_is_team_id(runner) -> bool:
+	var sim = _teamed([[1, 1], [2, 2], [3, 1]])
+	var first: int = sim.spawn(1, Vector2(4.5, 4.5), "builder")
+	var foe: int = sim.spawn(2, Vector2(8.5, 4.5), "builder")
+	sim.spawn(3, Vector2(12.5, 4.5), "builder")
+	sim.start_match([1, 2, 3] as Array[int])
+	sim.remove_object(first)
+	sim.step()
+	runner.check(sim.snapshot().match.status == "ongoing", "TM10 an ally survives, the team stays in")
+	sim.remove_object(foe)
+	sim.step()
+	var match_state: Dictionary = sim.snapshot().match
+	runner.check(match_state.status == "won" and match_state.winner == 1, "TM10 seats 1 and 3 on team 1: winner is the team id")
 	return true

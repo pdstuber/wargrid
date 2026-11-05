@@ -507,7 +507,7 @@ func _snapshot() -> Dictionary:
 	for player in players:
 		sequences.append({"player": player, "sequence": _last_sequences[player]})
 	return {"tick": _tick, "next_entity_id": _next_entity_id, "entities": entities,
-		"pending_commands": pending, "last_sequences": sequences, "map": _navigation.snapshot(), "path_queue": _path_queue.duplicate(), "players":_player_snapshots(),"buildings":_sorted_copies(_buildings),"sources":_sorted_copies(_sources),"terrain_cells":_terrain_snapshot(),"next_production_id":_next_production_id,"command_results":_command_results.duplicate(true),"combat_events":_combat_events.duplicate(true),"match":_match.duplicate(true) if _match != null else null}
+		"pending_commands": pending, "last_sequences": sequences, "map": _navigation.snapshot(), "path_queue": _path_queue.duplicate(), "players":_player_snapshots(true),"buildings":_sorted_copies(_buildings),"sources":_sorted_copies(_sources),"terrain_cells":_terrain_snapshot(),"next_production_id":_next_production_id,"command_results":_command_results.duplicate(true),"combat_events":_combat_events.duplicate(true),"match":_match.duplicate(true) if _match != null else null}
 
 func replace_blocked_cells(cells: Array[Vector2i]) -> Dictionary:
 	var size: Array = _navigation.snapshot().size
@@ -563,7 +563,7 @@ func _sorted_copies(records: Dictionary) -> Array:
 		result.append(records[id].duplicate(true))
 	return result
 
-func _player_snapshots() -> Array:
+func _player_snapshots(with_alive: bool = false) -> Array:
 	var result: Array = _sorted_copies(_players)
 	for player in result:
 		player.power_supply = 0
@@ -574,7 +574,7 @@ func _player_snapshots() -> Array:
 			if power > 0: player.power_supply += power
 			else: player.power_demand -= power
 		player.work_rate = Definitions.work_rate(player.power_supply,player.power_demand)
-		player.alive = _survives(player.id)
+		if with_alive: player.alive = _survives(player.id)
 	return result
 
 func _terrain_snapshot() -> Array:
