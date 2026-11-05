@@ -76,7 +76,7 @@ func test_rendered_probe_ticks(runner) -> bool:
 
 func test_snapshot_size_ceiling(runner) -> bool:
 	# Step 38 is the peak (routes full, queue just drained). The snapshot is copied twice per tick; raise a ceiling only deliberately and add a performance-ledger row.
-	var ceilings := {"open": 81285, "dense": 82149}
+	var ceilings := {"open": 81287, "dense": 82151}
 	for layout in ceilings:
 		var sim: RefCounted = Workload.create(layout)
 		Workload.issue_leg(sim, 0)

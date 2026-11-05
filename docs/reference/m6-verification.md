@@ -3,15 +3,15 @@
 Plan: [M6 plan](../superpowers/plans/2026-11-05-m6-teams-full-map.md). Run rules: [milestone prompt](../milestone-prompt.md).
 
 ```text
-Resume record (updated 2026-11-05, after Task 6)
-Branch / base commit / working-tree state: m6-teams-map / eabaa63 / Task 6 committed on top
-Last green task / next incomplete task: Task 6 / Task 7 (gate review follows Task 7)
+Resume record (updated 2026-11-05, after Task 7)
+Branch / base commit / working-tree state: m6-teams-map / 0730fe3 / Task 7 committed on top (gate review pending)
+Last green task / next incomplete task: Task 7 / Task 8 after the Task 7 gate review and a restart
 Changed paths since last commit: none
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 242 cases, 104,617 checks, 0 failures, exit 0, TESTS PASSED; netplay match/kill/stall/silent/spike/perturb/version all passed
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 248 cases, 104,632 checks, 0 failures, exit 0, TESTS PASSED (netplay scenarios inside the suite passed)
 Known red case or blocker: none. Pending: test_maps_load in the CI export job (Review Focus 1); team-*.tsv CI comparison unrun until CI
 Approved decisions, pre-authorizations used, deferred gates: as before; local commit per milestone prompt; no push/PR/merge/window/BM6 re-pin without approval
 Usage so far (python3 tools/session_usage.py <session files>): not measured
-Next exact action: start Task 7 (tank splash); baseline 242 cases / 104,617 checks
+Next exact action: Task 7 gate review (fresh Opus), fix findings, then start Task 8 in a fresh session; baseline 248 cases / 104,632 checks
 ```
 
 ## Task 0: baseline (2026-11-05, tree 9ea11bc + Task 0 test)
@@ -177,3 +177,14 @@ Start metrics (resampled routes in world units; buildable = open cells in the 25
 - Other assertion changes (geometry encoded centre range): D1 rifle values; R1 outside miss moved to 7.5, R1 building boundary uses the edge maximum; W1/L1 ticks (0,4,8,30,34,38; next fire 30; partial clip 4); G2 enemy at 5 cells; G4 enemy at 5.2 cells (in edge range, an AI guard would no longer approach); A5 decoy at 5.2 cells; A1 asserts `edge_gap <= 3.9`; P2 expected cell [16.5, 9.5], release test spawns the second attacker in the target's row and teleports the first target instead of a move order (a 1-cell move stays inside edge range).
 - `run_team_match.sh` after Task 6: `won tick=23162 winner=2 units_peak=316`, step+bot p50 1.692 / p95 11.375 / p99 28.277 ms (baseline row was tick 19541, winner 1); not a gate.
 - Design notes: `_nearest(..., edge)` is edge-tested only for the human in-range acquisition; AI scan stays centre-based. `Combat.EDGE_EPS` 1e-6, `RANGE_SLACK` 0.1, `MAX_TARGET_RADIUS` 2.2 (3x3 depot/factory diagonal half is 2.12).
+
+## Task 7: Crusader splash (2026-11-05, tree 0730fe3 + Task 7)
+
+- Cluster (`test_splash_cluster`, 300 shells at the middle of five infantry 1 cell apart): the aimed infantry hit by all 300, 105 neighbour hits = 0.35 per shell (window 0.30-0.42; Monte Carlo 0.359, Zero Hour measured 0.30). Deterministic: the RNG starts at `RNG_SEED`.
+- Mask: the INI mask `ALLIES ENEMIES NEUTRALS` hurts own and allied tanks next to the target; the attacker is never a victim.
+- Provisional re-pins (`test / assertion / old → new / cause`):
+  - `test_skirmish_match.gd` / `S1_CORE_SERIES` / 3285391664560676360 → 9208518222819811099 / Task 7 (`rng` snapshot field; `TERMINAL_TICK` 9938 unchanged)
+  - `test_state_hash.gd` / `PINNED` / 5fd6ce7215bcc43b → cf05a1d315bcc43b / Task 7 (`rng` field)
+  - `test_simulation.gd` / C1 fresh, C11 final state / gain `"rng": 625341585` / Task 7 (authorized field)
+  - `test_combat.gd` / D1 rifle, D1 cannon / gain `primary_radius`, `secondary_radius`, `secondary_damage`, `affects` / Task 7
+  - `test_benchmark.gd` / BM5 snapshot node ceiling / open 81285 → 81287, dense 82149 → 82151 / Task 7 (`rng` = +2 nodes; ledger row added). **Not named in the plan's pin list: flag at the gate.**

@@ -33,11 +33,21 @@ var _retaliations: int = 0
 var _allocation_calls: int = 0
 var _navigation_builds: int = 0
 var _map: Dictionary = {}
+const RNG_SEED: int = 0x2545F491
+var _rng: int = RNG_SEED
 
 func _init(blocked_cells: Array[Vector2i] = [], size: Vector2i = Navigation.SIZE) -> void:
 	_navigation = Navigation.new(blocked_cells, size)
 	for cell in _navigation.snapshot().blocked_cells:
 		_terrain_cells.append(Vector2i(cell[0],cell[1]))
+
+func next_random() -> int:
+	var x: int = _rng
+	x ^= (x << 13) & 0xFFFFFFFF
+	x ^= x >> 17
+	x ^= (x << 5) & 0xFFFFFFFF
+	_rng = x
+	return x
 
 func map_data() -> Dictionary:
 	return _map
@@ -507,7 +517,7 @@ func _snapshot() -> Dictionary:
 	for player in players:
 		sequences.append({"player": player, "sequence": _last_sequences[player]})
 	return {"tick": _tick, "next_entity_id": _next_entity_id, "entities": entities,
-		"pending_commands": pending, "last_sequences": sequences, "map": _navigation.snapshot(), "path_queue": _path_queue.duplicate(), "players":_player_snapshots(true),"buildings":_sorted_copies(_buildings),"sources":_sorted_copies(_sources),"terrain_cells":_terrain_snapshot(),"next_production_id":_next_production_id,"command_results":_command_results.duplicate(true),"combat_events":_combat_events.duplicate(true),"match":_match.duplicate(true) if _match != null else null}
+		"pending_commands": pending, "last_sequences": sequences, "map": _navigation.snapshot(), "path_queue": _path_queue.duplicate(), "players":_player_snapshots(true),"buildings":_sorted_copies(_buildings),"sources":_sorted_copies(_sources),"terrain_cells":_terrain_snapshot(),"next_production_id":_next_production_id,"command_results":_command_results.duplicate(true),"combat_events":_combat_events.duplicate(true),"match":_match.duplicate(true) if _match != null else null,"rng":_rng}
 
 func replace_blocked_cells(cells: Array[Vector2i]) -> Dictionary:
 	var size: Array = _navigation.snapshot().size

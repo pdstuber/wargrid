@@ -9,7 +9,7 @@ const Fixture = preload("res://tests/combat_fixture.gd")
 const EconomyFixture = preload("res://tests/economy_fixture.gd")
 
 func cases() -> Array[Callable]:
-	return [test_combat_definitions, test_health_snapshot_isolation, test_weapon_range_boundary, test_ranger_fires_at_edge_max, test_crusader_fires_at_edge_max, test_rifle_cycle_30, test_firing_cell_uses_edge, test_building_edge_range, test_damage_armor_matrix, test_weapon_cooldown, test_guard_priority, test_attack_validation_atomic, test_combat_intent_order, test_orders_preserve_reload, test_acquisition_throttle, test_mutual_lethal_fire, test_target_removed_cleanup, test_destroyed_unit_no_actions, test_destroyed_producer_accounting, test_same_tick_attack_and_cancel, test_removed_target_rescans, test_controller_and_scan_radius, test_scan_acquires_beyond_weapon_range, test_scan_radius_by_controller, test_scan_radius_boundary, test_removed_chaser_clears_chase, test_scan_keeps_target_leaving_radius, test_attack_move_resumes_after_chase, test_scan_same_tick_orders, test_scan_includes_buildings, test_human_guard_in_range_only, test_human_guard_holds_against_kiting, test_ai_guard_unchanged, test_human_attack_move_marches_in_range, test_human_attack_move_post_kill_rescan, test_human_attack_move_follows_retreat, test_rescan_same_tick_orders, test_human_attack_move_drops_target_out_of_range, test_human_attack_move_first_approach_has_no_leash, test_retarget_only_for_attack_move, test_missing_id_skipped, test_due_tick_death_skips_member, test_foreign_id_rejects, test_attack_move_mixed_selection, test_retaliate_trigger_distance, test_retaliate_joiners, test_retaliate_leash_and_return, test_retaliate_return_scan_and_rehit, test_retaliate_same_tick_cases, test_retaliate_go_home_queues_once]
+	return [test_combat_definitions, test_health_snapshot_isolation, test_weapon_range_boundary, test_ranger_fires_at_edge_max, test_crusader_fires_at_edge_max, test_rifle_cycle_30, test_firing_cell_uses_edge, test_building_edge_range, test_damage_armor_matrix, test_weapon_cooldown, test_guard_priority, test_attack_validation_atomic, test_combat_intent_order, test_orders_preserve_reload, test_acquisition_throttle, test_mutual_lethal_fire, test_target_removed_cleanup, test_destroyed_unit_no_actions, test_destroyed_producer_accounting, test_same_tick_attack_and_cancel, test_removed_target_rescans, test_controller_and_scan_radius, test_scan_acquires_beyond_weapon_range, test_scan_radius_by_controller, test_scan_radius_boundary, test_removed_chaser_clears_chase, test_scan_keeps_target_leaving_radius, test_attack_move_resumes_after_chase, test_scan_same_tick_orders, test_scan_includes_buildings, test_human_guard_in_range_only, test_human_guard_holds_against_kiting, test_ai_guard_unchanged, test_human_attack_move_marches_in_range, test_human_attack_move_post_kill_rescan, test_human_attack_move_follows_retreat, test_rescan_same_tick_orders, test_human_attack_move_drops_target_out_of_range, test_human_attack_move_first_approach_has_no_leash, test_retarget_only_for_attack_move, test_missing_id_skipped, test_due_tick_death_skips_member, test_foreign_id_rejects, test_attack_move_mixed_selection, test_retaliate_trigger_distance, test_retaliate_joiners, test_retaliate_leash_and_return, test_retaliate_return_scan_and_rehit, test_retaliate_same_tick_cases, test_retaliate_go_home_queues_once, test_rng_sequence, test_splash_victims_boundary, test_splash_cluster, test_splash_mask, test_splash_last_builder_same_tick, test_splash_event_flag]
 
 func test_combat_definitions(runner) -> bool:
 	runner.check(Definitions.profile("infantry") == {"max_hp": 180000, "armor": "human", "weapon": "rifle"}, "D1 infantry")
@@ -21,8 +21,8 @@ func test_combat_definitions(runner) -> bool:
 	for kind in hp:
 		runner.check(Definitions.profile(kind) == {"max_hp": hp[kind], "armor": "structure", "weapon": ""}, "D1 " + kind)
 	runner.check(Definitions.profile("nothing").is_empty() and Definitions.weapon("nothing").is_empty(), "D1 unknown empty")
-	runner.check(Definitions.weapon("rifle") == {"damage": 5000, "damage_type": "small_arms", "range": 4.0, "delay_ticks": 4, "clip_size": 3, "reload_ticks": 22}, "D1 rifle")
-	runner.check(Definitions.weapon("cannon") == {"damage": 60000, "damage_type": "armor_piercing", "range": 6.0, "delay_ticks": 60, "clip_size": 0, "reload_ticks": 0}, "D1 cannon")
+	runner.check(Definitions.weapon("rifle") == {"damage": 5000, "damage_type": "small_arms", "range": 4.0, "delay_ticks": 4, "clip_size": 3, "reload_ticks": 22, "primary_radius": 0.0, "secondary_radius": 0.0, "secondary_damage": 0, "affects": []}, "D1 rifle")
+	runner.check(Definitions.weapon("cannon") == {"damage": 60000, "damage_type": "armor_piercing", "range": 6.0, "delay_ticks": 60, "clip_size": 0, "reload_ticks": 0, "primary_radius": 0.2, "secondary_radius": 0.0, "secondary_damage": 0, "affects": ["allies", "enemies", "neutrals"]}, "D1 cannon")
 	var rows := {"human": [100, 10], "tank": [25, 100], "dozer": [25, 100], "humvee": [50, 100], "structure": [50, 100], "chinook": [50, 50]}
 	for armor in rows:
 		runner.check(Definitions.armor_percent(armor, "small_arms") == rows[armor][0] and Definitions.armor_percent(armor, "armor_piercing") == rows[armor][1], "D1 armor " + armor)
@@ -1172,4 +1172,117 @@ func test_retaliate_go_home_queues_once(runner) -> bool:
 	runner.check(sim._path_queue.count(world[1]) == 1, "RG1 going home replaces the queued path request")
 	sim.remove_object(world[1])
 	runner.check(not sim._path_queue.has(world[1]), "RG1 no stale id after the unit dies")
+	return true
+
+func test_rng_sequence(runner) -> bool:
+	var sim = Fixture.world()
+	var seen: Array = []
+	for i in range(4): seen.append(sim.next_random())
+	runner.check(seen == [3777279546, 2342155435, 1692513196, 1525286], "S7 xorshift32 sequence")
+	runner.check(sim.snapshot().rng == 1525286, "S7 snapshot rng is the state")
+	return true
+
+func test_splash_victims_boundary(runner) -> bool:
+	var sim = Fixture.world()
+	var attacker: Dictionary = {"id": -1, "owner": 1}
+	var edge: float = 0.52 + Definitions.radius("infantry")
+	for case in [[edge, true], [edge + 0.01, false]]:
+		var fresh = Fixture.world()
+		fresh.spawn(2, Vector2(5.0 + case[0], 5.0), "infantry")
+		runner.check(Combat.splash_victims(fresh, Vector2(5.0, 5.0), 0.52, ["enemies"], attacker).size() == (1 if case[1] else 0), "S7 blast edge " + str(case[0]))
+	return true
+
+func _cluster() -> Array:
+	var sim = Fixture.world()
+	var row: Array = []
+	for x in range(5):
+		var id: int = sim.spawn(2, Vector2(10.5 + x, 10.5), "infantry")
+		sim._entities[id].hp = 1000000000
+		sim._entities[id].combat = null
+		row.append(id)
+	return [sim, row, sim.spawn(1, Vector2(12.5, 15.5), "tank")]
+
+func test_splash_cluster(runner) -> bool:
+	var world: Array = _cluster()
+	var sim = world[0]
+	var row: Array = world[1]
+	var tank: int = world[2]
+	runner.check(Fixture.send(sim, {"type": "attack", "entity_ids": [tank], "target_id": row[2]}).ok, "S7 attack accepted")
+	var shells: int = 0
+	var middle_hits: int = 0
+	var neighbour_hits: int = 0
+	var wrong: int = 0
+	for tick in range(2000):
+		if shells == 300: break
+		sim._entities[tank].combat.next_fire_tick = 0
+		sim.step()
+		var middle: bool = false
+		for shot in _shots(sim):
+			if shot.target_id == row[2]:
+				middle = true
+				wrong += 0 if not shot.splash and shot.damage == 6000 else 1
+			else:
+				neighbour_hits += 1
+				wrong += 0 if shot.splash and shot.damage == 6000 else 1
+		shells += 1 if middle else 0
+		middle_hits += 1 if middle else 0
+	var rate: float = float(neighbour_hits) / 300.0
+	print("S7 cluster: shells ", shells, " middle ", middle_hits, " neighbour hits ", neighbour_hits, " rate ", rate)
+	runner.check(shells == 300 and middle_hits == 300 and wrong == 0, "S7 aimed infantry hit by every shell, flags and damage right")
+	runner.check(rate >= 0.30 and rate <= 0.42, "S7 neighbour hits per shell inside 0.30-0.42")
+	return true
+
+func _teamed(seats: Array) -> RefCounted:
+	var sim = Fixture.world()
+	for seat in seats: sim.add_player(seat[0], 0, "human", seat[1])
+	return sim
+
+func test_splash_mask(runner) -> bool:
+	var sim = _teamed([[1, 1], [2, 2], [3, 1]])
+	var attacker: int = sim.spawn(1, Vector2(10.5, 10.5), "tank")
+	var target: int = sim.spawn(2, Vector2(10.5, 15.5), "tank")
+	var ally: int = sim.spawn(3, Vector2(11.4, 15.5), "tank")
+	var own: int = sim.spawn(1, Vector2(9.6, 15.5), "tank")
+	runner.check(Fixture.send(sim, {"type": "attack", "entity_ids": [attacker], "target_id": target}).ok, "S7 mask attack accepted")
+	sim.step()
+	var hit: Dictionary = {}
+	for shot in _shots(sim):
+		if shot.attacker_id == attacker: hit[shot.target_id] = shot.splash
+	runner.check(hit == {target: false, ally: true, own: true}, "S7 INI mask hurts own and allied units, never the attacker")
+	var record: Dictionary = Combat.record(sim, target)
+	runner.check(Combat.splash_victims(sim, Vector2(record.position[0], record.position[1]), 0.2, ["enemies"], Combat.record(sim, attacker)).size() == 1, "S7 an enemies-only mask would skip allies")
+	return true
+
+func _last_builder_world(spare: bool) -> Array:
+	var sim = _teamed([[1, 1], [2, 2], [3, 1]])
+	var target: int = sim.spawn(3, Vector2(10.5, 10.5), "builder")
+	var splashed: int = sim.spawn(1, Vector2(11.4, 10.5), "builder")
+	sim.spawn(2, Vector2(9.5, 15.5), "tank")
+	sim.spawn(2, Vector2(25.5, 25.5), "builder")
+	if spare: sim.spawn(3, Vector2(20.5, 5.5), "builder")
+	for id in [target, splashed]: sim._entities[id].hp = 1000
+	sim.start_match([1, 2, 3] as Array[int])
+	return [sim, target, splashed]
+
+func test_splash_last_builder_same_tick(runner) -> bool:
+	var out: Array = _last_builder_world(false)
+	out[0].step()
+	var match_state: Dictionary = out[0].snapshot().match
+	runner.check(not out[0].snapshot().entities.any(func(e: Dictionary) -> bool: return e.id in [out[1], out[2]]), "S7 target and splashed builder both die")
+	runner.check(match_state.status == "won" and match_state.winner == 2 and match_state.ended_tick == out[0].tick() - 1, "S7 team out on that tick")
+	var stays: Array = _last_builder_world(true)
+	stays[0].step()
+	runner.check(stays[0].snapshot().match.status == "ongoing", "S7 team with one surviving seat stays in")
+	return true
+
+func test_splash_event_flag(runner) -> bool:
+	var sim = Fixture.world()
+	var tank: int = sim.spawn(1, Vector2(10.5, 10.5), "tank")
+	sim.spawn(2, Vector2(10.5, 15.5), "tank")
+	sim.spawn(2, Vector2(14.5, 15.5), "tank")
+	var before: int = sim.snapshot().rng
+	sim.step()
+	var shots: Array = _shots(sim).filter(func(s: Dictionary) -> bool: return s.attacker_id == tank)
+	runner.check(shots.size() == 1 and shots[0].splash == false, "S7 lone tank target gives one non-splash event")
+	runner.check(sim.snapshot().rng == before, "S7 vehicle target draws nothing")
 	return true

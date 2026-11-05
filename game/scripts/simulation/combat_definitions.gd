@@ -25,9 +25,13 @@ static func profile(kind: String) -> Dictionary:
 
 static func weapon(kind: String) -> Dictionary:
 	match kind:
-		"rifle": return {"damage": 5000, "damage_type": "small_arms", "range": 4.0, "delay_ticks": 4, "clip_size": 3, "reload_ticks": 22}
-		"cannon": return {"damage": 60000, "damage_type": "armor_piercing", "range": 6.0, "delay_ticks": 60, "clip_size": 0, "reload_ticks": 0}
+		"rifle": return {"damage": 5000, "damage_type": "small_arms", "range": 4.0, "delay_ticks": 4, "clip_size": 3, "reload_ticks": 22, "primary_radius": 0.0, "secondary_radius": 0.0, "secondary_damage": 0, "affects": []}
+		"cannon": return {"damage": 60000, "damage_type": "armor_piercing", "range": 6.0, "delay_ticks": 60, "clip_size": 0, "reload_ticks": 0, "primary_radius": 0.2, "secondary_radius": 0.0, "secondary_damage": 0, "affects": ["allies", "enemies", "neutrals"]}
 	return {}
+
+# Zero Hour ScatterRadiusVsInfantry 10 and a 12-unit reach, scaled by 25/15 for Wargrid's one-unit-per-cell spacing, less the 7-unit Ranger radius (docs/reference/m6-verification.md, Splash finding).
+const SCATTER_VS_INFANTRY: float = 2.0 / 3.0
+const INFANTRY_BLAST: float = 0.52
 
 # Source: Zero Hour geometry at 25 units per cell: infantry cylinder r 7, boxes as half-diagonals (docs/reference/m6-verification.md Values table).
 static func radius(kind: String) -> float:

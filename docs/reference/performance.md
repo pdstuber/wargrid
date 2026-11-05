@@ -67,6 +67,7 @@ All rows: this Mac, Godot 4.7.2, Compatibility renderer, 64×64 map, 300 units, 
 | 2026-11-03 scratch spike | ticks units wait for routes after one building is removed (150 moving) | 19 | — | same |
 
 | 2026-11-03 M4 Task 1 (uncommitted, `m4-combat`) | snapshot node ceiling at step 38 (`hp`, `max_hp`, `combat` per unit = +6; `combat_events`, `match` root = +4) | 81,285 (was 79,481); busiest unit 328 (was 322) | 82,149 (was 80,345) | `test_snapshot_size_ceiling`, ceilings raised deliberately |
+| 2026-11-05 M6 Task 7 (`m6-teams-map`) | snapshot node ceiling at step 38 (top-level `rng` = +2) | 81,287 (was 81,285); busiest unit unchanged | 82,151 (was 82,149) | `test_snapshot_size_ceiling`, ceilings raised deliberately by the one authorized field |
 | 2026-11-03 M4 Tasks 1–4 (uncommitted) | sim-only tick p50 / p95 / p99 / max (ms) | 1.038 / 1.559 / 1.627 / 8.198 | 1.064 / 1.592 / 1.652 / 8.013 | `sh tools/run_benchmark.sh`, `BENCHMARK PASSED 2`; budget 1.67 passes, margin ~5% |
 | 2026-11-03 M4 scratch spike after Task 4 (not the Task 9a tool) | 150 v 150 (100 infantry + 50 tanks per side, 10-wide blocks), 64×64 empty map, 2100 unpaced ticks, sim-only tick p50 / p95 / max (ms); `combat_work` per tick | contact (blocks 3 cells apart, guard): 11.7 / 12.5 / 27.9; ~37,500 checks per tick | open (attack-move across the map): 5.8 / 15.3 / 33.6; 45,000 checks per tick while approaching | scratch `combat_spike.gd`, outside the repo; **7.5–9× over the 1.67 ms budget, and also over the old 8 ms dev gate**; confirms risk 1 below |
 

@@ -279,9 +279,8 @@ static func fire(sim: RefCounted, unit_ids: Array[int], moved_ids: Array[int]) -
 		var target: Dictionary = record(sim, combat.target_id)
 		if target.is_empty() or not hostile(sim, unit.owner, target.owner) or not _in_range(sim, unit, target): continue
 		var weapon: Dictionary = CombatDefinitions.weapon(CombatDefinitions.profile(unit.kind).weapon)
-		var amount: int = weapon.damage * CombatDefinitions.armor_percent(CombatDefinitions.profile(target.kind).armor, weapon.damage_type) / 100
-		shots.append({"type": "shot", "tick": sim._tick, "attacker_id": unit_id, "target_id": target.id, "damage": amount})
-		damage[target.id] = damage.get(target.id, 0) + amount
+		_hit(shots, damage, sim, unit_id, target, weapon, false)
+		if weapon.primary_radius > 0.0: _splash(shots, damage, sim, unit, target, weapon)
 		_reload(sim, combat, weapon)
 	sim._combat_events.append_array(shots)
 	var dead: Array = damage.keys().filter(func(id: int) -> bool: return record(sim, id).hp <= damage[id])
@@ -295,6 +294,39 @@ static func fire(sim: RefCounted, unit_ids: Array[int], moved_ids: Array[int]) -
 	for id in dead:
 		sim._combat_events.append({"type": "death", "tick": sim._tick, "object_id": id})
 		sim.remove_object(id)
+
+static func _hit(shots: Array[Dictionary], damage: Dictionary, sim: RefCounted, attacker_id: int, target: Dictionary, weapon: Dictionary, splash: bool) -> void:
+	var amount: int = weapon.damage * CombatDefinitions.armor_percent(CombatDefinitions.profile(target.kind).armor, weapon.damage_type) / 100
+	shots.append({"type": "shot", "tick": sim._tick, "attacker_id": attacker_id, "target_id": target.id, "damage": amount, "splash": splash})
+	damage[target.id] = damage.get(target.id, 0) + amount
+
+# Against infantry the shell lands at a seeded point (uniform angle and radius) and blasts a wider radius.
+static func _splash(shots: Array[Dictionary], damage: Dictionary, sim: RefCounted, unit: Dictionary, target: Dictionary, weapon: Dictionary) -> void:
+	var impact: Vector2 = _victim_centre(target)
+	var radius: float = weapon.primary_radius
+	if target.kind == "infantry":
+		impact += _scatter(sim) * CombatDefinitions.SCATTER_VS_INFANTRY * sim.next_random() / 4294967296.0
+		radius = CombatDefinitions.INFANTRY_BLAST
+	for victim in splash_victims(sim, impact, radius, weapon.affects, unit):
+		if victim.id != target.id: _hit(shots, damage, sim, unit.id, victim, weapon, true)
+
+static func _scatter(sim: RefCounted) -> Vector2:
+	while true:
+		var d := Vector2(sim.next_random() / 2147483648.0 - 1.0, sim.next_random() / 2147483648.0 - 1.0)
+		var squared: float = d.length_squared()
+		if squared > 1e-12 and squared <= 1.0: return d / sqrt(squared)
+	return Vector2.ZERO
+
+# shortcut: scans every object per cannon shot; grid it if cannon shots x objects shows in the ledger.
+static func splash_victims(sim: RefCounted, impact: Vector2, radius: float, affects: Array, attacker: Dictionary) -> Array[Dictionary]:
+	var victims: Array[Dictionary] = []
+	for pool in [sim._entities, sim._buildings]:
+		for victim in pool.values():
+			if victim.id == attacker.id or victim.kind == "collector": continue
+			if (_victim_centre(victim).distance_to(impact) - CombatDefinitions.radius(victim.kind)) > radius + EDGE_EPS: continue
+			if affects.has("enemies" if hostile(sim, attacker.owner, victim.owner) else "allies"): victims.append(victim)
+	victims.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.id < b.id)
+	return victims
 
 static func _reload(sim: RefCounted, combat: Dictionary, weapon: Dictionary) -> void:
 	if weapon.clip_size == 0:

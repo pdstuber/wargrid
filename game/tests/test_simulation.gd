@@ -10,7 +10,7 @@ func equal(runner, actual: Variant, expected: Variant, label: String) -> void:
 
 func test_spawn(runner) -> bool:
 	var sim = Simulation.new()
-	equal(runner, sim.snapshot(), {"tick": 0, "next_entity_id": 1, "entities": [], "pending_commands": [], "last_sequences": [], "map": {"size": [16, 16], "blocked_cells": []}, "path_queue": [], "players":[],"buildings":[],"sources":[],"terrain_cells":[],"next_production_id":1,"command_results":[],"combat_events":[],"match":null}, "C1 fresh")
+	equal(runner, sim.snapshot(), {"tick": 0, "next_entity_id": 1, "entities": [], "pending_commands": [], "last_sequences": [], "map": {"size": [16, 16], "blocked_cells": []}, "path_queue": [], "players":[],"buildings":[],"sources":[],"terrain_cells":[],"next_production_id":1,"command_results":[],"combat_events":[],"match":null,"rng":625341585}, "C1 fresh")
 	equal(runner, sim.spawn(1, Vector2(1, 2)), 1, "C1 first ID")
 	equal(runner, sim.spawn(2, Vector2.ZERO), 2, "C1 second ID")
 	var before: Dictionary = sim.snapshot()
@@ -212,7 +212,7 @@ func test_repeatability(runner) -> bool:
 		"entities": [{"id": 1, "owner": 1, "position": [8.0, 9.0], "order": null, "status": "arrived", "route": [], "destination": [8.0, 9.0],"kind":"vehicle","hp":240000,"max_hp":240000,"combat":null,"construction_id":null,"collection":null}],
 		"map": {"size": [16, 16], "blocked_cells": []}, "path_queue": [],
 		"pending_commands": [], "last_sequences": [{"player": 1, "sequence": 1}],
-		"players":[],"buildings":[],"sources":[],"terrain_cells":[],"next_production_id":1,"command_results":[],"combat_events":[],"match":null,
+		"players":[],"buildings":[],"sources":[],"terrain_cells":[],"next_production_id":1,"command_results":[],"combat_events":[],"match":null,"rng":625341585,
 	}, "C11 full final state")
 	return true
 
