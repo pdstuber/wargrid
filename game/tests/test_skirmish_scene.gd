@@ -70,7 +70,7 @@ func test_combat_context_input(runner) -> bool:
 	main.selected_ids.assign([1, ids.infantry])
 	var pending: int = _pending(main)
 	helper.pointer(main, enemy_point, MOUSE_BUTTON_RIGHT, true)
-	runner.check(_pending(main) == pending and _pending(main, "move") == 0 and not main._error.is_empty(), "K3 an unarmed member rejects the whole click without a move")
+	runner.check(_pending(main) == pending + 1 and _pending(main, "move") == 0 and main._error.is_empty(), "K3 an unarmed member no longer rejects the click")
 	main.selected_ids.assign([ids.infantry, ids.tank])
 	pending = _pending(main)
 	helper.key(main, KEY_A)

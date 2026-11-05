@@ -133,19 +133,22 @@ func _validate(command: Dictionary, due: bool = false) -> String:
 		if not command.origin is Array or command.origin.size() != 2: return "Expected integer origin"
 		for coordinate in command.origin:
 			if typeof(coordinate) != TYPE_INT: return "Expected integer origin"
+	var live: Array = []
 	if fields.has("entity_ids"):
 		if not command.entity_ids is Array or command.entity_ids.is_empty(): return "Expected nonempty entity array"
 		var seen: Dictionary = {}
 		for id in command.entity_ids:
 			if typeof(id) != TYPE_INT or id <= 0 or seen.has(id): return "Invalid or duplicate entity ID"
 			seen[id] = true
-		if not _owns_all(command.player,command.entity_ids): return "Missing entity or wrong owner"
+		var found: Variant = _live_ids(command.player,command.entity_ids)
+		if found is String: return found
+		live = found
+		if live.is_empty(): return "No units left" if due else "Missing entity or wrong owner"
 	if command.type == "move": return _validate_target(command,due)
 	if command.type == "stop": return ""
 	if command.type in ["attack","attack_move"]:
-		for id in command.entity_ids:
-			if _entities[id].combat == null: return "Attack requires armed units"
 		if command.type == "attack_move": return _validate_target(command,due)
+		if _armed(live).is_empty(): return "Attack requires armed units"
 		return "" if Combat.valid_target(self,command.player,command.target_id) else "Invalid attack target"
 	if not _players.has(command.player): return "Player has no economy"
 	# Due builds are checked once by Construction.place, which reuses that preview grid.
@@ -177,7 +180,7 @@ func _validate(command: Dictionary, due: bool = false) -> String:
 		return ""
 	if command.type == "gather":
 		if not _sources.has(command.source_id): return "Missing supply source"
-		for id in command.entity_ids:
+		for id in live:
 			if _entities[id].kind != "collector": return "Gather requires collectors"
 			if _sources[command.source_id].boxes == 0 and _entities[id].collection.cargo == 0: return "Source is empty"
 		return ""
@@ -192,14 +195,19 @@ func _validate_target(command: Dictionary, due: bool) -> String:
 	if not _in_bounds(target): return "Target outside map"
 	if not due and command.has("entity_ids"):
 		for id in command.entity_ids:
-			if _entities[id].kind != "collector" and not _navigation.is_walkable(target): return "Target must be walkable and within map"
+			if _entities.has(id) and _entities[id].kind != "collector" and not _navigation.is_walkable(target): return "Target must be walkable and within map"
 	return ""
 
-func _owns_all(player: int, ids: Array) -> bool:
+func _live_ids(player: int, ids: Array) -> Variant:
+	var live: Array = []
 	for id in ids:
-		if not _entities.has(id) or _entities[id].owner != player:
-			return false
-	return true
+		if not _entities.has(id): continue
+		if _entities[id].owner != player: return "Missing entity or wrong owner"
+		live.append(id)
+	return live
+
+func _armed(ids: Array) -> Array:
+	return ids.filter(func(id): return _entities[id].combat != null)
 
 func _command_before(a: Dictionary, b: Dictionary) -> bool:
 	for key in ["tick", "player", "sequence"]:
@@ -252,6 +260,9 @@ func _apply_orders() -> void:
 		if command.type != "move":
 			_command_results.append({"tick":_tick,"player":command.player,"sequence":command.sequence,"ok":error.is_empty(),"error":error})
 		if not error.is_empty(): continue
+		if command.has("entity_ids"):
+			command.entity_ids = _live_ids(command.player,command.entity_ids)
+			if command.type == "attack": command.entity_ids = _armed(command.entity_ids)
 		if command.type in ["build","resume_build"]:
 			command.entity_ids = [command.builder_id]
 		if not command.has("entity_ids"): continue

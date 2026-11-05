@@ -9,7 +9,7 @@ const Fixture = preload("res://tests/combat_fixture.gd")
 const EconomyFixture = preload("res://tests/economy_fixture.gd")
 
 func cases() -> Array[Callable]:
-	return [test_combat_definitions, test_health_snapshot_isolation, test_weapon_range_boundary, test_damage_armor_matrix, test_weapon_cooldown, test_guard_priority, test_attack_validation_atomic, test_combat_intent_order, test_orders_preserve_reload, test_acquisition_throttle, test_mutual_lethal_fire, test_target_removed_cleanup, test_destroyed_unit_no_actions, test_destroyed_producer_accounting, test_same_tick_attack_and_cancel, test_removed_target_rescans, test_controller_and_scan_radius, test_scan_acquires_beyond_weapon_range, test_scan_radius_by_controller, test_scan_radius_boundary, test_removed_chaser_clears_chase, test_scan_keeps_target_leaving_radius, test_attack_move_resumes_after_chase, test_scan_same_tick_orders, test_scan_includes_buildings, test_human_guard_in_range_only, test_human_guard_holds_against_kiting, test_ai_guard_unchanged, test_human_attack_move_marches_in_range, test_human_attack_move_post_kill_rescan, test_human_attack_move_follows_retreat, test_rescan_same_tick_orders, test_human_attack_move_drops_target_out_of_range, test_retarget_only_for_attack_move]
+	return [test_combat_definitions, test_health_snapshot_isolation, test_weapon_range_boundary, test_damage_armor_matrix, test_weapon_cooldown, test_guard_priority, test_attack_validation_atomic, test_combat_intent_order, test_orders_preserve_reload, test_acquisition_throttle, test_mutual_lethal_fire, test_target_removed_cleanup, test_destroyed_unit_no_actions, test_destroyed_producer_accounting, test_same_tick_attack_and_cancel, test_removed_target_rescans, test_controller_and_scan_radius, test_scan_acquires_beyond_weapon_range, test_scan_radius_by_controller, test_scan_radius_boundary, test_removed_chaser_clears_chase, test_scan_keeps_target_leaving_radius, test_attack_move_resumes_after_chase, test_scan_same_tick_orders, test_scan_includes_buildings, test_human_guard_in_range_only, test_human_guard_holds_against_kiting, test_ai_guard_unchanged, test_human_attack_move_marches_in_range, test_human_attack_move_post_kill_rescan, test_human_attack_move_follows_retreat, test_rescan_same_tick_orders, test_human_attack_move_drops_target_out_of_range, test_retarget_only_for_attack_move, test_missing_id_skipped, test_due_tick_death_skips_member, test_foreign_id_rejects, test_attack_move_mixed_selection]
 
 func test_combat_definitions(runner) -> bool:
 	runner.check(Definitions.profile("infantry") == {"max_hp": 180000, "armor": "human", "weapon": "rifle"}, "D1 infantry")
@@ -196,11 +196,10 @@ func test_attack_validation_atomic(runner) -> bool:
 		["missing target", {"type": "attack", "entity_ids": [rifle], "target_id": 999}],
 		["bool target", {"type": "attack", "entity_ids": [rifle], "target_id": true}],
 		["enemy member", {"type": "attack", "entity_ids": [enemy_unit], "target_id": enemy}],
-		["unarmed member", {"type": "attack", "entity_ids": [rifle, worker], "target_id": enemy}],
+		["unarmed only", {"type": "attack", "entity_ids": [worker], "target_id": enemy}],
 		["friend target", {"type": "attack", "entity_ids": [rifle], "target_id": friend}],
 		["source target", {"type": "attack", "entity_ids": [rifle], "target_id": source}],
 		["collector target", {"type": "attack", "entity_ids": [rifle], "target_id": air}],
-		["attack_move unarmed", {"type": "attack_move", "entity_ids": [rifle, worker], "target": [9.5, 9.5]}],
 		["attack_move off map", {"type": "attack_move", "entity_ids": [rifle], "target": [99.5, 9.5]}],
 		["attack_move string", {"type": "attack_move", "entity_ids": [rifle], "target": ["a", 9.5]}],
 		["attack_move missing target", {"type": "attack_move", "entity_ids": [rifle]}],
@@ -219,6 +218,79 @@ func test_attack_validation_atomic(runner) -> bool:
 	for command in sim.snapshot().pending_commands:
 		if command.type == "attack_move": pending = command
 	runner.check(pending.get("entity_ids") == [rifle] and pending.get("target") == [9.5, 9.5], "V1 future command deep copied")
+	return true
+
+func _group_world() -> Dictionary:
+	var sim = Fixture.world()
+	return {"sim": sim, "a": sim.spawn(1, Vector2(2.5, 2.5), "infantry"), "b": sim.spawn(1, Vector2(2.5, 4.5), "infantry"),
+		"worker": sim.spawn(1, Vector2(2.5, 6.5), "builder"), "enemy": sim.spawn(2, Vector2(20.5, 2.5), "builder"),
+		"foe": sim.spawn(2, Vector2(20.5, 4.5), "infantry")}
+
+func _step(sim: RefCounted, ticks: int) -> void:
+	for i in ticks: sim.step()
+
+func test_missing_id_skipped(runner) -> bool:
+	for type in ["move", "stop", "attack", "attack_move"]:
+		var w: Dictionary = _group_world()
+		var sim = w.sim
+		var payload: Dictionary = {"type": type, "entity_ids": [w.a, 999, w.b]}
+		if type == "attack": payload.target_id = w.enemy
+		elif type != "stop": payload.target = [9.5, 9.5]
+		runner.check(Fixture.send(sim, payload).ok, "G1 " + type + " with a missing id accepted")
+		_step(sim, 2)
+		var applied: bool = _mode(sim, w.a).mode != "guard" or type == "stop"
+		if type == "move": applied = Fixture.object(sim, w.a).destination != null and Fixture.object(sim, w.b).destination != null
+		runner.check(applied and (type == "move" or _mode(sim, w.b).mode == _mode(sim, w.a).mode), "G1 " + type + " applies to the remaining ids")
+	var econ = EconomyFixture.make_world()
+	var collector: int = econ.spawn(1, Vector2(6.5, 4.5), "collector")
+	var source: int = econ.add_supply_source(Vector2i(10, 10), 5)
+	var gathered: Dictionary = Fixture.send(econ, {"type": "gather", "entity_ids": [collector, 999], "source_id": source})
+	runner.check(gathered.ok, "G1 gather with a missing id accepted " + gathered.error)
+	return true
+
+func test_due_tick_death_skips_member(runner) -> bool:
+	var w: Dictionary = _group_world()
+	var sim = w.sim
+	var tick: int = sim.snapshot().tick + 4
+	var seq: int = 1
+	runner.check(sim.issue_command({"tick": tick, "player": 1, "sequence": seq, "type": "attack_move", "entity_ids": [w.a, w.b], "target": [9.5, 9.5]}).ok, "G2 future order accepted")
+	_step(sim, 2)
+	sim.remove_object(w.a)
+	_step(sim, 3)
+	runner.check(_mode(sim, w.b).mode == "attack_move", "G2 live member gets the order after the other died")
+	var w2: Dictionary = _group_world()
+	var sim2 = w2.sim
+	runner.check(sim2.issue_command({"tick": sim2.snapshot().tick + 2, "player": 1, "sequence": 1, "type": "attack_move", "entity_ids": [w2.a], "target": [9.5, 9.5]}).ok, "G2 single-unit order accepted")
+	sim2.remove_object(w2.a)
+	var results: Array = []
+	for i in 3:
+		sim2.step()
+		results.append_array(sim2.snapshot().command_results)
+	runner.check(results.size() == 1 and not results[0].ok and results[0].error == "No units left", "G2 all members gone gives No units left " + str(results))
+	return true
+
+func test_foreign_id_rejects(runner) -> bool:
+	var w: Dictionary = _group_world()
+	_rejected(runner, w.sim, {"type": "move", "entity_ids": [w.a, w.foe], "target": [9.5, 9.5]}, "G3 foreign id move")
+	var result: Dictionary = Fixture.send(w.sim, {"type": "stop", "entity_ids": [w.a, w.foe]})
+	runner.check(not result.ok and result.error == "Missing entity or wrong owner", "G3 foreign id error text")
+	return true
+
+func test_attack_move_mixed_selection(runner) -> bool:
+	var w: Dictionary = _group_world()
+	var sim = w.sim
+	runner.check(Fixture.send(sim, {"type": "attack_move", "entity_ids": [w.a, w.worker], "target": [9.5, 9.5]}).ok, "G4 mixed attack_move accepted")
+	_step(sim, 2)
+	var builder: Dictionary = Fixture.object(sim, w.worker)
+	runner.check(builder.combat == null and builder.destination != null and _mode(sim, w.a).mode == "attack_move", "G4 builder moves plainly, rifle attack-moves")
+	var w2: Dictionary = _group_world()
+	runner.check(Fixture.send(w2.sim, {"type": "attack_move", "entity_ids": [w2.worker], "target": [9.5, 9.5]}).ok, "G4 builder alone accepted")
+	_step(w2.sim, 2)
+	runner.check(Fixture.object(w2.sim, w2.worker).destination != null, "G4 builder alone moves")
+	var w3: Dictionary = _group_world()
+	runner.check(Fixture.send(w3.sim, {"type": "attack", "entity_ids": [w3.a, w3.worker], "target_id": w3.enemy}).ok, "G4 attack with builder accepted")
+	_step(w3.sim, 2)
+	runner.check(_mode(w3.sim, w3.a).mode == "attack" and Fixture.object(w3.sim, w3.worker).combat == null, "G4 only the rifle attacks")
 	return true
 
 func _mode(sim: RefCounted, id: int) -> Dictionary:
