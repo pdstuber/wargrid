@@ -39,9 +39,10 @@ static func edge_gap(unit: Dictionary, target: Dictionary) -> float:
 static func _gap_at(x: float, y: float, kind: String, target: Dictionary) -> float:
 	var cx: float = target.position[0] if not target.has("origin") else target.origin[0] + Definitions.building(target.kind).footprint.x * 0.5
 	var cy: float = target.position[1] if not target.has("origin") else target.origin[1] + Definitions.building(target.kind).footprint.y * 0.5
-	var dx: float = x - cx
-	var dy: float = y - cy
-	return maxf(0.0, sqrt(dx * dx + dy * dy) - CombatDefinitions.radius(kind) - CombatDefinitions.radius(target.kind))
+	return _gap_between(x - cx, y - cy, CombatDefinitions.radius(kind), CombatDefinitions.radius(target.kind))
+
+static func _gap_between(dx: float, dy: float, radius_a: float, radius_b: float) -> float:
+	return maxf(0.0, sqrt(dx * dx + dy * dy) - radius_a - radius_b)
 
 # Source: retail AIData.ini GuardOuterModifierHuman / GuardOuterModifierAI.
 const GUARD_OUTER_HUMAN: float = 2.2
@@ -214,7 +215,12 @@ static func _firing_cell(sim: RefCounted, unit: Dictionary, target: Dictionary, 
 	var occupied: Vector2i = sim._cell(target.position) if not target.has("origin") else Vector2i(-1, -1)
 	var best: Variant = null
 	var best_distance: float = INF
-	var window: float = reach + CombatDefinitions.radius(unit.kind) + CombatDefinitions.radius(target.kind)
+	var unit_radius: float = CombatDefinitions.radius(unit.kind)
+	var target_radius: float = CombatDefinitions.radius(target.kind)
+	var window: float = reach + unit_radius + target_radius
+	var cx: float = target.position[0] if not target.has("origin") else target.origin[0] + Definitions.building(target.kind).footprint.x * 0.5
+	var cy: float = target.position[1] if not target.has("origin") else target.origin[1] + Definitions.building(target.kind).footprint.y * 0.5
+	var limit: float = reach + EDGE_EPS
 	for y in range(int(floorf(low.y - window)), int(floorf(high.y + window)) + 1):
 		for x in range(int(floorf(low.x - window)), int(floorf(high.x + window)) + 1):
 			var cell := Vector2i(x, y)
@@ -222,9 +228,9 @@ static func _firing_cell(sim: RefCounted, unit: Dictionary, target: Dictionary, 
 			sim._combat_work += 1
 			var distance: float = position.distance_squared_to(center)
 			if best != null and distance > best_distance: continue
+			if _gap_between(center.x - cx, center.y - cy, unit_radius, target_radius) > limit: continue
 			if cell == occupied or component < 0 or sim._navigation.component_at(center) != component: continue
 			if held.has(cell) and cell != own and cell != own_goal: continue
-			if _gap_at(center.x, center.y, unit.kind, target) > reach + EDGE_EPS: continue
 			if best == null or distance < best_distance or (distance == best_distance and (cell.y < Vector2i(best.floor()).y or (cell.y == Vector2i(best.floor()).y and cell.x < Vector2i(best.floor()).x))):
 				best = center
 				best_distance = distance
