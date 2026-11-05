@@ -571,9 +571,17 @@ Add China and GLA distinct rules, core units and economy differences (for exampl
 
 **Exit gate:** three playable faction prototypes; economy/production/combat parity tracked by faction.
 
+### M7.1 — Roster fill (proposed 2026-11-05, scope not approved; placement chosen by the user)
+
+M7 gives three prototype factions with a core unit list. This milestone fills each faction's roster so a 3v3 match has real choices: units, structures, tech prerequisites and upgrades, taken one faction at a time from the Zero Hour INI data (`INIZH.big`, see §4) and written as Wargrid's own data definitions. Placed before the M7.5 art pass so each unit is styled once, and before M8 so bots build from the full roster.
+
+**Proposed scope (not approved):** first fix the roster per faction with the user (what is in, what waits for "Later": aircraft, superweapons, generals); then add units in batches per faction, each batch measured with the [parity harness](docs/reference/zero-hour-parity-harness.md) where the mechanic exists in Zero Hour. Departures stay explicit, and measured numbers never change Wargrid values automatically.
+
+**Proposed exit gate:** the agreed roster playable for all three factions, behaviour tests per unit and per tech rule, parity results recorded as a decision list, ledger rows inside the budgets (more unit kinds raise scan, allocation and snapshot costs), and a user playtest.
+
 ### M7.5 — Art pass (placement decided by the user 2026-11-05; scope proposed, not approved)
 
-Give the game a deliberate look instead of placeholder rectangles and text labels. Placed after M7 so each of the three factions is styled once, and before M8 so the bot playtests are played on the real look.
+Give the game a deliberate look instead of placeholder rectangles and text labels. Placed after M7.1 so each unit is styled once, and before M8 so the bot playtests are played on the real look.
 
 **User note (2026-11-05):** the coloured-rectangle look is more fun than expected, so a stylised geometric direction is explored before sprites are committed to. Blueprint §2 chose pixel-art sprites; switching is a design change the user decides after the comparison below.
 
