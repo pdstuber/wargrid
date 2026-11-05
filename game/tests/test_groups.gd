@@ -234,13 +234,13 @@ func test_queue_replay(runner) -> bool:
 
 func test_small_group_matches_brute_force(runner) -> bool:
 	var nav = Navigation.new([Vector2i(5, 5), Vector2i(6, 5), Vector2i(5, 6)], Vector2i(12, 12))
-	var target := Vector2(5.5, 5.5)
-	var unavailable: Array[Vector2i] = [Vector2i(4, 4), Vector2i(7, 7), Vector2i(5, 4)]
+	var target := Vector2(8.5, 8.5)
+	var unavailable: Array[Vector2i] = [Vector2i(7, 7), Vector2i(9, 9), Vector2i(8, 7)]
 	var ok: bool = true
 	for size in [1, 2, 3, 5, 8]:
 		var units: Array[Dictionary] = []
 		for i in range(size):
-			units.append({"id": 10 - i, "position": [4.5 + (i % 3), 7.5 + (i % 2)]})
+			units.append({"id": 10 - i, "position": [8.5, 8.5] if i == 1 else [4.5 + (i % 3), 7.5 + (i % 2)]})
 		var expected: Dictionary = {}
 		var taken: Dictionary = {}
 		var ordered: Array[Dictionary] = units.duplicate()

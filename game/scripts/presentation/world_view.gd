@@ -44,6 +44,7 @@ func hovered_id() -> int:
 	return _hovered_id
 
 func set_hovered(id: int) -> void:
+	if id != _hovered_id: queue_redraw()
 	_hovered_id = id
 
 static func building_label(building: Dictionary) -> String:
@@ -116,6 +117,7 @@ func _draw() -> void:
 			draw_line(point - Vector2(0, 6), point + Vector2(0, 6), Color("8cff87"), 2.0)
 	_draw_focus()
 	_draw_inspected()
+	_draw_resume_outline()
 	_draw_rally()
 	_draw_hints()
 	_draw_cues()
@@ -159,11 +161,20 @@ func _draw_inspected() -> void:
 		polygon.append(polygon[0])
 		draw_polyline(polygon, Color("ff3b30"), 2.0)
 
+func _draw_resume_outline() -> void:
+	var id: int = resume_candidate()
+	if id == -1: return
+	for building in _state.get("buildings", []):
+		if building.id != id: continue
+		var polygon := _cell_polygon(Vector2(building.origin[0], building.origin[1]), Vector2(Definitions.building(building.kind).footprint))
+		polygon.append(polygon[0])
+		draw_polyline(polygon, Color("8cff87"), 2.0)
+
 func _draw_hints() -> void:
 	for hint in _hints:
 		var age: float = float(_state.tick - hint.tick) / HINT_TICKS
 		var center: Vector2 = Iso.world_to_plane(hint.point)
-		draw_arc(center, 14.0 * (1.0 - age) + 4.0, 0.0, TAU, 16, Color("ffe680"), 2.0)
+		draw_arc(center, 14.0 * age + 4.0, 0.0, TAU, 16, Color("8cff87"), 2.0)
 
 func rally_marker() -> Array:
 	for building in _state.get("buildings", []):
