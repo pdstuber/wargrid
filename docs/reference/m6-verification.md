@@ -3,15 +3,15 @@
 Plan: [M6 plan](../superpowers/plans/2026-11-05-m6-teams-full-map.md). Run rules: [milestone prompt](../milestone-prompt.md).
 
 ```text
-Resume record (updated 2026-11-05, Task 11 stop gate)
-Branch / base commit / working-tree state: m6-teams-map / 11a-11i committed on top of 76bbfc9 / clean after the 11i commit
-Last green task / next incomplete task: Task 11 (11.0, 11a-11i, 11.9 done) / gate review, then Task 12 (Confirm final pins)
+Resume record (updated 2026-11-05, Task 11 stop gate, after perf fixes)
+Branch / base commit / working-tree state: m6-teams-map / Task 11 committed on top of 76bbfc9 (11a-11i, A-C, F, integer-key normalize, D, gate review record) / clean
+Last green task / next incomplete task: Task 11 done pending user decision on the rows below / Task 12 (Confirm final pins)
 Changed paths since last commit: none
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh on the 11i tree, 269 cases, 112,690 checks, 0 failures, exit 0; run_netplay.sh match exit 0 (tick 8252); run_team_match exit 0; run_benchmark exit 1 (COMBAT STRESS open ceiling, also failing at 76bbfc9)
-Known red case or blocker: step p95/p99 of the team match (7.1 / 11.7 ms vs 1.67 / 3.3) still over budget after 11i; movement plumbing 1.447 vs 0.83; COMBAT STRESS open ceiling fails (4.677 / 6.739 vs 2.05 / 3.86); user decides. Open for user: I4 BM5 ledger row
-Approved decisions, pre-authorizations used, deferred gates: local commits per milestone prompt; user approved .duplicate() in D1/E1 tests (11f) 2026-11-05; 11i was pre-approved if needed; no push/PR/merge/window/BM6 re-pin without approval
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 270 cases, 112,693 checks, 0 failures, exit 0; team-match fold 7406935539604104369 tick 20000 winner 1; idle benchmarks recorded in the Task 11.9 idle table
+Known red case or blocker: team-match step wall p95/p99 3.27/5.72 ms vs 1.67/3.3; movement plumbing 0.855 vs 0.83; COMBAT STRESS open p95 2.45 vs ceiling 2.05 (run_benchmark.sh exits 1; combat dense/contact/skirmish3v3 never measured because run_combat.gd stops at the first push_error). Open for user: I4 BM5 ledger row
+Approved decisions, pre-authorizations used, deferred gates: local commits per milestone prompt; user approved .duplicate() in D1/E1 (11f), fixes A, B, C, F, integer-key normalize, D; E rejected, G not taken; no push/PR/merge/window/BM6 re-pin without approval
 Usage so far (python3 tools/session_usage.py <session files>): not measured
-Next exact action: dispatch the Task 11 gate review (Opus, fresh context), record findings, ask the user about the over-budget rows; then Task 12
+Next exact action: user decides on the remaining over-budget rows; then Task 12
 ```
 
 ## Task 0: baseline (2026-11-05, tree 9ea11bc + Task 0 test)
@@ -311,3 +311,24 @@ Minor (rulings): N1 "restarts the refresh interval" no longer discriminates (bot
 - **A** `Locomotion._route_length_until` (stops summing once the braking cap cannot bind), **B** skip turn/heading math when the heading already equals the desired direction, **C** `_firing_cell` tests distance before the reachability checks. All trace-preserving by construction.
 - Tree after A-C: suite `CASES 269 CHECKS 112690 FAILURES 0`; team-match fold `7406935539604104369` tick 20000 unchanged. Timing not yet re-measured (machine was loaded by another app; idle rerun pending, together with the three gate-review measurement gaps).
 - **F** (`combat.gd` `_firing_cell`: radius/centre lookups hoisted, `_gap_between` shared with `_gap_at`, reach test before the reachability checks), **integer-key `_normalize`** (`grid_navigation.gd`, probe: 6.6-8.7 ms to 0.55 ms per placement), **D** (snapshot entities copy shallow with small fields deep; `route` shared read-only, waypoints frozen at creation, `_advance` replaces the route with `slice(1)` instead of `pop_front`). User approved 2026-11-05. Each: suite green (D adds `test_route_shared_read_only`: `CASES 270 CHECKS 112693 FAILURES 0`), team-match fold `7406935539604104369` tick 20000 unchanged, `PINNED` unchanged. E rejected (no measurable gain), G not taken (changes the approved P1 rule, moves every match pin).
+
+## Task 11.9 re-measure on an idle machine (2026-11-05, tree HEAD after "Share snapshot routes read-only"; no other app running)
+
+Earlier rows in this file (the 11.9 table above, the perf-investigation numbers) were taken with another app using about 110 % CPU and are superseded by this table. Gate-review gaps closed: lockstep measured, HEADLESS compared with 76bbfc9 back to back, profiler-off wall run taken.
+
+| Row | Before (11.0 / 76bbfc9, loaded) | Now (idle) | Budget | Status |
+|---|---|---|---|---|
+| team-match `step` wall p95 / p99, profiler off | 11.427 / 19.143 (profiler on) | 3.268 / 5.717 | 1.67 / 3.3 | **exceeded** |
+| team-match `step` zone p95 (profiler on) | 9.324 | 3.066 | 1.67 | **exceeded** |
+| team-match warm-up `step` max | 415.192 | 10.179 | none | improved |
+| `opponent.decide` max (`team_match`) | 407.597 | 6.654 | none | improved |
+| movement plumbing (`snapshot + view.copy + view.sort`, `movement_open` mean) | 1.884 | 0.855 (0.727 + 0.078 + 0.050) | 0.83 | **exceeded by 0.025** |
+| `large_196` `step` mean (warm-up / window) | n/a | 1.852 / 1.708 | none | recorded |
+| HEADLESS open / dense p95 / p99 | 76bbfc9 back to back: 4.179 / 4.199 p95 | 1.528 / 1.517 p95; p99 1.683 / 1.701 | 1.67 | pass (simulation-only budget) |
+| COMBAT open p95 / p99 | 76bbfc9 back to back: 3.334 / 5.175 | 2.453 / 3.542 | stress ceiling 2.05 / 3.86 | **p95 exceeded** (p99 within); script still exits 1 |
+| LOCKSTEP overhead p99 | not measured before | 0.066 | 0.55 | pass |
+
+- The 76bbfc9 to HEAD movement p95 drop (4.18 to 1.53) is fixes A and B (the Task 8 `route_length` regression), not noise.
+- `run_combat.gd` stops at the first `push_error`, so combat dense, contact and skirmish3v3 are still not measured. Open item.
+- The trace after 11i is a different match (tick 20000), so the 11.0 team-match numbers are not like-for-like; the profile above is the reference from here on.
+- Still over budget: team-match `step` p95/p99, movement plumbing (by 3 %), COMBAT open p95. Remaining candidates (not approved): ring cache for `_firing_cell`, profiling `production`, G (stagger rescans after target loss; changes the approved P1 rule and every match pin), presentation reading live state.
