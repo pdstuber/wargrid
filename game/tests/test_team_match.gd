@@ -1,0 +1,84 @@
+extends RefCounted
+
+const Skirmish = preload("res://scripts/simulation/skirmish.gd")
+const TeamMatch = preload("res://scripts/debug/team_match.gd")
+const StateHash = preload("res://scripts/simulation/state_hash.gd")
+const Combat = preload("res://scripts/simulation/combat.gd")
+const Fixture = preload("res://tests/combat_fixture.gd")
+
+const PREFIX_TICKS: int = 3000
+
+func cases() -> Array[Callable]:
+	return [test_bot_never_targets_ally, test_dead_seat_bot_is_silent, test_team_match_prefix]
+
+func _bot_world() -> RefCounted:
+	var sim = Fixture.world()
+	for seat in [[1, 1], [3, 1], [2, 2]]: sim.add_player(seat[0], 0, "ai", seat[1])
+	return sim
+
+func test_bot_never_targets_ally(runner) -> bool:
+	var sim = _bot_world()
+	var tank: int = sim.spawn(1, Vector2(10.5, 10.5), "tank")
+	sim.spawn(1, Vector2(2.5, 2.5), "builder")
+	var ally: int = sim.spawn(3, Vector2(11.5, 10.5), "builder")
+	var enemy: int = sim.spawn(2, Vector2(28.5, 10.5), "builder")
+	sim.start_match([1, 2, 3] as Array[int])
+	var attacks: int = 0
+	var bad: int = 0
+	for tick in range(Skirmish.DECISION_TICKS * 2):
+		sim.step()
+		Skirmish.issue_opponent(sim, 1, 0)
+		for command in sim.snapshot().pending_commands:
+			if command.player == 1 and command.type == "attack":
+				attacks += 1
+				if command.target_id != enemy or command.target_id == ally: bad += 1
+	runner.check(attacks > 0 and bad == 0 and tank != ally, "TB1 bot attacks the hostile builder, never the nearer ally")
+	return true
+
+func test_dead_seat_bot_is_silent(runner) -> bool:
+	var sim = _bot_world()
+	sim.spawn(2, Vector2(28.5, 10.5), "builder")
+	sim.spawn(3, Vector2(10.5, 10.5), "builder")
+	sim.start_match([2, 3] as Array[int])
+	var issued: int = 0
+	for tick in range(Skirmish.DECISION_TICKS * 2):
+		Skirmish.issue_opponent(sim, 1, 0)
+		issued += sim.snapshot().pending_commands.filter(func(command: Dictionary) -> bool: return command.player == 1).size()
+		sim.step()
+	runner.check(issued == 0, "TB2 a seat without objects issues nothing")
+	return true
+
+func test_team_match_prefix(runner) -> bool:
+	var a = TeamMatch.create()
+	var b = TeamMatch.create()
+	var rows: PackedStringArray = []
+	var diverged: int = -1
+	var tanks: bool = false
+	for tick in range(PREFIX_TICKS):
+		if tick % 30 == 0:
+			var state: Dictionary = a.snapshot()
+			var digest: String = StateHash.digest(state)
+			if digest != StateHash.digest(b.snapshot()) and diverged == -1: diverged = tick
+			rows.append("%d\t%s" % [tick, digest])
+			if state.entities.any(func(unit: Dictionary) -> bool: return unit.kind == "tank"): tanks = true
+		TeamMatch.step(a)
+		TeamMatch.step(b)
+		if tick % 600 == 599: await runner.process_frame
+	runner.check(diverged == -1, "TB3 two runs agree every 30 ticks")
+	runner.check(rows.size() == 100, "TB3 trace has 100 rows")
+	var state: Dictionary = a.snapshot()
+	for entry in TeamMatch.SEATS:
+		var done: int = state.buildings.filter(func(building: Dictionary) -> bool: return building.owner == entry.seat and building.completed).size()
+		runner.check(done == 4, "TB3 seat %d completes four buildings" % entry.seat)
+	runner.check(tanks, "TB3 a tank was produced")
+	_write_trace(runner, rows)
+	return true
+
+func _write_trace(runner, rows: PackedStringArray) -> void:
+	var path: String = OS.get_environment("WARGRID_TEAM_REPLAY_TRACE")
+	if path.is_empty(): return
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	runner.check(file != null, "TB3 team trace opens")
+	if file == null: return
+	file.store_string("\n".join(rows) + "\n")
+	file.close()

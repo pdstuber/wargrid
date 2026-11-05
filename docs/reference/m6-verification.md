@@ -3,15 +3,15 @@
 Plan: [M6 plan](../superpowers/plans/2026-11-05-m6-teams-full-map.md). Run rules: [milestone prompt](../milestone-prompt.md).
 
 ```text
-Resume record (updated 2026-11-05, after Task 4 gate review fixes)
-Branch / base commit / working-tree state: m6-teams-map / 308bb4b / clean after the Task 4 commit
-Last green task / next incomplete task: Task 4 (gate review done, fixes in) / Task 5
+Resume record (updated 2026-11-05, after Task 5)
+Branch / base commit / working-tree state: m6-teams-map / 4a37e56 / Task 5 committed on top
+Last green task / next incomplete task: Task 5 / Task 6
 Changed paths since last commit: none
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 234 cases, 104,594 checks, 0 failures, exit 0, TESTS PASSED; all 9 run_netplay.sh scenarios passed unchanged; S1_CORE_SERIES and TERMINAL_TICK unchanged
-Known red case or blocker: none. Pending: test_maps_load in the CI export job (Review Focus 1)
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 237 cases, 104,606 checks, 0 failures, exit 0, TESTS PASSED; S1_CORE_SERIES and TERMINAL_TICK untouched; run_team_match.sh baseline below
+Known red case or blocker: none. Pending: test_maps_load in the CI export job (Review Focus 1); team-*.tsv CI comparison unrun until CI
 Approved decisions, pre-authorizations used, deferred gates: as before; local commit per milestone prompt; no push/PR/merge/window/BM6 re-pin without approval
 Usage so far (python3 tools/session_usage.py <session files>): not measured
-Next exact action: start Task 5; baseline 234 cases / 104,594 checks
+Next exact action: start Task 6; baseline 237 cases / 104,606 checks
 ```
 
 ## Task 0: baseline (2026-11-05, tree 9ea11bc + Task 0 test)
@@ -156,3 +156,10 @@ Start metrics (resampled routes in world units; buildable = open cells in the 25
 - Gap: `_retaliate_trigger`'s non-hostile-attacker skip is only reachable by friendly fire (Task 7); it is untested until then.
 - Gate review (Opus, 505a4ee): no Critical. I1 (winner = team id untested) and I2 (duplicate-seat check vacuous) fixed by `test_winner_is_team_id` and `[1, 1, 2]` in TM9; M1 (`alive` cost in the per-tick rate path) fixed by computing `alive` only in `snapshot()`.
 - Gap (I3): the bot team filter (`Skirmish._hostile`) has no test until Task 5's 3v3. Minor M2 (defensive hostility checks in `fire`/`plan` unreachable today) and M3 (world_view right-click on allies; presentation out of scope) noted, not fixed.
+
+## Task 5: bots on Ashfall and the 3v3 harness (2026-11-05, tree 4a37e56 + Task 5)
+
+- `TeamMatch.SEATS` (`game/scripts/debug/team_match.gd`): team 1 = seats 1, 2, 8 (starts (21,127), (69,168), (18,67)); team 2 = seats 4, 5, 6 (starts (174,125), (177,65), (123,21)). Ashfall seats 3 and 7 unused.
+- `sh tools/run_team_match.sh` on current mechanics (baseline row, no gate): `TEAM MATCH won tick=19541 winner=1 units_peak=326`; step+bot time per tick p50 1.312 ms, p95 11.129 ms, p99 25.866 ms, max 1052.824 ms (includes the per-tick snapshot the harness takes; cap 27000 not reached).
+- Skirmish bot code needed no change: slots and hostile filters were already in place from Tasks 3-4. Mutation check: making `_hostile` ignore teams fails TB1.
+- Trace: `WARGRID_TEAM_REPLAY_TRACE` writes 100 rows (tick 0, 30 … 2970); compared with `compare_replays.py --interval 30 --rows 100` in CI and `compare_local_traces.sh`.
