@@ -4,20 +4,23 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 ## Session
 
+2026-11-05 relay stack spike between milestones, then the relay was **replaced by a Go port on `main`** (`4f38ce8`, pushed; `main` = `origin/main`). CI run 41950491714 green on `4f38ce8` (relay, relay-lint, Linux, Windows, compare-replays). Locally on the final tree: relay `go test -race`, golangci-lint 0 issues, `run_conformance.sh` 33 cases, all nine `run_netplay.sh` scenarios passed; fly `wargrid-relay-jvm` redeployed from that tree (remote match passed). Evidence: [relay stack spike](reference/relay-stack-spike.md), host comparison in [relay scaling](reference/relay-scaling.md#flyio-vs-railway-measured-2026-11-0405).
+
 2026-11-04 M5 online spike **implemented and merged to `main`** (merge `55beae4`, pushed; `main` = `origin/main`). Tasks 0–11 done; exit gate met except the repeat friend match on the fixed build, which the user deferred to later (open, not met). Verified on `bba5482`: editor suite 192 cases / 104,432 checks / 0 failures, benchmark exit 0 (lockstep p99 0.060 ms vs 0.55), relay `gradlew test`, nine `run_netplay.sh` scenarios, CI green (relay, Linux, Windows, compare-replays), `compare_local_traces.sh` MATCHED (netplay 364), rendered benchmark passed (frame p95 4.3 / 5.9 ms, about 0.7 ms above M4.1, one run), Grok review and `/ponytail-review` done; HUD look is a user statement ("that looks fine"). Findings: [M5 findings](reference/m5-online.md); evidence: [M5 verification](reference/m5-verification.md). Earlier: M4.1 merged at `f2c5f9e` (playtest declared done by the user 2026-11-04, findings open); M3 detail in [M3 verification](reference/m3-verification.md), M4 in [M4 verification](reference/m4-verification.md).
 
 ## Pending user action
 
 - M4.1 playtest findings (user, 2026-11-04) are open; to be tackled outside M5, see [M4.1 verification](reference/m4.1-verification.md). Deferred minors: BM7 lane pin, R5 other-command coverage.
-- `main` and `origin/main` at `55beae4` (M5 merged). Local branches `gpl-license`, `m5-online` and older milestone branches are merged and can be deleted (not done).
-- Relay replaced (user, 2026-11-05): Kotlin/Ktor relay → Go (net/http + gws, room goroutines) in `relay/` and deployed to `wargrid-relay-jvm`; protocol-compatible (conformance suite `protocol/conformance`, 33 cases; all nine netplay scenarios pass). CI: relay job builds Linux/Windows binaries for the Godot jobs, `relay-lint` runs golangci-lint. Evidence: [relay stack spike](reference/relay-stack-spike.md). Fresh-context review fixed a stalled-write leak (no `left` when a peer stops reading; regression test `relay/stall_test.go`); fly runs the committed tree (redeployed after the commit). grok removed from the review route (user, 2026-11-05).
-- M5 open items: repeat the friend match (macOS vs Windows on the fixed build) later; real fly bill later (user: "fine for now"); Railway check done in the 2026-11-05 [relay stack spike](reference/relay-stack-spike.md) (comparison in [relay scaling](reference/relay-scaling.md#flyio-vs-railway-measured-2026-11-0405); sleep/wake still untested); suspend during a live match unobserved. Optional deploy with `-Xlog:cds` to check AppCDS needs approval.
+- `main` and `origin/main` at `4f38ce8` (Go relay). Local branches `gpl-license`, `m5-online` and older milestone branches are merged and can be deleted (not done).
+- Global agent rules: grok removed from the review route in `~/dotfiles/config/agents/AGENTS.md` (user, 2026-11-05); that dotfiles change is uncommitted and is the user's to commit. `grok` can be uninstalled.
+- Spike harness (other ports, load driver, raw results) copied to `~/projects/wargrid-relay-spike`, outside git; delete when no longer wanted.
+- M5 open items: repeat the friend match (macOS vs Windows on the fixed build) later; real fly bill later (user: "fine for now"); Railway check done in the 2026-11-05 [relay stack spike](reference/relay-stack-spike.md) (comparison in [relay scaling](reference/relay-scaling.md#flyio-vs-railway-measured-2026-11-0405); sleep/wake still untested); suspend during a live match unobserved.
 - Choose a licence for original art and audio (code is GPL-3.0-or-later).
 - Check in a fresh session whether the project skill settings shrank the skill listing (baseline 48,567 bytes; revert if not).
 
 ## Deferred experiments and research
 
-- Relay scaling (user, 2026-11-04): the single-machine `--ha=false` relay is accepted for M5 only; user is not happy with it as the long-term approach. Placed in M9 (user, 2026-11-04): cloud-agnostic multi-machine relay (no provider-only routing, so no `fly-replay`), fly.io stays the host for now, Railway evaluated in M5 Task 11; load test (N synthetic rooms) first. Proposal review and options: [relay scaling](reference/relay-scaling.md).
+- Relay scaling (user, 2026-11-04): the single-machine `--ha=false` relay is accepted for M5 only; user is not happy with it as the long-term approach. Placed in M9 (user, 2026-11-04): cloud-agnostic multi-machine relay (no provider-only routing, so no `fly-replay`), fly.io stays the host for now. Railway evaluation and the synthetic-room load test were done in the 2026-11-05 [relay stack spike](reference/relay-stack-spike.md): about one 3v3 room per shared-cpu-1x machine at the 6.25 % CPU baseline; M9 design inputs (batching, compact command log, Elixir-style room patterns) recorded there. Proposal review and options: [relay scaling](reference/relay-scaling.md).
 - Project goal (user, 2026-11-04): also an architecture exploration. Over-engineering is acceptable; explore very scalable architectures from the start, from M6 on. M5 design stays as approved.
 - Source/config-supported economy and combat values remain RETAIL_UNVERIFIED; departures stay explicit in reference/design notes.
 - AI moods (Sleep, Alert 1.1, Aggressive 1.5) deferred to M8 bots (user, 2026-11-03).
@@ -27,9 +30,11 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 ## Next action
 
+**Next session (proposed):** pick between M6 planning (teams and full-scale map; blueprint §7), the open M4.1 playtest findings, or the repeat macOS-vs-Windows friend match on the Go relay. The relay is done for now; M9 owns its next changes.
+
 **M4 complete and merged into local `main` (2026-11-03).** Evidence: [M4 verification](reference/m4-verification.md). Process changes adopted on `main`: [milestone prompt](milestone-prompt.md), [workflow retrospective](reference/2026-11-03-milestone-workflow-retrospective.md). Roadmap re-aimed at the long-term target (3v3 online with friends against bots, USA/China/GLA, Twilight-Flame-like full-scale map): blueprint §1, §7, §11, §14.
 
-- **M5 online spike: merged to `main` (2026-11-04), repeat friend match open.** Still unobserved/owed: M9 list in [M5 findings](reference/m5-online.md) (dynamic delay first: command p95 ~190-205 ms against the 250 ms budget at a 4-tick delay), Railway cost follow-up. Historical handoff `prompt.txt`.
+- **M5 online spike: merged to `main` (2026-11-04), repeat friend match open.** Still unobserved/owed: M9 list in [M5 findings](reference/m5-online.md) (dynamic delay first: command p95 ~190-205 ms against the 250 ms budget at a 4-tick delay). Historical handoff `prompt.txt`.
 - **M4.1 implemented and merged to `main` (2026-11-04); user declared the playtest done 2026-11-04, findings open (see M4.1 verification).** Formerly next: user playtest (rally, enemy info, pile labels, opponent defence, 5–10 minute match). Evidence: [M4.1 verification](reference/m4.1-verification.md). The five items below are the original playtest notes, now all implemented:
   1. **Rally point per producer.** Zero Hour production exits read a rally point (`AIPlayer.cpp` 500/680, source revision `0a05454`). Today new units stay on the producer's perimeter, which also stalls production at about 8 infantry and 11 tanks. Touches production, a new command and the replay traces.
   2. **Opponent too passive.** Guard units only fire inside weapon range and never move, and the opponent never defends its base. Proposed: base defense (the same rule the scripted human needed in M4 Task 7) and reaction a bit beyond weapon range; check Zero Hour's idle acquisition range in source before choosing the distance. Changes the match outcome, so the scenario pin (tick 9943) must be recalibrated.
@@ -37,6 +42,13 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
   4. **Collectors on one supply pile are hard to read.** One dock per pile is M3 design (Zero Hour docking); add visibility: pile label "docked 1 · waiting 2", collector state when selected.
   5. **"4: barracks" next to "S: stop".** HUD wording slip: base line says "1/2/3 build", the skirmish appends "4: barracks" elsewhere; make it one "1/2/3/4 build".
 - **After M5:** M6 teams and full-scale map, M7 China and GLA (gate: Zero Hour spot checks S1–S3 run or deferred), M8 bots, M9 3v3 online.
+
+## 2026-11-05 — Relay stack spike and Go relay
+
+- User request: compare relay stacks (Go + gws, Rust + Axum, current Kotlin, Elixir chosen as fourth) on performance, resources, fly fit, ease and maintenance, considering M9. Six builds passed one 35-case black-box suite; local Apple-container benchmarks, fly and Railway trial deployments, all temporary apps deleted. Findings and numbers: [relay stack spike](reference/relay-stack-spike.md).
+- Key findings: fly's shared-CPU burst balance does not accrue while suspended, so a 3v3 room must fit the 6.25 % baseline (Go/Rust/Elixir about 5–6 % per room, Kotlin 23 % and throttled); the Kotlin/Ktor CIO relay burned CPU while idle (cause unverified); a raw per-frame reconnect log is infeasible on 256 MB; Railway works but adds about 28 ms per round trip from Bavaria.
+- User decisions: replace the relay with the go-idiomatic port in the repo and on fly; keep the conformance suite; add golangci-lint; remove grok from reviews. User's fly org is on the legacy (free) Hobby plan (allowances in README Relay section).
+- Mistakes caught during the day: Rust ports lacked `TCP_NODELAY` (hid write cost), first harness CPU windows were skewed by 2 s `container stats` calls, a fill run hung on a missing deadline, a commit message overstated the CPU gain (amended before push). The documented grok command hangs headless; replaced by a fresh-context reviewer.
 
 ## 2026-11-04 — M5 human matches
 

@@ -567,7 +567,7 @@ Per-faction build orders, base defense, attack waves and sensible target choice;
 
 Lobby with slots, faction, team and bot choice; three humans plus three bots through the relay; handling a dropped player (pause, or the player becomes a bot); optional browser export over the same WebSocket transport.
 
-**Relay beyond one machine (user, 2026-11-04; design proposed):** rooms on several machines with the owner encoded in the match code, region-aware placement, deploys that drain live rooms, and reconnect by replaying the room's command log. Cloud-agnostic (user decision): no routing, discovery or placement feature that exists on one provider only. fly.io stays the host for now; Railway is evaluated in M5 Task 11. Options and host evidence: [relay scaling](docs/reference/relay-scaling.md).
+**Relay beyond one machine (user, 2026-11-04; design proposed):** rooms on several machines with the owner encoded in the match code, region-aware placement, deploys that drain live rooms, and reconnect by replaying the room's command log. Cloud-agnostic (user decision): no routing, discovery or placement feature that exists on one provider only. fly.io stays the host for now; Railway was evaluated in the 2026-11-05 [relay stack spike](docs/reference/relay-stack-spike.md) instead of M5 Task 11 (fly kept). Options and host evidence: [relay scaling](docs/reference/relay-scaling.md).
 
 **Exit gate:** a real 3v3 match with friends without desync.
 

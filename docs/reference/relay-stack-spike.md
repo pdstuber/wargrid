@@ -15,7 +15,7 @@ Every port implements the M5 relay wire protocol byte-for-byte (`relay/src/main/
 | rust-idiomatic | task per room (actor), shared `Utf8Bytes`, feed+flush batching | ~330 | 86 crates |
 | elixir | Bandit 1.14 + WebSock, GenServer per room, Registry, monitors | 314 | 10 hex packages |
 
-Ports were written by Sonnet subagents from one spec; the conformance suite and harness by Opus. Other ports, the load harness and raw JSONL results stayed in the session scratchpad (`relay-spike/`), not in the repository.
+Ports were written by Sonnet subagents from one spec; the conformance suite and harness by Opus. Other ports, the load harness (`drive.py`, `bench/`) and raw JSONL results are kept outside the repository in `~/projects/wargrid-relay-spike` on the user's Mac (not backed up by git).
 
 ## Method
 
