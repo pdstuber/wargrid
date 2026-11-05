@@ -106,8 +106,7 @@ static func _grid(sim: RefCounted, box: Dictionary) -> Dictionary:
 	return box.grid
 
 static func _scan_radius_for(sim: RefCounted, unit: Dictionary, human: bool) -> float:
-	if not human: return _scan_reach(sim, unit)
-	return _scan_reach(sim, unit) if unit.combat.retarget else _reach(unit.kind)
+	return _reach(unit.kind) if human and not unit.combat.retarget else _scan_reach(sim, unit)
 
 # An attack-move approach has no leash; only a halted (firing) unit drops a target that left weapon range.
 static func _left_range(unit: Dictionary, target: Dictionary, mode: String) -> bool:
