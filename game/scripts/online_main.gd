@@ -10,6 +10,7 @@ var _lockstep: RefCounted
 var _report_path: String = ""
 var _finished: bool = false
 var _credit: int = 0
+var _rejections_seen: int = 0
 
 func setup(transport: RefCounted, lockstep: RefCounted, seat: int) -> void:
 	_transport = transport
@@ -36,9 +37,14 @@ func _step_simulation() -> void:
 		_credit -= 1
 		var tick: int = simulation.tick()
 		_lockstep.finish_tick(tick, simulation.snapshot() if _lockstep.wants_snapshot(tick) else null)
+	var rejections: Array = _lockstep.rejections()
+	if rejections.size() > _rejections_seen:
+		_error = "Rejected: " + rejections.back().error
+		_rejections_seen = rejections.size()
 	if not _finished and (simulation.match_over() or _lockstep.status().begins_with("ended")): _finish()
 
 func _submit(payload: Dictionary) -> void:
+	_show_hint(payload)
 	_error = ""
 	_lockstep.submit(payload)
 	_refresh()
