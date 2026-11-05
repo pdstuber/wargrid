@@ -1,9 +1,12 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"fmt"
+	"log/slog"
 	"maps"
+	"runtime/debug"
 	"slices"
 	"strings"
 	"sync"
@@ -68,6 +71,8 @@ type room struct {
 
 func (r *room) run() {
 	defer close(r.done)
+	defer r.recoverCrash()
+	drain, quit := r.reg.draining, r.reg.quit
 	var flush <-chan time.Time
 	if r.cfg.batch > 0 {
 		t := time.NewTicker(r.cfg.batch)
@@ -80,6 +85,14 @@ func (r *room) run() {
 			for _, s := range r.seats {
 				s.c.flushNow()
 			}
+		case <-drain:
+			drain = nil
+			if !r.started { // no new connections arrive while draining, so the lobby can never fill
+				r.closeAll()
+			}
+		case <-quit:
+			quit = nil
+			r.closeAll()
 		case j := <-r.joins:
 			j.reply <- r.join(j)
 		case ev := <-r.events:
@@ -93,6 +106,32 @@ func (r *room) run() {
 			}
 		}
 	}
+}
+
+// post never blocks on a room whose goroutine has ended.
+func (r *room) post(ev any) {
+	select {
+	case r.events <- ev:
+	case <-r.done:
+	}
+}
+
+// closeAll ends every seat's socket; each close comes back as a leave.
+func (r *room) closeAll() {
+	for _, s := range r.seats {
+		s.c.close()
+	}
+}
+
+// recoverCrash ends only this room when its goroutine panics.
+func (r *room) recoverCrash() {
+	p := recover()
+	if p == nil {
+		return
+	}
+	slog.Error("room crashed", "code", r.code, "panic", p, "stack", string(debug.Stack()))
+	r.reg.remove(r.code, r)
+	r.closeAll()
 }
 
 func (r *room) join(j joinReq) joinResult {
@@ -120,6 +159,7 @@ func (r *room) admit(c *conn) *seat {
 		for i := range list {
 			list[i] = fmt.Sprint(i + 1)
 		}
+		slog.Info("match start", "code", r.code, "seats", r.cfg.seats)
 		start := []byte(fmt.Sprintf(`{"type":"start","seats":[%s],"delay":%d}`, strings.Join(list, ","), inputDelay))
 		for _, s := range r.seats {
 			s.c.send(start, 0)
@@ -162,19 +202,48 @@ func (r *room) leave(s *seat) bool {
 		return false
 	}
 	r.reg.remove(r.code, r)
-	line := "MATCH END " + r.code
+	args := []any{"code", r.code}
 	for _, n := range slices.Sorted(maps.Keys(r.stats)) {
-		line += fmt.Sprintf(" seat%d=%s", n, r.stats[n])
+		args = append(args, fmt.Sprintf("seat%d", n), r.stats[n])
 	}
-	fmt.Println(line)
+	slog.Info("MATCH END", args...)
 	return true
 }
 
 // registry is only touched on create, lookup and removal, never per frame.
 type registry struct {
-	mu    sync.Mutex
-	rooms map[string]*room
-	cfg   config
+	mu       sync.Mutex
+	rooms    map[string]*room
+	cfg      config
+	draining chan struct{} // closed on shutdown signal
+	quit     chan struct{} // closed when the drain deadline passes
+}
+
+func newRegistry(cfg config) *registry {
+	return &registry{rooms: map[string]*room{}, cfg: cfg, draining: make(chan struct{}), quit: make(chan struct{})}
+}
+
+func (g *registry) startDrain() { close(g.draining) }
+func (g *registry) stop()       { close(g.quit) }
+
+func (g *registry) count() int {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	return len(g.rooms)
+}
+
+// waitEmpty reports whether every room ended before ctx was done.
+func (g *registry) waitEmpty(ctx context.Context) bool {
+	t := time.NewTicker(50 * time.Millisecond)
+	defer t.Stop()
+	for g.count() > 0 {
+		select {
+		case <-ctx.Done():
+			return false
+		case <-t.C:
+		}
+	}
+	return true
 }
 
 func (g *registry) remove(code string, r *room) {
@@ -201,7 +270,12 @@ func (g *registry) join(h *envelope, c *conn) joinResult {
 	req := joinReq{h, c, make(chan joinResult, 1)}
 	select {
 	case r.joins <- req:
-		return <-req.reply
+		select {
+		case res := <-req.reply:
+			return res
+		case <-r.done: // crashed mid-join
+			return joinResult{reason: "unknown match"}
+		}
 	case <-r.done:
 		return joinResult{reason: "unknown match"}
 	}
