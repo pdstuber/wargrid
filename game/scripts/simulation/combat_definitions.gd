@@ -1,5 +1,7 @@
 extends RefCounted
 
+const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
+
 const ARMOR := {
 	"human": {"small_arms": 100, "armor_piercing": 10},
 	"tank": {"small_arms": 25, "armor_piercing": 100},
@@ -23,9 +25,19 @@ static func profile(kind: String) -> Dictionary:
 
 static func weapon(kind: String) -> Dictionary:
 	match kind:
-		"rifle": return {"damage": 5000, "damage_type": "small_arms", "range": 4.0, "delay_ticks": 3, "clip_size": 3, "reload_ticks": 21}
+		"rifle": return {"damage": 5000, "damage_type": "small_arms", "range": 4.0, "delay_ticks": 4, "clip_size": 3, "reload_ticks": 22}
 		"cannon": return {"damage": 60000, "damage_type": "armor_piercing", "range": 6.0, "delay_ticks": 60, "clip_size": 0, "reload_ticks": 0}
 	return {}
+
+# Source: Zero Hour geometry at 25 units per cell: infantry cylinder r 7, boxes as half-diagonals (docs/reference/m6-verification.md Values table).
+static func radius(kind: String) -> float:
+	match kind:
+		"infantry": return 0.28
+		"tank", "builder": return 0.7211102550927978
+		"vehicle": return 0.6260990336999411
+		"collector": return 0.835224520712844
+	var footprint: Vector2i = Definitions.building(kind).footprint
+	return 0.5 * sqrt(float(footprint.x * footprint.x + footprint.y * footprint.y))
 
 # Source: Zero Hour AmericaInfantryRanger/AmericaTankCrusader VisionRange 100/150 at 25 units per cell.
 static func vision(kind: String) -> float:

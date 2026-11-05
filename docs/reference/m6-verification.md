@@ -3,15 +3,15 @@
 Plan: [M6 plan](../superpowers/plans/2026-11-05-m6-teams-full-map.md). Run rules: [milestone prompt](../milestone-prompt.md).
 
 ```text
-Resume record (updated 2026-11-05, after Task 5)
-Branch / base commit / working-tree state: m6-teams-map / 4a37e56 / Task 5 committed on top
-Last green task / next incomplete task: Task 5 / Task 6
+Resume record (updated 2026-11-05, after Task 6)
+Branch / base commit / working-tree state: m6-teams-map / eabaa63 / Task 6 committed on top
+Last green task / next incomplete task: Task 6 / Task 7 (gate review follows Task 7)
 Changed paths since last commit: none
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 237 cases, 104,606 checks, 0 failures, exit 0, TESTS PASSED; S1_CORE_SERIES and TERMINAL_TICK untouched; run_team_match.sh baseline below
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 242 cases, 104,617 checks, 0 failures, exit 0, TESTS PASSED; netplay match/kill/stall/silent/spike/perturb/version all passed
 Known red case or blocker: none. Pending: test_maps_load in the CI export job (Review Focus 1); team-*.tsv CI comparison unrun until CI
 Approved decisions, pre-authorizations used, deferred gates: as before; local commit per milestone prompt; no push/PR/merge/window/BM6 re-pin without approval
 Usage so far (python3 tools/session_usage.py <session files>): not measured
-Next exact action: start Task 6; baseline 237 cases / 104,606 checks
+Next exact action: start Task 7 (tank splash); baseline 242 cases / 104,617 checks
 ```
 
 ## Task 0: baseline (2026-11-05, tree 9ea11bc + Task 0 test)
@@ -163,3 +163,17 @@ Start metrics (resampled routes in world units; buildable = open cells in the 25
 - `sh tools/run_team_match.sh` on current mechanics (baseline row, no gate): `TEAM MATCH won tick=19541 winner=1 units_peak=326`; step+bot time per tick p50 1.312 ms, p95 11.129 ms, p99 25.866 ms, max 1052.824 ms (includes the per-tick snapshot the harness takes; cap 27000 not reached).
 - Skirmish bot code needed no change: slots and hostile filters were already in place from Tasks 3-4. Mutation check: making `_hostile` ignore teams fails TB1.
 - Trace: `WARGRID_TEAM_REPLAY_TRACE` writes 100 rows (tick 0, 30 … 2970); compared with `compare_replays.py --interval 30 --rows 100` in CI and `compare_local_traces.sh`.
+
+## Task 6: edge-to-edge range and Ranger cadence (2026-11-05, tree eabaa63 + Task 6)
+
+- `sh tools/run_tests.sh`: 242 cases, 104,617 checks, 0 failures (+5 cases `test_ranger_fires_at_edge_max`, `test_crusader_fires_at_edge_max`, `test_rifle_cycle_30`, `test_firing_cell_uses_edge`, `test_building_edge_range`). Measured rule outputs: Ranger vs Dozer 4.9011 cells = 122.5 units (measured 122), Crusader vs Dozer 7.3422 = 183.6 (measured 183). Rifle gaps 4, 4, 22.
+- Baseline note: the record's 104,606 was a run with `WARGRID_TEAM_REPLAY_TRACE` set (TB3 adds a trace-open check); unset it is 104,605.
+- Provisional re-pins (test / assertion / old → new / cause):
+  - `test_skirmish_match.gd` / `TERMINAL_TICK` / 9938 → 10368 (winner 1, inside 9000-10799) / Task 6
+  - `test_skirmish_match.gd` / `S1_CORE_SERIES` / 1224646555515136482 → 3285391664560676360 / Task 6
+  - `tools/run_netplay.sh` / s1 terminal tick / 8423 → 9383 / Task 6 (script logs no winner; winner unverified for netplay s1, S1 skirmish test asserts winner 1)
+  - `test_benchmark.gd` / BM6 / ceiling 15500 → 18500, floor 13000 → 16000 (measured 18168) / Task 6; needs user approval at Task 12
+  - `PINNED` and R4 unchanged.
+- Other assertion changes (geometry encoded centre range): D1 rifle values; R1 outside miss moved to 7.5, R1 building boundary uses the edge maximum; W1/L1 ticks (0,4,8,30,34,38; next fire 30; partial clip 4); G2 enemy at 5 cells; G4 enemy at 5.2 cells (in edge range, an AI guard would no longer approach); A5 decoy at 5.2 cells; A1 asserts `edge_gap <= 3.9`; P2 expected cell [16.5, 9.5], release test spawns the second attacker in the target's row and teleports the first target instead of a move order (a 1-cell move stays inside edge range).
+- `run_team_match.sh` after Task 6: `won tick=23162 winner=2 units_peak=316`, step+bot p50 1.692 / p95 11.375 / p99 28.277 ms (baseline row was tick 19541, winner 1); not a gate.
+- Design notes: `_nearest(..., edge)` is edge-tested only for the human in-range acquisition; AI scan stays centre-based. `Combat.EDGE_EPS` 1e-6, `RANGE_SLACK` 0.1, `MAX_TARGET_RADIUS` 2.2 (3x3 depot/factory diagonal half is 2.12).

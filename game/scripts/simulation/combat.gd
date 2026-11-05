@@ -4,6 +4,11 @@ const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.g
 const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
 const REPATH_TICKS: int = 8
+# Zero Hour fires at range - 0.1 cells measured edge to edge; EDGE_EPS absorbs float noise at the boundary.
+const RANGE_SLACK: float = 0.1
+const EDGE_EPS: float = 1e-6
+# Largest building radius (3x3 footprint), bounds the nearest-target grid window.
+const MAX_TARGET_RADIUS: float = 2.2
 # Fixed in ticks: a shorter wait lets attack_move dither at a wall (U1, cadence 8 vs 15).
 const UNREACHABLE_BACKOFF_TICKS: int = 60
 
@@ -28,6 +33,16 @@ static func distance_squared(position: Vector2, target: Dictionary) -> float:
 	var nearest := Vector2(clampf(position.x, target.origin[0], target.origin[0] + size.x), clampf(position.y, target.origin[1], target.origin[1] + size.y))
 	return position.distance_squared_to(nearest)
 
+static func edge_gap(unit: Dictionary, target: Dictionary) -> float:
+	return _gap_at(unit.position[0], unit.position[1], unit.kind, target)
+
+static func _gap_at(x: float, y: float, kind: String, target: Dictionary) -> float:
+	var cx: float = target.position[0] if not target.has("origin") else target.origin[0] + Definitions.building(target.kind).footprint.x * 0.5
+	var cy: float = target.position[1] if not target.has("origin") else target.origin[1] + Definitions.building(target.kind).footprint.y * 0.5
+	var dx: float = x - cx
+	var dy: float = y - cy
+	return maxf(0.0, sqrt(dx * dx + dy * dy) - CombatDefinitions.radius(kind) - CombatDefinitions.radius(target.kind))
+
 # Source: retail AIData.ini GuardOuterModifierHuman / GuardOuterModifierAI.
 const GUARD_OUTER_HUMAN: float = 2.2
 const GUARD_OUTER_AI: float = 1.333
@@ -49,13 +64,15 @@ static func scan_radius(sim: RefCounted, unit: Dictionary) -> float:
 static var _reach_by_kind: Dictionary = {}
 
 static func _reach(kind: String) -> float:
-	if not _reach_by_kind.has(kind): _reach_by_kind[kind] = CombatDefinitions.weapon(CombatDefinitions.profile(kind).weapon).range
+	if not _reach_by_kind.has(kind): _reach_by_kind[kind] = CombatDefinitions.weapon(CombatDefinitions.profile(kind).weapon).range - RANGE_SLACK
 	return _reach_by_kind[kind]
 
 static func _in_range(sim: RefCounted, unit: Dictionary, target: Dictionary) -> bool:
 	sim._combat_work += 1
-	var reach: float = _reach(unit.kind)
-	return distance_squared(Vector2(unit.position[0], unit.position[1]), target) <= reach * reach
+	return _reaches(unit, target)
+
+static func _reaches(unit: Dictionary, target: Dictionary) -> bool:
+	return edge_gap(unit, target) <= _reach(unit.kind) + EDGE_EPS
 
 static func plan(sim: RefCounted, unit_ids: Array[int]) -> void:
 	var grid_box := {"ready": false, "grid": {}}
@@ -82,10 +99,10 @@ static func plan(sim: RefCounted, unit_ids: Array[int]) -> void:
 			if sim._tick >= combat.repath_tick or combat.retarget:
 				var grid: Dictionary = _grid(sim, grid_box)
 				var zone: int = Profiler.begin()
-				combat.target_id = _nearest(sim, unit, grid, _scan_radius_for(sim, unit, human))
+				combat.target_id = _nearest(sim, unit, grid, _scan_radius_for(sim, unit, human), false, human and not unit.combat.retarget)
 				Profiler.end(&"combat.nearest", zone)
 				combat.retarget = false
-				if combat.target_id != null and not _within(unit, record(sim, combat.target_id), _reach(unit.kind)): sim._scan_chases += 1
+				if combat.target_id != null and not _reaches(unit, record(sim, combat.target_id)): sim._scan_chases += 1
 				if combat.target_id == null: combat.repath_tick = sim._tick + REPATH_TICKS - (sim._tick + unit.id) % REPATH_TICKS
 		if combat.target_id == null:
 			_end_chase(sim, unit)
@@ -123,13 +140,10 @@ static func _scan_radius_for(sim: RefCounted, unit: Dictionary, human: bool) -> 
 # An attack-move approach has no leash; only a halted (firing) unit drops a target that left weapon range.
 static func _left_range(unit: Dictionary, target: Dictionary, mode: String) -> bool:
 	if mode == "attack_move" and unit.status != "idle": return false
-	return not _within(unit, target, _reach(unit.kind))
+	return not _reaches(unit, target)
 
 static func _scan_reach(sim: RefCounted, unit: Dictionary) -> float:
 	return maxf(scan_radius(sim, unit), _reach(unit.kind))
-
-static func _within(unit: Dictionary, target: Dictionary, radius: float) -> bool:
-	return distance_squared(Vector2(unit.position[0], unit.position[1]), target) <= radius * radius
 
 static func _engage(sim: RefCounted, unit: Dictionary, target: Dictionary, held: Dictionary) -> void:
 	if _in_range(sim, unit, target):
@@ -163,7 +177,7 @@ static func _approach(sim: RefCounted, unit: Dictionary, target: Dictionary, hel
 	if sim._tick < combat.repath_tick: return
 	combat.repath_tick = sim._tick + REPATH_TICKS
 	var reach: float = _reach(unit.kind)
-	if unit.destination != null and (unit.status == "moving" or unit.status == "path_pending") and distance_squared(Vector2(unit.destination[0], unit.destination[1]), target) <= reach * reach: return
+	if unit.destination != null and (unit.status == "moving" or unit.status == "path_pending") and _gap_at(unit.destination[0], unit.destination[1], unit.kind, target) <= reach + EDGE_EPS: return
 	var zone: int = Profiler.begin()
 	if not held.ready: _hold_cells(sim, held)
 	var previous: Variant = sim._cell(unit.destination) if unit.destination != null else null
@@ -200,14 +214,15 @@ static func _firing_cell(sim: RefCounted, unit: Dictionary, target: Dictionary, 
 	var occupied: Vector2i = sim._cell(target.position) if not target.has("origin") else Vector2i(-1, -1)
 	var best: Variant = null
 	var best_distance: float = INF
-	for y in range(int(floorf(low.y - reach)), int(floorf(high.y + reach)) + 1):
-		for x in range(int(floorf(low.x - reach)), int(floorf(high.x + reach)) + 1):
+	var window: float = reach + CombatDefinitions.radius(unit.kind) + CombatDefinitions.radius(target.kind)
+	for y in range(int(floorf(low.y - window)), int(floorf(high.y + window)) + 1):
+		for x in range(int(floorf(low.x - window)), int(floorf(high.x + window)) + 1):
 			var cell := Vector2i(x, y)
 			var center := Vector2(cell) + Vector2(0.5, 0.5)
 			sim._combat_work += 1
 			if cell == occupied or component < 0 or sim._navigation.component_at(center) != component: continue
 			if held.has(cell) and cell != own and cell != own_goal: continue
-			if distance_squared(center, target) > reach * reach: continue
+			if _gap_at(center.x, center.y, unit.kind, target) > reach + EDGE_EPS: continue
 			var distance: float = position.distance_squared_to(center)
 			if best == null or distance < best_distance or (distance == best_distance and (cell.y < Vector2i(best.floor()).y or (cell.y == Vector2i(best.floor()).y and cell.x < Vector2i(best.floor()).x))):
 				best = center
@@ -233,17 +248,19 @@ static func _bucket(grid: Dictionary, x: int, y: int, target: Dictionary) -> voi
 	if not grid.has(key): grid[key] = []
 	grid[key].append(target)
 
-static func _nearest(sim: RefCounted, unit: Dictionary, grid: Dictionary, radius: float, units_only: bool = false) -> Variant:
+# edge: radius is a weapon reach tested edge to edge; otherwise a centre scan radius.
+static func _nearest(sim: RefCounted, unit: Dictionary, grid: Dictionary, radius: float, units_only: bool = false, edge: bool = false) -> Variant:
 	var best: Variant = null
 	var best_distance: float = INF
 	var position := Vector2(unit.position[0], unit.position[1])
-	for y in range(int(floorf((position.y - radius) / GRID_CELL)), int(floorf((position.y + radius) / GRID_CELL)) + 1):
-		for x in range(int(floorf((position.x - radius) / GRID_CELL)), int(floorf((position.x + radius) / GRID_CELL)) + 1):
+	var window: float = radius + CombatDefinitions.radius(unit.kind) + MAX_TARGET_RADIUS if edge else radius
+	for y in range(int(floorf((position.y - window) / GRID_CELL)), int(floorf((position.y + window) / GRID_CELL)) + 1):
+		for x in range(int(floorf((position.x - window) / GRID_CELL)), int(floorf((position.x + window) / GRID_CELL)) + 1):
 			for target in grid.get(Vector2i(x, y), []):
 				if not hostile(sim, unit.owner, target.owner) or (units_only and target.has("origin")): continue
 				sim._combat_work += 1
-				var distance: float = distance_squared(position, target)
-				if distance > radius * radius: continue
+				var distance: float = edge_gap(unit, target) if edge else distance_squared(position, target)
+				if distance > (radius + EDGE_EPS if edge else radius * radius): continue
 				if distance < best_distance or (distance == best_distance and target.id < best):
 					best = target.id
 					best_distance = distance

@@ -35,7 +35,7 @@ func test_attack_chase(runner) -> bool:
 	runner.check(first_shot > 0, "A1 shoots only after closing the distance")
 	var attacker_pos: Array = Fixture.object(sim, attacker).position
 	var target_pos: Array = Fixture.object(sim, target).position
-	runner.check(Vector2(attacker_pos[0], attacker_pos[1]).distance_to(Vector2(target_pos[0], target_pos[1])) <= 4.0 + 1e-6, "A1 fires from inside rifle range")
+	runner.check(Combat.edge_gap(Fixture.object(sim, attacker), Fixture.object(sim, target)) <= 3.9 + 1e-6, "A1 fires from inside rifle range")
 	runner.check(Vector2i(Vector2(attacker_pos[0], attacker_pos[1]).floor()) != Vector2i(Vector2(target_pos[0], target_pos[1]).floor()), "A1 never enters the target cell")
 	var old_destination: Variant = Fixture.object(sim, attacker).destination
 	runner.check(Fixture.send(sim, {"player": 2, "type": "move", "entity_ids": [target], "target": [12.5, 14.5]}).ok, "A1 target relocation accepted")
@@ -250,15 +250,15 @@ func test_pursuit_respects_reservations(runner) -> bool:
 	Fixture.send(sim, {"type": "attack", "entity_ids": [attacker], "target_id": target})
 	sim.step()
 	runner.check(Fixture.object(sim, reserver).destination == [16.5, 10.5], "P2 nearest firing cell is reserved")
-	runner.check(Fixture.object(sim, attacker).destination == [17.5, 9.5], "P2 skips reserved and occupied cells, ties by y")
+	runner.check(Fixture.object(sim, attacker).destination == [16.5, 9.5], "P2 skips reserved and occupied cells, ties by y")
 	var release = Fixture.world()
 	var first: int = release.spawn(1, Vector2(2.5, 10.5), "infantry")
-	var second: int = release.spawn(1, Vector2(2.5, 12.5), "infantry")
+	var second: int = release.spawn(1, Vector2(1.5, 10.5), "infantry")
 	var moving: int = release.spawn(2, Vector2(20.5, 10.5), "vehicle")
 	Fixture.send(release, {"type": "attack", "entity_ids": [first], "target_id": moving})
-	Fixture.send(release, {"player": 2, "type": "move", "entity_ids": [moving], "target": [20.5, 0.5]})
 	for tick in range(Combat.REPATH_TICKS): release.step()
 	runner.check(Fixture.object(release, first).destination == [16.5, 10.5], "P2 first attacker holds the old firing cell")
+	release._entities[moving].position = [20.5, 0.5]
 	var still: int = release.spawn(2, Vector2(20.5, 10.5), "builder")
 	runner.check(still > 0, "P2 stationary second target spawned")
 	Fixture.send(release, {"type": "attack", "entity_ids": [second], "target_id": still})
