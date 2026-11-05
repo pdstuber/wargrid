@@ -6,7 +6,7 @@ const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
 const Locomotion = preload("res://scripts/simulation/locomotion.gd")
 
 func cases() -> Array[Callable]:
-	return [test_start_delay_three_ticks, test_acceleration_curve, test_short_hop_no_overshoot, test_group_arrival_unchanged, test_reorder_keeps_speed, test_angle_between_accuracy, test_measured_turn_then_move, test_heading_factors, test_reorder_mid_turn, test_reorder_mid_cell_straight]
+	return [test_start_delay_three_ticks, test_acceleration_curve, test_short_hop_no_overshoot, test_group_arrival_unchanged, test_reorder_keeps_speed, test_angle_between_accuracy, test_measured_turn_then_move, test_heading_factors, test_reorder_mid_turn, test_reorder_mid_cell_straight, test_dozer_turn_follows_speed]
 
 func unit_of(sim, id: int) -> Dictionary:
 	return Economy.object(sim, id)
@@ -210,4 +210,19 @@ func test_reorder_mid_cell_straight(runner) -> bool:
 	var after: Dictionary = unit_of(sim, id)
 	runner.check(minimum >= before.position[0] and after.heading[0] > 0.99, "L10 mid-cell re-order ahead never goes backwards or turns back")
 	runner.check(after.speed > 0.0 and after.move_after == before.move_after, "L10 mid-cell re-order keeps moving without a new delay")
+	return true
+
+# Dozer 180 degree turn in the retail source build (parity trace turn_dozer, order at frame 8): 90 degrees turned 46 frames after the order. Later frames are not compared: the retail dozer also braked to 0.15 cells/s mid-turn there, cause not identified.
+func test_dozer_turn_follows_speed(runner) -> bool:
+	var sim = Simulation.new([], Vector2i(64, 16))
+	sim.add_player(1, 1000)
+	var id: int = sim.spawn(1, Vector2(30.5, 8.5), "builder")
+	Economy.send(sim, {"type": "move", "entity_ids": [id], "target": [5.5, 8.5]})
+	var quarter: int = -1
+	for index in range(1, 301):
+		sim.step()
+		var unit: Dictionary = unit_of(sim, id)
+		var left: float = Locomotion.angle_between(Vector2(unit.heading[0], unit.heading[1]), Vector2(-1.0, 0.0))
+		if quarter < 0 and left <= 90.0: quarter = index
+	runner.check(absi(quarter - 46) <= 6, "L11 dozer 90 degrees turned after %d ticks (retail 46)" % quarter)
 	return true

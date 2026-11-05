@@ -573,6 +573,8 @@ Add China and GLA distinct rules, core units and economy differences (for exampl
 
 **Pre-M7 gate (proposed 2026-11-03):** run or explicitly defer the reduced level 1 spot checks (S1–S3) in [Zero Hour verification](docs/reference/zero-hour-verification.md) before kickoff, because factions multiply unverified constants. **Met 2026-11-05 (user decision):** S1–S3 measured by the [parity harness](docs/reference/zero-hour-parity-harness.md) on a source build; the differences found are a decision list in the [spike](docs/reference/zero-hour-parity-spike.md#decision-list-proposal-for-the-next-combat-feel-work), not yet decided. New factions in M7 can measure their units with the same harness.
 
+**Turn, movement and attack check (user, 2026-11-05):** for every new China and GLA unit, and again for the USA units, run the [parity harness](docs/reference/zero-hour-parity-harness.md) `turn_`, `move_`, `range_` and `reach_` scenarios against the Wargrid simulation and compare whole traces (angle, speed and position per frame), not only the first-move frame. M6 compared the Dozer only at first move and at INI values; the full trace showed Wargrid turning twice as fast (fixed in M6: wheeled turn follows speed). The retail Dozer also slowed to 0.15 cells/s mid-turn at frames 70–80 (cause not identified); look for it in the other wheeled and tracked units.
+
 **Exit gate:** three playable faction prototypes; economy/production/combat parity tracked by faction.
 
 ### M7.1 — Roster fill (proposed 2026-11-05, scope not approved; placement chosen by the user)

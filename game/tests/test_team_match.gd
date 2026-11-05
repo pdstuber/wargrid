@@ -8,7 +8,7 @@ const Fixture = preload("res://tests/combat_fixture.gd")
 
 const PREFIX_TICKS: int = 20000
 const TRACE_INTERVAL: int = 200
-const FINAL_DIGEST: String = "0b630e0094762f1d"
+const FINAL_DIGEST: String = "234f0b14453bc6c6"
 const BUILD_CHECK_TICK: int = 3000
 
 func cases() -> Array[Callable]:

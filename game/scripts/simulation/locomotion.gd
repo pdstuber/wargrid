@@ -11,12 +11,19 @@ static func step(unit: Dictionary, kind_def: Dictionary, tick: int) -> float:
 		var heading := Vector2(unit.heading[0], unit.heading[1])
 		factor = heading_factor(kind_def.locomotor, angle_between(heading, desired), kind_def)
 		var turned := turn(heading, desired, kind_def.turn_cos, kind_def.turn_sin)
+		if kind_def.locomotor == "wheels": turned = _wheel_turn(heading, desired, unit.speed, kind_def)
 		unit.heading = [turned.x, turned.y]
 	if tick < unit.move_after: return 0.0
 	var remaining: float = _route_length_until(unit, 2.0 * kind_def.brake, cap * cap, cap / 30.0)
 	var stoppable: float = sqrt(2.0 * kind_def.brake * remaining)
 	unit.speed = minf(minf(unit.speed + kind_def.accel / 30.0, cap * factor), stoppable)
 	return minf(unit.speed / 30.0, remaining)
+
+# Wheels turn in proportion to speed up to turn speed (Locomotor.cpp moveTowardsPositionWheels, turnFactor); the step uses sin(k a) = k sin(a), exact enough at 3 degrees.
+static func _wheel_turn(heading: Vector2, desired: Vector2, speed: float, kind_def: Dictionary) -> Vector2:
+	var k: float = minf(speed / maxf(kind_def.min_turn_speed, kind_def.speed / 4.0), 1.0)
+	var sin_step: float = kind_def.turn_sin * k
+	return turn(heading, desired, sqrt(1.0 - sin_step * sin_step), sin_step)
 
 static func angle_between(a: Vector2, b: Vector2) -> float:
 	var dot: float = a.x * b.x + a.y * b.y
