@@ -5,7 +5,7 @@ const Economy = preload("res://tests/economy_fixture.gd")
 const Combat = preload("res://scripts/simulation/combat.gd")
 
 func cases() -> Array[Callable]:
-	return [test_allies_never_target, test_team_victory, test_same_tick_team_cases, test_start_match_validation, test_team_defaults, test_winner_is_team_id]
+	return [test_allies_never_target, test_team_victory, test_same_tick_team_cases, test_start_match_validation, test_team_defaults, test_winner_is_team_id, test_friendly_fire_never_retaliates]
 
 func _shots(sim: RefCounted) -> Array:
 	return sim.snapshot().combat_events.filter(func(event: Dictionary) -> bool: return event.type == "shot")
@@ -145,4 +145,13 @@ func test_winner_is_team_id(runner) -> bool:
 	sim.step()
 	var match_state: Dictionary = sim.snapshot().match
 	runner.check(match_state.status == "won" and match_state.winner == 1, "TM10 seats 1 and 3 on team 1: winner is the team id")
+	return true
+
+func test_friendly_fire_never_retaliates(runner) -> bool:
+	var sim = _teamed([[1, 1], [3, 1]])
+	var victim: int = sim.spawn(1, Vector2(10.5, 10.5), "infantry")
+	var guard: int = sim.spawn(1, Vector2(11.5, 10.5), "infantry")
+	var ally: int = sim.spawn(3, Vector2(14.5, 10.5), "tank")
+	Combat._retaliate_trigger(sim, [{"attacker_id": ally, "target_id": victim}] as Array[Dictionary])
+	runner.check(sim._entities[victim].combat.mode == "guard" and sim._entities[guard].combat.mode == "guard" and sim.retaliations() == 0, "TM6 an ally's splash hit starts no retaliation")
 	return true

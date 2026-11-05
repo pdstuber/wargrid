@@ -137,7 +137,7 @@ func _enemy_summary(state: Dictionary) -> String:
 func _result_text(match_state: Dictionary) -> String:
 	if match_state.status == "ongoing": return ""
 	if match_state.status == "draw": return "Draw"
-	return "Victory" if match_state.winner == local_player else "Defeat"
+	return "Victory" if match_state.winner == simulation.team_of(local_player) else "Defeat"
 
 func _refresh_hud(state: Dictionary) -> void:
 	super._refresh_hud(state)

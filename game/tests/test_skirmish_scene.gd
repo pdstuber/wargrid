@@ -117,6 +117,8 @@ func test_match_hud_and_restart(runner) -> bool:
 	main.simulation.remove_object(2)
 	main._physics_process(0.0)
 	runner.check(main.get_node("HUD/Result").text == "Victory" and main.get_node("HUD/Restart").visible, "K4 victory and restart button")
+	main.simulation._players[main.local_player].team = 7
+	runner.check(main._result_text({"status": "won", "winner": 7}) == "Victory" and main._result_text({"status": "won", "winner": main.local_player}) == "Defeat", "K4 result compares the winning team id with the local team")
 	var before: Dictionary = main.simulation.snapshot()
 	main._submit({"type": "move", "entity_ids": [ids.tank], "target": [12.5, 12.5]})
 	main._unhandled_input(InputEventKey.new())

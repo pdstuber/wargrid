@@ -5,7 +5,7 @@ const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 const StateHash = preload("res://scripts/simulation/state_hash.gd")
 
 func cases() -> Array[Callable]:
-	return [test_maps_load, test_bad_map_rejected, test_skirmish_identical]
+	return [test_maps_load, test_bad_map_rejected, test_skirmish_identical, test_exports_ship_map_notice]
 
 func test_maps_load(runner) -> bool:
 	var skirmish := MapData.load("res://data/maps/skirmish.json")
@@ -31,4 +31,15 @@ func test_skirmish_identical(runner) -> bool:
 	var state: Dictionary = sim.snapshot()
 	runner.check(sim.map_data().name == "Skirmish" and state.entities.size() == 2 and state.entities[0].id == 1 and state.entities[1].id == 2, "MP3 builders then sources keep ids")
 	runner.check(Skirmish.create(false, "human").map_data().starts.size() == 2, "MP3 second controller reaches the sim")
+	return true
+
+func test_exports_ship_map_notice(runner) -> bool:
+	var config := ConfigFile.new()
+	runner.check(config.load("res://export_presets.cfg") == OK, "MP5 export presets load")
+	var presets: int = 0
+	for section in config.get_sections():
+		if section.ends_with(".options"): continue
+		presets += 1
+		runner.check("data/maps/NOTICE.md" in str(config.get_value(section, "include_filter", "")), "MP5 %s ships EA's map notice" % config.get_value(section, "name", section))
+	runner.check(presets == 6, "MP5 six presets checked")
 	return true
