@@ -2,6 +2,7 @@ extends RefCounted
 
 const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
 const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
+const Profiler = preload("res://scripts/debug/profiler.gd")
 const REPATH_TICKS: int = 8
 # Fixed in ticks: a shorter wait lets attack_move dither at a wall (U1, cadence 8 vs 15).
 const UNREACHABLE_BACKOFF_TICKS: int = 60
@@ -73,7 +74,10 @@ static func plan(sim: RefCounted, unit_ids: Array[int]) -> void:
 		if kept.is_empty() or kept.owner == unit.owner:
 			combat.target_id = null
 			if sim._tick >= combat.repath_tick or combat.retarget:
-				combat.target_id = _nearest(sim, unit, _grid(sim, grid_box), _scan_radius_for(sim, unit, human))
+				var grid: Dictionary = _grid(sim, grid_box)
+				var zone: int = Profiler.begin()
+				combat.target_id = _nearest(sim, unit, grid, _scan_radius_for(sim, unit, human))
+				Profiler.end(&"combat.nearest", zone)
 				combat.retarget = false
 				if combat.target_id != null and not _within(unit, record(sim, combat.target_id), _reach(unit.kind)): sim._scan_chases += 1
 				if combat.target_id == null: combat.repath_tick = sim._tick + REPATH_TICKS - (sim._tick + unit.id) % REPATH_TICKS
@@ -101,7 +105,9 @@ static func plan(sim: RefCounted, unit_ids: Array[int]) -> void:
 
 static func _grid(sim: RefCounted, box: Dictionary) -> Dictionary:
 	if not box.ready:
+		var zone: int = Profiler.begin()
 		box.grid = _build_grid(sim)
+		Profiler.end(&"combat.build_grid", zone)
 		box.ready = true
 	return box.grid
 
@@ -152,9 +158,11 @@ static func _approach(sim: RefCounted, unit: Dictionary, target: Dictionary, hel
 	combat.repath_tick = sim._tick + REPATH_TICKS
 	var reach: float = _reach(unit.kind)
 	if unit.destination != null and (unit.status == "moving" or unit.status == "path_pending") and distance_squared(Vector2(unit.destination[0], unit.destination[1]), target) <= reach * reach: return
+	var zone: int = Profiler.begin()
 	if not held.ready: _hold_cells(sim, held)
 	var previous: Variant = sim._cell(unit.destination) if unit.destination != null else null
 	var goal: Variant = _firing_cell(sim, unit, target, reach, held.cells)
+	Profiler.end(&"combat.firing_cell", zone)
 	if previous != null: held.cells.erase(previous)
 	sim._path_queue.erase(unit.id)
 	if goal == null:
@@ -257,7 +265,9 @@ static func fire(sim: RefCounted, unit_ids: Array[int], moved_ids: Array[int]) -
 	for id in damage:
 		var hit: Dictionary = record(sim, id)
 		hit.hp = maxi(0, hit.hp - damage[id])
+	var zone: int = Profiler.begin()
 	_retaliate_trigger(sim, shots)
+	Profiler.end(&"combat.retaliate", zone)
 	dead.sort()
 	for id in dead:
 		sim._combat_events.append({"type": "death", "tick": sim._tick, "object_id": id})

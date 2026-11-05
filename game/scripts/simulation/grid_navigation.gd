@@ -1,5 +1,6 @@
 extends RefCounted
 
+const Profiler = preload("res://scripts/debug/profiler.gd")
 const SIZE := Vector2i(16, 16)
 var _grid := AStarGrid2D.new()
 var _blocked: Array[Vector2i] = []
@@ -10,7 +11,8 @@ var _component_cells: Array[Array] = []
 const Neighbors: Array[Vector2i] = [Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT, Vector2i.UP]
 
 func _init(blocked_cells: Array[Vector2i] = [], size: Vector2i = SIZE) -> void:
-	assert(size.x > 0 and size.y > 0 and size.x <= 64 and size.y <= 64)
+	assert(size.x > 0 and size.y > 0 and size.x <= 256 and size.y <= 256)
+	var zone: int = Profiler.begin()
 	_map_size = size
 	_grid.region = Rect2i(Vector2i.ZERO, size)
 	_grid.cell_size = Vector2.ONE
@@ -21,6 +23,7 @@ func _init(blocked_cells: Array[Vector2i] = [], size: Vector2i = SIZE) -> void:
 	_grid.jumping_enabled = false
 	_grid.update()
 	_apply_blocked(_normalize(blocked_cells))
+	Profiler.end(&"navigation.build", zone)
 
 func _cell_before(a: Vector2i, b: Vector2i) -> bool:
 	return a.y < b.y or (a.y == b.y and a.x < b.x)
@@ -47,6 +50,11 @@ func _index(cell: Vector2i) -> int:
 	return cell.y * _map_size.x + cell.x
 
 func _rebuild_components() -> void:
+	var zone: int = Profiler.begin()
+	_rebuild_component_cells()
+	Profiler.end(&"navigation.components", zone)
+
+func _rebuild_component_cells() -> void:
 	_components.resize(_map_size.x * _map_size.y)
 	_components.fill(-1)
 	_component_cells.clear()
@@ -85,7 +93,9 @@ func route(from: Vector2, to: Vector2) -> Array[Vector2]:
 	var end := Vector2i(to.floor())
 	if start == end:
 		return [to]
+	var zone: int = Profiler.begin()
 	var cells: Array[Vector2i] = _grid.get_id_path(start, end, false)
+	Profiler.end(&"navigation.astar", zone)
 	if cells.is_empty():
 		return points
 	for cell in cells:
@@ -113,6 +123,8 @@ func cells_in_component(component: int) -> Array[Vector2i]:
 	return _component_cells[component].duplicate()
 
 func replace_blocked_cells(cells: Array[Vector2i]) -> void:
+	var zone: int = Profiler.begin()
 	var normalized: Array[Vector2i] = _normalize(cells)
 	if normalized != _blocked:
 		_apply_blocked(normalized)
+	Profiler.end(&"navigation.replace", zone)

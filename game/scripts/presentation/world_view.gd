@@ -2,6 +2,7 @@ extends Node2D
 
 const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
+const Profiler = preload("res://scripts/debug/profiler.gd")
 var _preview_cells: Array[Vector2i] = []
 var _preview_valid: bool = false
 var _state: Dictionary = {}
@@ -21,11 +22,17 @@ static func hp_fraction(hp: int, max_hp: int) -> float:
 	return clampf(float(hp) / float(max_hp), 0.0, 1.0) if max_hp > 0 else 1.0
 
 func set_state(state: Dictionary, selected_ids: Array[int]) -> void:
+	var zone: int = Profiler.begin()
 	_state = state.duplicate(true)
+	Profiler.end(&"view.copy", zone)
 	_selected_ids = selected_ids.duplicate()
 	_prune_hints()
+	zone = Profiler.begin()
 	_state.get("entities", []).sort_custom(_draw_before)
+	Profiler.end(&"view.sort", zone)
+	zone = Profiler.begin()
 	_remember_points()
+	Profiler.end(&"view.points", zone)
 	queue_redraw()
 
 func add_hint(point: Vector2, tick: int) -> void:
@@ -88,7 +95,11 @@ func pick_entity(plane_point: Vector2, any_owner: bool = false) -> int:
 func _draw() -> void:
 	if not _state.has("map"):
 		return
+	var total: int = Profiler.begin()
+	var zone: int = Profiler.begin()
 	_draw_terrain()
+	Profiler.end(&"draw.terrain", zone)
+	zone = Profiler.begin()
 	for source in _state.get("sources",[]):
 		_draw_footprint(source.origin,Vector2i(3,3),Color("9f8045"),_selected_ids.has(source.id))
 		var lines: PackedStringArray = pile_lines(source)
@@ -101,6 +112,8 @@ func _draw() -> void:
 		_draw_footprint(building.origin,definition.footprint,tint.lerp(Color("687b8c"),0.4) if building.completed else tint.lerp(Color("887966"),0.6),_selected_ids.has(building.id))
 		_draw_text(building.origin,building_label(building))
 		_draw_health(Iso.world_to_plane(Vector2(building.origin[0],building.origin[1]) + Vector2(definition.footprint) / 2.0) + Vector2(-16,-26),building,_selected_ids.has(building.id))
+	Profiler.end(&"draw.structures", zone)
+	zone = Profiler.begin()
 	for cell in _preview_cells:
 		_draw_footprint([cell.x,cell.y],Vector2i.ONE,Color(0.2,0.9,0.3,0.55) if _preview_valid else Color(0.9,0.2,0.2,0.55),false)
 	for unit in _state.get("entities",[]):
@@ -115,12 +128,16 @@ func _draw() -> void:
 			var point: Vector2 = Iso.world_to_plane(target)
 			draw_line(point - Vector2(6, 0), point + Vector2(6, 0), Color("8cff87"), 2.0)
 			draw_line(point - Vector2(0, 6), point + Vector2(0, 6), Color("8cff87"), 2.0)
+	Profiler.end(&"draw.units", zone)
+	zone = Profiler.begin()
 	_draw_focus()
 	_draw_inspected()
 	_draw_resume_outline()
 	_draw_rally()
 	_draw_hints()
 	_draw_cues()
+	Profiler.end(&"draw.overlays", zone)
+	Profiler.end(&"draw", total)
 
 func _draw_health(top_left: Vector2, object: Dictionary, selected: bool) -> void:
 	if not object.has("hp") or (not selected and object.hp >= object.max_hp): return

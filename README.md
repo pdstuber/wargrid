@@ -54,6 +54,8 @@ python3 -m unittest discover -s tools -p 'test_*.py'
 sh tools/run_benchmark.sh
 ```
 
+Profiling (report-only, never gates): `sh tools/run_profile.sh` prints per-zone timings for the benchmark workloads, the scripted skirmish match and a synthetic 196×196 map; the rendered benchmark takes `-- --profile` for the same zones plus a 196×196 leg. Results: [performance spike](docs/reference/performance-spike.md).
+
 Milestone runs follow the reusable [milestone prompt](docs/milestone-prompt.md) (resume record, restart at gates, pre-authorized local commits, gate reviews). Token usage per session for the resume record: `python3 tools/session_usage.py <Claude session or Codex rollout files>`.
 
 CI runs Linux and Windows and compares their replay traces. macOS was dropped from CI on 2026-11-03 because hosted macOS runners repeatedly failed to start within the job timeout; at each milestone gate compare this Mac against a CI run instead: `sh tools/compare_local_traces.sh RUN_ID` (runs the suite with all three trace paths, downloads that run's Linux and Windows traces with `gh`, prints `REPLAYS MATCHED 1200` per scenario).

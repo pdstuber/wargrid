@@ -8,6 +8,7 @@ const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.g
 const Combat = preload("res://scripts/simulation/combat.gd")
 const Allocation = preload("res://scripts/simulation/destination_allocation.gd")
 const Navigation = preload("res://scripts/simulation/grid_navigation.gd")
+const Profiler = preload("res://scripts/debug/profiler.gd")
 const PATH_REQUESTS_PER_TICK: int = 8
 var _navigation: RefCounted
 
@@ -318,7 +319,12 @@ func _assign_move(members: Array[Dictionary], target: Array) -> void:
 	for unit in members:
 		if unit.kind != "collector": ground.append(unit)
 	_allocation_calls += 1
-	var goals: Dictionary = Allocation.assign(_navigation, ground, point, _unavailable_cells(ground))
+	var zone: int = Profiler.begin()
+	var unavailable: Array[Vector2i] = _unavailable_cells(ground)
+	Profiler.end(&"assign_move.unavailable", zone)
+	zone = Profiler.begin()
+	var goals: Dictionary = Allocation.assign(_navigation, ground, point, unavailable)
+	Profiler.end(&"allocation.assign", zone)
 	for unit in members:
 		unit.route = []
 		if unit.kind == "collector":
@@ -356,7 +362,9 @@ func _stop_unit(unit: Dictionary) -> void:
 func _service_paths() -> void:
 	for i in range(mini(PATH_REQUESTS_PER_TICK, _path_queue.size())):
 		var id: int = _path_queue.pop_front()
+		var zone: int = Profiler.begin()
 		_assign_route(_entities[id])
+		Profiler.end(&"route", zone)
 
 func combat_work() -> int:
 	return _combat_work
@@ -378,26 +386,44 @@ func allocation_calls() -> int:
 
 func step() -> void:
 	if match_over(): return
+	var total: int = Profiler.begin()
 	_command_results.clear()
 	_combat_events.clear()
 	_combat_work = 0
 	_scan_chases = 0
 	_retaliations = 0
 	_allocation_calls = 0
+	var zone: int = Profiler.begin()
 	_apply_orders()
+	Profiler.end(&"step.apply_orders", zone)
+	zone = Profiler.begin()
 	var ids: Array[int] = []
 	ids.assign(_entities.keys())
 	ids.sort()
 	var armed: Array[int] = []
 	for id in ids:
 		if _entities[id].combat != null: armed.append(id)
+	Profiler.end(&"step.ids", zone)
+	zone = Profiler.begin()
 	Combat.plan(self,armed)
+	Profiler.end(&"step.combat_plan", zone)
+	zone = Profiler.begin()
 	var rates: Dictionary = {}
 	for player in _player_snapshots(): rates[player.id] = player.work_rate
+	Profiler.end(&"step.rates", zone)
+	zone = Profiler.begin()
 	Construction.step(self,rates)
+	Profiler.end(&"step.construction", zone)
+	zone = Profiler.begin()
 	Production.step(self,rates)
+	Profiler.end(&"step.production", zone)
+	zone = Profiler.begin()
 	Supply.step(self,ids)
+	Profiler.end(&"step.supply", zone)
+	zone = Profiler.begin()
 	_service_paths()
+	Profiler.end(&"step.service_paths", zone)
+	zone = Profiler.begin()
 	var before: Dictionary = {}
 	for id in armed: before[id] = _entities[id].position
 	for id in ids:
@@ -406,9 +432,15 @@ func step() -> void:
 	var moved: Array[int] = []
 	for id in armed:
 		if _entities[id].position != before[id]: moved.append(id)
+	Profiler.end(&"step.advance", zone)
+	zone = Profiler.begin()
 	Combat.fire(self,armed,moved)
+	Profiler.end(&"step.combat_fire", zone)
+	zone = Profiler.begin()
 	if _match != null: _evaluate_match()
+	Profiler.end(&"step.evaluate_match", zone)
 	_tick += 1
+	Profiler.end(&"step", total)
 
 func _assign_route(unit: Dictionary) -> void:
 	var from := Vector2(unit.position[0], unit.position[1])
@@ -445,6 +477,12 @@ func _advance(unit: Dictionary) -> void:
 		unit.status = "arrived"
 
 func snapshot() -> Dictionary:
+	var zone: int = Profiler.begin()
+	var result: Dictionary = _snapshot()
+	Profiler.end(&"snapshot", zone)
+	return result
+
+func _snapshot() -> Dictionary:
 	var entities: Array = []
 	var ids: Array = _entities.keys()
 	ids.sort()
