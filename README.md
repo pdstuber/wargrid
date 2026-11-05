@@ -83,7 +83,9 @@ sh tools/run_conformance.sh                               # black-box protocol s
 sh tools/run_netplay.sh match                             # two headless Godot clients through a local relay
 ```
 
-Spike knobs, all off by default: `WARGRID_SEATS` (seats per room), `WARGRID_BATCH_MS` (one newline-joined message per recipient per interval; the current Godot client cannot read it), plus the test-only `WARGRID_TEST_DELAY_MS` and `WARGRID_SILENCE_MS`.
+Spike knobs, all off by default: `WARGRID_SEATS` (seats per room), `WARGRID_BATCH_MS` (one newline-joined message per recipient per interval; the current Godot client cannot read it), plus the test-only `WARGRID_TEST_DELAY_MS` and `WARGRID_SILENCE_MS`. A set but non-integer knob exits with status 2.
+
+Shutdown: on SIGINT (fly's default `kill_signal`) or SIGTERM the relay stops accepting connections, closes lobbies that have not started, lets started matches run for `WARGRID_DRAIN_MS` (default 3500; plus 1 s close grace stays under fly's default 5 s `kill_timeout`), then closes the rest; every room logs `MATCH END`. A second signal exits immediately. Hour-long matches do not survive a deploy; that drain is M9 ([relay scaling](docs/reference/relay-scaling.md)).
 
 ### Hosting
 
@@ -94,6 +96,7 @@ Status: Go relay deployed at `wss://wargrid-relay-jvm.fly.dev/ws` (2026-11-05):
 - Godot probe `RELAY WELCOME 64`; warm 55–78 ms.
 - Cold start after a stop 1.3–1.8 s; resume after a suspend 0.33–0.51 s.
 - Remote `run_netplay.sh match` PASSED.
+- Redeployed 2026-11-05 with shutdown drain and crash isolation (`58d13f2`); log shows `relay started … drain=3.5s`, probe `RELAY WELCOME` 1837 ms (cold start). A live drain on fly is not yet observed.
 
 Capacity: a shared vCPU's 6.25 % baseline holds about one 3v3 room ([relay scaling](docs/reference/relay-scaling.md#flyio-vs-railway-measured-2026-11-0405)).
 

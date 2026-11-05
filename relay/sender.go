@@ -46,14 +46,14 @@ func (s *sender) send(frame []byte, delay time.Duration) {
 
 func (s *sender) addBatch(frame []byte) {
 	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.batch = append(s.batch, frame)
-	s.mu.Unlock()
 }
 
 func (s *sender) flushNow() {
 	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.flushBatch()
-	s.mu.Unlock()
 }
 
 // flushBatch writes pending ticks as one newline-joined message; caller holds mu.

@@ -3,17 +3,25 @@ package main
 
 import (
 	"bytes"
-	"log"
+	"context"
+	"errors"
+	"log/slog"
+	"net"
 	"net/http"
 	"os"
+	"os/signal"
 	"strconv"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/lxzan/gws"
 )
 
-const closeGrace = 200 * time.Millisecond
+const (
+	closeGrace = 200 * time.Millisecond
+	stopGrace  = time.Second // close handshakes after a forced stop
+)
 
 type conn struct {
 	sender
@@ -37,10 +45,16 @@ type relay struct {
 }
 
 func envInt(name string, def int) int {
-	if v, err := strconv.Atoi(os.Getenv(name)); err == nil {
-		return v
+	v, ok := os.LookupEnv(name)
+	if !ok {
+		return def
 	}
-	return def
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		slog.Error("invalid config", "var", name, "value", v)
+		os.Exit(2)
+	}
+	return n
 }
 
 func getConn(s *gws.Conn) *conn { v, _ := s.Session().Load("c"); return v.(*conn) }
@@ -64,7 +78,7 @@ func (h *relay) OnOpen(s *gws.Conn) {
 
 func (h *relay) OnClose(s *gws.Conn, _ error) {
 	if c := getConn(s); c.seat != nil {
-		c.room.events <- leaveMsg{c.seat}
+		c.room.post(leaveMsg{c.seat})
 	}
 }
 
@@ -95,13 +109,14 @@ func (h *relay) OnMessage(s *gws.Conn, msg *gws.Message) {
 	case "hello":
 		res := h.reg.join(e, c)
 		if res.seat == nil {
+			slog.Info("join rejected", "reason", res.reason)
 			c.reject(res.reason)
 			return
 		}
 		c.seat = res.seat
 		c.room = res.seat.r
 	case "tick":
-		c.room.events <- tickMsg{c.seat, e.seat, e.tick, bytes.Clone(msg.Bytes())}
+		c.room.post(tickMsg{c.seat, e.seat, e.tick, bytes.Clone(msg.Bytes())})
 	case "ping":
 		c.send([]byte(`{"type":"pong","t":`+e.t+`}`), 0)
 	}
@@ -113,11 +128,42 @@ func main() {
 		testDelay: time.Duration(envInt("WARGRID_TEST_DELAY_MS", 0)) * time.Millisecond,
 		batch:     time.Duration(envInt("WARGRID_BATCH_MS", 0)) * time.Millisecond,
 	}
-	h := &relay{
-		reg:     &registry{rooms: map[string]*room{}, cfg: cfg},
-		silence: time.Duration(envInt("WARGRID_SILENCE_MS", 10000)) * time.Millisecond,
+	silence := time.Duration(envInt("WARGRID_SILENCE_MS", 10000)) * time.Millisecond
+	drain := time.Duration(envInt("WARGRID_DRAIN_MS", 3500)) * time.Millisecond
+	addr := ":" + os.Getenv("PORT")
+	if addr == ":" {
+		addr = ":8080"
 	}
-	up := gws.NewUpgrader(h, &gws.ServerOption{ReadMaxPayloadSize: 1 << 20, CheckUtf8Enabled: true})
+	reg := newRegistry(cfg)
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		slog.Error("listen failed", "err", err)
+		os.Exit(1)
+	}
+	slog.Info("relay started", "addr", addr, "seats", cfg.seats, "silence", silence, "batch", cfg.batch, "drain", drain)
+	if err := serve(ln, newServer(&relay{reg: reg, silence: silence}), reg, drain); err != nil {
+		slog.Error("serve failed", "err", err)
+		os.Exit(1)
+	}
+}
+
+func serve(ln net.Listener, srv *http.Server, reg *registry, drain time.Duration) error {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	errc := make(chan error, 1)
+	go func() { errc <- srv.Serve(ln) }()
+	select {
+	case err := <-errc:
+		return err
+	case <-ctx.Done():
+	}
+	stop() // a second signal exits immediately
+	shutdown(srv, reg, drain)
+	return nil
+}
+
+func newServer(h *relay) *http.Server {
+	up := gws.NewUpgrader(h, &gws.ServerOption{ReadMaxPayloadSize: 1 << 20, CheckUtf8Enabled: true, Recovery: gws.Recovery})
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("ok")) })
 	mux.HandleFunc("GET /ws", func(w http.ResponseWriter, r *http.Request) {
@@ -125,10 +171,27 @@ func main() {
 			go s.ReadLoop()
 		}
 	})
-	addr := ":" + os.Getenv("PORT")
-	if addr == ":" {
-		addr = ":8080"
+	return &http.Server{Handler: mux, ReadHeaderTimeout: 10 * time.Second, IdleTimeout: 60 * time.Second}
+}
+
+// shutdown stops accepting connections, lets started matches run until drain passes, then closes the rest.
+// http.Server.Shutdown does not wait for WebSockets (hijacked), so rooms are tracked by the registry.
+func shutdown(srv *http.Server, reg *registry, drain time.Duration) {
+	slog.Info("draining", "rooms", reg.count(), "timeout", drain)
+	ctx, cancel := context.WithTimeout(context.Background(), drain)
+	defer cancel()
+	reg.startDrain()
+	if err := srv.Shutdown(ctx); err != nil && !errors.Is(err, context.DeadlineExceeded) {
+		slog.Warn("http shutdown", "err", err)
 	}
-	srv := &http.Server{Addr: addr, Handler: mux, ReadHeaderTimeout: 10 * time.Second, IdleTimeout: 60 * time.Second}
-	log.Fatal(srv.ListenAndServe())
+	_ = srv.Close() // HTTP requests still open at the deadline
+	forced := 0
+	if !reg.waitEmpty(ctx) {
+		forced = reg.count()
+		reg.stop()
+		grace, cancelGrace := context.WithTimeout(context.Background(), stopGrace)
+		defer cancelGrace()
+		reg.waitEmpty(grace)
+	}
+	slog.Info("stopped", "forced", forced, "remaining", reg.count())
 }
