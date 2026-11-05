@@ -412,7 +412,7 @@ Departure, recorded: wheels follow the route instead of arcing or reversing.
 - An invariant value changes in a sub-task. Revert that sub-task's files (`git checkout -- <files>`), record what changed, and stop.
 - An equivalence test (AL1, NI1, VW2) fails with the code as specified. Never edit the reference copy to make it pass.
 - Any other failing assertion.
-- A row still exceeds its budget after 11h (report it; the user decides).
+- A row other than team-match `step` p95/p99 still exceeds its budget after 11h (report it; the user decides). A `step` p95/p99 excess goes to 11i.
 
 Commands: run every suite or benchmark with output to a file and read only summary lines (`CASES`, `TESTS PASSED`, `PROFILE COMPLETE`, failing lines). Commit each sub-task on its own with the message given.
 
@@ -635,6 +635,11 @@ Commands: run every suite or benchmark with output to a file and read only summa
   - every benchmark p95.
 
   Mark any row over budget **exceeded**; never loosen a budget. Presentation changed (11g), so Task 13's rendered rerun is required.
+- [ ] **11i Chase repath stagger (conditional; user, 2026-11-05).** Only if the 11.9 team-match `step` p95 or p99 is over budget. Task 1 measured p95 7.36 ms against 1.67 ms: every chaser re-plans on the same tick every `REPATH_TICKS` (`Combat._approach` sets `repath_tick = tick + REPATH_TICKS`, no stagger; the guard path at `combat.gd` 83 staggers by id).
+  - Red: a test that 20 units chasing from one order re-plan on at least 4 distinct ticks within one `REPATH_TICKS` window (counter, not timing).
+  - Change `_approach` to `repath_tick = tick + REPATH_TICKS - (tick + unit.id) % REPATH_TICKS`. This changes every trace on purpose: re-pin provisionally under Global Constraints (windows unchanged), record each as `test / assertion / old → new / 11i`, and re-run 11.9. Task 12 confirms them.
+  - If `step` p95/p99 is within budget without it, skip 11i and record "not needed".
+  - Commit `Stagger chase repaths by unit id`.
 - [ ] Record the deferred items, all not approved:
   - static terrain as one batch: the spike measured about 5 fps at 196×196, but big-map presentation is out of M6 scope;
   - persistent combat bins;

@@ -7,11 +7,11 @@ Resume record (updated 2026-11-05, after Task 2)
 Branch / base commit / working-tree state: m6-teams-map / 9ea11bc (main) / clean after the Task 2 commit
 Last green task / next incomplete task: Task 2 / Task 3 (not a stop gate; next gate after Task 4)
 Changed paths since last commit: none (Task 2 commit: tools/zh_map/, game/data/maps/ashfall.json, game/data/maps/NOTICE.md, CI line)
-Last command / cases / checks / failures / exit / marker: python3 tools/zh_map/test_zh_map.py, 10 tests OK; sh tools/run_tests.sh unchanged (222 cases, 104,554 checks, 0 failures; no game/ code changed)
+Last command / cases / checks / failures / exit / marker: python3 tools/zh_map/test_zh_map.py, 10 tests OK; sh tools/run_tests.sh unchanged (222 cases, 104,554 checks, 0 failures before the spike merge; 225 cases, 104,562 checks, 0 failures on d2e27d5 (merge of spike-performance: +3 cases, +8 checks, test_profiler.gd))
 Known red case or blocker: none
 Approved decisions, pre-authorizations used, deferred gates: as before; Task 3 asserts Ashfall exactly 194 x 187; local commits per milestone prompt; no push/PR/merge/window/BM6 re-pin without approval
 Usage so far (python3 tools/session_usage.py <session files>): Task 1 session 37b12bfa, 50 requests before the review, max context 170,834, output 36,877 (opus); Task 2 not measured
-Next exact action: start Task 3 (Sonnet medium) on this branch; check the Values-table rows it needs first
+Next exact action: start Task 3 (Sonnet medium) on this branch; baseline is now 225 cases / 104,562 checks; Task 11 is the spike-performance version plus conditional 11i (user, 2026-11-05)
 ```
 
 ## Task 0: baseline (2026-11-05, tree 9ea11bc + Task 0 test)
