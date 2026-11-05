@@ -34,6 +34,7 @@ func test_skirmish_identical(runner) -> bool:
 	return true
 
 func test_exports_ship_map_notice(runner) -> bool:
+	runner.check(FileAccess.file_exists("res://data/maps/NOTICE.md"), "MP5 EA's map notice is in the project or pack")
 	if not FileAccess.file_exists("res://export_presets.cfg"): return true # exported packs omit the presets; the project run checks them
 	var config := ConfigFile.new()
 	runner.check(config.load("res://export_presets.cfg") == OK, "MP5 export presets load")
