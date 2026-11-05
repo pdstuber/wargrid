@@ -559,6 +559,8 @@ Approved design (2026-11-05): [findings design](docs/superpowers/specs/2026-11-0
 
 Matches with up to eight players in teams with team victory; a hand-authored map whose layout is inspired by Twilight Flame (an official 8-player Zero Hour map, 4,900 × 4,900 world units, about 196 × 196 cells at 25 units per cell; no EA map data copied); navigation, allocation and snapshot costs scaled for that size (measure first; candidate fixes: incremental navigation updates, local destination search). Still USA only.
 
+**Planning inputs (decided 2026-11-05):** decide the [parity spike decision list](docs/reference/zero-hour-parity-spike.md#decision-list-proposal-for-the-next-combat-feel-work) (edge-to-edge range, Ranger cadence 4/4/22, tank splash, start delay and turning) and budget the pin re-calibration it forces (skirmish, netplay, BM6); fix the Chinook supply scenario to turn M3's provisional collector timing into measured values.
+
 **Exit gate:** a deterministic headless 3v3 bots-vs-bots match on the full map within the [performance ledger](docs/reference/performance.md) budgets, with new ledger rows.
 
 ### M7 — China and GLA core

@@ -27,7 +27,7 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 - Source/config-supported economy and combat values remain RETAIL_UNVERIFIED; departures stay explicit in reference/design notes.
 - AI moods (Sleep, Alert 1.1, Aggressive 1.5) deferred to M8 bots (user, 2026-11-03).
 - Retail map sizes vs our 48×32 cells: check before choosing the M6 full-scale map.
-- Runtime parity harness: adopted 2026-11-05 ([spike](reference/zero-hour-parity-spike.md)); counts as level 1 with the source-build caveat; open: its decision list and the Chinook supply scenario.
+- Runtime parity harness: adopted 2026-11-05 ([spike](reference/zero-hour-parity-spike.md)); counts as level 1 with the source-build caveat; open: its decision list and the Chinook supply scenario. Decided 2026-11-05: M5.1 adds a retaliation parity scenario at Task 9; the combat-feel list (edge-to-edge range, Ranger cadence 4/4/22, tank splash, start delay and turning) and the Chinook scenario go to M6 planning, because range and cadence change every weapon number and would invalidate the skirmish and netplay pins and BM6 again.
 - Retail `ForceIdleMSEC` INI value unread (code default 1 frame); `stop` re-acquire delay uses the existing 15-tick stagger instead.
 
 ## Next action
