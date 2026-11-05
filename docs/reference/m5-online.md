@@ -58,4 +58,4 @@ The plan's hard gate (macOS-Windows human match on the fixed build) is a **user-
 
 ## M9 list
 
-Lobby and match browser; reconnect with command-log replay; dropped player becomes a bot; dynamic input delay; 3+ seats (egress about 220 KiB/s per 3v3 room in JSON, 120 binary; revisit encoding only if budgets miss); browser export; server-stamped ticks (option B); relay scaling per [relay scaling](relay-scaling.md); room cleanup, join rate limit, drain before deploy; fixed Docker image tags and non-root user; the 200 ms close grace replaced by a close-frame reason.
+Lobby and match browser; reconnect with command-log replay; dropped player becomes a bot; dynamic input delay; 3+ seats (egress about 220 KiB/s per 3v3 room in JSON, 120 binary; revisit encoding only if budgets miss); browser export; server-stamped ticks (option B); relay scaling per [relay scaling](relay-scaling.md); room cleanup, join rate limit, drain before deploy (single-process drain window on SIGINT/SIGTERM exists, see README; multi-machine drain open); fixed Docker image tags and non-root user; the 200 ms close grace replaced by a close-frame reason.

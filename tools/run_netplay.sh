@@ -136,19 +136,22 @@ PY
     ! grep -q '^NETCLIENT END' "$out/s1.log" || fail "seat 1 ended"
     kill -9 "$pid1" ;;
   relay-down|relay-term)
-    start_relay; start_pair "" ""
+    drain_ms=500
+    start_relay WARGRID_DRAIN_MS=$drain_ms; start_pair "" ""
     sleep 2
-    if [ "$scenario" = relay-down ]; then kill -9 "$relay_pid"; else kill -TERM "$relay_pid"; fi
+    if [ "$scenario" = relay-down ]; then kill -9 "$relay_pid"; stop_limit=2000; else kill -TERM "$relay_pid"; stop_limit=$((drain_ms + 2000)); fi
     down=$(ms)
     wait_exit "$pid1" 20; wait_exit "$pid2" 20
     for name in s1 s2; do
       echo "$name: $(end_line $name) $(($(log_ms $name TIME) - down)) ms after relay stop"
-      if [ "$scenario" = relay-down ]; then
-        expect_end $name ended_relay
-        [ "$(end_tick $name)" -gt 0 ] || fail "$name never started the match"
-        [ $(($(log_ms $name TIME) - down)) -le 2000 ] || fail "$name took too long"
-      fi
-    done ;;
+      expect_end $name ended_relay
+      [ "$(end_tick $name)" -gt 0 ] || fail "$name never started the match"
+      [ $(($(log_ms $name TIME) - down)) -le $stop_limit ] || fail "$name took too long"
+    done
+    if [ "$scenario" = relay-term ] && [ -z "$remote" ]; then
+      wait "$relay_pid" || fail "relay exited $? on SIGTERM"
+      grep -q 'MATCH END' "$out/relay.log" || fail "relay logged no MATCH END on SIGTERM"
+    fi ;;
   *) fail "unknown scenario" ;;
 esac
 echo "NETPLAY PASSED $scenario $(${PYTHON:-python3} -c "import time;print(round(time.time()-$started,1))") s"
