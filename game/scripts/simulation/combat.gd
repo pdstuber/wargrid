@@ -58,8 +58,7 @@ static func plan(sim: RefCounted, unit_ids: Array[int]) -> void:
 		var combat: Dictionary = unit.combat
 		var kept: Dictionary = record(sim, combat.target_id) if combat.target_id != null else {}
 		var human: bool = not is_ai(sim, unit.owner)
-		var leash: float = _keep_radius(sim, unit, mode, human)
-		if not kept.is_empty() and kept.owner != unit.owner and not _within(unit, kept, leash):
+		if not kept.is_empty() and kept.owner != unit.owner and human and _left_range(unit, kept, mode):
 			combat.retarget = mode == "attack_move"
 			kept = {}
 		if kept.is_empty() or kept.owner == unit.owner:
@@ -98,9 +97,10 @@ static func _scan_radius_for(sim: RefCounted, unit: Dictionary, human: bool) -> 
 	if not human: return _scan_reach(sim, unit)
 	return _scan_reach(sim, unit) if unit.combat.retarget else _reach(unit.kind)
 
-static func _keep_radius(sim: RefCounted, unit: Dictionary, mode: String, human: bool) -> float:
-	if not human: return INF
-	return _reach(unit.kind) if mode == "guard" else _scan_reach(sim, unit)
+# An attack-move approach has no leash; only a halted (firing) unit drops a target that left weapon range.
+static func _left_range(unit: Dictionary, target: Dictionary, mode: String) -> bool:
+	if mode == "attack_move" and unit.status != "idle": return false
+	return not _within(unit, target, _reach(unit.kind))
 
 static func _scan_reach(sim: RefCounted, unit: Dictionary) -> float:
 	return maxf(scan_radius(sim, unit), _reach(unit.kind))

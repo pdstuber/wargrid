@@ -9,7 +9,7 @@ const Fixture = preload("res://tests/combat_fixture.gd")
 const EconomyFixture = preload("res://tests/economy_fixture.gd")
 
 func cases() -> Array[Callable]:
-	return [test_combat_definitions, test_health_snapshot_isolation, test_weapon_range_boundary, test_damage_armor_matrix, test_weapon_cooldown, test_guard_priority, test_attack_validation_atomic, test_combat_intent_order, test_orders_preserve_reload, test_acquisition_throttle, test_mutual_lethal_fire, test_target_removed_cleanup, test_destroyed_unit_no_actions, test_destroyed_producer_accounting, test_same_tick_attack_and_cancel, test_removed_target_rescans, test_controller_and_scan_radius, test_scan_acquires_beyond_weapon_range, test_scan_radius_by_controller, test_scan_radius_boundary, test_removed_chaser_clears_chase, test_scan_keeps_target_leaving_radius, test_attack_move_resumes_after_chase, test_scan_same_tick_orders, test_scan_includes_buildings, test_human_guard_in_range_only, test_human_guard_holds_against_kiting, test_ai_guard_unchanged, test_human_attack_move_marches_in_range, test_human_attack_move_post_kill_rescan, test_human_attack_move_follows_retreat, test_rescan_same_tick_orders]
+	return [test_combat_definitions, test_health_snapshot_isolation, test_weapon_range_boundary, test_damage_armor_matrix, test_weapon_cooldown, test_guard_priority, test_attack_validation_atomic, test_combat_intent_order, test_orders_preserve_reload, test_acquisition_throttle, test_mutual_lethal_fire, test_target_removed_cleanup, test_destroyed_unit_no_actions, test_destroyed_producer_accounting, test_same_tick_attack_and_cancel, test_removed_target_rescans, test_controller_and_scan_radius, test_scan_acquires_beyond_weapon_range, test_scan_radius_by_controller, test_scan_radius_boundary, test_removed_chaser_clears_chase, test_scan_keeps_target_leaving_radius, test_attack_move_resumes_after_chase, test_scan_same_tick_orders, test_scan_includes_buildings, test_human_guard_in_range_only, test_human_guard_holds_against_kiting, test_ai_guard_unchanged, test_human_attack_move_marches_in_range, test_human_attack_move_post_kill_rescan, test_human_attack_move_follows_retreat, test_rescan_same_tick_orders, test_human_attack_move_drops_target_out_of_range, test_retarget_only_for_attack_move]
 
 func test_combat_definitions(runner) -> bool:
 	runner.check(Definitions.profile("infantry") == {"max_hp": 180000, "armor": "human", "weapon": "rifle"}, "D1 infantry")
@@ -592,11 +592,11 @@ func test_scan_keeps_target_leaving_radius(runner) -> bool:
 	return true
 
 func test_attack_move_resumes_after_chase(runner) -> bool:
-	var sim = Fixture.world()
+	var sim = _ai_world()
 	var walker: int = sim.spawn(1, Vector2(2.5, 2.5), "infantry")
 	var goal := [2.5, 20.5]
 	Fixture.send(sim, {"type": "attack_move", "entity_ids": [walker], "target": goal})
-	var prey: int = sim.spawn(2, Vector2(6.0, 8.5), "builder")
+	var prey: int = sim.spawn(2, Vector2(7.5, 8.5), "builder")
 	sim._entities[prey].hp = 1
 	var killed: bool = false
 	for tick in range(600):
@@ -809,4 +809,38 @@ func test_rescan_same_tick_orders(runner) -> bool:
 		var unit: Dictionary = Fixture.object(sim, walker)
 		runner.check(not unit.combat.retarget, "A5 " + order + " replaces the pending retarget")
 		runner.check(unit.combat.target_id == (decoy if order == "attack" else null), "A5 " + order + " leaves no scanned target")
+	return true
+
+func test_human_attack_move_drops_target_out_of_range(runner) -> bool:
+	for case in [[9.5, false], [6.0, true]]:
+		var sim = Fixture.world()
+		var walker: int = sim.spawn(1, Vector2(2.5, 2.5), "infantry")
+		var prey: int = sim.spawn(2, Vector2(5.5, 2.5), "builder")
+		var other: int = sim.spawn(2, Vector2(2.5, 8.5), "builder")
+		Fixture.send(sim, {"type": "attack_move", "entity_ids": [walker], "target": [2.5, 20.5]})
+		runner.check(_scan_shot_within(sim, 40) and Fixture.object(sim, walker).combat.target_id == prey, "A6 the unit fires on the near enemy")
+		sim._entities[prey].position = [2.5 + case[0], 2.5]
+		sim.step()
+		var unit: Dictionary = Fixture.object(sim, walker)
+		if case[1]:
+			runner.check(unit.combat.target_id == prey, "A6 a target 6 cells away, inside the scan radius, is re-chased after the drop")
+		else:
+			runner.check(unit.combat.target_id == other or unit.combat.target_id == null, "A6 a target beyond the scan radius is not re-taken")
+			runner.check(unit.combat.target_id != prey and not unit.combat.retarget, "A6 the drop rescans in the same plan and clears the flag")
+	return true
+
+func test_retarget_only_for_attack_move(runner) -> bool:
+	var guard = Fixture.world()
+	var shooter: int = guard.spawn(1, Vector2(2.5, 2.5), "infantry")
+	var first: int = guard.spawn(2, Vector2(5.5, 2.5), "builder")
+	guard._entities[first].hp = 1
+	runner.check(_kill_first(guard, first), "A7 guard kills its target")
+	guard.spawn(2, Vector2(8.5, 2.5), "builder")
+	for tick in range(16): guard.step()
+	var unit: Dictionary = Fixture.object(guard, shooter)
+	runner.check(not unit.combat.retarget and unit.combat.target_id == null and unit.position == [2.5, 2.5], "A7 a human guard never rescans wide or moves after a kill")
+	var world: Array = _attack_move_world(5.5)
+	runner.check(_kill_first(world[0], world[2]), "A7 attack-move kills its target")
+	world[0].step()
+	runner.check(not Fixture.object(world[0], world[1]).combat.retarget, "A7 retarget is cleared once served")
 	return true
