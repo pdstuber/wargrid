@@ -4,7 +4,7 @@ const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Navigation = preload("res://scripts/simulation/grid_navigation.gd")
 
 func cases() -> Array[Callable]:
-	return [test_distance, test_short_zero, test_replacement, test_retarget, test_obstacle, test_blocked, test_invalid, test_replay, test_far_coordinates]
+	return [test_distance, test_short_zero, test_replacement, test_retarget, test_obstacle, test_blocked, test_invalid, test_replay, test_far_coordinates, test_route_shared_read_only]
 
 func order(sim, target: Vector2, sequence: int = 0, tick: int = -1) -> Dictionary:
 	return sim.issue_command({"tick": sim.snapshot().tick if tick < 0 else tick, "player": 1,
@@ -162,4 +162,18 @@ func test_far_coordinates(runner) -> bool:
 	runner.check(absf(entity(sim).position[0] - (52.5 - 1.0 / 15.0)) <= 1e-5, "M9 far coordinate ten-tick distance")
 	advance(sim, 22)
 	arrived(runner, sim, Vector2(54.5, 48.5), "M9 far coordinate arrival")
+	return true
+
+func test_route_shared_read_only(runner) -> bool:
+	var sim = Simulation.new()
+	sim.spawn(1, Vector2(0.5, 0.5))
+	order(sim, Vector2(12.5, 9.5))
+	for i in range(5): sim.step()
+	var first: Dictionary = sim.snapshot()
+	var route: Array = first.entities[0].route
+	runner.check(not route.is_empty() and route.is_read_only() and route[0].is_read_only(), "M-route snapshot route is read-only")
+	runner.check(is_same(route, sim.snapshot().entities[0].route), "M-route snapshots share an unchanged route")
+	var length: int = route.size()
+	for i in range(30): sim.step()
+	runner.check(first.entities[0].route.size() == length and first.entities[0].route == route, "M-route a held snapshot keeps its route while the unit advances")
 	return true

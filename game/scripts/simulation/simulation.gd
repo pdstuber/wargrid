@@ -356,7 +356,7 @@ func _assign_move(members: Array[Dictionary], target: Array) -> void:
 		if unit.kind == "collector":
 			unit.order = {"type":"move","target":target.duplicate()}
 			unit.destination = target.duplicate()
-			unit.route = [target.duplicate()]
+			unit.route = [_frozen(target.duplicate())]
 			unit.status = "moving"
 			continue
 		if goals[unit.id] == null:
@@ -477,7 +477,7 @@ func _assign_route(unit: Dictionary) -> void:
 	var to := Vector2(unit.destination[0], unit.destination[1])
 	unit.route = []
 	for point in _navigation.route(from, to):
-		unit.route.append([point.x, point.y])
+		unit.route.append(_frozen([point.x, point.y]))
 	if unit.route.size() > 1 and _behind(from, unit.route[0], unit.route[1]): unit.route.pop_front()
 	unit.status = "blocked" if unit.route.is_empty() else "moving"
 	if unit.status == "moving" and unit.speed == 0.0: unit.move_after = _tick + START_DELAY_TICKS
@@ -487,6 +487,18 @@ func _assign_route(unit: Dictionary) -> void:
 
 func _behind(from: Vector2, first: Array, second: Array) -> bool:
 	return (first[0] - from.x) * (second[0] - first[0]) + (first[1] - from.y) * (second[1] - first[1]) < 0.0
+
+# Snapshots share route arrays, so waypoints are read-only and the route is replaced, never edited, once it is shared.
+static func _frozen(waypoint: Array) -> Array:
+	waypoint.make_read_only()
+	return waypoint
+
+func _entity_copy(unit: Dictionary) -> Dictionary:
+	var copy: Dictionary = unit.duplicate()
+	for key in copy:
+		if key != "route" and (copy[key] is Array or copy[key] is Dictionary): copy[key] = copy[key].duplicate(true)
+	if not unit.route.is_read_only(): unit.route.make_read_only()
+	return copy
 
 func _advance(unit: Dictionary) -> void:
 	var remaining: float = Locomotion.step(unit, Definitions.unit(unit.kind), _tick)
@@ -501,7 +513,7 @@ func _advance(unit: Dictionary) -> void:
 			x = waypoint[0]
 			y = waypoint[1]
 			remaining = maxf(0.0, remaining - distance)
-			unit.route.pop_front()
+			unit.route = unit.route.slice(1)
 		else:
 			x += dx / distance * remaining
 			y += dy / distance * remaining
@@ -523,7 +535,7 @@ func _snapshot() -> Dictionary:
 	var ids: Array = _entities.keys()
 	ids.sort()
 	for id in ids:
-		entities.append(_entities[id].duplicate(true))
+		entities.append(_entity_copy(_entities[id]))
 	var pending: Array = _pending.duplicate(true)
 	pending.sort_custom(_command_before)
 	var sequences: Array = []
