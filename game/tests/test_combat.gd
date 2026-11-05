@@ -9,7 +9,7 @@ const Fixture = preload("res://tests/combat_fixture.gd")
 const EconomyFixture = preload("res://tests/economy_fixture.gd")
 
 func cases() -> Array[Callable]:
-	return [test_combat_definitions, test_health_snapshot_isolation, test_weapon_range_boundary, test_damage_armor_matrix, test_weapon_cooldown, test_guard_priority, test_attack_validation_atomic, test_combat_intent_order, test_orders_preserve_reload, test_acquisition_throttle, test_mutual_lethal_fire, test_target_removed_cleanup, test_destroyed_unit_no_actions, test_destroyed_producer_accounting, test_same_tick_attack_and_cancel, test_removed_target_rescans, test_controller_and_scan_radius, test_scan_acquires_beyond_weapon_range, test_scan_radius_by_controller, test_scan_radius_boundary, test_removed_chaser_clears_chase, test_scan_keeps_target_leaving_radius, test_attack_move_resumes_after_chase, test_scan_same_tick_orders, test_scan_includes_buildings]
+	return [test_combat_definitions, test_health_snapshot_isolation, test_weapon_range_boundary, test_damage_armor_matrix, test_weapon_cooldown, test_guard_priority, test_attack_validation_atomic, test_combat_intent_order, test_orders_preserve_reload, test_acquisition_throttle, test_mutual_lethal_fire, test_target_removed_cleanup, test_destroyed_unit_no_actions, test_destroyed_producer_accounting, test_same_tick_attack_and_cancel, test_removed_target_rescans, test_controller_and_scan_radius, test_scan_acquires_beyond_weapon_range, test_scan_radius_by_controller, test_scan_radius_boundary, test_removed_chaser_clears_chase, test_scan_keeps_target_leaving_radius, test_attack_move_resumes_after_chase, test_scan_same_tick_orders, test_scan_includes_buildings, test_human_guard_in_range_only, test_human_guard_holds_against_kiting, test_ai_guard_unchanged]
 
 func test_combat_definitions(runner) -> bool:
 	runner.check(Definitions.profile("infantry") == {"max_hp": 180000, "armor": "human", "weapon": "rifle"}, "D1 infantry")
@@ -520,20 +520,25 @@ func _scan_shot_within(sim: RefCounted, limit: int) -> bool:
 		if not _shots(sim).is_empty(): return true
 	return false
 
-func test_scan_acquires_beyond_weapon_range(runner) -> bool:
+func _ai_world() -> RefCounted:
 	var sim = Fixture.world()
+	sim.add_player(1, 0, "ai")
+	return sim
+
+func test_scan_acquires_beyond_weapon_range(runner) -> bool:
+	var sim = _ai_world()
 	var guard: int = sim.spawn(1, Vector2(2.5, 2.5), "infantry")
-	var builder: int = sim.spawn(2, Vector2(10.5, 2.5), "builder")
+	var builder: int = sim.spawn(2, Vector2(7.5, 2.5), "builder")
 	sim.step()
 	var unit: Dictionary = Fixture.object(sim, guard)
-	runner.check(unit.combat.target_id == builder and unit.combat.mode == "guard", "X1 guard acquires an enemy 8 cells away and stays in guard")
+	runner.check(unit.combat.target_id == builder and unit.combat.mode == "guard", "X1 ai guard acquires an enemy 5 cells away and stays in guard")
 	runner.check(unit.status != "idle", "X1 guard approaches the out-of-range target")
 	runner.check(_scan_shot_within(sim, 300), "X1 chasing guard later fires")
-	var far = Fixture.world()
+	var far = _ai_world()
 	var idle: int = far.spawn(1, Vector2(2.5, 2.5), "infantry")
-	far.spawn(2, Vector2(11.5, 2.5), "builder")
+	far.spawn(2, Vector2(8.5, 2.5), "builder")
 	far.step()
-	runner.check(Fixture.object(far, idle).combat.target_id == null, "X2 enemy 9 cells away is outside the 8.8 radius")
+	runner.check(Fixture.object(far, idle).combat.target_id == null, "X2 enemy 6 cells away is outside the ai 5.332 radius")
 	return true
 
 func test_scan_radius_by_controller(runner) -> bool:
@@ -552,18 +557,18 @@ func test_scan_radius_by_controller(runner) -> bool:
 	return true
 
 func test_scan_radius_boundary(runner) -> bool:
-	for case in [[11.29, true], [11.31, false]]:
-		var sim = Fixture.world()
+	for case in [[7.82, true], [7.84, false]]:
+		var sim = _ai_world()
 		var guard: int = sim.spawn(1, Vector2(2.5, 2.5), "infantry")
 		sim.spawn(2, Vector2(case[0], 2.5), "builder")
 		sim.step()
-		runner.check((Fixture.object(sim, guard).combat.target_id != null) == case[1], "R2 enemy at x=" + str(case[0]) + " (radius 8.8): acquired=" + str(case[1]))
+		runner.check((Fixture.object(sim, guard).combat.target_id != null) == case[1], "R2 enemy at x=" + str(case[0]) + " (ai radius 5.332): acquired=" + str(case[1]))
 	return true
 
 func test_removed_chaser_clears_chase(runner) -> bool:
-	var sim = Fixture.world()
+	var sim = _ai_world()
 	var guard: int = sim.spawn(1, Vector2(2.5, 2.5), "infantry")
-	sim.spawn(2, Vector2(10.5, 2.5), "builder")
+	sim.spawn(2, Vector2(7.5, 2.5), "builder")
 	sim.step()
 	runner.check(sim._chases.has(guard), "R3 chase started")
 	sim.remove_object(guard)
@@ -571,9 +576,9 @@ func test_removed_chaser_clears_chase(runner) -> bool:
 	return true
 
 func test_scan_keeps_target_leaving_radius(runner) -> bool:
-	var sim = Fixture.world()
+	var sim = _ai_world()
 	var guard: int = sim.spawn(1, Vector2(2.5, 2.5), "infantry")
-	var builder: int = sim.spawn(2, Vector2(10.5, 2.5), "builder")
+	var builder: int = sim.spawn(2, Vector2(7.5, 2.5), "builder")
 	sim.step()
 	runner.check(Fixture.object(sim, guard).combat.target_id == builder, "K1 chase started")
 	sim._entities[builder].position = [30.5, 2.5]
@@ -611,10 +616,10 @@ func test_attack_move_resumes_after_chase(runner) -> bool:
 	return true
 
 func _chasing_world() -> Array:
-	var sim = Fixture.world()
+	var sim = _ai_world()
 	var guard: int = sim.spawn(1, Vector2(2.5, 2.5), "infantry")
-	var builder: int = sim.spawn(2, Vector2(10.5, 2.5), "builder")
-	var other: int = sim.spawn(2, Vector2(2.5, 11.5), "builder")
+	var builder: int = sim.spawn(2, Vector2(7.5, 2.5), "builder")
+	var other: int = sim.spawn(2, Vector2(2.5, 7.5), "builder")
 	sim.step()
 	return [sim, guard, builder, other]
 
@@ -658,8 +663,48 @@ func test_scan_includes_buildings(runner) -> bool:
 	runner.check(placed.ok, "B1 foundation placement accepted")
 	EconomyFixture.steps(sim, 2)
 	sim.remove_object(1)
-	var scanner: int = sim.spawn(2, Vector2(6.0, 4.5), "infantry")
+	var scanner: int = sim.spawn(2, Vector2(11.0, 4.5), "infantry")
 	sim.step()
 	var foundation: Array = sim.snapshot().buildings
-	runner.check(not foundation.is_empty() and Fixture.object(sim, scanner).combat.target_id == foundation[0].id, "B1 an enemy foundation 8 cells away is acquired")
+	runner.check(not foundation.is_empty() and Fixture.object(sim, scanner).combat.target_id == foundation[0].id, "B1 an enemy foundation 3 cells away is acquired")
+	return true
+
+func test_human_guard_in_range_only(runner) -> bool:
+	var near = Fixture.world()
+	var guard: int = near.spawn(1, Vector2(2.5, 2.5), "infantry")
+	var builder: int = near.spawn(2, Vector2(6.5, 2.5), "builder")
+	near.step()
+	runner.check(Fixture.object(near, guard).combat.target_id == builder, "G1 human guard acquires an enemy at exactly weapon range")
+	runner.check(_scan_shot_within(near, 20), "G1 and fires")
+	runner.check(Fixture.object(near, guard).position == [2.5, 2.5], "G1 the shot needs no movement")
+	var far = Fixture.world()
+	var idle: int = far.spawn(1, Vector2(2.5, 2.5), "infantry")
+	far.spawn(2, Vector2(7.0, 2.5), "builder")
+	for tick in range(40): far.step()
+	var unit: Dictionary = Fixture.object(far, idle)
+	runner.check(unit.combat.target_id == null and unit.position == [2.5, 2.5] and unit.destination == null, "G2 human guard ignores an enemy 4.5 cells away and never approaches")
+	return true
+
+func test_human_guard_holds_against_kiting(runner) -> bool:
+	var sim = Fixture.world()
+	var guard: int = sim.spawn(1, Vector2(2.5, 2.5), "infantry")
+	var builder: int = sim.spawn(2, Vector2(6.0, 2.5), "builder")
+	sim.step()
+	runner.check(Fixture.object(sim, guard).combat.target_id == builder, "G3 target at 3.5 cells acquired")
+	sim._entities[builder].position = [7.5, 2.5]
+	sim.step()
+	var unit: Dictionary = Fixture.object(sim, guard)
+	runner.check(unit.combat.target_id == null and unit.position == [2.5, 2.5], "G3 target moved to 5 cells is dropped, the unit does not follow")
+	sim._entities[builder].position = [6.0, 2.5]
+	for tick in range(8): sim.step()
+	runner.check(Fixture.object(sim, guard).combat.target_id == builder, "G3 target back at 3.5 cells is re-acquired by the next cadence tick")
+	return true
+
+func test_ai_guard_unchanged(runner) -> bool:
+	var sim = _ai_world()
+	var guard: int = sim.spawn(1, Vector2(2.5, 2.5), "infantry")
+	var builder: int = sim.spawn(2, Vector2(7.3, 2.5), "builder")
+	sim.step()
+	var unit: Dictionary = Fixture.object(sim, guard)
+	runner.check(unit.combat.target_id == builder and unit.status != "idle", "G4 ai guard acquires an enemy 4.8 cells away and approaches")
 	return true

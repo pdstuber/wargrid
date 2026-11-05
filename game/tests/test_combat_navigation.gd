@@ -225,6 +225,7 @@ func test_attack_move_resume_keeps_slots(runner) -> bool:
 
 func test_guard_retarget(runner) -> bool:
 	var sim = Fixture.world()
+	sim.add_player(1, 0, "ai")
 	var guard: int = sim.spawn(1, Vector2(10.5, 10.5), "infantry")
 	var leaving: int = sim.spawn(2, Vector2(13.5, 10.5), "builder")
 	var staying: int = sim.spawn(2, Vector2(10.5, 13.9), "builder")

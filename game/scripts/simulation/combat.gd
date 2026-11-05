@@ -25,10 +25,12 @@ static func distance_squared(position: Vector2, target: Dictionary) -> float:
 const GUARD_OUTER_HUMAN: float = 2.2
 const GUARD_OUTER_AI: float = 1.333
 
+static func is_ai(sim: RefCounted, owner: int) -> bool:
+	var player: Variant = sim._players.get(owner)
+	return player != null and player.controller == "ai"
+
 static func scan_radius(sim: RefCounted, unit: Dictionary) -> float:
-	var player: Variant = sim._players.get(unit.owner)
-	var ai: bool = player != null and player.controller == "ai"
-	return CombatDefinitions.vision(unit.kind) * (GUARD_OUTER_AI if ai else GUARD_OUTER_HUMAN)
+	return CombatDefinitions.vision(unit.kind) * (GUARD_OUTER_AI if is_ai(sim, unit.owner) else GUARD_OUTER_HUMAN)
 
 static var _reach_by_kind: Dictionary = {}
 
@@ -55,13 +57,14 @@ static func plan(sim: RefCounted, unit_ids: Array[int]) -> void:
 		if mode != "guard" and mode != "attack_move": continue
 		var combat: Dictionary = unit.combat
 		var kept: Dictionary = record(sim, combat.target_id) if combat.target_id != null else {}
-		if kept.is_empty() or kept.owner == unit.owner:
+		var in_range_only: bool = mode == "guard" and not is_ai(sim, unit.owner)
+		if kept.is_empty() or kept.owner == unit.owner or (in_range_only and not _in_range(sim, unit, kept)):
 			combat.target_id = null
 			if sim._tick >= combat.repath_tick:
 				if not grid_ready:
 					grid = _build_grid(sim)
 					grid_ready = true
-				combat.target_id = _nearest(sim, unit, grid)
+				combat.target_id = _nearest(sim, unit, grid, _reach(unit.kind) if in_range_only else _scan_reach(sim, unit))
 				if combat.target_id != null and not _within(unit, record(sim, combat.target_id), _reach(unit.kind)): sim._scan_chases += 1
 				if combat.target_id == null: combat.repath_tick = sim._tick + REPATH_TICKS - (sim._tick + unit.id) % REPATH_TICKS
 		if combat.target_id == null:
@@ -192,10 +195,9 @@ static func _bucket(grid: Dictionary, x: int, y: int, target: Dictionary) -> voi
 	if not grid.has(key): grid[key] = []
 	grid[key].append(target)
 
-static func _nearest(sim: RefCounted, unit: Dictionary, grid: Dictionary) -> Variant:
+static func _nearest(sim: RefCounted, unit: Dictionary, grid: Dictionary, radius: float) -> Variant:
 	var best: Variant = null
 	var best_distance: float = INF
-	var radius: float = _scan_reach(sim, unit)
 	var position := Vector2(unit.position[0], unit.position[1])
 	for y in range(int(floorf((position.y - radius) / GRID_CELL)), int(floorf((position.y + radius) / GRID_CELL)) + 1):
 		for x in range(int(floorf((position.x - radius) / GRID_CELL)), int(floorf((position.x + radius) / GRID_CELL)) + 1):
