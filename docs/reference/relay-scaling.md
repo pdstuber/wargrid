@@ -125,8 +125,28 @@ Recommendation (proposal):
 - Keep Railway as the cloud-agnostic fallback the R2 design already allows (one service per worker, own domain).
 - Re-evaluate Railway only if fly's per-machine capacity or pricing becomes the binding constraint.
 
+## High availability options (proposed 2026-11-05)
+
+User, 2026-11-05: one machine is acceptable for now; it is not highly available, so what could be done there is worth exploring. Here "available" means a crash or host loss does not end live matches; deploys are already covered by draining. Nothing below is decided or measured; the options are for M9 planning.
+
+Fly's managed Redis (docs read 2026-11-05, fly.io/docs/about/pricing and /docs/upstash/redis): it is **Upstash Redis**, a third-party extension billed through the Fly invoice. Databases run "within Fly.io infrastructure, but not inside your organization's network" and are "replicated within the same region in a highly-available configuration"; the primary region is chosen at creation and cannot change; read replicas in other regions are optional; data transfer to it is billed like other cross-boundary traffic. Standard Redis protocol, so code that uses only that protocol stays cloud-agnostic; only provisioning (`flyctl redis create`) is fly-specific.
+
+| Option | How | What it survives | Cost / risk |
+|---|---|---|---|
+| A. One machine (today) | Drain before deploy; fly restarts a crashed machine | Deploys | A crash or host loss ends live rooms; players rematch |
+| B. Rebuild rooms from the clients | Relay keeps no durable room state. Every client already holds the full command history in its simulation; after a restart, reconnecting clients re-send it and the relay restores the room from the longest log | Crash, host loss, deploy, with no extra service | Idea, not checked against the fixed wire protocol (`protocol/vectors`, conformance suite); likely a protocol addition, so a conformance change; clients may sit at different ticks, so the relay needs a rule for which log wins |
+| C. Mirror room state to Redis | Seats and the command log appended to Redis off the hot path; a replacement machine adopts the room, clients reconnect and replay | Same as B, plus the relay can restart without any client having every command | Extra dependency, a fixed primary region, transfer cost; never put Redis on the per-tick path (the command budget has little headroom, see the latency numbers above) |
+| D. Several machines, owner in the match code (existing design) | See Routing options | Fault isolation, region latency; a live room still lives on one machine | Most machinery; adds availability only when combined with B or C |
+
+Assessment (Claude, not a user decision):
+
+- Every option beyond A depends on **client reconnect with command-log replay**, which M9 already plans. Build and test that first; it is useful on its own for dropped players.
+- B should be tried before C: it needs no new service, and the clients already hold exactly the data Redis would store. If the protocol can carry it, Redis adds little for room state.
+- Redis earns its place for **shared directory state** (match code to owner machine, seat claims, public matchmaking) once there is more than one machine, which is option D, not for the live room.
+- For a friends-scale game, A plus fast reconnect is probably enough; B or C is for learning and robustness. Choose at M9 planning.
+
 ## Unverified
 
-- fly: public hostname per worker as one app per worker (cost, deploy commands); `performance` CPU sizes and price; the actual bill.
+- fly: public hostname per worker as one app per worker (cost, deploy commands); the actual bill; `performance-1x` under our relay load (planned for M9, user 2026-11-05). Docs, fetched 2026-11-05 (fly.io/docs/about/pricing, /machines/cpu-performance): `shared` baseline 5 ms per 80 ms (6.25 %), `performance` 100 %; `performance-1x` 2 GB $33/month and `performance-2x` 4 GB $66/month at the lowest-priced regions, `fra` costs more (its 1 GB shared example is $7.73 against $6.70 in `iad`); stopped or suspended machines pay only $0.15 per GB of rootfs per month. Unknown: `performance` price in `fra`, whether `shared-cpu-2x` doubles the baseline.
 - Railway: Hobby vs trial limits (regions, CPU limit), maximum honoured draining time, sleep/wake time and the 502 path with the Godot client, cold start, config-as-code files, behaviour under sustained load beyond 3 minutes.
 - Both: RTT from players' locations other than the user's Mac; more than one machine per stack.
