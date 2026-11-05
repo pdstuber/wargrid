@@ -77,7 +77,7 @@ static func _reaches(unit: Dictionary, target: Dictionary) -> bool:
 
 static func plan(sim: RefCounted, unit_ids: Array[int]) -> void:
 	var grid_box := {"ready": false, "grid": {}}
-	var held := {"ready": false, "cells": {}}
+	var held := {"ready": false, "cells": {}, "rings": {}}
 	for unit_id in unit_ids:
 		var unit: Dictionary = sim._entities[unit_id]
 		if unit.combat.mode == "move" and unit.status != "moving" and unit.status != "path_pending": unit.combat.mode = "guard"
@@ -182,7 +182,7 @@ static func _approach(sim: RefCounted, unit: Dictionary, target: Dictionary, hel
 	var zone: int = Profiler.begin()
 	if not held.ready: _hold_cells(sim, held)
 	var previous: Variant = sim._cell(unit.destination) if unit.destination != null else null
-	var goal: Variant = _firing_cell(sim, unit, target, reach, held.cells)
+	var goal: Variant = _firing_cell(sim, unit, target, reach, held)
 	Profiler.end(&"combat.firing_cell", zone)
 	if previous != null: held.cells.erase(previous)
 	sim._path_queue.erase(unit.id)
@@ -207,34 +207,45 @@ static func _hold_cells(sim: RefCounted, held: Dictionary) -> void:
 static func _firing_cell(sim: RefCounted, unit: Dictionary, target: Dictionary, reach: float, held: Dictionary) -> Variant:
 	var position := Vector2(unit.position[0], unit.position[1])
 	var component: int = sim._navigation.component_at(position)
-	var low := Vector2(target.position[0], target.position[1]) if not target.has("origin") else Vector2(target.origin[0], target.origin[1])
-	var high := low
-	if target.has("origin"): high += Vector2(Definitions.building(target.kind).footprint)
 	var own: Vector2i = sim._cell(unit.position)
 	var own_goal: Variant = sim._cell(unit.destination) if unit.destination != null else null
 	var occupied: Vector2i = sim._cell(target.position) if not target.has("origin") else Vector2i(-1, -1)
 	var best: Variant = null
 	var best_distance: float = INF
-	var unit_radius: float = CombatDefinitions.radius(unit.kind)
+	var ring: Dictionary = _reach_ring(held.rings, unit.kind, target, reach)
+	sim._combat_work += ring.window_cells
+	for cell in ring.cells:
+		var center := Vector2(cell) + Vector2(0.5, 0.5)
+		var distance: float = position.distance_squared_to(center)
+		if best != null and distance > best_distance: continue
+		if cell == occupied or component < 0 or sim._navigation.component_at(center) != component: continue
+		if held.cells.has(cell) and cell != own and cell != own_goal: continue
+		if best == null or distance < best_distance or (distance == best_distance and (cell.y < Vector2i(best.floor()).y or (cell.y == Vector2i(best.floor()).y and cell.x < Vector2i(best.floor()).x))):
+			best = center
+			best_distance = distance
+	return best
+
+# Cells within weapon reach of the target for one attacker kind; shared by every attacker of that kind within a tick.
+static func _reach_ring(rings: Dictionary, kind: String, target: Dictionary, reach: float) -> Dictionary:
+	var by_kind: Dictionary = rings.get_or_add(target.id, {})
+	if by_kind.has(kind): return by_kind[kind]
+	var low := Vector2(target.position[0], target.position[1]) if not target.has("origin") else Vector2(target.origin[0], target.origin[1])
+	var high := low
+	if target.has("origin"): high += Vector2(Definitions.building(target.kind).footprint)
+	var unit_radius: float = CombatDefinitions.radius(kind)
 	var target_radius: float = CombatDefinitions.radius(target.kind)
 	var window: float = reach + unit_radius + target_radius
 	var cx: float = target.position[0] if not target.has("origin") else target.origin[0] + Definitions.building(target.kind).footprint.x * 0.5
 	var cy: float = target.position[1] if not target.has("origin") else target.origin[1] + Definitions.building(target.kind).footprint.y * 0.5
 	var limit: float = reach + EDGE_EPS
+	var cells: Array[Vector2i] = []
+	var examined: int = 0
 	for y in range(int(floorf(low.y - window)), int(floorf(high.y + window)) + 1):
 		for x in range(int(floorf(low.x - window)), int(floorf(high.x + window)) + 1):
-			var cell := Vector2i(x, y)
-			var center := Vector2(cell) + Vector2(0.5, 0.5)
-			sim._combat_work += 1
-			var distance: float = position.distance_squared_to(center)
-			if best != null and distance > best_distance: continue
-			if _gap_between(center.x - cx, center.y - cy, unit_radius, target_radius) > limit: continue
-			if cell == occupied or component < 0 or sim._navigation.component_at(center) != component: continue
-			if held.has(cell) and cell != own and cell != own_goal: continue
-			if best == null or distance < best_distance or (distance == best_distance and (cell.y < Vector2i(best.floor()).y or (cell.y == Vector2i(best.floor()).y and cell.x < Vector2i(best.floor()).x))):
-				best = center
-				best_distance = distance
-	return best
+			examined += 1
+			if _gap_between(x + 0.5 - cx, y + 0.5 - cy, unit_radius, target_radius) <= limit: cells.append(Vector2i(x, y))
+	by_kind[kind] = {"cells": cells, "window_cells": examined}
+	return by_kind[kind]
 
 const GRID_CELL: int = 8
 
