@@ -2,13 +2,28 @@ extends RefCounted
 
 const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 const ScriptedHuman = preload("res://scripts/simulation/scripted_human.gd")
+const StateHash = preload("res://scripts/simulation/state_hash.gd")
 
 const TICK_LIMIT: int = 10800
 const TERMINAL_TICK: int = 9938
 const WINNER: int = 1
 
+const S1_CORE_SERIES: int = 1224646555515136482
+
 func cases() -> Array[Callable]:
-	return [test_mirror_match_script]
+	return [test_mirror_match_script, test_skirmish_core_series]
+
+func test_skirmish_core_series(runner) -> bool:
+	var sim = Skirmish.create()
+	var series: int = 0
+	for tick in range(TERMINAL_TICK + 1):
+		ScriptedHuman.issue(sim)
+		Skirmish.issue_opponent(sim)
+		sim.step()
+		series = (series * 31 + StateHash.core_check(sim.snapshot())) & 0x7fffffffffffffff
+		if tick % 600 == 599: await runner.process_frame
+	runner.check(series == S1_CORE_SERIES, "S1 core series pinned, got " + str(series))
+	return true
 
 func _credits(state: Dictionary, player: int) -> int:
 	for entry in state.players:
