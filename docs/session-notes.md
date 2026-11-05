@@ -4,6 +4,8 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 ## Session
 
+2026-11-05 **M6 planned, not started** (`main`, documentation only, no game code). Approved design, source evidence, execution plan and root `prompt.txt`; AGENTS.md map-data exception; blueprint §7/§12/§14 and README updated. Verified: local links and paths in the changed docs; no tests run (docs only). Decisions and the cheaper-model plan check: see the M6 planning section below.
+
 2026-11-05 **M5.1 implemented and merged to `main`** (merge `5d86caf`; branch deleted locally and on origin; `main` = `origin/main` at `becf439` plus this wrap-up). User playtest done ("I just did a playtest, the rest look good"; one finding, the production-queue label, fixed in `294e20e`). Verified: suite 220 then 221 cases / 104,553 checks / 0 failures; CI run 42019783157 green on `ff117f8` (relay, relay-lint, Linux, Windows, compare-replays), whose game, relay, tools and protocol code equals `main`; `compare_local_traces.sh` MATCHED (netplay 281, on `8588f85`); rendered benchmark rerun passed (open, dense); relay checks and all nine netplay scenarios passed on the merged tree. Opus review (4 important findings fixed) and `/ponytail-review` done. Not verified on screen by me: hint ring, paused label, resume outline (covered only by the user's sentence). Open: parity item (Zero Hour joined a Ranger at 70 units, Wargrid 48; bisect before changing; return-home timing unmeasured). Evidence and rulings: [M5.1 verification](reference/m5.1-verification.md). Blueprint now also has proposed M7.1 roster fill and M7.5 art pass (opens with a sprite vs stylised-geometry spike, since the user likes the rectangle look); scope of both not approved.
 
 2026-11-05 relay hardening **merged to `main`** (merge `58d13f2`, pushed) and deployed to fly `wargrid-relay-jvm`: drain on SIGINT/SIGTERM, per-room crash isolation, fail-fast config, `log/slog`. Verified on the final tree: `go test -race`, golangci-lint 0 issues, `run_conformance.sh` 33 cases, `run_netplay.sh` relay-term, relay-down and match passed; on fly the new binary logs `relay started … drain=3.5s` and the probe got `RELAY WELCOME`. Live drain on fly not yet observed (the machine was suspended at deploy). Detail below.
@@ -32,13 +34,13 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 - Project goal (user, 2026-11-04): also an architecture exploration. Over-engineering is acceptable; explore very scalable architectures from the start, from M6 on. M5 design stays as approved.
 - Source/config-supported economy and combat values remain RETAIL_UNVERIFIED; departures stay explicit in reference/design notes.
 - AI moods (Sleep, Alert 1.1, Aggressive 1.5) deferred to M8 bots (user, 2026-11-03).
-- Retail map sizes vs our 48×32 cells: check before choosing the M6 full-scale map.
-- Runtime parity harness: adopted 2026-11-05 ([spike](reference/zero-hour-parity-spike.md)); counts as level 1 with the source-build caveat; open: its decision list and the Chinook supply scenario. Decided 2026-11-05: M5.1 adds a retaliation parity scenario at Task 9; the combat-feel list (edge-to-edge range, Ranger cadence 4/4/22, tank splash, start delay and turning) and the Chinook scenario go to M6 planning, because range and cadence change every weapon number and would invalidate the skirmish and netplay pins and BM6 again.
+- Retail map sizes vs our 48×32 cells: superseded by the M6 decision to convert Twilight Flame; M6 Task 1 records its real size and border.
+- Runtime parity harness: adopted 2026-11-05 ([spike](reference/zero-hour-parity-spike.md)); counts as level 1 with the source-build caveat; open: its decision list and the Chinook supply scenario. Decided 2026-11-05: M5.1 adds a retaliation parity scenario at Task 9; the combat-feel list and the Chinook scenario went to M6 planning, and the user decided all four items in favour of Zero Hour behaviour (see the M6 planning section; plan Tasks 6–10).
 - Retail `ForceIdleMSEC` INI value unread (code default 1 frame); `stop` re-acquire delay uses the existing 15-tick stagger instead.
 
 ## Next action
 
-**Next session:** M6 planning (teams and full-scale map; it also takes the combat-feel parity list and the Chinook supply scenario, see Deferred). Optional first: bisect the retaliation join radius with `retaliate_ranger`. Still open separately: the repeat macOS-vs-Windows friend match on the Go relay. Relay hardening is done and deployed; M9 owns its next changes.
+**Next session:** M6 implementation kickoff: say "resume from prompt.txt" (root `prompt.txt`, [execution plan](superpowers/plans/2026-11-05-m6-teams-full-map.md); user confirmed the plan captures what they want, 2026-11-05). Task 0 can run on Sonnet; switch to Opus high before Task 1. Optional first: bisect the retaliation join radius with `retaliate_ranger`. Still open separately: the repeat macOS-vs-Windows friend match on the Go relay. Relay hardening is done and deployed; M9 owns its next changes.
 
 **M4 complete and merged into local `main` (2026-11-03).** Evidence: [M4 verification](reference/m4-verification.md). Process changes adopted on `main`: [milestone prompt](milestone-prompt.md), [workflow retrospective](reference/2026-11-03-milestone-workflow-retrospective.md). Roadmap re-aimed at the long-term target (3v3 online with friends against bots, USA/China/GLA, Twilight-Flame-like full-scale map): blueprint §1, §7, §11, §14.
 
@@ -50,6 +52,17 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
   4. **Collectors on one supply pile are hard to read.** One dock per pile is M3 design (Zero Hour docking); add visibility: pile label "docked 1 · waiting 2", collector state when selected.
   5. **"4: barracks" next to "S: stop".** HUD wording slip: base line says "1/2/3 build", the skirmish appends "4: barracks" elsewhere; make it one "1/2/3/4 build".
 - **After M5:** M6 teams and full-scale map, M7 China and GLA (gate: Zero Hour spot checks S1–S3 run or deferred), M8 bots, M9 3v3 online.
+
+## 2026-11-05 — M6 planning decisions
+
+User decisions (2026-11-05, planning only; plan `~/.claude/plans/nifty-sprouting-globe.md`):
+- Headless is enough for M6; 1v1 skirmish stays on 48×32, no big-map presentation.
+- Parity decision list: edge-to-edge range, Ranger cadence 4/4/22, Crusader splash, and all three movement items (3-frame start delay, acceleration/braking, turn-in-place).
+- Map converted from EA's GPL-3 (+ additional terms) `Twilight Flame.map` in `~/projects/CnC_Modding_Support` (`3aad8e4`) by a repo tool; EA notice and terms kept, own map name, AGENTS.md map-data rule to be amended. Matters most: scale, elevation, start positions, attack routes.
+- Elevation affects passability only (cliffs block, ramps connect).
+- One M6 (not split M6/M6.1); feel changes before final measurement.
+- Teams confirmed: up to 8 seats with team ids, hostility = different team, team victory; bot seats run the existing skirmish policy; lockstep stays 2-seat. Splash hurts allies (source default). Firing ignores heading (no turrets) in M6.
+- Done: evidence note `docs/reference/m6-map-and-feel.md`, design (builder-checked, approved), execution plan `docs/superpowers/plans/2026-11-05-m6-teams-full-map.md`; AGENTS.md map-data exception, blueprint §7/§12/§14 and README updated. Plan checked for cheaper-model execution by two cold Sonnet-medium reads (11 then 6 high/medium gaps, all fixed: model routing per task, Task 1 values table, per-tick movement rule, start-delay trigger, epsilons, provisional re-pins with Task 12 confirming). Root `prompt.txt` written. Not committed. Next: `/wrapup`, then a fresh-session kickoff with "resume from prompt.txt".
 
 ## 2026-11-05 — Relay shutdown and crash isolation
 
