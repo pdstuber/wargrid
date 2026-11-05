@@ -9,7 +9,7 @@ const Fixture = preload("res://tests/combat_fixture.gd")
 const EconomyFixture = preload("res://tests/economy_fixture.gd")
 
 func cases() -> Array[Callable]:
-	return [test_combat_definitions, test_health_snapshot_isolation, test_weapon_range_boundary, test_ranger_fires_at_edge_max, test_crusader_fires_at_edge_max, test_rifle_cycle_30, test_firing_cell_uses_edge, test_building_edge_range, test_damage_armor_matrix, test_weapon_cooldown, test_guard_priority, test_attack_validation_atomic, test_combat_intent_order, test_orders_preserve_reload, test_acquisition_throttle, test_mutual_lethal_fire, test_target_removed_cleanup, test_destroyed_unit_no_actions, test_destroyed_producer_accounting, test_same_tick_attack_and_cancel, test_removed_target_rescans, test_controller_and_scan_radius, test_scan_acquires_beyond_weapon_range, test_scan_radius_by_controller, test_scan_radius_boundary, test_removed_chaser_clears_chase, test_scan_keeps_target_leaving_radius, test_attack_move_resumes_after_chase, test_scan_same_tick_orders, test_scan_includes_buildings, test_human_guard_in_range_only, test_human_guard_holds_against_kiting, test_ai_guard_unchanged, test_human_attack_move_marches_in_range, test_human_attack_move_post_kill_rescan, test_human_attack_move_follows_retreat, test_rescan_same_tick_orders, test_human_attack_move_drops_target_out_of_range, test_human_attack_move_first_approach_has_no_leash, test_retarget_only_for_attack_move, test_missing_id_skipped, test_due_tick_death_skips_member, test_foreign_id_rejects, test_attack_move_mixed_selection, test_retaliate_trigger_distance, test_retaliate_joiners, test_retaliate_leash_and_return, test_retaliate_return_scan_and_rehit, test_retaliate_same_tick_cases, test_retaliate_go_home_queues_once, test_rng_sequence, test_splash_victims_boundary, test_splash_cluster, test_splash_mask, test_splash_last_builder_same_tick, test_splash_event_flag]
+	return [test_combat_definitions, test_definitions_shared, test_health_snapshot_isolation, test_weapon_range_boundary, test_ranger_fires_at_edge_max, test_crusader_fires_at_edge_max, test_rifle_cycle_30, test_firing_cell_uses_edge, test_building_edge_range, test_damage_armor_matrix, test_weapon_cooldown, test_guard_priority, test_attack_validation_atomic, test_combat_intent_order, test_orders_preserve_reload, test_acquisition_throttle, test_mutual_lethal_fire, test_target_removed_cleanup, test_destroyed_unit_no_actions, test_destroyed_producer_accounting, test_same_tick_attack_and_cancel, test_removed_target_rescans, test_controller_and_scan_radius, test_scan_acquires_beyond_weapon_range, test_scan_radius_by_controller, test_scan_radius_boundary, test_removed_chaser_clears_chase, test_scan_keeps_target_leaving_radius, test_attack_move_resumes_after_chase, test_scan_same_tick_orders, test_scan_includes_buildings, test_human_guard_in_range_only, test_human_guard_holds_against_kiting, test_ai_guard_unchanged, test_human_attack_move_marches_in_range, test_human_attack_move_post_kill_rescan, test_human_attack_move_follows_retreat, test_rescan_same_tick_orders, test_human_attack_move_drops_target_out_of_range, test_human_attack_move_first_approach_has_no_leash, test_retarget_only_for_attack_move, test_missing_id_skipped, test_due_tick_death_skips_member, test_foreign_id_rejects, test_attack_move_mixed_selection, test_retaliate_trigger_distance, test_retaliate_joiners, test_retaliate_leash_and_return, test_retaliate_return_scan_and_rehit, test_retaliate_same_tick_cases, test_retaliate_go_home_queues_once, test_rng_sequence, test_splash_victims_boundary, test_splash_cluster, test_splash_mask, test_splash_last_builder_same_tick, test_splash_event_flag]
 
 func test_combat_definitions(runner) -> bool:
 	runner.check(Definitions.profile("infantry") == {"max_hp": 180000, "armor": "human", "weapon": "rifle"}, "D1 infantry")
@@ -27,9 +27,9 @@ func test_combat_definitions(runner) -> bool:
 	for armor in rows:
 		runner.check(Definitions.armor_percent(armor, "small_arms") == rows[armor][0] and Definitions.armor_percent(armor, "armor_piercing") == rows[armor][1], "D1 armor " + armor)
 	runner.check(Definitions.armor_percent("x", "small_arms") == 0 and Definitions.armor_percent("human", "x") == 0, "D1 unknown armor is zero")
-	var changed: Dictionary = Definitions.profile("tank")
+	var changed: Dictionary = Definitions.profile("tank").duplicate()
 	changed.max_hp = 1
-	var weapon: Dictionary = Definitions.weapon("rifle")
+	var weapon: Dictionary = Definitions.weapon("rifle").duplicate()
 	weapon.damage = 1
 	runner.check(Definitions.profile("tank").max_hp == 480000 and Definitions.weapon("rifle").damage == 5000, "D1 fresh dictionaries")
 	var infantry: Dictionary = Economy.unit("infantry")
@@ -1292,4 +1292,10 @@ func test_splash_event_flag(runner) -> bool:
 	var shots: Array = _shots(sim).filter(func(s: Dictionary) -> bool: return s.attacker_id == tank)
 	runner.check(shots.size() == 1 and shots[0].splash == false, "S7 lone tank target gives one non-splash event")
 	runner.check(sim.snapshot().rng == before, "S7 vehicle target draws nothing")
+	return true
+
+func test_definitions_shared(runner) -> bool:
+	runner.check(is_same(Economy.unit("tank"), Economy.unit("tank")) and is_same(Economy.building("depot"), Economy.building("depot")), "DF1 economy definitions are shared")
+	runner.check(is_same(Definitions.weapon("rifle"), Definitions.weapon("rifle")) and is_same(Definitions.profile("factory"), Definitions.profile("factory")), "DF1 combat definitions are shared")
+	runner.check(Economy.unit("nope").is_empty() and Economy.building("nope").is_empty() and Definitions.profile("nope").is_empty() and Definitions.weapon("nope").is_empty(), "DF1 unknown kinds are empty")
 	return true
