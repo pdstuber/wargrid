@@ -85,7 +85,11 @@ func _refresh_queue(queue: Array) -> void:
 			button.name = str(entry.id)
 			button.pressed.connect(_cancel_entry.bind(entry.id))
 			$HUD/Economy/Queue.add_child(button)
-		button.text = "Cancel #%d %s (%d/%d)" % [entry.id,entry.kind,entry.work,Definitions.unit(entry.kind).ticks * 1000]
+		button.text = queue_label(entry)
+
+static func queue_label(entry: Dictionary) -> String:
+	if entry.work == 0: return "Cancel %s (queued)" % entry.kind
+	return "Cancel %s (%d%%)" % [entry.kind,entry.work * 100 / (Definitions.unit(entry.kind).ticks * 1000)]
 
 func pan_camera(direction: Vector2, delta: float) -> void:
 	if _placement_kind.is_empty(): super.pan_camera(direction,delta)

@@ -5,7 +5,7 @@ const Fixture = preload("res://tests/economy_fixture.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 
 func cases() -> Array[Callable]:
-	return [test_base_ready,test_placement_input,test_production_ui,test_context_orders,test_execution_feedback,test_preview_hover_cost,test_resume_status]
+	return [test_base_ready,test_placement_input,test_production_ui,test_context_orders,test_execution_feedback,test_preview_hover_cost,test_resume_status,test_queue_label]
 
 func setup(runner):
 	var main = Base.instantiate()
@@ -239,4 +239,10 @@ func test_resume_status(runner) -> bool:
 	main._refresh()
 	runner.check(not status.text.contains("Right-click: resume"),"H6 hint gone off the building")
 	main.free()
+	return true
+
+func test_queue_label(runner) -> bool:
+	var BaseMain = load("res://scripts/base_main.gd")
+	runner.check(BaseMain.queue_label({"id":10,"kind":"tank","work":270000}) == "Cancel tank (90%)","Bs5 started entry shows percent, no id or raw work")
+	runner.check(BaseMain.queue_label({"id":12,"kind":"tank","work":0}) == "Cancel tank (queued)","Bs5 unstarted entry shows queued")
 	return true
