@@ -33,13 +33,18 @@ func _cell_before(a: Vector2i, b: Vector2i) -> bool:
 	return a.y < b.y or (a.y == b.y and a.x < b.x)
 
 func _normalize(cells: Array[Vector2i]) -> Array[Vector2i]:
-	var unique: Dictionary = {}
-	for cell in cells:
-		assert(_grid.region.has_point(cell))
-		unique[cell] = true
+	var keys := PackedInt32Array()
+	keys.resize(cells.size())
+	for i in range(cells.size()):
+		assert(_grid.region.has_point(cells[i]))
+		keys[i] = _index(cells[i])
+	keys.sort()
 	var normalized: Array[Vector2i] = []
-	normalized.assign(unique.keys())
-	normalized.sort_custom(_cell_before)
+	var previous: int = -1
+	for key in keys:
+		if key == previous: continue
+		previous = key
+		normalized.append(Vector2i(key % _map_size.x, key / _map_size.x))
 	return normalized
 
 func _apply_blocked(cells: Array[Vector2i]) -> void:
