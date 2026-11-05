@@ -3,15 +3,15 @@
 Plan: [M6 plan](../superpowers/plans/2026-11-05-m6-teams-full-map.md). Run rules: [milestone prompt](../milestone-prompt.md).
 
 ```text
-Resume record (updated 2026-11-05, Task 12 table written, BM6 approved)
-Branch / base commit / working-tree state: m6-teams-map / Task 11 committed on top of 76bbfc9 / clean
-Last green task / next incomplete task: Task 13 (ledger rows committed) / Task 14 (Exit gate)
+Resume record (updated 2026-11-05, Task 14 exit gate, review fixes applied)
+Branch / base commit / working-tree state: m6-teams-map / local commits on top of 9a33147 (review fixes 85ddb81, 029fef7, then lean cuts) / clean after the docs commit
+Last green task / next incomplete task: Task 13 / Task 14 remaining: CI (needs push), compare_local_traces, user playtest, merge approval
 Changed paths since last commit: none
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 270 cases, 112,693 checks, 0 failures, exit 0; team-match fold 7406935539604104369 tick 20000 winner 1; run_team_match exit 0
-Known red case or blocker: none. Accepted by the user 2026-11-05 as known over-budget rows (not loosened, to report at the exit gate): team-match step wall p95/p99 2.39/5.56 ms vs 1.67/3.3 (path-finding bursts, PATH_REQUESTS_PER_TICK 8; design options open: fewer requests per tick, shared routes, G, live-state presentation); movement plumbing 0.855 vs 0.83; COMBAT STRESS open p95 2.41 vs ceiling 2.05 (run_benchmark.sh exits 1 on it; combat dense/contact/skirmish3v3 never measured because run_combat.gd stops at the first push_error). Open for user: I4 BM5 ledger row; BM6 re-pin needs approval at Task 12
-Approved decisions, pre-authorizations used, deferred gates: local commits per milestone prompt; user approved .duplicate() in D1/E1 (11f), fixes A, B, C, F, integer-key normalize, D, production occupied set, ring cache, merge diff; E rejected, G not taken; no push/PR/merge/window/BM6 re-pin without approval
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 272 cases, 112,704 checks, 0 failures, exit 0, TESTS PASSED
+Known red case or blocker: user-accepted over-budget rows unchanged (team-match step p95/p99 2.39/5.56 ms; COMBAT STRESS open p95 2.405 vs ceiling 2.05, run_benchmark.sh exit 1). Budget realism (F=6 unmeasured) is open: Steam survey and PassMark proxy gave F about 4.2 native; user wants a WebAssembly spike (separate branch after M6)
+Approved decisions, pre-authorizations used, deferred gates: local commits per milestone prompt; Opus gate review dispatched; no push/PR/merge/window without approval
 Usage so far (python3 tools/session_usage.py <session files>): not measured
-Next exact action: Task 14 exit gate (BM6 re-pin already in tree)
+Next exact action: ask the user to approve a push for CI, then compare_local_traces.sh <run id>, user playtest, merge decision
 ```
 
 ## Task 0: baseline (2026-11-05, tree 9ea11bc + Task 0 test)
@@ -361,3 +361,11 @@ Suite: 270 cases, 112,693 checks, 0 failures, exit 0. Nine netplay scenarios (`m
 | BM6 ceiling / floor | `test_benchmark.gd` | 15500 / 13000 → 18500 / 16000 | 6 (edge range) | user approved 2026-11-05 |
 
 Replays and R4: unchanged since Task 4 per the rows above.
+
+## Task 14: exit gate (2026-11-05)
+
+- Full suite after review fixes: 272 cases, 112,704 checks, 0 failures, exit 0 (tree after "Drop dead route_length; one occupancy path in spawn").
+- `sh tools/run_benchmark.sh` (tree 9a33147): movement open / dense PASS (BENCHMARK PASSED 2); COMBAT STRESS open p95 / p99 2.405 / 3.417 ms vs ceiling 2.05 / 3.86 EXCEEDED, script exits 1 and stops before dense / contact / skirmish3v3 (user-accepted, not loosened).
+- Opus gate review (fresh context, 9a33147): no Critical. Important, all fixed test-first (each new test failed with its fix reverted): I1 export presets now ship `data/maps/NOTICE.md` (MP5); I2 the team trace now runs the whole 20,000-tick match at interval 200 (CI and compare_local_traces updated) and pins the final digest 0b630e0094762f1d (TB3); I3 friendly-fire retaliation skip (TM6). Minor fixed: M3 victory text compares the team id (K4). Minor open: M1, M2, M4 (EDGE_EPS 1e-6 below float32 spacing at Ashfall coordinates), M5 (banned-call scanner gaps), M6 (converter does not emit source revision), M7 (snapshot makes live routes read-only), M8 (MapData._valid can raise). Weak tests named: TM5, L9 check 4, TB2.
+- Lean review (fresh Opus, 029fef7): -103 lines possible. Applied: dead `route_length`, one occupancy path in `spawn`. Skipped: profiler-zone removal (the WebAssembly spike needs them), `braking_distance` (would delete an assertion), `_victim_centre` reuse (float32 vs double would change range edges). Remaining items open for the user.
+- Not done: CI on Linux and Windows (needs a push), `compare_local_traces.sh`, user playtest, merge. The pinned digest and trace interval change are untested on CI.
