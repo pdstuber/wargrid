@@ -58,7 +58,7 @@ func test_replacement(runner) -> bool:
 	runner.check(order(sim, Vector2(4.5, 1.5)).ok, "M3 first")
 	runner.check(order(sim, Vector2(1.5, 4.5), 1).ok, "M3 second")
 	advance(sim, 3)
-	runner.check(position(sim).distance_to(Vector2(1.5, 1.5 + 4.0 / 90.0)) <= 1e-5, "M3 final order first ramp step")
+	runner.check(position(sim).distance_to(Vector2(1.5, 1.5 + 0.8 / 30.0)) <= 1e-5, "M3 final order first ramp step")
 	return true
 
 func test_retarget(runner) -> bool:
@@ -85,14 +85,14 @@ func test_obstacle(runner) -> bool:
 	var nav = Navigation.new(solids)
 	sim.spawn(1, Vector2(1.5, 1.5))
 	runner.check(order(sim, Vector2(3.5, 1.5)).ok, "M5 accepted")
-	for i in range(44):
+	for i in range(73):
 		var before := position(sim)
 		sim.step()
 		var after := position(sim)
 		runner.check(before.distance_to(after) <= 0.1 + 1e-5, "M5 budget")
 		for sample in range(11):
 			runner.check(nav.is_walkable(before.lerp(after, sample / 10.0)), "M5 sampled segment walkable")
-	arrived(runner, sim, Vector2(3.5, 1.5), "M5 arrival 44")
+	arrived(runner, sim, Vector2(3.5, 1.5), "M5 arrival 73")
 	return true
 
 func test_blocked(runner) -> bool:
@@ -108,7 +108,7 @@ func test_blocked(runner) -> bool:
 	advance(sim, 300)
 	runner.check(entity(sim) == before, "M6 persistent blocked")
 	runner.check(order(sim, Vector2(1.5, 2.5), 1).ok, "M6 recovery order")
-	advance(sim, 14)
+	advance(sim, 22)
 	arrived(runner, sim, Vector2(1.5, 2.5), "M6 recovery")
 	return true
 

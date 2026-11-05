@@ -74,6 +74,16 @@ func _vehicle_bounds(unit: Dictionary) -> Rect2:
 	var half: float = {"infantry": 6.0, "tank": 15.0}.get(unit.get("kind"), 12.0)
 	return Rect2(Iso.world_to_plane(point) + Vector2(-half, -34 if unit.get("kind") == "collector" else -16), Vector2(half * 2.0, 16))
 
+func heading_marks() -> Array[Dictionary]:
+	var marks: Array[Dictionary] = []
+	for unit in _state.get("entities", []):
+		if unit.get("kind") == "collector": continue
+		var point := Vector2(unit.position[0], unit.position[1])
+		var direction: Vector2 = (Iso.world_to_plane(point + Vector2(unit.heading[0], unit.heading[1])) - Iso.world_to_plane(point)).normalized()
+		var from: Vector2 = _vehicle_bounds(unit).get_center()
+		marks.append({"id": unit.id, "from": from, "to": from + direction * 5.0})
+	return marks
+
 func pick_target(plane_point: Vector2, own: int) -> int:
 	for i in range(_state.get("entities", []).size() - 1, -1, -1):
 		var unit: Dictionary = _state.entities[i]
@@ -128,6 +138,7 @@ func _draw() -> void:
 			var point: Vector2 = Iso.world_to_plane(target)
 			draw_line(point - Vector2(6, 0), point + Vector2(6, 0), Color("8cff87"), 2.0)
 			draw_line(point - Vector2(0, 6), point + Vector2(0, 6), Color("8cff87"), 2.0)
+	for mark in heading_marks(): draw_line(mark.from, mark.to, Color.WHITE, 2.0)
 	Profiler.end(&"draw.units", zone)
 	zone = Profiler.begin()
 	_draw_focus()

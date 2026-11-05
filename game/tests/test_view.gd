@@ -6,7 +6,7 @@ const Fixture = preload("res://tests/economy_fixture.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 
 func cases() -> Array[Callable]:
-	return [test_pick, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint]
+	return [test_pick, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_heading_mark_layout]
 
 func test_pick(runner) -> bool:
 	var view = View.new()
@@ -138,5 +138,22 @@ func test_resume_hint(runner) -> bool:
 	state.buildings[0].builder_id = 1
 	view.set_state(state, [1])
 	runner.check(view.resume_candidate() == -1 and not View.building_label(state.buildings[0]).ends_with(" paused"), "H2 attached builder: no candidate, no paused")
+	view.free()
+	return true
+
+func test_heading_mark_layout(runner) -> bool:
+	var view = View.new()
+	var sim = Simulation.new([], Vector2i(32, 32))
+	sim.add_player(1, 1000)
+	var ids: Array = []
+	for kind in ["infantry", "tank", "builder", "vehicle", "collector"]:
+		ids.append(sim.spawn(1, Vector2(3.5 + ids.size() * 2, 4.5), kind))
+	view.set_state(sim.snapshot(), [])
+	var marks: Array[Dictionary] = view.heading_marks()
+	runner.check(marks.size() == 4, "V2 one mark per ground unit")
+	for mark in marks:
+		var bounds: Rect2 = view._vehicle_bounds(view._state.entities[ids.find(mark.id)])
+		runner.check(bounds.has_point(mark.from) and bounds.has_point(mark.to), "V2 mark inside the unit rectangle " + str(mark.id))
+		runner.check(mark.id != ids[4], "V2 no mark for a collector")
 	view.free()
 	return true

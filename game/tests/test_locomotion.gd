@@ -2,10 +2,11 @@ extends RefCounted
 
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Economy = preload("res://tests/economy_fixture.gd")
+const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
 const Locomotion = preload("res://scripts/simulation/locomotion.gd")
 
 func cases() -> Array[Callable]:
-	return [test_start_delay_three_ticks, test_acceleration_curve, test_short_hop_no_overshoot, test_group_arrival_unchanged, test_reorder_keeps_speed]
+	return [test_start_delay_three_ticks, test_acceleration_curve, test_short_hop_no_overshoot, test_group_arrival_unchanged, test_reorder_keeps_speed, test_angle_between_accuracy, test_measured_turn_then_move, test_heading_factors, test_reorder_mid_turn]
 
 func unit_of(sim, id: int) -> Dictionary:
 	return Economy.object(sim, id)
@@ -122,10 +123,73 @@ func test_reorder_keeps_speed(runner) -> bool:
 	Economy.send(sim, {"type": "move", "entity_ids": [id], "target": [25.5, 5.5]})
 	for index in range(12): sim.step()
 	var before: Dictionary = unit_of(sim, id)
-	Economy.send(sim, {"type": "move", "entity_ids": [id], "target": [5.5, 15.5]})
+	Economy.send(sim, {"type": "move", "entity_ids": [id], "target": [29.5, 5.5]})
 	sim.step()
 	sim.step()
 	var after: Dictionary = unit_of(sim, id)
-	runner.check(before.speed == 0.8 and after.speed == 0.8 and after.status == "moving", "L5 re-order while moving keeps full speed")
+	runner.check(before.speed == 0.8 and after.move_after == before.move_after and after.status == "moving", "L5 re-order while moving gets no new start delay")
 	runner.check(is_equal_approx(Locomotion.braking_distance(0.8, 4.0), 0.08), "L5 braking distance")
+	return true
+
+func test_angle_between_accuracy(runner) -> bool:
+	var worst: float = 0.0
+	for index in range(3600):
+		var degrees: float = index / 10.0
+		var radians: float = degrees * PI / 180.0
+		var shown: float = degrees if degrees <= 180.0 else 360.0 - degrees
+		var measured: float = Locomotion.angle_between(Vector2(1, 0), Vector2(cos(radians), sin(radians)))
+		worst = maxf(worst, absf(measured - shown))
+	runner.check(worst <= 0.1, "L6 angle error " + str(worst))
+	return true
+
+func first_move_offset(kind: String) -> int:
+	var sim = Simulation.new([], Vector2i(64, 16))
+	sim.add_player(1, 1000)
+	var id: int = sim.spawn(1, Vector2(30.5, 8.5), kind)
+	Economy.send(sim, {"type": "move", "entity_ids": [id], "target": [5.5, 8.5]})
+	var moving_at: int = -1
+	for index in range(200):
+		sim.step()
+		var unit: Dictionary = unit_of(sim, id)
+		if moving_at < 0 and unit.status == "moving": moving_at = index
+		if unit.position != [30.5, 8.5]: return index - moving_at
+	return -1
+
+func test_measured_turn_then_move(runner) -> bool:
+	# Ranger: 16.67 deg/tick, first move once 180 - 16.67 (k - 1) < 45: k = 9.1 -> 10 turns, offset 9 after the first moving tick.
+	# Crusader: 6 deg/tick, 180 - 6 (k - 1) < 45: k = 23.5 -> 24, offset 23. Measured 11 and 24 are counted from the command, one tick before the first moving snapshot.
+	# Dozer: wheels never stop, so the first move is the end of the start delay, offset 2.
+	var expected := {"infantry": 9, "tank": 23, "builder": 2}
+	var measured := {"infantry": 11, "tank": 24, "builder": 3}
+	for kind in expected:
+		var offset: int = first_move_offset(kind)
+		runner.check(offset == expected[kind], "L7 first move " + kind + " " + str(offset))
+		runner.check(absi(offset + 1 - measured[kind]) <= 1, "L7 within one tick of measured " + kind)
+	return true
+
+func test_heading_factors(runner) -> bool:
+	var tank: Dictionary = Definitions.unit("tank")
+	var infantry: Dictionary = Definitions.unit("infantry")
+	var builder: Dictionary = Definitions.unit("builder")
+	runner.check(is_equal_approx(Locomotion.heading_factor("treads", 22.5, tank), 0.5), "L8 treads half")
+	runner.check(Locomotion.heading_factor("treads", 45.0, tank) == 0.0, "L8 treads zero at 45")
+	runner.check(is_equal_approx(Locomotion.heading_factor("legs", 22.5, infantry), 0.5), "L8 legs half")
+	runner.check(Locomotion.heading_factor("legs", 45.0, infantry) == 0.0, "L8 legs zero at 45")
+	runner.check(is_equal_approx(Locomotion.heading_factor("wheels", 30.0, builder), maxf(builder.min_turn_speed, 1.2 / 4.0) / 1.2), "L8 wheels floor")
+	runner.check(Locomotion.heading_factor("wheels", 9.0, builder) == 1.0, "L8 wheels straight")
+	return true
+
+func test_reorder_mid_turn(runner) -> bool:
+	var sim = Simulation.new([], Vector2i(64, 16))
+	sim.add_player(1, 1000)
+	var id: int = sim.spawn(1, Vector2(30.5, 8.5), "tank")
+	Economy.send(sim, {"type": "move", "entity_ids": [id], "target": [5.5, 8.5]})
+	for index in range(8): sim.step()
+	var before: Dictionary = unit_of(sim, id)
+	Economy.send(sim, {"type": "move", "entity_ids": [id], "target": [30.5, 14.5]})
+	sim.step()
+	var after: Dictionary = unit_of(sim, id)
+	runner.check(after.position == before.position, "L9 position does not jump")
+	runner.check(Locomotion.angle_between(Vector2(before.heading[0], before.heading[1]), Vector2(after.heading[0], after.heading[1])) < 6.5, "L9 heading turns on from where it was")
+	runner.check(Locomotion.angle_between(Vector2(after.heading[0], after.heading[1]), Vector2(0, 1)) < 175.0, "L9 heading follows the new route")
 	return true

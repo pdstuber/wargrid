@@ -3,15 +3,15 @@
 Plan: [M6 plan](../superpowers/plans/2026-11-05-m6-teams-full-map.md). Run rules: [milestone prompt](../milestone-prompt.md).
 
 ```text
-Resume record (updated 2026-11-05, after Task 8)
-Branch / base commit / working-tree state: m6-teams-map / c050326 / Task 8 committed on top
-Last green task / next incomplete task: Task 8 / Task 9 (heading and turning; stop gate after it)
+Resume record (updated 2026-11-05, after Task 9)
+Branch / base commit / working-tree state: m6-teams-map / 71cbae4 / Task 9 committed on top
+Last green task / next incomplete task: Task 9 (stop gate: review pending) / Task 10 (Chinook supply scenario)
 Changed paths since last commit: none
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 253 cases, 105,800 checks, 0 failures, exit 0, TESTS PASSED; nine netplay scenarios passed (s1 re-pinned 9989)
-Known red case or blocker: none. Pending: test_maps_load in the CI export job (Review Focus 1); team-*.tsv CI comparison unrun until CI
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 258 cases, 112,678 checks, 0 failures, exit 0, TESTS PASSED; nine netplay scenarios passed (s1 re-pinned 10791); python3 tools/test_sim_math.py OK
+Known red case or blocker: none. OPEN FINDING for the user: re-order from mid-cell makes the unit turn back to the cell centre it passed (route[0] is behind); tanks stall up to ~23 ticks. A skip-waypoint fix moved S1 to 8168, outside the 9000-10799 window, so it was reverted
 Approved decisions, pre-authorizations used, deferred gates: as before; local commit per milestone prompt; no push/PR/merge/window/BM6 re-pin without approval
 Usage so far (python3 tools/session_usage.py <session files>): not measured
-Next exact action: start Task 9 in a fresh session; baseline 253 cases / 105,800 checks
+Next exact action: Task 9 gate review result, then restart; Task 10 in a fresh session
 ```
 
 ## Task 0: baseline (2026-11-05, tree 9ea11bc + Task 0 test)
@@ -206,3 +206,17 @@ Start metrics (resampled routes in world units; buildable = open cells in the 25
   - `test_economy.gd` / E6 move wins: 1 → 4 steps; `test_benchmark.gd` / BM3 settle: 10 → 14 steps; `test_combat.gd` / D1 economy rows gain `accel`, `brake` / Task 8
   - `test_combat_navigation.gd` / A1 pursuit refresh: ≤ 16 → ≤ 22 ticks (measured 22; the target's start delay and infantry ramp add 6) / Task 8
 - New `test_locomotion.gd`: L1 start delay (move, attack-move, chase, production exit), L2 acceleration curve, L3 short hop, L4 group arrival, L5 re-order keeps speed and `braking_distance`.
+
+## Task 9: heading and turning (2026-11-05, tree 71cbae4 + Task 9)
+
+- `Locomotion.angle_between`, `turn`, `heading_factor`; per-kind `locomotor`, `turn_cos`, `turn_sin` (literals from the values table, no trig in the simulation), `min_turn_speed` (builder 1.0, vehicle 0.8) in `economy_definitions.gd`; `heading` field on every unit; `WorldView.heading_marks()`; `tools/test_sim_math.py` plus a CI line.
+- Measured check (`test_measured_turn_then_move`): first move after the first `moving` snapshot: Ranger 9, Crusader 23, Dozer 2; from the command (+1) 10, 24, 3 against measured 11, 24, 3, all within 1.
+- Ruling: the test compares `offset + 1` (g = 1), not the plan's `+ 2`; Crusader offset is 23, not 22 (24 − 1 turns done).
+- Provisional re-pins and assertion changes (`test / assertion / old → new / cause`):
+  - `test_skirmish_match.gd` / `TERMINAL_TICK` / 10610 → 10502 (window 9000–10799, winner 1) / Task 9; `S1_CORE_SERIES` → 5085064042691093313
+  - `test_state_hash.gd` / `PINNED` / 04b65da94bdd4dfb → 054088294bdd4dfb / Task 9 (`heading`)
+  - `tools/run_netplay.sh` / s1 terminal tick / 9989 → 10791 / Task 9; all nine scenarios pass
+  - `test_benchmark.gd` / BM5 ceilings / open 82703 → 84119, dense 83567 → 84983, busiest 332 → 336 / Task 9 (+4 nodes per unit). **Ledger row not added yet: flag at the gate.**
+  - `test_movement.gd` / M3 first step 4/90 → 0.8/30 (wheels, 90° turn); M5 arrival 44 → 73 steps; M6 recovery 14 → 22 steps / Task 9
+  - `test_locomotion.gd` / L5 re-order: asserts no new start delay instead of `speed == 0.8` (a mid-cell re-order starts with a turn back, see the open finding) / Task 9
+  - `test_simulation.gd` / C1, C11 gain `heading`; `test_combat.gd` / D1 economy rows gain `locomotor`, `turn_cos`, `turn_sin` / Task 9
