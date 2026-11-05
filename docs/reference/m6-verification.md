@@ -262,3 +262,4 @@ Start metrics (resampled routes in world units; buildable = open cells in the 25
 ## Task 11 sub-tasks (invariants checked after each: full suite, team-match fold 7966218396352725740 / tick 20774)
 
 - **11a** (tree b488053 + 11a): suite `CASES 261 CHECKS 112671 FAILURES 0`; fold unchanged. AL1 passes, AL2 `last_cells_examined` 81 (CEILING 81). `large_196.warmup` max `allocation.assign` 566 → 1.556 ms.
+- **11b** (tree + 11b): suite `CASES 261 CHECKS 112671 FAILURES 0`; fold unchanged; N7 green unchanged. `large_196` `navigation.components` per rebuild 69.0 → 26.3 ms.

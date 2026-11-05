@@ -61,27 +61,36 @@ func _rebuild_component_cells() -> void:
 	_components.resize(_map_size.x * _map_size.y)
 	_components.fill(-1)
 	_component_cells.clear()
+	var queue: Array[Vector2i] = []
+	var count: int = 0
 	for y in range(_map_size.y):
 		for x in range(_map_size.x):
 			var seed := Vector2i(x, y)
 			if _grid.is_point_solid(seed) or _components[_index(seed)] != -1:
 				continue
-			var component: int = _component_cells.size()
-			var cells: Array[Vector2i] = [seed]
-			_components[_index(seed)] = component
+			queue.clear()
+			queue.append(seed)
+			_components[_index(seed)] = count
 			var read: int = 0
-			while read < cells.size():
-				var cell: Vector2i = cells[read]
+			while read < queue.size():
+				var cell: Vector2i = queue[read]
 				read += 1
 				for offset in Neighbors:
 					var neighbor: Vector2i = cell + offset
 					if not _grid.region.has_point(neighbor) or _grid.is_point_solid(neighbor):
 						continue
 					if _components[_index(neighbor)] == -1:
-						_components[_index(neighbor)] = component
-						cells.append(neighbor)
-			cells.sort_custom(_cell_before)
-			_component_cells.append(cells)
+						_components[_index(neighbor)] = count
+						queue.append(neighbor)
+			count += 1
+	for i in range(count):
+		var cells: Array[Vector2i] = []
+		_component_cells.append(cells)
+	for y in range(_map_size.y):
+		for x in range(_map_size.x):
+			var label: int = _components[_index(Vector2i(x, y))]
+			if label >= 0:
+				_component_cells[label].append(Vector2i(x, y))
 
 func is_walkable(point: Vector2) -> bool:
 	if not point.is_finite() or point.x < 0 or point.y < 0 or point.x >= _map_size.x or point.y >= _map_size.y:
