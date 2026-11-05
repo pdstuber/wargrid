@@ -11,7 +11,7 @@ Not covered: anything that needs the retail binary (exact retail floating point,
 ## Setup (once per machine)
 
 1. Game data: extracted retail copy in `/Users/pdstuber/CnC/run/` ([installation](installation.md)). Other location: `ZH_PARITY_DATA=<dir containing INIZH.big>`.
-2. Engine: clone [dvcdsys/GeneralsGameCode-macOS](https://github.com/dvcdsys/GeneralsGameCode-macOS) to `/Users/pdstuber/projects/GeneralsGameCode-macOS` and check out the local branch `wargrid-parity` (base `8fedb1649` plus the parity patch; the patch is listed in the [spike](zero-hour-parity-spike.md#what-was-built)). Other location: `ZH_PARITY_BIN=<path to generalszh_api>`.
+2. Engine: the parity patch exists only in the local branch `wargrid-parity` of `/Users/pdstuber/projects/GeneralsGameCode-macOS` (never pushed; contents in the [spike](zero-hour-parity-spike.md#what-was-built)). On another machine, clone [dvcdsys/GeneralsGameCode-macOS](https://github.com/dvcdsys/GeneralsGameCode-macOS), then carry the branch over without publishing it: on this machine `git -C /Users/pdstuber/projects/GeneralsGameCode-macOS bundle create wargrid-parity.bundle 8fedb1649..wargrid-parity`, on the other `git fetch <path>/wargrid-parity.bundle wargrid-parity:wargrid-parity && git switch wargrid-parity`. Other location: `ZH_PARITY_BIN=<path to generalszh_api>`.
 3. Build (about 15 minutes clean, Command Line Tools are enough):
    `cmake --preset apple-arm64-release -DRTS_BUILD_OUTPUT_SUFFIX=_api && cmake --build build/apple-arm64-release --config Release --target z_generals`
 

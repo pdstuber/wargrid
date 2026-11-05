@@ -14,7 +14,7 @@ Status: spike between milestones. **Adopted (user, 2026-11-05, "go with your rec
 
 ## What was built
 
-Fork checkout `/Users/pdstuber/projects/GeneralsGameCode-macOS`, local branch `wargrid-parity`, commit `b3874dc95` on base `8fedb1649`, **never pushed**, 4 files:
+Fork checkout `/Users/pdstuber/projects/GeneralsGameCode-macOS`, local branch `wargrid-parity` on base `8fedb1649`: `b3874dc95` (patch) and `eb595cfc9` (fixes after a Codex `gpt-6-astra` review), **never pushed**, 4 files:
 
 - `Dependencies/Utility/osdep_compat/win32_api.h`: `GetCommandLineA` returned `""` on macOS, so every command-line flag was dropped (the first probe ran windowed with loud sound); now built from `_NSGetArgv`.
 - `GeneralsMD/.../Common/CommandLine.cpp`: `-noaudio` also in release builds.
@@ -45,20 +45,20 @@ Each scenario starts a fresh headless skirmish on `Killing Fields`, spawns USA t
 | Ranger farthest firing distance | stationary maximum 122 (123 needs a move); approach-and-stop distance 115.45 | AttackRange 100; Wargrid 4 cells = 100 | **differs**: = 100 + own radius 7 + Dozer half-length 15 |
 | S3 Ranger burst | 4, 4, 22 frames (17 bursts, every one) | DelayBetweenShots 3, clip 3, reload 21; Wargrid 3/3/21 | within the ±1 tolerance but **systematic +1 frame per gap**: cycle 30 frames, not 27 |
 | Ranger duel time-to-kill | 339 frames, 36 shots (winner fired 1 frame earlier) | Wargrid 303 (36 hits at 3/3/21) | **differs** +12% (the +1 cadence) |
-| Crusader duel time-to-kill | 428 frames, 8 shots; both died 2 frames apart | Wargrid 420 | +8 frames shell flight at 140 units |
+| Crusader duel time-to-kill | 428 frames, 8 shots; both reached 0 health at frame 435 (removed at 450 and 452) | Wargrid 420 | +8 frames shell flight at 140 units |
 | Crusader vs Ranger in a 5-Ranger cluster (15 apart) | 30 shots, 30 direct hits of 6 HP, 1750 frames; **9 splash hits of 6 HP (54 HP) on neighbours** | Wargrid 30 direct 6 HP hits, 1740 ticks, no splash | splash differs; no scatter miss seen |
 | Chinook supply trip | see [Unverified](#unverified) | 8 × 75 = 600 per trip; 6 cells/s flight (provisional) | peak flight 150.5 u/s (= 6 cells/s); deposits not observed yet |
 
 ## Assessment (Claude, not a user decision)
 
 - The harness answers "what does the game logic do" exactly and unattended, with no World Builder, video or screen.
-- It measures a **source build** (upstream fork plus four small patches, 64-bit arm64, not VC6), not the shipped `Game.dat`. That is level 2 in the [verification doc](zero-hour-verification.md#levels), not level 1. Evidence that it still reflects retail: logic files the fork touches are 64-bit casts, `PLAYER_EXTERNAL` parity and an opt-in guard mode; nothing in locomotor, weapon or damage code; upstream keeps `RETAIL_COMPATIBLE_*` on by default; every INI-driven number came out exact. Floating point differs from retail, which matters for replay CRCs, not at a ±20% tolerance.
+- It measures a **source build** (upstream fork plus four small patches, 64-bit arm64, not VC6), not the shipped `Game.dat`. That is level 2 in the [verification doc](zero-hour-verification.md#levels), not level 1. Evidence that it still reflects retail: logic files the fork touches are 64-bit casts, `PLAYER_EXTERNAL` parity and an opt-in guard mode; nothing in locomotor, weapon or damage code; upstream keeps `RETAIL_COMPATIBLE_*` on by default; cruise speeds, turn rates, Ranger and Dozer acceleration and the Crusader interval match the INI within 0.15% (not the Crusader start lurch or the Ranger cadence). Whether 64-bit arm64 floating point shifts any of these numbers against retail is **unverified**.
 - Differences the source-reading level 0 missed: range counts both units' geometry radii (stationary maxima 122 and 183, both 22% beyond Wargrid's centre-to-centre 100 and 150), the Ranger burst runs one frame slower per gap (time-to-kill +12%), tank shells splash neighbouring infantry, and movement starts 3 frames after an order with turn-in-place first.
 
 ### Decision list (proposal, for the next combat-feel work)
 
 1. Range: switch to edge-to-edge distance, or keep centre-to-centre cells and accept shorter engagements.
-2. Ranger cadence: 3/3/21 (INI arithmetic) or 4/4/22 (shipped behaviour of the source build).
+2. Ranger cadence: 3/3/21 (INI arithmetic) or 4/4/22 (measured source-build behaviour).
 3. Tank splash against infantry (radius and damage), currently omitted.
 4. Start delay, acceleration and turn-in-place, currently instant.
 

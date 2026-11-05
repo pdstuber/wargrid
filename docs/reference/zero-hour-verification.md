@@ -1,13 +1,13 @@
 # Verification against real Zero Hour — 2026-11-03
 
-Status: **LEVEL 0 DONE (SOURCE/CONFIG); LEVEL 0 AUTOMATED (74 values, 0 differ); LEVEL 1 REDUCED TO THREE SPOT CHECKS, NOT RUN; LEVEL 2 NOT STARTED**. Nothing here measures the running retail game. Never describe level 0 values as measured parity. Scope rule from [AGENTS](../../AGENTS.md): preserve strategic identity and feel; original bugs and slow algorithms are not compatibility requirements. Goal is calibrated constants and feel, not trace parity.
+Status: **LEVEL 0 DONE (SOURCE/CONFIG); LEVEL 0 AUTOMATED (74 values, 0 differ); LEVEL 1 DONE 2026-11-05 BY THE PARITY HARNESS ON A SOURCE BUILD (user decision); LEVEL 2 NOT STARTED**. Nothing here measures the shipped retail binary; level 1 measured a native source build ([spike](zero-hour-parity-spike.md)). Never describe level 0 values as measured parity. Scope rule from [AGENTS](../../AGENTS.md): preserve strategic identity and feel; original bugs and slow algorithms are not compatibility requirements. Goal is calibrated constants and feel, not trace parity.
 
 ## Levels
 
 | Level | Evidence | State |
 |---|---|---|
 | 0 | Source plus hash-pinned INI reading | done below |
-| 1 | Observe the real game: three scripted-map spot checks (speed, range and reload, burst rhythm) | reduced protocol below, awaiting user session |
+| 1 | Observe the real game: three spot checks (speed, range and reload, burst rhythm) | done by the [parity harness](zero-hour-parity-harness.md) on a source build, see below |
 | 2 | Instrumented build of EA source logging per logic frame | only if level 1 shows disagreement that matters |
 | 3 | Replay/full-match trace comparison | rejected: Wargrid grid, direct-hit combat and pathing differ by design, so it fails by construction |
 
