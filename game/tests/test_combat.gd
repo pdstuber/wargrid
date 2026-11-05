@@ -9,7 +9,7 @@ const Fixture = preload("res://tests/combat_fixture.gd")
 const EconomyFixture = preload("res://tests/economy_fixture.gd")
 
 func cases() -> Array[Callable]:
-	return [test_combat_definitions, test_health_snapshot_isolation, test_weapon_range_boundary, test_damage_armor_matrix, test_weapon_cooldown, test_guard_priority, test_attack_validation_atomic, test_combat_intent_order, test_orders_preserve_reload, test_acquisition_throttle, test_mutual_lethal_fire, test_target_removed_cleanup, test_destroyed_unit_no_actions, test_destroyed_producer_accounting, test_same_tick_attack_and_cancel, test_removed_target_rescans, test_controller_and_scan_radius, test_scan_acquires_beyond_weapon_range, test_scan_radius_by_controller, test_scan_radius_boundary, test_removed_chaser_clears_chase, test_scan_keeps_target_leaving_radius, test_attack_move_resumes_after_chase, test_scan_same_tick_orders, test_scan_includes_buildings, test_human_guard_in_range_only, test_human_guard_holds_against_kiting, test_ai_guard_unchanged, test_human_attack_move_marches_in_range, test_human_attack_move_post_kill_rescan, test_human_attack_move_follows_retreat, test_rescan_same_tick_orders, test_human_attack_move_drops_target_out_of_range, test_retarget_only_for_attack_move, test_missing_id_skipped, test_due_tick_death_skips_member, test_foreign_id_rejects, test_attack_move_mixed_selection]
+	return [test_combat_definitions, test_health_snapshot_isolation, test_weapon_range_boundary, test_damage_armor_matrix, test_weapon_cooldown, test_guard_priority, test_attack_validation_atomic, test_combat_intent_order, test_orders_preserve_reload, test_acquisition_throttle, test_mutual_lethal_fire, test_target_removed_cleanup, test_destroyed_unit_no_actions, test_destroyed_producer_accounting, test_same_tick_attack_and_cancel, test_removed_target_rescans, test_controller_and_scan_radius, test_scan_acquires_beyond_weapon_range, test_scan_radius_by_controller, test_scan_radius_boundary, test_removed_chaser_clears_chase, test_scan_keeps_target_leaving_radius, test_attack_move_resumes_after_chase, test_scan_same_tick_orders, test_scan_includes_buildings, test_human_guard_in_range_only, test_human_guard_holds_against_kiting, test_ai_guard_unchanged, test_human_attack_move_marches_in_range, test_human_attack_move_post_kill_rescan, test_human_attack_move_follows_retreat, test_rescan_same_tick_orders, test_human_attack_move_drops_target_out_of_range, test_retarget_only_for_attack_move, test_missing_id_skipped, test_due_tick_death_skips_member, test_foreign_id_rejects, test_attack_move_mixed_selection, test_retaliate_trigger_distance, test_retaliate_joiners, test_retaliate_leash_and_return, test_retaliate_return_scan_and_rehit, test_retaliate_same_tick_cases]
 
 func test_combat_definitions(runner) -> bool:
 	runner.check(Definitions.profile("infantry") == {"max_hp": 180000, "armor": "human", "weapon": "rifle"}, "D1 infantry")
@@ -915,4 +915,180 @@ func test_retarget_only_for_attack_move(runner) -> bool:
 	runner.check(_kill_first(world[0], world[2]), "A7 attack-move kills its target")
 	world[0].step()
 	runner.check(not Fixture.object(world[0], world[1]).combat.retarget, "A7 retarget is cleared once served")
+	return true
+
+func _ret_world() -> Array:
+	var sim = Fixture.world()
+	sim.add_player(2, 0, "ai")
+	var victim: int = sim.spawn(1, Vector2(10.5, 10.5), "infantry")
+	var attacker: int = sim.spawn(2, Vector2(15.5, 10.5), "tank")
+	return [sim, victim, attacker]
+
+func _shot(attacker: int, victim: int) -> Array[Dictionary]:
+	return [{"attacker_id": attacker, "target_id": victim}] as Array[Dictionary]
+
+func _mode_of(sim: RefCounted, id: int) -> String:
+	return sim._entities[id].combat.mode
+
+func test_retaliate_trigger_distance(runner) -> bool:
+	for case in [[8.0, true], [8.01, false]]:
+		var world: Array = _ret_world()
+		var sim = world[0]
+		var far: int = sim.spawn(2, Vector2(10.5 + case[0], 10.5), "tank")
+		Combat._retaliate_trigger(sim, _shot(far, world[1]))
+		runner.check((_mode_of(sim, world[1]) == "retaliate") == case[1], "RT1 attacker at %s cells" % case[0])
+	var ai_victim: Array = _ret_world()
+	ai_victim[0]._players[1] = {"id": 1, "credits": 0, "controller": "ai"}
+	Combat._retaliate_trigger(ai_victim[0], _shot(ai_victim[2], ai_victim[1]))
+	runner.check(_mode_of(ai_victim[0], ai_victim[1]) == "guard", "RT1 ai-owned victim never triggers")
+	var kill: Array = _ret_world()
+	var neighbour: int = kill[0].spawn(1, Vector2(12.5, 10.5), "infantry")
+	kill[0]._entities[kill[1]].hp = 0
+	Combat._retaliate_trigger(kill[0], _shot(kill[2], kill[1]))
+	runner.check(_mode_of(kill[0], neighbour) == "retaliate" and _mode_of(kill[0], kill[1]) == "guard", "RT1 killing hit triggers the neighbour, not the dead victim")
+	runner.check(kill[0].retaliations() == 1 and kill[0]._entities[neighbour].combat.target_id == kill[2], "RT1 counter and target")
+	return true
+
+func test_retaliate_joiners(runner) -> bool:
+	var world: Array = _ret_world()
+	var sim = world[0]
+	var near: int = sim.spawn(1, Vector2(5.75, 10.5), "infantry")
+	var out: int = sim.spawn(1, Vector2(10.5, 5.6), "infantry")
+	var mover: int = sim.spawn(1, Vector2(9.5, 10.5), "infantry")
+	var attacking: int = sim.spawn(1, Vector2(9.5, 11.5), "infantry")
+	var builder: int = sim.spawn(1, Vector2(9.5, 9.5), "builder")
+	sim._entities[mover].status = "moving"
+	sim._entities[attacking].combat.mode = "attack"
+	Combat._retaliate_trigger(sim, _shot(world[2], world[1]))
+	runner.check(_mode_of(sim, world[1]) == "retaliate" and _mode_of(sim, near) == "retaliate", "RJ1 victim and unit at 4.75 join")
+	runner.check(_mode_of(sim, out) == "guard", "RJ1 unit at 4.9 does not")
+	runner.check(_mode_of(sim, mover) == "guard" and _mode_of(sim, attacking) == "attack" and sim._entities[builder].combat == null, "RJ1 moving, attacking and unarmed do not join")
+	runner.check(sim._entities[near].combat.goal == sim._entities[near].position and sim._entities[near].combat.until == sim.tick() + Combat.RETALIATION_TICKS, "RJ1 home and leash tick")
+	var shop = Fixture.world()
+	shop.add_player(2, 0, "ai")
+	shop._buildings[900] = {"id": 900, "owner": 1, "kind": "barracks", "origin": [10, 10], "hp": 1000000, "max_hp": 1000000, "completed": true, "queue": []}
+	var inside: int = shop.spawn(1, Vector2(17.0, 11.0), "infantry")
+	var outside: int = shop.spawn(1, Vector2(11.0, 17.4), "infantry")
+	var raider: int = shop.spawn(2, Vector2(15.0, 11.0), "infantry")
+	Combat._retaliate_trigger(shop, _shot(raider, 900))
+	runner.check(_mode_of(shop, inside) == "retaliate" and _mode_of(shop, outside) == "guard", "RJ2 building radius 4.8 + half diagonal from the centre")
+	return true
+
+func _trigger_at(sim: RefCounted, victim: int, attacker: int) -> void:
+	Combat._retaliate_trigger(sim, _shot(attacker, victim))
+
+func test_retaliate_leash_and_return(runner) -> bool:
+	var sim = Fixture.world()
+	sim.add_player(2, 0, "ai")
+	var rifle: int = sim.spawn(1, Vector2(5.5, 5.5), "infantry")
+	var bait: int = sim.spawn(2, Vector2(10.0, 5.5), "builder")
+	_trigger_at(sim, rifle, bait)
+	var farthest: float = 0.0
+	for tick in range(900):
+		if _mode_of(sim, rifle) == "retaliate" and sim._entities[rifle].combat.target_id != null:
+			sim._entities[bait].position = [minf(sim._entities[rifle].position[0] + 5.0, 30.0), 5.5]
+		sim.step()
+		farthest = maxf(farthest, absf(sim._entities[rifle].position[0] - 5.5))
+		if _mode_of(sim, rifle) == "guard": break
+	var unit: Dictionary = sim._entities[rifle]
+	runner.check(farthest > 5.0 and farthest < 8.0, "RL1 chase stops near the 7.2 leash, farthest %s" % farthest)
+	runner.check(unit.combat.mode == "guard" and unit.combat.goal == null and absf(unit.position[0] - 5.5) < 1.5, "RL1 walks home and ends in guard")
+	var far = _ret_world()
+	var rifle2: int = far[1]
+	_trigger_at(far[0], rifle2, far[2])
+	far[0]._entities[far[2]].position = [28.5, 10.5]
+	far[0].step()
+	runner.check(far[0]._entities[rifle2].combat.target_id == null and _mode_of(far[0], rifle2) == "retaliate", "RL2 attacker beyond 16 cells from home: back home")
+	var timed = _ret_world()
+	_trigger_at(timed[0], timed[1], timed[2])
+	timed[0]._entities[timed[1]].combat.until = timed[0].tick() + 1
+	timed[0].step()
+	timed[0].step()
+	runner.check(timed[0]._entities[timed[1]].combat.target_id == null, "RL3 leash tick reached: back home")
+	return true
+
+func test_retaliate_return_scan_and_rehit(runner) -> bool:
+	var sim = Fixture.world()
+	sim.add_player(2, 0, "ai")
+	var rifle: int = sim.spawn(1, Vector2(5.5, 5.5), "infantry")
+	var bait: int = sim.spawn(2, Vector2(9.0, 5.5), "builder")
+	_trigger_at(sim, rifle, bait)
+	sim._entities[rifle].position = [13.5, 5.5]
+	sim._entities[bait].position = [28.5, 5.5]
+	sim.step()
+	runner.check(sim._entities[rifle].combat.target_id == null and sim._entities[rifle].status != "idle", "RS1 returning")
+	var enemy: int = sim.spawn(2, Vector2(5.5, 12.0), "builder")
+	var seen: bool = false
+	for tick in range(31):
+		sim.step()
+		seen = seen or sim._entities[rifle].combat.target_id == enemy
+	runner.check(seen, "RS1 enemy unit within 7.2 cells of home becomes the target")
+	var rehit = _ret_world()
+	_trigger_at(rehit[0], rehit[1], rehit[2])
+	rehit[0]._entities[rehit[1]].position = [14.5, 10.5]
+	rehit[0]._entities[rehit[2]].position = [28.5, 10.5]
+	rehit[0].step()
+	runner.check(rehit[0]._entities[rehit[1]].combat.target_id == null, "RS2 returning")
+	for tick in range(5): rehit[0].step()
+	var tank: int = rehit[0].spawn(2, Vector2(18.0, 11.0), "tank")
+	_trigger_at(rehit[0], rehit[1], tank)
+	var unit: Dictionary = rehit[0]._entities[rehit[1]]
+	runner.check(unit.combat.target_id == tank and unit.combat.until == rehit[0].tick() + Combat.RETALIATION_TICKS and rehit[0].retaliations() == 0, "RS2 hit while returning restarts the chase, leash refreshed")
+	var shop = Fixture.world()
+	var guard: int = shop.spawn(1, Vector2(5.5, 5.5), "infantry")
+	shop._entities[guard].combat.mode = "retaliate"
+	shop._entities[guard].combat.goal = [5.5, 5.5]
+	shop._entities[guard].position = [10.5, 5.5]
+	shop._entities[guard].status = "moving"
+	shop._entities[guard].destination = [5.5, 5.5]
+	shop._buildings[900] = {"id": 900, "owner": 2, "kind": "barracks", "origin": [4, 8], "hp": 1000000, "max_hp": 1000000, "completed": true, "queue": []}
+	for tick in range(31): shop.step()
+	runner.check(shop._entities[guard].combat.target_id == null, "RS3 an enemy building is never a return target")
+	return true
+
+func test_retaliate_same_tick_cases(runner) -> bool:
+	var expected := {"move": "move", "attack": "attack", "attack_move": "attack_move", "stop": "retaliate"}
+	for type in expected:
+		var world: Array = _ret_world()
+		var sim = world[0]
+		var payload := {"type": type, "entity_ids": [world[1]]}
+		if type == "move" or type == "attack_move": payload.target = [20.5, 20.5]
+		if type == "attack": payload.target_id = world[2]
+		Fixture.send(sim, payload)
+		sim.step()
+		runner.check(_mode_of(sim, world[1]) == expected[type], "RC1 %s due in the trigger tick leaves %s" % [type, expected[type]])
+	for type in ["move", "stop", "attack", "attack_move"]:
+		var world: Array = _ret_world()
+		var sim = world[0]
+		for tick in range(10):
+			if _mode_of(sim, world[1]) == "retaliate": break
+			sim.step()
+		runner.check(_mode_of(sim, world[1]) == "retaliate", "RC2 %s: unit retaliating after the first shot" % type)
+		var payload := {"type": type, "entity_ids": [world[1]]}
+		if type == "move" or type == "attack_move": payload.target = [20.5, 20.5]
+		if type == "attack": payload.target_id = world[2]
+		Fixture.send(sim, payload)
+		sim.step()
+		runner.check(_mode_of(sim, world[1]) == ("guard" if type == "stop" else type), "RC2 %s replaces retaliate" % type)
+	var gone: Array = _ret_world()
+	_trigger_at(gone[0], gone[1], gone[2])
+	gone[0]._entities[gone[1]].position = [15.5, 10.5]
+	gone[0]._entities[gone[2]].position = [25.5, 10.5]
+	gone[0].remove_object(gone[2])
+	runner.check(gone[0]._entities[gone[1]].combat.target_id == null and gone[0]._entities[gone[1]].status == "path_pending", "RC3 attacker removed: unit sent home")
+	gone[0].step()
+	var dead_order: Dictionary = Fixture.send(gone[0], {"type": "attack", "entity_ids": [gone[1]], "target_id": gone[2]})
+	gone[0].step()
+	runner.check(_mode_of(gone[0], gone[1]) == "retaliate" and gone[0]._entities[gone[1]].combat.target_id == null, "RC3 attack on a dead target changes nothing, no crash")
+	var joiner: Array = _ret_world()
+	_trigger_at(joiner[0], joiner[1], joiner[2])
+	joiner[0].remove_object(joiner[1])
+	joiner[0].step()
+	var swap: Array = _ret_world()
+	var second: int = swap[0].spawn(2, Vector2(14.0, 11.5), "infantry")
+	_trigger_at(swap[0], swap[1], swap[2])
+	swap[0].remove_object(swap[2])
+	_trigger_at(swap[0], swap[1], second)
+	swap[0].step()
+	runner.check(swap[0]._entities[swap[1]].combat.target_id == second or swap[0]._entities[swap[1]].combat.target_id == null, "RC4 target dies as a new hit lands: new target or home")
 	return true

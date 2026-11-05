@@ -24,6 +24,13 @@ static func distance_squared(position: Vector2, target: Dictionary) -> float:
 # Source: retail AIData.ini GuardOuterModifierHuman / GuardOuterModifierAI.
 const GUARD_OUTER_HUMAN: float = 2.2
 const GUARD_OUTER_AI: float = 1.333
+# Source: retail AIData.ini RetaliationDistance / RetaliationFriendsRadius; leash factors from AIStates.cpp guard states.
+const RETALIATION_DISTANCE: float = 8.0
+const RETALIATION_FRIENDS_RADIUS: float = 4.8
+const RETALIATION_TICKS: int = 300
+const RETURN_SCAN_TICKS: int = 30
+const LEASH_UNIT: float = 1.8
+const LEASH_ATTACKER: float = 4.0
 
 static func is_ai(sim: RefCounted, owner: int) -> bool:
 	var player: Variant = sim._players.get(owner)
@@ -44,8 +51,7 @@ static func _in_range(sim: RefCounted, unit: Dictionary, target: Dictionary) -> 
 	return distance_squared(Vector2(unit.position[0], unit.position[1]), target) <= reach * reach
 
 static func plan(sim: RefCounted, unit_ids: Array[int]) -> void:
-	var grid: Dictionary = {}
-	var grid_ready: bool = false
+	var grid_box := {"ready": false, "grid": {}}
 	var held := {"ready": false, "cells": {}}
 	for unit_id in unit_ids:
 		var unit: Dictionary = sim._entities[unit_id]
@@ -53,6 +59,9 @@ static func plan(sim: RefCounted, unit_ids: Array[int]) -> void:
 		var mode: String = unit.combat.mode
 		if mode == "attack":
 			_pursue(sim, unit, held)
+			continue
+		if mode == "retaliate":
+			_plan_retaliate(sim, unit, held, grid_box)
 			continue
 		if mode != "guard" and mode != "attack_move": continue
 		var combat: Dictionary = unit.combat
@@ -64,10 +73,7 @@ static func plan(sim: RefCounted, unit_ids: Array[int]) -> void:
 		if kept.is_empty() or kept.owner == unit.owner:
 			combat.target_id = null
 			if sim._tick >= combat.repath_tick or combat.retarget:
-				if not grid_ready:
-					grid = _build_grid(sim)
-					grid_ready = true
-				combat.target_id = _nearest(sim, unit, grid, _scan_radius_for(sim, unit, human))
+				combat.target_id = _nearest(sim, unit, _grid(sim, grid_box), _scan_radius_for(sim, unit, human))
 				combat.retarget = false
 				if combat.target_id != null and not _within(unit, record(sim, combat.target_id), _reach(unit.kind)): sim._scan_chases += 1
 				if combat.target_id == null: combat.repath_tick = sim._tick + REPATH_TICKS - (sim._tick + unit.id) % REPATH_TICKS
@@ -92,6 +98,12 @@ static func plan(sim: RefCounted, unit_ids: Array[int]) -> void:
 		elif not moving:
 			combat.mode = "guard"
 			combat.goal = null
+
+static func _grid(sim: RefCounted, box: Dictionary) -> Dictionary:
+	if not box.ready:
+		box.grid = _build_grid(sim)
+		box.ready = true
+	return box.grid
 
 static func _scan_radius_for(sim: RefCounted, unit: Dictionary, human: bool) -> float:
 	if not human: return _scan_reach(sim, unit)
@@ -208,14 +220,14 @@ static func _bucket(grid: Dictionary, x: int, y: int, target: Dictionary) -> voi
 	if not grid.has(key): grid[key] = []
 	grid[key].append(target)
 
-static func _nearest(sim: RefCounted, unit: Dictionary, grid: Dictionary, radius: float) -> Variant:
+static func _nearest(sim: RefCounted, unit: Dictionary, grid: Dictionary, radius: float, units_only: bool = false) -> Variant:
 	var best: Variant = null
 	var best_distance: float = INF
 	var position := Vector2(unit.position[0], unit.position[1])
 	for y in range(int(floorf((position.y - radius) / GRID_CELL)), int(floorf((position.y + radius) / GRID_CELL)) + 1):
 		for x in range(int(floorf((position.x - radius) / GRID_CELL)), int(floorf((position.x + radius) / GRID_CELL)) + 1):
 			for target in grid.get(Vector2i(x, y), []):
-				if target.owner == unit.owner: continue
+				if target.owner == unit.owner or (units_only and target.has("origin")): continue
 				sim._combat_work += 1
 				var distance: float = distance_squared(position, target)
 				if distance > radius * radius: continue
@@ -246,6 +258,7 @@ static func fire(sim: RefCounted, unit_ids: Array[int], moved_ids: Array[int]) -
 	for id in damage:
 		var hit: Dictionary = record(sim, id)
 		hit.hp = maxi(0, hit.hp - damage[id])
+	_retaliate_trigger(sim, shots)
 	dead.sort()
 	for id in dead:
 		sim._combat_events.append({"type": "death", "tick": sim._tick, "object_id": id})
@@ -268,6 +281,87 @@ static func object_removed(sim: RefCounted, id: int) -> void:
 		unit.combat.target_id = null
 		unit.combat.repath_tick = sim._tick
 		unit.combat.retarget = unit.combat.mode == "attack_move" and not is_ai(sim, unit.owner)
+		if unit.combat.mode == "retaliate":
+			_go_home(sim, unit)
 		if unit.combat.mode == "attack":
 			unit.combat.mode = "guard"
 			sim._stop_unit(unit)
+
+static func _is_idle_guard(unit: Dictionary) -> bool:
+	return unit.combat.mode == "guard" and unit.combat.target_id == null and unit.status != "moving" and unit.status != "path_pending"
+
+static func _victim_centre(victim: Dictionary) -> Vector2:
+	if not victim.has("origin"): return Vector2(victim.position[0], victim.position[1])
+	return Vector2(victim.origin[0], victim.origin[1]) + Vector2(Definitions.building(victim.kind).footprint) * 0.5
+
+static func _friends_radius(victim: Dictionary) -> float:
+	if not victim.has("origin"): return RETALIATION_FRIENDS_RADIUS
+	return RETALIATION_FRIENDS_RADIUS + 0.5 * Vector2(Definitions.building(victim.kind).footprint).length()
+
+# shortcut: joiners found by scanning all armed units per trigger, grid it if triggers x units shows in the ledger.
+static func _retaliate_trigger(sim: RefCounted, shots: Array[Dictionary]) -> void:
+	var armed: Array = []
+	for shot in shots:
+		var victim: Dictionary = record(sim, shot.target_id)
+		var attacker: Dictionary = record(sim, shot.attacker_id)
+		if victim.is_empty() or attacker.is_empty() or is_ai(sim, victim.owner): continue
+		if distance_squared(Vector2(attacker.position[0], attacker.position[1]), victim) > RETALIATION_DISTANCE * RETALIATION_DISTANCE: continue
+		if armed.is_empty():
+			for unit in sim._entities.values():
+				if unit.combat != null: armed.append(unit)
+			armed.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.id < b.id)
+		var centre := _victim_centre(victim)
+		var radius: float = _friends_radius(victim)
+		for unit in armed:
+			if unit.owner != victim.owner or unit.hp <= 0: continue
+			if unit.id == victim.id and unit.combat.mode == "retaliate" and unit.combat.target_id == null:
+				_retarget_retaliation(sim, unit, attacker)
+			elif _is_idle_guard(unit) and Vector2(unit.position[0], unit.position[1]).distance_squared_to(centre) <= radius * radius:
+				_join_retaliation(sim, unit, attacker)
+
+static func _retarget_retaliation(sim: RefCounted, unit: Dictionary, attacker: Dictionary) -> void:
+	unit.combat.target_id = attacker.id
+	unit.combat.until = sim._tick + RETALIATION_TICKS
+	unit.combat.repath_tick = sim._tick
+
+static func _join_retaliation(sim: RefCounted, unit: Dictionary, attacker: Dictionary) -> void:
+	unit.combat.mode = "retaliate"
+	unit.combat.goal = unit.position.duplicate()
+	_retarget_retaliation(sim, unit, attacker)
+	sim._retaliations += 1
+
+static func _go_home(sim: RefCounted, unit: Dictionary) -> void:
+	unit.combat.target_id = null
+	unit.combat.repath_tick = sim._tick + RETURN_SCAN_TICKS
+	var members: Array[Dictionary] = [unit]
+	sim._assign_move(members, unit.combat.goal)
+
+static func _plan_retaliate(sim: RefCounted, unit: Dictionary, held: Dictionary, grid_box: Dictionary) -> void:
+	var combat: Dictionary = unit.combat
+	var home := Vector2(combat.goal[0], combat.goal[1])
+	var vision: float = CombatDefinitions.vision(unit.kind)
+	if combat.target_id == null:
+		_plan_return(sim, unit, home, vision, grid_box)
+		return
+	var attacker: Dictionary = record(sim, combat.target_id)
+	var away: bool = Vector2(unit.position[0], unit.position[1]).distance_squared_to(home) > pow(vision * LEASH_UNIT, 2)
+	if attacker.is_empty() or away or sim._tick >= combat.until or distance_squared(home, attacker) > pow(vision * LEASH_ATTACKER, 2):
+		_go_home(sim, unit)
+		return
+	_pursue(sim, unit, held)
+	if unit.status == "blocked": _go_home(sim, unit)
+
+static func _plan_return(sim: RefCounted, unit: Dictionary, home: Vector2, vision: float, grid_box: Dictionary) -> void:
+	var combat: Dictionary = unit.combat
+	if unit.status != "moving" and unit.status != "path_pending":
+		combat.mode = "guard"
+		combat.goal = null
+		return
+	if sim._tick < combat.repath_tick: return
+	combat.repath_tick = sim._tick + RETURN_SCAN_TICKS
+	var scout := {"position": [home.x, home.y], "owner": unit.owner}
+	var found: Variant = _nearest(sim, scout, _grid(sim, grid_box), vision * LEASH_UNIT, true)
+	if found == null: return
+	combat.target_id = found
+	combat.until = sim._tick + RETALIATION_TICKS
+	combat.repath_tick = sim._tick

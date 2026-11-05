@@ -28,6 +28,7 @@ var _match: Variant = null
 var _combat_work: int = 0
 var _chases: Dictionary = {}
 var _scan_chases: int = 0
+var _retaliations: int = 0
 var _allocation_calls: int = 0
 var _navigation_builds: int = 0
 
@@ -363,6 +364,9 @@ func combat_work() -> int:
 func scan_chases() -> int:
 	return _scan_chases
 
+func retaliations() -> int:
+	return _retaliations
+
 func navigation_builds() -> int:
 	return _navigation_builds
 
@@ -378,6 +382,7 @@ func step() -> void:
 	_combat_events.clear()
 	_combat_work = 0
 	_scan_chases = 0
+	_retaliations = 0
 	_allocation_calls = 0
 	_apply_orders()
 	var ids: Array[int] = []
