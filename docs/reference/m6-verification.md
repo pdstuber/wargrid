@@ -258,3 +258,7 @@ Start metrics (resampled routes in world units; buildable = open cells in the 25
 
 - `sh tools/run_profile.sh`: exit 0, `PROFILE COMPLETE 7`.
 - `sh tools/run_benchmark.sh`: **exit 1, twice (same tree)**. `COMBAT STRESS FAIL open`: p95 3.351 / p99 5.175 against ceiling 2.05 / 3.86 (`run_combat.gd` `STRESS_CEILING`). The record did not show this earlier; Tasks 6-9 added per-unit work. Not touched: the ceiling stays. Task 11.9 re-measures; if still over, the user decides.
+
+## Task 11 sub-tasks (invariants checked after each: full suite, team-match fold 7966218396352725740 / tick 20774)
+
+- **11a** (tree b488053 + 11a): suite `CASES 261 CHECKS 112671 FAILURES 0`; fold unchanged. AL1 passes, AL2 `last_cells_examined` 81 (CEILING 81). `large_196.warmup` max `allocation.assign` 566 → 1.556 ms.

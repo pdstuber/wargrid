@@ -25,6 +25,9 @@ func _init(blocked_cells: Array[Vector2i] = [], size: Vector2i = SIZE) -> void:
 	_apply_blocked(_normalize(blocked_cells))
 	Profiler.end(&"navigation.build", zone)
 
+func size() -> Vector2i:
+	return _map_size
+
 func _cell_before(a: Vector2i, b: Vector2i) -> bool:
 	return a.y < b.y or (a.y == b.y and a.x < b.x)
 
