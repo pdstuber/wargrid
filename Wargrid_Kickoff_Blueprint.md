@@ -857,7 +857,7 @@ Keep the working title **Wargrid** independently of EA branding; also check name
 
 ## 13. Kickoff prompt for Codex CLI / Claude Code
 
-Use the root `prompt.txt` (written when a milestone is kicked off; none is active now) in a new session in the Wargrid repository. It records the current milestone handoff and follows the [milestone prompt](docs/milestone-prompt.md); earlier handoffs live in `docs/m3-prompt.txt`, `docs/m4-prompt.txt`, `docs/m4.1-prompt.txt`, `docs/m5-prompt.txt` and `docs/m5.1-prompt.txt`. The prompt limits work to one milestone, requires verification/review and preserves Git/window approval rules. Keep the current handoff prompt in that one file rather than maintaining a second copy here.
+Use the root `prompt.txt` (written when a milestone is kicked off; none is active now) in a new session in the Wargrid repository. It records the current milestone handoff and follows the [milestone prompt](docs/milestone-prompt.md); earlier handoffs live in `docs/m3-prompt.txt`, `docs/m4-prompt.txt`, `docs/m4.1-prompt.txt`, `docs/m5-prompt.txt`, `docs/m5.1-prompt.txt` and `docs/m6-prompt.txt`. The prompt limits work to one milestone, requires verification/review and preserves Git/window approval rules. Keep the current handoff prompt in that one file rather than maintaining a second copy here.
 
 ### Follow-up prompt for a dedicated research agent
 
