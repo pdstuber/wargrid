@@ -152,7 +152,7 @@ func test_combat_work_ceiling(runner) -> bool:
 	for tick in range(120):
 		sim.step()
 		peak = maxi(peak, sim.combat_work())
-	runner.check(peak <= 23900 and peak > 20000, "BM6 combat work ceiling, got " + str(peak))
+	runner.check(peak <= 15500 and peak > 13000, "BM6 combat work ceiling, got " + str(peak))
 	return true
 
 func test_volley_retaliation_work(runner) -> bool:
