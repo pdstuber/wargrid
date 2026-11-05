@@ -3,15 +3,15 @@
 Plan: [M6 plan](../superpowers/plans/2026-11-05-m6-teams-full-map.md). Run rules: [milestone prompt](../milestone-prompt.md).
 
 ```text
-Resume record (updated 2026-11-05, Task 11 gate closed)
+Resume record (updated 2026-11-05, Task 12 table written, BM6 approval pending)
 Branch / base commit / working-tree state: m6-teams-map / Task 11 committed on top of 76bbfc9 / clean
-Last green task / next incomplete task: Task 11 (gate review done, user accepted the remaining rows) / Task 12 (Confirm final pins)
+Last green task / next incomplete task: Task 12 table (uncommitted until BM6 approval) / Task 13 (Benchmarks and ledger)
 Changed paths since last commit: none
 Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 270 cases, 112,693 checks, 0 failures, exit 0; team-match fold 7406935539604104369 tick 20000 winner 1; run_team_match exit 0
 Known red case or blocker: none. Accepted by the user 2026-11-05 as known over-budget rows (not loosened, to report at the exit gate): team-match step wall p95/p99 2.39/5.56 ms vs 1.67/3.3 (path-finding bursts, PATH_REQUESTS_PER_TICK 8; design options open: fewer requests per tick, shared routes, G, live-state presentation); movement plumbing 0.855 vs 0.83; COMBAT STRESS open p95 2.41 vs ceiling 2.05 (run_benchmark.sh exits 1 on it; combat dense/contact/skirmish3v3 never measured because run_combat.gd stops at the first push_error). Open for user: I4 BM5 ledger row; BM6 re-pin needs approval at Task 12
 Approved decisions, pre-authorizations used, deferred gates: local commits per milestone prompt; user approved .duplicate() in D1/E1 (11f), fixes A, B, C, F, integer-key normalize, D, production occupied set, ring cache, merge diff; E rejected, G not taken; no push/PR/merge/window/BM6 re-pin without approval
 Usage so far (python3 tools/session_usage.py <session files>): not measured
-Next exact action: Task 12 (read the plan range '### Task 12'); confirm every provisional pin against its window and cause, ask the user to approve the BM6 values
+Next exact action: get user approval of BM6 18500/16000, commit 'Confirm M6 pins', then Task 13
 ```
 
 ## Task 0: baseline (2026-11-05, tree 9ea11bc + Task 0 test)
@@ -347,3 +347,17 @@ Earlier rows in this file (the 11.9 table above, the perf-investigation numbers)
 - **Order waves** (ticks 0, 390, 780, 1230: six bots place a building on the same tick): each placement took about 1.7 ms in `ao.effects`, of which `navigation.replace` 1.25 ms. Microbenchmark of the pieces at tick 400 (3,855 blocked cells): `_normalize` 0.54 ms, the old dictionary diff plus a linear `Array.erase` in a 32k component list, then the merge diff 0.98 ms with a Callable compare. Fixes: `_diff` merges row-major lists on integer keys (0.33 ms), the local block path removes by `bsearch_custom` plus `remove_at` instead of `erase`. `navigation.replace` max 9.8 to 5.7 ms, `step.apply_orders` max 12.2 to 8.2 ms. Fold unchanged, suite `CASES 270 CHECKS 112693 FAILURES 0`.
 - **Path bursts**: `PATH_REQUESTS_PER_TICK` is 8, and A* on 196x196 takes about 0.5-1 ms per long route, so bursts of 4-8 requests make 4-8 ms ticks in runs of 3-5 ticks (e.g. 9255-9259, 10306-10310, 14462-14465). They are the largest part of the wall p99 (5.56 ms, budget 3.3). A trace-identical fix would need a cheaper search per request; lowering the per-tick request count or sharing routes between units with the same goal changes traces and the feel of move orders (design decision, not taken).
 - Wall `step` p95 / p99 unchanged by this: 2.392 / 5.557 (budget 1.67 / 3.3).
+
+## Task 12: final pins (2026-11-05, tree b94b580)
+
+Suite: 270 cases, 112,693 checks, 0 failures, exit 0. Nine netplay scenarios (`match kill stall silent spike perturb version relay-down relay-term`) exit 0; `match` terminal tick 8252.
+
+| Pin | File | Base → final | Cause tasks | Window / status |
+|---|---|---|---|---|
+| `TERMINAL_TICK` | `test_skirmish_match.gd` | 9938 → 8260 (winner 1) | 6, 8, 9, C1 fix (route[0] drop), 11i | 8000–10799, inside |
+| `S1_CORE_SERIES` | `test_skirmish_match.gd` | 1224646555515136482 → 353544374398116375 | 6, 7, 8, 9, C1, 11i | series spans 8261 ticks |
+| netplay s1 end tick | `tools/run_netplay.sh` | 8423 → 8252 | 6, 7, 8, 9, C1, 11i | passes; script logs no winner, S1 test asserts winner 1 |
+| `PINNED` | `test_state_hash.gd` | 15df35ca15bcc43b → 054088294bdd4dfb | 4 (team, alive), 7 (rng), 8 (speed, move_after), 9 (heading) | field additions only |
+| BM6 ceiling / floor | `test_benchmark.gd` | 15500 / 13000 → 18500 / 16000 | 6 (edge range) | **needs user approval** |
+
+Replays and R4: unchanged since Task 4 per the rows above.
