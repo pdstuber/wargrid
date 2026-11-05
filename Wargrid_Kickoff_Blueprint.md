@@ -557,7 +557,7 @@ Approved design (2026-11-05): [findings design](docs/superpowers/specs/2026-11-0
 
 ### M6 — Teams and a full-scale map
 
-**Status (2026-11-05):** implemented on branch `m6-teams-map`, not merged. Exit gate open: CI, the user's 1v1 feel playtest and merge approval pending; see [M6 verification](docs/reference/m6-verification.md).
+**Status (2026-11-05):** implemented and merged to `main`; CI green, user 1v1 playtest done with minor findings open; see [M6 verification](docs/reference/m6-verification.md).
 
 Matches with up to eight players in teams with team victory; a map converted from EA's GPL-released Twilight Flame source (an official 8-player Zero Hour map, 4,900 × 4,900 world units, about 196 × 196 cells at 25 units per cell; user decision 2026-11-05, replacing "hand-authored, no EA map data"), under Wargrid's own name with EA's notice kept; navigation, allocation and snapshot costs scaled for that size (measure first; candidate fixes: incremental navigation updates, local destination search). Still USA only.
 
