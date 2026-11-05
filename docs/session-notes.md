@@ -34,6 +34,7 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 - Project goal (user, 2026-11-04): also an architecture exploration. Over-engineering is acceptable; explore very scalable architectures from the start, from M6 on. M5 design stays as approved.
 - Source/config-supported economy and combat values remain RETAIL_UNVERIFIED; departures stay explicit in reference/design notes.
 - AI moods (Sleep, Alert 1.1, Aggressive 1.5) deferred to M8 bots (user, 2026-11-03).
+- Map analyzer proposal (user-supplied, GPT-written; [proposal](reference/map-analyzer-proposal.md)): superseded by the conversion decision. Its route-length matrix and per-start metrics went into M6 Task 2 (report-only); parked: chokepoint/alternative-route analysis for M8 bots, a validator for more maps, per-unit clearance, PNG/HTML reports.
 - Retail map sizes vs our 48×32 cells: superseded by the M6 decision to convert Twilight Flame; M6 Task 1 records its real size and border.
 - Runtime parity harness: adopted 2026-11-05 ([spike](reference/zero-hour-parity-spike.md)); counts as level 1 with the source-build caveat; open: its decision list and the Chinook supply scenario. Decided 2026-11-05: M5.1 adds a retaliation parity scenario at Task 9; the combat-feel list and the Chinook scenario went to M6 planning, and the user decided all four items in favour of Zero Hour behaviour (see the M6 planning section; plan Tasks 6–10).
 - Retail `ForceIdleMSEC` INI value unread (code default 1 frame); `stop` re-acquire delay uses the existing 15-tick stagger instead.

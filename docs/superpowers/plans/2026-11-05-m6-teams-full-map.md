@@ -194,7 +194,12 @@ Format per the milestone prompt. Stop gates (fresh-context Opus review, then res
   - **Slot search:** kinds in the order `reactor` 2×2, `depot` 3×3, `barracks` 2×2, `factory` 3×3. For each kind, try origins (top-left cell) at Chebyshev distance d = 2, 3, …, 12 from the builder cell; within a ring, y ascending, then x ascending.
   - **Accepting an origin:** the first origin wins when its footprint is inside the map and open, and its footprint grown by one cell on every side (clipped to the map) is open and covers no earlier slot's footprint, the builder cell, or any source footprint.
   - **Supply:** each start needs a source within 20 cells (Chebyshev) of the builder cell.
-- CLI `python3 tools/zh_map/convert.py <map> <out.json>` exits 1 with the failing check named.
+- CLI `python3 tools/zh_map/convert.py <map> <out.json>` exits 1 with the failing check named. It also prints the two report tables below; neither has a pass/fail tolerance (a threshold is a user decision).
+- Produces `convert.route_matrix(passable: list[list[bool]], step_units: float, starts: list) -> dict`, mapping `(seat_a, seat_b)` to path length in world units. It uses 8-neighbour Dijkstra with diagonal cost √2 × step, with no corner cutting past a blocked orthogonal neighbour. It runs on the source grid (10 units: a sample is passable unless cliff or water) and on the resampled grid (25 units); the report prints both lengths and their ratio per pair.
+- Produces `convert.start_metrics(grid: dict, placed: dict, matrix: dict) -> list`, one row per seat:
+  - buildable open cells within Chebyshev 12 of the builder cell;
+  - Chebyshev distance to the nearest source origin;
+  - route length to every other start, from the resampled matrix.
 
 - [ ] Red `test_refpack_literals_and_copies`: a hand-built stream with one literal run, one 2-byte, one 3-byte and one 4-byte copy decodes to the expected bytes.
 - [ ] Red `test_chunks_roundtrip`: a synthetic raw `CkMp` file (TOC, `HeightMapData` v4 4×4 plus border 1, `ObjectsList` with `Player_1_Start` and `Player_2_Start` waypoints and one supply object) parses to the expected dict.
@@ -205,7 +210,9 @@ Format per the milestone prompt. Stop gates (fresh-context Opus review, then res
   - Every pair of starts must be connected.
   - Route widths are reported for each start and its two nearest other starts.
 - [ ] Red `test_every_start_has_slots_and_supply` (Review Focus 5): a start boxed in by cliffs fails with `no slots: seat 3`; a start with no source within 20 cells fails with `no supply: seat 3`.
-- [ ] Implement until green. Run the converter on the real map. Record the route-width table in the verification file and commit the JSON and NOTICE. Commit `Convert the Ashfall map from EA's GPL map source`.
+- [ ] Red `test_route_matrix_straight_and_diagonal`: on an open 20×20 grid with step 10, the route from (0,0) to (10,0) is 100 and to (10,10) is 100√2 (within 1e-9). With a wall at x = 5 that has one gap at y = 19, the route is longer than 100 and passes the gap.
+- [ ] Red `test_start_metrics_rows`: a synthetic two-start map gives one row per seat with the expected buildable count, supply distance and route length.
+- [ ] Implement until green. Run the converter on the real map. Record the route-width table, the route-length matrix (source vs resampled, ratio) and the per-start metrics in the verification file. Task 5 picks `TeamMatch.SEATS` with the per-start metrics in view. Commit the JSON and NOTICE. Commit `Convert the Ashfall map from EA's GPL map source`.
 
 ### Task 3: Map loader; the skirmish loads from data
 
