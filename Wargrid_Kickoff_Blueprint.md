@@ -557,6 +557,8 @@ Approved design (2026-11-05): [findings design](docs/superpowers/specs/2026-11-0
 
 ### M6 — Teams and a full-scale map
 
+**Status (2026-11-05):** implemented on branch `m6-teams-map`, not merged. Exit gate open: CI, the user's 1v1 feel playtest and merge approval pending; see [M6 verification](docs/reference/m6-verification.md).
+
 Matches with up to eight players in teams with team victory; a map converted from EA's GPL-released Twilight Flame source (an official 8-player Zero Hour map, 4,900 × 4,900 world units, about 196 × 196 cells at 25 units per cell; user decision 2026-11-05, replacing "hand-authored, no EA map data"), under Wargrid's own name with EA's notice kept; navigation, allocation and snapshot costs scaled for that size (measure first; candidate fixes: incremental navigation updates, local destination search). Still USA only.
 
 **Planning inputs (decided 2026-11-05):** decide the [parity spike decision list](docs/reference/zero-hour-parity-spike.md#decision-list-proposal-for-the-next-combat-feel-work) (edge-to-edge range, Ranger cadence 4/4/22, tank splash, start delay and turning) and budget the pin re-calibration it forces (skirmish, netplay, BM6); fix the Chinook supply scenario to turn M3's provisional collector timing into measured values.
@@ -570,6 +572,8 @@ Matches with up to eight players in teams with team victory; a map converted fro
 Add China and GLA distinct rules, core units and economy differences (for example GLA without power) using data definitions, behavior-specific tests and `tools/check_reference.py`.
 
 **Pre-M7 gate (proposed 2026-11-03):** run or explicitly defer the reduced level 1 spot checks (S1–S3) in [Zero Hour verification](docs/reference/zero-hour-verification.md) before kickoff, because factions multiply unverified constants. **Met 2026-11-05 (user decision):** S1–S3 measured by the [parity harness](docs/reference/zero-hour-parity-harness.md) on a source build; the differences found are a decision list in the [spike](docs/reference/zero-hour-parity-spike.md#decision-list-proposal-for-the-next-combat-feel-work), not yet decided. New factions in M7 can measure their units with the same harness.
+
+**Turn, movement and attack check (user, 2026-11-05):** for every new China and GLA unit, and again for the USA units, run the [parity harness](docs/reference/zero-hour-parity-harness.md) `turn_`, `move_`, `range_` and `reach_` scenarios against the Wargrid simulation and compare whole traces (angle, speed and position per frame), not only the first-move frame. M6 compared the Dozer only at first move and at INI values; the full trace showed Wargrid turning twice as fast (fixed in M6: wheeled turn follows speed). The retail Dozer also slowed to 0.15 cells/s mid-turn at frames 70–80 (cause not identified); look for it in the other wheeled and tracked units.
 
 **Exit gate:** three playable faction prototypes; economy/production/combat parity tracked by faction.
 

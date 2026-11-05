@@ -4,7 +4,7 @@ const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Navigation = preload("res://scripts/simulation/grid_navigation.gd")
 
 func cases() -> Array[Callable]:
-	return [test_distance, test_short_zero, test_replacement, test_retarget, test_obstacle, test_blocked, test_invalid, test_replay, test_far_coordinates]
+	return [test_distance, test_short_zero, test_replacement, test_retarget, test_obstacle, test_blocked, test_invalid, test_replay, test_far_coordinates, test_route_shared_read_only]
 
 func order(sim, target: Vector2, sequence: int = 0, tick: int = -1) -> Dictionary:
 	return sim.issue_command({"tick": sim.snapshot().tick if tick < 0 else tick, "player": 1,
@@ -31,13 +31,13 @@ func test_distance(runner) -> bool:
 	sim.spawn(1, Vector2(1.5, 1.5))
 	runner.check(entity(sim).get("status") == "idle", "M1 idle")
 	runner.check(order(sim, Vector2(4.5, 1.5)).ok, "M1 accepted")
-	sim.step()
-	runner.check(position(sim).distance_to(Vector2(1.6, 1.5)) <= 1e-5, "M1 first budget")
+	advance(sim, 3)
+	runner.check(position(sim).distance_to(Vector2(1.5 + 4.0 / 90.0, 1.5)) <= 1e-5, "M1 first budget")
 	runner.check(entity(sim).get("status") == "moving", "M1 moving")
 	advance(sim, 9)
-	runner.check(position(sim).distance_to(Vector2(2.5, 1.5)) <= 1e-5, "M1 ten budgets")
-	advance(sim, 20)
-	arrived(runner, sim, Vector2(4.5, 1.5), "M1 arrival 30")
+	runner.check(position(sim).distance_to(Vector2(2.5 - 1.0 / 15.0, 1.5)) <= 1e-5, "M1 ten budgets (2 ramp ticks lose 1/15)")
+	advance(sim, 22)
+	arrived(runner, sim, Vector2(4.5, 1.5), "M1 arrival 32")
 	var before: Dictionary = entity(sim)
 	advance(sim, 30)
 	runner.check(entity(sim) == before, "M1 arrival persists")
@@ -48,7 +48,7 @@ func test_short_zero(runner) -> bool:
 		var sim = Simulation.new()
 		sim.spawn(1, Vector2(1.5, 1.5))
 		runner.check(order(sim, target).ok, "M2 accepted")
-		sim.step()
+		advance(sim, 5)
 		arrived(runner, sim, target, "M2 short/zero")
 	return true
 
@@ -57,8 +57,8 @@ func test_replacement(runner) -> bool:
 	sim.spawn(1, Vector2(1.5, 1.5))
 	runner.check(order(sim, Vector2(4.5, 1.5)).ok, "M3 first")
 	runner.check(order(sim, Vector2(1.5, 4.5), 1).ok, "M3 second")
-	sim.step()
-	runner.check(position(sim).distance_to(Vector2(1.5, 1.6)) <= 1e-5, "M3 final order one budget")
+	advance(sim, 3)
+	runner.check(position(sim).distance_to(Vector2(1.5, 1.5 + 0.8 / 30.0)) <= 1e-5, "M3 final order first ramp step")
 	return true
 
 func test_retarget(runner) -> bool:
@@ -85,14 +85,14 @@ func test_obstacle(runner) -> bool:
 	var nav = Navigation.new(solids)
 	sim.spawn(1, Vector2(1.5, 1.5))
 	runner.check(order(sim, Vector2(3.5, 1.5)).ok, "M5 accepted")
-	for i in range(40):
+	for i in range(75):
 		var before := position(sim)
 		sim.step()
 		var after := position(sim)
 		runner.check(before.distance_to(after) <= 0.1 + 1e-5, "M5 budget")
 		for sample in range(11):
 			runner.check(nav.is_walkable(before.lerp(after, sample / 10.0)), "M5 sampled segment walkable")
-	arrived(runner, sim, Vector2(3.5, 1.5), "M5 arrival 40")
+	arrived(runner, sim, Vector2(3.5, 1.5), "M5 arrival 75")
 	return true
 
 func test_blocked(runner) -> bool:
@@ -108,7 +108,7 @@ func test_blocked(runner) -> bool:
 	advance(sim, 300)
 	runner.check(entity(sim) == before, "M6 persistent blocked")
 	runner.check(order(sim, Vector2(1.5, 2.5), 1).ok, "M6 recovery order")
-	advance(sim, 10)
+	advance(sim, 24)
 	arrived(runner, sim, Vector2(1.5, 2.5), "M6 recovery")
 	return true
 
@@ -124,7 +124,7 @@ func test_invalid(runner) -> bool:
 		var before: Dictionary = sim.snapshot()
 		runner.check(not order(sim, target, 1).ok, "M7 invalid target rejected")
 		runner.check(sim.snapshot() == before, "M7 route and sequence unchanged")
-	advance(sim, 27)
+	advance(sim, 30)
 	arrived(runner, sim, Vector2(4.5, 1.5), "M7 original continues")
 	return true
 
@@ -137,7 +137,7 @@ func replay(batch: int, reads: bool = false):
 	for group in range(300 / batch):
 		for tick in range(batch):
 			if reads:
-				var state: Dictionary = sim.snapshot()
+				var state: Dictionary = sim.snapshot().duplicate(true)
 				if not state.map.blocked_cells.is_empty():
 					state.map.blocked_cells[0][0] = 9
 				state.map.size[0] = 9
@@ -158,8 +158,22 @@ func test_far_coordinates(runner) -> bool:
 	var sim = Simulation.new([], Vector2i(64, 64))
 	sim.spawn(1, Vector2(51.5, 48.5))
 	order(sim, Vector2(54.5, 48.5))
-	advance(sim, 10)
-	runner.check(absf(entity(sim).position[0] - 52.5) <= 1e-5, "M9 far coordinate ten-tick distance")
-	advance(sim, 20)
-	arrived(runner, sim, Vector2(54.5, 48.5), "M9 far coordinate thirty-tick arrival")
+	advance(sim, 12)
+	runner.check(absf(entity(sim).position[0] - (52.5 - 1.0 / 15.0)) <= 1e-5, "M9 far coordinate ten-tick distance")
+	advance(sim, 22)
+	arrived(runner, sim, Vector2(54.5, 48.5), "M9 far coordinate arrival")
+	return true
+
+func test_route_shared_read_only(runner) -> bool:
+	var sim = Simulation.new()
+	sim.spawn(1, Vector2(0.5, 0.5))
+	order(sim, Vector2(12.5, 9.5))
+	for i in range(5): sim.step()
+	var first: Dictionary = sim.snapshot()
+	var route: Array = first.entities[0].route
+	runner.check(not route.is_empty() and route.is_read_only() and route[0].is_read_only(), "M-route snapshot route is read-only")
+	runner.check(is_same(route, sim.snapshot().entities[0].route), "M-route snapshots share an unchanged route")
+	var length: int = route.size()
+	for i in range(30): sim.step()
+	runner.check(first.entities[0].route.size() == length and first.entities[0].route == route, "M-route a held snapshot keeps its route while the unit advances")
 	return true

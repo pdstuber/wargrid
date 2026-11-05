@@ -43,6 +43,7 @@ jobs:
       WARGRID_REPLAY_TRACE: ${{ github.workspace }}/replay-${{ matrix.platform }}.tsv
       WARGRID_ECONOMY_REPLAY_TRACE: ${{ github.workspace }}/economy-${{ matrix.platform }}.tsv
       WARGRID_COMBAT_REPLAY_TRACE: ${{ github.workspace }}/combat-${{ matrix.platform }}.tsv
+      WARGRID_TEAM_REPLAY_TRACE: ${{ github.workspace }}/team-${{ matrix.platform }}.tsv
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -91,6 +92,7 @@ jobs:
           WARGRID_REPLAY_TRACE: ${{ github.workspace }}/export-replay-${{ matrix.platform }}.tsv
           WARGRID_ECONOMY_REPLAY_TRACE: ${{ github.workspace }}/export-economy-${{ matrix.platform }}.tsv
           WARGRID_COMBAT_REPLAY_TRACE: ${{ github.workspace }}/export-combat-${{ matrix.platform }}.tsv
+          WARGRID_TEAM_REPLAY_TRACE: ${{ github.workspace }}/export-team-${{ matrix.platform }}.tsv
         run: |
           set -o pipefail
           exe="build/test/${{ matrix.platform }}/WargridTests${{ matrix.platform == 'windows' && '.console.exe' || '' }}"
@@ -115,9 +117,11 @@ jobs:
             ${{ env.WARGRID_REPLAY_TRACE }}
             ${{ env.WARGRID_ECONOMY_REPLAY_TRACE }}
             ${{ env.WARGRID_COMBAT_REPLAY_TRACE }}
+            ${{ env.WARGRID_TEAM_REPLAY_TRACE }}
             ${{ github.workspace }}/export-replay-${{ matrix.platform }}.tsv
             ${{ github.workspace }}/export-economy-${{ matrix.platform }}.tsv
             ${{ github.workspace }}/export-combat-${{ matrix.platform }}.tsv
+            ${{ github.workspace }}/export-team-${{ matrix.platform }}.tsv
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
@@ -201,13 +205,17 @@ jobs:
           python3 tools/test_desync_diff.py
           python3 tools/test_check_reference.py
           python3 tools/test_session_usage.py
+          python3 tools/test_sim_math.py
+          python3 tools/zh_map/test_zh_map.py
           python3 tools/zh_parity/analyze.py --self-test
       - name: Compare all platform ticks
         run: |
           python3 tools/compare_replays.py traces/replay-linux.tsv traces/replay-windows.tsv
           python3 tools/compare_replays.py traces/economy-linux.tsv traces/economy-windows.tsv
           python3 tools/compare_replays.py traces/combat-linux.tsv traces/combat-windows.tsv
+          python3 tools/compare_replays.py --interval 200 --rows 100 traces/team-linux.tsv traces/team-windows.tsv
           python3 tools/compare_replays.py traces/replay-linux.tsv traces/replay-windows.tsv traces/export-replay-linux.tsv traces/export-replay-windows.tsv
           python3 tools/compare_replays.py traces/economy-linux.tsv traces/economy-windows.tsv traces/export-economy-linux.tsv traces/export-economy-windows.tsv
           python3 tools/compare_replays.py traces/combat-linux.tsv traces/combat-windows.tsv traces/export-combat-linux.tsv traces/export-combat-windows.tsv
+          python3 tools/compare_replays.py --interval 200 --rows 100 traces/team-linux.tsv traces/team-windows.tsv traces/export-team-linux.tsv traces/export-team-windows.tsv
           python3 tools/compare_replays.py --interval 30 --rows 0 traces/netplay-linux.tsv traces/netplay-windows.tsv

@@ -54,8 +54,9 @@ func _building(state: Dictionary, id: int) -> Dictionary:
 	return {}
 
 func _refresh() -> void:
-	if selected_building_id != -1 and _building(simulation.snapshot(),selected_building_id).is_empty(): selected_building_id = -1
-	super._refresh()
+	var state: Dictionary = simulation.snapshot()
+	if selected_building_id != -1 and _building(state,selected_building_id).is_empty(): selected_building_id = -1
+	_show(state)
 	$HUD/Economy.position.y = maxf(116.0,_status.position.y + _status.get_minimum_size().y + 8.0)
 
 func _refresh_hud(state: Dictionary) -> void:

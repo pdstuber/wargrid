@@ -3,43 +3,59 @@ extends RefCounted
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
 const Combat = preload("res://scripts/simulation/combat.gd")
+const Profiler = preload("res://scripts/debug/profiler.gd")
+const MapData = preload("res://scripts/simulation/map_data.gd")
 
-const SIZE := Vector2i(48, 32)
 const START_CREDITS: int = 10000
 const DECISION_TICKS: int = 30
 const ATTACK_TICK: int = 5400
 const DEFENCE_RADIUS: float = 10.0
 const BUILD_ORDER: Array[String] = ["reactor", "depot", "barracks", "factory"]
-const LEFT_ORIGINS := {"reactor": Vector2i(8, 12), "depot": Vector2i(8, 5), "barracks": Vector2i(12, 12), "factory": Vector2i(12, 18)}
+const MAP_PATH := "res://data/maps/skirmish.json"
 const UNIT_FOR := {"barracks": "infantry", "factory": "tank"}
 const TARGET_CATEGORIES: Array = [["builder"], ["barracks", "factory"], ["depot"], ["reactor"]]
 
+static var _skirmish_map: Dictionary = {}
+
 static func origin(kind: String, player: int) -> Vector2i:
-	var left: Vector2i = LEFT_ORIGINS[kind]
-	if player == 1: return left
-	return Vector2i(SIZE.x - left.x - Definitions.building(kind).footprint.x, left.y)
+	return MapData.slot(_default_map(), player, kind)
+
+static func _default_map() -> Dictionary:
+	if _skirmish_map.is_empty(): _skirmish_map = MapData.load(MAP_PATH)
+	return _skirmish_map
+
+static func _slot(sim: RefCounted, kind: String, player: int) -> Vector2i:
+	var map: Dictionary = sim.map_data()
+	return MapData.slot(map if not map.is_empty() else _default_map(), player, kind)
 
 static func create(with_match: bool = true, second_controller: String = "ai") -> RefCounted:
-	var sim = Simulation.new([], SIZE)
-	sim.add_player(1, START_CREDITS)
-	sim.add_player(2, START_CREDITS, second_controller)
-	sim.spawn(1, Vector2(4.5, 14.5), "builder")
-	sim.spawn(2, Vector2(43.5, 14.5), "builder")
-	sim.add_supply_source(Vector2i(5, 3), 200)
-	sim.add_supply_source(Vector2i(40, 3), 200)
+	var seats: Array[Dictionary] = [
+		{"seat": 1, "team": 1, "controller": "human", "credits": START_CREDITS},
+		{"seat": 2, "team": 2, "controller": second_controller, "credits": START_CREDITS}]
+	var sim = MapData.create(_default_map(), seats)
 	if with_match: sim.start_match([1, 2] as Array[int])
 	return sim
 
 static func issue_opponent(sim: RefCounted, player: int = 2, attack_tick: int = ATTACK_TICK) -> void:
+	issue_opponents(sim, [player], attack_tick)
+
+static func issue_opponents(sim: RefCounted, players: Array[int], attack_tick: int = ATTACK_TICK) -> void:
 	if sim.tick() % DECISION_TICKS != 0: return
+	var zone: int = Profiler.begin()
 	var state: Dictionary = sim.snapshot()
+	for player in players: _decide(sim, player, attack_tick, state)
+	Profiler.end(&"opponent.decide", zone)
+
+static func _decide(sim: RefCounted, player: int, attack_tick: int, state: Dictionary) -> void:
 	var sequence: int = -1
 	for entry in state.last_sequences:
 		if entry.player == player: sequence = entry.sequence
 	var credits: int = 0
 	for entry in state.players:
 		if entry.id == player: credits = entry.credits
-	var ctx := {"sim": sim, "player": player, "tick": state.tick, "sequence": sequence, "credits": credits}
+	var teams := {}
+	for entry in state.players: teams[entry.id] = entry.team
+	var ctx := {"sim": sim, "player": player, "tick": state.tick, "sequence": sequence, "credits": credits, "teams": teams}
 	var buildings: Array = state.buildings.filter(func(building: Dictionary) -> bool: return building.owner == player)
 	_build(ctx, state, buildings)
 	_produce(ctx, buildings)
@@ -68,7 +84,7 @@ static func _build(ctx: Dictionary, state: Dictionary, buildings: Array) -> void
 	for kind in BUILD_ORDER:
 		if buildings.any(func(building: Dictionary) -> bool: return building.kind == kind): continue
 		var cost: int = Definitions.building(kind).cost
-		var site: Vector2i = origin(kind, ctx.player)
+		var site: Vector2i = _slot(ctx.sim, kind, ctx.player)
 		if ctx.credits >= cost and _send(ctx, {"type": "build", "builder_id": builder, "building_kind": kind, "origin": [site.x, site.y]}): ctx.credits -= cost
 		return
 
@@ -79,8 +95,8 @@ static func _produce(ctx: Dictionary, buildings: Array) -> void:
 		if ctx.credits >= cost and _send(ctx, {"type": "produce", "building_id": building.id, "unit_kind": UNIT_FOR[building.kind]}): ctx.credits -= cost
 
 static func _attack(ctx: Dictionary, state: Dictionary, skip: Dictionary = {}) -> void:
-	var enemies: Array = state.entities.filter(func(unit: Dictionary) -> bool: return unit.owner != ctx.player and unit.kind != "collector")
-	enemies.append_array(state.buildings.filter(func(building: Dictionary) -> bool: return building.owner != ctx.player))
+	var enemies: Array = state.entities.filter(func(unit: Dictionary) -> bool: return _hostile(ctx, unit.owner) and unit.kind != "collector")
+	enemies.append_array(state.buildings.filter(func(building: Dictionary) -> bool: return _hostile(ctx, building.owner)))
 	var groups := {}
 	for unit in state.entities:
 		if unit.owner != ctx.player or skip.has(unit.id) or not _idle(unit): continue
@@ -92,12 +108,15 @@ static func _attack(ctx: Dictionary, state: Dictionary, skip: Dictionary = {}) -
 	targets.sort()
 	for target in targets: _send(ctx, {"type": "attack", "entity_ids": groups[target], "target_id": target})
 
+static func _hostile(ctx: Dictionary, owner: int) -> bool:
+	return owner != ctx.player and ctx.teams.get(owner, 0) != ctx.teams.get(ctx.player, -1)
+
 static func _idle(unit: Dictionary) -> bool:
 	return unit.combat != null and unit.combat.mode == "guard" and unit.combat.target_id == null
 
 static func _defend(ctx: Dictionary, state: Dictionary, buildings: Array) -> Dictionary:
 	var intruders: Array = state.entities.filter(func(unit: Dictionary) -> bool:
-		if unit.owner == ctx.player or unit.kind == "collector": return false
+		if not _hostile(ctx, unit.owner) or unit.kind == "collector": return false
 		var at := Vector2(unit.position[0], unit.position[1])
 		return buildings.any(func(building: Dictionary) -> bool: return Combat.distance_squared(at, building) <= DEFENCE_RADIUS * DEFENCE_RADIUS))
 	var sent := {}

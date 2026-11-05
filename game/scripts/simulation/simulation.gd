@@ -6,15 +6,20 @@ const Construction = preload("res://scripts/simulation/construction.gd")
 const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
 const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
 const Combat = preload("res://scripts/simulation/combat.gd")
+const Locomotion = preload("res://scripts/simulation/locomotion.gd")
 const Allocation = preload("res://scripts/simulation/destination_allocation.gd")
 const Navigation = preload("res://scripts/simulation/grid_navigation.gd")
+const Profiler = preload("res://scripts/debug/profiler.gd")
 const PATH_REQUESTS_PER_TICK: int = 8
+const START_DELAY_TICKS: int = 2
 var _navigation: RefCounted
 
 var _players: Dictionary = {}
 var _buildings: Dictionary = {}
 var _sources: Dictionary = {}
 var _terrain_cells: Array[Vector2i] = []
+var _terrain_cache: Array = []
+var _terrain_cached: bool = false
 var _command_results: Array[Dictionary] = []
 var _next_production_id: int = 1
 var _tick: int = 0
@@ -31,38 +36,65 @@ var _scan_chases: int = 0
 var _retaliations: int = 0
 var _allocation_calls: int = 0
 var _navigation_builds: int = 0
+var _navigation_local: int = 0
+var _map: Dictionary = {}
+const RNG_SEED: int = 0x2545F491
+var _rng: int = RNG_SEED
 
 func _init(blocked_cells: Array[Vector2i] = [], size: Vector2i = Navigation.SIZE) -> void:
 	_navigation = Navigation.new(blocked_cells, size)
 	for cell in _navigation.snapshot().blocked_cells:
 		_terrain_cells.append(Vector2i(cell[0],cell[1]))
 
-func add_player(player: int, credits: int, controller: String = "human") -> Dictionary:
+func next_random() -> int:
+	var x: int = _rng
+	x ^= (x << 13) & 0xFFFFFFFF
+	x ^= x >> 17
+	x ^= (x << 5) & 0xFFFFFFFF
+	_rng = x
+	return x
+
+func map_data() -> Dictionary:
+	return _map
+
+func add_player(player: int, credits: int, controller: String = "human", team: int = 0) -> Dictionary:
 	if controller != "human" and controller != "ai": return {"ok": false, "error": "Invalid controller"}
-	if player <= 0 or credits < 0 or _players.has(player):
+	if player <= 0 or credits < 0 or _players.has(player) or team < 0:
 		return {"ok": false, "error": "Invalid or duplicate player"}
-	_players[player] = {"id":player,"credits":credits,"controller":controller}
+	_players[player] = {"id":player,"credits":credits,"controller":controller,"team":team if team > 0 else player}
 	return {"ok":true,"error":""}
 
-func spawn(owner: int, position: Vector2, kind: String = "vehicle") -> int:
+func team_of(player: int) -> int:
+	return _players[player].team if _players.has(player) else 0
+
+func spawn(owner: int, position: Vector2, kind: String = "vehicle", occupied: Variant = null) -> int:
 	if Definitions.unit(kind).is_empty() or owner <= 0 or not _in_bounds(position) or (kind != "collector" and not _navigation.is_walkable(position)):
 		return -1
 	var cell := Vector2i(position.floor())
-	for unit in _entities.values():
-		if kind == "collector" or unit.kind == "collector": continue
-		if _cell(unit.position) == cell or (unit.destination != null and _cell(unit.destination) == cell):
-			return -1
+	if kind != "collector" and (occupied if occupied != null else occupied_cells()).has(cell): return -1
 	var id: int = _next_entity_id
-	_entities[id] = {"id": id, "owner": owner, "position": [position.x, position.y], "order": null, "status": "idle", "route": [], "destination": null, "kind":kind,"hp":CombatDefinitions.profile(kind).max_hp,"max_hp":CombatDefinitions.profile(kind).max_hp,"combat":CombatDefinitions.initial_combat(kind),"construction_id":null,"collection": {"enabled":false,"preferred_source_id":null,"target_id":null,"phase":"idle","remaining_ticks":0,"retry_tick":0,"cargo":0} if kind == "collector" else null}
+	_entities[id] = {"id": id, "owner": owner, "position": [position.x, position.y], "order": null, "status": "idle", "route": [], "destination": null, "kind":kind,"hp":CombatDefinitions.profile(kind).max_hp,"max_hp":CombatDefinitions.profile(kind).max_hp,"combat":CombatDefinitions.initial_combat(kind),"speed":0.0,"move_after":0,"heading":[1.0,0.0],"construction_id":null,"collection": {"enabled":false,"preferred_source_id":null,"target_id":null,"phase":"idle","remaining_ticks":0,"retry_tick":0,"cargo":0} if kind == "collector" else null}
 	_next_entity_id += 1
 	return id
+
+func occupied_cells() -> Dictionary:
+	var cells: Dictionary = {}
+	for unit in _entities.values():
+		if unit.kind == "collector": continue
+		cells[_cell(unit.position)] = true
+		if unit.destination != null: cells[_cell(unit.destination)] = true
+	return cells
 
 func start_match(players: Array[int]) -> Dictionary:
 	var ids: Array[int] = players.duplicate()
 	ids.sort()
-	if _match != null or ids.size() != 2 or ids[0] == ids[1] or ids[0] <= 0: return {"ok":false,"error":"Invalid match players"}
-	for id in ids:
-		if not _players.has(id) or not _survives(id): return {"ok":false,"error":"Player cannot start a match"}
+	if _match != null or ids.size() < 2 or ids.size() > 8 or ids[0] <= 0: return {"ok":false,"error":"Invalid match players"}
+	var teams: Dictionary = {}
+	for i in ids.size():
+		if i > 0 and ids[i] == ids[i - 1]: return {"ok":false,"error":"Invalid match players"}
+		if not _players.has(ids[i]) or not _survives(ids[i]): return {"ok":false,"error":"Player cannot start a match"}
+		teams[team_of(ids[i])] = true
+	if teams.size() < 2: return {"ok":false,"error":"Invalid match players"}
 	_match = {"players":ids,"status":"ongoing","winner":null,"ended_tick":null}
 	return {"ok":true,"error":""}
 
@@ -74,12 +106,12 @@ func _survives(player: int) -> bool:
 	return false
 
 func _evaluate_match() -> void:
-	var alive: Array[int] = []
+	var alive: Dictionary = {}
 	for player in _match.players:
-		if _survives(player): alive.append(player)
-	if alive.size() == 2: return
+		if _survives(player): alive[team_of(player)] = true
+	if alive.size() > 1: return
 	_match.status = "draw" if alive.is_empty() else "won"
-	_match.winner = alive[0] if alive.size() == 1 else null
+	_match.winner = alive.keys()[0] if alive.size() == 1 else null
 	_match.ended_tick = _tick
 
 func match_over() -> bool:
@@ -318,13 +350,18 @@ func _assign_move(members: Array[Dictionary], target: Array) -> void:
 	for unit in members:
 		if unit.kind != "collector": ground.append(unit)
 	_allocation_calls += 1
-	var goals: Dictionary = Allocation.assign(_navigation, ground, point, _unavailable_cells(ground))
+	var zone: int = Profiler.begin()
+	var unavailable: Array[Vector2i] = _unavailable_cells(ground)
+	Profiler.end(&"assign_move.unavailable", zone)
+	zone = Profiler.begin()
+	var goals: Dictionary = Allocation.assign(_navigation, ground, point, unavailable)
+	Profiler.end(&"allocation.assign", zone)
 	for unit in members:
 		unit.route = []
 		if unit.kind == "collector":
 			unit.order = {"type":"move","target":target.duplicate()}
 			unit.destination = target.duplicate()
-			unit.route = [target.duplicate()]
+			unit.route = [_frozen(target.duplicate())]
 			unit.status = "moving"
 			continue
 		if goals[unit.id] == null:
@@ -356,7 +393,9 @@ func _stop_unit(unit: Dictionary) -> void:
 func _service_paths() -> void:
 	for i in range(mini(PATH_REQUESTS_PER_TICK, _path_queue.size())):
 		var id: int = _path_queue.pop_front()
+		var zone: int = Profiler.begin()
 		_assign_route(_entities[id])
+		Profiler.end(&"route", zone)
 
 func combat_work() -> int:
 	return _combat_work
@@ -370,6 +409,9 @@ func retaliations() -> int:
 func navigation_builds() -> int:
 	return _navigation_builds
 
+func navigation_local_updates() -> int:
+	return _navigation_local
+
 func tick() -> int:
 	return _tick
 
@@ -378,51 +420,93 @@ func allocation_calls() -> int:
 
 func step() -> void:
 	if match_over(): return
+	var total: int = Profiler.begin()
 	_command_results.clear()
 	_combat_events.clear()
 	_combat_work = 0
 	_scan_chases = 0
 	_retaliations = 0
 	_allocation_calls = 0
+	var zone: int = Profiler.begin()
 	_apply_orders()
+	Profiler.end(&"step.apply_orders", zone)
+	zone = Profiler.begin()
 	var ids: Array[int] = []
 	ids.assign(_entities.keys())
 	ids.sort()
 	var armed: Array[int] = []
 	for id in ids:
 		if _entities[id].combat != null: armed.append(id)
+	Profiler.end(&"step.ids", zone)
+	zone = Profiler.begin()
 	Combat.plan(self,armed)
+	Profiler.end(&"step.combat_plan", zone)
+	zone = Profiler.begin()
 	var rates: Dictionary = {}
 	for player in _player_snapshots(): rates[player.id] = player.work_rate
+	Profiler.end(&"step.rates", zone)
+	zone = Profiler.begin()
 	Construction.step(self,rates)
+	Profiler.end(&"step.construction", zone)
+	zone = Profiler.begin()
 	Production.step(self,rates)
+	Profiler.end(&"step.production", zone)
+	zone = Profiler.begin()
 	Supply.step(self,ids)
+	Profiler.end(&"step.supply", zone)
+	zone = Profiler.begin()
 	_service_paths()
+	Profiler.end(&"step.service_paths", zone)
+	zone = Profiler.begin()
 	var before: Dictionary = {}
 	for id in armed: before[id] = _entities[id].position
 	for id in ids:
-		if _entities[id].status == "moving":
-			_advance(_entities[id])
+		var unit: Dictionary = _entities[id]
+		if unit.status == "moving": _advance(unit)
+		elif unit.status != "path_pending": unit.speed = 0.0
 	var moved: Array[int] = []
 	for id in armed:
 		if _entities[id].position != before[id]: moved.append(id)
+	Profiler.end(&"step.advance", zone)
+	zone = Profiler.begin()
 	Combat.fire(self,armed,moved)
+	Profiler.end(&"step.combat_fire", zone)
+	zone = Profiler.begin()
 	if _match != null: _evaluate_match()
+	Profiler.end(&"step.evaluate_match", zone)
 	_tick += 1
+	Profiler.end(&"step", total)
 
 func _assign_route(unit: Dictionary) -> void:
 	var from := Vector2(unit.position[0], unit.position[1])
 	var to := Vector2(unit.destination[0], unit.destination[1])
 	unit.route = []
 	for point in _navigation.route(from, to):
-		unit.route.append([point.x, point.y])
+		unit.route.append(_frozen([point.x, point.y]))
+	if unit.route.size() > 1 and _behind(from, unit.route[0], unit.route[1]): unit.route.pop_front()
 	unit.status = "blocked" if unit.route.is_empty() else "moving"
+	if unit.status == "moving" and unit.speed == 0.0: unit.move_after = _tick + START_DELAY_TICKS
 	if unit.status == "blocked":
 		unit.order = null
 		unit.destination = null
 
+func _behind(from: Vector2, first: Array, second: Array) -> bool:
+	return (first[0] - from.x) * (second[0] - first[0]) + (first[1] - from.y) * (second[1] - first[1]) < 0.0
+
+# Snapshots share route arrays, so waypoints are read-only and the route is replaced, never edited, once it is shared.
+static func _frozen(waypoint: Array) -> Array:
+	waypoint.make_read_only()
+	return waypoint
+
+func _entity_copy(unit: Dictionary) -> Dictionary:
+	var copy: Dictionary = unit.duplicate()
+	for key in copy:
+		if key != "route" and (copy[key] is Array or copy[key] is Dictionary): copy[key] = copy[key].duplicate(true)
+	if not unit.route.is_read_only(): unit.route.make_read_only()
+	return copy
+
 func _advance(unit: Dictionary) -> void:
-	var remaining: float = Definitions.unit(unit.kind).speed / 30.0
+	var remaining: float = Locomotion.step(unit, Definitions.unit(unit.kind), _tick)
 	var x: float = unit.position[0]
 	var y: float = unit.position[1]
 	while not unit.route.is_empty():
@@ -434,7 +518,7 @@ func _advance(unit: Dictionary) -> void:
 			x = waypoint[0]
 			y = waypoint[1]
 			remaining = maxf(0.0, remaining - distance)
-			unit.route.pop_front()
+			unit.route = unit.route.slice(1)
 		else:
 			x += dx / distance * remaining
 			y += dy / distance * remaining
@@ -442,14 +526,21 @@ func _advance(unit: Dictionary) -> void:
 	unit.position = [x, y]
 	if unit.route.is_empty():
 		unit.order = null
+		unit.speed = 0.0
 		unit.status = "arrived"
 
 func snapshot() -> Dictionary:
+	var zone: int = Profiler.begin()
+	var result: Dictionary = _snapshot()
+	Profiler.end(&"snapshot", zone)
+	return result
+
+func _snapshot() -> Dictionary:
 	var entities: Array = []
 	var ids: Array = _entities.keys()
 	ids.sort()
 	for id in ids:
-		entities.append(_entities[id].duplicate(true))
+		entities.append(_entity_copy(_entities[id]))
 	var pending: Array = _pending.duplicate(true)
 	pending.sort_custom(_command_before)
 	var sequences: Array = []
@@ -458,7 +549,7 @@ func snapshot() -> Dictionary:
 	for player in players:
 		sequences.append({"player": player, "sequence": _last_sequences[player]})
 	return {"tick": _tick, "next_entity_id": _next_entity_id, "entities": entities,
-		"pending_commands": pending, "last_sequences": sequences, "map": _navigation.snapshot(), "path_queue": _path_queue.duplicate(), "players":_player_snapshots(),"buildings":_sorted_copies(_buildings),"sources":_sorted_copies(_sources),"terrain_cells":_terrain_snapshot(),"next_production_id":_next_production_id,"command_results":_command_results.duplicate(true),"combat_events":_combat_events.duplicate(true),"match":_match.duplicate(true) if _match != null else null}
+		"pending_commands": pending, "last_sequences": sequences, "map": _navigation.snapshot(), "path_queue": _path_queue.duplicate(), "players":_player_snapshots(true),"buildings":_sorted_copies(_buildings),"sources":_sorted_copies(_sources),"terrain_cells":_terrain_snapshot(),"next_production_id":_next_production_id,"command_results":_command_results.duplicate(true),"combat_events":_combat_events.duplicate(true),"match":_match.duplicate(true) if _match != null else null,"rng":_rng}
 
 func replace_blocked_cells(cells: Array[Vector2i]) -> Dictionary:
 	var size: Array = _navigation.snapshot().size
@@ -475,6 +566,7 @@ func replace_blocked_cells(cells: Array[Vector2i]) -> Dictionary:
 	for cell in cells: unique[cell] = true
 	_terrain_cells.assign(unique.keys())
 	_terrain_cells.sort_custom(func(a: Vector2i,b: Vector2i) -> bool: return a.y < b.y or (a.y == b.y and a.x < b.x))
+	_terrain_cached = false
 	return _replace_union(_union_cells())
 
 func _replace_union(cells: Array[Vector2i], prebuilt: RefCounted = null) -> Dictionary:
@@ -482,8 +574,9 @@ func _replace_union(cells: Array[Vector2i], prebuilt: RefCounted = null) -> Dict
 	if prebuilt != null:
 		_navigation = prebuilt
 	else:
-		_navigation_builds += 1
-		_navigation.replace_blocked_cells(cells)
+		var how: String = _navigation.replace_blocked_cells(cells)
+		if how == "full": _navigation_builds += 1
+		elif how == "local": _navigation_local += 1
 	if _navigation.snapshot() == map:
 		return {"ok": true, "error": ""}
 	_path_queue.clear()
@@ -500,6 +593,7 @@ func _replace_union(cells: Array[Vector2i], prebuilt: RefCounted = null) -> Dict
 		if not _navigation.is_walkable(destination) or _navigation.component_at(position) != _navigation.component_at(destination):
 			unit.order = null
 			unit.destination = null
+			unit.speed = 0.0
 			unit.status = "blocked"
 		else:
 			unit.status = "path_pending"
@@ -514,7 +608,7 @@ func _sorted_copies(records: Dictionary) -> Array:
 		result.append(records[id].duplicate(true))
 	return result
 
-func _player_snapshots() -> Array:
+func _player_snapshots(with_alive: bool = false) -> Array:
 	var result: Array = _sorted_copies(_players)
 	for player in result:
 		player.power_supply = 0
@@ -525,13 +619,20 @@ func _player_snapshots() -> Array:
 			if power > 0: player.power_supply += power
 			else: player.power_demand -= power
 		player.work_rate = Definitions.work_rate(player.power_supply,player.power_demand)
+		if with_alive: player.alive = _survives(player.id)
 	return result
 
 func _terrain_snapshot() -> Array:
-	var result: Array = []
-	for cell in _terrain_cells:
-		result.append([cell.x,cell.y])
-	return result
+	if not _terrain_cached:
+		var result: Array = []
+		for cell in _terrain_cells:
+			var pair: Array = [cell.x,cell.y]
+			pair.make_read_only()
+			result.append(pair)
+		result.make_read_only()
+		_terrain_cache = result
+		_terrain_cached = true
+	return _terrain_cache
 
 func _in_bounds(point: Vector2) -> bool:
 	var size: Array = _navigation.snapshot().size

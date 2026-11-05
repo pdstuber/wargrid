@@ -2,6 +2,10 @@ extends Node2D
 
 const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
+const Profiler = preload("res://scripts/debug/profiler.gd")
+const DEPTH_SCALE := 1024.0
+const INDEX_BITS := 20
+const INDEX_MASK := (1 << 20) - 1
 var _preview_cells: Array[Vector2i] = []
 var _preview_valid: bool = false
 var _state: Dictionary = {}
@@ -21,11 +25,17 @@ static func hp_fraction(hp: int, max_hp: int) -> float:
 	return clampf(float(hp) / float(max_hp), 0.0, 1.0) if max_hp > 0 else 1.0
 
 func set_state(state: Dictionary, selected_ids: Array[int]) -> void:
-	_state = state.duplicate(true)
+	var zone: int = Profiler.begin()
+	_state = state.duplicate()
+	Profiler.end(&"view.copy", zone)
 	_selected_ids = selected_ids.duplicate()
 	_prune_hints()
-	_state.get("entities", []).sort_custom(_draw_before)
+	zone = Profiler.begin()
+	if _state.has("entities"): _state.entities = _depth_sorted(state.entities)
+	Profiler.end(&"view.sort", zone)
+	zone = Profiler.begin()
 	_remember_points()
+	Profiler.end(&"view.points", zone)
 	queue_redraw()
 
 func add_hint(point: Vector2, tick: int) -> void:
@@ -67,6 +77,16 @@ func _vehicle_bounds(unit: Dictionary) -> Rect2:
 	var half: float = {"infantry": 6.0, "tank": 15.0}.get(unit.get("kind"), 12.0)
 	return Rect2(Iso.world_to_plane(point) + Vector2(-half, -34 if unit.get("kind") == "collector" else -16), Vector2(half * 2.0, 16))
 
+func heading_marks() -> Array[Dictionary]:
+	var marks: Array[Dictionary] = []
+	for unit in _state.get("entities", []):
+		if unit.get("kind") == "collector": continue
+		var point := Vector2(unit.position[0], unit.position[1])
+		var direction: Vector2 = (Iso.world_to_plane(point + Vector2(unit.heading[0], unit.heading[1])) - Iso.world_to_plane(point)).normalized()
+		var from: Vector2 = _vehicle_bounds(unit).get_center()
+		marks.append({"id": unit.id, "from": from, "to": from + direction * 5.0})
+	return marks
+
 func pick_target(plane_point: Vector2, own: int) -> int:
 	for i in range(_state.get("entities", []).size() - 1, -1, -1):
 		var unit: Dictionary = _state.entities[i]
@@ -88,7 +108,11 @@ func pick_entity(plane_point: Vector2, any_owner: bool = false) -> int:
 func _draw() -> void:
 	if not _state.has("map"):
 		return
+	var total: int = Profiler.begin()
+	var zone: int = Profiler.begin()
 	_draw_terrain()
+	Profiler.end(&"draw.terrain", zone)
+	zone = Profiler.begin()
 	for source in _state.get("sources",[]):
 		_draw_footprint(source.origin,Vector2i(3,3),Color("9f8045"),_selected_ids.has(source.id))
 		var lines: PackedStringArray = pile_lines(source)
@@ -101,6 +125,8 @@ func _draw() -> void:
 		_draw_footprint(building.origin,definition.footprint,tint.lerp(Color("687b8c"),0.4) if building.completed else tint.lerp(Color("887966"),0.6),_selected_ids.has(building.id))
 		_draw_text(building.origin,building_label(building))
 		_draw_health(Iso.world_to_plane(Vector2(building.origin[0],building.origin[1]) + Vector2(definition.footprint) / 2.0) + Vector2(-16,-26),building,_selected_ids.has(building.id))
+	Profiler.end(&"draw.structures", zone)
+	zone = Profiler.begin()
 	for cell in _preview_cells:
 		_draw_footprint([cell.x,cell.y],Vector2i.ONE,Color(0.2,0.9,0.3,0.55) if _preview_valid else Color(0.9,0.2,0.2,0.55),false)
 	for unit in _state.get("entities",[]):
@@ -115,12 +141,17 @@ func _draw() -> void:
 			var point: Vector2 = Iso.world_to_plane(target)
 			draw_line(point - Vector2(6, 0), point + Vector2(6, 0), Color("8cff87"), 2.0)
 			draw_line(point - Vector2(0, 6), point + Vector2(0, 6), Color("8cff87"), 2.0)
+	for mark in heading_marks(): draw_line(mark.from, mark.to, Color.WHITE, 2.0)
+	Profiler.end(&"draw.units", zone)
+	zone = Profiler.begin()
 	_draw_focus()
 	_draw_inspected()
 	_draw_resume_outline()
 	_draw_rally()
 	_draw_hints()
 	_draw_cues()
+	Profiler.end(&"draw.overlays", zone)
+	Profiler.end(&"draw", total)
 
 func _draw_health(top_left: Vector2, object: Dictionary, selected: bool) -> void:
 	if not object.has("hp") or (not selected and object.hp >= object.max_hp): return
@@ -237,10 +268,20 @@ func _cell_polygon(origin: Vector2, size: Vector2) -> PackedVector2Array:
 	return PackedVector2Array([Iso.world_to_plane(origin), Iso.world_to_plane(origin + Vector2(size.x, 0)),
 		Iso.world_to_plane(origin + size), Iso.world_to_plane(origin + Vector2(0, size.y))])
 
-func _draw_before(a: Dictionary, b: Dictionary) -> bool:
-	var depth_a: float = a.position[0] + a.position[1]
-	var depth_b: float = b.position[0] + b.position[1]
-	return a.id < b.id if depth_a == depth_b else depth_a < depth_b
+# Input is in id order (snapshot order), so equal depths keep id order like the old comparator.
+func _depth_sorted(entities: Array) -> Array:
+	assert(entities.size() <= INDEX_MASK)
+	var keys := PackedInt64Array()
+	keys.resize(entities.size())
+	for i in range(entities.size()):
+		var unit: Dictionary = entities[i]
+		keys[i] = (int(floor((float(unit.position[0]) + float(unit.position[1])) * DEPTH_SCALE)) << INDEX_BITS) | i
+	keys.sort()
+	var sorted: Array = []
+	sorted.resize(entities.size())
+	for i in range(keys.size()):
+		sorted[i] = entities[keys[i] & INDEX_MASK]
+	return sorted
 
 func pick_entities(plane_rect: Rect2) -> Array[int]:
 	var rect := plane_rect.abs()

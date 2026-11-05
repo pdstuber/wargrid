@@ -2,7 +2,13 @@ extends RefCounted
 
 const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
 const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
+const Profiler = preload("res://scripts/debug/profiler.gd")
 const REPATH_TICKS: int = 8
+# Zero Hour fires at range - 0.1 cells measured edge to edge; EDGE_EPS absorbs float noise at the boundary.
+const RANGE_SLACK: float = 0.1
+const EDGE_EPS: float = 1e-6
+# Largest building radius (3x3 footprint), bounds the nearest-target grid window.
+const MAX_TARGET_RADIUS: float = 2.2
 # Fixed in ticks: a shorter wait lets attack_move dither at a wall (U1, cadence 8 vs 15).
 const UNREACHABLE_BACKOFF_TICKS: int = 60
 
@@ -10,9 +16,15 @@ static func record(sim: RefCounted, id: int) -> Dictionary:
 	if sim._entities.has(id): return sim._entities[id]
 	return sim._buildings.get(id, {})
 
+static func hostile(sim: RefCounted, a: int, b: int) -> bool:
+	if a == b: return false
+	var team_a: int = sim.team_of(a)
+	var team_b: int = sim.team_of(b)
+	return team_a == 0 or team_b == 0 or team_a != team_b
+
 static func valid_target(sim: RefCounted, owner: int, target_id: int) -> bool:
 	var target: Dictionary = record(sim, target_id)
-	return not target.is_empty() and target.owner != owner and target.kind != "collector"
+	return not target.is_empty() and hostile(sim, owner, target.owner) and target.kind != "collector"
 
 static func distance_squared(position: Vector2, target: Dictionary) -> float:
 	if not target.has("origin"):
@@ -20,6 +32,17 @@ static func distance_squared(position: Vector2, target: Dictionary) -> float:
 	var size: Vector2i = Definitions.building(target.kind).footprint
 	var nearest := Vector2(clampf(position.x, target.origin[0], target.origin[0] + size.x), clampf(position.y, target.origin[1], target.origin[1] + size.y))
 	return position.distance_squared_to(nearest)
+
+static func edge_gap(unit: Dictionary, target: Dictionary) -> float:
+	return _gap_at(unit.position[0], unit.position[1], unit.kind, target)
+
+static func _gap_at(x: float, y: float, kind: String, target: Dictionary) -> float:
+	var cx: float = target.position[0] if not target.has("origin") else target.origin[0] + Definitions.building(target.kind).footprint.x * 0.5
+	var cy: float = target.position[1] if not target.has("origin") else target.origin[1] + Definitions.building(target.kind).footprint.y * 0.5
+	return _gap_between(x - cx, y - cy, CombatDefinitions.radius(kind), CombatDefinitions.radius(target.kind))
+
+static func _gap_between(dx: float, dy: float, radius_a: float, radius_b: float) -> float:
+	return maxf(0.0, sqrt(dx * dx + dy * dy) - radius_a - radius_b)
 
 # Source: retail AIData.ini GuardOuterModifierHuman / GuardOuterModifierAI.
 const GUARD_OUTER_HUMAN: float = 2.2
@@ -42,17 +65,19 @@ static func scan_radius(sim: RefCounted, unit: Dictionary) -> float:
 static var _reach_by_kind: Dictionary = {}
 
 static func _reach(kind: String) -> float:
-	if not _reach_by_kind.has(kind): _reach_by_kind[kind] = CombatDefinitions.weapon(CombatDefinitions.profile(kind).weapon).range
+	if not _reach_by_kind.has(kind): _reach_by_kind[kind] = CombatDefinitions.weapon(CombatDefinitions.profile(kind).weapon).range - RANGE_SLACK
 	return _reach_by_kind[kind]
 
 static func _in_range(sim: RefCounted, unit: Dictionary, target: Dictionary) -> bool:
 	sim._combat_work += 1
-	var reach: float = _reach(unit.kind)
-	return distance_squared(Vector2(unit.position[0], unit.position[1]), target) <= reach * reach
+	return _reaches(unit, target)
+
+static func _reaches(unit: Dictionary, target: Dictionary) -> bool:
+	return edge_gap(unit, target) <= _reach(unit.kind) + EDGE_EPS
 
 static func plan(sim: RefCounted, unit_ids: Array[int]) -> void:
 	var grid_box := {"ready": false, "grid": {}}
-	var held := {"ready": false, "cells": {}}
+	var held := {"ready": false, "cells": {}, "rings": {}}
 	for unit_id in unit_ids:
 		var unit: Dictionary = sim._entities[unit_id]
 		if unit.combat.mode == "move" and unit.status != "moving" and unit.status != "path_pending": unit.combat.mode = "guard"
@@ -67,15 +92,18 @@ static func plan(sim: RefCounted, unit_ids: Array[int]) -> void:
 		var combat: Dictionary = unit.combat
 		var kept: Dictionary = record(sim, combat.target_id) if combat.target_id != null else {}
 		var human: bool = not is_ai(sim, unit.owner)
-		if not kept.is_empty() and kept.owner != unit.owner and human and _left_range(unit, kept, mode):
+		if not kept.is_empty() and hostile(sim, unit.owner, kept.owner) and human and _left_range(unit, kept, mode):
 			combat.retarget = mode == "attack_move"
 			kept = {}
-		if kept.is_empty() or kept.owner == unit.owner:
+		if kept.is_empty() or not hostile(sim, unit.owner, kept.owner):
 			combat.target_id = null
 			if sim._tick >= combat.repath_tick or combat.retarget:
-				combat.target_id = _nearest(sim, unit, _grid(sim, grid_box), _scan_radius_for(sim, unit, human))
+				var grid: Dictionary = _grid(sim, grid_box)
+				var zone: int = Profiler.begin()
+				combat.target_id = _nearest(sim, unit, grid, _scan_radius_for(sim, unit, human), false, human and not unit.combat.retarget)
+				Profiler.end(&"combat.nearest", zone)
 				combat.retarget = false
-				if combat.target_id != null and not _within(unit, record(sim, combat.target_id), _reach(unit.kind)): sim._scan_chases += 1
+				if combat.target_id != null and not _reaches(unit, record(sim, combat.target_id)): sim._scan_chases += 1
 				if combat.target_id == null: combat.repath_tick = sim._tick + REPATH_TICKS - (sim._tick + unit.id) % REPATH_TICKS
 		if combat.target_id == null:
 			_end_chase(sim, unit)
@@ -101,7 +129,9 @@ static func plan(sim: RefCounted, unit_ids: Array[int]) -> void:
 
 static func _grid(sim: RefCounted, box: Dictionary) -> Dictionary:
 	if not box.ready:
+		var zone: int = Profiler.begin()
 		box.grid = _build_grid(sim)
+		Profiler.end(&"combat.build_grid", zone)
 		box.ready = true
 	return box.grid
 
@@ -111,13 +141,10 @@ static func _scan_radius_for(sim: RefCounted, unit: Dictionary, human: bool) -> 
 # An attack-move approach has no leash; only a halted (firing) unit drops a target that left weapon range.
 static func _left_range(unit: Dictionary, target: Dictionary, mode: String) -> bool:
 	if mode == "attack_move" and unit.status != "idle": return false
-	return not _within(unit, target, _reach(unit.kind))
+	return not _reaches(unit, target)
 
 static func _scan_reach(sim: RefCounted, unit: Dictionary) -> float:
 	return maxf(scan_radius(sim, unit), _reach(unit.kind))
-
-static func _within(unit: Dictionary, target: Dictionary, radius: float) -> bool:
-	return distance_squared(Vector2(unit.position[0], unit.position[1]), target) <= radius * radius
 
 static func _engage(sim: RefCounted, unit: Dictionary, target: Dictionary, held: Dictionary) -> void:
 	if _in_range(sim, unit, target):
@@ -149,12 +176,14 @@ static func _pursue(sim: RefCounted, unit: Dictionary, held: Dictionary) -> void
 static func _approach(sim: RefCounted, unit: Dictionary, target: Dictionary, held: Dictionary) -> void:
 	var combat: Dictionary = unit.combat
 	if sim._tick < combat.repath_tick: return
-	combat.repath_tick = sim._tick + REPATH_TICKS
+	combat.repath_tick = sim._tick + REPATH_TICKS - (sim._tick + unit.id) % REPATH_TICKS
 	var reach: float = _reach(unit.kind)
-	if unit.destination != null and (unit.status == "moving" or unit.status == "path_pending") and distance_squared(Vector2(unit.destination[0], unit.destination[1]), target) <= reach * reach: return
+	if unit.destination != null and (unit.status == "moving" or unit.status == "path_pending") and _gap_at(unit.destination[0], unit.destination[1], unit.kind, target) <= reach + EDGE_EPS: return
+	var zone: int = Profiler.begin()
 	if not held.ready: _hold_cells(sim, held)
 	var previous: Variant = sim._cell(unit.destination) if unit.destination != null else null
-	var goal: Variant = _firing_cell(sim, unit, target, reach, held.cells)
+	var goal: Variant = _firing_cell(sim, unit, target, reach, held)
+	Profiler.end(&"combat.firing_cell", zone)
 	if previous != null: held.cells.erase(previous)
 	sim._path_queue.erase(unit.id)
 	if goal == null:
@@ -178,27 +207,45 @@ static func _hold_cells(sim: RefCounted, held: Dictionary) -> void:
 static func _firing_cell(sim: RefCounted, unit: Dictionary, target: Dictionary, reach: float, held: Dictionary) -> Variant:
 	var position := Vector2(unit.position[0], unit.position[1])
 	var component: int = sim._navigation.component_at(position)
-	var low := Vector2(target.position[0], target.position[1]) if not target.has("origin") else Vector2(target.origin[0], target.origin[1])
-	var high := low
-	if target.has("origin"): high += Vector2(Definitions.building(target.kind).footprint)
 	var own: Vector2i = sim._cell(unit.position)
 	var own_goal: Variant = sim._cell(unit.destination) if unit.destination != null else null
 	var occupied: Vector2i = sim._cell(target.position) if not target.has("origin") else Vector2i(-1, -1)
 	var best: Variant = null
 	var best_distance: float = INF
-	for y in range(int(floorf(low.y - reach)), int(floorf(high.y + reach)) + 1):
-		for x in range(int(floorf(low.x - reach)), int(floorf(high.x + reach)) + 1):
-			var cell := Vector2i(x, y)
-			var center := Vector2(cell) + Vector2(0.5, 0.5)
-			sim._combat_work += 1
-			if cell == occupied or component < 0 or sim._navigation.component_at(center) != component: continue
-			if held.has(cell) and cell != own and cell != own_goal: continue
-			if distance_squared(center, target) > reach * reach: continue
-			var distance: float = position.distance_squared_to(center)
-			if best == null or distance < best_distance or (distance == best_distance and (cell.y < Vector2i(best.floor()).y or (cell.y == Vector2i(best.floor()).y and cell.x < Vector2i(best.floor()).x))):
-				best = center
-				best_distance = distance
+	var ring: Dictionary = _reach_ring(held.rings, unit.kind, target, reach)
+	sim._combat_work += ring.window_cells
+	for cell in ring.cells:
+		var center := Vector2(cell) + Vector2(0.5, 0.5)
+		var distance: float = position.distance_squared_to(center)
+		if best != null and distance > best_distance: continue
+		if cell == occupied or component < 0 or sim._navigation.component_at(center) != component: continue
+		if held.cells.has(cell) and cell != own and cell != own_goal: continue
+		if best == null or distance < best_distance or (distance == best_distance and (cell.y < Vector2i(best.floor()).y or (cell.y == Vector2i(best.floor()).y and cell.x < Vector2i(best.floor()).x))):
+			best = center
+			best_distance = distance
 	return best
+
+# Cells within weapon reach of the target for one attacker kind; shared by every attacker of that kind within a tick.
+static func _reach_ring(rings: Dictionary, kind: String, target: Dictionary, reach: float) -> Dictionary:
+	var by_kind: Dictionary = rings.get_or_add(target.id, {})
+	if by_kind.has(kind): return by_kind[kind]
+	var low := Vector2(target.position[0], target.position[1]) if not target.has("origin") else Vector2(target.origin[0], target.origin[1])
+	var high := low
+	if target.has("origin"): high += Vector2(Definitions.building(target.kind).footprint)
+	var unit_radius: float = CombatDefinitions.radius(kind)
+	var target_radius: float = CombatDefinitions.radius(target.kind)
+	var window: float = reach + unit_radius + target_radius
+	var cx: float = target.position[0] if not target.has("origin") else target.origin[0] + Definitions.building(target.kind).footprint.x * 0.5
+	var cy: float = target.position[1] if not target.has("origin") else target.origin[1] + Definitions.building(target.kind).footprint.y * 0.5
+	var limit: float = reach + EDGE_EPS
+	var cells: Array[Vector2i] = []
+	var examined: int = 0
+	for y in range(int(floorf(low.y - window)), int(floorf(high.y + window)) + 1):
+		for x in range(int(floorf(low.x - window)), int(floorf(high.x + window)) + 1):
+			examined += 1
+			if _gap_between(x + 0.5 - cx, y + 0.5 - cy, unit_radius, target_radius) <= limit: cells.append(Vector2i(x, y))
+	by_kind[kind] = {"cells": cells, "window_cells": examined}
+	return by_kind[kind]
 
 const GRID_CELL: int = 8
 
@@ -219,17 +266,19 @@ static func _bucket(grid: Dictionary, x: int, y: int, target: Dictionary) -> voi
 	if not grid.has(key): grid[key] = []
 	grid[key].append(target)
 
-static func _nearest(sim: RefCounted, unit: Dictionary, grid: Dictionary, radius: float, units_only: bool = false) -> Variant:
+# edge: radius is a weapon reach tested edge to edge; otherwise a centre scan radius.
+static func _nearest(sim: RefCounted, unit: Dictionary, grid: Dictionary, radius: float, units_only: bool = false, edge: bool = false) -> Variant:
 	var best: Variant = null
 	var best_distance: float = INF
 	var position := Vector2(unit.position[0], unit.position[1])
-	for y in range(int(floorf((position.y - radius) / GRID_CELL)), int(floorf((position.y + radius) / GRID_CELL)) + 1):
-		for x in range(int(floorf((position.x - radius) / GRID_CELL)), int(floorf((position.x + radius) / GRID_CELL)) + 1):
+	var window: float = radius + CombatDefinitions.radius(unit.kind) + MAX_TARGET_RADIUS if edge else radius
+	for y in range(int(floorf((position.y - window) / GRID_CELL)), int(floorf((position.y + window) / GRID_CELL)) + 1):
+		for x in range(int(floorf((position.x - window) / GRID_CELL)), int(floorf((position.x + window) / GRID_CELL)) + 1):
 			for target in grid.get(Vector2i(x, y), []):
-				if target.owner == unit.owner or (units_only and target.has("origin")): continue
+				if not hostile(sim, unit.owner, target.owner) or (units_only and target.has("origin")): continue
 				sim._combat_work += 1
-				var distance: float = distance_squared(position, target)
-				if distance > radius * radius: continue
+				var distance: float = edge_gap(unit, target) if edge else distance_squared(position, target)
+				if distance > (radius + EDGE_EPS if edge else radius * radius): continue
 				if distance < best_distance or (distance == best_distance and target.id < best):
 					best = target.id
 					best_distance = distance
@@ -246,22 +295,56 @@ static func fire(sim: RefCounted, unit_ids: Array[int], moved_ids: Array[int]) -
 		var combat: Dictionary = unit.combat
 		if combat.target_id == null or sim._tick < combat.next_fire_tick: continue
 		var target: Dictionary = record(sim, combat.target_id)
-		if target.is_empty() or target.owner == unit.owner or not _in_range(sim, unit, target): continue
+		if target.is_empty() or not hostile(sim, unit.owner, target.owner) or not _in_range(sim, unit, target): continue
 		var weapon: Dictionary = CombatDefinitions.weapon(CombatDefinitions.profile(unit.kind).weapon)
-		var amount: int = weapon.damage * CombatDefinitions.armor_percent(CombatDefinitions.profile(target.kind).armor, weapon.damage_type) / 100
-		shots.append({"type": "shot", "tick": sim._tick, "attacker_id": unit_id, "target_id": target.id, "damage": amount})
-		damage[target.id] = damage.get(target.id, 0) + amount
+		_hit(shots, damage, sim, unit_id, target, weapon, false)
+		if weapon.primary_radius > 0.0: _splash(shots, damage, sim, unit, target, weapon)
 		_reload(sim, combat, weapon)
 	sim._combat_events.append_array(shots)
 	var dead: Array = damage.keys().filter(func(id: int) -> bool: return record(sim, id).hp <= damage[id])
 	for id in damage:
 		var hit: Dictionary = record(sim, id)
 		hit.hp = maxi(0, hit.hp - damage[id])
+	var zone: int = Profiler.begin()
 	_retaliate_trigger(sim, shots)
+	Profiler.end(&"combat.retaliate", zone)
 	dead.sort()
 	for id in dead:
 		sim._combat_events.append({"type": "death", "tick": sim._tick, "object_id": id})
 		sim.remove_object(id)
+
+static func _hit(shots: Array[Dictionary], damage: Dictionary, sim: RefCounted, attacker_id: int, target: Dictionary, weapon: Dictionary, splash: bool) -> void:
+	var amount: int = weapon.damage * CombatDefinitions.armor_percent(CombatDefinitions.profile(target.kind).armor, weapon.damage_type) / 100
+	shots.append({"type": "shot", "tick": sim._tick, "attacker_id": attacker_id, "target_id": target.id, "damage": amount, "splash": splash})
+	damage[target.id] = damage.get(target.id, 0) + amount
+
+# Against infantry the shell lands at a seeded point (uniform angle and radius) and blasts a wider radius.
+static func _splash(shots: Array[Dictionary], damage: Dictionary, sim: RefCounted, unit: Dictionary, target: Dictionary, weapon: Dictionary) -> void:
+	var impact: Vector2 = _victim_centre(target)
+	var radius: float = weapon.primary_radius
+	if target.kind == "infantry":
+		impact += _scatter(sim) * CombatDefinitions.SCATTER_VS_INFANTRY * sim.next_random() / 4294967296.0
+		radius = CombatDefinitions.INFANTRY_BLAST
+	for victim in splash_victims(sim, impact, radius, weapon.affects, unit):
+		if victim.id != target.id: _hit(shots, damage, sim, unit.id, victim, weapon, true)
+
+static func _scatter(sim: RefCounted) -> Vector2:
+	while true:
+		var d := Vector2(sim.next_random() / 2147483648.0 - 1.0, sim.next_random() / 2147483648.0 - 1.0)
+		var squared: float = d.length_squared()
+		if squared > 1e-12 and squared <= 1.0: return d / sqrt(squared)
+	return Vector2.ZERO
+
+# shortcut: scans every object per cannon shot; grid it if cannon shots x objects shows in the ledger.
+static func splash_victims(sim: RefCounted, impact: Vector2, radius: float, affects: Array, attacker: Dictionary) -> Array[Dictionary]:
+	var victims: Array[Dictionary] = []
+	for pool in [sim._entities, sim._buildings]:
+		for victim in pool.values():
+			if victim.id == attacker.id or victim.kind == "collector": continue
+			if (_victim_centre(victim).distance_to(impact) - CombatDefinitions.radius(victim.kind)) > radius + EDGE_EPS: continue
+			if affects.has("enemies" if hostile(sim, attacker.owner, victim.owner) else "allies"): victims.append(victim)
+	victims.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.id < b.id)
+	return victims
 
 static func _reload(sim: RefCounted, combat: Dictionary, weapon: Dictionary) -> void:
 	if weapon.clip_size == 0:
@@ -304,7 +387,7 @@ static func _retaliate_trigger(sim: RefCounted, shots: Array[Dictionary]) -> voi
 	for shot in shots:
 		var victim: Dictionary = record(sim, shot.target_id)
 		var attacker: Dictionary = record(sim, shot.attacker_id)
-		if victim.is_empty() or attacker.is_empty() or is_ai(sim, victim.owner): continue
+		if victim.is_empty() or attacker.is_empty() or is_ai(sim, victim.owner) or not hostile(sim, victim.owner, attacker.owner): continue
 		if distance_squared(Vector2(attacker.position[0], attacker.position[1]), victim) > RETALIATION_DISTANCE * RETALIATION_DISTANCE: continue
 		if not built:
 			built = true

@@ -9,12 +9,12 @@ func cases() -> Array[Callable]:
 
 func test_definitions(runner) -> bool:
 	for row in [["reactor",800,300,5,Vector2i(2,2)], ["depot",2000,300,-1,Vector2i(3,3)], ["factory",2000,450,-1,Vector2i(3,3)]]:
-		var definition: Dictionary = Definitions.building(row[0])
+		var definition: Dictionary = Definitions.building(row[0]).duplicate()
 		runner.check(definition.get("cost") == row[1] and definition.get("ticks") == row[2] and definition.get("power") == row[3] and definition.get("footprint") == row[4], "E1 building " + row[0])
 		definition.cost = 1
 		runner.check(Definitions.building(row[0]).get("cost") == row[1], "E1 building copied")
 	for row in [["collector",1200,300,6.0,true], ["vehicle",700,300,3.0,false], ["builder",1000,150,1.2,false]]:
-		var definition: Dictionary = Definitions.unit(row[0])
+		var definition: Dictionary = Definitions.unit(row[0]).duplicate()
 		runner.check(definition.get("cost") == row[1] and definition.get("ticks") == row[2] and definition.get("speed") == row[3] and definition.get("air") == row[4], "E1 unit " + row[0])
 		definition.cost = 1
 		runner.check(Definitions.unit(row[0]).get("cost") == row[1], "E1 unit copied")
@@ -44,7 +44,7 @@ func test_economy_snapshot_isolation(runner) -> bool:
 	if not before.has("players") or not before.entities[0].has("collection"):
 		runner.check(false,"E3 economy fields exist")
 		return true
-	var changed: Dictionary = sim.snapshot()
+	var changed: Dictionary = sim.snapshot().duplicate(true)
 	changed.players[0].credits = 0
 	changed.entities[0].kind = "vehicle"
 	changed.entities[0].collection.cargo = 8
@@ -158,7 +158,7 @@ func test_stop_and_intent_order(runner) -> bool:
 	Fixture.send(sim,{"type":"move","entity_ids":[1],"target":[12.5,4.5]})
 	var before: Dictionary = sim.snapshot()
 	runner.check(not Fixture.send(sim,{"type":"stop","entity_ids":[999]}).ok and sim.snapshot() == before,"E6 invalid retains intent")
-	sim.step()
+	for i in range(4): sim.step()
 	runner.check(sim.snapshot().entities[0].position[0] > 4.5,"E6 move wins")
 	return true
 

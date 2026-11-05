@@ -51,7 +51,7 @@ static func _seek(sim: RefCounted, unit: Dictionary) -> void:
 	collection.phase = "flying_depot" if collection.cargo > 0 else "flying_source"
 	unit.destination = goal.duplicate()
 	unit.order = {"type":"move","target":goal.duplicate()}
-	unit.route = [goal.duplicate()]
+	unit.route = [sim._frozen(goal.duplicate())]
 	unit.status = "moving"
 	if unit.position == goal: _admit(sim,unit,target)
 

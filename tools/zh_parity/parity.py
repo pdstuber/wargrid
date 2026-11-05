@@ -67,8 +67,11 @@ class Game:
     def call(self, path, body=None):
         data = None if body is None else json.dumps(body).encode()
         req = urllib.request.Request(API + path, data=data, headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=10) as r:
-            return json.loads(r.read() or "null")
+        try:
+            with urllib.request.urlopen(req, timeout=10) as r:
+                return json.loads(r.read() or "null")
+        except urllib.error.HTTPError as e:
+            raise RuntimeError(f"{path} {e.code}: {e.read().decode()}") from None
 
     def command(self, verb, ids=(), **params):
         r = self.call("/command", {"player": self.me, "ids": list(ids), "verb": verb, "params": params})
@@ -81,6 +84,10 @@ class Game:
         if owner is not None:
             params["owner"] = owner
         return self.command("spawn", **params)["objectId"]
+
+    def can_make(self, template):
+        options = (o for b in self.call(f"/buildable?player={self.me}")["builders"] for o in b["options"])
+        return next((o["canMake"] for o in options if o["template"] == template), None)
 
     def own(self, fragment):
         return [u["id"] for u in self.call(f"/units?player={self.me}") if fragment in u["template"]]
@@ -223,17 +230,31 @@ def splash(gap=140, spacing=15):
     return run
 
 
+def until(g, rows, dock, done, what, limit=4000):
+    for _ in range(limit):
+        if done():
+            return
+        g.record([dock], 1, rows)
+    raise RuntimeError(f"no {what} within {limit} frames")
+
+
 def supply():
-    """Supply centre (spawns its own Chinook) 400 units from a neutral warehouse; money sampled every frame."""
+    """Dozer builds a supply centre 400 units from a neutral warehouse; money sampled every frame once the centre's Chinook exists."""
     def run(g):
         x, y = g.clear_strip(640, width=160)
         dock = g.spawn("SupplyDock", x + 560, y, owner=g.neutral)	# map warehouses belong to the neutral player
-        g.spawn("AmericaSupplyCenter", x + 160, y)
+        dozer = g.spawn("AmericaVehicleDozer", x + 100, y)
         rows = []
-        g.record([dock], 30, rows)
-        chinooks = g.own("Chinook") or [g.spawn("AmericaVehicleChinook", x + 160, y + 100)]
-        meta = {"order_frame": g.frame, "unit": chinooks[0], "dock": dock, "spawned_by_centre": bool(g.own("Chinook"))}
-        g.record([chinooks[0], dock], 3600, rows, money=True)
+        g.record([dock], 10, rows)	# a dozer ordered in its spawn frame gets "buildObjectNow failed"
+        # A raw spawn never runs onBuildComplete and instant placement stays under construction,
+        # so a dozer builds the centre; the API player is not American, hence its prerequisite first.
+        g.command("build_structure", [dozer], template="AmericaPowerPlant", pos=[x + 100, y + 150, 0])
+        until(g, rows, dock, lambda: g.can_make("AmericaSupplyCenter") == "ok", "buildable supply centre")
+        g.command("build_structure", [dozer], template="AmericaSupplyCenter", pos=[x + 160, y, 0])
+        until(g, rows, dock, lambda: g.own("Chinook"), "supply centre's Chinook")
+        unit = g.own("Chinook")[0]
+        meta = {"order_frame": g.frame, "unit": unit, "dock": dock, "build_frames": g.frame - rows[0][0] + 1}
+        g.record([unit, dock], 3600, rows, money=True)
         return rows, meta
     return run
 

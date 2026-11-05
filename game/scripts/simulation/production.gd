@@ -58,6 +58,7 @@ static func spawn_collector(sim: RefCounted, building: Dictionary) -> int:
 static func step(sim: RefCounted, rates: Dictionary) -> void:
 	var ids: Array = sim._buildings.keys()
 	ids.sort()
+	var occupied: Variant = null
 	for id in ids:
 		var building: Dictionary = sim._buildings[id]
 		if not building.completed or building.queue.is_empty(): continue
@@ -69,12 +70,15 @@ static func step(sim: RefCounted, rates: Dictionary) -> void:
 		if entry.kind == "collector":
 			spawned = spawn_collector(sim,building)
 		else:
+			if occupied == null: occupied = sim.occupied_cells()
 			for cell in Construction.perimeter(building.kind,Vector2i(building.origin[0],building.origin[1])):
-				spawned = sim.spawn(building.owner,Vector2(cell) + Vector2(.5,.5),entry.kind)
+				spawned = sim.spawn(building.owner,Vector2(cell) + Vector2(.5,.5),entry.kind,occupied)
 				if spawned != -1:
 					var unit: Dictionary = sim._entities[spawned]
 					var members: Array[Dictionary] = [unit]
 					sim._assign_move(members,rally_target(sim,building,unit))
 					sim._set_intent(unit,"move")
+					occupied[sim._cell(unit.position)] = true
+					if unit.destination != null: occupied[sim._cell(unit.destination)] = true
 					break
 		if spawned != -1: building.queue.pop_front()

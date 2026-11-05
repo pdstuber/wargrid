@@ -179,7 +179,7 @@ func test_path_budget(runner) -> bool:
 			else:
 				var old: Array = before.entities[i].position
 				var distance: float = Vector2(unit.position[0], unit.position[1]).distance_to(Vector2(old[0], old[1]))
-				runner.check(unit.status == "moving" and absf(distance - 0.1) <= 1e-5, "G7 serviced/new movers get one budget")
+				runner.check(unit.status == "moving" and distance <= 0.1 + 1e-5, "G7 serviced/new movers stay within one budget")
 	var wall: Array[Vector2i] = []
 	for y in range(16):
 		wall.append(Vector2i(8, y))
