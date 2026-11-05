@@ -3,15 +3,15 @@
 Plan: [M6 plan](../superpowers/plans/2026-11-05-m6-teams-full-map.md). Run rules: [milestone prompt](../milestone-prompt.md).
 
 ```text
-Resume record (updated 2026-11-05, after Task 10)
-Branch / base commit / working-tree state: m6-teams-map / a16f65a / Task 10 committed on top
-Last green task / next incomplete task: Task 10 (Chinook supply trip measured) / Task 11 (Measure and scale)
+Resume record (updated 2026-11-05, Task 11 stop gate)
+Branch / base commit / working-tree state: m6-teams-map / 11a-11i committed on top of 76bbfc9 / clean after the 11i commit
+Last green task / next incomplete task: Task 11 (11.0, 11a-11i, 11.9 done) / gate review, then Task 12 (Confirm final pins)
 Changed paths since last commit: none
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh on a16f65a, 259 cases, 112,666 checks, 0 failures, exit 0; parity.py supply_chinook headless -noaudio exit 0; analyze.py --self-test OK
-Known red case or blocker: none. Open for user at Task 9 gate: I4 BM5 ledger row (not in the plan's re-pin list)
-Approved decisions, pre-authorizations used, deferred gates: local commit per milestone prompt; no push/PR/merge/window/BM6 re-pin without approval
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh on the 11i tree, 269 cases, 112,690 checks, 0 failures, exit 0; run_netplay.sh match exit 0 (tick 8252); run_team_match exit 0; run_benchmark exit 1 (COMBAT STRESS open ceiling, also failing at 76bbfc9)
+Known red case or blocker: step p95/p99 of the team match (7.1 / 11.7 ms vs 1.67 / 3.3) still over budget after 11i; movement plumbing 1.447 vs 0.83; COMBAT STRESS open ceiling fails (4.677 / 6.739 vs 2.05 / 3.86); user decides. Open for user: I4 BM5 ledger row
+Approved decisions, pre-authorizations used, deferred gates: local commits per milestone prompt; user approved .duplicate() in D1/E1 tests (11f) 2026-11-05; 11i was pre-approved if needed; no push/PR/merge/window/BM6 re-pin without approval
 Usage so far (python3 tools/session_usage.py <session files>): not measured
-Next exact action: Task 11 (read the plan range and docs/reference/performance-spike.md); no fork change was needed for Task 10
+Next exact action: dispatch the Task 11 gate review (Opus, fresh context), record findings, ask the user about the over-budget rows; then Task 12
 ```
 
 ## Task 0: baseline (2026-11-05, tree 9ea11bc + Task 0 test)
@@ -269,3 +269,28 @@ Start metrics (resampled routes in world units; buildable = open cells in the 25
 - **11f** (tree + 11f): suite `CASES 266 CHECKS 112687 FAILURES 0`; fold unchanged. DF1 added (`test_combat.gd`). Stopped for user once: D1/E1 wrote into returned definitions (`test_combat.gd:30,32`, `test_economy.gd:12,17`); user approved `.duplicate()` before the write, 2026-11-05. `movement_open` `step.advance` mean 1.627 → 1.529 ms.
 - **11g** (tree + 11g): suite `CASES 267 CHECKS 112688 FAILURES 0`; fold unchanged. VW2 added (`test_view.gd`). Allowed change: `test_view.gd` / V1 "set_state copies" → "V1 set_state keeps its own entity list" (entity write line removed) / 11g. `movement_open` mean: `view.copy` 0.743 → 0.379 ms, `view.sort` 0.598 → 0.074 ms.
 - **11h** (tree + 11h): suite `CASES 268 CHECKS 112689 FAILURES 0`; fold unchanged. RF1 red first (2 snapshots), green after (1).
+- **11i** (tree + 11i): needed, since 11.9 step p95 6.0 ms / p99 over budget after 11a-11h. RP1 red first (1 distinct re-plan tick), green after. Stagger: `combat.gd` `_approach` `repath_tick = tick + REPATH_TICKS - (tick + unit.id) % REPATH_TICKS`. Suite `CASES 269 CHECKS 112690 FAILURES 0`. `sh tools/run_netplay.sh match` exit 0.
+  - Provisional re-pins (`test / assertion / old → new / cause`):
+    - `test_skirmish_match.gd` / `TERMINAL_TICK` / 8168 → 8260 (winner 1, inside 8000-10799) / 11i;
+    - `test_skirmish_match.gd` / `S1_CORE_SERIES` / 9160721353698121349 → 353544374398116375 (series now spans 8261 ticks) / 11i;
+    - `tools/run_netplay.sh` / s1 terminal tick / 8244 → 8252 (same winner, passes) / 11i.
+    - `PINNED`, R4, other replays, BM6: unchanged.
+  - Assertion edits tied to the new schedule (`test_combat_navigation.gd`) / 11i: A2 retry window now `tick < retry_tick` (the `repath_tick` read when blocked); P2 steps until `tick() == first.combat.repath_tick` instead of `REPATH_TICKS` steps; N1 `repath_tick` expectations use the stagger formula (`REPATH_TICKS - attacker % REPATH_TICKS`, `5 + REPATH_TICKS - (5 + attacker) % REPATH_TICKS`).
+  - New team-match fold: `7406935539604104369`, terminal tick 20000, winner 1 (was 7966218396352725740 / 20774).
+
+## Task 11.9: re-measure (2026-11-05, tree 11i)
+
+| Row | Before (11.0) | After | Budget | Status |
+|---|---|---|---|---|
+| team-match `step` p95 (profiler zone) | 9.324 ms | 7.127 ms | 1.67 | **exceeded** |
+| team-match `step` p95 / p99 (wall, profiler on) | 11.427 / 19.143 | 7.475 / 11.672 | 1.67 / 3.3 | **exceeded** |
+| team-match warm-up `step` max | 415.192 | 46.270 | none | improved |
+| `opponent.decide` max (`team_match`) | 407.597 | 8.691 | none | improved |
+| movement plumbing (`snapshot + view.copy + view.sort`, `movement_open` mean) | 1.884 (0.543 + 0.743 + 0.598) | 1.447 (0.847 + 0.505 + 0.095) | 0.83 | **exceeded** |
+| `large_196` warm-up `step` max | 576.129 | 12.657 | none | improved |
+| HEADLESS open / dense p95 | 4.183 / 4.202 | 5.747 / 5.770 | 1.67 | **exceeded**; rose with no movement code touched, likely machine noise (unverified; earlier 11.9 run on 11h: 4.853 / 4.811) |
+| COMBAT open p95 / p99 | 3.323 / 5.142 | 4.677 / 6.739 | stress ceiling 2.05 / 3.86 | **exceeded** (ceiling check fails, exit 1; unchanged from 11.0, not touched) |
+
+- Step p95/p99 stays over budget after 11i. No budget loosened. Decision for the user.
+- Rendered rerun needed at Task 13 (11g changed presentation).
+- Deferred, not approved: static terrain as one batch (about 5 fps at 196x196, big-map presentation is out of M6 scope); persistent combat bins; presentation reading live state; struct-of-arrays entities.

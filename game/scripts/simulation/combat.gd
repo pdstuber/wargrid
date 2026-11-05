@@ -175,7 +175,7 @@ static func _pursue(sim: RefCounted, unit: Dictionary, held: Dictionary) -> void
 static func _approach(sim: RefCounted, unit: Dictionary, target: Dictionary, held: Dictionary) -> void:
 	var combat: Dictionary = unit.combat
 	if sim._tick < combat.repath_tick: return
-	combat.repath_tick = sim._tick + REPATH_TICKS
+	combat.repath_tick = sim._tick + REPATH_TICKS - (sim._tick + unit.id) % REPATH_TICKS
 	var reach: float = _reach(unit.kind)
 	if unit.destination != null and (unit.status == "moving" or unit.status == "path_pending") and _gap_at(unit.destination[0], unit.destination[1], unit.kind, target) <= reach + EDGE_EPS: return
 	var zone: int = Profiler.begin()
