@@ -332,6 +332,7 @@ func _set_intent(unit: Dictionary, mode: String, target_id: Variant = null, goal
 	unit.combat.target_id = target_id
 	unit.combat.goal = goal.duplicate() if goal != null else null
 	unit.combat.repath_tick = _tick
+	unit.combat.retarget = false
 
 func _stop_unit(unit: Dictionary) -> void:
 	unit.order = null

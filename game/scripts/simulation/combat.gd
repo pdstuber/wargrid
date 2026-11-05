@@ -57,14 +57,19 @@ static func plan(sim: RefCounted, unit_ids: Array[int]) -> void:
 		if mode != "guard" and mode != "attack_move": continue
 		var combat: Dictionary = unit.combat
 		var kept: Dictionary = record(sim, combat.target_id) if combat.target_id != null else {}
-		var in_range_only: bool = mode == "guard" and not is_ai(sim, unit.owner)
-		if kept.is_empty() or kept.owner == unit.owner or (in_range_only and not _in_range(sim, unit, kept)):
+		var human: bool = not is_ai(sim, unit.owner)
+		var leash: float = _keep_radius(sim, unit, mode, human)
+		if not kept.is_empty() and kept.owner != unit.owner and not _within(unit, kept, leash):
+			combat.retarget = mode == "attack_move"
+			kept = {}
+		if kept.is_empty() or kept.owner == unit.owner:
 			combat.target_id = null
-			if sim._tick >= combat.repath_tick:
+			if sim._tick >= combat.repath_tick or combat.retarget:
 				if not grid_ready:
 					grid = _build_grid(sim)
 					grid_ready = true
-				combat.target_id = _nearest(sim, unit, grid, _reach(unit.kind) if in_range_only else _scan_reach(sim, unit))
+				combat.target_id = _nearest(sim, unit, grid, _scan_radius_for(sim, unit, human))
+				combat.retarget = false
 				if combat.target_id != null and not _within(unit, record(sim, combat.target_id), _reach(unit.kind)): sim._scan_chases += 1
 				if combat.target_id == null: combat.repath_tick = sim._tick + REPATH_TICKS - (sim._tick + unit.id) % REPATH_TICKS
 		if combat.target_id == null:
@@ -88,6 +93,14 @@ static func plan(sim: RefCounted, unit_ids: Array[int]) -> void:
 		elif not moving:
 			combat.mode = "guard"
 			combat.goal = null
+
+static func _scan_radius_for(sim: RefCounted, unit: Dictionary, human: bool) -> float:
+	if not human: return _scan_reach(sim, unit)
+	return _scan_reach(sim, unit) if unit.combat.retarget else _reach(unit.kind)
+
+static func _keep_radius(sim: RefCounted, unit: Dictionary, mode: String, human: bool) -> float:
+	if not human: return INF
+	return _reach(unit.kind) if mode == "guard" else _scan_reach(sim, unit)
 
 static func _scan_reach(sim: RefCounted, unit: Dictionary) -> float:
 	return maxf(scan_radius(sim, unit), _reach(unit.kind))
@@ -254,6 +267,7 @@ static func object_removed(sim: RefCounted, id: int) -> void:
 		if unit.combat == null or unit.combat.target_id != id: continue
 		unit.combat.target_id = null
 		unit.combat.repath_tick = sim._tick
+		unit.combat.retarget = unit.combat.mode == "attack_move" and not is_ai(sim, unit.owner)
 		if unit.combat.mode == "attack":
 			unit.combat.mode = "guard"
 			sim._stop_unit(unit)
