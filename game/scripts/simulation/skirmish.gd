@@ -37,13 +37,16 @@ static func create(with_match: bool = true, second_controller: String = "ai") ->
 	return sim
 
 static func issue_opponent(sim: RefCounted, player: int = 2, attack_tick: int = ATTACK_TICK) -> void:
+	issue_opponents(sim, [player], attack_tick)
+
+static func issue_opponents(sim: RefCounted, players: Array[int], attack_tick: int = ATTACK_TICK) -> void:
 	if sim.tick() % DECISION_TICKS != 0: return
 	var zone: int = Profiler.begin()
-	_decide(sim, player, attack_tick)
+	var state: Dictionary = sim.snapshot()
+	for player in players: _decide(sim, player, attack_tick, state)
 	Profiler.end(&"opponent.decide", zone)
 
-static func _decide(sim: RefCounted, player: int, attack_tick: int) -> void:
-	var state: Dictionary = sim.snapshot()
+static func _decide(sim: RefCounted, player: int, attack_tick: int, state: Dictionary) -> void:
 	var sequence: int = -1
 	for entry in state.last_sequences:
 		if entry.player == player: sequence = entry.sequence

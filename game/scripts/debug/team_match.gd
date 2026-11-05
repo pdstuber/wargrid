@@ -20,5 +20,7 @@ static func create() -> RefCounted:
 	return sim
 
 static func step(sim: RefCounted) -> void:
-	for entry in SEATS: Skirmish.issue_opponent(sim, entry.seat)
+	var seats: Array[int] = []
+	for entry in SEATS: seats.append(entry.seat)
+	Skirmish.issue_opponents(sim, seats)
 	sim.step()
