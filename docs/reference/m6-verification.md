@@ -3,15 +3,15 @@
 Plan: [M6 plan](../superpowers/plans/2026-11-05-m6-teams-full-map.md). Run rules: [milestone prompt](../milestone-prompt.md).
 
 ```text
-Resume record (updated 2026-11-05, after Task 7)
-Branch / base commit / working-tree state: m6-teams-map / 0730fe3 / Task 7 committed on top (gate review pending)
-Last green task / next incomplete task: Task 7 / Task 8 after the Task 7 gate review and a restart
+Resume record (updated 2026-11-05, after Task 7 gate review)
+Branch / base commit / working-tree state: m6-teams-map / 0730fe3 / Task 7 + review fixes committed on top
+Last green task / next incomplete task: Task 7 / Task 8 after a restart
 Changed paths since last commit: none
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 248 cases, 104,632 checks, 0 failures, exit 0, TESTS PASSED (netplay scenarios inside the suite passed)
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 248 cases, 104,634 checks, 0 failures, exit 0, TESTS PASSED; seven netplay scenarios passed (s1 re-pinned 9876)
 Known red case or blocker: none. Pending: test_maps_load in the CI export job (Review Focus 1); team-*.tsv CI comparison unrun until CI
 Approved decisions, pre-authorizations used, deferred gates: as before; local commit per milestone prompt; no push/PR/merge/window/BM6 re-pin without approval
 Usage so far (python3 tools/session_usage.py <session files>): not measured
-Next exact action: Task 7 gate review (fresh Opus), fix findings, then start Task 8 in a fresh session; baseline 248 cases / 104,632 checks
+Next exact action: start Task 8 in a fresh session; baseline 248 cases / 104,634 checks
 ```
 
 ## Task 0: baseline (2026-11-05, tree 9ea11bc + Task 0 test)
@@ -183,8 +183,10 @@ Start metrics (resampled routes in world units; buildable = open cells in the 25
 - Cluster (`test_splash_cluster`, 300 shells at the middle of five infantry 1 cell apart): the aimed infantry hit by all 300, 105 neighbour hits = 0.35 per shell (window 0.30-0.42; Monte Carlo 0.359, Zero Hour measured 0.30). Deterministic: the RNG starts at `RNG_SEED`.
 - Mask: the INI mask `ALLIES ENEMIES NEUTRALS` hurts own and allied tanks next to the target; the attacker is never a victim.
 - Provisional re-pins (`test / assertion / old → new / cause`):
-  - `test_skirmish_match.gd` / `S1_CORE_SERIES` / 3285391664560676360 → 9208518222819811099 / Task 7 (`rng` snapshot field; `TERMINAL_TICK` 9938 unchanged)
-  - `test_state_hash.gd` / `PINNED` / 5fd6ce7215bcc43b → cf05a1d315bcc43b / Task 7 (`rng` field)
+  - `test_skirmish_match.gd` / `S1_CORE_SERIES` / 3285391664560676360 → 9208518222819811099 / Task 7 (splash changed HP in the match; `core_check` does not hash `rng`; `TERMINAL_TICK` 10368 unchanged)
+  - `test_state_hash.gd` / `PINNED` / 5fd6ce7215bcc43b → cf05a1d315bcc43b / Task 7 (`rng` field, hash half only)
   - `test_simulation.gd` / C1 fresh, C11 final state / gain `"rng": 625341585` / Task 7 (authorized field)
   - `test_combat.gd` / D1 rifle, D1 cannon / gain `primary_radius`, `secondary_radius`, `secondary_damage`, `affects` / Task 7
   - `test_benchmark.gd` / BM5 snapshot node ceiling / open 81285 → 81287, dense 82149 → 82151 / Task 7 (`rng` = +2 nodes; ledger row added). **Not named in the plan's pin list: flag at the gate.**
+  - `tools/run_netplay.sh` / s1 (`match`) terminal tick / 9383 → 9876 / Task 7 (splash); all seven netplay scenarios pass
+- Gate review (fresh Opus): code matches spec. Fixed: cause text above, draw order pinned (105 hits), attacker-adjacent check, netplay re-pin. Left: collector exclusion and id-order have no dedicated test; secondary radius/damage and `neutrals` unread (0 / no owners).

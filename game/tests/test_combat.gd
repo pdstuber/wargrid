@@ -1230,6 +1230,7 @@ func test_splash_cluster(runner) -> bool:
 	print("S7 cluster: shells ", shells, " middle ", middle_hits, " neighbour hits ", neighbour_hits, " rate ", rate)
 	runner.check(shells == 300 and middle_hits == 300 and wrong == 0, "S7 aimed infantry hit by every shell, flags and damage right")
 	runner.check(rate >= 0.30 and rate <= 0.42, "S7 neighbour hits per shell inside 0.30-0.42")
+	runner.check(neighbour_hits == 105, "S7 draw order pinned: 105 neighbour hits")
 	return true
 
 func _teamed(seats: Array) -> RefCounted:
@@ -1249,6 +1250,12 @@ func test_splash_mask(runner) -> bool:
 	for shot in _shots(sim):
 		if shot.attacker_id == attacker: hit[shot.target_id] = shot.splash
 	runner.check(hit == {target: false, ally: true, own: true}, "S7 INI mask hurts own and allied units, never the attacker")
+	var close = _teamed([[1, 1], [2, 2]])
+	var adjacent: int = close.spawn(1, Vector2(10.5, 10.5), "tank")
+	var foe: int = close.spawn(2, Vector2(11.4, 10.5), "tank")
+	Fixture.send(close, {"type": "attack", "entity_ids": [adjacent], "target_id": foe})
+	close.step()
+	runner.check(not _shots(close).any(func(e: Dictionary) -> bool: return e.attacker_id == adjacent and e.target_id == adjacent), "S7 attacker next to its target is not its own victim")
 	var record: Dictionary = Combat.record(sim, target)
 	runner.check(Combat.splash_victims(sim, Vector2(record.position[0], record.position[1]), 0.2, ["enemies"], Combat.record(sim, attacker)).size() == 1, "S7 an enemies-only mask would skip allies")
 	return true
