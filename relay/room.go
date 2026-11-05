@@ -1,0 +1,235 @@
+package main
+
+import (
+	"crypto/rand"
+	"fmt"
+	"maps"
+	"slices"
+	"strings"
+	"sync"
+	"time"
+)
+
+const (
+	codeAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+	protocol     = 1
+	inputDelay   = 4
+)
+
+type config struct {
+	seats     int
+	testDelay time.Duration
+	batch     time.Duration
+}
+
+type seat struct {
+	n        int
+	c        *conn
+	r        *room
+	lastTick int
+	frames   int
+	bytes    int
+	dead     bool // rejected: ignore further input, still counts until the socket closes
+}
+
+type joinReq struct {
+	hello *envelope
+	c     *conn
+	reply chan joinResult
+}
+
+type joinResult struct {
+	seat   *seat
+	reason string
+}
+
+type tickMsg struct {
+	s    *seat
+	seat int
+	tick int
+	data []byte // one copy, shared read-only by every recipient
+}
+
+type leaveMsg struct{ s *seat }
+
+// room owns all its state in run(); connections talk to it only through channels.
+type room struct {
+	code    string
+	cfg     config
+	reg     *registry
+	build   string
+	joins   chan joinReq // unbuffered: a send succeeds only while run() is alive
+	events  chan any
+	done    chan struct{}
+	seats   map[int]*seat
+	started bool
+	stats   map[int]string
+}
+
+func (r *room) run() {
+	defer close(r.done)
+	var flush <-chan time.Time
+	if r.cfg.batch > 0 {
+		t := time.NewTicker(r.cfg.batch)
+		defer t.Stop()
+		flush = t.C
+	}
+	for {
+		select {
+		case <-flush:
+			for _, s := range r.seats {
+				s.c.flushNow()
+			}
+		case j := <-r.joins:
+			j.reply <- r.join(j)
+		case ev := <-r.events:
+			switch ev := ev.(type) {
+			case tickMsg:
+				r.forward(ev)
+			case leaveMsg:
+				if r.leave(ev.s) {
+					return
+				}
+			}
+		}
+	}
+}
+
+func (r *room) join(j joinReq) joinResult {
+	h := j.hello
+	if r.build != h.build {
+		return joinResult{reason: "build mismatch"}
+	}
+	if r.started || len(r.seats) >= r.cfg.seats {
+		return joinResult{reason: "match full"}
+	}
+	return joinResult{seat: r.admit(j.c)}
+}
+
+func (r *room) admit(c *conn) *seat {
+	n := 1
+	for r.seats[n] != nil {
+		n++
+	}
+	s := &seat{n: n, c: c, r: r}
+	r.seats[n] = s
+	c.send([]byte(fmt.Sprintf(`{"type":"welcome","seat":%d,"match":%q}`, n, r.code)), 0)
+	if len(r.seats) == r.cfg.seats {
+		r.started = true
+		list := make([]string, r.cfg.seats)
+		for i := range list {
+			list[i] = fmt.Sprint(i + 1)
+		}
+		start := []byte(fmt.Sprintf(`{"type":"start","seats":[%s],"delay":%d}`, strings.Join(list, ","), inputDelay))
+		for _, s := range r.seats {
+			s.c.send(start, 0)
+		}
+	}
+	return s
+}
+
+func (r *room) forward(t tickMsg) {
+	s := t.s
+	if s.dead {
+		return
+	}
+	if !r.started || t.seat != s.n || t.tick != max(s.lastTick, inputDelay-1)+1 {
+		s.dead = true
+		s.c.reject("invalid message")
+		return
+	}
+	s.lastTick, s.frames, s.bytes = t.tick, s.frames+1, s.bytes+len(t.data)
+	for _, o := range r.seats {
+		if o != s {
+			if r.cfg.batch > 0 {
+				o.c.addBatch(t.data)
+			} else {
+				o.c.send(t.data, r.cfg.testDelay)
+			}
+		}
+	}
+}
+
+// leave reports whether the room is now empty and has been removed.
+func (r *room) leave(s *seat) bool {
+	delete(r.seats, s.n)
+	left := []byte(fmt.Sprintf(`{"type":"left","seat":%d,"after_tick":%d}`, s.n, max(s.lastTick, inputDelay-1)))
+	for _, o := range r.seats {
+		o.c.send(left, 0)
+	}
+	r.stats[s.n] = fmt.Sprintf("%df/%dB", s.frames, s.bytes)
+	if len(r.seats) > 0 {
+		return false
+	}
+	r.reg.remove(r.code, r)
+	line := "MATCH END " + r.code
+	for _, n := range slices.Sorted(maps.Keys(r.stats)) {
+		line += fmt.Sprintf(" seat%d=%s", n, r.stats[n])
+	}
+	fmt.Println(line)
+	return true
+}
+
+// registry is only touched on create, lookup and removal, never per frame.
+type registry struct {
+	mu    sync.Mutex
+	rooms map[string]*room
+	cfg   config
+}
+
+func (g *registry) remove(code string, r *room) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if g.rooms[code] == r {
+		delete(g.rooms, code)
+	}
+}
+
+func (g *registry) join(h *envelope, c *conn) joinResult {
+	if h.protocol != protocol {
+		return joinResult{reason: "protocol mismatch"}
+	}
+	if h.match == "" {
+		return g.create(h, c)
+	}
+	g.mu.Lock()
+	r := g.rooms[h.match]
+	g.mu.Unlock()
+	if r == nil {
+		return joinResult{reason: "unknown match"}
+	}
+	req := joinReq{h, c, make(chan joinResult, 1)}
+	select {
+	case r.joins <- req:
+		return <-req.reply
+	case <-r.done:
+		return joinResult{reason: "unknown match"}
+	}
+}
+
+func (g *registry) create(h *envelope, c *conn) joinResult {
+	g.mu.Lock()
+	code := randomCode()
+	for g.rooms[code] != nil {
+		code = randomCode()
+	}
+	r := &room{
+		code: code, cfg: g.cfg, reg: g, build: h.build,
+		joins: make(chan joinReq), events: make(chan any, 64), done: make(chan struct{}),
+		seats: map[int]*seat{}, stats: map[int]string{},
+	}
+	g.rooms[code] = r
+	g.mu.Unlock()
+	s := r.admit(c) // before run() starts: nobody else knows the code yet
+	go r.run()
+	return joinResult{seat: s}
+}
+
+func randomCode() string {
+	b := make([]byte, 6)
+	rand.Read(b)
+	for i := range b {
+		b[i] = codeAlphabet[int(b[i])%len(codeAlphabet)] // 256 % 32 == 0: unbiased
+	}
+	return string(b)
+}

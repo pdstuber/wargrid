@@ -62,8 +62,71 @@ Replay and `.internal` discovery are recorded as evidence only; the agnostic des
 - Regions: one in Europe, Amsterdam (`europe-west4-drams3a`) (docs.railway.com/reference/deployment-regions). fly `fra` is closer to Bavaria.
 - Price: Hobby $5/month, includes $5 usage; RAM $10/GB/month, CPU $20/vCPU/month, egress $0.05/GB; Hobby up to 6 replicas per service (docs.railway.com/reference/pricing/plans). fly has no monthly minimum.
 
+## fly.io vs Railway, measured (2026-11-04/05)
+
+Source: [relay stack spike](relay-stack-spike.md), which deployed the same four relay images (Kotlin, Go, Rust, Elixir; 3v3 rooms) on both hosts and ran the same probes and a 180 s, 10-room load from the user's Mac (near Bavaria) through each host's TLS edge. fly: four temporary apps in `fra`, shared-cpu-1x 256 MB, suspend autostop. Railway: user's **trial** account, one project, one service per stack in `europe-west4` (Amsterdam). Everything was deleted afterwards; Railway usage for about 3.5 h of four services plus load was **$0.08** (`railway usage`). One machine per stack and one client location, so treat latency as indicative.
+
+### Deploying
+
+| | fly.io | Railway |
+|---|---|---|
+| Steps per service | `fly apps create`, then `fly deploy <dir> -c <abs>/fly.toml --dockerfile … --ha=false --remote-only` | `railway add --service s --variables …`, `railway service scale --service s eu-west=1 sfo=0`, `railway up <dir> --path-as-root --service s --ci`, `railway domain --service s --port 8080` |
+| Config | `fly.toml` in the repository: VM size, `[http_service]`, autostop, health checks, env | Lives in Railway's project state, set through CLI or dashboard; config-as-code files not tried |
+| First deploy (remote build + start) | 47–93 s, includes builder warm-up | Go 64 s, Elixir 97 s, Rust 152 s, Kotlin 183 s |
+| Redeploy of an existing image | `fly deploy` again (rebuild) | `railway service redeploy --service s --yes` (no rebuild) |
+| Public URL | `<app>.fly.dev`, automatic | `railway domain` generates `<service>-production-xxxx.up.railway.app`; one extra step |
+| Upload | Build context = positional dir, `.dockerignore` honoured | Respects `.gitignore`; dirs without one needed a `.railwayignore`, or local `target/`, `_build/` and `build/` would upload |
+| Removal | `fly apps destroy <app> --yes`, gone at once | `railway delete --project <id> --yes`: endpoints 404 at once, project soft-deleted with `deletedAt` 48 h later |
+
+Gotchas hit (measured):
+
+- **fly:** relative `-c` fails once a positional dir is given (absolute path needed); without `--ha=false` fly creates two machines and rooms split ([M5 verification](m5-verification.md)); app names cannot be renamed; Prometheus API needs `Authorization: FlyV1 <token>` (Bearer gives 401).
+- **Railway:** a new service defaults to region `sfo` (California). `scale eu-west=1` *adds* Amsterdam next to it, and the trial refuses the deploy with "Your plan can only deploy to a single region. Please upgrade to Pro to deploy to multiple regions." Right after `railway add` the region map was not populated yet (`Unknown region sfo`), so three services silently deployed to California until `sfo=0` and a redeploy. Project creation is rate-limited ("1 project per 30 seconds"). `railway init` prints prompt text before its `--json` output, so scripts must not parse it blindly. Whether Hobby (not trial) allows multi-region is unverified.
+
+### Operating
+
+- **Metrics:** fly exposes Prometheus per machine (CPU by mode, `fly_instance_cpu_balance`, `_cpu_baseline`, `_cpu_throttle`, memory), 15 s steps. Railway: `railway metrics --cpu --memory --raw --json`, 30 s points, CPU in vCPU against a `CPU_LIMIT` of **2.0** on the trial; no balance or throttle concept.
+- **Logs:** both stream app logs from the CLI (`fly logs`, `railway logs`). fly also logs machine lifecycle (suspend, resume, "Machine started in …"), which is what exposed a slow host.
+- **Placement control:** fly `machine clone` moved a slow-resuming Rust machine to another host (resume 1.6–12 s became 0.67–0.80 s). Railway gives no host-level control in the CLI used.
+- **Idle cost model:** fly suspends idle machines (resume 0.6–0.7 s, cold start 1.6–3.8 s depending on stack) and bills rootfs only while suspended (docs, [M5 findings](m5-online.md#hosting)). Railway sleep ("serverless") was **not tested**; services stayed up for the whole run. Docs: first request after sleep "may return a 502" (see Railway section above).
+
+### Performance (measured, 10 rooms 3v3 unless stated)
+
+| | fly `fra` shared-cpu-1x | Railway Amsterdam (trial) |
+|---|---|---|
+| CPU, Go / Rust / Elixir / Kotlin | 38–39 % / 29–31 % / 64 % / 98 % of one shared vCPU | 0.20–0.23 / 0.21–0.24 / 0.77 / 2.4–2.6 vCPU |
+| Sustained load | Burst balance drains, then **throttled to the 6.25 % baseline** (Kotlin p99 → 30 s); balance does not accrue while suspended, so about one 3v3 room per machine is sustainable | No throttling seen in 3 min at up to 2.6 vCPU |
+| Memory used, Go / Rust / Elixir / Kotlin | VM 53 / 52 / 159 / 98 MiB of 210 usable (guest base ~48) | 15 / 2–9 / 171 / 122–130 MB (service only) |
+| Latency from the Mac, p50 / p99 (Go, Rust, Elixir) | 11–12 / 12–18 ms | 39–41 / 44–45 ms |
+| Warm connect → welcome | 58–64 ms | 147–201 ms |
+
+Railway's per-vCPU figures look lower than fly's percentages partly because the units differ (vCPU-seconds on an unthrottled, probably faster host vs share of a quota-limited shared vCPU); the CPU ratio between stacks is similar on both hosts except Kotlin.
+
+### Assessment (Claude, not a user decision)
+
+**Railway is a real alternative technically, but not a better default for Wargrid now.**
+
+For Railway:
+- WebSockets ran through its TLS edge for every stack without changes.
+- Dockerfile deploys from the CLI were straightforward once the region trap was known.
+- Metrics are easy to script.
+- Capacity per service is much higher: no burst quota, so ten 3v3 rooms cost about 0.22 vCPU in Go or Rust instead of throttling.
+
+Against Railway:
+- **Latency:** the only EU region is Amsterdam, and players near Bavaria saw about +28 ms p50 per round trip. That eats into M5's 45–59 ms headroom under the 250 ms command budget, which the 4-tick input delay already leaves ([M5 findings](m5-online.md#latency-budget-command-p95--250-ms)). For lockstep this matters more than CPU.
+- **Cost floor:** Railway Hobby is $5/month (docs). The user's fly org is on the legacy (free) Hobby plan (user, 2026-11-05), whose allowances are honoured for pre-October-2024 orgs: "Up to 3 shared-cpu-1x 256mb VMs" and "100 GB North America & Europe" outbound, with "no monthly subscription fee" (docs.fly.io/about/discontinued-plans, read 2026-11-05). So up to three relay machines cost nothing on fly. For new fly orgs the list price is $2.53/month per started shared-cpu-1x 256 MB in `fra`; fly.io/pricing.md says "invoices under $5 are waived" for new users.
+- **Infra as code:** config sits in Railway's state, not in a reviewed file like `fly.toml`.
+- **Multi-region:** the plan's single-region limit conflicts with M9's region-aware placement unless Pro.
+- **Sleep:** the sleep/502 path is untested with the Godot client.
+
+Recommendation (proposal):
+- Stay on fly `fra` for the friends relay.
+- Treat fly's 6.25 % baseline as the capacity limit to design around in M9: batching, a compact log, one room per shared machine, or a non-shared CPU size.
+- Keep Railway as the cloud-agnostic fallback the R2 design already allows (one service per worker, own domain).
+- Re-evaluate Railway only if fly's per-machine capacity or pricing becomes the binding constraint.
+
 ## Unverified
 
-- fly: public hostname per worker as one app per worker (cost, deploy commands).
-- Railway (evaluation in M5 Task 11): Kotlin relay deploy and cold/warm `--probe-relay`; maximum honoured draining time; wake time and the 502 path with the Godot client; memory and idle cost of the relay.
-- Both: rooms per machine; RTT from players' locations.
+- fly: public hostname per worker as one app per worker (cost, deploy commands); `performance` CPU sizes and price; the actual bill.
+- Railway: Hobby vs trial limits (regions, CPU limit), maximum honoured draining time, sleep/wake time and the 502 path with the Godot client, cold start, config-as-code files, behaviour under sustained load beyond 3 minutes.
+- Both: RTT from players' locations other than the user's Mac; more than one machine per stack.

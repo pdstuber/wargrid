@@ -1,13 +1,13 @@
-FROM eclipse-temurin:21-jdk AS build
+# Multi-arch index digests (linux/amd64 for fly, linux/arm64 for local builds), resolved 2026-11-05.
+FROM --platform=$BUILDPLATFORM golang:1.27.3@sha256:c292963ad0e5f51e843c726edc204a4e4c26a859ba1e4d736d91028aa3633048 AS build
+ARG TARGETOS TARGETARCH
 WORKDIR /src
-COPY . .
-RUN ./gradlew --no-daemon buildFatJar
+COPY go.mod go.sum ./
+RUN go mod download
+COPY *.go ./
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags=-s -o /relay .
 
-FROM eclipse-temurin:21-jre
-COPY --from=build /src/build/libs/relay-all.jar /relay-all.jar
-# AppCDS archive from a short training run: halves local startup; no measured gain on fly yet.
-RUN java -XX:ArchiveClassesAtExit=/relay.jsa -jar /relay-all.jar & pid=$!; \
-    for i in $(seq 150); do curl -sf http://127.0.0.1:8080/health >/dev/null && break; sleep 0.2; done; \
-    kill $pid; wait $pid || true; test -s /relay.jsa
+FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
+COPY --from=build /relay /relay
 EXPOSE 8080
-CMD ["java", "-XX:SharedArchiveFile=/relay.jsa", "-XX:+UseSerialGC", "-XX:TieredStopAtLevel=1", "-XX:-UsePerfData", "-jar", "/relay-all.jar"]
+ENTRYPOINT ["/relay"]

@@ -13,7 +13,7 @@ for scenario in replay economy combat; do
 	python3 "$repo_root/tools/compare_replays.py" "$work/ci/replay-linux/$scenario-linux.tsv" "$work/ci/replay-windows/$scenario-windows.tsv" "$work/$scenario-local.tsv" || exit 1
 done
 sh "$repo_root/tools/export_build.sh" macOS "$work/Wargrid.app" >"$work/export.log" 2>&1 || { tail -20 "$work/export.log"; exit 1; }
-NETPLAY_OUT="$work/netplay" WARGRID_RELAY_JAR="${WARGRID_RELAY_JAR:-$repo_root/relay/build/libs/relay-all.jar}" \
+NETPLAY_OUT="$work/netplay" \
 	WARGRID_CLIENT="$work/Wargrid.app/Contents/MacOS/Wargrid --headless" sh "$repo_root/tools/run_netplay.sh" match >"$work/netplay.log" 2>&1 || { tail -20 "$work/netplay.log"; exit 1; }
 printf 'netplay: '
 python3 "$repo_root/tools/compare_replays.py" --interval 30 --rows 0 "$work/ci/netplay-linux/netplay-linux.tsv" "$work/ci/netplay-windows/netplay-windows.tsv" "$work/netplay/s1.tsv"

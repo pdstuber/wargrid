@@ -1,5 +1,7 @@
 # M5 Online Spike Implementation Plan
 
+> **Historical (2026-11-05):** `relay/` is now a Go port; the Kotlin/Ktor and Gradle steps below describe M5 as built. Current relay commands: [README](../../../README.md#relay).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task (native, sequential, per `prompt.txt`). Steps use checkbox (`- [ ]`) syntax for tracking. Implementer: **Sonnet 5.5, medium effort** (user, 2026-11-04). Steps marked **Opus preflight** dispatch one read-only Opus subagent before the task starts (see "Opus preflight" below).
 
 **Goal:** Two desktop clients (macOS, Windows) play today's 1v1 skirmish over the internet in deterministic lockstep through a Kotlin/Ktor relay on fly.io, with desync detection, relay-owned membership, measured latency, and a findings report for M9.

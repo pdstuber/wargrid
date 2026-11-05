@@ -17,7 +17,7 @@ A Godot isometric pixel-art RTS preserving Zero Hour's faction identity, strateg
 - [M1 execution plan](docs/superpowers/plans/2026-11-01-m1-vehicle.md): adopted single-vehicle slice, exact movement/input contracts and acceptance cases.
 - [M2 execution plan](docs/superpowers/plans/2026-11-01-m2-groups.md): group movement contracts, implemented benchmarks and remaining acceptance gates.
 - [Session prompt](prompt.txt): M5 execution handoff; preparation is not implementation approval. Historical prompts: [M3](docs/m3-prompt.txt), [M4](docs/m4-prompt.txt), [M4.1](docs/m4.1-prompt.txt).
-- [M5 design](docs/superpowers/specs/2026-11-04-m5-online-spike-design.md) and [plan](docs/superpowers/plans/2026-11-04-m5-online-spike.md) (both approved 2026-11-04): lockstep over a Ktor relay on fly.io; implemented and merged to `main` (Tasks 0–11; repeat friend match on the fixed build deferred by the user, open). Evidence: [M5 verification](docs/reference/m5-verification.md).
+- [M5 design](docs/superpowers/specs/2026-11-04-m5-online-spike-design.md) and [plan](docs/superpowers/plans/2026-11-04-m5-online-spike.md) (both approved 2026-11-04): lockstep over a Ktor relay on fly.io (relay replaced by a protocol-compatible Go port on 2026-11-05, see [Relay](#relay)); implemented and merged to `main` (Tasks 0–11; repeat friend match on the fixed build deferred by the user, open). Evidence: [M5 verification](docs/reference/m5-verification.md).
 - [M4.1 design](docs/superpowers/specs/2026-11-03-m4.1-playtest-polish-design.md) (approved 2026-11-03) and [plan](docs/superpowers/plans/2026-11-03-m4.1-playtest-polish.md): idle scan, base defence, rally points, presentation fixes; implemented and merged, user playtest pending.
 - [M3 plan](docs/superpowers/plans/2026-11-02-m3-base-supplies.md), [approved design](docs/superpowers/specs/2026-11-02-m3-base-supplies-design.md), [source evidence](docs/reference/m3-economy.md) and [original kickoff prompt](docs/m3-prompt.txt): adopted M3 contracts and source-supported values; runtime parity remains unverified.
 - [M4 plan](docs/superpowers/plans/2026-11-03-m4-combat.md), [approved design](docs/superpowers/specs/2026-11-03-m4-combat-design.md) and [combat evidence](docs/reference/m4-combat.md): implemented, verified and merged; see [M4 verification](docs/reference/m4-verification.md).
@@ -72,18 +72,43 @@ Historical M1 suite: **32 cases, 1,089 checks, zero failures, exit 0**, `TESTS P
 
 Historical M1 visible smoke is supported by user recording/reports. [M1 measurements](docs/reference/m1-validation.md) record limited headless performance and same-host ARM64/Rosetta replay evidence; these do not establish M2 performance, rendered frame times or cross-OS determinism. User confirmed positive M2 playability and no M3 visual issues; the full visible checklist was not reported item by item. Rendered frame time and backlog were measured 2026-11-03 on a fast development Mac: zero backlog, frame p95 4.1/6.5 ms with vsync off. Budgets for a low-end/browser target are stricter and two are currently exceeded: see the [performance ledger](docs/reference/performance.md). Headless measurements do not establish feel or frame timing. Zero Hour parity remains unverified. Stop at M3; no M4 expansion.
 
-## Relay hosting
+## Relay
 
-The relay runs on fly.io, region `fra`, one shared-cpu-1x 256 MB machine configured to suspend when idle (resume about 0.5 s after a manual suspend; cold start about 3.2 s p50 after a stop or deploy; idle autosuspend and suspend during a live match are unverified). Rooms live in memory, so deploy exactly one machine (`--ha=false`; `fly machine list` must show one). Status: JVM relay deployed at `wss://wargrid-relay-jvm.fly.dev/ws` (warm 78 ms); native dropped (build failed, see the verification file); app name stays `wargrid-relay-jvm`. Memory on the machine (fly Grafana): about 100 MiB used, about 128 MiB peak during a match. Cost: not researched; fly.io has no fixed monthly plan, so check current shared-cpu-1x 256 MB pricing and the stopped/suspended storage charge before leaving it running.
+The relay is a Go program in `relay/` (net/http + [gws](https://github.com/lxzan/gws), one goroutine per room), protocol-compatible to the M5 Kotlin/Ktor relay it replaced on 2026-11-05 (user decision after the [relay stack spike](docs/reference/relay-stack-spike.md)). Go version: `relay/go.mod`. `tools/run_netplay.sh` and `tools/run_conformance.sh` build it themselves unless `WARGRID_RELAY_BIN` names a binary. Known difference from the Kotlin relay: an invalid tick is checked in the room goroutine, so a reply to a message sent right after it (e.g. a `pong`) can arrive before its `error`; Godot is unaffected.
 
 ```sh
-fly apps create wargrid-relay-jvm
+(cd relay && go test -race ./... && golangci-lint run)   # unit tests, protocol vectors, lint (config relay/.golangci.yml)
+sh tools/run_conformance.sh                               # black-box protocol suite (protocol/conformance), prints CONFORMANCE PASSED <cases>
+sh tools/run_netplay.sh match                             # two headless Godot clients through a local relay
+```
+
+Spike knobs, all off by default: `WARGRID_SEATS` (seats per room), `WARGRID_BATCH_MS` (one newline-joined message per recipient per interval; the current Godot client cannot read it), plus the test-only `WARGRID_TEST_DELAY_MS` and `WARGRID_SILENCE_MS`.
+
+### Hosting
+
+fly.io, region `fra`, one shared-cpu-1x 256 MB machine that suspends when idle. Rooms live in memory, so deploy exactly one machine (`--ha=false`; `fly machine list` must show one). The app name stays `wargrid-relay-jvm` (fly apps cannot be renamed) although it now runs the Go relay.
+
+Status: Go relay deployed at `wss://wargrid-relay-jvm.fly.dev/ws` (2026-11-05):
+- Deploy took 54 s; image 3.6 MB.
+- Godot probe `RELAY WELCOME 64`; warm 55–78 ms.
+- Cold start after a stop 1.3–1.8 s; resume after a suspend 0.33–0.51 s.
+- Remote `run_netplay.sh match` PASSED.
+
+Capacity: a shared vCPU's 6.25 % baseline holds about one 3v3 room ([relay scaling](docs/reference/relay-scaling.md#flyio-vs-railway-measured-2026-11-0405)).
+
+Cost: the user's org is on fly's legacy (free) Hobby plan (user, 2026-11-05). Per [discontinued plans](https://docs.fly.io/about/discontinued-plans) (read 2026-11-05) it has "no monthly subscription fee" and keeps free allowances of "Up to 3 shared-cpu-1x 256mb VMs" and "100 GB North America & Europe" outbound. So the one relay machine costs nothing even when it runs all the time, and 100 GB covers roughly 120 hours a month of 3v3 play (about 220 KiB/s per room in JSON, [M5 findings](docs/reference/m5-online.md#m9-list)).
+
+Without the allowances, list prices ([pricing](https://fly.io/pricing.md)) are $2.53 a month for a started shared-cpu-1x 256 MB in `fra`, and $0.15 per GB of rootfs per month while stopped or suspended. Its "invoices under $5 are waived" applies to new users.
+
+The bill itself was not read.
+
+```sh
 fly deploy relay -c $PWD/relay/fly.toml -a wargrid-relay-jvm --dockerfile $PWD/relay/Dockerfile --ha=false
 godot --headless --path game -- --probe-relay wss://wargrid-relay-jvm.fly.dev/ws   # prints RELAY WELCOME <ms>
 WARGRID_RELAY_URL=wss://wargrid-relay-jvm.fly.dev/ws WARGRID_MATCH_WAIT=600 sh tools/run_netplay.sh match
 ```
 
-Measurements and the native decision: [M5 verification](docs/reference/m5-verification.md). Findings and M9 list: [M5 findings](docs/reference/m5-online.md). M5 status: implemented and locally verified (Tasks 0–11); reviews, CI on the final tree and the HUD look are done; the repeat friend match on the fixed build is deferred by the user to a later date and remains open (see verification file).
+M5 measurements of the Kotlin relay and the native decision: [M5 verification](docs/reference/m5-verification.md). Findings and M9 list: [M5 findings](docs/reference/m5-online.md). M5 status: implemented and locally verified (Tasks 0–11); reviews, CI on the final tree and the HUD look are done; the repeat friend match on the fixed build is deferred by the user to a later date and remains open (see verification file).
 
 ## Local references
 

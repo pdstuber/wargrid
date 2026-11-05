@@ -45,14 +45,10 @@ jobs:
       WARGRID_COMBAT_REPLAY_TRACE: ${{ github.workspace }}/combat-${{ matrix.platform }}.tsv
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "21"
       - uses: actions/download-artifact@v4
         with:
-          name: relay-jar
-          path: relay-jar
+          name: relay-bin
+          path: relay-bin
       - name: Install pinned Godot
         run: |
           "$PYTHON" - <<'PY'
@@ -101,11 +97,11 @@ jobs:
           "$exe" --headless 2>&1 | tee exported-results.log
           grep -Eq '^TESTS PASSED [1-9][0-9]*$' exported-results.log
       - name: Exported netplay scenarios
-        env:
-          WARGRID_RELAY_JAR: ${{ github.workspace }}/relay-jar/relay-all.jar
         run: |
           set -o pipefail
           root=$(pwd -W 2>/dev/null || pwd)
+          export WARGRID_RELAY_BIN="$root/relay-bin/relay-${{ matrix.platform }}${{ matrix.platform == 'windows' && '.exe' || '' }}"
+          chmod +x "$WARGRID_RELAY_BIN"
           exe="build/game/${{ matrix.platform }}/Wargrid${{ matrix.platform == 'windows' && '.console.exe' || '.x86_64' }}"
           export WARGRID_CLIENT="$root/$exe --headless"
           for scenario in match perturb relay-down; do
@@ -154,17 +150,40 @@ jobs:
         working-directory: relay
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-go@v5
         with:
-          distribution: temurin
-          java-version: "21"
-          cache: gradle
-      - run: ./gradlew test buildFatJar
+          go-version-file: relay/go.mod
+          cache-dependency-path: |
+            relay/go.sum
+            protocol/conformance/go.sum
+      - run: go vet ./... && go test -race ./...
+      - run: go vet ./...
+        working-directory: protocol/conformance
+      - name: Build relay for the Godot jobs
+        run: |
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -o ../relay-bin/relay-linux .
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -o ../relay-bin/relay-windows.exe .
+      - name: Conformance
+        working-directory: .
+        run: WARGRID_RELAY_BIN=$PWD/relay-bin/relay-linux sh tools/run_conformance.sh
       - uses: actions/upload-artifact@v4
         with:
-          name: relay-jar
-          path: relay/build/libs/relay-all.jar
+          name: relay-bin
+          path: relay-bin/
           if-no-files-found: error
+  relay-lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: relay/go.mod
+          cache-dependency-path: relay/go.sum
+      - uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.15
+          working-directory: relay
   compare-replays:
     needs: godot
     runs-on: ubuntu-latest

@@ -5,7 +5,7 @@ repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd) || exit 1
 out=${NETPLAY_OUT:-$(mktemp -d)}
 mkdir -p "$out" || exit 1
 client=${WARGRID_CLIENT:-"godot --headless --path $repo_root/game"}
-jar=${WARGRID_RELAY_JAR:-$repo_root/relay/build/libs/relay-all.jar}
+relay_bin=$WARGRID_RELAY_BIN
 port=$(${PYTHON:-python3} -c 'import socket;s=socket.socket();s.bind(("",0));print(s.getsockname()[1])')
 url=${WARGRID_RELAY_URL:-ws://127.0.0.1:$port/ws}
 remote=${WARGRID_RELAY_URL:+1}
@@ -19,7 +19,11 @@ ms() { ${PYTHON:-python3} -c 'import time;print(int(time.time()*1000))'; }
 
 start_relay() {
   [ -z "$remote" ] || return 0
-  env PORT=$port "$@" java -jar "$jar" >"$out/relay.log" 2>&1 &
+  if [ -z "$relay_bin" ]; then
+    relay_bin=$out/relay
+    (cd "$repo_root/relay" && go build -o "$relay_bin" .) || fail "relay build failed"
+  fi
+  env PORT=$port "$@" "$relay_bin" >"$out/relay.log" 2>&1 &
   relay_pid=$!
   pids="$pids $relay_pid"
   i=0
