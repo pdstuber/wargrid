@@ -3,15 +3,15 @@
 Plan: [M6 plan](../superpowers/plans/2026-11-05-m6-teams-full-map.md). Run rules: [milestone prompt](../milestone-prompt.md).
 
 ```text
-Resume record (updated 2026-11-05, after the Task 1 gate)
-Branch / base commit / working-tree state: m6-teams-map / 9ea11bc (main) / clean after the Task 1 commit
-Last green task / next incomplete task: Task 1 (gate reviewed) / Task 2
-Changed paths since last commit: none (Task 1 commit: docs/reference/m6-verification.md, docs/reference/m6-map-and-feel.md)
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 222 cases, 104,554 checks, 0 failures, exit 0, TESTS PASSED (tree: 781ab5a, rerun by the gate reviewer with the Task 1 docs)
+Resume record (updated 2026-11-05, after Task 2)
+Branch / base commit / working-tree state: m6-teams-map / 9ea11bc (main) / clean after the Task 2 commit
+Last green task / next incomplete task: Task 2 / Task 3 (not a stop gate; next gate after Task 4)
+Changed paths since last commit: none (Task 2 commit: tools/zh_map/, game/data/maps/ashfall.json, game/data/maps/NOTICE.md, CI line)
+Last command / cases / checks / failures / exit / marker: python3 tools/zh_map/test_zh_map.py, 10 tests OK; sh tools/run_tests.sh unchanged (222 cases, 104,554 checks, 0 failures; no game/ code changed)
 Known red case or blocker: none
-Approved decisions, pre-authorizations used, deferred gates: design approved 2026-11-05; user 2026-11-05 after the Task 1 gate: turning uses the source order and the legs ramp (plan Task 9 and design amended), Task 3 asserts Ashfall exactly 194 x 187 (plan amended), splash: scaled scatter against infantry (2/3-cell scatter, 0.52-cell blast, seeded xorshift32, snapshot field `rng`; plan Task 7, Global Constraints and design amended); Task 0 and Task 1 local commits and the Task 1 gate review used the milestone pre-authorizations; no push/PR/merge/window/BM6 re-pin without approval
-Usage so far (python3 tools/session_usage.py <session files>): Task 1 session 37b12bfa, 50 requests before the review, max context 170,834, output 36,877 (opus)
-Next exact action: start Task 2 (Sonnet medium session) on this branch
+Approved decisions, pre-authorizations used, deferred gates: as before; Task 3 asserts Ashfall exactly 194 x 187; local commits per milestone prompt; no push/PR/merge/window/BM6 re-pin without approval
+Usage so far (python3 tools/session_usage.py <session files>): Task 1 session 37b12bfa, 50 requests before the review, max context 170,834, output 36,877 (opus); Task 2 not measured
+Next exact action: start Task 3 (Sonnet medium) on this branch; check the Values-table rows it needs first
 ```
 
 ## Task 0: baseline (2026-11-05, tree 9ea11bc + Task 0 test)
@@ -132,3 +132,13 @@ Reviewer reran the suite (222 / 104,554 / 0), the decode, resample, cost and det
 - Production exits spawn with heading `[1, 0]`, not facing out of the door.
 - Splash against infantry: scatter and blast scaled by 25/15 for Wargrid's spacing (2/3 and 0.52 cells instead of 0.4 and 0.2); vehicle and building targets keep the INI 0.2-cell blast and no scatter.
 - Building bounding radius from Wargrid's footprint, not Zero Hour's geometry: barracks 1.41 vs 2.84 cells, factory 2.12 vs 3.20, depot 2.12 vs 2.52, reactor 1.41 vs 1.49.
+
+## Task 2: map converter and Ashfall data (2026-11-05, tree 9ea11bc + Task 2)
+
+`python3 tools/zh_map/test_zh_map.py`: 10 tests OK. Converter run on the real map (`convert.py <map> game/data/maps/ashfall.json`, 2.7 s): 194 x 187, 3,669 blocked cells, 0 water, 8 starts (cells as in Task 1), 12 sources of 400 boxes, every start has all four slots and a source within Chebyshev 20, all 28 pairs connected. Rulings: lost-route/slot/supply checks run in the order slots, supply (per seat), then routes; `notice` text carries EA's copyright line "Copyright 2025 Electronic Arts Inc." as used in its source headers (the map file itself has none); water is a cell centre inside a water polygon (none on this map); report-only tables below, no tolerance.
+
+Route lengths in world units, source grid (10-unit samples) vs resampled (25-unit cells): ratio 0.989 to 1.011 for all 28 pairs (full table: re-run the converter; e.g. 1-2 1622.5 vs 1624.6, 1-4 4194.5 vs 4156.4, 5-6 1785.6 vs 1805.6, 6-7 1340.0 vs 1325.0).
+
+Route widths (Chebyshev clearance t, width >= 2t - 1 cells) for each start and its two nearest starts: 1-2 6, 1-8 3, 2-3 4, 3-4 4, 4-5 4, 5-6 4, 6-7 3, 7-8 7.
+
+Start metrics (resampled routes in world units; buildable = open cells in the 25 x 25 window): every start 625 buildable. Supply Chebyshev distance to the nearest source origin: seats 1-8 = 16, 17, 18, 15, 18, 16, 15, 18. Route length to the nearest other start: 1-2 1625, 2-3 1491, 3-4 1579, 5-6 1806, 6-7 1325, 7-8 1776 (full rows in the converter output). Task 5 picks `TeamMatch.SEATS` with these in view.
