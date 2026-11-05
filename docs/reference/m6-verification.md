@@ -5,13 +5,13 @@ Plan: [M6 plan](../superpowers/plans/2026-11-05-m6-teams-full-map.md). Run rules
 ```text
 Resume record (updated 2026-11-05, Task 12 table written, BM6 approved)
 Branch / base commit / working-tree state: m6-teams-map / Task 11 committed on top of 76bbfc9 / clean
-Last green task / next incomplete task: Task 12 table (uncommitted until BM6 approval) / Task 13 (Benchmarks and ledger)
+Last green task / next incomplete task: Task 13 (ledger rows committed) / Task 14 (Exit gate)
 Changed paths since last commit: none
 Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 270 cases, 112,693 checks, 0 failures, exit 0; team-match fold 7406935539604104369 tick 20000 winner 1; run_team_match exit 0
 Known red case or blocker: none. Accepted by the user 2026-11-05 as known over-budget rows (not loosened, to report at the exit gate): team-match step wall p95/p99 2.39/5.56 ms vs 1.67/3.3 (path-finding bursts, PATH_REQUESTS_PER_TICK 8; design options open: fewer requests per tick, shared routes, G, live-state presentation); movement plumbing 0.855 vs 0.83; COMBAT STRESS open p95 2.41 vs ceiling 2.05 (run_benchmark.sh exits 1 on it; combat dense/contact/skirmish3v3 never measured because run_combat.gd stops at the first push_error). Open for user: I4 BM5 ledger row; BM6 re-pin needs approval at Task 12
 Approved decisions, pre-authorizations used, deferred gates: local commits per milestone prompt; user approved .duplicate() in D1/E1 (11f), fixes A, B, C, F, integer-key normalize, D, production occupied set, ring cache, merge diff; E rejected, G not taken; no push/PR/merge/window/BM6 re-pin without approval
 Usage so far (python3 tools/session_usage.py <session files>): not measured
-Next exact action: Task 13 (user approved BM6 18500/16000 on 2026-11-05)
+Next exact action: Task 14 exit gate (BM6 re-pin already in tree)
 ```
 
 ## Task 0: baseline (2026-11-05, tree 9ea11bc + Task 0 test)
