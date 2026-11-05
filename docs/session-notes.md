@@ -4,7 +4,7 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 ## Session
 
-2026-11-05 **M5.1 implemented on `m5.1-findings`, not merged; user playtest done (2026-11-05: "I just did a playtest, the rest look good", plus a production-queue label fix `294e20e`).** Tasks 0-9 done except the playtest and the merge. Branch pushed to origin through `8588f85`; local-only after that: the merge of `main` (relay hardening `c5205da`) and later doc commits. Verified: suite 220 cases / 104,551 checks / 0 failures on the merged tree; CI run 42017965845 green on `8588f85` (relay, relay-lint, Linux, Windows, compare-replays); `compare_local_traces.sh` MATCHED (netplay 281); rendered benchmark rerun passed (open, dense); relay `go test -race`, lint, conformance 33 and all nine netplay scenarios on the merged tree. Opus review (4 important findings fixed) and `/ponytail-review` done. Not verified: hint ring, paused label and resume outline on screen. Evidence and rulings: [M5.1 verification](reference/m5.1-verification.md).
+2026-11-05 **M5.1 implemented and merged to `main`** (merge `5d86caf`; branch deleted locally and on origin; `main` = `origin/main` at `becf439` plus this wrap-up). User playtest done ("I just did a playtest, the rest look good"; one finding, the production-queue label, fixed in `294e20e`). Verified: suite 220 then 221 cases / 104,553 checks / 0 failures; CI run 42019783157 green on `ff117f8` (relay, relay-lint, Linux, Windows, compare-replays), whose game, relay, tools and protocol code equals `main`; `compare_local_traces.sh` MATCHED (netplay 281, on `8588f85`); rendered benchmark rerun passed (open, dense); relay checks and all nine netplay scenarios passed on the merged tree. Opus review (4 important findings fixed) and `/ponytail-review` done. Not verified on screen by me: hint ring, paused label, resume outline (covered only by the user's sentence). Open: parity item (Zero Hour joined a Ranger at 70 units, Wargrid 48; bisect before changing; return-home timing unmeasured). Evidence and rulings: [M5.1 verification](reference/m5.1-verification.md). Blueprint now also has proposed M7.1 roster fill and M7.5 art pass (opens with a sprite vs stylised-geometry spike, since the user likes the rectangle look); scope of both not approved.
 
 2026-11-05 relay hardening **merged to `main`** (merge `58d13f2`, pushed) and deployed to fly `wargrid-relay-jvm`: drain on SIGINT/SIGTERM, per-room crash isolation, fail-fast config, `log/slog`. Verified on the final tree: `go test -race`, golangci-lint 0 issues, `run_conformance.sh` 33 cases, `run_netplay.sh` relay-term, relay-down and match passed; on fly the new binary logs `relay started … drain=3.5s` and the probe got `RELAY WELCOME`. Live drain on fly not yet observed (the machine was suspended at deploy). Detail below.
 
@@ -16,7 +16,7 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 ## Pending user action
 
-- M5.1: approve push of the unpushed commits (CI reruns on the final tree) and the merge of `m5.1-findings` into `main`.
+- Decide the proposed M7.1 roster fill and M7.5 art pass scope (blueprint §7), and whether a roster list per faction is wanted before M7 planning.
 - M5.1 parity item open: Zero Hour joined a Ranger at 70 units, Wargrid radius is 48; bisect with `retaliate_ranger` before any change. Return-home timing unmeasured.
 - M4.1 playtest findings (user, 2026-11-04) are open; to be tackled outside M5, see [M4.1 verification](reference/m4.1-verification.md). Deferred minors: BM7 lane pin, R5 other-command coverage.
 - `main` and `origin/main` at the relay hardening merge (`58d13f2`) plus doc follow-ups. Local branches `gpl-license`, `m5-online`, `spike-relay-improvements` (also on origin) and older milestone branches are merged and can be deleted (not done).
@@ -38,7 +38,7 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 
 ## Next action
 
-**Next session:** M5.1 push, CI and merge to `main` on approval. Then M6 planning (it also takes the combat-feel parity list). Still open separately: the repeat macOS-vs-Windows friend match on the Go relay.
+**Next session:** M6 planning (teams and full-scale map; it also takes the combat-feel parity list and the Chinook supply scenario, see Deferred). Optional first: bisect the retaliation join radius with `retaliate_ranger`. Still open separately: the repeat macOS-vs-Windows friend match on the Go relay. Relay hardening is done and deployed; M9 owns its next changes.
 
 **M4 complete and merged into local `main` (2026-11-03).** Evidence: [M4 verification](reference/m4-verification.md). Process changes adopted on `main`: [milestone prompt](milestone-prompt.md), [workflow retrospective](reference/2026-11-03-milestone-workflow-retrospective.md). Roadmap re-aimed at the long-term target (3v3 online with friends against bots, USA/China/GLA, Twilight-Flame-like full-scale map): blueprint §1, §7, §11, §14.
 
