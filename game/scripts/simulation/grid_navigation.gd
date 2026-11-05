@@ -196,23 +196,15 @@ func replace_blocked_cells(cells: Array[Vector2i]) -> String:
 	if normalized == _blocked:
 		Profiler.end(&"navigation.replace", zone)
 		return "none"
-	var old: Dictionary = {}
-	for cell in _blocked:
-		old[cell] = true
-	var new: Dictionary = {}
-	for cell in normalized:
-		new[cell] = true
 	var added: Array[Vector2i] = []
-	for cell in normalized:
-		if not old.has(cell): added.append(cell)
 	var removed: Array[Vector2i] = []
-	for cell in _blocked:
-		if not new.has(cell): removed.append(cell)
+	_diff(normalized, added, removed)
 	var local: bool = false
 	if removed.is_empty() and blocks_locally(added):
 		for cell in added:
 			_grid.set_point_solid(cell, true)
-			_component_cells[_components[_index(cell)]].erase(cell)
+			var list: Array = _component_cells[_components[_index(cell)]]
+			list.remove_at(list.bsearch_custom(cell, _cell_before))
 			_components[_index(cell)] = -1
 		local = true
 	elif added.is_empty() and _is_rectangle(removed):
@@ -231,6 +223,26 @@ func replace_blocked_cells(cells: Array[Vector2i]) -> String:
 		_apply_blocked(normalized)
 	Profiler.end(&"navigation.replace", zone)
 	return "local" if local else "full"
+
+# Both lists are in row-major order, so one merge pass on integer keys finds the changed cells.
+func _diff(normalized: Array[Vector2i], added: Array[Vector2i], removed: Array[Vector2i]) -> void:
+	var width: int = _map_size.x
+	var i: int = 0
+	var j: int = 0
+	var count_new: int = normalized.size()
+	var count_old: int = _blocked.size()
+	while i < count_new or j < count_old:
+		var new_key: int = normalized[i].y * width + normalized[i].x if i < count_new else 1 << 40
+		var old_key: int = _blocked[j].y * width + _blocked[j].x if j < count_old else 1 << 40
+		if new_key < old_key:
+			added.append(normalized[i])
+			i += 1
+		elif old_key < new_key:
+			removed.append(_blocked[j])
+			j += 1
+		else:
+			i += 1
+			j += 1
 
 # -1 unless every open cell 4-adjacent to the rectangle carries one label.
 func _single_neighbor_label(rectangle: Array[Vector2i]) -> int:
