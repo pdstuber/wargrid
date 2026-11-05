@@ -294,3 +294,14 @@ Start metrics (resampled routes in world units; buildable = open cells in the 25
 - Step p95/p99 stays over budget after 11i. No budget loosened. Decision for the user.
 - Rendered rerun needed at Task 13 (11g changed presentation).
 - Deferred, not approved: static terrain as one batch (about 5 fps at 196x196, big-map presentation is out of M6 scope); persistent combat bins; presentation reading live state; struct-of-arrays entities.
+
+## Task 11 gate review (Opus, fresh context, tree bfcbacd)
+
+Suite on HEAD: 269 cases, 112,690 checks, 0 failures. No critical findings. 11c reasoning (ring arcs, single-label free, preview equivalence), 11d caches, 11e equivalence and 11i stagger range checked sound; mutations killed AL1, AL2, NI1, NI3, SM1, RF1, RP1.
+
+Important (open, to do before Task 12; measure only when no other benchmark is running):
+1. `run_benchmark.sh` aborts at the combat failure before `run_lockstep.gd`, so the lockstep row was never measured in 11.0 or 11.9. Run `run_lockstep.gd` and `run_combat.gd` directly and add the rows.
+2. The 11.9 HEADLESS row claim "no movement code touched" is wrong (11a, 11c, 11d, 11f touch the movement path). Rerun 76bbfc9 and HEAD back to back, or reword.
+3. The 11.9 team-match wall numbers were taken with the profiler on, and after 11i the trace is a different match. Take one profiler-off wall run.
+
+Minor (rulings): N1 "restarts the refresh interval" no longer discriminates (both values 7 for attacker id 1); the neighbouring destination check still covers it. A2 compares the loop index with an absolute tick (works because the sim starts at 0). VW2 does not exercise the 1/1024 quantization (plan-mandated, sub-pixel). NI2 only catches a wrong ring rule through the build count. 11a scan cost scales with the scanned area, so a target in a long thin component can scan up to the whole map (about 38k cells at 196x196, same order as the old sort).
