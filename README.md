@@ -24,7 +24,7 @@ A Godot isometric pixel-art RTS preserving Zero Hour's faction identity, strateg
 - [Relay scaling](docs/reference/relay-scaling.md): proposed cloud-agnostic multi-machine relay for M9, with fly.io and Railway evidence; not implemented.
 - [Performance ledger](docs/reference/performance.md): low-end/browser target, derived budgets (assumed 6× slowdown), measurement history; every milestone adds a row.
 - [M4 scenario envelope](docs/reference/m4-scenario-envelope.md) and [Task 4/5 test appendix](docs/superpowers/plans/2026-11-03-m4-tests-4-5.md): measured economy/travel/navigation numbers and unrun red-test sketches that prepare M4 Tasks 4, 5 and 7.
-- [Zero Hour verification plan](docs/reference/zero-hour-verification.md): level 0 source/config findings plus the automated data check (`tools/check_reference.py`), level 1 reduced to three scripted-map spot checks; gate before M7 (factions).
+- [Zero Hour verification plan](docs/reference/zero-hour-verification.md): level 0 source/config findings plus the automated data check (`tools/check_reference.py`); level 1 (S1–S3, gate before M7) done 2026-11-05 by the [parity harness](docs/reference/zero-hour-parity-harness.md) (`tools/zh_parity/`, headless runs of a native macOS Zero Hour source build; any milestone can measure a mechanic with it). Results and open decision list: [parity harness spike](docs/reference/zero-hour-parity-spike.md).
 - [Agent instructions](AGENTS.md): development and verification rules.
 - [Installation reference](docs/reference/installation.md): available game data, archive hashes and unresolved version questions.
 
@@ -118,6 +118,7 @@ M5 measurements of the Kotlin relay and the native decision: [M5 verification](d
 
 - OpenRA (GPL-3.0-or-later): `/Users/pdstuber/projects/OpenRA`; reading for M5 lockstep (`OpenRA.Game/Network`: `OrderManager.cs`, `SyncReport.cs`) and M8 bot structure (`OpenRA.Mods.Common/Traits/BotModules`). Reported to have smarter bots; unverified.
 - TheSuperHackers patched Zero Hour source: `/Users/pdstuber/projects/GeneralsGameCode`; cross-check for EA source and known retail bugs.
+- Native macOS Zero Hour fork (GPL, never vendored): `/Users/pdstuber/projects/GeneralsGameCode-macOS`, local branch `wargrid-parity` (`b3874dc95`); engine for the [parity harness](docs/reference/zero-hour-parity-harness.md).
 
 These sibling projects and backups are research inputs, not future build/test dependencies. Keep original EA source and game assets outside Wargrid. Exact retail executable version, mod status and runtime behavior remain unverified.
 

@@ -62,6 +62,8 @@ Optional feel notes in the same session, impressions plus frame counts, no pass/
 
 Output: a short results table in `docs/reference/zero-hour-level1-results.md` with raw frame counts, version info and a verdict per row (match, differs, unclear). Video files stay outside the repo. Differences feed a decision list and never change numbers automatically. Never mark a row verified without recorded frame counts.
 
+**Level 1 done by harness (user decision, 2026-11-05):** the [parity harness spike](zero-hour-parity-spike.md) measured S1–S3 and the feel notes frame by frame on a native macOS source build instead of this manual session; caveat: a source build, not the shipped binary. S1 and the S2 interval match; S2 distance and S3 differ by definition (range edge-to-edge, +1 frame per burst gap) and go to the spike's decision list. The [parity harness](zero-hour-parity-harness.md) replaces the manual protocol for later checks.
+
 ## Gate
 
 M7 (China and GLA core; renumbered from M5 on 2026-11-03) adds many unverified constants. Treat completion or explicit user deferral of the reduced level 1 (S1–S3) as a gate before M7 kickoff, recorded in README and the blueprint. Level 2 is optional and only considered after level 1. Any Zero Hour source used for level 2 stays external and read-only: no code copied (AGENTS), and GPL terms make that a hard rule.
