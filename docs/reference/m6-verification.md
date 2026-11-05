@@ -238,3 +238,23 @@ Start metrics (resampled routes in world units; buildable = open cells in the 25
 ## Task 10: Chinook supply trip (2026-11-05, tree a16f65a + parity.py change, no Wargrid value changed)
 
 `supply_chinook` now builds the centre with a spawned dozer (power plant, then supply centre; no fork change). Result: 4 deposits of exactly 600, peak flight 150.2 u/s, cycle 773 frames against Wargrid's about 535; decision-list item 5 in the [parity spike](zero-hour-parity-spike.md). Load and unload times are not separated (stated there).
+
+## Task 11.0: baseline (2026-11-05, tree 76bbfc9 + profiler hook in `run_team_match.gd`)
+
+- `sh tools/run_tests.sh` on 76bbfc9: `CASES 259 CHECKS 112666 FAILURES 0`, exit 0.
+- **Team-match fold: `7966218396352725740`, terminal tick 20774, winner 1** (scratch fold of `StateHash.core_check` per tick, same loop as the harness).
+- `sh tools/run_team_match.sh`: exit 0, `TEAM MATCH won tick=20774 winner=1 units_peak=295`. Wall `step` (profiler on): p50 2.837, p95 11.427, p99 19.143, max 825.615 ms. Profiled `step` zone over the full match: mean 3.383, p50 2.807, p95 9.324, max 411.9 ms.
+- Top zones by mean (`team_match`): step.advance 1.474, snapshot 1.247 (1.2 calls/tick), step.combat_plan 0.791, step.production 0.749, opponent.decide 0.411, combat.firing_cell 0.365, navigation.components 0.156, step.combat_fire 0.143.
+- 5 slowest calls (`team_match`): tick 930 step 411.9; tick 930 step.apply_orders 411.8; tick 90 step 407.8; tick 480 step 407.8; tick 90 step.apply_orders 407.7. Slow-call count 58531 (warm-up 32).
+- Max per zone:
+
+  | Zone | `team_match.warmup` | `team_match` |
+  |---|---|---|
+  | allocation.assign | not in top 16 | 42.963 |
+  | navigation.build | 813.612 | 805.739 |
+  | navigation.replace | not in top 16 | 70.103 |
+  | opponent.decide | 410.406 | 407.597 |
+  | snapshot | 2.811 | 11.727 |
+
+- `sh tools/run_profile.sh`: exit 0, `PROFILE COMPLETE 7`.
+- `sh tools/run_benchmark.sh`: **exit 1, twice (same tree)**. `COMBAT STRESS FAIL open`: p95 3.351 / p99 5.175 against ceiling 2.05 / 3.86 (`run_combat.gd` `STRESS_CEILING`). The record did not show this earlier; Tasks 6-9 added per-unit work. Not touched: the ceiling stays. Task 11.9 re-measures; if still over, the user decides.
