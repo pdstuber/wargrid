@@ -3,6 +3,9 @@ extends Node2D
 const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
+const DEPTH_SCALE := 1024.0
+const INDEX_BITS := 20
+const INDEX_MASK := (1 << 20) - 1
 var _preview_cells: Array[Vector2i] = []
 var _preview_valid: bool = false
 var _state: Dictionary = {}
@@ -23,12 +26,12 @@ static func hp_fraction(hp: int, max_hp: int) -> float:
 
 func set_state(state: Dictionary, selected_ids: Array[int]) -> void:
 	var zone: int = Profiler.begin()
-	_state = state.duplicate(true)
+	_state = state.duplicate()
 	Profiler.end(&"view.copy", zone)
 	_selected_ids = selected_ids.duplicate()
 	_prune_hints()
 	zone = Profiler.begin()
-	_state.get("entities", []).sort_custom(_draw_before)
+	if _state.has("entities"): _state.entities = _depth_sorted(state.entities)
 	Profiler.end(&"view.sort", zone)
 	zone = Profiler.begin()
 	_remember_points()
@@ -265,10 +268,20 @@ func _cell_polygon(origin: Vector2, size: Vector2) -> PackedVector2Array:
 	return PackedVector2Array([Iso.world_to_plane(origin), Iso.world_to_plane(origin + Vector2(size.x, 0)),
 		Iso.world_to_plane(origin + size), Iso.world_to_plane(origin + Vector2(0, size.y))])
 
-func _draw_before(a: Dictionary, b: Dictionary) -> bool:
-	var depth_a: float = a.position[0] + a.position[1]
-	var depth_b: float = b.position[0] + b.position[1]
-	return a.id < b.id if depth_a == depth_b else depth_a < depth_b
+# Input is in id order (snapshot order), so equal depths keep id order like the old comparator.
+func _depth_sorted(entities: Array) -> Array:
+	assert(entities.size() <= INDEX_MASK)
+	var keys := PackedInt64Array()
+	keys.resize(entities.size())
+	for i in range(entities.size()):
+		var unit: Dictionary = entities[i]
+		keys[i] = (int(floor((float(unit.position[0]) + float(unit.position[1])) * DEPTH_SCALE)) << INDEX_BITS) | i
+	keys.sort()
+	var sorted: Array = []
+	sorted.resize(entities.size())
+	for i in range(keys.size()):
+		sorted[i] = entities[keys[i] & INDEX_MASK]
+	return sorted
 
 func pick_entities(plane_rect: Rect2) -> Array[int]:
 	var rect := plane_rect.abs()

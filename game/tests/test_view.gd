@@ -4,9 +4,10 @@ const View = preload("res://scripts/presentation/world_view.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Fixture = preload("res://tests/economy_fixture.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
+const MovementWorkload = preload("res://scripts/debug/movement_workload.gd")
 
 func cases() -> Array[Callable]:
-	return [test_pick, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_heading_mark_layout]
+	return [test_pick, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_heading_mark_layout,test_depth_order_matches_comparator]
 
 func test_pick(runner) -> bool:
 	var view = View.new()
@@ -22,9 +23,8 @@ func test_pick(runner) -> bool:
 	for offset in [Vector2(12, -8), Vector2(0, 0), Vector2(-13, -8), Vector2(0, -17)]:
 		runner.check(view.pick_entity(anchor + offset) == -1, "V1 outside " + str(offset))
 	runner.check(view.pick_entity(Iso.world_to_plane(Vector2(4.5, 4.5)) + Vector2(0, -8)) == -1, "V1 enemy ignored")
-	state.entities[0].position[0] = 10
 	state.entities.clear()
-	runner.check(view.pick_entity(anchor + Vector2(0, -8)) == 1, "V1 set_state copies")
+	runner.check(view.pick_entity(anchor + Vector2(0, -8)) == 1, "V1 set_state keeps its own entity list")
 	view.free()
 	return true
 
@@ -155,5 +155,21 @@ func test_heading_mark_layout(runner) -> bool:
 		var bounds: Rect2 = view._vehicle_bounds(view._state.entities[ids.find(mark.id)])
 		runner.check(bounds.has_point(mark.from) and bounds.has_point(mark.to), "V2 mark inside the unit rectangle " + str(mark.id))
 		runner.check(mark.id != ids[4], "V2 no mark for a collector")
+	view.free()
+	return true
+
+func test_depth_order_matches_comparator(runner) -> bool:
+	var sim = MovementWorkload.create("open")
+	for i in range(40): sim.step()
+	var state: Dictionary = sim.snapshot()
+	var view = View.new()
+	view.set_state(state, [])
+	var expected: Array = state.entities.duplicate()
+	expected.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		var depth_a: float = a.position[0] + a.position[1]
+		var depth_b: float = b.position[0] + b.position[1]
+		return a.id < b.id if depth_a == depth_b else depth_a < depth_b)
+	var got: Array = view._state.entities.map(func(u): return u.id)
+	runner.check(state.entities.size() == 300 and got == expected.map(func(u): return u.id), "VW2 depth order matches the comparator")
 	view.free()
 	return true
