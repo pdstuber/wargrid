@@ -213,9 +213,9 @@ jobs:
           python3 tools/compare_replays.py traces/replay-linux.tsv traces/replay-windows.tsv
           python3 tools/compare_replays.py traces/economy-linux.tsv traces/economy-windows.tsv
           python3 tools/compare_replays.py traces/combat-linux.tsv traces/combat-windows.tsv
-          python3 tools/compare_replays.py --interval 30 --rows 100 traces/team-linux.tsv traces/team-windows.tsv
+          python3 tools/compare_replays.py --interval 200 --rows 100 traces/team-linux.tsv traces/team-windows.tsv
           python3 tools/compare_replays.py traces/replay-linux.tsv traces/replay-windows.tsv traces/export-replay-linux.tsv traces/export-replay-windows.tsv
           python3 tools/compare_replays.py traces/economy-linux.tsv traces/economy-windows.tsv traces/export-economy-linux.tsv traces/export-economy-windows.tsv
           python3 tools/compare_replays.py traces/combat-linux.tsv traces/combat-windows.tsv traces/export-combat-linux.tsv traces/export-combat-windows.tsv
-          python3 tools/compare_replays.py --interval 30 --rows 100 traces/team-linux.tsv traces/team-windows.tsv traces/export-team-linux.tsv traces/export-team-windows.tsv
+          python3 tools/compare_replays.py --interval 200 --rows 100 traces/team-linux.tsv traces/team-windows.tsv traces/export-team-linux.tsv traces/export-team-windows.tsv
           python3 tools/compare_replays.py --interval 30 --rows 0 traces/netplay-linux.tsv traces/netplay-windows.tsv

@@ -6,7 +6,10 @@ const StateHash = preload("res://scripts/simulation/state_hash.gd")
 const Combat = preload("res://scripts/simulation/combat.gd")
 const Fixture = preload("res://tests/combat_fixture.gd")
 
-const PREFIX_TICKS: int = 3000
+const PREFIX_TICKS: int = 20000
+const TRACE_INTERVAL: int = 200
+const FINAL_DIGEST: String = "0b630e0094762f1d"
+const BUILD_CHECK_TICK: int = 3000
 
 func cases() -> Array[Callable]:
 	return [test_bot_never_targets_ally, test_dead_seat_bot_is_silent, test_team_match_prefix]
@@ -54,23 +57,25 @@ func test_team_match_prefix(runner) -> bool:
 	var rows: PackedStringArray = []
 	var diverged: int = -1
 	var tanks: bool = false
+	var built: Dictionary = {}
 	for tick in range(PREFIX_TICKS):
-		if tick % 30 == 0:
+		if tick % TRACE_INTERVAL == 0:
 			var state: Dictionary = a.snapshot()
 			var digest: String = StateHash.digest(state)
 			if digest != StateHash.digest(b.snapshot()) and diverged == -1: diverged = tick
 			rows.append("%d\t%s" % [tick, digest])
 			if state.entities.any(func(unit: Dictionary) -> bool: return unit.kind == "tank"): tanks = true
+		if tick == BUILD_CHECK_TICK: built = _completed_buildings(a)
 		TeamMatch.step(a)
 		TeamMatch.step(b)
 		if tick % 600 == 599: await runner.process_frame
-	runner.check(diverged == -1, "TB3 two runs agree every 30 ticks")
+	runner.check(diverged == -1, "TB3 two runs agree every 200 ticks")
 	runner.check(rows.size() == 100, "TB3 trace has 100 rows")
 	var state: Dictionary = a.snapshot()
 	for entry in TeamMatch.SEATS:
-		var done: int = state.buildings.filter(func(building: Dictionary) -> bool: return building.owner == entry.seat and building.completed).size()
-		runner.check(done == 4, "TB3 seat %d completes four buildings" % entry.seat)
+		runner.check(built.get(entry.seat, 0) == 4, "TB3 seat %d completes four buildings" % entry.seat)
 	runner.check(tanks, "TB3 a tank was produced")
+	runner.check(StateHash.digest(state) == FINAL_DIGEST, "TB3 final digest %s at tick %d" % [StateHash.digest(state), PREFIX_TICKS])
 	_write_trace(runner, rows)
 	return true
 
@@ -82,3 +87,9 @@ func _write_trace(runner, rows: PackedStringArray) -> void:
 	if file == null: return
 	file.store_string("\n".join(rows) + "\n")
 	file.close()
+
+func _completed_buildings(sim: RefCounted) -> Dictionary:
+	var counts: Dictionary = {}
+	for building in sim.snapshot().buildings:
+		if building.completed: counts[building.owner] = counts.get(building.owner, 0) + 1
+	return counts
