@@ -7,7 +7,13 @@ from desync_diff import first_difference
 
 
 def report(**changes):
-    base = {"seat": 1, "tick": 60, "hash_rows": ["0\ta"], "command_log": [{"type": "move", "tick": 4}], "snapshot": {"players": {"1": {"credits": 5}}, "entities": [{"position": [14.1, 2.0]}]}}
+    base = {
+        "seat": 1,
+        "tick": 60,
+        "hash_rows": ["0\ta"],
+        "command_log": [{"type": "move", "tick": 4}],
+        "snapshot": {"players": {"1": {"credits": 5}}, "entities": [{"position": [14.1, 2.0]}]},
+    }
     base.update(changes)
     return base
 
@@ -25,7 +31,9 @@ class DesyncDiffTests(unittest.TestCase):
         self.assertIn("command_log[0]", first_difference(report(), other))
 
     def test_snapshot_path_and_values(self):
-        other = report(snapshot={"players": {"1": {"credits": 5}}, "entities": [{"position": [14.100000000000001, 2.0]}]})
+        other = report(
+            snapshot={"players": {"1": {"credits": 5}}, "entities": [{"position": [14.100000000000001, 2.0]}]}
+        )
         text = first_difference(report(), other)
         self.assertIn("snapshot.entities[0].position[0]", text)
         self.assertIn("14.1 != 14.100000000000001", text)
@@ -44,6 +52,7 @@ class DesyncDiffTests(unittest.TestCase):
 
     def test_cli_exit_codes(self):
         import subprocess, sys
+
         with tempfile.TemporaryDirectory() as d:
             a, b = Path(d, "a.json"), Path(d, "b.json")
             a.write_text(json.dumps(report()))

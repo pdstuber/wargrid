@@ -2,6 +2,7 @@
 
 Format evidence: docs/reference/m6-map-and-feel.md. Usage: convert.py <map> <out.json>
 """
+
 import collections
 import heapq
 import json
@@ -18,9 +19,11 @@ SAMPLE = 10.0
 HEIGHT_SCALE = 0.625
 CLIFF_STEP = 9.8
 NAME = "Ashfall"
-NOTICE = ("Converted from an Electronic Arts map source (Copyright 2025 Electronic Arts Inc., "
-          "GPL-3.0-or-later with EA's additional terms). Modified; not the original. "
-          "Terms, source path and revision: game/data/maps/NOTICE.md.")
+NOTICE = (
+    "Converted from an Electronic Arts map source (Copyright 2025 Electronic Arts Inc., "
+    "GPL-3.0-or-later with EA's additional terms). Modified; not the original. "
+    "Terms, source path and revision: game/data/maps/NOTICE.md."
+)
 # StartingBoxes in object/civilianbuilding.ini, Object SupplyDock (INIZH.big); no map override.
 BOXES = {"SupplyDock": 400}
 FOOTPRINTS = (("reactor", 2), ("depot", 3), ("barracks", 2), ("factory", 3))
@@ -42,7 +45,7 @@ class _Reader:
         return v
 
     def raw(self, n):
-        v = self.b[self.p:self.p + n]
+        v = self.b[self.p : self.p + n]
         self.p += n
         return v
 
@@ -68,8 +71,12 @@ def derive_cliffs(w, h, heights):
     cliff = [False] * (w * h)
     for j in range(h - 1):
         for i in range(w - 1):
-            corners = [heights[j * w + i], heights[j * w + i + 1], heights[(j + 1) * w + i],
-                       heights[(j + 1) * w + i + 1]]
+            corners = [
+                heights[j * w + i],
+                heights[j * w + i + 1],
+                heights[(j + 1) * w + i],
+                heights[(j + 1) * w + i + 1],
+            ]
             cliff[j * w + i] = (max(corners) - min(corners)) * HEIGHT_SCALE > CLIFF_STEP
     return cliff
 
@@ -118,7 +125,11 @@ def read_map(data):
         if name == "HeightMapData":
             w, h = c.take("i"), c.take("i")
             border = c.take("i") if version >= 3 else 0
-            bounds = [(c.take("i"), c.take("i")) for _ in range(c.take("i"))] if version >= 4 else [(w - 2 * border, h - 2 * border)]
+            bounds = (
+                [(c.take("i"), c.take("i")) for _ in range(c.take("i"))]
+                if version >= 4
+                else [(w - 2 * border, h - 2 * border)]
+            )
             if c.take("i") != w * h:
                 raise ConvertError("HeightMapData size")
             raw.update(width=w, height=h, border=border, boundary=bounds[0], heights=list(c.raw(w * h)))
@@ -129,8 +140,17 @@ def read_map(data):
                 o = _Reader(data, os_)
                 x, y, z, angle = o.take("f"), o.take("f"), o.take("f"), o.take("f")
                 flags, template = o.take("i"), o.ascii()
-                raw["objects"].append(dict(template=template, x=x, y=y, z=z, angle=angle, flags=flags,
-                                           props=_read_dict(o, names) if over >= 2 else {}))
+                raw["objects"].append(
+                    dict(
+                        template=template,
+                        x=x,
+                        y=y,
+                        z=z,
+                        angle=angle,
+                        flags=flags,
+                        props=_read_dict(o, names) if over >= 2 else {},
+                    )
+                )
         elif name == "PolygonTriggers":
             raw["water_polygons"] += _read_water(c, version)
     if raw["cliff"] is None:
@@ -185,16 +205,22 @@ def resample(raw):
         row, hrow = "", []
         for cx in range(w):
             x0 = cx * scale
-            area = sum(_overlap(y0, y0 + scale, j, j + 1) * _overlap(x0, x0 + scale, i, i + 1)
-                       for j in range(int(y0), math.ceil(y0 + scale)) for i in range(int(x0), math.ceil(x0 + scale))
-                       if _cliff(raw, i, j))
+            area = sum(
+                _overlap(y0, y0 + scale, j, j + 1) * _overlap(x0, x0 + scale, i, i + 1)
+                for j in range(int(y0), math.ceil(y0 + scale))
+                for i in range(int(x0), math.ceil(x0 + scale))
+                if _cliff(raw, i, j)
+            )
             if _wet(raw, (cx + 0.5) * CELL, (cy + 0.5) * CELL):
                 row += "~"
             else:
                 row += "#" if area >= 0.5 * scale * scale else "."
-            pts = [raw["heights"][(j + raw["border"]) * raw["width"] + i + raw["border"]] * HEIGHT_SCALE
-                   for j in range(math.ceil(y0), int(y0 + scale) + 1) for i in range(math.ceil(x0), int(x0 + scale) + 1)
-                   if j + raw["border"] < raw["height"] and i + raw["border"] < raw["width"]]
+            pts = [
+                raw["heights"][(j + raw["border"]) * raw["width"] + i + raw["border"]] * HEIGHT_SCALE
+                for j in range(math.ceil(y0), int(y0 + scale) + 1)
+                for i in range(math.ceil(x0), int(x0 + scale) + 1)
+                if j + raw["border"] < raw["height"] and i + raw["border"] < raw["width"]
+            ]
             hrow.append(round(10 * sum(pts) / len(pts)))
         cells.append(row)
         heights.append(hrow)
@@ -213,7 +239,7 @@ def _box(x, y, size):
 def _seat_of(obj):
     name = str(obj["props"].get("waypointName", ""))
     if name.startswith("Player_") and name.endswith("_Start"):
-        return int(name[len("Player_"):-len("_Start")])
+        return int(name[len("Player_") : -len("_Start")])
     return 0
 
 
@@ -227,9 +253,11 @@ def _find_slot(grid, size, taken):
                     continue
                 inside = _box(x, y, size)
                 grown = _box(x - 1, y - 1, size + 2)
-                if all(_open(grid, i, j) for i, j in inside) and \
-                        all(_open(grid, i, j) for i, j in grown if 0 <= i < w and 0 <= j < h) and \
-                        not grown & taken["cells"]:
+                if (
+                    all(_open(grid, i, j) for i, j in inside)
+                    and all(_open(grid, i, j) for i, j in grown if 0 <= i < w and 0 <= j < h)
+                    and not grown & taken["cells"]
+                ):
                     return [x, y], inside
     return None, None
 
@@ -257,8 +285,9 @@ def place(grid, raw):
                 raise ConvertError(f"no slots: seat {seat}")
             slots[kind] = origin
             taken["cells"] |= footprint
-        if not any(max(abs(s["origin"][0] + 1 - cell[0]), abs(s["origin"][1] + 1 - cell[1])) <= SUPPLY_REACH
-                   for s in sources):
+        if not any(
+            max(abs(s["origin"][0] + 1 - cell[0]), abs(s["origin"][1] + 1 - cell[1])) <= SUPPLY_REACH for s in sources
+        ):
             raise ConvertError(f"no supply: seat {seat}")
         starts.append(dict(seat=seat, cell=list(cell), slots=slots))
     return dict(starts=starts, sources=sources)
@@ -277,13 +306,18 @@ def route_matrix(passable, step_units, starts):
             for dx in (-1, 0, 1):
                 for dy in (-1, 0, 1):
                     nx, ny = x + dx, y + dy
-                    if (dx or dy) and 0 <= nx < w and 0 <= ny < h and passable[ny][nx] and \
-                            (not (dx and dy) or (passable[y][nx] and passable[ny][x])):
+                    if (
+                        (dx or dy)
+                        and 0 <= nx < w
+                        and 0 <= ny < h
+                        and passable[ny][nx]
+                        and (not (dx and dy) or (passable[y][nx] and passable[ny][x]))
+                    ):
                         nd = d + (math.sqrt(2) if dx and dy else 1.0)
                         if nd < dist.get((nx, ny), math.inf):
                             dist[(nx, ny)] = nd
                             heapq.heappush(heap, (nd, (nx, ny)))
-        for sb in starts[a + 1:]:
+        for sb in starts[a + 1 :]:
             out[(sa["seat"], sb["seat"])] = dist.get(tuple(sb["cell"]), math.inf) * step_units
     return out
 
@@ -294,8 +328,10 @@ def passable_cells(grid):
 
 def passable_samples(raw):
     bx, by = raw["boundary"]
-    return [[not _cliff(raw, i, j) and not _wet(raw, (i + 0.5) * SAMPLE, (j + 0.5) * SAMPLE)
-             for i in range(bx)] for j in range(by)]
+    return [
+        [not _cliff(raw, i, j) and not _wet(raw, (i + 0.5) * SAMPLE, (j + 0.5) * SAMPLE) for i in range(bx)]
+        for j in range(by)
+    ]
 
 
 def start_metrics(grid, placed, matrix):
@@ -312,9 +348,11 @@ def start_metrics(grid, placed, matrix):
 def route_widths(passable, starts):
     """Narrowest 4-neighbour corridor (Chebyshev clearance) between a start and its two nearest starts."""
     h, w = len(passable), len(passable[0])
-    clear = [[0 if not passable[y][x] else (1 if x in (0, w - 1) or y in (0, h - 1) else 10 ** 9)
-              for x in range(w)] for y in range(h)]
-    queue = collections.deque((x, y) for y in range(h) for x in range(w) if clear[y][x] < 10 ** 9)
+    clear = [
+        [0 if not passable[y][x] else (1 if x in (0, w - 1) or y in (0, h - 1) else 10**9) for x in range(w)]
+        for y in range(h)
+    ]
+    queue = collections.deque((x, y) for y in range(h) for x in range(w) if clear[y][x] < 10**9)
     while queue:
         x, y = queue.popleft()
         for dx in (-1, 0, 1):
@@ -340,8 +378,7 @@ def route_widths(passable, starts):
 
     pairs = set()
     for s in starts:
-        near = sorted((o for o in starts if o is not s),
-                      key=lambda o: math.dist(o["cell"], s["cell"]))[:2]
+        near = sorted((o for o in starts if o is not s), key=lambda o: math.dist(o["cell"], s["cell"]))[:2]
         pairs |= {tuple(sorted((s["seat"], o["seat"]))) for o in near}
     cell = {s["seat"]: tuple(s["cell"]) for s in starts}
     out = {}
@@ -360,17 +397,29 @@ def convert(raw, name, notice):
     for pair, length in matrix.items():
         if math.isinf(length):
             raise ConvertError(f"route lost: {pair[0]}-{pair[1]}")
-    return dict(name=name, notice=notice, size=grid["size"], cells=grid["cells"], heights=grid["heights"],
-                starts=placed["starts"], sources=placed["sources"])
+    return dict(
+        name=name,
+        notice=notice,
+        size=grid["size"],
+        cells=grid["cells"],
+        heights=grid["heights"],
+        starts=placed["starts"],
+        sources=placed["sources"],
+    )
 
 
 def write_json(out, path):
-    parts = [f'  "name": {json.dumps(out["name"])}', f'  "notice": {json.dumps(out["notice"])}',
-             f'  "size": {json.dumps(out["size"])}',
-             '  "cells": [\n' + ",\n".join(f'    "{r}"' for r in out["cells"]) + "\n  ]",
-             '  "heights": [\n' + ",\n".join("    " + json.dumps(r, separators=(",", ":")) for r in out["heights"]) + "\n  ]",
-             '  "starts": [\n' + ",\n".join("    " + json.dumps(s) for s in out["starts"]) + "\n  ]",
-             '  "sources": [\n' + ",\n".join("    " + json.dumps(s) for s in out["sources"]) + "\n  ]"]
+    parts = [
+        f'  "name": {json.dumps(out["name"])}',
+        f'  "notice": {json.dumps(out["notice"])}',
+        f'  "size": {json.dumps(out["size"])}',
+        '  "cells": [\n' + ",\n".join(f'    "{r}"' for r in out["cells"]) + "\n  ]",
+        '  "heights": [\n'
+        + ",\n".join("    " + json.dumps(r, separators=(",", ":")) for r in out["heights"])
+        + "\n  ]",
+        '  "starts": [\n' + ",\n".join("    " + json.dumps(s) for s in out["starts"]) + "\n  ]",
+        '  "sources": [\n' + ",\n".join("    " + json.dumps(s) for s in out["sources"]) + "\n  ]",
+    ]
     with open(path, "w") as f:
         f.write("{\n" + ",\n".join(parts) + "\n}\n")
 
@@ -378,9 +427,16 @@ def write_json(out, path):
 def report(raw, out):
     grid = dict(size=out["size"], cells=out["cells"])
     placed = dict(starts=out["starts"], sources=out["sources"])
-    fine = route_matrix(passable_samples(raw), SAMPLE, [dict(seat=s["seat"], cell=[
-        int(o["x"] // SAMPLE), int(o["y"] // SAMPLE)]) for s in out["starts"]
-        for o in raw["objects"] if _seat_of(o) == s["seat"]])
+    fine = route_matrix(
+        passable_samples(raw),
+        SAMPLE,
+        [
+            dict(seat=s["seat"], cell=[int(o["x"] // SAMPLE), int(o["y"] // SAMPLE)])
+            for s in out["starts"]
+            for o in raw["objects"]
+            if _seat_of(o) == s["seat"]
+        ],
+    )
     coarse = route_matrix(passable_cells(grid), CELL, out["starts"])
     print("route lengths (world units): pair, source grid, resampled grid, ratio")
     for pair in coarse:

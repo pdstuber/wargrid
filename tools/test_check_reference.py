@@ -61,7 +61,14 @@ def big(files: dict) -> bytes:
     for name, payload in zip(names, payloads):
         index += struct.pack(">II", offset + len(body), len(payload)) + name
         body += payload
-    data = b"BIGF" + struct.pack("<I", 16 + index_size + len(body)) + struct.pack(">I", len(files)) + struct.pack(">I", 16 + index_size) + index + body
+    data = (
+        b"BIGF"
+        + struct.pack("<I", 16 + index_size + len(body))
+        + struct.pack(">I", len(files))
+        + struct.pack(">I", 16 + index_size)
+        + index
+        + body
+    )
     return data
 
 
@@ -98,11 +105,13 @@ class ReferenceTests(unittest.TestCase):
         self.assertEqual(ref.ms_to_ticks(0), 0)
 
     def test_compare_marks_match_differ_and_departure(self):
-        rows = ref.compare([
-            ("infantry cost", 225, 225, None),
-            ("infantry speed", 0.8, 0.9, None),
-            ("vehicle speed", 2.4, 3.0, "legacy prototype unit"),
-        ])
+        rows = ref.compare(
+            [
+                ("infantry cost", 225, 225, None),
+                ("infantry speed", 0.8, 0.9, None),
+                ("vehicle speed", 2.4, 3.0, "legacy prototype unit"),
+            ]
+        )
         self.assertEqual([row[-1] for row in rows], ["match", "DIFFERS", "deliberate: legacy prototype unit"])
 
     def test_cli_reports_and_fails_on_difference(self):
@@ -110,9 +119,27 @@ class ReferenceTests(unittest.TestCase):
             archive = Path(directory) / "INIZH.big"
             archive.write_bytes(big(INI))
             wargrid = Path(directory) / "wargrid.json"
-            values = {"infantry": {"cost": 225, "ticks": 150, "max_hp": 180000, "armor": "human", "speed": 0.8, "weapon": "rifle"},
-                      "weapons": {"rifle": {"damage": 5000, "damage_type": "small_arms", "range": 4.0, "delay_ticks": 3, "clip_size": 3, "reload_ticks": 21}},
-                      "armor": {"human": {"small_arms": 100, "armor_piercing": 10}}}
+            values = {
+                "infantry": {
+                    "cost": 225,
+                    "ticks": 150,
+                    "max_hp": 180000,
+                    "armor": "human",
+                    "speed": 0.8,
+                    "weapon": "rifle",
+                },
+                "weapons": {
+                    "rifle": {
+                        "damage": 5000,
+                        "damage_type": "small_arms",
+                        "range": 4.0,
+                        "delay_ticks": 3,
+                        "clip_size": 3,
+                        "reload_ticks": 21,
+                    }
+                },
+                "armor": {"human": {"small_arms": 100, "armor_piercing": 10}},
+            }
             wargrid.write_text(json.dumps(values))
             out = io.StringIO()
             code = ref.main([str(archive), "--wargrid-json", str(wargrid), "--skip-hash", "--only", "infantry"], out)
@@ -121,7 +148,9 @@ class ReferenceTests(unittest.TestCase):
             values["infantry"]["speed"] = 0.9
             wargrid.write_text(json.dumps(values))
             out = io.StringIO()
-            self.assertEqual(ref.main([str(archive), "--wargrid-json", str(wargrid), "--skip-hash", "--only", "infantry"], out), 1)
+            self.assertEqual(
+                ref.main([str(archive), "--wargrid-json", str(wargrid), "--skip-hash", "--only", "infantry"], out), 1
+            )
             self.assertIn("DIFFERS", out.getvalue())
 
     def test_hash_pin_rejects_other_data(self):

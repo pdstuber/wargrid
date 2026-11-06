@@ -4,6 +4,7 @@
 that grows with session length. It is not a price.
     python3 tools/session_usage.py ~/.claude/projects/<project>/<session>.jsonl ~/.codex/sessions/2026/11/03/rollout-*.jsonl
 """
+
 import collections
 import json
 import sys
@@ -30,16 +31,35 @@ def claude(path: Path) -> dict:
             continue
         seen.add(request)
         used = message.get("usage") or {}
-        contexts.append(sum(used.get(key) or 0 for key in ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens")))
+        contexts.append(
+            sum(
+                used.get(key) or 0 for key in ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens")
+            )
+        )
         output += used.get("output_tokens") or 0
         if message.get("model"):
             models[message["model"]] += 1
-    return {"processed": sum(contexts), "requests": len(contexts), "output": output, "models": dict(models),
-            "first_context": contexts[0] if contexts else 0, "max_context": max(contexts, default=0)}
+    return {
+        "processed": sum(contexts),
+        "requests": len(contexts),
+        "output": output,
+        "models": dict(models),
+        "first_context": contexts[0] if contexts else 0,
+        "max_context": max(contexts, default=0),
+    }
 
 
 def codex(path: Path) -> dict:
-    result = {"thread": None, "parent": None, "processed": 0, "cached": 0, "output": 0, "requests": 0, "max_context": 0, "models": {}}
+    result = {
+        "thread": None,
+        "parent": None,
+        "processed": 0,
+        "cached": 0,
+        "output": 0,
+        "requests": 0,
+        "max_context": 0,
+        "models": {},
+    }
     models = collections.Counter()
     for event in _events(path):
         payload = event.get("payload") or {}
@@ -52,9 +72,15 @@ def codex(path: Path) -> dict:
             models[payload["model"]] += 1
         elif payload.get("type") == "token_count" and payload.get("info"):
             total = payload["info"]["total_token_usage"]
-            result.update(processed=total.get("input_tokens", 0), cached=total.get("cached_input_tokens", 0), output=total.get("output_tokens", 0))
+            result.update(
+                processed=total.get("input_tokens", 0),
+                cached=total.get("cached_input_tokens", 0),
+                output=total.get("output_tokens", 0),
+            )
             result["requests"] += 1
-            result["max_context"] = max(result["max_context"], (payload["info"].get("last_token_usage") or {}).get("input_tokens", 0))
+            result["max_context"] = max(
+                result["max_context"], (payload["info"].get("last_token_usage") or {}).get("input_tokens", 0)
+            )
     result["models"] = dict(models)
     return result
 
@@ -98,8 +124,19 @@ def main(argv: list, out=sys.stdout) -> int:
         if kind == "claude":
             result = claude(path)
             total += result["processed"]
-            print("claude %s processed=%d requests=%d first_context=%d max_context=%d output=%d models=%s" % (
-                path.name, result["processed"], result["requests"], result["first_context"], result["max_context"], result["output"], result["models"]), file=out)
+            print(
+                "claude %s processed=%d requests=%d first_context=%d max_context=%d output=%d models=%s"
+                % (
+                    path.name,
+                    result["processed"],
+                    result["requests"],
+                    result["first_context"],
+                    result["max_context"],
+                    result["output"],
+                    result["models"],
+                ),
+                file=out,
+            )
         elif kind == "codex":
             codex_threads.append(codex(path))
         else:
@@ -107,7 +144,11 @@ def main(argv: list, out=sys.stdout) -> int:
             return 1
     for thread_id, group in group_codex(codex_threads).items():
         total += group["processed"]
-        print("codex %s processed=%d requests=%d threads=%d output=%d" % (thread_id, group["processed"], group["requests"], group["threads"], group["output"]), file=out)
+        print(
+            "codex %s processed=%d requests=%d threads=%d output=%d"
+            % (thread_id, group["processed"], group["requests"], group["threads"], group["output"]),
+            file=out,
+        )
     print("TOTAL processed=%d" % total, file=out)
     return 0
 

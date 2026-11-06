@@ -5,6 +5,7 @@ Usage: python3 -I tools/zh_parity/analyze.py [--traces DIR]
 Units: world units (1 Wargrid cell = 25), logic frames at 30 Hz. Expected values are Wargrid's
 (they equal the INI per tools/check_reference.py unless noted); "feel" rows have no pass/fail.
 """
+
 import argparse
 import json
 import math
@@ -55,7 +56,7 @@ def movement(meta, rows):
     sp = series(rows, meta["unit"], "speed")
     start = next(f for f, v in sp if v > 0)
     peak = max(v for _, v in sp)
-    top = statistics.median(v for _, v in sp if v > 0)	# cruise speed; peak can be a one-frame lurch
+    top = statistics.median(v for _, v in sp if v > 0)  # cruise speed; peak can be a one-frame lurch
     rising = [b - a for (_, a), (_, b) in zip(sp, sp[1:]) if b - a > 1e-3]
     falling = [a - b for (_, a), (_, b) in zip(sp, sp[1:]) if a - b > 1e-3]
     return {
@@ -135,7 +136,9 @@ def damage_events(rows, uid, until):
 def splashing(meta, rows):
     died = death_frame(rows, meta["target"])
     end = died or int(rows[-1]["frame"])
-    shots_until = [s for s, _ in shot_rows(rows, meta["unit"]) if s < end]	# a shot stamped at the death frame shows after it
+    shots_until = [
+        s for s, _ in shot_rows(rows, meta["unit"]) if s < end
+    ]  # a shot stamped at the death frame shows after it
     hits = damage_events(rows, meta["target"], end)
     splash = [d for n in meta["neighbours"] for d in damage_events(rows, n, end)]
     return {
@@ -164,7 +167,10 @@ def supplying(meta, rows):
 
 
 def reaching(meta, rows):
-    return {"farthest_fire": meta["farthest_fire"], "probes": [(int(r["gap"]), int(r["fired"]), int(r["moved"])) for r in rows]}
+    return {
+        "farthest_fire": meta["farthest_fire"],
+        "probes": [(int(r["gap"]), int(r["fired"]), int(r["moved"])) for r in rows],
+    }
 
 
 KINDS = {"move": movement, "turn": turning, "duel": duel, "splash": splashing, "supply": supplying, "reach": reaching}
@@ -199,48 +205,89 @@ def report(traces):
 
 def self_test():
     def hp_rows(uid, healths, x="150"):
-        return [{"frame": str(i), "id": str(uid), "template": "dead" if hp is None else "b", "x": "" if hp is None else x,
-                 "y": "" if hp is None else "0", "angle": "0", "speed": "0", "lastShotFrame": "0", "health": str(hp or 0)}
-                for i, hp in enumerate(healths)]
+        return [
+            {
+                "frame": str(i),
+                "id": str(uid),
+                "template": "dead" if hp is None else "b",
+                "x": "" if hp is None else x,
+                "y": "" if hp is None else "0",
+                "angle": "0",
+                "speed": "0",
+                "lastShotFrame": "0",
+                "health": str(hp or 0),
+            }
+            for i, hp in enumerate(healths)
+        ]
 
     def trace(speeds, angles=None, shots_at=(), health=None, unit_health=None):
         rows, last = [], 0
         for i, v in enumerate(speeds):
-            last = i - 1 if (i - 1) in shots_at else last	# engine stamps the shot one frame before it shows
-            rows.append({"frame": str(i), "id": "1", "template": "a", "x": str(i), "y": "0",
-                         "angle": str(angles[i] if angles else 0.0), "speed": str(v), "lastShotFrame": str(last),
-                         "health": str(unit_health[i] if unit_health else 10)})
+            last = i - 1 if (i - 1) in shots_at else last  # engine stamps the shot one frame before it shows
+            rows.append(
+                {
+                    "frame": str(i),
+                    "id": "1",
+                    "template": "a",
+                    "x": str(i),
+                    "y": "0",
+                    "angle": str(angles[i] if angles else 0.0),
+                    "speed": str(v),
+                    "lastShotFrame": str(last),
+                    "health": str(unit_health[i] if unit_health else 10),
+                }
+            )
         return rows + hp_rows(2, health or [10] * len(speeds))
 
-    jitter = [0.3, 0.30001, 0.29999] * 3	# plateau float noise must not count as acceleration or braking
+    jitter = [0.3, 0.30001, 0.29999] * 3  # plateau float noise must not count as acceleration or braking
     m = movement({"unit": 1, "order_frame": 2}, trace([0, 0, 0, 0, 0.1, 0.2] + jitter + [0.2, 0.1, 0]))
     assert m["start_delay_frames"] == 2 and m["top_speed"] == 9.0 and m["accel"] == 90.0, m
     assert m["frames_to_top"] == 2 and m["braking"] == 90.0, m
     lurch = movement({"unit": 1, "order_frame": 0}, trace([0, 0.6] + [0.3] * 8 + [0]))
     assert lurch["top_speed"] == 9.0 and lurch["peak_speed"] == 18.0, lurch
     step = math.radians(6)
-    t = turning({"unit": 1, "order_frame": 0}, trace([0, 0.1, 0.1, 0.1], [3.1, 3.1 + step, -3.1 + step, -3.1 + 2 * step]))
+    t = turning(
+        {"unit": 1, "order_frame": 0}, trace([0, 0.1, 0.1, 0.1], [3.1, 3.1 + step, -3.1 + step, -3.1 + 2 * step])
+    )
     assert abs(t["turn_rate"] - 180.0) < 1e-6 and t["turn_frames"] == 3 and t["start_delay_frames"] == 1, t
     s = shots({"unit": 1, "target": 2, "order_frame": 0}, trace([0] * 40, shots_at=(10, 13, 16, 37)))
     assert s["burst_pattern"] == "3,3,21" and s["shots"] == 4, s
-    assert s["first_shot_distance"] == 139.0, s	# x at the row where the shot first shows (frame 11)
-    hp = [10, 10, 10, 10, 10, 10, 6, 6, 2, 0, None]	# health 0 at frame 9 counts as death, removal comes later
+    assert s["first_shot_distance"] == 139.0, s  # x at the row where the shot first shows (frame 11)
+    hp = [10, 10, 10, 10, 10, 10, 6, 6, 2, 0, None]  # health 0 at frame 9 counts as death, removal comes later
     d = duel({"unit": 1, "target": 2, "order_frame": 0}, trace([0] * 11, shots_at=(5, 7, 8, 9), health=hp))
-    assert d["winner"] == "unit" and d["ttk_frames"] == 4 and d["killer_shots"] == 3, d	# shot stamped at death not counted
-    late = [10] * 10 + [0]	# attacker dies later from an outstanding projectile
-    both = duel({"unit": 1, "target": 2, "order_frame": 0}, trace([0] * 11, shots_at=(5, 7, 8), health=hp, unit_health=late))
+    assert d["winner"] == "unit" and d["ttk_frames"] == 4 and d["killer_shots"] == 3, (
+        d
+    )  # shot stamped at death not counted
+    late = [10] * 10 + [0]  # attacker dies later from an outstanding projectile
+    both = duel(
+        {"unit": 1, "target": 2, "order_frame": 0}, trace([0] * 11, shots_at=(5, 7, 8), health=hp, unit_health=late)
+    )
     assert both["winner"] == "both died" and both["ttk_frames"] == 4, both
     noshot = duel({"unit": 1, "target": 2, "order_frame": 0}, trace([0] * 11, health=hp))
     assert noshot["ttk_frames"] is None and noshot["killer_shots"] == 0, noshot
     neighbour = hp_rows(3, [10] * 7 + [4] * 4, x="165")
-    sp = splashing({"unit": 1, "target": 2, "neighbours": [3], "order_frame": 0},
-                   trace([0] * 11, shots_at=(5, 7, 8, 9), health=hp) + neighbour)
+    sp = splashing(
+        {"unit": 1, "target": 2, "neighbours": [3], "order_frame": 0},
+        trace([0] * 11, shots_at=(5, 7, 8, 9), health=hp) + neighbour,
+    )
     assert sp["shots_to_kill"] == 3 and sp["target_hits"] == 3 and sp["target_damage_per_hit"] == [2.0, 4.0], sp
     assert sp["splash_events"] == 1 and sp["splash_damage"] == 6.0 and sp["frames_to_kill"] == 4, sp
     alive = splashing({"unit": 1, "target": 2, "neighbours": [], "order_frame": 0}, trace([0] * 6, shots_at=(1,)))
     assert alive["shots_to_kill"] is None and alive["frames_to_kill"] is None, alive
-    cash = [{"frame": str(f), "id": "money", "template": "money", "x": "", "y": "", "angle": "", "speed": "",
-             "lastShotFrame": "", "health": str(v)} for f, v in enumerate([0, 0, 600, 600, 600, 1200])]
+    cash = [
+        {
+            "frame": str(f),
+            "id": "money",
+            "template": "money",
+            "x": "",
+            "y": "",
+            "angle": "",
+            "speed": "",
+            "lastShotFrame": "",
+            "health": str(v),
+        }
+        for f, v in enumerate([0, 0, 600, 600, 600, 1200])
+    ]
     su = supplying({"unit": 1, "order_frame": 0}, trace([0, 5, 5, 0, 0, 0]) + cash)
     assert su["deposits"] == 2 and su["deposit"] == 600 and su["cycle_frames"] == 3 and su["cruise_speed"] == 150, su
     assert verdict("3,4,20", "3,3,21", 1) == "PASS" and verdict("3,3", "3,3,21", 1) == "FAIL"

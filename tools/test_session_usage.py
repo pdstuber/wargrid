@@ -11,8 +11,20 @@ import session_usage as usage
 
 def claude_lines():
     def request(rid, read, created, output, model="claude-sonnet-5-5"):
-        return {"type": "assistant", "requestId": rid, "message": {"model": model, "usage": {
-            "input_tokens": 10, "cache_read_input_tokens": read, "cache_creation_input_tokens": created, "output_tokens": output}}}
+        return {
+            "type": "assistant",
+            "requestId": rid,
+            "message": {
+                "model": model,
+                "usage": {
+                    "input_tokens": 10,
+                    "cache_read_input_tokens": read,
+                    "cache_creation_input_tokens": created,
+                    "output_tokens": output,
+                },
+            },
+        }
+
     return [
         {"type": "user", "message": {"content": "hello"}},
         request("r1", 1000, 90, 5),
@@ -23,12 +35,27 @@ def claude_lines():
 
 def codex_lines(thread, parent=None, totals=(500, 400, 9), last_input=300):
     source = {"subagent": {"thread_spawn": {"parent_thread_id": parent}}} if parent else "vscode"
-    lines = [{"type": "session_meta", "payload": {"id": thread, "cwd": "/x/wargrid", "source": source}},
-             {"type": "turn_context", "payload": {"model": "gpt-6.1-sol"}}]
+    lines = [
+        {"type": "session_meta", "payload": {"id": thread, "cwd": "/x/wargrid", "source": source}},
+        {"type": "turn_context", "payload": {"model": "gpt-6.1-sol"}},
+    ]
     for step in (1, 2):
-        lines.append({"type": "event_msg", "payload": {"type": "token_count", "info": {
-            "total_token_usage": {"input_tokens": totals[0] * step // 2, "cached_input_tokens": totals[1] * step // 2, "output_tokens": totals[2]},
-            "last_token_usage": {"input_tokens": last_input}}}})
+        lines.append(
+            {
+                "type": "event_msg",
+                "payload": {
+                    "type": "token_count",
+                    "info": {
+                        "total_token_usage": {
+                            "input_tokens": totals[0] * step // 2,
+                            "cached_input_tokens": totals[1] * step // 2,
+                            "output_tokens": totals[2],
+                        },
+                        "last_token_usage": {"input_tokens": last_input},
+                    },
+                },
+            }
+        )
     return lines
 
 
@@ -51,14 +78,18 @@ class SessionUsageTests(unittest.TestCase):
     def test_codex_uses_last_cumulative_total(self):
         with tempfile.TemporaryDirectory() as directory:
             result = usage.codex(write(directory, "rollout-a.jsonl", codex_lines("a")))
-        self.assertEqual((result["processed"], result["cached"], result["output"], result["requests"]), (500, 400, 9, 2))
+        self.assertEqual(
+            (result["processed"], result["cached"], result["output"], result["requests"]), (500, 400, 9, 2)
+        )
         self.assertEqual((result["thread"], result["parent"], result["max_context"]), ("a", None, 300))
 
     def test_codex_children_roll_up_to_root(self):
         with tempfile.TemporaryDirectory() as directory:
-            files = [write(directory, "rollout-root.jsonl", codex_lines("root")),
-                     write(directory, "rollout-child.jsonl", codex_lines("child", parent="root", totals=(100, 50, 1))),
-                     write(directory, "rollout-grand.jsonl", codex_lines("grand", parent="child", totals=(20, 10, 1)))]
+            files = [
+                write(directory, "rollout-root.jsonl", codex_lines("root")),
+                write(directory, "rollout-child.jsonl", codex_lines("child", parent="root", totals=(100, 50, 1))),
+                write(directory, "rollout-grand.jsonl", codex_lines("grand", parent="child", totals=(20, 10, 1))),
+            ]
             groups = usage.group_codex([usage.codex(path) for path in files])
         self.assertEqual(list(groups), ["root"])
         self.assertEqual((groups["root"]["processed"], groups["root"]["threads"]), (620, 3))

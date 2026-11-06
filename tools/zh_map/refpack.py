@@ -10,7 +10,7 @@ def decode(data: bytes) -> bytes:
     wide = 4 if kind & 0x8000 else 3
     if kind & 0x100:
         i += wide
-    size = int.from_bytes(data[i:i + wide], "big")
+    size = int.from_bytes(data[i : i + wide], "big")
     i += wide
     out = bytearray()
 
@@ -27,32 +27,31 @@ def decode(data: bytes) -> bytes:
             second = data[i]
             i += 1
             run = first & 3
-            out += data[i:i + run]
+            out += data[i : i + run]
             i += run
             copy(((first & 0x60) << 3) + second, ((first & 0x1C) >> 2) + 3)
         elif not first & 0x40:
             second, third = data[i], data[i + 1]
             i += 2
             run = second >> 6
-            out += data[i:i + run]
+            out += data[i : i + run]
             i += run
             copy(((second & 0x3F) << 8) + third, (first & 0x3F) + 4)
         elif not first & 0x20:
             second, third, fourth = data[i], data[i + 1], data[i + 2]
             i += 3
             run = first & 3
-            out += data[i:i + run]
+            out += data[i : i + run]
             i += run
-            copy((((first & 0x10) >> 4) << 16) + (second << 8) + third,
-                 (((first & 0x0C) >> 2) << 8) + fourth + 5)
+            copy((((first & 0x10) >> 4) << 16) + (second << 8) + third, (((first & 0x0C) >> 2) << 8) + fourth + 5)
         else:
             run = ((first & 0x1F) << 2) + 4
             if run <= 112:
-                out += data[i:i + run]
+                out += data[i : i + run]
                 i += run
                 continue
             run = first & 3
-            out += data[i:i + run]
+            out += data[i : i + run]
             break
     if len(out) != size:
         raise ValueError(f"refpack size {len(out)} != header {size}")

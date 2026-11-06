@@ -2,6 +2,7 @@
 
 usage: install_export_templates.py EXPECTED_SHA256 VERSION   (VERSION like 4.7.2-stable)
 """
+
 import hashlib
 import os
 import sys

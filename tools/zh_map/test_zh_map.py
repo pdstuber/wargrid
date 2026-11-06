@@ -50,13 +50,31 @@ def raw_map(w_cells, h_cells, cliff_cells=(), cliff_samples=(), starts=(), sourc
     objects = []
     for seat, (cx, cy) in enumerate(starts, 1):
         props = {"waypointName": f"Player_{seat}_Start"}
-        objects.append(dict(template="*Waypoints/Waypoint", x=cx * 25 + 12.5, y=cy * 25 + 12.5,
-                            z=0.0, angle=0.0, flags=0, props=props))
+        objects.append(
+            dict(
+                template="*Waypoints/Waypoint",
+                x=cx * 25 + 12.5,
+                y=cy * 25 + 12.5,
+                z=0.0,
+                angle=0.0,
+                flags=0,
+                props=props,
+            )
+        )
     for cx, cy in sources:
-        objects.append(dict(template="SupplyDock", x=cx * 25 + 12.5, y=cy * 25 + 12.5,
-                            z=0.0, angle=0.0, flags=0, props={}))
-    return dict(width=w, height=h, border=0, boundary=(w, h), heights=[0] * (w * h),
-                cliff=cliff, water_polygons=[], objects=objects)
+        objects.append(
+            dict(template="SupplyDock", x=cx * 25 + 12.5, y=cy * 25 + 12.5, z=0.0, angle=0.0, flags=0, props={})
+        )
+    return dict(
+        width=w,
+        height=h,
+        border=0,
+        boundary=(w, h),
+        heights=[0] * (w * h),
+        cliff=cliff,
+        water_polygons=[],
+        objects=objects,
+    )
 
 
 def wall(x0, x1, h_cells):
@@ -76,18 +94,21 @@ class RefpackTest(unittest.TestCase):
 
 class ReadMapTest(unittest.TestCase):
     def test_chunks_roundtrip(self):
-        data = synthetic_file([
-            ("*Waypoints/Waypoint", 100.0, 200.0, [("waypointID", 5), ("waypointName", "Player_1_Start")]),
-            ("*Waypoints/Waypoint", 300.0, 400.0, [("waypointID", 6), ("waypointName", "Player_2_Start")]),
-            ("SupplyDock", 50.0, 60.0, []),
-        ])
+        data = synthetic_file(
+            [
+                ("*Waypoints/Waypoint", 100.0, 200.0, [("waypointID", 5), ("waypointName", "Player_1_Start")]),
+                ("*Waypoints/Waypoint", 300.0, 400.0, [("waypointID", 6), ("waypointName", "Player_2_Start")]),
+                ("SupplyDock", 50.0, 60.0, []),
+            ]
+        )
         raw = convert.read_map(data)
         self.assertEqual((raw["width"], raw["height"], raw["border"], raw["boundary"]), (4, 4, 1, (2, 2)))
         self.assertEqual(raw["heights"], list(range(16)))
         self.assertEqual(len(raw["cliff"]), 16)
         self.assertEqual(raw["water_polygons"], [])
-        self.assertEqual([o["template"] for o in raw["objects"]],
-                         ["*Waypoints/Waypoint", "*Waypoints/Waypoint", "SupplyDock"])
+        self.assertEqual(
+            [o["template"] for o in raw["objects"]], ["*Waypoints/Waypoint", "*Waypoints/Waypoint", "SupplyDock"]
+        )
         first = raw["objects"][0]
         self.assertEqual((first["x"], first["y"], first["flags"]), (100.0, 200.0, 7))
         self.assertEqual(first["props"], {"waypointID": 5, "waypointName": "Player_1_Start"})
@@ -119,8 +140,7 @@ class ResampleTest(unittest.TestCase):
 
 class PlaceTest(unittest.TestCase):
     def test_lost_route_fails(self):
-        raw = raw_map(80, 30, cliff_cells=wall(38, 42, 30), starts=[(10, 15), (70, 15)],
-                      sources=[(16, 15), (64, 15)])
+        raw = raw_map(80, 30, cliff_cells=wall(38, 42, 30), starts=[(10, 15), (70, 15)], sources=[(16, 15), (64, 15)])
         for i in range(95, 105):
             raw["cliff"][37 * raw["width"] + i] = False
         with self.assertRaisesRegex(convert.ConvertError, "route lost: 1-2"):
@@ -146,10 +166,9 @@ class PlaceTest(unittest.TestCase):
             x, y = first["slots"][kind]
             footprints.append({(i, j) for i in range(x, x + size) for j in range(y, y + size)})
         for n, a in enumerate(footprints):
-            for b in footprints[n + 1:]:
+            for b in footprints[n + 1 :]:
                 self.assertFalse(a & b)
         self.assertEqual(out["sources"][0], {"origin": [15, 14], "boxes": 400})
-
 
     def test_edge_source_stays_inside_map(self):
         raw = raw_map(80, 30, starts=[(10, 15), (70, 15)], sources=[(16, 15), (79, 29)])
@@ -170,13 +189,17 @@ class RouteTest(unittest.TestCase):
 
     def test_start_metrics_rows(self):
         grid = dict(size=[30, 10], cells=["." * 30] * 10)
-        placed = dict(starts=[dict(seat=1, cell=[2, 5]), dict(seat=2, cell=[27, 5])],
-                      sources=[dict(origin=[5, 4], boxes=400)])
+        placed = dict(
+            starts=[dict(seat=1, cell=[2, 5]), dict(seat=2, cell=[27, 5])], sources=[dict(origin=[5, 4], boxes=400)]
+        )
         rows = convert.start_metrics(grid, placed, {(1, 2): 625.0})
-        self.assertEqual(rows, [
-            dict(seat=1, buildable=150, supply=3, routes={2: 625.0}),
-            dict(seat=2, buildable=150, supply=22, routes={1: 625.0}),
-        ])
+        self.assertEqual(
+            rows,
+            [
+                dict(seat=1, buildable=150, supply=3, routes={2: 625.0}),
+                dict(seat=2, buildable=150, supply=22, routes={1: 625.0}),
+            ],
+        )
 
 
 if __name__ == "__main__":
