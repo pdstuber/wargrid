@@ -9,7 +9,7 @@ const Iso = preload("res://scripts/presentation/isometric.gd")
 const Fixture = preload("res://tests/economy_fixture.gd")
 
 func cases() -> Array[Callable]:
-	return [test_skirmish_ready_and_tick, test_combat_context_input, test_match_hud_and_restart, test_combat_view, test_hud_layout_and_focus, test_hud_build_line, test_enemy_selection_read_only, test_rally_input_and_marker, test_supply_pile_labels, test_attack_move_hint_and_rejection, test_selection_prunes_dead]
+	return [test_skirmish_ready_and_tick, test_combat_context_input, test_match_hud_and_restart, test_combat_view, test_hud_layout_and_focus, test_hud_build_line, test_enemy_selection_read_only, test_rally_input_and_marker, test_supply_pile_labels, test_attack_move_hint_and_rejection, test_selection_prunes_dead, test_order_marks_own_only, test_health_bar_clear_of_boxes, test_result_clear_of_status, test_silent_keys_explain]
 
 func _setup(runner):
 	var main = Scene.instantiate()
@@ -342,5 +342,56 @@ func test_selection_prunes_dead(runner) -> bool:
 	main.simulation.remove_object(ids.tank)
 	main._refresh()
 	runner.check(main.selected_ids == [ids.infantry], "H4 selection keeps only live ids, got " + str(main.selected_ids))
+	main.free()
+	return true
+
+func test_order_marks_own_only(runner) -> bool:
+	var main = await _setup(runner)
+	var ids: Dictionary = _arena(main)
+	Fixture.send(main.simulation, {"type": "move", "entity_ids": [ids.tank], "target": [12.5, 14.5]})
+	Fixture.send(main.simulation, {"type": "move", "player": 2, "entity_ids": [ids.enemy], "target": [16.5, 14.5]})
+	Fixture.steps(main.simulation, 2)
+	main._refresh()
+	var marks: Array[Vector2] = main.get_node("WorldView").order_marks()
+	runner.check(marks == [Iso.world_to_plane(Vector2(12.5, 14.5))], "P1 only the local player's order shows a cross, got " + str(marks))
+	main.free()
+	return true
+
+func test_health_bar_clear_of_boxes(runner) -> bool:
+	var view = View.new()
+	for half in [6.0, 15.0]:
+		var bounds := Rect2(Vector2(100, 100), Vector2(half * 2.0, 16))
+		runner.check(not view.health_rect(bounds).intersects(bounds.grow(4.0 + 1.5)), "P2 health bar clear of the focus box at half width %s" % half)
+	view.free()
+	return true
+
+func test_result_clear_of_status(runner) -> bool:
+	var main = await _setup(runner)
+	var ids: Dictionary = _arena(main)
+	main.selected_ids.assign([ids.tank])
+	main.inspected_id = ids.enemy
+	main.simulation.remove_object(2)
+	main._physics_process(0.0)
+	await runner.process_frame
+	await runner.process_frame
+	var status: Rect2 = main.get_node("HUD/Status").get_global_rect()
+	for path in ["HUD/Result", "HUD/Restart"]:
+		var rect: Rect2 = main.get_node(path).get_global_rect()
+		runner.check(main.get_node(path).visible and rect.position.y >= status.end.y, "P3 %s sits below the status text at any width, %s vs %s" % [path, rect, status])
+	main.free()
+	return true
+
+func test_silent_keys_explain(runner) -> bool:
+	var helper = BaseScene.new()
+	var main = await _setup(runner)
+	var ids: Dictionary = _arena(main)
+	main.selected_ids.assign([ids.infantry])
+	var before: Dictionary = main.simulation.snapshot()
+	helper.key(main, KEY_1)
+	runner.check(main._placement_kind.is_empty() and main.simulation.snapshot() == before and main._error == "Choose one builder", "P4 build key without a builder says why, got '%s'" % main._error)
+	main._error = ""
+	main.selected_ids.clear()
+	helper.key(main, KEY_E)
+	runner.check(main.simulation.snapshot() == before and main._error == "Select a production building", "P4 E without a building says why, got '%s'" % main._error)
 	main.free()
 	return true

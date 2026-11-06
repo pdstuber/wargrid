@@ -105,7 +105,10 @@ func _builder() -> int:
 	return -1
 
 func _enter_placement(kind: String) -> void:
-	if _builder() == -1: return
+	if _builder() == -1:
+		_error = "Choose one builder"
+		_refresh()
+		return
 	_placement_kind = kind
 	selected_building_id = -1
 	_preview_key = []
@@ -209,7 +212,10 @@ func _set_rally(plane: Vector2) -> bool:
 
 func _produce_selected() -> void:
 	var building: Dictionary = _building(simulation.snapshot(),selected_building_id)
-	if building.is_empty(): return
+	if building.is_empty():
+		_error = "Select a production building"
+		_refresh()
+		return
 	_submit({"type":"produce","building_id":building.id,"unit_kind":_production_kind(building)})
 
 func _cancel_entry(id: int) -> void:
