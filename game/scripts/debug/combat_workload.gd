@@ -63,7 +63,8 @@ static func _transports() -> Simulation:
 		assert(entered.ok, entered.error)
 	for column in range(10):
 		for row in range(10):
-			assert(sim.spawn(2, Vector2(48.5 + column, 19.5 + row), "usa_rifle_infantry") > 0)
+			var target: int = sim.spawn(2, Vector2(48.5 + column, 19.5 + row), "usa_rifle_infantry")
+			assert(target > 0)
 	sim.step()
 	var marched: Dictionary = sim.issue_command({"tick": sim.tick(), "player": 1, "sequence": 20, "type": "attack_move", "entity_ids": cars, "target": [60.5, 24.5]})
 	assert(marched.ok, marched.error)
