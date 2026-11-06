@@ -13,7 +13,7 @@ Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh,
 Known red case or blocker: none (combat stress rows exceed the 1.82 / 3.64 budget: reported, not loosened). CI run 42295509369 on f44f081 green (Linux, Windows, relay, lints, compare-replays); macOS compare_local_traces matched all five (replay, economy, combat 1200, team 100, netplay 278)
 Approved decisions, pre-authorizations used, deferred gates: pushes approved 2026-11-06 (m7-factions only); user sign-off of gate 1 and its visuals 2026-11-06; WAVE_MIN 6 accepted "for now" (revisit at M8 research and gates 2-3); rulings as logged in the sections above. Open for the user: analyze.py burst/reach tolerance, Dozer mid-turn dip, team match winner flip (accepted by silence, not stated)
 Usage so far: not recorded
-Next exact action: the user starts an Opus (high) planning session that expands gate 2 into steps with the playtest carry-over items (see the plan's gate 2 outline). Do not begin any G2 item.
+Next exact action: gate 2 is expanded to step level (G2.0-G2.7, planning session 2026-11-06, docs only, uncommitted). The user reviews the plan and settles the review decisions (G2.1 full-load rule; G2.0 "Match has not started"; G2.5 new `defence_attack` command), then starts G2.0 on Sonnet (medium). Do not begin any G2 item before that.
 ```
 
 ## Pins at base

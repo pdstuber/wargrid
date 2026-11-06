@@ -3,7 +3,7 @@ Implement Wargrid M7 (three factions with their signature mechanics) only, in ~/
 Milestone files:
 - Design (approved by user 2026-11-06, amended at planning the same day; do not ask again): docs/superpowers/specs/2026-11-06-m7-factions-design.md
 - Source evidence (values tables, source findings): docs/reference/m7-factions.md
-- Plan: docs/superpowers/plans/2026-11-06-m7-factions.md (Tasks 0-11 at step level; gate 2 and gate 3 are outlines)
+- Plan: docs/superpowers/plans/2026-11-06-m7-factions.md (Tasks 0-11 and gate 2 G2.0-G2.7 at step level; gate 3 is an outline)
 - Verification file and resume record: docs/reference/m7-verification.md (Task 0 creates it; Task 2 writes its "Values table")
 - Budgets: docs/reference/performance.md (F = 5.5)
 - Reference sources (read only, outside the repo): ~/projects/CnC_Generals_Zero_Hour (0a05454), ../GeneralsGameCode-macOS (parity fork, branch wargrid-parity), retail INIZH.big via tools/check_reference.py. Parity runs always -headless -noaudio.

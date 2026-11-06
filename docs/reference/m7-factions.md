@@ -152,8 +152,31 @@ Damage type names match case-insensitively (`Source/Common/INI/INI.cpp:1633`).
 - **Gattling ramp-up** (`FiringTracker.cpp:110-160`). The fast steps start when consecutive shots are greater than ContinuousFireOne or Two. A target switch within the coast time keeps the count. Cool-down starts at the next possible shot plus the coast.
 - **Command Centers** have no WeaponSet and do not fire. They train Dozers ($1000, 5 s) and Workers ($200, 3 s). Starts: `playertemplate.ini:46-129`.
 
+### Gate 2 planning findings (2026-11-06)
+
+Status: **SOURCE/CONFIG, NOT MEASURED.** EA source `0a05454` (paths under `GeneralsMD/Code/GameEngine/Source`); INI decoded from the pinned root `INIZH.big` with `tools/check_reference.py` `load_archive` (scratch dump, not tracked).
+
+- **Horde cadence** (`GameLogic/Object/Update/HordeUpdate.cpp:170-171,277,344`): the first update wakes `GameLogicRandomValue(1, UpdateRate)` frames after creation. Infantry re-check every `UpdateRate` (30 frames); vehicles run every frame but re-check only when `frame > last + UpdateRate`, so every 31 frames.
+- **Horde filter** (`HordeUpdate.cpp:86-112`): the other object needs its own HordeUpdate, the KindOf mask, the exact template when `ExactMatch`, `ALLIES` relationship, and the same on/off-map state. Range is `Radius` from the bounding sphere (edge to edge).
+- **Rub-off** (`HordeUpdate.cpp:290-315`): a unit with fewer than `Count − 1` qualifying neighbours is still in the horde if one of the neighbours found inside `Radius` is a true member and its centre lies within `RubOffRadius`. INI: Red Guard and Tank Hunter `RubOffRadius 60`, `Radius 30`; Battlemaster `150` and `75`. Each `Radius` plus both bounding radii stays below the `RubOffRadius` (Red Guard 44, Tank Hunter 50, Battlemaster about 107), so the rule comes down to "a true member among the counted neighbours".
+- **Rate-of-fire bonus** (`GameLogic/Object/Weapon.cpp:499-522`): both the shot delay and the clip reload are `floor(frames / bonus)`. `gamedata.ini:319` `HORDE RATE_OF_FIRE 150%`. When a bonus condition changes, `Object::setWeaponBonusCondition` (`Object.cpp:4674-4684`) calls `onWeaponBonusChange` (`Weapon.cpp:1955-1985`). If the weapon is between shots or reloading, that call restarts the wait from the current frame with the new delay.
+- **Gattling ramp** (`GameLogic/Object/FiringTracker.cpp:84-160,256-346`): `shotFired` runs after the shot's delay is set.
+  - It adds 1 to the shot count on the same target, or on a new target before the cool-down frame; otherwise the count resets to 1.
+  - It sets the cool-down frame to the possible next shot frame (old rate) plus the coast.
+  - It then changes level: none to MEAN when count > One; MEAN to FAST when count > Two; MEAN back to none when count < One; FAST back to none when count < Two. Every drop goes straight to none and resets the count and the target.
+  - The level change restarts the current delay (see the bonus item above), so the shot that crosses a threshold already waits the faster delay.
+  - Once the frame passes the cool-down frame, `update` cools down.
+  - INI `weapon.ini`: `GattlingTankGun` `CONTINUOUS_FIRE_MEAN RATE_OF_FIRE 200%`, `CONTINUOUS_FIRE_FAST 300%`, not cumulative (the INI comment says so); `GattlingBuildingGun` the same. This closes the FiringTracker gap below.
+- **Full load** (`GameLogic/AI/AIDock.cpp:574-636`, `GameLogic/Object/Update/DockUpdate/SupplyWarehouseDockUpdate.cpp:93-136`): the collector waits its delay before every `action()`, and the action fails once the collector is full or the pile is empty, so a load takes (boxes taken + 1) × delay. This confirms the earlier reading. M3 departs from it on purpose for the Chinook ([M3 evidence](m3-economy.md), "M3 intentionally departs at capacity").
+- **Boneless dock positions** (`GameLogic/Object/Update/DockUpdate/DockUpdate.cpp:446-487`): the spot is the dock centre plus the unit vector toward the collector times half the major radius, then `findPositionAround` up to 100 units, reachable for that collector. `ChinaSupplyCenter`, `SupplyDock` and `SupplyPileSmall` are boneless (`NumberApproachPositions = -1`); `SupplyWarehouse` has 9 bones, `SupplyPile` 5.
+- **China INI rows** (`object/factionbuilding.ini`, `object/chinavehicle.ini`, `object/chinainfantry.ini`, `locomotor.ini`, `weapon.ini`):
+  - Barracks `EnergyProduction 0`, no prerequisite. Gattling Cannon prerequisite ChinaPowerPlant, idle scan 250 / 250 ms.
+  - Locomotors (speed / turn / accel / brake / min turn): SupplyTruck 40 / 90 / 240 / 50 / 15; Redguard 25 / 500 / 100 / 150 / 0; GattlingTank 40 / 180 / 1000 / 1000 / 0; BattleMaster 25 / 180 / 1000 / 1000 / 0; ChinaVehicleDozer 30 / 90 / 30 / 50 / 0.
+  - Weapons: `GattlingTankGun` delay 400 ms, `GattlingBuildingGun` 250 ms. `ChinaInfantryTankHunterMissileLauncher` equals the Missile Defender weapon apart from `MinimumAttackRange 5` (out of scope). `BattleMasterTankGun` equals `CrusaderTankGun`.
+  - Armor: `TruckArmor` and `AntiAirVehicle` equal `HumveeArmor` in every listed column.
+
 ### Gaps
 
-- Whether FiringTracker runs before or after the next delay is computed (where the gattling rate takes effect) was not checked.
+- ~~Whether FiringTracker runs before or after the next delay is computed~~: closed above (gate 2 planning).
 - Not read: OpenContain enter and exit details, turret behaviour, the CommandSet lists (listed above in the audit), the low-power effect on POWERED defences beyond the flag.
 - `TechnicalRPGWeapon` has no `WeaponSpeed`; the Patriot's `WeaponSpeed 1` defers to its missile locomotor.
