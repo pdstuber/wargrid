@@ -68,7 +68,7 @@ Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) a
 ## Next action
 
 **Next session:** the M7 plan and `prompt.txt` are written (uncommitted until approved). Options at kickoff:
-1. **Run M7 gate 1:** a fresh session on Sonnet (medium), "resume from prompt.txt", starting at Task 0. Optional first: a cold read of the [plan](superpowers/plans/2026-11-06-m7-factions.md) by a fresh model for gaps.
+1. **Run M7 gate 1:** start the coordinator per the [milestone prompt](milestone-prompt.md) "Unattended run" (`claude --remote-control --permission-mode auto --model sonnet`, then "run prompt.txt"); it resumes from the resume record. Optional first: a cold read of the [plan](superpowers/plans/2026-11-06-m7-factions.md) by a fresh model for gaps.
    Or first the small **Ashfall playable** task (blueprint §7, before M7): it has no design yet, so a short brainstorm first.
 2. **M6 leftovers:** the over-budget simulation rows are now M7's first task (design §1); optionally the leash-driven retaliation return timing ([M5.1 verification](reference/m5.1-verification.md)). The playtest findings and the join-radius bisect are done. Still open separately: the repeat macOS-vs-Windows friend match on the Go relay. Relay hardening is done and deployed; M9 owns its next changes (one machine is acceptable for now, availability options and the `performance-1x` question are in [relay scaling](reference/relay-scaling.md)).
 

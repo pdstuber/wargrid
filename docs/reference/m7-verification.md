@@ -7,7 +7,7 @@ Plan: [M7 plan](../superpowers/plans/2026-11-06-m7-factions.md). Design: [M7 des
 ```text
 Resume record (updated 2026-11-06, Task 4 done)
 Branch / base commit / working-tree state: m7-factions at 6a7a6c9 plus the Task 4 commit "Read capabilities instead of kind ids"; tree clean after it
-Last green task / next incomplete task: Task 4 (capability reads) / Task 5 (Command Center, seat faction, Zero Hour survival, bot builder); a fresh session starts there (checkpoint restart after Task 5 per plan)
+Last green task / next incomplete task: Task 4 (capability reads) / Task 5 (Command Center, seat faction, Zero Hour survival, bot builder); each task runs in a fresh subagent (milestone prompt "Unattended run", 2026-11-06), which covers the plan's checkpoint restarts
 Changed paths since last commit: none after the Task 4 commit
 Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 283 cases / 112,759 checks / 5 failures (F1, F2, F4 and one incomplete case, all test_factions.gd, owners Tasks 5-6), exit 1; the four replay traces equal the Task 3 run byte for byte; python3 -m unittest discover -s tools: OK (guard without allow-list); run_lint.sh and run_warnings.sh pass; run_netplay.sh match terminal tick 8242
 Known red case or blocker: test_factions.gd F1-F4 until Tasks 5-6
@@ -38,6 +38,7 @@ Next exact action: Task 5. Before the change run the four traced suites into a f
 
 - Task 4: `Economy.unit()` / `Economy.building()` / `Combat.profile()` return cached legacy-shaped views built from the merged rows in `definitions/usa.gd` (`Registry.unit_view` etc.), so the D1 dict pins and `is_same` identity stay unchanged (user decision, 2026-11-06). The views can go when the pins are rewritten on purpose.
 - Task 4: `usa_power_plant.counts_for_victory` is false to keep today's survival rule (a power plant never counted); Task 5 flips it to Zero Hour's rule. `Simulation.spawn` defaults an empty kind to `Registry.DEFAULT_SPAWN` (52 callers rely on the old default); `Skirmish.BUILD_ORDER` / `UNIT_FOR` became `build_order()` / `unit_for()`; `faction.start_building` is empty until Task 5. Hotkey build menus in `base_main.gd` / `skirmish_main.gd` keep their kind literals until Task 7 (outside the guarded directories).
+- Test sharding (workflow change before Task 5, user 2026-11-06, not M7 scope): `run_tests.sh` runs the cases in up to 4 parallel `--shard=i/n` processes (`WARGRID_TEST_SHARDS`, `1` = one process); new `test_runner.gd` adds 3 cases / 5 checks (286 cases). `test_team_match.gd` was 100 s of 135 s (prefix case 55 s, core series 44 s), so cases are sharded, not suites. Same tree: one process 124 s, 4 shards 66 s, 8 shards 68 s; totals, sorted FAIL lines and all four traces identical. Check counts differ with traces on (112,764) and off (112,757) because trace writes are checked; that is the source of earlier 112,752 vs 112,759 drift.
 - Task 4 performance risk: air checks in `_build_grid` and friends are now `Registry.air_kinds.has(kind)` instead of a string compare; no benchmark run yet (WoW-skew question open, benchmarks wait for the user to quit it).
 
 ## Base rows (tree: m7-factions, M7 Task 0 working tree, Apple M6, idle-ish)
