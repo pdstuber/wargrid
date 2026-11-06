@@ -259,20 +259,19 @@ def supply():
     return run
 
 
-def retaliate(gap=140):
-    """Crusader hits one idle enemy Ranger; do the others join, how far do they chase, do they walk home?"""
+def retaliate(gap=140, offsets=((0, 0), (0, 25), (0, -25), (0, 70), (0, -140)), attacker="AmericaTankCrusader", frames=900):
+    """An attacker hits one idle enemy Ranger; do the others join, how far do they chase, do they walk home?"""
     def run(g):
         x, y = g.clear_strip(gap + 160, width=200)
-        aid = g.spawn("AmericaTankCrusader", x + 20, y)
+        aid = g.spawn(attacker, x + 20, y)
         vx = x + 20 + gap
-        # (dx, dy) from the victim: two inside the Wargrid joiner radius (48 units), one just outside, one far.
-        offsets = ((0, 0), (0, 25), (0, -25), (0, 70), (0, -140))
+        # (dx, dy) from the victim; the first is the victim itself. Wargrid's joiner radius is 4.8 cells = 120 units.
         tids = [g.spawn("AmericaInfantryRanger", vx + dx, y + dy, angle=math.pi, owner=g.enemy) for dx, dy in offsets]
         rows = []
         g.record([aid] + tids, 5, rows)
         g.command("attack_target", [aid], targetId=tids[0])
         meta = {"order_frame": g.frame, "unit": aid, "victim": tids[0], "group": tids[1:], "offsets": offsets}
-        g.record([aid] + tids, 900, rows)
+        g.record([aid] + tids, frames, rows)
         return rows, meta
     return run
 
@@ -293,6 +292,9 @@ SCENARIOS = {
     "splash_crusader": splash(),
     "supply_chinook": supply(),
     "retaliate_ranger": retaliate(),
+    # An API Ranger attacker (range 100) 95 units away; the group stands behind the victim and walks out to kill it, then home.
+    "retaliate_return": retaliate(gap=95, offsets=((0, 0), (40, 0), (70, 0), (100, 0), (0, 60)), attacker="AmericaInfantryRanger", frames=1500),
+    "retaliate_bisect": retaliate(offsets=((0, 0), (0, 100), (0, -115), (0, 125), (0, -130))),
 }
 # name -> (attacker, target, gap that fires, gap that does not)
 REACH = {

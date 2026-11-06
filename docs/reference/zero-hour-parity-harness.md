@@ -39,6 +39,7 @@ Traces go to `~/CnC/parity/traces/` (outside git): one `<scenario>.tsv` (first l
 | `duel_<unit>` | mirror duel, defender fires back | time-to-kill, winner |
 | `splash_crusader` | tank shell into a five-Ranger cluster | shots to kill, hits, splash damage on neighbours |
 | `supply_chinook` | supply centre and warehouse 400 apart | deposit size, cycle frames, cruise speed |
+| `retaliate_ranger`, `retaliate_bisect`, `retaliate_return` | an attacker (tank, or a Ranger for `_return`) hits one idle Ranger; Rangers at set distances | who joins (starts moving, fires) and how far they chase; read from the trace by hand, no `analyze.py` metric |
 
 Units: `ranger` = `AmericaInfantryRanger`, `crusader` = `AmericaTankCrusader`, `dozer` = `AmericaVehicleDozer`. Any object template from `INIZH.big` works (see `strings INIZH.big | rg '^Object '`).
 
