@@ -10,10 +10,10 @@ Branch / base commit / working-tree state: m7-factions rebased onto main 025540d
 Last green task / next incomplete task: Task 11 (gate 1) signed off by the user 2026-11-06 / push for CI on Linux and Windows (approval needed), then STOP: gate 2 is an outline
 Changed paths since last commit: none
 Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 344 cases / 134,353 / 0, exit 0, TESTS PASSED 134353 (067bf58); lint, warnings, ruff, mypy, unittest, netplay match 8331, team match won tick 33205 winner 1, run_benchmark.sh exit 0, rendered movement benchmark PASSED 2 (all on the bot wave tree); ledger rows added
-Known red case or blocker: none (combat stress rows exceed the 1.82 / 3.64 budget: reported, not loosened)
-Approved decisions, pre-authorizations used, deferred gates: user sign-off of gate 1 and its visuals 2026-11-06; WAVE_MIN 6 accepted "for now" (revisit at M8 research and gates 2-3); rulings as logged in the sections above. Open for the user: analyze.py burst/reach tolerance, Dozer mid-turn dip, team match winner flip (accepted by silence, not stated)
+Known red case or blocker: none (combat stress rows exceed the 1.82 / 3.64 budget: reported, not loosened). CI run 42295509369 on f44f081 green (Linux, Windows, relay, lints, compare-replays); macOS compare_local_traces matched all five (replay, economy, combat 1200, team 100, netplay 278)
+Approved decisions, pre-authorizations used, deferred gates: pushes approved 2026-11-06 (m7-factions only); user sign-off of gate 1 and its visuals 2026-11-06; WAVE_MIN 6 accepted "for now" (revisit at M8 research and gates 2-3); rulings as logged in the sections above. Open for the user: analyze.py burst/reach tolerance, Dozer mid-turn dip, team match winner flip (accepted by silence, not stated)
 Usage so far: not recorded
-Next exact action: ask the user to approve a push for CI on Linux and Windows (compare_local_traces for macOS); then the user starts an Opus (high) planning session that expands gate 2 into steps with the playtest carry-over items (see the plan's gate 2 outline). Do not begin any G2 item.
+Next exact action: the user starts an Opus (high) planning session that expands gate 2 into steps with the playtest carry-over items (see the plan's gate 2 outline). Do not begin any G2 item.
 ```
 
 ## Pins at base
@@ -358,3 +358,8 @@ Tree: m7-factions 06f570e + uncommitted. `game/scripts/simulation/skirmish.gd`, 
 - Numbers: priorities 29/28/27/26 are from the decoded Normal Tank set (confirmed). Guesses: the 4-cell divisor (ZH 100 units, assumed 25 units per cell), `WAVE_TIMEOUT` 1800 (ZH `checkReadyTeams` 60 s), `RALLY_RADIUS` 6, and `WAVE_MIN`. `WAVE_MIN` 8 (the starting value) leaves the 6-seat team match unfinished at the 45000 cap (ended tick 54974, winner team 2); scratch runs with other values, same tree: 6 / 1800 won 33204 team 1, 8 / 900 won 39370 team 1, 10 / 1200 won 36521 team 2, 5 / 900 won 61243, 12 / 1800 won 59970, 5 / 1800 not done by 65000. The outcome is chaotic in the constant, not monotone; 6 was chosen as the one that keeps the old 60 s timeout and ends inside the cap. S1 with 8: 8384, with 6: 9473 (both window, winner 1).
 - Probe (scratch script, not tracked; 10 riflemen behind 3 batteries and 2 power plants, human does nothing else, bot seat 2 on the skirmish map, 30000 ticks): new bot killed 2 of 3 batteries (ticks 6990 and 18989), made 120 combat units, 112 died, no win in 30000 ticks, human riflemen all alive. Old bot at the same ticks: 0 batteries killed, 123 made, 123 died, no win. So the bot now deals with batteries but pays about 55 units per battery.
 - The bot still never builds `usa_defence` (user ruling kept).
+
+## CI evidence at gate 1 (2026-11-06)
+
+- Run 42292961869 on 3a31be0: Linux and Windows Godot jobs failed on `BM5 transports: 20 full cars against 100 riflemen` in the exported suite only. Cause: `combat_workload.gd` `_transports()` spawned the 100 enemy riflemen inside `assert(...)`, which exported release builds strip. Fixed in f44f081 (spawn bound to a variable first); the local headless run never failed because asserts are active there. No other call inside an `assert` in game scripts, benchmarks or tests (searched).
+- Run 42295509369 on f44f081: all jobs green, including compare-replays. `sh tools/compare_local_traces.sh 42295509369` on macOS: REPLAYS MATCHED for replay, economy, combat (1200 each), team (100) and netplay (278).
