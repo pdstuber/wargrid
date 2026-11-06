@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 
 const Simulation = preload("res://scripts/simulation/simulation.gd")

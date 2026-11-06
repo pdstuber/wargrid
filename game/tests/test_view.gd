@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 
 const View = preload("res://scripts/presentation/world_view.gd")

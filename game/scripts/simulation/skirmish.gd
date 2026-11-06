@@ -28,11 +28,11 @@ static func _slot(sim: RefCounted, kind: String, player: int) -> Vector2i:
 	var map: Dictionary = sim.map_data()
 	return MapData.slot(map if not map.is_empty() else _default_map(), player, kind)
 
-static func create(with_match: bool = true, second_controller: String = "ai") -> RefCounted:
+static func create(with_match: bool = true, second_controller: String = "ai") -> Simulation:
 	var seats: Array[Dictionary] = [
 		{"seat": 1, "team": 1, "controller": "human", "credits": START_CREDITS},
 		{"seat": 2, "team": 2, "controller": second_controller, "credits": START_CREDITS}]
-	var sim = MapData.create(_default_map(), seats)
+	var sim: Simulation = MapData.create(_default_map(), seats)
 	if with_match: sim.start_match([1, 2] as Array[int])
 	return sim
 
@@ -48,13 +48,13 @@ static func issue_opponents(sim: RefCounted, players: Array[int], attack_tick: i
 
 static func _decide(sim: RefCounted, player: int, attack_tick: int, state: Dictionary) -> void:
 	var sequence: int = -1
-	for entry in state.last_sequences:
+	for entry: Variant in state.last_sequences:
 		if entry.player == player: sequence = entry.sequence
 	var credits: int = 0
-	for entry in state.players:
+	for entry: Dictionary in state.players:
 		if entry.id == player: credits = entry.credits
 	var teams := {}
-	for entry in state.players: teams[entry.id] = entry.team
+	for entry: Dictionary in state.players: teams[entry.id] = entry.team
 	var ctx := {"sim": sim, "player": player, "tick": state.tick, "sequence": sequence, "credits": credits, "teams": teams}
 	var buildings: Array = state.buildings.filter(func(building: Dictionary) -> bool: return building.owner == player)
 	_build(ctx, state, buildings)
@@ -72,12 +72,12 @@ static func _send(ctx: Dictionary, payload: Dictionary) -> bool:
 
 static func _build(ctx: Dictionary, state: Dictionary, buildings: Array) -> void:
 	var builder: int = -1
-	for unit in state.entities:
+	for unit: Dictionary in state.entities:
 		if unit.owner == ctx.player and unit.kind == "builder":
 			builder = unit.id
 			break
 	if builder == -1: return
-	for building in buildings:
+	for building: Variant in buildings:
 		if building.completed: continue
 		if building.builder_id == null: _send(ctx, {"type": "resume_build", "builder_id": builder, "building_id": building.id})
 		return
@@ -89,7 +89,7 @@ static func _build(ctx: Dictionary, state: Dictionary, buildings: Array) -> void
 		return
 
 static func _produce(ctx: Dictionary, buildings: Array) -> void:
-	for building in buildings:
+	for building: Variant in buildings:
 		if not building.completed or not building.queue.is_empty() or not UNIT_FOR.has(building.kind): continue
 		var cost: int = Definitions.unit(UNIT_FOR[building.kind]).cost
 		if ctx.credits >= cost and _send(ctx, {"type": "produce", "building_id": building.id, "unit_kind": UNIT_FOR[building.kind]}): ctx.credits -= cost
@@ -98,7 +98,7 @@ static func _attack(ctx: Dictionary, state: Dictionary, skip: Dictionary = {}) -
 	var enemies: Array = state.entities.filter(func(unit: Dictionary) -> bool: return _hostile(ctx, unit.owner) and unit.kind != "collector")
 	enemies.append_array(state.buildings.filter(func(building: Dictionary) -> bool: return _hostile(ctx, building.owner)))
 	var groups := {}
-	for unit in state.entities:
+	for unit: Dictionary in state.entities:
 		if unit.owner != ctx.player or skip.has(unit.id) or not _idle(unit): continue
 		var target: Variant = _pick(unit, enemies)
 		if target == null: continue
@@ -106,7 +106,7 @@ static func _attack(ctx: Dictionary, state: Dictionary, skip: Dictionary = {}) -
 		groups[target].append(unit.id)
 	var targets: Array = groups.keys()
 	targets.sort()
-	for target in targets: _send(ctx, {"type": "attack", "entity_ids": groups[target], "target_id": target})
+	for target: Variant in targets: _send(ctx, {"type": "attack", "entity_ids": groups[target], "target_id": target})
 
 static func _hostile(ctx: Dictionary, owner: int) -> bool:
 	return owner != ctx.player and ctx.teams.get(owner, 0) != ctx.teams.get(ctx.player, -1)
@@ -122,24 +122,24 @@ static func _defend(ctx: Dictionary, state: Dictionary, buildings: Array) -> Dic
 	var sent := {}
 	if intruders.is_empty(): return sent
 	var groups := {}
-	for unit in state.entities:
+	for unit: Dictionary in state.entities:
 		if unit.owner != ctx.player or not _idle(unit): continue
 		var target: Variant = _nearest(unit, intruders)
 		if not groups.has(target): groups[target] = []
 		groups[target].append(unit.id)
 	var targets: Array = groups.keys()
 	targets.sort()
-	for target in targets:
+	for target: Variant in targets:
 		if not _send(ctx, {"type": "attack", "entity_ids": groups[target], "target_id": target}): continue
-		for id in groups[target]: sent[id] = true
+		for id: Variant in groups[target]: sent[id] = true
 	return sent
 
 static func _pick(unit: Dictionary, enemies: Array) -> Variant:
 	var position := Vector2(unit.position[0], unit.position[1])
-	for category in TARGET_CATEGORIES:
+	for category: Variant in TARGET_CATEGORIES:
 		var best: Variant = null
 		var best_distance: float = INF
-		for enemy in enemies:
+		for enemy: Variant in enemies:
 			if not category.has(enemy.kind): continue
 			var distance: float = Combat.distance_squared(position, enemy)
 			if distance < best_distance or (distance == best_distance and enemy.id < best):
@@ -152,7 +152,7 @@ static func _nearest(unit: Dictionary, enemies: Array) -> int:
 	var position := Vector2(unit.position[0], unit.position[1])
 	var best: int = -1
 	var best_distance: float = INF
-	for enemy in enemies:
+	for enemy: Variant in enemies:
 		var distance: float = Combat.distance_squared(position, enemy)
 		if distance < best_distance or (distance == best_distance and enemy.id < best):
 			best = enemy.id

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 
 const Main = preload("res://scenes/main.tscn")
@@ -35,6 +36,7 @@ func test_ready(runner) -> bool:
 	var positions: Dictionary = {}
 	for i in range(state.entities.size()):
 		var unit: Dictionary = state.entities[i]
+		@warning_ignore("integer_division")
 		runner.check(unit.id == i + 1 and unit.owner == 1 and unit.position == [float(i % 5) + 1.5, float(i / 5) + 1.5], "S1 authored start")
 		positions[unit.position] = true
 	runner.check(positions.size() == 20, "S1 unique starts")
@@ -160,7 +162,7 @@ func test_driver(runner) -> bool:
 	main.free()
 	return true
 
-func _mouse(runner, main, viewport_point: Vector2, button: MouseButton, pressed: bool, shift: bool = false) -> void:
+func _mouse(runner, _main, viewport_point: Vector2, button: MouseButton, pressed: bool, shift: bool = false) -> void:
 	var event := InputEventMouseButton.new()
 	event.position = runner.root.get_final_transform() * viewport_point
 	event.global_position = event.position

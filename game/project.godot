@@ -42,3 +42,12 @@ common/physics_ticks_per_second=30
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 textures/vram_compression/import_etc2_astc=true
+
+[debug]
+
+gdscript/warnings/untyped_declaration=2
+gdscript/warnings/unused_parameter=2
+gdscript/warnings/shadowed_variable=2
+gdscript/warnings/shadowed_variable_base_class=2
+gdscript/warnings/shadowed_global_identifier=2
+gdscript/warnings/integer_division=2

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 
 const RelayTransport = preload("res://scripts/net/relay_transport.gd")

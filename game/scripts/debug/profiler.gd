@@ -22,13 +22,13 @@ static func end(zone: StringName, start: int) -> void:
 
 static func end_tick() -> void:
 	if not enabled: return
-	for zone in _current:
+	for zone: Variant in _current:
 		if not _series.has(zone):
 			var zeros: Array = []
 			zeros.resize(_ticks)
 			zeros.fill(0.0)
 			_series[zone] = zeros
-	for zone in _series: _series[zone].append(_current.get(zone, 0) / 1000.0)
+	for zone: Variant in _series: _series[zone].append(_current.get(zone, 0) / 1000.0)
 	_current.clear()
 	_ticks += 1
 
@@ -50,18 +50,18 @@ static func series(zone: StringName) -> PackedFloat64Array:
 
 static func _mean(zone: StringName) -> float:
 	var total: float = 0.0
-	for value in _series[zone]: total += value
+	for value: Variant in _series[zone]: total += value
 	return total / maxi(_ticks, 1)
 
 # Zones sorted by mean ms per tick; share is relative to `total_zone`.
 static func report(label: String, total_zone: StringName = &"step") -> PackedStringArray:
 	var zones: Array = _series.keys()
 	var means: Dictionary = {}
-	for zone in zones: means[zone] = _mean(zone)
+	for zone: Variant in zones: means[zone] = _mean(zone)
 	zones.sort_custom(func(a: StringName, b: StringName) -> bool: return means[a] > means[b] or (means[a] == means[b] and String(a) < String(b)))
 	var total: float = means.get(total_zone, 0.0)
 	var lines := PackedStringArray()
-	for zone in zones:
+	for zone: Variant in zones:
 		var summary: Dictionary = Stats.summary(series(zone))
 		lines.append("PROFILE %s zone=%s mean_ms=%.4f share=%.1f%% p50=%.4f p95=%.4f max=%.3f calls_per_tick=%.2f" % [label, zone, means[zone],
 			100.0 * means[zone] / total if total > 0.0 else 0.0, summary.p50, summary.p95, summary.max, float(_calls.get(zone, 0)) / maxi(_ticks, 1)])

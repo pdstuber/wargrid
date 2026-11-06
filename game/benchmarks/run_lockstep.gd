@@ -4,6 +4,7 @@ const Workload = preload("res://scripts/debug/combat_workload.gd")
 const Stats = preload("res://scripts/debug/timing_stats.gd")
 const Lockstep = preload("res://scripts/net/lockstep.gd")
 const Wire = preload("res://scripts/net/wire.gd")
+const Simulation = preload("res://scripts/simulation/simulation.gd")
 
 const WARMUP: int = 300
 const SAMPLES: int = 1800
@@ -18,7 +19,7 @@ func _run() -> void:
 	quit(0 if _measure() else 1)
 
 func _measure() -> bool:
-	var sim: RefCounted = Workload.create("contact")
+	var sim: Simulation = Workload.create("contact")
 	var seats: Array[int] = [1, 2]
 	var mine := Lockstep.new(1, seats)
 	var peer := Lockstep.new(2, seats)
@@ -66,6 +67,7 @@ func _measure() -> bool:
 	var summary: Dictionary = Stats.summary(overhead)
 	print("LOCKSTEP overhead_ms=", JSON.stringify(summary), " snapshot_ms_on_hash_ticks=", JSON.stringify(Stats.summary(snapshots)),
 		" hash_ticks=", hash_ticks, " busy_30_tick_windows=", busy_windows, " alive_end=", sim.snapshot().entities.size())
+	@warning_ignore("integer_division")
 	if hash_ticks < 60 or busy_windows < SAMPLES / 30:
 		push_error("Lockstep benchmark workload invalid: hash_ticks=%d busy_windows=%d" % [hash_ticks, busy_windows])
 		return false

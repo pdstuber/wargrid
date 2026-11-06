@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 
 const Skirmish = preload("res://scripts/simulation/skirmish.gd")
@@ -44,14 +45,17 @@ func test_roster_production(runner) -> bool:
 	var barracks: int = Economy.build(runner, sim, "barracks", Skirmish.origin("barracks", 1))
 	runner.check(not Economy.send(sim, {"type": "produce", "building_id": barracks, "unit_kind": "tank"}).ok, "R2 barracks rejects tanks")
 	var infantry: int = _queue_and_wait(runner, sim, barracks, "infantry", "R2")
+	@warning_ignore("integer_division")
 	runner.check(infantry % 1000 == 225 and infantry / 1000 >= 148 and infantry / 1000 <= 150, "R2 infantry costs 225 and takes 150 work ticks, got " + str(infantry))
 	Economy.build(runner, sim, "reactor", Skirmish.origin("reactor", 1))
 	Economy.build(runner, sim, "depot", Skirmish.origin("depot", 1))
 	var factory: int = Economy.build(runner, sim, "factory", Skirmish.origin("factory", 1))
 	runner.check(not Economy.send(sim, {"type": "produce", "building_id": factory, "unit_kind": "infantry"}).ok, "R2 factory rejects infantry")
 	var tank: int = _queue_and_wait(runner, sim, factory, "tank", "R2")
+	@warning_ignore("integer_division")
 	runner.check(tank % 1000 == 900 and tank / 1000 >= 298 and tank / 1000 <= 300, "R2 tank costs 900 and takes 300 work ticks, got " + str(tank))
 	var vehicle: int = _queue_and_wait(runner, sim, factory, "vehicle", "R2")
+	@warning_ignore("integer_division")
 	runner.check(vehicle % 1000 == 700 and vehicle / 1000 >= 298 and vehicle / 1000 <= 300, "R2 legacy vehicle still 700 and 300 ticks, got " + str(vehicle))
 	return true
 

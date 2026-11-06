@@ -40,7 +40,7 @@ func _connect(code: String) -> void:
 	set_process(true)
 
 func _set_busy(busy: bool) -> void:
-	for path in ["Offline", "Create", "RelayUrl", "JoinRow/Code", "JoinRow/Join"]:
+	for path: String in ["Offline", "Create", "RelayUrl", "JoinRow/Code", "JoinRow/Join"]:
 		var control: Control = get_node("Center/Box/" + path)
 		if control is BaseButton: control.disabled = busy
 		else: control.editable = not busy

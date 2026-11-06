@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 
 const Wire = preload("res://scripts/net/wire.gd")

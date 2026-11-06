@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 
 const Stats = preload("res://scripts/debug/timing_stats.gd")

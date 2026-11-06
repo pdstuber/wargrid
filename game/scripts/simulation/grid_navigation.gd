@@ -9,13 +9,13 @@ var _map_size: Vector2i
 var _snapshot_cache: Dictionary = {}
 var _components := PackedInt32Array()
 var _component_cells: Array[Array] = []
-const Neighbors: Array[Vector2i] = [Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT, Vector2i.UP]
+const NEIGHBORS: Array[Vector2i] = [Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT, Vector2i.UP]
 
-func _init(blocked_cells: Array[Vector2i] = [], size: Vector2i = SIZE) -> void:
-	assert(size.x > 0 and size.y > 0 and size.x <= 256 and size.y <= 256)
+func _init(blocked_cells: Array[Vector2i] = [], grid_size: Vector2i = SIZE) -> void:
+	assert(grid_size.x > 0 and grid_size.y > 0 and grid_size.x <= 256 and grid_size.y <= 256)
 	var zone: int = Profiler.begin()
-	_map_size = size
-	_grid.region = Rect2i(Vector2i.ZERO, size)
+	_map_size = grid_size
+	_grid.region = Rect2i(Vector2i.ZERO, grid_size)
 	_grid.cell_size = Vector2.ONE
 	_grid.cell_shape = AStarGrid2D.CELL_SHAPE_SQUARE
 	_grid.default_compute_heuristic = AStarGrid2D.HEURISTIC_MANHATTAN
@@ -44,6 +44,7 @@ func _normalize(cells: Array[Vector2i]) -> Array[Vector2i]:
 	for key in keys:
 		if key == previous: continue
 		previous = key
+		@warning_ignore("integer_division")
 		normalized.append(Vector2i(key % _map_size.x, key / _map_size.x))
 	return normalized
 
@@ -72,17 +73,17 @@ func _rebuild_component_cells() -> void:
 	var count: int = 0
 	for y in range(_map_size.y):
 		for x in range(_map_size.x):
-			var seed := Vector2i(x, y)
-			if _grid.is_point_solid(seed) or _components[_index(seed)] != -1:
+			var seed_cell := Vector2i(x, y)
+			if _grid.is_point_solid(seed_cell) or _components[_index(seed_cell)] != -1:
 				continue
 			queue.clear()
-			queue.append(seed)
-			_components[_index(seed)] = count
+			queue.append(seed_cell)
+			_components[_index(seed_cell)] = count
 			var read: int = 0
 			while read < queue.size():
 				var cell: Vector2i = queue[read]
 				read += 1
-				for offset in Neighbors:
+				for offset in NEIGHBORS:
 					var neighbor: Vector2i = cell + offset
 					if not _grid.region.has_point(neighbor) or _grid.is_point_solid(neighbor):
 						continue
@@ -133,9 +134,9 @@ func snapshot() -> Dictionary:
 			pair.make_read_only()
 			cells.append(pair)
 		cells.make_read_only()
-		var size: Array = [_map_size.x, _map_size.y]
-		size.make_read_only()
-		_snapshot_cache = {"size": size, "blocked_cells": cells}
+		var size_pair: Array = [_map_size.x, _map_size.y]
+		size_pair.make_read_only()
+		_snapshot_cache = {"size": size_pair, "blocked_cells": cells}
 		_snapshot_cache.make_read_only()
 	return _snapshot_cache
 
@@ -251,7 +252,7 @@ func _single_neighbor_label(rectangle: Array[Vector2i]) -> int:
 		inside[cell] = true
 	var label: int = -1
 	for cell in rectangle:
-		for offset in Neighbors:
+		for offset in NEIGHBORS:
 			var neighbor: Vector2i = cell + offset
 			if inside.has(neighbor) or not _open(neighbor):
 				continue

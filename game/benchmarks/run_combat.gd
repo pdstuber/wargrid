@@ -2,6 +2,7 @@ extends SceneTree
 
 const Workload = preload("res://scripts/debug/combat_workload.gd")
 const Stats = preload("res://scripts/debug/timing_stats.gd")
+const Simulation = preload("res://scripts/simulation/simulation.gd")
 
 const WARMUP: int = 300
 const SAMPLES: int = 1800
@@ -14,7 +15,7 @@ func _initialize() -> void:
 func _run() -> void:
 	print("M4 COMBAT HEADLESS engine=", Engine.get_version_info().string, " os=", OS.get_name(),
 		" cpu=", OS.get_processor_name(), " map=64x64 units=150v150/105v105 warmup_ticks=", WARMUP, " sample_ticks=", SAMPLES, " unpaced=true")
-	for layout in ["open", "dense", "contact", "skirmish3v3"]:
+	for layout: String in ["open", "dense", "contact", "skirmish3v3"]:
 		if not _measure(layout):
 			quit(1)
 			return
@@ -22,7 +23,7 @@ func _run() -> void:
 	quit(0)
 
 func _measure(layout: String) -> bool:
-	var sim: RefCounted = Workload.create(layout)
+	var sim: Simulation = Workload.create(layout)
 	var samples := PackedFloat64Array()
 	var warmup := PackedFloat64Array()
 	var snapshots := PackedFloat64Array()
@@ -42,7 +43,7 @@ func _measure(layout: String) -> bool:
 		var snapshot_started: int = Time.get_ticks_usec()
 		var state: Dictionary = sim.snapshot()
 		var snapshot_elapsed: float = (Time.get_ticks_usec() - snapshot_started) / 1000.0
-		for event in state.combat_events:
+		for event: Dictionary in state.combat_events:
 			if event.type == "shot":
 				shots += 1
 				if first_shot == -1: first_shot = tick

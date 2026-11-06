@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 
 const Definitions = preload("res://scripts/simulation/combat_definitions.gd")

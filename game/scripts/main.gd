@@ -3,8 +3,8 @@ extends Node
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
-const Zooms: Array[float] = [0.5, 1.0, 2.0]
-var simulation = Simulation.new()
+const ZOOMS: Array[float] = [0.5, 1.0, 2.0]
+var simulation: Simulation = Simulation.new()
 var selected_ids: Array[int] = []
 var local_player: int = 1
 var _sequence: int = 0
@@ -31,7 +31,7 @@ func _ready() -> void:
 func _reset_camera() -> void:
 	var size: Array = simulation.snapshot().map.size
 	_camera_bounds = Rect2(Vector2.ZERO, Vector2.ZERO)
-	for corner in [Vector2(size[0], 0), Vector2(0, size[1]), Vector2(size[0], size[1])]:
+	for corner: Variant in [Vector2(size[0], 0), Vector2(0, size[1]), Vector2(size[0], size[1])]:
 		_camera_bounds = _camera_bounds.expand(Iso.world_to_plane(corner))
 	_camera.position = Iso.world_to_plane(Vector2(size[0], size[1]) / 2.0)
 
@@ -54,9 +54,9 @@ func pan_camera(direction: Vector2, delta: float) -> void:
 func change_zoom(direction: int) -> void:
 	if _selecting:
 		return
-	var index: int = Zooms.find(_camera.zoom.x)
-	index = clampi(index + signi(direction), 0, Zooms.size() - 1)
-	_camera.zoom = Vector2.ONE * Zooms[index]
+	var index: int = ZOOMS.find(_camera.zoom.x)
+	index = clampi(index + signi(direction), 0, ZOOMS.size() - 1)
+	_camera.zoom = Vector2.ONE * ZOOMS[index]
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("deselect"):
@@ -144,7 +144,7 @@ func _show(state: Dictionary) -> void:
 	_refresh_hud(state)
 	Profiler.end(&"refresh.hud", zone)
 
-func _create_simulation() -> RefCounted:
+func _create_simulation() -> Simulation:
 	for y in range(4, 10):
 		for x in range(6, 9):
 			_base_blocked.append(Vector2i(x, y))
@@ -156,7 +156,7 @@ func _create_simulation() -> RefCounted:
 
 func _refresh_hud(state: Dictionary) -> void:
 	var counts := {"moving": 0, "path_pending": 0, "arrived": 0, "blocked": 0}
-	for unit in state.entities:
+	for unit: Dictionary in state.entities:
 		if counts.has(unit.status):
 			counts[unit.status] += 1
 	_status.text = "Left/drag: select | Shift: add | Right: move | WASD/arrows: pan | Wheel: zoom | Esc: clear | B: obstacle\nSelected: %d | Tick: %d | Moving: %d | Pending: %d | Arrived: %d | Blocked: %d\n%s" % [
@@ -183,7 +183,7 @@ func _submit(payload: Dictionary) -> void:
 	var command: Dictionary = payload.duplicate(true)
 	command.tick = command.get("tick",state.tick)
 	command.player = local_player
-	for entry in state.last_sequences:
+	for entry: Variant in state.last_sequences:
 		if entry.player == local_player: _sequence = maxi(_sequence,entry.sequence + 1)
 	command.sequence = _sequence
 	var result: Dictionary = simulation.issue_command(command)

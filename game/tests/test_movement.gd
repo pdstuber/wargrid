@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 
 const Simulation = preload("res://scripts/simulation/simulation.gd")
@@ -134,6 +135,7 @@ func replay(batch: int, reads: bool = false):
 	order(sim, Vector2(3.5, 1.5))
 	order(sim, Vector2(1.5, 5.5), 1, 17)
 	order(sim, Vector2(4.5, 4.5), 2, 68)
+	@warning_ignore("integer_division")
 	for group in range(300 / batch):
 		for tick in range(batch):
 			if reads:

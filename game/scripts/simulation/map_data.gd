@@ -21,47 +21,47 @@ static func parse(text: String) -> Dictionary:
 	return parsed
 
 static func slot(map: Dictionary, seat: int, kind: String) -> Vector2i:
-	for start in map.starts:
+	for start: Dictionary in map.starts:
 		if int(start.seat) == seat: return _cell(start.slots[kind])
 	return Vector2i(-1, -1)
 
 static func start_cell(map: Dictionary, seat: int) -> Vector2i:
-	for start in map.starts:
+	for start: Dictionary in map.starts:
 		if int(start.seat) == seat: return _cell(start.cell)
 	return Vector2i(-1, -1)
 
 static func blocked_cells(map: Dictionary) -> Array[Vector2i]:
 	var cells: Array[Vector2i] = []
-	for y in map.cells.size():
+	for y: int in map.cells.size():
 		var row: String = map.cells[y]
 		for x in row.length():
 			if row[x] != ".": cells.append(Vector2i(x, y))
 	return cells
 
-static func create(map: Dictionary, seats: Array[Dictionary]) -> RefCounted:
-	var sim = Simulation.new(blocked_cells(map), Vector2i(int(map.size[0]), int(map.size[1])))
+static func create(map: Dictionary, seats: Array[Dictionary]) -> Simulation:
+	var sim: Simulation = Simulation.new(blocked_cells(map), Vector2i(int(map.size[0]), int(map.size[1])))
 	sim._map = map
 	for seat in seats: sim.add_player(seat.seat, seat.credits, seat.controller, seat.get("team", 0))
 	for seat in seats:
 		var cell := start_cell(map, seat.seat)
 		sim.spawn(seat.seat, Vector2(cell) + Vector2(0.5, 0.5), "builder")
-	for source in map.sources: sim.add_supply_source(_cell(source.origin), int(source.boxes))
+	for source: Dictionary in map.sources: sim.add_supply_source(_cell(source.origin), int(source.boxes))
 	return sim
 
 static func _cell(pair: Array) -> Vector2i:
 	return Vector2i(int(pair[0]), int(pair[1]))
 
 static func _valid(map: Dictionary) -> bool:
-	for key in ["name", "notice", "size", "cells", "starts", "sources"]:
+	for key: String in ["name", "notice", "size", "cells", "starts", "sources"]:
 		if not map.has(key): return false
 	if map.size is not Array or map.size.size() != 2: return false
 	var size := Vector2i(int(map.size[0]), int(map.size[1]))
 	if size.x <= 0 or size.y <= 0 or map.cells is not Array or map.cells.size() != size.y: return false
-	for row in map.cells:
+	for row: Variant in map.cells:
 		if row is not String or row.length() != size.x: return false
-	for start in map.starts:
+	for start: Variant in map.starts:
 		if not _start_valid(map, start, size): return false
-	for source in map.sources:
+	for source: Variant in map.sources:
 		if not _open(map, size, _cell(source.origin), SOURCE_FOOTPRINT): return false
 	return true
 

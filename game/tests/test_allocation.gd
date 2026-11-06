@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 
 const Navigation = preload("res://scripts/simulation/grid_navigation.gd")
@@ -47,6 +48,7 @@ func test_ring_work_ceiling(runner) -> bool:
 	var nav = Navigation.new([], Vector2i(196, 196))
 	var units: Array[Dictionary] = []
 	for i in range(60):
+		@warning_ignore("integer_division")
 		units.append({"id": i + 1, "position": [5.5 + i % 10, 95.5 + i / 10]})
 	var goals: Dictionary = Allocation.assign(nav, units, Vector2(150.5, 98.5), [])
 	runner.check(Allocation.last_cells_examined <= CEILING, "AL2 ring work %d within ceiling %d" % [Allocation.last_cells_examined, CEILING])

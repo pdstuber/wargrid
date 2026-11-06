@@ -15,8 +15,8 @@ func _ready() -> void:
 	$HUD/Economy/Produce.pressed.connect(_produce_selected)
 	$HUD/Economy/CancelBuild.pressed.connect(_cancel_build)
 
-func _create_simulation() -> RefCounted:
-	var sim = Simulation.new([],Vector2i(32,32))
+func _create_simulation() -> Simulation:
+	var sim: Simulation = Simulation.new([],Vector2i(32,32))
 	sim.add_player(1,10000)
 	sim.spawn(1,Vector2(4.5,4.5),"builder")
 	sim.add_supply_source(Vector2i(24,4),200)
@@ -44,12 +44,12 @@ func _view_selection() -> Array[int]:
 	return ids
 
 func _local_state(state: Dictionary) -> Dictionary:
-	for player in state.players:
+	for player: Dictionary in state.players:
 		if player.id == local_player: return player
 	return state.players[0]
 
 func _building(state: Dictionary, id: int) -> Dictionary:
-	for building in state.buildings:
+	for building: Dictionary in state.buildings:
 		if building.id == id: return building
 	return {}
 
@@ -60,7 +60,7 @@ func _refresh() -> void:
 	$HUD/Economy.position.y = maxf(116.0,_status.position.y + _status.get_minimum_size().y + 8.0)
 
 func _refresh_hud(state: Dictionary) -> void:
-	for result in state.command_results:
+	for result: Dictionary in state.command_results:
 		if result.player == local_player and (result.tick > _last_result_tick or (result.tick == _last_result_tick and result.sequence > _last_result_sequence)):
 			_error = result.error
 			_last_result_tick = result.tick
@@ -76,10 +76,10 @@ func _refresh_hud(state: Dictionary) -> void:
 	_refresh_queue(building.get("queue",[]))
 
 func _refresh_queue(queue: Array) -> void:
-	var ids: Array = queue.map(func(entry: Dictionary): return str(entry.id))
+	var ids: Array = queue.map(func(entry: Dictionary) -> String: return str(entry.id))
 	for child in $HUD/Economy/Queue.get_children():
 		if not ids.has(str(child.name)): child.free()
-	for entry in queue:
+	for entry: Variant in queue:
 		var button: Button = $HUD/Economy/Queue.get_node_or_null(str(entry.id))
 		if button == null:
 			button = Button.new()
@@ -100,7 +100,7 @@ func change_zoom(direction: int) -> void:
 
 func _builder() -> int:
 	if selected_ids.size() != 1: return -1
-	for unit in simulation.snapshot().entities:
+	for unit: Dictionary in simulation.snapshot().entities:
 		if unit.id == selected_ids[0] and unit.kind == "builder" and unit.owner == local_player: return unit.id
 	return -1
 
@@ -181,10 +181,10 @@ func _unhandled_input(event: InputEvent) -> void:
 func _context_order(id: int) -> bool:
 	if selected_ids.is_empty(): return false
 	var state: Dictionary = simulation.snapshot()
-	for source in state.sources:
+	for source: Dictionary in state.sources:
 		if source.id != id: continue
 		var collectors: bool = true
-		for unit in state.entities:
+		for unit: Dictionary in state.entities:
 			if selected_ids.has(unit.id) and unit.kind != "collector": collectors = false
 		if collectors: _submit({"type":"gather","entity_ids":selected_ids.duplicate(),"source_id":id})
 		else:

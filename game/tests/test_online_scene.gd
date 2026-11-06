@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 
 const OnlineScene = preload("res://scenes/online_skirmish.tscn")

@@ -6,6 +6,7 @@ const CombatWorkload = preload("res://scripts/debug/combat_workload.gd")
 const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 const ScriptedHuman = preload("res://scripts/simulation/scripted_human.gd")
 const View = preload("res://scripts/presentation/world_view.gd")
+const Simulation = preload("res://scripts/simulation/simulation.gd")
 
 const WARMUP: int = 300
 const SAMPLES: int = 1800
@@ -22,10 +23,10 @@ func _run() -> void:
 		" warmup_ticks=", WARMUP, " sample_ticks=", SAMPLES, " unpaced=true zones=inclusive")
 	_view = View.new()
 	var done: int = 0
-	for layout in ["open", "dense"]:
+	for layout: String in ["open", "dense"]:
 		_movement(layout)
 		done += 1
-	for layout in ["contact", "skirmish3v3", "open"]:
+	for layout: String in ["contact", "skirmish3v3", "open"]:
 		_fixed("combat_" + layout, CombatWorkload.create(layout), 1)
 		done += 1
 	_skirmish()
@@ -37,15 +38,15 @@ func _run() -> void:
 	quit(0)
 
 # Mirrors one rendered tick: the scene snapshots (base scenes twice), then the view copies and sorts.
-func _frame(sim: RefCounted, snapshots: int) -> void:
+func _frame(sim: Simulation, snapshots: int) -> void:
 	var state: Dictionary = {}
 	for i in range(snapshots): state = sim.snapshot()
 	_view.set_state(state, _no_selection)
 	Profiler.end_tick()
 
-func _harness(call: Callable) -> Variant:
+func _harness(workload: Callable) -> Variant:
 	Profiler.enabled = false
-	var result: Variant = call.call()
+	var result: Variant = workload.call()
 	Profiler.enabled = true
 	return result
 
@@ -53,12 +54,12 @@ func _phase(label: String, warmup: bool) -> void:
 	for line in Profiler.report(label + (".warmup" if warmup else "")): print(line)
 	var slow: Array = Array(Profiler.slow)
 	slow.sort_custom(func(a: String, b: String) -> bool: return a.get_slice(" ", 2).to_float() > b.get_slice(" ", 2).to_float())
-	for line in slow.slice(0, TOP_SLOW): print("PROFILE_SLOW ", label, " ", line)
+	for line: Variant in slow.slice(0, TOP_SLOW): print("PROFILE_SLOW ", label, " ", line)
 	print("PROFILE_SLOW_COUNT ", label, " ", slow.size())
 	Profiler.reset()
 
 func _movement(layout: String) -> void:
-	var sim: RefCounted = MovementWorkload.create(layout)
+	var sim: Simulation = MovementWorkload.create(layout)
 	Profiler.reset()
 	Profiler.enabled = true
 	var leg: int = 0
@@ -73,7 +74,7 @@ func _movement(layout: String) -> void:
 	Profiler.enabled = false
 	print("PROFILE_END movement_", layout, " legs=", leg)
 
-func _fixed(label: String, sim: RefCounted, snapshots: int, edits: Dictionary = {}) -> void:
+func _fixed(label: String, sim: Simulation, snapshots: int, edits: Dictionary = {}) -> void:
 	Profiler.reset()
 	Profiler.enabled = true
 	var start_units: int = sim.snapshot().entities.size()
@@ -87,7 +88,7 @@ func _fixed(label: String, sim: RefCounted, snapshots: int, edits: Dictionary = 
 	print("PROFILE_END ", label, " units_start=", start_units, " units_end=", sim.snapshot().entities.size())
 
 func _skirmish() -> void:
-	var sim: RefCounted = Skirmish.create()
+	var sim: Simulation = Skirmish.create()
 	Profiler.reset()
 	Profiler.enabled = true
 	var peak: int = 0
@@ -103,7 +104,7 @@ func _skirmish() -> void:
 	print("PROFILE_END skirmish_match ticks=", sim.tick(), " over=", sim.match_over(), " peak_entities=", peak)
 
 func _large() -> void:
-	var sim: RefCounted = CombatWorkload.create_large()
+	var sim: Simulation = CombatWorkload.create_large()
 	var started: int = Time.get_ticks_usec()
 	var route: Array[Vector2] = sim._navigation.route(Vector2(5.5, 98.5), Vector2(190.5, 98.5))
 	print("PROFILE_ROUTE large start_to_start_ms=", (Time.get_ticks_usec() - started) / 1000.0, " points=", route.size())

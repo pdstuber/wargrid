@@ -9,7 +9,7 @@ func _ready() -> void:
 	super._ready()
 	$HUD/Restart.pressed.connect(_restart)
 
-func _create_simulation() -> RefCounted:
+func _create_simulation() -> Simulation:
 	return Skirmish.create()
 
 func _step_simulation() -> void:
@@ -67,7 +67,7 @@ func _finish_selection(point: Vector2) -> void:
 func _enemy_at(plane: Vector2) -> int:
 	var id: int = _view.pick_entity(plane, true)
 	if id == -1: return _view.pick_target(plane, local_player)
-	for unit in simulation.snapshot().entities:
+	for unit: Dictionary in simulation.snapshot().entities:
 		if unit.id == id: return id if unit.owner != local_player else -1
 	return -1
 
@@ -103,7 +103,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _selected_summary(state: Dictionary) -> String:
 	if selected_ids.size() != 1: return ""
-	for unit in state.entities:
+	for unit: Dictionary in state.entities:
 		if unit.id != selected_ids[0]: continue
 		var line: String = "%s #%d HP %d/%d" % [unit.kind, unit.id, unit.hp / 1000, unit.max_hp / 1000]
 		if unit.combat != null: line += " | %s%s" % [unit.combat.mode, "" if unit.combat.target_id == null else " -> #" + str(unit.combat.target_id)]
@@ -121,8 +121,8 @@ func _ordinal(n: int) -> String:
 	return str(n) + suffix
 
 func _inspected(state: Dictionary) -> Dictionary:
-	for key in ["entities", "buildings"]:
-		for object in state[key]:
+	for key: String in ["entities", "buildings"]:
+		for object: Variant in state[key]:
 			if object.id == inspected_id: return object
 	return {}
 

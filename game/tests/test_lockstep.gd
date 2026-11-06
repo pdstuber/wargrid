@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 
 const Lockstep = preload("res://scripts/net/lockstep.gd")
@@ -27,7 +28,7 @@ class Net extends RefCounted:
 	var max_delay: int = 0
 	var rng := RandomNumberGenerator.new()
 
-	func add(seat: int, controller_seat_two: String, clock: Callable = Time.get_ticks_usec) -> Client:
+	func add(seat: int, _controller_seat_two: String, clock: Callable = Time.get_ticks_usec) -> Client:
 		var c := Client.new()
 		c.seat = seat
 		c.sim = Skirmish.create(true, "human")
@@ -70,7 +71,7 @@ class Net extends RefCounted:
 			c.behavior = Callable()
 			c.hook = Callable()
 
-func _pair(runner, max_delay: int = 0) -> Net:
+func _pair(_runner, max_delay: int = 0) -> Net:
 	var net := Net.new()
 	net.max_delay = max_delay
 	net.rng.seed = 5
@@ -126,11 +127,11 @@ func test_two_clients_equal_hashes(runner) -> bool:
 	runner.check(a.ls.command_log() == b.ls.command_log() and a.ls.command_log().size() > 10, "L2 command logs equal")
 	var oracle = Skirmish.create(true, "human")
 	var rows := PackedStringArray()
-	var log: Array = a.ls.command_log().duplicate()
+	var log_rows: Array = a.ls.command_log().duplicate()
 	for tick in range(1801):
 		if tick % 30 == 0: rows.append("%d\t%s" % [tick, StateHash.digest(oracle.snapshot())])
 		if tick == 1800: break
-		while not log.is_empty() and log[0].tick == tick: oracle.issue_command(log.pop_front())
+		while not log_rows.is_empty() and log_rows[0].tick == tick: oracle.issue_command(log_rows.pop_front())
 		oracle.step()
 	runner.check(rows == a.ls.hash_rows(), "L2 single-process replay of the command log matches")
 	return true
@@ -142,12 +143,12 @@ func test_own_command_uses_wire_form(runner) -> bool:
 	for c in net.clients: c.target = 12
 	net.connect_all()
 	net.run()
-	var log: Array = net.clients[0].ls.command_log().filter(func(m: Dictionary) -> bool: return m.type == "move")
-	runner.check(log.size() == 1 and typeof(log[0].tick) == TYPE_INT and typeof(log[0].entity_ids[0]) == TYPE_INT, "L3 applied command has int fields")
-	runner.check(log.size() == 1 and log[0].target[0] == 0.30000000000000004, "L3 target keeps full precision")
+	var log_rows: Array = net.clients[0].ls.command_log().filter(func(m: Dictionary) -> bool: return m.type == "move")
+	runner.check(log_rows.size() == 1 and typeof(log_rows[0].tick) == TYPE_INT and typeof(log_rows[0].entity_ids[0]) == TYPE_INT, "L3 applied command has int fields")
+	runner.check(log_rows.size() == 1 and log_rows[0].target[0] == 0.30000000000000004, "L3 target keeps full precision")
 	var sent: Dictionary = Wire.decode(net.clients[0].sent.filter(func(t: String) -> bool: return t.contains('"move"'))[0]).message
-	runner.check(sent.commands[0] == log[0], "L3 applied equals decoded sent form")
-	runner.check(typeof(log[0].target[1]) == TYPE_FLOAT, "L3 integral target stays float after the wire")
+	runner.check(sent.commands[0] == log_rows[0], "L3 applied equals decoded sent form")
+	runner.check(typeof(log_rows[0].target[1]) == TYPE_FLOAT, "L3 integral target stays float after the wire")
 	return true
 
 func _own(state: Dictionary, owner: int) -> Dictionary:
@@ -189,6 +190,7 @@ func test_cross_seat_same_tick(runner) -> bool:
 		c.hook = func(client, tick: int) -> void:
 			var index: int = tick - start_tick
 			if index < 0 or index >= 121: return
+			@warning_ignore("integer_division")
 			var type: String = COMMAND_TYPES[index / 11] if client.seat == 1 else COMMAND_TYPES[index % 11]
 			client.ls.submit(_make(type, _own(client.sim.snapshot(), client.seat)))
 	net.connect_all()
