@@ -6,6 +6,7 @@ import tarfile
 import tempfile
 import unittest
 from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import check_reference as ref
@@ -119,7 +120,7 @@ class ReferenceTests(unittest.TestCase):
             archive = Path(directory) / "INIZH.big"
             archive.write_bytes(big(INI))
             wargrid = Path(directory) / "wargrid.json"
-            values = {
+            values: dict[str, Any] = {
                 "usa_rifle_infantry": {
                     "cost": 225,
                     "ticks": 150,

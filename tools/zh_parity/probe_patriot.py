@@ -27,7 +27,7 @@ def attempt(name, setup, frames=400, order=None):
     try:
         x, y = g.clear_strip(600)
         ids = setup(g, x, y)
-        rows = []
+        rows: list[tuple[str, str]] = []
         g.record(ids["watch"], 5, rows)
         print(
             name,

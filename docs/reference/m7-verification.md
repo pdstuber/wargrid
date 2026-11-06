@@ -5,10 +5,10 @@ Plan: [M7 plan](../superpowers/plans/2026-11-06-m7-factions.md). Design: [M7 des
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-06, gate 1 review fixes done, uncommitted)
+Resume record (updated 2026-11-06, defence scan throttle done, uncommitted)
 Branch / base commit / working-tree state: m7-factions at 7293c91 (Task 10 committed); Task 11 changes uncommitted
 Last green task / next incomplete task: gate 1 review fixes green (see 'Gate 1 review fixes' below) / user playtest, rendered benchmark
-Changed paths since last commit: tools/zh_parity/{parity,analyze}.py, docs/reference/{m7-verification,performance}.md
+Changed paths since last commit: game/scripts/simulation/combat.gd, game/tests/test_defences.gd, tools/{zh_parity/probe_patriot.py,test_check_reference.py}, docs/reference/m7-verification.md
 Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 326 cases / 134,257 / 0, exit 0, TESTS PASSED 134257 (after review fixes); lint, warnings, unittest (39), conformance (33), netplay x7, team match pass; run_benchmark.sh exit 1 (combat stress open/dense exceeded their ceilings, as at base)
 Known red case or blocker: none (benchmark ceilings exceeded: reported, not loosened)
 Approved decisions, pre-authorizations used, deferred gates: user ruling 2026-11-06: the bot does not build usa_defence; stress ceiling re-pin and rendered benchmark need the user
@@ -180,6 +180,6 @@ Measured (source build), 2026-11-06, `tools/zh_parity/probe_patriot.py` and `par
 - Test gaps: DF7 keep-current-target, DF8 splash, DF9 ignores air and contained, DF10 deaths after all shots (all four seen red by scratch mutations of combat.gd: skip validity check, drop the splash line, drop the air/contained filter in `valid_target`, remove the dead target inside the loop); F5 asserts FactionRow width <= 520 (red with a 1400 px minimum size).
 - Scout speed: `check_reference.py` against the retail INIZH.big: Humvee locomotor 2.4 cells/s (60 u/s), matches the parity row; set to 2.4. S1 7685 (not past 8000; floor stays 7000), team match won tick 30687 winner 1, netplay match 7817.
 - Suite 326 / 134,257 / 0, exit 0, TESTS PASSED 134257 (check count rose from 113,0xx: not investigated beyond the slower scout car lengthening per-tick scripted matches). Lint, warnings, unittest 39 pass. run_netplay match, run_team_match pass. No benchmarks run.
-- Open, user ruling pending: finding 8 defence scan cost (`Combat._defence_pick` scans all objects per idle defence per tick; the `defences` layout p95 2.87 ms over 1.82); left as is.
+- Finding 8 CLOSED (user ruling 2026-11-06: throttle like Zero Hour and OpenRA). Retail Patriot `AmericaPatriotBattery` (INIZH.big `data\ini\object\factionbuilding.ini`, TurretAI): MinIdleScanInterval = MaxIdleScanInterval = 250 ms = 8 ticks at 30/s (ceil, as `ms_to_ticks`). `Combat.DEFENCE_SCAN_TICKS` = 8, fixed, so no RNG draw (min equals max). A defence without a valid target scans only when `combat.scan_tick` is due; the key exists only after the first scan (inside the gate-1 building `combat` record, no new snapshot field outside the list). `fire_defences` returns early when no completed armed building exists and sorts only armed ids. Tests DF11 (scan count <= 11 in 80 ticks, mid-interval target shot at next scan, tick 8; both red before), DF12 (acquired target kept, no rescan; guard), DF13 (identical runs, identical shot ticks). DF1-DF10 unchanged and green. No pin moved (the bot never builds defences): suite 329 / 134,261 / 0, exit 0, TESTS PASSED 134261; lint, warnings, ruff, mypy (two stale annotation errors in tools fixed), unittest 39, netplay match 7817, team match won tick 30687 winner 1 pass. No benchmarks run; the `defences` layout needs the coordinator's rerun.
 - Open for gate 2 (plan outline carries them): finding 5 `setup_seat` placement unchecked online; finding 6 `build_order()` / `unit_for()` read `DEFAULT_FACTION` instead of the seat faction.
 - Plan/design: "Snapshot fields added at gate 1" now states the as-built keys (present only while set).

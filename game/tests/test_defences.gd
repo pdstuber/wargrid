@@ -8,7 +8,7 @@ const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.g
 const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 
 func cases() -> Array[Callable]:
-	return [test_defence_fires_edge_range, test_defence_clip_and_reload, test_defence_picks_nearest_hostile, test_powered_defence_dark_when_low_power, test_bot_does_not_build_defence, test_defence_shots_trigger_retaliation, test_defence_keeps_current_target, test_defence_splash, test_defence_ignores_air_and_contained, test_defence_deaths_after_all_shots]
+	return [test_defence_fires_edge_range, test_defence_clip_and_reload, test_defence_picks_nearest_hostile, test_powered_defence_dark_when_low_power, test_bot_does_not_build_defence, test_defence_shots_trigger_retaliation, test_defence_keeps_current_target, test_defence_splash, test_defence_ignores_air_and_contained, test_defence_deaths_after_all_shots, test_idle_defence_scans_on_interval, test_defence_keeps_target_without_scanning, test_defence_scan_deterministic]
 
 func _world() -> RefCounted:
 	var sim = Fixture.world()
@@ -147,4 +147,49 @@ func test_defence_deaths_after_all_shots(runner) -> bool:
 	var shooters: Array = events.filter(func(e: Dictionary) -> bool: return e.type == "shot" and e.target_id == tank).map(func(e: Dictionary) -> int: return e.attacker_id)
 	var deaths: Array = events.filter(func(e: Dictionary) -> bool: return e.type == "death" and e.object_id == tank)
 	runner.check(shooters == [first, second] and deaths.size() == 1, "DF10 both batteries fire on the tick the target dies, one death: " + str(shooters) + " " + str(deaths.size()))
+	return true
+
+# Work the battery adds: the same world without it is the baseline.
+func _battery_work(at: Vector2, ticks: int, with_battery: bool) -> int:
+	var sim = _world()
+	if with_battery: EconomyFixture.add_completed(sim, 1, "usa_defence", Vector2i(10, 10))
+	sim.spawn(2, at, "usa_builder")
+	var work: int = 0
+	for i in range(ticks):
+		sim.step()
+		work += sim.combat_work()
+	return work
+
+func test_idle_defence_scans_on_interval(runner) -> bool:
+	var scans: int = _battery_work(Vector2(22.5, 10.5), 80, true) - _battery_work(Vector2(22.5, 10.5), 80, false)
+	runner.check(scans > 0 and scans <= 11, "DF11 an idle battery scans once per 8 ticks, not every tick: " + str(scans))
+	var late = _world()
+	var battery: int = EconomyFixture.add_completed(late, 1, "usa_defence", Vector2i(10, 10))
+	for i in range(3): late.step()
+	late.spawn(2, Vector2(16.5, 10.5), "usa_tank")
+	var ticks: Array = []
+	for i in range(12):
+		late.step()
+		for shot in _shots(late, battery): ticks.append(shot.tick)
+	runner.check(ticks.size() > 0 and ticks[0] == 8, "DF11 a target appearing mid-interval is shot at the next scan: " + str(ticks))
+	return true
+
+func test_defence_keeps_target_without_scanning(runner) -> bool:
+	var extra: int = _battery_work(Vector2(16.5, 10.5), 40, true) - _battery_work(Vector2(16.5, 10.5), 40, false)
+	runner.check(extra <= 2, "DF12 an acquired target is kept without rescanning: " + str(extra))
+	return true
+
+func test_defence_scan_deterministic(runner) -> bool:
+	var runs: Array = []
+	for n in range(2):
+		var sim = _world()
+		var defence: int = EconomyFixture.add_completed(sim, 1, "usa_defence", Vector2i(10, 10))
+		for i in range(5): sim.step()
+		sim.spawn(2, Vector2(16.5, 10.5), "usa_tank")
+		var ticks: Array = []
+		for i in range(40):
+			sim.step()
+			for shot in _shots(sim, defence): ticks.append(shot.tick)
+		runs.append(ticks)
+	runner.check(runs[0] == runs[1] and not runs[0].is_empty(), "DF13 identical runs give identical shot ticks")
 	return true

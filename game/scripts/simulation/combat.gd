@@ -332,19 +332,28 @@ static func fire(sim: Simulation, unit_ids: Array[int], moved_ids: Array[int]) -
 		sim._combat_events.append({"type": "death", "tick": sim._tick, "object_id": id})
 		sim.remove_object(id)
 
+# Retail Patriot MinIdleScanInterval = MaxIdleScanInterval = 250 ms (INIZH.big factionbuilding.ini) = 8 ticks, so no random draw.
+const DEFENCE_SCAN_TICKS: int = 8
+
 static func fire_defences(sim: Simulation) -> void:
-	var ids: Array = sim._buildings.keys()
+	var ids: Array = []
+	for id: int in sim._buildings:
+		if sim._buildings[id].completed and sim._buildings[id].has("combat"): ids.append(id)
+	if ids.is_empty(): return
 	ids.sort()
 	var shots: Array[Dictionary] = []
 	var damage: Dictionary = {}
 	var dark: Dictionary = {}
 	for id: int in ids:
 		var building: Dictionary = sim._buildings[id]
-		if not building.completed or not building.has("combat") or _is_dark(sim, building, dark): continue
+		if _is_dark(sim, building, dark): continue
 		var combat: Dictionary = building.combat
 		var weapon: Dictionary = CombatDefinitions.weapon(CombatDefinitions.profile(building.kind).weapon)
 		if not _defence_target_valid(sim, building):
-			combat.target_id = _defence_pick(sim, building, weapon)
+			combat.target_id = null
+			if sim._tick >= combat.get("scan_tick", 0):
+				combat.target_id = _defence_pick(sim, building, weapon)
+				combat.scan_tick = sim._tick + DEFENCE_SCAN_TICKS
 		if combat.target_id == null or sim._tick < combat.next_fire_tick: continue
 		_hit(shots, damage, sim, id, record(sim, combat.target_id), weapon, false)
 		if weapon.primary_radius > 0.0: _splash(shots, damage, sim, building, record(sim, combat.target_id), weapon)
@@ -382,7 +391,7 @@ static func _defence_target_valid(sim: Simulation, building: Dictionary) -> bool
 	if id == null or not valid_target(sim, building.owner, id): return false
 	return _defence_in_reach(building, record(sim, id), CombatDefinitions.weapon(CombatDefinitions.profile(building.kind).weapon).range)
 
-# shortcut: scans every object per idle defence per tick; grid it if the defences layout shows in the ledger.
+# shortcut: scans every object per due scan (every 8 ticks); grid it if the defences layout still shows in the ledger.
 static func _defence_pick(sim: Simulation, building: Dictionary, weapon: Dictionary) -> Variant:
 	var best: Variant = null
 	var best_gap: float = INF
