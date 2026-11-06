@@ -379,7 +379,9 @@ Replays and R4: unchanged since Task 4 per the rows above.
 - Assertion and pin changes caused by the fix (user-directed): `test_movement.gd` M5 73 → 75 steps, M6 22 → 24 steps; `TERMINAL_TICK` 8260 → 8286 (winner 1, inside 8000–10799); `S1_CORE_SERIES` 353544374398116375 → 3600881543542644697; `PINNED` 054088294bdd4dfb → 6374674a4bdd4dfb; `TB3` final digest 0b630e0094762f1d → 234f0b14453bc6c6; netplay match terminal tick 8252 → 8242. Suite 273 cases, 112,729 checks, 0 failures; all nine `run_netplay.sh` scenarios pass.
 - Playtest findings logged, not fixed: health bar unreadable under the red target box; "Victory" text overlaps the status line; enemy attack-move visualisation visible to the player (information leak); build keys do nothing without exactly one selected dozer (no message), E only produces from a selected building.
 
-## Playtest findings fixed (2026-11-06, branch `m6-playtest-findings` off `fde056b`, uncommitted)
+## Playtest findings fixed (2026-11-06)
+
+Branch `m6-playtest-findings` off `fde056b`, merged to local `main` as `d53c559` (not pushed).
 
 - Presentation and HUD only; no simulation file touched. Each new test failed before its fix (P1/P2 on the missing function, P3 on position, P4 on an empty error), then passed.
 - P1 enemy order crosses: `WorldView.order_marks()` returns only the local player's orders (test P1). P2 health bar: `WorldView.health_rect()` sits 10 px above the unit box, clear of the focus box stroke (test P2, units only; building bars not checked). P3 `Result` and `Restart` anchored at screen centre in `skirmish.tscn` and `online_skirmish.tscn`, below the status text at any width (test P3, headless layout in the test window). P4 build key without exactly one builder now shows "Choose one builder"; E without a selected building shows "Select a production building" (test P4). E still produces only from a selected building (Zero Hour behaviour, user kept it).
