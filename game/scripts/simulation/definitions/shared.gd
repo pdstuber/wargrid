@@ -17,6 +17,8 @@ const WEAPONS := {
 	"rocket": {"damage": 40000, "damage_type": "infantry_missile", "range": 7.0, "delay_ticks": 30, "clip_size": 0, "reload_ticks": 0, "primary_radius": 0.2, "secondary_radius": 0.0, "secondary_damage": 0, "affects": ["allies", "enemies", "neutrals"]},
 	"battery": {"damage": 30000, "damage_type": "explosion", "range": 9.0, "delay_ticks": 8, "clip_size": 4, "reload_ticks": 60, "primary_radius": 0.2, "secondary_radius": 0.0, "secondary_damage": 0, "affects": ["allies", "enemies", "neutrals"]},
 	"militia_gun": {"damage": 15000, "damage_type": "small_arms", "range": 4.0, "delay_ticks": 30, "clip_size": 0, "reload_ticks": 0, "primary_radius": 0.0, "secondary_radius": 0.0, "secondary_damage": 0, "affects": []},
+	"rotary_gun": {"damage": 15000, "damage_type": "gattling", "range": 6.0, "delay_ticks": 12, "clip_size": 0, "reload_ticks": 0, "primary_radius": 0.0, "secondary_radius": 0.0, "secondary_damage": 0, "affects": [], "ramp": {"shots": [2, 6], "percent": [200, 300], "coast_ticks": 30}},
+	"rotary_tower_gun": {"damage": 10000, "damage_type": "gattling", "range": 9.0, "delay_ticks": 8, "clip_size": 0, "reload_ticks": 0, "primary_radius": 0.0, "secondary_radius": 0.0, "secondary_damage": 0, "affects": [], "ramp": {"shots": [1, 5], "percent": [200, 300], "coast_ticks": 60}},
 	"scout_gun": {"damage": 10000, "damage_type": "rapid_fire", "range": 6.0, "delay_ticks": 6, "clip_size": 0, "reload_ticks": 0, "primary_radius": 0.0, "secondary_radius": 0.0, "secondary_damage": 0, "affects": []},
 }
 

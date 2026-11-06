@@ -5,15 +5,15 @@ Plan: [M7 plan](../superpowers/plans/2026-11-06-m7-factions.md). Design: [M7 des
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-06, gate 1 signed off)
-Branch / base commit / working-tree state: m7-factions rebased onto main 025540d; origin/m7-factions at 29507ed (CI green there), local HEAD adds the R1 planning docs (8f022b0, ed48b2e, not pushed); tree clean. R1 release workflow lives on its own branch r1-release (not pushed), see docs/reference/release-verification.md; it is not part of gate 2
-Last green task / next incomplete task: G2.3 done and uncommitted (horde, marker, hordes benchmark) / commit it ("Add the horde bonus and its marker"), then checkpoint restart, then G2.4
-Changed paths since last commit: horde.gd (new), simulation.gd, combat.gd, shared.gd, china.gd, world_view.gd, combat_workload.gd, run_combat.gd, tools/run_benchmark.sh; tests test_horde (new, registered), test_view; m7-verification.md
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh (traces on), 366 cases / 134,467 / 0, exit 0, TESTS PASSED 134467 (baseline HEAD 95094e8 with traces on: 358 / 134,439); four traces cmp-identical to HEAD; lint, warnings (86 tracked files + the two new files checked by hand), test_faction_guard.py OK; run_benchmark.sh exit 0, COMBAT BENCHMARK PASSED 8; netplay not rerun (no USA simulation change)
+Resume record (updated 2026-11-07, G2.4 done, uncommitted)
+Branch / base commit / working-tree state: m7-factions, HEAD 4cf82ee (G2.3 committed); G2.4 uncommitted
+Last green task / next incomplete task: G2.4 done (ramp, tower weapon, ramp benchmark) / commit it ("Add the rotary gun ramp-up"), then G2.5
+Changed paths since last commit: shared.gd, china.gd, combat_definitions.gd, combat.gd, combat_workload.gd, benchmarks/run_combat.gd, tools/run_benchmark.sh; tests test_ramp (new, registered), run_tests.gd; m7-verification.md
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 372 cases / 134,472 / 0, exit 0, TESTS PASSED 134472 (baseline HEAD 4cf82ee: 366 / 134,467 with traces on); four traces cmp-identical to HEAD; lint, warnings (88 tracked files; test_ramp.gd untracked, checked with --check-only), test_faction_guard.py OK; run_benchmark.sh exit 0, COMBAT BENCHMARK PASSED 9; netplay not rerun (no USA simulation change)
 Known red case or blocker: none (combat stress rows exceed the 1.82 / 3.64 budget: reported, not loosened)
-Approved decisions, pre-authorizations used, deferred gates: pushes approved 2026-11-06 (m7-factions only); user sign-off of gate 1 and its visuals 2026-11-06; WAVE_MIN 6 accepted "for now" (revisit at M8 research and gates 2-3); rulings as logged in the sections above. Open for the user: analyze.py burst/reach tolerance, Dozer mid-turn dip, team match winner flip (accepted by silence, not stated)
+Approved decisions, pre-authorizations used, deferred gates: as before (pushes approved 2026-11-06 for m7-factions only; gate 1 signed off). Departures in the G2.4 record
 Usage so far: not recorded
-Next exact action: commit G2.3, then G2.4 (ramp). Departures from G2.3 in the G2.3 record.
+Next exact action: commit G2.4, then G2.5 (manual attack for armed buildings)
 ```
 
 ## Pins at base
@@ -415,3 +415,19 @@ Departures and decisions (G2.3):
 - `Horde.step` skips the whole pass when no armed unit has `horde`; `combat.horde` and `combat.horde_tick` exist only on horde kinds, so USA snapshots are unchanged.
 - H7 asserts at least one pending restart (all four flips happen, but infantry re-check and fire both run on a 30-tick cadence, so some flips coincide with the firing tick and nothing is pending then).
 - `tools/run_warnings.sh` reads `git ls-files`, so untracked new scripts are skipped until staged; the two new files were checked with `--check-only` by hand.
+
+## G2.4 record
+
+Red first (all six, seen red: 5 crashed on `china_tank` having no combat, `test_rotary_tower_intervals` failed with no shots): `test_rotary_tank_intervals`, `test_rotary_tower_intervals`, `test_ramp_switch_within_coast_keeps_count`, `test_ramp_resets_after_coast`, `test_rotary_tower_dark_when_low_power`, `test_ramp_snapshot_keys_only_on_ramp_weapons`. Red was crash or empty-result, not a pinpoint assertion. No mutation run on the new tests. After implementation one of mine failed on a test bug (R5 expected level 1 at 30 ticks, the tower was already at 2); fixed by checking at 16 ticks.
+
+| test | assertion | old -> new | cause |
+|---|---|---|---|
+| run_benchmark.sh, run_combat.gd | `COMBAT BENCHMARK PASSED` | 8 -> 9 | G2.4 `ramp` layout |
+
+Benchmark `ramp` (20 rotary tanks, 6 towers vs 100 riflemen, Apple M6): p50 0.137 / p95 0.776 / p99 1.425 ms; window level-2 shots 680. Report-only, within budget. Not in the ledger yet (docks, hordes, ramp rows come at G2.7).
+
+Departures and decisions (G2.4):
+- `Combat.bonus_delay` now reads `weapon.ramp.percent[level - 1]`; horde still wins (shortcut comment kept). `_ramp_after_shot` follows the plan algorithm; `restart_wait` reused on level change, including the lazy cool-down.
+- Ramp window check counts shots by objects that were at level 2 after the previous tick (shots at level 2), via an id set rebuilt each tick for the `ramp` layout only.
+- `ramp` layout: tanks 5x4 attack-move, towers in a column at x=10, 2 plants (supply 20, demand 18).
+- R5 uses supply 0 (plants removed) as the dark spell and `remove_object` on the plants.

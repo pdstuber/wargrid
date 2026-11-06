@@ -29,12 +29,14 @@ func _run() -> void:
 		breached.append("docks")
 	if not _measure("hordes"):
 		breached.append("hordes")
+	if not _measure("ramp"):
+		breached.append("ramp")
 	if not breached.is_empty():
 		for layout: String in breached:
 			push_error("Combat benchmark failed for " + layout)
 		quit(1)
 		return
-	print("COMBAT BENCHMARK PASSED 8")
+	print("COMBAT BENCHMARK PASSED 9")
 	quit(0)
 
 func _measure(layout: String) -> bool:
@@ -64,6 +66,8 @@ func _measure(layout: String) -> bool:
 	var stacked_ticks: int = 0
 	var horde_checks: int = 0
 	var horde_peak: int = 0
+	var ramp_shots: int = 0
+	var ramped: Dictionary = {}
 	for tick in range(WARMUP + SAMPLES):
 		var started: int = Time.get_ticks_usec()
 		sim.step()
@@ -76,6 +80,7 @@ func _measure(layout: String) -> bool:
 				shots += 1
 				if tick >= WARMUP and riders.has(event.attacker_id): rider_shots += 1
 				if tick >= WARMUP and defenders.has(event.attacker_id): defence_shots += 1
+				if tick >= WARMUP and ramped.has(event.attacker_id): ramp_shots += 1
 				if first_shot == -1: first_shot = tick
 			else:
 				deaths += 1
@@ -94,6 +99,10 @@ func _measure(layout: String) -> bool:
 				docked[unit.position] = true
 			waiting_ticks += 1 if waiting else 0
 			stacked_ticks += 1 if stacked else 0
+		if layout == "ramp":
+			ramped.clear()
+			for object: Dictionary in state.entities + state.buildings:
+				if object.get("combat") != null and object.combat.get("ramp_level", 0) == 2: ramped[object.id] = true
 		if tick < WARMUP:
 			warmup.append(elapsed)
 			warmup_chases += sim.scan_chases()
@@ -120,6 +129,12 @@ func _measure(layout: String) -> bool:
 		print("COMBAT DEFENCES defence_shots_window=", defence_shots, " report-only until gate 1")
 		if defence_shots == 0:
 			push_error("Combat benchmark: no defence shots inside the timed window")
+			return false
+		return true
+	if layout == "ramp":
+		print("COMBAT RAMP level2_shots_window=", ramp_shots, " report-only")
+		if ramp_shots == 0:
+			push_error("Combat benchmark: no level 2 ramp shot inside the timed window")
 			return false
 		return true
 	if layout == "hordes":

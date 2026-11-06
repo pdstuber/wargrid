@@ -320,6 +320,7 @@ static func fire(sim: Simulation, unit_ids: Array[int], moved_ids: Array[int]) -
 		_hit(shots, damage, sim, unit_id, target, weapon, false)
 		if weapon.primary_radius > 0.0: _splash(shots, damage, sim, unit, target, weapon)
 		_reload(sim, combat, weapon)
+		_ramp_after_shot(sim, combat, weapon)
 	sim._combat_events.append_array(shots)
 	var dead: Array = damage.keys().filter(func(id: int) -> bool: return record(sim, id).hp <= damage[id])
 	for id: Variant in damage:
@@ -359,6 +360,7 @@ static func fire_defences(sim: Simulation) -> void:
 		_hit(shots, damage, sim, id, record(sim, combat.target_id), weapon, false)
 		if weapon.primary_radius > 0.0: _splash(shots, damage, sim, building, record(sim, combat.target_id), weapon)
 		_reload(sim, combat, weapon)
+		_ramp_after_shot(sim, combat, weapon)
 	sim._combat_events.append_array(shots)
 	var dead: Array = damage.keys().filter(func(target: int) -> bool: return record(sim, target).hp <= damage[target])
 	for target: Variant in damage: record(sim, target).hp = maxi(0, record(sim, target).hp - damage[target])
@@ -441,9 +443,41 @@ static func splash_victims(sim: Simulation, impact: Vector2, radius: float, affe
 	return victims
 
 # shortcut: horde wins over ramp; combine them when a kind has both.
-static func bonus_delay(combat: Dictionary, _weapon: Dictionary, ticks: int) -> int:
+static func bonus_delay(combat: Dictionary, weapon: Dictionary, ticks: int) -> int:
+	var percent: int = 100
+	if combat.get("horde", 0) > 0: percent = Shared.HORDE_RATE_PERCENT
+	elif combat.get("ramp_level", 0) > 0: percent = weapon.ramp.percent[combat.ramp_level - 1]
 	@warning_ignore("integer_division")
-	return ticks * 100 / (Shared.HORDE_RATE_PERCENT if combat.get("horde", 0) > 0 else 100)
+	return ticks * 100 / percent
+
+# FiringTracker.cpp: shots on one target (or a switch inside the coast) raise the rate; a pause past the coast drops it.
+static func _ramp_after_shot(sim: Simulation, combat: Dictionary, weapon: Dictionary) -> void:
+	if not weapon.has("ramp"): return
+	var ramp: Dictionary = weapon.ramp
+	var old_level: int = combat.ramp_level
+	var tick: int = sim._tick
+	if combat.ramp_until != 0 and tick > combat.ramp_until: _ramp_cool(combat)
+	if combat.target_id == combat.ramp_target:
+		combat.ramp_shots += 1
+	elif tick < combat.ramp_until:
+		combat.ramp_shots += 1
+		combat.ramp_target = combat.target_id
+	else:
+		combat.ramp_shots = 1
+		combat.ramp_target = combat.target_id
+	combat.ramp_until = combat.next_fire_tick + ramp.coast_ticks
+	if combat.ramp_level == 0:
+		if combat.ramp_shots > ramp.shots[0]: combat.ramp_level = 1
+	elif combat.ramp_level == 1:
+		if combat.ramp_shots < ramp.shots[0]: _ramp_cool(combat)
+		elif combat.ramp_shots > ramp.shots[1]: combat.ramp_level = 2
+	elif combat.ramp_shots < ramp.shots[1]: _ramp_cool(combat)
+	if combat.ramp_level != old_level: restart_wait(sim, combat, weapon)
+
+static func _ramp_cool(combat: Dictionary) -> void:
+	combat.ramp_level = 0
+	combat.ramp_shots = 0
+	combat.ramp_target = null
 
 # Object.cpp:4674-4684: a bonus change restarts the wait that is pending, at the new rate.
 static func restart_wait(sim: Simulation, combat: Dictionary, weapon: Dictionary) -> void:

@@ -4,12 +4,13 @@ const Simulation = preload("res://scripts/simulation/simulation.gd")
 const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
 
 static func create(layout: String) -> Simulation:
-	assert(layout == "open" or layout == "dense" or layout == "contact" or layout == "skirmish3v3" or layout == "transports" or layout == "defences" or layout == "docks" or layout == "hordes")
+	assert(layout == "open" or layout == "dense" or layout == "contact" or layout == "skirmish3v3" or layout == "transports" or layout == "defences" or layout == "docks" or layout == "hordes" or layout == "ramp")
 	if layout == "skirmish3v3": return _skirmish3v3()
 	if layout == "transports": return _transports()
 	if layout == "defences": return _defences()
 	if layout == "docks": return _docks()
 	if layout == "hordes": return _hordes()
+	if layout == "ramp": return _ramp()
 	var solids: Array[Vector2i] = []
 	if layout == "dense":
 		for x: int in [26, 34, 42]:
@@ -124,6 +125,26 @@ static func _hordes() -> Simulation:
 			assert(target > 0)
 	assert(army.all(func(id: int) -> bool: return id > 0))
 	var marched: Dictionary = sim.issue_command({"tick": 0, "player": 1, "sequence": 0, "type": "attack_move", "entity_ids": army, "target": [60.5, 24.5]})
+	assert(marched.ok, marched.error)
+	return sim
+
+# 20 rotary gun tanks attack-move and 6 powered towers (2 power plants) hold the line against 100 riflemen, so shots ramp to level 2.
+static func _ramp() -> Simulation:
+	var sim: Simulation = Simulation.new([], Vector2i(64, 64))
+	sim.add_player(1, 0)
+	sim.add_player(2, 0)
+	for index in range(2): _building(sim, "china_power_plant", Vector2i(2, 4 + 4 * index))
+	for index in range(6): _building(sim, "china_defence", Vector2i(10, 16 + 4 * index))
+	var army: Array[int] = []
+	for column in range(5):
+		for row in range(4):
+			army.append(sim.spawn(1, Vector2(12.5 + column, 20.5 + row), "china_tank"))
+	for column in range(10):
+		for row in range(10):
+			var target: int = sim.spawn(2, Vector2(30.5 + column, 19.5 + row), "usa_rifle_infantry")
+			assert(target > 0)
+	assert(army.all(func(id: int) -> bool: return id > 0))
+	var marched: Dictionary = sim.issue_command({"tick": 0, "player": 1, "sequence": 0, "type": "attack_move", "entity_ids": army, "target": [48.5, 24.5]})
 	assert(marched.ok, marched.error)
 	return sim
 
