@@ -271,7 +271,7 @@ func test_set_rally_same_tick_cases(runner) -> bool:
 	sim.remove_object(id)
 	Fixture.steps(sim,2)
 	var outcomes: Array = sim.snapshot().command_results.filter(func(row: Dictionary) -> bool: return row.error == "Missing producer")
-	runner.check(outcomes.size() == 2 and sim.snapshot().buildings.is_empty(),"R5 removed producer rejected, nothing orphaned")
+	runner.check(outcomes.size() == 2 and sim.snapshot().buildings.all(func(building: Dictionary) -> bool: return building.kind == "usa_command_center"),"R5 removed producer rejected, nothing orphaned")
 	var fresh: Dictionary = skirmish_barracks(runner)
 	var other = fresh.sim
 	var depot_world = economy_depot(runner)

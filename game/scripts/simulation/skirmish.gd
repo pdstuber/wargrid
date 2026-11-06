@@ -39,10 +39,12 @@ static func _slot(sim: RefCounted, kind: String, player: int) -> Vector2i:
 	var map: Dictionary = sim.map_data()
 	return MapData.slot(map if not map.is_empty() else _default_map(), player, kind)
 
-static func create(with_match: bool = true, second_controller: String = "ai") -> Simulation:
+static func create(with_match: bool = true, second_controller: String = "ai", factions: Dictionary = Registry.Factions.DEFAULT_SKIRMISH) -> Simulation:
 	var seats: Array[Dictionary] = [
 		{"seat": 1, "team": 1, "controller": "human", "credits": START_CREDITS},
 		{"seat": 2, "team": 2, "controller": second_controller, "credits": START_CREDITS}]
+	for seat in seats:
+		if factions.has(seat.seat): seat.faction = factions[seat.seat]
 	var sim: Simulation = MapData.create(_default_map(), seats)
 	if with_match: sim.start_match([1, 2] as Array[int])
 	return sim
@@ -69,7 +71,7 @@ static func _decide(sim: RefCounted, player: int, attack_tick: int, state: Dicti
 	var ctx := {"sim": sim, "player": player, "tick": state.tick, "sequence": sequence, "credits": credits, "teams": teams}
 	var buildings: Array = state.buildings.filter(func(building: Dictionary) -> bool: return building.owner == player)
 	_build(ctx, state, buildings)
-	_produce(ctx, buildings)
+	_produce(ctx, state, buildings)
 	var defending: Dictionary = _defend(ctx, state, buildings)
 	if state.tick >= attack_tick: _attack(ctx, state, defending)
 
@@ -99,11 +101,21 @@ static func _build(ctx: Dictionary, state: Dictionary, buildings: Array) -> void
 		if ctx.credits >= cost and _send(ctx, {"type": "build", "builder_id": builder, "building_kind": kind, "origin": [site.x, site.y]}): ctx.credits -= cost
 		return
 
-static func _produce(ctx: Dictionary, buildings: Array) -> void:
+static func _produce(ctx: Dictionary, state: Dictionary, buildings: Array) -> void:
+	var replace_builder: bool = not state.entities.any(func(unit: Dictionary) -> bool: return unit.owner == ctx.player and Registry.is_builder(unit.kind))
+	var start_unit: String = _start_unit(state, ctx.player)
 	for building: Variant in buildings:
-		if not building.completed or not building.queue.is_empty() or unit_for(building.kind).is_empty(): continue
-		var cost: int = Definitions.unit(unit_for(building.kind)).cost
-		if ctx.credits >= cost and _send(ctx, {"type": "produce", "building_id": building.id, "unit_kind": unit_for(building.kind)}): ctx.credits -= cost
+		if not building.completed or not building.queue.is_empty(): continue
+		var kind: String = start_unit if replace_builder and Registry.kind(building.kind).produces.has(start_unit) else unit_for(building.kind)
+		if kind.is_empty(): continue
+		var cost: int = Definitions.unit(kind).cost
+		if ctx.credits >= cost and _send(ctx, {"type": "produce", "building_id": building.id, "unit_kind": kind}): ctx.credits -= cost
+		if kind == start_unit: replace_builder = false
+
+static func _start_unit(state: Dictionary, player: int) -> String:
+	for entry: Dictionary in state.players:
+		if entry.id == player: return Registry.faction(entry.get("faction", Registry.Factions.DEFAULT_FACTION)).start_unit
+	return ""
 
 static func _attack(ctx: Dictionary, state: Dictionary, skip: Dictionary = {}) -> void:
 	var enemies: Array = state.entities.filter(func(unit: Dictionary) -> bool: return _hostile(ctx, unit.owner) and not Registry.air_kinds.has(unit.kind))

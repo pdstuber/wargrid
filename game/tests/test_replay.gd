@@ -200,6 +200,7 @@ func _combat_events(runner, world: Dictionary, index: int) -> void:
 		600:
 			for at in [Vector2(38.5,14.5),Vector2(38.5,15.5),Vector2(38.5,13.5),Vector2(39.5,14.5),Vector2(39.5,15.5)]:
 				runner.check(sim.spawn(1,at,"usa_tank") != -1,"R4 finishing group")
+		1000: runner.check(sim.remove_object(4).ok,"R4 seat 2 loses its last counting building")
 
 func _combat_trace(runner) -> Dictionary:
 	var a: Dictionary = _combat_world(runner)

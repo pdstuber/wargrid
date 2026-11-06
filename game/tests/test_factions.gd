@@ -11,7 +11,7 @@ const EconomyFixture = preload("res://tests/economy_fixture.gd")
 const LockstepTests = preload("res://tests/test_lockstep.gd")
 
 func cases() -> Array[Callable]:
-	return [test_foundation_keeps_seat_alive, test_cancel_last_foundation_defeats, test_choose_faction_online_same_hash, test_match_waits_for_all_factions, test_capability_rules]
+	return [test_foundation_keeps_seat_alive, test_cancel_last_foundation_defeats, test_choose_faction_online_same_hash, test_match_waits_for_all_factions, test_capability_rules, test_start_has_command_center_and_builder, test_survival_counts_buildings_only, test_bot_trains_builder_without_one, test_bot_without_command_center]
 
 func test_capability_rules(runner) -> bool:
 	Registry.add_test_kind("x_maker", {"class": "vehicle", "cost": 1, "ticks": 1, "speed": 1.0, "locomotor": "wheels", "max_hp": 1000, "armor": "builder_vehicle", "weapon": "", "builds": ["usa_barracks"]})
@@ -26,24 +26,17 @@ func test_capability_rules(runner) -> bool:
 	Registry.clear_test_kinds()
 	return true
 
-func _add_completed(sim, owner: int, kind: String, origin: Vector2i) -> int:
-	var id: int = sim._next_entity_id
-	sim._next_entity_id += 1
-	var hp: int = CombatDefinitions.profile(kind).max_hp
-	sim._buildings[id] = {"id":id,"owner":owner,"kind":kind,"hp":hp,"max_hp":hp,"origin":[origin.x,origin.y],"completed":true,"work":0,"paid_cost":0,"builder_id":null,"approach":null,"queue":[],"active_collector_id":null}
-	sim._replace_union(sim._union_cells())
-	return id
-
 func _foundation_world(runner) -> Dictionary:
 	var sim = Simulation.new([], Vector2i(32, 32))
 	sim.add_player(1, 10000)
 	sim.add_player(2, 10000)
 	var builder: int = sim.spawn(1, Vector2(4.5, 4.5), "usa_builder")
 	sim.spawn(2, Vector2(26.5, 26.5), "usa_builder")
-	_add_completed(sim, 2, "usa_power_plant", Vector2i(20, 20))
+	EconomyFixture.add_completed(sim, 2, "usa_power_plant", Vector2i(20, 20))
 	var placed: int = sim.snapshot().next_entity_id
 	var result: Dictionary = EconomyFixture.send(sim, {"type": "build", "builder_id": builder, "building_kind": "usa_barracks", "origin": [8, 8]})
 	runner.check(result.ok, "F1 foundation placed: " + result.error)
+	EconomyFixture.steps(sim, 1)
 	var started: Dictionary = sim.start_match([1, 2])
 	runner.check(started.ok, "F1 match starts with a foundation as seat 1's only building: " + started.error)
 	return {"sim": sim, "builder": builder, "foundation": placed}
@@ -105,4 +98,64 @@ func test_match_waits_for_all_factions(runner) -> bool:
 	net.run()
 	runner.check(seen.get(4) == "setup" and seen.get(5) == "setup", "F4 status stays setup through tick 5")
 	runner.check(seen.get(6) == "ongoing", "F4 status is ongoing from tick 6")
+	return true
+
+func test_start_has_command_center_and_builder(runner) -> bool:
+	var state: Dictionary = Skirmish.create().snapshot()
+	for seat in [1, 2]:
+		var homes: Array = state.buildings.filter(func(b: Dictionary) -> bool: return b.owner == seat)
+		var origin: Vector2i = Skirmish.origin("usa_command_center", seat)
+		runner.check(homes.size() == 1 and homes[0].kind == "usa_command_center" and homes[0].completed and homes[0].origin == [origin.x, origin.y], "C2 seat %d starts with a completed command center on its slot" % seat)
+		runner.check(state.entities.filter(func(u: Dictionary) -> bool: return u.owner == seat and u.kind == "usa_builder").size() == 1, "C2 seat %d starts with one builder" % seat)
+	runner.check(state.players.all(func(p: Dictionary) -> bool: return p.faction == "usa"), "C2 every seat records its faction")
+	return true
+
+func _survival_world(extra_kind: String) -> RefCounted:
+	var sim = Simulation.new([], Vector2i(32, 32))
+	for seat in [1, 2]:
+		sim.add_player(seat, 0)
+		sim.spawn(seat, Vector2(4.5 + seat * 10, 4.5), "usa_builder")
+		EconomyFixture.add_completed(sim, seat, "usa_barracks", Vector2i(seat * 10, 10))
+	sim.start_match([1, 2] as Array[int])
+	sim.remove_object(4)
+	if not extra_kind.is_empty(): EconomyFixture.add_completed(sim, 2, extra_kind, Vector2i(20, 20))
+	EconomyFixture.steps(sim, 2)
+	return sim
+
+func test_survival_counts_buildings_only(runner) -> bool:
+	Registry.add_test_kind("x_turret", {"cost": 1, "ticks": 1, "power": 0, "footprint": Vector2i(1, 1), "prerequisite": "", "max_hp": 1000, "armor": "structure", "weapon": "", "produces": [], "receives_supply": false, "counts_for_victory": false, "slot": "defence", "spawns_on_complete": []})
+	var builder_only = _survival_world("")
+	runner.check(builder_only.snapshot().match.status == "won" and builder_only.snapshot().entities.any(func(u: Dictionary) -> bool: return u.owner == 2 and u.kind == "usa_builder"), "S2 a living builder without buildings is defeated")
+	var turret_only = _survival_world("x_turret")
+	runner.check(turret_only.snapshot().match.status == "won", "S2 a building without counts_for_victory does not keep the seat alive")
+	var center_only = _survival_world("usa_command_center")
+	center_only.remove_object(3)
+	EconomyFixture.steps(center_only, 3)
+	runner.check(center_only.snapshot().match.status == "ongoing" and not center_only.snapshot().entities.any(func(u: Dictionary) -> bool: return u.owner == 2), "S2 a command center alone keeps the seat alive")
+	Registry.clear_test_kinds()
+	return true
+
+func _bot_orders(sim, kind: String) -> int:
+	return sim.snapshot().pending_commands.filter(func(c: Dictionary) -> bool: return c.player == 2 and c.type == "produce" and c.unit_kind == kind).size()
+
+func test_bot_trains_builder_without_one(runner) -> bool:
+	var sim = Skirmish.create(false)
+	sim.remove_object(3)
+	Skirmish.issue_opponent(sim)
+	runner.check(_bot_orders(sim, "usa_builder") == 1, "B1 the bot trains a builder from its command center when it has none")
+	EconomyFixture.steps(sim, 400)
+	runner.check(sim.snapshot().entities.any(func(u: Dictionary) -> bool: return u.owner == 2 and u.kind == "usa_builder"), "B1 the trained builder exists")
+	var other = Skirmish.create(false)
+	Skirmish.issue_opponent(other)
+	runner.check(_bot_orders(other, "usa_builder") == 0, "B1 a bot with a builder trains none")
+	return true
+
+func test_bot_without_command_center(runner) -> bool:
+	var sim = Skirmish.create(false)
+	sim.remove_object(3)
+	sim.remove_object(4)
+	EconomyFixture.add_completed(sim, 2, "usa_barracks", Vector2i(34, 12))
+	Skirmish.issue_opponent(sim)
+	EconomyFixture.steps(sim, 2)
+	runner.check(_bot_orders(sim, "usa_builder") == 0 and sim.snapshot().buildings.any(func(b: Dictionary) -> bool: return b.owner == 2 and not b.queue.is_empty() and b.queue[0].kind == "usa_rifle_infantry"), "B2 without a command center or builder the bot keeps producing elsewhere")
 	return true

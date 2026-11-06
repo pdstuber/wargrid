@@ -2,6 +2,7 @@
 extends RefCounted
 
 const Simulation = preload("res://scripts/simulation/simulation.gd")
+const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
 
 static func make_world(credits: int = 10000, size: Vector2i = Vector2i(32,32)) -> RefCounted:
 	var sim = Simulation.new([],size)
@@ -36,6 +37,14 @@ static func build(runner, sim: RefCounted, kind: String, origin: Vector2i, max_t
 				return -1
 	runner.check(false,"fixture build timeout " + kind)
 	return -1
+
+static func add_completed(sim: RefCounted, owner: int, kind: String, origin: Vector2i) -> int:
+	var id: int = sim._next_entity_id
+	sim._next_entity_id += 1
+	var hp: int = CombatDefinitions.profile(kind).max_hp
+	sim._buildings[id] = {"id":id,"owner":owner,"kind":kind,"hp":hp,"max_hp":hp,"origin":[origin.x,origin.y],"completed":true,"work":0,"paid_cost":0,"builder_id":null,"approach":null,"queue":[],"active_collector_id":null}
+	sim._replace_union(sim._union_cells())
+	return id
 
 static func object(sim: RefCounted, id: int) -> Dictionary:
 	var state: Dictionary = sim.snapshot()

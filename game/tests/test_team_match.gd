@@ -6,12 +6,13 @@ const TeamMatch = preload("res://scripts/debug/team_match.gd")
 const StateHash = preload("res://scripts/simulation/state_hash.gd")
 const Combat = preload("res://scripts/simulation/combat.gd")
 const Fixture = preload("res://tests/combat_fixture.gd")
+const Economy = preload("res://tests/economy_fixture.gd")
 
 const PREFIX_TICKS: int = 20000
 const TRACE_INTERVAL: int = 200
-const FINAL_DIGEST: String = "6a389cd2453bc6c6"
+const FINAL_DIGEST: String = "0ef885e10e0de507"
 const BUILD_CHECK_TICK: int = 3000
-const TEAM_CORE_SERIES: int = 1490497313643459296
+const TEAM_CORE_SERIES: int = 5307413438668649372
 
 func cases() -> Array[Callable]:
 	return [test_bot_never_targets_ally, test_dead_seat_bot_is_silent, test_team_match_prefix, test_team_core_series]
@@ -27,6 +28,7 @@ func test_bot_never_targets_ally(runner) -> bool:
 	sim.spawn(1, Vector2(2.5, 2.5), "usa_builder")
 	var ally: int = sim.spawn(3, Vector2(11.5, 10.5), "usa_builder")
 	var enemy: int = sim.spawn(2, Vector2(28.5, 10.5), "usa_builder")
+	for seat in [1, 2, 3]: Economy.add_completed(sim, seat, "usa_barracks", Vector2i(seat * 8, 25))
 	sim.start_match([1, 2, 3] as Array[int])
 	var attacks: int = 0
 	var bad: int = 0
@@ -44,6 +46,7 @@ func test_dead_seat_bot_is_silent(runner) -> bool:
 	var sim = _bot_world()
 	sim.spawn(2, Vector2(28.5, 10.5), "usa_builder")
 	sim.spawn(3, Vector2(10.5, 10.5), "usa_builder")
+	for seat in [2, 3]: Economy.add_completed(sim, seat, "usa_barracks", Vector2i(seat * 8, 25))
 	sim.start_match([2, 3] as Array[int])
 	var issued: int = 0
 	for tick in range(Skirmish.DECISION_TICKS * 2):
@@ -75,7 +78,7 @@ func test_team_match_prefix(runner) -> bool:
 	runner.check(rows.size() == 100, "TB3 trace has 100 rows")
 	var state: Dictionary = a.snapshot()
 	for entry in TeamMatch.SEATS:
-		runner.check(built.get(entry.seat, 0) == 4, "TB3 seat %d completes four buildings" % entry.seat)
+		runner.check(built.get(entry.seat, 0) == 5, "TB3 seat %d completes four buildings beside its command center" % entry.seat)
 	runner.check(tanks, "TB3 a tank was produced")
 	runner.check(StateHash.digest(state) == FINAL_DIGEST, "TB3 final digest %s at tick %d" % [StateHash.digest(state), PREFIX_TICKS])
 	_write_trace(runner, rows)

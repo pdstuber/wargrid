@@ -62,6 +62,10 @@
     "factory": [
      12,
      18
+    ],
+    "command_center": [
+     4,
+     17
     ]
    }
   },
@@ -87,6 +91,10 @@
     "factory": [
      33,
      18
+    ],
+    "command_center": [
+     41,
+     17
     ]
    }
   }

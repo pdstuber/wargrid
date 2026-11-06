@@ -5,15 +5,15 @@ Plan: [M7 plan](../superpowers/plans/2026-11-06-m7-factions.md). Design: [M7 des
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-06, Task 4 done)
-Branch / base commit / working-tree state: m7-factions at 6a7a6c9 plus the Task 4 commit "Read capabilities instead of kind ids"; tree clean after it
-Last green task / next incomplete task: Task 4 (capability reads) / Task 5 (Command Center, seat faction, Zero Hour survival, bot builder); each task runs in a fresh subagent (milestone prompt "Unattended run", 2026-11-06), which covers the plan's checkpoint restarts
-Changed paths since last commit: none after the Task 4 commit
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 283 cases / 112,759 checks / 5 failures (F1, F2, F4 and one incomplete case, all test_factions.gd, owners Tasks 5-6), exit 1; the four replay traces equal the Task 3 run byte for byte; python3 -m unittest discover -s tools: OK (guard without allow-list); run_lint.sh and run_warnings.sh pass; run_netplay.sh match terminal tick 8242
-Known red case or blocker: test_factions.gd F1-F4 until Tasks 5-6
-Approved decisions, pre-authorizations used, deferred gates: local commit per green task (milestone prompt); D1 definition-dict pins kept via legacy projections (user, 2026-11-06, answer "Legacy projection")
+Resume record (updated 2026-11-06, Task 5 done, uncommitted)
+Branch / base commit / working-tree state: m7-factions at 413cc91 (Task 4 commit below it); Task 5 changes uncommitted
+Last green task / next incomplete task: Task 5 (Command Center, seat faction, Zero Hour survival, bot builder) / Task 6 (choose_faction and the setup phase)
+Changed paths since last commit: game/scripts/simulation/{simulation,skirmish,map_data}.gd, definitions/{usa,factions,shared}.gd, game/scripts/debug/team_match.gd, game/data/maps/{ashfall,skirmish}.json, tools/zh_map/{convert.py,test_zh_map.py}, tools/run_netplay.sh, game/tests/{economy_fixture,test_factions,test_skirmish,test_skirmish_scene,test_skirmish_match,test_online_scene,test_map,test_production,test_replay,test_teams,test_team_match,test_combat}.gd, this file
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 290 cases / 112,777 checks / 3 failures (F3, F4 x2, all Task 6), exit 1, no TESTS PASSED marker; replay trace equals pre-change, economy/combat/team traces differ (CC ids and buildings); lint, warnings, unittest discover (39), zh_map tests (11) pass; run_team_match won tick 37074 winner 1; run_netplay match terminal tick 9373
+Known red case or blocker: test_factions.gd F3, F4 until Task 6
+Approved decisions, pre-authorizations used, deferred gates: local commit per green task (milestone prompt); D1 legacy projections (user, 2026-11-06); wider match windows (user, 2026-11-06)
 Usage so far: not recorded
-Next exact action: Task 5. Before the change run the four traced suites into a fresh dir; Task 5 re-pins provisionally what it moves.
+Next exact action: commit Task 5, then Task 6. Benchmarks (BM6 rendered/stress) not rerun in Task 5.
 ```
 
 ## Pins at base
@@ -29,6 +29,14 @@ Next exact action: Task 5. Before the change run the four traced suites into a f
 | test_state_hash | H1 `PINNED` | 6374674a4bdd4dfb → 4b52b4564bdd4dfb | Task 3 rename |
 | test_team_match | TB3 `FINAL_DIGEST` | 234f0b14453bc6c6 → 6a389cd2453bc6c6 | Task 3 rename |
 | test_base_scene, test_skirmish_scene | Bs5 queue label, E1 enemy line | `tank` → `usa_tank` in the text | Task 3 rename (labels show the kind id until Task 7 display names) |
+| test_skirmish_match | S1 `TERMINAL_TICK` | 8286 → 9267 | Task 5 (window 8000-17999) |
+| test_skirmish_match | S1 `TICK_LIMIT` | 10800 → 18000 | Task 5 (user window) |
+| test_skirmish_match | S1 `S1_CORE_SERIES` | 3600881543542644697 → 5002559116398996570 | Task 5 (series covers TERMINAL_TICK + 1 ticks) |
+| test_team_match | TB4 `TEAM_CORE_SERIES` | 1490497313643459296 → 5307413438668649372 | Task 5 |
+| test_team_match | TB3 `FINAL_DIGEST` | 6a389cd2453bc6c6 → 0ef885e10e0de507 | Task 5 |
+| test_team_match | TB3 completed buildings per seat | 4 → 5 | Task 5 (command center) |
+| run_netplay.sh | `match` terminal tick | 8242 → 9373 | Task 5 |
+| debug/team_match.gd | `TEAM_TICK_CAP` | 27000 → 45000 | Task 5 (user window); match ends won, winner 1, tick 37074 |
 
 ## Departures and deferrals
 
@@ -40,6 +48,10 @@ Next exact action: Task 5. Before the change run the four traced suites into a f
 - Task 4: `usa_power_plant.counts_for_victory` is false to keep today's survival rule (a power plant never counted); Task 5 flips it to Zero Hour's rule. `Simulation.spawn` defaults an empty kind to `Registry.DEFAULT_SPAWN` (52 callers rely on the old default); `Skirmish.BUILD_ORDER` / `UNIT_FOR` became `build_order()` / `unit_for()`; `faction.start_building` is empty until Task 5. Hotkey build menus in `base_main.gd` / `skirmish_main.gd` keep their kind literals until Task 7 (outside the guarded directories).
 - Test sharding (workflow change before Task 5, user 2026-11-06, not M7 scope): `run_tests.sh` runs the cases in up to 4 parallel `--shard=i/n` processes (`WARGRID_TEST_SHARDS`, `1` = one process); new `test_runner.gd` adds 3 cases / 5 checks (286 cases). `test_team_match.gd` was 100 s of 135 s (prefix case 55 s, core series 44 s), so cases are sharded, not suites. Same tree: one process 124 s, 4 shards 66 s, 8 shards 68 s; totals, sorted FAIL lines and all four traces identical. Check counts differ with traces on (112,764) and off (112,757) because trace writes are checked; that is the source of earlier 112,752 vs 112,759 drift.
 - Task 4 performance risk: air checks in `_build_grid` and friends are now `Registry.air_kinds.has(kind)` instead of a string compare; no benchmark run yet (WoW-skew question open, benchmarks wait for the user to quit it).
+
+- Task 5: ids become builder 1, command center 2, builder 3, command center 4, sources 5-6 (`setup_seat` runs per seat in order). `usa_power_plant.counts_for_victory` now true (Zero Hour rule). `structure_tough` armor added to `shared.gd` with the `structure` percentages (the plan's explosion column is not modelled yet). `setup_seat` writes int origins and a default rally (the command center produces). Seats without a `faction` in `MapData.create` still get the legacy builder-only start. The bot queues its faction's `start_unit` at the first idle completed building that produces it when it owns no builder.
+- Task 5 test changes (setup or semantics, not tolerance): builder-only survival setups now use `EconomyFixture.add_completed` (test_teams TM3/TM8/TM9/TM10, test_team_match TB1/TB2, test_combat S7 `_last_builder_world`, test_factions F1 steps one tick so the placed foundation exists); ids and removals shifted to the command centers/builder 3 in test_skirmish (K1, O1, A3 now includes the command center as producer target, M0 rewritten: a foundation now keeps a seat alive), test_skirmish_scene (K2, K4), test_online_scene (N1, N4), test_map (MP3), test_replay (R4 removes seat 2's command center at tick 1000 to end the match), test_production (R5). S7 intent changed: unit deaths never end a match while the team owns buildings; the team-out case removes the barracks.
+- Task 5 cadence: new tests B1, B2, C2, S2 passed on first run (written with the implementation, not observed red).
 
 ## Base rows (tree: m7-factions, M7 Task 0 working tree, Apple M6, idle-ish)
 

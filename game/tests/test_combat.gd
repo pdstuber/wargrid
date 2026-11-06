@@ -1261,15 +1261,19 @@ func test_splash_mask(runner) -> bool:
 	runner.check(Combat.splash_victims(sim, Vector2(record.position[0], record.position[1]), 0.2, ["enemies"], Combat.record(sim, attacker)).size() == 1, "S7 an enemies-only mask would skip allies")
 	return true
 
-func _last_builder_world(spare: bool) -> Array:
+func _last_builder_world(keep_buildings: bool) -> Array:
 	var sim = _teamed([[1, 1], [2, 2], [3, 1]])
 	var target: int = sim.spawn(3, Vector2(10.5, 10.5), "usa_builder")
 	var splashed: int = sim.spawn(1, Vector2(11.4, 10.5), "usa_builder")
 	sim.spawn(2, Vector2(9.5, 15.5), "usa_tank")
 	sim.spawn(2, Vector2(25.5, 25.5), "usa_builder")
-	if spare: sim.spawn(3, Vector2(20.5, 5.5), "usa_builder")
+	var homes: Array[int] = []
+	for seat in [1, 2, 3]: homes.append(EconomyFixture.add_completed(sim, seat, "usa_barracks", Vector2i(2, seat * 6)))
 	for id in [target, splashed]: sim._entities[id].hp = 1000
 	sim.start_match([1, 2, 3] as Array[int])
+	if not keep_buildings:
+		sim.remove_object(homes[0])
+		sim.remove_object(homes[2])
 	return [sim, target, splashed]
 
 func test_splash_last_builder_same_tick(runner) -> bool:
@@ -1280,7 +1284,7 @@ func test_splash_last_builder_same_tick(runner) -> bool:
 	runner.check(match_state.status == "won" and match_state.winner == 2 and match_state.ended_tick == out[0].tick() - 1, "S7 team out on that tick")
 	var stays: Array = _last_builder_world(true)
 	stays[0].step()
-	runner.check(stays[0].snapshot().match.status == "ongoing", "S7 team with one surviving seat stays in")
+	runner.check(stays[0].snapshot().match.status == "ongoing", "S7 units dying never end a match while the team owns buildings")
 	return true
 
 func test_splash_event_flag(runner) -> bool:

@@ -27,7 +27,7 @@ NOTICE = (
 )
 # StartingBoxes in object/civilianbuilding.ini, Object SupplyDock (INIZH.big); no map override.
 BOXES = {"SupplyDock": 400}
-FOOTPRINTS = (("power_plant", 2), ("supply_center", 3), ("barracks", 2), ("factory", 3))
+FOOTPRINTS = (("power_plant", 2), ("supply_center", 3), ("barracks", 2), ("factory", 3), ("command_center", 3))
 MAX_RING = 12
 SUPPLY_REACH = 20
 

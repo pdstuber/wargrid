@@ -6,6 +6,7 @@ const ARMOR := {
 	"builder_vehicle": {"small_arms": 25, "armor_piercing": 100},
 	"light_vehicle": {"small_arms": 50, "armor_piercing": 100},
 	"structure": {"small_arms": 50, "armor_piercing": 100},
+	"structure_tough": {"small_arms": 50, "armor_piercing": 100},
 	"helicopter": {"small_arms": 50, "armor_piercing": 50},
 }
 

@@ -100,11 +100,27 @@ func start_match(players: Array[int]) -> Dictionary:
 	_match = {"players":ids,"status":"ongoing","winner":null,"ended_tick":null}
 	return {"ok":true,"error":""}
 
+func setup_seat(player: int, faction: String) -> void:
+	var definition: Dictionary = Registry.faction(faction)
+	var start: Dictionary = _map_start(player)
+	_players[player].faction = faction
+	spawn(player, Vector2(start.cell[0], start.cell[1]) + Vector2(0.5, 0.5), definition.start_unit)
+	var origin: Array = start.slots[Registry.kind(definition.start_building).slot]
+	var id: int = _next_entity_id
+	_next_entity_id += 1
+	var hp: int = CombatDefinitions.profile(definition.start_building).max_hp
+	_buildings[id] = {"id":id,"owner":player,"kind":definition.start_building,"hp":hp,"max_hp":hp,"origin":[int(origin[0]),int(origin[1])],"completed":true,"work":0,"paid_cost":0,"builder_id":null,"approach":null,"queue":[],"active_collector_id":null}
+	if Registry.can_rally(definition.start_building): _buildings[id].rally = Production.default_rally(self,definition.start_building,Vector2i(int(origin[0]),int(origin[1])))
+	_replace_union(_union_cells())
+
+func _map_start(player: int) -> Dictionary:
+	for start: Dictionary in _map.starts:
+		if int(start.seat) == player: return start
+	return {}
+
 func _survives(player: int) -> bool:
-	for unit: Dictionary in _entities.values():
-		if unit.owner == player and Registry.is_builder(unit.kind): return true
 	for building: Dictionary in _buildings.values():
-		if building.owner == player and building.completed and Registry.kind(building.kind).counts_for_victory: return true
+		if building.owner == player and Registry.kind(building.kind).counts_for_victory: return true
 	return false
 
 func _evaluate_match() -> void:

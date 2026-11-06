@@ -41,6 +41,9 @@ static func create(map: Dictionary, seats: Array[Dictionary]) -> Simulation:
 	sim._map = map
 	for seat in seats: sim.add_player(seat.seat, seat.credits, seat.controller, seat.get("team", 0))
 	for seat in seats:
+		if seat.has("faction"):
+			sim.setup_seat(seat.seat, seat.faction)
+			continue
 		var cell := start_cell(map, seat.seat)
 		sim.spawn(seat.seat, Vector2(cell) + Vector2(0.5, 0.5), Registry.faction(Registry.Factions.DEFAULT_FACTION).start_unit)
 	for source: Dictionary in map.sources: sim.add_supply_source(_cell(source.origin), int(source.boxes))

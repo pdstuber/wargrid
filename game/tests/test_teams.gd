@@ -42,7 +42,7 @@ func test_allies_never_target(runner) -> bool:
 func test_team_victory(runner) -> bool:
 	var sim = _teamed([[1, 1], [2, 2], [3, 3]])
 	var builders: Dictionary = {}
-	for seat in [1, 2, 3]: builders[seat] = sim.spawn(seat, Vector2(4.5 + seat * 4, 4.5), "usa_builder")
+	for seat in [1, 2, 3]: builders[seat] = Economy.add_completed(sim, seat, "usa_barracks", Vector2i(4 + seat * 4, 4))
 	runner.check(sim.start_match([3, 1, 2] as Array[int]).ok, "TM3 three-team match starts")
 	sim.remove_object(builders[2])
 	sim.step()
@@ -102,9 +102,9 @@ func test_same_tick_team_cases(runner) -> bool:
 	runner.check(Economy.send(ordered, {"type": "attack", "entity_ids": [mine], "target_id": foe}).ok, "TM7 explicit attack on an enemy is accepted")
 
 	var draw = _teamed([[1, 1], [2, 2], [3, 3]])
-	var kept: int = draw.spawn(1, Vector2(4.5, 4.5), "usa_builder")
-	var left_b: int = draw.spawn(2, Vector2(8.5, 4.5), "usa_builder")
-	var left_c: int = draw.spawn(3, Vector2(12.5, 4.5), "usa_builder")
+	var kept: int = Economy.add_completed(draw, 1, "usa_barracks", Vector2i(4, 4))
+	var left_b: int = Economy.add_completed(draw, 2, "usa_barracks", Vector2i(8, 4))
+	var left_c: int = Economy.add_completed(draw, 3, "usa_barracks", Vector2i(12, 4))
 	draw.start_match([1, 2, 3] as Array[int])
 	draw.remove_object(kept)
 	draw.remove_object(left_b)
@@ -115,29 +115,29 @@ func test_same_tick_team_cases(runner) -> bool:
 
 func test_start_match_validation(runner) -> bool:
 	var sim = _teamed([[1, 1], [2, 2]])
-	sim.spawn(1, Vector2(4.5, 4.5), "usa_builder")
+	Economy.add_completed(sim, 1, "usa_barracks", Vector2i(4, 4))
 	runner.check(not sim.start_match([1] as Array[int]).ok, "TM9 one seat rejected")
 	runner.check(not sim.start_match([1, 1, 2] as Array[int]).ok, "TM9 duplicate seat rejected")
 	var nine = Fixture.world()
 	var seats: Array[int] = []
 	for seat in range(1, 10):
 		nine.add_player(seat, 0, "human", seat)
-		nine.spawn(seat, Vector2(1.5 + seat, 1.5), "usa_builder")
+		Economy.add_completed(nine, seat, "usa_barracks", Vector2i(seat * 3, 1))
 		seats.append(seat)
 	runner.check(not nine.start_match(seats).ok, "TM9 nine seats rejected")
 	var one_team = _teamed([[1, 1], [2, 1]])
-	one_team.spawn(1, Vector2(4.5, 4.5), "usa_builder")
-	one_team.spawn(2, Vector2(6.5, 4.5), "usa_builder")
+	Economy.add_completed(one_team, 1, "usa_barracks", Vector2i(4, 4))
+	Economy.add_completed(one_team, 2, "usa_barracks", Vector2i(8, 4))
 	runner.check(not one_team.start_match([1, 2] as Array[int]).ok, "TM9 all seats on one team rejected")
-	sim.spawn(2, Vector2(6.5, 4.5), "usa_builder")
+	Economy.add_completed(sim, 2, "usa_barracks", Vector2i(8, 4))
 	runner.check(sim.start_match([1, 2] as Array[int]).ok, "TM9 valid two-seat match starts")
 	return true
 
 func test_winner_is_team_id(runner) -> bool:
 	var sim = _teamed([[1, 1], [2, 2], [3, 1]])
-	var first: int = sim.spawn(1, Vector2(4.5, 4.5), "usa_builder")
-	var foe: int = sim.spawn(2, Vector2(8.5, 4.5), "usa_builder")
-	sim.spawn(3, Vector2(12.5, 4.5), "usa_builder")
+	var first: int = Economy.add_completed(sim, 1, "usa_barracks", Vector2i(4, 4))
+	var foe: int = Economy.add_completed(sim, 2, "usa_barracks", Vector2i(8, 4))
+	Economy.add_completed(sim, 3, "usa_barracks", Vector2i(12, 4))
 	sim.start_match([1, 2, 3] as Array[int])
 	sim.remove_object(first)
 	sim.step()

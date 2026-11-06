@@ -13,15 +13,18 @@ func cases() -> Array[Callable]:
 func _owned(items: Array, player: int) -> Array:
 	return items.filter(func(item: Dictionary) -> bool: return item.owner == player)
 
+func _built(items: Array, player: int) -> Array:
+	return _owned(items, player).filter(func(item: Dictionary) -> bool: return item.kind != "usa_command_center")
+
 func test_skirmish_initial_state(runner) -> bool:
 	var sim = Skirmish.create()
 	var state: Dictionary = sim.snapshot()
 	runner.check(state.map.size == [48, 32], "K1 map size")
 	runner.check(state.players.size() == 2 and state.players[0].credits == 10000 and state.players[1].credits == 10000, "K1 two players with 10000 credits")
 	runner.check(state.entities.size() == 2 and state.entities[0].id == 1 and state.entities[0].owner == 1 and state.entities[0].kind == "usa_builder" and state.entities[0].position == [4.5, 14.5], "K1 builder one")
-	runner.check(state.entities[1].id == 2 and state.entities[1].owner == 2 and state.entities[1].position == [43.5, 14.5], "K1 builder two")
-	runner.check(state.sources.size() == 2 and state.sources[0].id == 3 and state.sources[0].origin == [5, 3] and state.sources[0].boxes == 200 and state.sources[1].id == 4 and state.sources[1].origin == [40, 3] and state.sources[1].boxes == 200, "K1 sources left then right")
-	runner.check(state.buildings.is_empty() and state.pending_commands.is_empty() and state.tick == 0, "K1 no structures, army or commands")
+	runner.check(state.entities[1].id == 3 and state.entities[1].owner == 2 and state.entities[1].position == [43.5, 14.5], "K1 builder two")
+	runner.check(state.sources.size() == 2 and state.sources[0].id == 5 and state.sources[0].origin == [5, 3] and state.sources[0].boxes == 200 and state.sources[1].id == 6 and state.sources[1].origin == [40, 3] and state.sources[1].boxes == 200, "K1 sources left then right")
+	runner.check(state.buildings.map(func(building: Dictionary) -> Array: return [building.id, building.owner, building.kind, building.completed, building.origin]) == [[2, 1, "usa_command_center", true, [4, 17]], [4, 2, "usa_command_center", true, [41, 17]]] and state.pending_commands.is_empty() and state.tick == 0, "K1 only the command centers, no army or commands")
 	runner.check(state.match == {"players": [1, 2], "status": "ongoing", "winner": null, "ended_tick": null} and Skirmish.create(false).snapshot().match == null, "K1 match starts after setup")
 	runner.check(Skirmish.origin("usa_power_plant", 2) == Vector2i(38, 12) and Skirmish.origin("usa_supply_center", 2) == Vector2i(37, 5) and Skirmish.origin("usa_barracks", 2) == Vector2i(34, 12) and Skirmish.origin("usa_factory", 2) == Vector2i(33, 18) and Skirmish.origin("usa_factory", 1) == Vector2i(12, 18), "K1 mirrored origins")
 	runner.check(Skirmish.create().snapshot() == state, "K1 creation is repeatable")
@@ -67,26 +70,26 @@ func test_opponent_pays_and_retries(runner) -> bool:
 	Skirmish.issue_opponent(sim)
 	sim.step()
 	var first: Dictionary = sim.snapshot()
-	runner.check(first.buildings.size() == 1 and first.buildings[0].kind == "usa_power_plant" and first.buildings[0].origin == [38, 12] and first.players[1].credits == 9200, "O1 first decision places the mirrored reactor and pays 800")
+	runner.check(_built(first.buildings, 2).size() == 1 and _built(first.buildings, 2)[0].kind == "usa_power_plant" and _built(first.buildings, 2)[0].origin == [38, 12] and first.players[1].credits == 9200, "O1 first decision places the mirrored reactor and pays 800")
 	var open_sites: int = 0
 	var most_queued: int = 0
 	var paused_resumed: bool = false
 	for tick in range(1, 3000):
 		_decide(sim)
 		if tick == 100:
-			Economy.send(sim, {"player": 2, "type": "stop", "entity_ids": [2]})
+			Economy.send(sim, {"player": 2, "type": "stop", "entity_ids": [3]})
 		sim.step()
 		var state: Dictionary = sim.snapshot()
-		var mine: Array = _owned(state.buildings, 2)
+		var mine: Array = _built(state.buildings, 2)
 		open_sites = maxi(open_sites, mine.filter(func(building: Dictionary) -> bool: return not building.completed).size())
 		for building in mine: most_queued = maxi(most_queued, building.queue.size())
 		if tick == 101: paused_resumed = mine[0].builder_id == null
-		if tick == 140: paused_resumed = paused_resumed and mine[0].builder_id == 2
+		if tick == 140: paused_resumed = paused_resumed and mine[0].builder_id == 3
 	runner.check(open_sites == 1, "O1 never more than one unfinished structure")
 	runner.check(paused_resumed, "O1 a paused foundation is resumed by the lowest builder")
 	var final: Dictionary = sim.snapshot()
-	var kinds: Array = _owned(final.buildings, 2).map(func(building: Dictionary) -> String: return building.kind)
-	runner.check(kinds == ["usa_power_plant", "usa_supply_center", "usa_barracks", "usa_factory"] and _owned(final.buildings, 2).all(func(building: Dictionary) -> bool: return building.completed), "O1 all four structures completed in order")
+	var kinds: Array = _built(final.buildings, 2).map(func(building: Dictionary) -> String: return building.kind)
+	runner.check(kinds == ["usa_power_plant", "usa_supply_center", "usa_barracks", "usa_factory"] and _built(final.buildings, 2).all(func(building: Dictionary) -> bool: return building.completed), "O1 all four structures completed in order")
 	runner.check(most_queued <= 1, "O1 at most one queued unit per producer")
 	runner.check(_owned(final.entities, 2).any(func(unit: Dictionary) -> bool: return unit.kind == "usa_rifle_infantry") and _owned(final.entities, 2).any(func(unit: Dictionary) -> bool: return unit.kind == "usa_tank"), "O1 produced both unit kinds")
 	runner.check(sim.snapshot().last_sequences.any(func(entry: Dictionary) -> bool: return entry.player == 2 and entry.sequence >= 5), "O1 sequences continue from the snapshot")
@@ -140,7 +143,7 @@ func test_opponent_attack_policy(runner) -> bool:
 	Skirmish.issue_opponent(sim)
 	runner.check(sim.snapshot().pending_commands.filter(func(command: Dictionary) -> bool: return command.type == "attack").is_empty(), "A3 attackers are not reissued")
 	for builder in [1, first, second]: sim.remove_object(builder)
-	for expected in [barracks, depot, reactor]:
+	for expected in [barracks, 2, depot, reactor]:
 		_to_tick(sim, (sim.snapshot().tick / 30 + 1) * 30)
 		Skirmish.issue_opponent(sim)
 		sim.step()
@@ -221,7 +224,7 @@ func test_match_lifecycle(runner) -> bool:
 	_start(runner, sim, [0, 1] as Array[int], false, "M0 non-positive rejected")
 	runner.check(sim.snapshot().match == null, "M0 no match after rejections")
 	var eliminated = Skirmish.create(false)
-	eliminated.remove_object(2)
+	eliminated.remove_object(4)
 	_start(runner, eliminated, [2, 1] as Array[int], false, "M0 eliminated player rejected")
 	_start(runner, sim, [2, 1] as Array[int], true, "M0 start accepted")
 	runner.check(sim.snapshot().match == {"players": [1, 2], "status": "ongoing", "winner": null, "ended_tick": null}, "M0 players sorted, ongoing")
@@ -234,6 +237,7 @@ func test_match_lifecycle(runner) -> bool:
 	Economy.build(runner, held, "usa_power_plant", Skirmish.origin("usa_power_plant", 1))
 	var barracks: int = Economy.build(runner, held, "usa_barracks", Skirmish.origin("usa_barracks", 1))
 	var infantry: int = held.spawn(1, Vector2(20.5, 20.5), "usa_rifle_infantry")
+	var reactor_of_held: int = barracks - 1
 	Economy.send(held, {"type": "build", "builder_id": 1, "building_kind": "usa_supply_center", "origin": [8, 5]})
 	for tick in range(60): held.step()
 	var foundation: Dictionary = held.snapshot().buildings.filter(func(building: Dictionary) -> bool: return building.kind == "usa_supply_center")[0]
@@ -242,18 +246,21 @@ func test_match_lifecycle(runner) -> bool:
 	held.remove_object(1)
 	held.step()
 	runner.check(held.snapshot().match.status == "ongoing", "M0 losing only the builder does not lose")
-	held.remove_object(barracks)
+	for id: int in [2, reactor_of_held, barracks]: held.remove_object(id)
+	held.step()
+	runner.check(held.snapshot().match.status == "ongoing", "M0 a foundation keeps the seat alive (Zero Hour)")
+	held.remove_object(foundation.id)
 	held.step()
 	var lost: Dictionary = held.snapshot()
-	runner.check(lost.match.status == "won" and lost.match.winner == 2 and lost.match.ended_tick == lost.tick - 1 and held.snapshot().entities.any(func(unit: Dictionary) -> bool: return unit.id == infantry), "M0 army, reactor and foundation do not prevent defeat; ended_tick is the pre-increment tick")
+	runner.check(lost.match.status == "won" and lost.match.winner == 2 and lost.match.ended_tick == lost.tick - 1 and held.snapshot().entities.any(func(unit: Dictionary) -> bool: return unit.id == infantry), "M0 an army does not prevent defeat; ended_tick is the pre-increment tick")
 	for tick in range(10): held.step()
 	runner.check(held.snapshot() == lost, "M0 terminal state is frozen")
 	var rejected: Dictionary = Economy.send(held, {"type": "move", "entity_ids": [infantry], "target": [22.5, 20.5]})
 	runner.check(not rejected.ok and held.snapshot() == lost, "M0 terminal match rejects orders unchanged")
 	var draw = Skirmish.create(false)
-	for at in [Vector2(3.5, 12.5), Vector2(3.5, 13.5), Vector2(3.5, 15.5), Vector2(3.5, 16.5), Vector2(5.5, 12.5)]: draw.spawn(2, at, "usa_tank")
-	for at in [Vector2(44.5, 12.5), Vector2(44.5, 13.5), Vector2(44.5, 15.5), Vector2(44.5, 16.5), Vector2(42.5, 12.5)]: draw.spawn(1, at, "usa_tank")
 	draw.start_match([1, 2] as Array[int])
+	draw.remove_object(2)
+	draw.remove_object(4)
 	draw.step()
 	var drawn: Dictionary = draw.snapshot()
 	runner.check(drawn.match.status == "draw" and drawn.match.winner == null and drawn.match.ended_tick == 0 and drawn.tick == 1, "M0 simultaneous elimination is a draw")

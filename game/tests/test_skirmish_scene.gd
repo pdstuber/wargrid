@@ -38,12 +38,11 @@ func test_skirmish_ready_and_tick(runner) -> bool:
 	runner.check(main.simulation.snapshot() == Skirmish.create().snapshot(), "K2 exact scenario")
 	main._physics_process(0.0)
 	var state: Dictionary = main.simulation.snapshot()
-	runner.check(state.tick == 1 and state.buildings.size() == 1 and state.buildings[0].owner == 2 and state.buildings[0].kind == "usa_power_plant", "K2 one physics callback is one tick and the opponent command is due on the pre-step tick")
+	runner.check(state.tick == 1 and state.buildings.size() == 3 and state.buildings[2].owner == 2 and state.buildings[2].kind == "usa_power_plant", "K2 one physics callback is one tick and the opponent command is due on the pre-step tick")
 	main._process(0.1)
 	main._refresh()
 	runner.check(main.simulation.snapshot().tick == 1, "K2 _process and _refresh never step")
-	main.simulation.remove_object(1)
-	main.simulation.remove_object(2)
+	for building: Dictionary in main.simulation.snapshot().buildings: main.simulation.remove_object(building.id)
 	main._physics_process(0.0)
 	var frozen: Dictionary = main.simulation.snapshot()
 	main._physics_process(0.0)
@@ -115,7 +114,8 @@ func test_match_hud_and_restart(runner) -> bool:
 	main._refresh()
 	var text: String = main.get_node("HUD/Status").text
 	runner.check(text.contains("Credits") and text.contains("tank #" + str(ids.tank)) and text.contains("HP 480/480") and text.contains("guard"), "K4 credits, kind, HP and order in the HUD")
-	main.simulation.remove_object(2)
+	main.simulation.remove_object(3)
+	main.simulation.remove_object(4)
 	main._physics_process(0.0)
 	runner.check(main.get_node("HUD/Result").text == "Victory" and main.get_node("HUD/Restart").visible, "K4 victory and restart button")
 	main.simulation._players[main.local_player].team = 7
@@ -142,10 +142,11 @@ func test_match_hud_and_restart(runner) -> bool:
 	for loser in [[1, "Defeat"], [-1, "Draw"]]:
 		var other = await _setup(runner)
 		if loser[0] == 1:
-			other.simulation.remove_object(1)
-		else:
-			other.simulation.remove_object(1)
 			other.simulation.remove_object(2)
+		else:
+			other.simulation.remove_object(2)
+			other.simulation.remove_object(3)
+			other.simulation.remove_object(4)
 		other._physics_process(0.0)
 		runner.check(other.get_node("HUD/Result").text == loser[1], "K4 " + loser[1])
 		other.free()
@@ -370,7 +371,8 @@ func test_result_clear_of_status(runner) -> bool:
 	var ids: Dictionary = _arena(main)
 	main.selected_ids.assign([ids.tank])
 	main.inspected_id = ids.enemy
-	main.simulation.remove_object(2)
+	main.simulation.remove_object(3)
+	main.simulation.remove_object(4)
 	main._physics_process(0.0)
 	await runner.process_frame
 	await runner.process_frame

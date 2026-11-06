@@ -30,7 +30,7 @@ func test_bad_map_rejected(runner) -> bool:
 func test_skirmish_identical(runner) -> bool:
 	var sim = Skirmish.create()
 	var state: Dictionary = sim.snapshot()
-	runner.check(sim.map_data().name == "Skirmish" and state.entities.size() == 2 and state.entities[0].id == 1 and state.entities[1].id == 2, "MP3 builders then sources keep ids")
+	runner.check(sim.map_data().name == "Skirmish" and state.entities.size() == 2 and state.entities[0].id == 1 and state.entities[1].id == 3, "MP3 builders then sources keep ids")
 	runner.check(Skirmish.create(false, "human").map_data().starts.size() == 2, "MP3 second controller reaches the sim")
 	return true
 

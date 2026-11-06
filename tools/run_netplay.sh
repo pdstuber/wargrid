@@ -87,7 +87,7 @@ case $scenario in
     wait_exit "$pid1" "$match_wait"; wait_exit "$pid2" "$match_wait"
     expect_end s1 match_over; expect_end s2 match_over
     [ "$(end_tick s1)" = "$(end_tick s2)" ] || fail "terminal ticks differ"
-    [ "$(end_tick s1)" = 8242 ] || fail "terminal tick $(end_tick s1), pinned 8242"
+    [ "$(end_tick s1)" = 9373 ] || fail "terminal tick $(end_tick s1), pinned 9373"
     oracle; same_hashes "$out/s1.tsv" "$out/s2.tsv" "$out/oracle.tsv"
     echo "match terminal tick $(end_tick s1)" ;;
   kill)
