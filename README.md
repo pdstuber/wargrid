@@ -134,6 +134,16 @@ container build -t wargrid-web web         # local image check, after exporting 
 
 Verified by the user 2026-11-06: Safari loads the live site and plays a skirmish against the bot. Unverified: a browser-to-browser match through the relay, a mixed browser and desktop match (floats in WASM versus native), Chrome and Firefox on the live site, and a hidden tab (browsers pause or throttle it, which stalls lockstep for everyone).
 
+## Release
+
+A pushed tag `v<version>` runs [`release.yml`](.github/workflows/release.yml) (plan: [release workflow](docs/superpowers/plans/2026-11-06-release-workflow.md), evidence: [release verification](docs/reference/release-verification.md)):
+
+1. Set `config/version` in `game/project.godot` to `<version>`, commit, push. The tag must equal `v` plus that value: the relay only lets clients with equal versions share a room.
+2. Push the tag. The full Tests workflow runs on that commit, then Linux, Windows, macOS and Web are exported and packaged.
+3. Approve the `production` Environment. The job deploys the relay (`wargrid-relay-jvm`), checks `/health`, deploys the web build (`wargrid-web`), checks `/health`, then publishes the three desktop zips as a GitHub Release.
+
+A prerelease tag (`v0.7.0-rc.1`) skips both fly deploys and publishes a GitHub prerelease only. A relay deploy ends matches in progress, so release when nobody is playing. Builds are unsigned: macOS needs right-click Open (or `xattr -dr com.apple.quarantine Wargrid.app`), Windows SmartScreen needs More info, Run anyway; each zip's `README.txt` says so.
+
 M5 measurements of the Kotlin relay and the native decision: [M5 verification](docs/reference/m5-verification.md). Findings and M9 list: [M5 findings](docs/reference/m5-online.md). M5 status: implemented and locally verified (Tasks 0–11); reviews, CI on the final tree and the HUD look are done; the repeat friend match on the fixed build is deferred by the user to a later date and remains open (see verification file).
 
 ## Local references

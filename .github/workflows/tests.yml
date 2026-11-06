@@ -63,7 +63,7 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ${{ matrix.templates }}
-          key: export-templates-${{ runner.os }}-${{ env.TEMPLATES_SHA256 }}
+          key: export-templates-desktop-web-${{ runner.os }}-${{ env.TEMPLATES_SHA256 }}
       - name: Install pinned export templates
         run: '"$PYTHON" tools/install_export_templates.py "$TEMPLATES_SHA256" "$GODOT_VERSION"'
       - name: Export test build and game

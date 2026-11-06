@@ -1,0 +1,127 @@
+name: Release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+concurrency:
+  group: release
+  cancel-in-progress: false
+env:
+  GODOT_VERSION: 4.7.2-stable
+  GODOT_ZIP: Godot_v4.7.2-stable_linux.x86_64.zip
+  GODOT_SHA256: cadd3204e728a35d3f13adb7fd0d7902636b79f6b95c40c265eb73b6c35329e4
+  GODOT_EXECUTABLE: Godot_v4.7.2-stable_linux.x86_64
+  TEMPLATES_SHA256: f298490b8d44d934be425a5a65a51bf15f422428b229a06a6e11d9ffea248011
+  FLYCTL_VERSION: 0.5.5
+  FLYCTL_SHA256: 2c64e1c7f320fafed0452fbce9adff57fcaf733619f0faa315ae883ec03d7ef6
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+      prerelease: ${{ steps.check.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        run: python3 tools/release_version.py "$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+  tests:
+    needs: version
+    uses: ./.github/workflows/tests.yml
+  build:
+    needs: [version, tests]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Godot
+        run: python3 tools/install_godot.py
+      - uses: actions/cache@v4
+        with:
+          path: ~/.local/share/godot/export_templates/4.7.2.stable
+          key: export-templates-desktop-web-${{ runner.os }}-${{ env.TEMPLATES_SHA256 }}
+      - name: Install pinned export templates
+        run: python3 tools/install_export_templates.py "$TEMPLATES_SHA256" "$GODOT_VERSION"
+      - name: Export all platforms
+        run: |
+          "$GODOT_BIN" --headless --path game --import
+          sh tools/export_build.sh Linux build/release/linux/Wargrid.x86_64
+          sh tools/export_build.sh "Windows Desktop" build/release/windows/Wargrid.exe
+          sh tools/export_build.sh macOS build/release/macos/Wargrid.zip
+          sh tools/export_build.sh Web web/site/index.html
+          "$GODOT_BIN" --headless --script "$PWD/tools/godot_licenses.gd" -- "$PWD/build/release/GODOT_LICENSES.txt"
+          test -s build/release/GODOT_LICENSES.txt
+      - name: Package desktop zips
+        run: |
+          extras="LICENSE game/data/maps/NOTICE.md build/release/GODOT_LICENSES.txt"
+          python3 tools/package_release.py linux build/release/linux "release/Wargrid-$VERSION-linux.zip" $extras
+          python3 tools/package_release.py windows build/release/windows "release/Wargrid-$VERSION-windows.zip" $extras
+          python3 tools/package_release.py macos build/release/macos/Wargrid.zip "release/Wargrid-$VERSION-macos.zip" $extras
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-zips
+          path: release/*.zip
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-site
+          path: web/site/
+          if-no-files-found: error
+  publish:
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      PRERELEASE: ${{ needs.version.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-zips
+          path: release
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-site
+          path: web/site
+      - name: Install pinned flyctl
+        if: env.PRERELEASE == 'false'
+        run: |
+          archive="$RUNNER_TEMP/flyctl.tar.gz"
+          curl -fsSL -o "$archive" "https://github.com/superfly/flyctl/releases/download/v$FLYCTL_VERSION/flyctl_${FLYCTL_VERSION}_Linux_x86_64.tar.gz"
+          echo "$FLYCTL_SHA256  $archive" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/flyctl"
+          tar -xzf "$archive" -C "$RUNNER_TEMP/flyctl"
+          echo "$RUNNER_TEMP/flyctl" >> "$GITHUB_PATH"
+      - name: Deploy relay
+        if: env.PRERELEASE == 'false'
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN_RELAY }}
+        run: |
+          flyctl deploy "$PWD/relay" -c "$PWD/relay/fly.toml" -a wargrid-relay-jvm --ha=false
+          curl -fsS --retry 10 --retry-delay 6 --retry-all-errors https://wargrid-relay-jvm.fly.dev/health
+      - name: Deploy web
+        if: env.PRERELEASE == 'false'
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN_WEB }}
+        run: |
+          flyctl deploy "$PWD/web" -c "$PWD/web/fly.toml" -a wargrid-web --dockerfile "$PWD/web/Dockerfile" --ha=false
+          curl -fsS --retry 10 --retry-delay 6 --retry-all-errors https://wargrid.pdstuber.dev/health
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" release/*.zip --clobber
+          elif [ "$PRERELEASE" = true ]; then
+            gh release create "$GITHUB_REF_NAME" release/*.zip --title "Wargrid $VERSION" --generate-notes --prerelease
+          else
+            gh release create "$GITHUB_REF_NAME" release/*.zip --title "Wargrid $VERSION" --generate-notes
+          fi
