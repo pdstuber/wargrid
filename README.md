@@ -51,6 +51,7 @@ CI pins matching Linux archive and SHA-256 from [official release metadata](http
 ```sh
 godot --version
 sh tools/run_tests.sh
+sh tools/run_lint.sh   # needs: uv tool install gdtoolkit==4.5.0
 python3 -m unittest discover -s tools -p 'test_*.py'
 sh tools/run_benchmark.sh
 ```

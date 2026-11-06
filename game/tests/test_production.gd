@@ -273,7 +273,7 @@ func test_set_rally_same_tick_cases(runner) -> bool:
 	runner.check(outcomes.size() == 2 and sim.snapshot().buildings.is_empty(),"R5 removed producer rejected, nothing orphaned")
 	var fresh: Dictionary = skirmish_barracks(runner)
 	var other = fresh.sim
-	var depot_world = Economy_depot(runner)
+	var depot_world = economy_depot(runner)
 	runner.check(not rally(depot_world.sim,depot_world.depot,[5.5,5.5]).ok,"R5 depot rejected")
 	for row in [[[999.5,1.5],"out of map"],[[INF,1.5],"non-finite"],[[1.5],"short"]]:
 		var before_state: Dictionary = other.snapshot()
@@ -282,7 +282,7 @@ func test_set_rally_same_tick_cases(runner) -> bool:
 	runner.check(not rally(other,999,[5.5,5.5]).ok,"R5 missing producer rejected")
 	return true
 
-func Economy_depot(runner) -> Dictionary:
+func economy_depot(runner) -> Dictionary:
 	var sim = Fixture.make_world(50000)
 	Fixture.build(runner,sim,"reactor",Vector2i(5,5))
 	return {"sim":sim,"depot":Fixture.build(runner,sim,"depot",Vector2i(10,4))}

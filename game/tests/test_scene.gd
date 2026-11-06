@@ -160,7 +160,7 @@ func test_driver(runner) -> bool:
 	main.free()
 	return true
 
-func _mouse(runner, main, viewport_point: Vector2, button: MouseButton, pressed: bool, shift: bool = false) -> void:
+func _mouse(runner, _main, viewport_point: Vector2, button: MouseButton, pressed: bool, shift: bool = false) -> void:
 	var event := InputEventMouseButton.new()
 	event.position = runner.root.get_final_transform() * viewport_point
 	event.global_position = event.position

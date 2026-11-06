@@ -16,10 +16,10 @@ var local_player: int = 1
 var _hints: Array[Dictionary] = []
 var _hovered_id: int = -1
 const HINT_TICKS: int = 40
-const OwnerColors := {1: Color("376eac"), 2: Color("b04a3a")}
+const OWNER_COLORS := {1: Color("376eac"), 2: Color("b04a3a")}
 
 static func owner_color(owner: int) -> Color:
-	return OwnerColors.get(owner, Color("808080"))
+	return OWNER_COLORS.get(owner, Color("808080"))
 
 static func hp_fraction(hp: int, max_hp: int) -> float:
 	return clampf(float(hp) / float(max_hp), 0.0, 1.0) if max_hp > 0 else 1.0

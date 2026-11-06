@@ -188,6 +188,16 @@ jobs:
         with:
           version: v2.15
           working-directory: relay
+  gdscript-lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install gdtoolkit==4.5.0
+      - run: sh tools/run_lint.sh
   compare-replays:
     needs: godot
     runs-on: ubuntu-latest

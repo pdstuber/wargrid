@@ -27,7 +27,7 @@ class Net extends RefCounted:
 	var max_delay: int = 0
 	var rng := RandomNumberGenerator.new()
 
-	func add(seat: int, controller_seat_two: String, clock: Callable = Time.get_ticks_usec) -> Client:
+	func add(seat: int, _controller_seat_two: String, clock: Callable = Time.get_ticks_usec) -> Client:
 		var c := Client.new()
 		c.seat = seat
 		c.sim = Skirmish.create(true, "human")
@@ -70,7 +70,7 @@ class Net extends RefCounted:
 			c.behavior = Callable()
 			c.hook = Callable()
 
-func _pair(runner, max_delay: int = 0) -> Net:
+func _pair(_runner, max_delay: int = 0) -> Net:
 	var net := Net.new()
 	net.max_delay = max_delay
 	net.rng.seed = 5

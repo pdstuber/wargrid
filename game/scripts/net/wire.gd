@@ -13,7 +13,7 @@ const _REQUIRED := {
 }
 const _COMMAND_INTS := ["tick", "player", "sequence", "builder_id", "building_id", "production_id", "source_id", "target_id"]
 
-static var _HASH_PATTERN: RegEx = RegEx.create_from_string("^[0-9a-f]{16}$")
+static var _hash_pattern: RegEx = RegEx.create_from_string("^[0-9a-f]{16}$")
 
 static func encode(message: Dictionary) -> String:
 	return JSON.stringify(message, "", true, true)
@@ -69,5 +69,5 @@ static func _tick_extras(message: Dictionary) -> bool:
 	if message.has("hash"):
 		var hash: Variant = message.hash
 		if hash is not Dictionary or not hash.has("tick") or not _to_int(hash, "tick"): return false
-		if hash.get("value") is not String or not _HASH_PATTERN.search(hash.value): return false
+		if hash.get("value") is not String or not _hash_pattern.search(hash.value): return false
 	return true

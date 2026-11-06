@@ -3,7 +3,7 @@ extends Node
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
-const Zooms: Array[float] = [0.5, 1.0, 2.0]
+const ZOOMS: Array[float] = [0.5, 1.0, 2.0]
 var simulation = Simulation.new()
 var selected_ids: Array[int] = []
 var local_player: int = 1
@@ -54,9 +54,9 @@ func pan_camera(direction: Vector2, delta: float) -> void:
 func change_zoom(direction: int) -> void:
 	if _selecting:
 		return
-	var index: int = Zooms.find(_camera.zoom.x)
-	index = clampi(index + signi(direction), 0, Zooms.size() - 1)
-	_camera.zoom = Vector2.ONE * Zooms[index]
+	var index: int = ZOOMS.find(_camera.zoom.x)
+	index = clampi(index + signi(direction), 0, ZOOMS.size() - 1)
+	_camera.zoom = Vector2.ONE * ZOOMS[index]
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("deselect"):

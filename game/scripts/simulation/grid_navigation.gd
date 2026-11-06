@@ -9,7 +9,7 @@ var _map_size: Vector2i
 var _snapshot_cache: Dictionary = {}
 var _components := PackedInt32Array()
 var _component_cells: Array[Array] = []
-const Neighbors: Array[Vector2i] = [Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT, Vector2i.UP]
+const NEIGHBORS: Array[Vector2i] = [Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT, Vector2i.UP]
 
 func _init(blocked_cells: Array[Vector2i] = [], size: Vector2i = SIZE) -> void:
 	assert(size.x > 0 and size.y > 0 and size.x <= 256 and size.y <= 256)
@@ -82,7 +82,7 @@ func _rebuild_component_cells() -> void:
 			while read < queue.size():
 				var cell: Vector2i = queue[read]
 				read += 1
-				for offset in Neighbors:
+				for offset in NEIGHBORS:
 					var neighbor: Vector2i = cell + offset
 					if not _grid.region.has_point(neighbor) or _grid.is_point_solid(neighbor):
 						continue
@@ -251,7 +251,7 @@ func _single_neighbor_label(rectangle: Array[Vector2i]) -> int:
 		inside[cell] = true
 	var label: int = -1
 	for cell in rectangle:
-		for offset in Neighbors:
+		for offset in NEIGHBORS:
 			var neighbor: Vector2i = cell + offset
 			if inside.has(neighbor) or not _open(neighbor):
 				continue
