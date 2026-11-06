@@ -1,11 +1,13 @@
 extends RefCounted
 
 const Simulation = preload("res://scripts/simulation/simulation.gd")
+const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
 
 static func create(layout: String) -> Simulation:
-	assert(layout == "open" or layout == "dense" or layout == "contact" or layout == "skirmish3v3" or layout == "transports")
+	assert(layout == "open" or layout == "dense" or layout == "contact" or layout == "skirmish3v3" or layout == "transports" or layout == "defences")
 	if layout == "skirmish3v3": return _skirmish3v3()
 	if layout == "transports": return _transports()
+	if layout == "defences": return _defences()
 	var solids: Array[Vector2i] = []
 	if layout == "dense":
 		for x: int in [26, 34, 42]:
@@ -66,6 +68,32 @@ static func _transports() -> Simulation:
 	var marched: Dictionary = sim.issue_command({"tick": sim.tick(), "player": 1, "sequence": 20, "type": "attack_move", "entity_ids": cars, "target": [60.5, 24.5]})
 	assert(marched.ok, marched.error)
 	return sim
+
+# 12 powered batteries (8 power plants) face 100 riflemen that attack-move in; battery fire lands once they close within range.
+static func _defences() -> Simulation:
+	var sim: Simulation = Simulation.new([], Vector2i(64, 64))
+	sim.add_player(1, 0)
+	sim.add_player(2, 0)
+	for index in range(8): _building(sim, "usa_power_plant", Vector2i(2, 4 + 4 * index))
+	for index in range(12): _building(sim, "usa_defence", Vector2i(10, 4 + 4 * index))
+	var attackers: Array[int] = []
+	for column in range(10):
+		for row in range(10):
+			var id: int = sim.spawn(2, Vector2(26.5 + column, 19.5 + row), "usa_rifle_infantry")
+			assert(id > 0)
+			attackers.append(id)
+	var marched: Dictionary = sim.issue_command({"tick": 0, "player": 2, "sequence": 0, "type": "attack_move", "entity_ids": attackers, "target": [4.5, 24.5]})
+	assert(marched.ok, marched.error)
+	return sim
+
+static func _building(sim: Simulation, kind: String, origin: Vector2i) -> void:
+	var id: int = sim._next_entity_id
+	sim._next_entity_id += 1
+	var hp: int = CombatDefinitions.profile(kind).max_hp
+	sim._buildings[id] = {"id": id, "owner": 1, "kind": kind, "hp": hp, "max_hp": hp, "origin": [origin.x, origin.y], "completed": true, "work": 0, "paid_cost": 0, "builder_id": null, "approach": null, "queue": [], "active_collector_id": null}
+	var combat: Variant = CombatDefinitions.initial_combat(kind)
+	if combat != null: sim._buildings[id].combat = combat
+	sim._replace_union(sim._union_cells())
 
 # Three staggered lanes, 35 units per owner per lane (12 tanks); the last 9 of each group stay idle behind.
 static func _skirmish3v3() -> Simulation:

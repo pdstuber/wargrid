@@ -66,6 +66,10 @@
     "command_center": [
      4,
      17
+    ],
+    "defence": [
+     10,
+     16
     ]
    }
   },
@@ -95,6 +99,10 @@
     "command_center": [
      41,
      17
+    ],
+    "defence": [
+     37,
+     16
     ]
    }
   }

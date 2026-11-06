@@ -5,15 +5,15 @@ Plan: [M7 plan](../superpowers/plans/2026-11-06-m7-factions.md). Design: [M7 des
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-06, Task 9 done, uncommitted)
-Branch / base commit / working-tree state: m7-factions at 589ac15 (Task 8 committed); Task 9 changes uncommitted
-Last green task / next incomplete task: Task 9 (containers) / Task 10 (firing buildings, missile battery, powered defences)
-Changed paths since last commit: game/scripts/simulation/{containers.gd (new),simulation.gd,combat.gd,definitions/usa.gd}, game/scripts/debug/combat_workload.gd, game/benchmarks/run_combat.gd, tools/run_benchmark.sh, game/tests/{test_containers.gd (new),run_tests.gd,test_benchmark.gd}, this file
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 312 cases / 112,983 / 0, exit 0, TESTS PASSED 112983; lint, warnings, unittest pass; the four traces identical to the pre-change run
+Resume record (updated 2026-11-06, Task 10 done, uncommitted)
+Branch / base commit / working-tree state: m7-factions at 2a71a6d (Task 9 committed); Task 10 changes uncommitted
+Last green task / next incomplete task: Task 10 (firing buildings, missile battery, powered defences) / Task 11 (gate 1)
+Changed paths since last commit: game/scripts/simulation/{combat,construction,simulation}.gd, definitions/{usa,shared}.gd, game/scripts/debug/combat_workload.gd, game/benchmarks/run_combat.gd, game/data/maps/{skirmish,ashfall}.json, tools/{zh_map/convert.py,zh_map/test_zh_map.py,run_benchmark.sh}, game/tests/{test_defences.gd (new),run_tests,test_benchmark,test_base_scene,economy_fixture}.gd, this file
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 318 cases / 112,988 / 0, exit 0, TESTS PASSED 112988; lint, warnings, unittest, netplay match (8257) pass; run_team_match.sh: TEAM MATCH won tick=23816 winner=2
 Known red case or blocker: none
-Approved decisions, pre-authorizations used, deferred gates: as Task 8; see Task 9 departures below
+Approved decisions, pre-authorizations used, deferred gates: user ruling 2026-11-06 (after the lever log below): the bot does not build usa_defence; see Task 10 departures
 Usage so far: not recorded
-Next exact action: commit Task 9 (body lists the _entities loops, see Departures), then Task 10. Benchmarks not run (transports layout and the new per-tick Containers.step pass are unmeasured).
+Next exact action: commit Task 10, then Task 11 (gate 1). Benchmarks not run (defences layout unmeasured; run_combat now expects PASSED 6).
 ```
 
 ## Pins at base
@@ -47,6 +47,7 @@ Next exact action: commit Task 9 (body lists the _entities loops, see Departures
 | run_netplay.sh | `match` terminal tick | 9166 → 8257 | Task 8 |
 | test_combat, test_simulation | D1 legacy vehicle weapon, C1/C11 snapshots | weapon "" → scout_gun; combat null → guard record | Task 8 (scout car armed) |
 
+| test_base_scene | M1 builder menu | + `5: Missile Battery $1000` | Task 10 |
 
 ## Departures and deferrals
 
@@ -101,3 +102,15 @@ Gate-1 rows (cost, ticks, max_hp, armor, vision, radius, weapon, other) are the 
 - Task 9: the enter intent is `unit.order = {"type":"enter","target","target_id"}` (no new entity key; `enter_id` would be outside the gate's snapshot list). `_advance` keeps an enter order on arrival so `Containers.step` can re-path or board; Combat.plan keeps combat mode "move" while a unit is entering. Aircraft cannot enter even when a container lists `air`. `unload` by a non-owner or on a non-container: "Cannot unload this container" (plan named no message). A command naming a passenger via `builder_id` is not caught (only `entity_ids`).
 - Task 9 `_entities` loops changed (skip `container_id`): `Simulation.occupied_cells`, `Simulation._unavailable_cells`, `Simulation.replace_blocked_cells` (unit-cover check), `Combat._hold_cells`, `Combat._build_grid`, `Combat.splash_victims`; the `moved` loop in `Simulation.step` excludes passengers. `Combat._can_join` (retaliation joiners) excludes passengers. `_advance` and `_service_paths` need no change (a passenger's status is "contained"). New loops: `Containers.step` (one pass per tick over `_entities`: copy positions, collect enterers), `Containers._free_slots` and `Containers._release` (per validation and per container death).
 - Task 9: transports layout (`combat_workload.gd`, `run_combat.gd`): 20 full scout cars march on 100 riflemen; the headless fixture check saw 180 passenger shots in the timed window (first at tick 479). Report-only, not run under the benchmark script; `run_benchmark.sh` now expects `COMBAT BENCHMARK PASSED 5`.
+
+- Task 10: `Combat.fire_defences` skips `_retaliate_trigger` (a building attacker has no `position`); defences do not trigger retaliation. Building `combat` key exists only on armed buildings (as Task 9's keys). Power for the dark check is summed per owner on demand in `fire_defences` (completed buildings, `power` sum < 0), not read from the snapshot. `Registry.kind(...).powered` read with `.get("powered", false)`. `defences` benchmark layout builds its records directly (`_building` in `combat_workload.gd`),; unmeasured; `run_combat.gd` and `run_benchmark.sh` now expect `PASSED 6`.
+
+- Task 10 option B (planning default, not a user approval): `Skirmish._build` skips a kind whose `counts_for_victory` is false before `ATTACK_TICK`, and sets `ctx.saving` while it cannot afford it so `_produce` holds. Result: S1 terminal 8340 (inside window), team match still `cap tick=45000 winner=null units_peak=237`. Pins S1/TB3/TB4 not re-pinned (got 3012336044666173545 / e065527c29051ac2 / 8977165343545068717). DF5 passes with `Skirmish.create(false)`; O1 reverted to four structures.
+
+- Task 10 ZH evidence (read-only, `~/projects/CnC_Generals_Zero_Hour` @ 0a05454): `GeneralsMD/Code/GameEngine/Source/GameLogic/AI/AISkirmishPlayer.cpp:494-540` picks an enemy *player* (skips `hasAnyObjects()==false`, adds a distance penalty when "another ai is already targeting this guy"), not a structure category; `AIPlayer.cpp:1312-1328` treats `KINDOF_FS_BASE_DEFENSE` / `KINDOF_TECH_BASE_DEFENSE` as hostile-strength terms for special-power drop placement only. Victory: `Common/RTS/Team.cpp:1711` `hasAnyBuildings(kindOf)` (defences carry no victory flag). Not found: any explicit "attack defences" priority; units auto-acquire structures in range. Uncertainty: AI teams are script-driven (ScriptActions), not read. Option 1 (defences as last bot target category) was tried in the sim: no effect (S1 8340, TB3/TB4 values and `cap tick=45000 winner=null` identical) and reverted; hypothesis "defences keep seats alive" is false because defences do not count for victory (probe at 45000: seats 1, 2, 5, 8 still owned power/supply/barracks/factory).
+
+- Task 10 option "one battery per seat" (user ruling 2026-11-06): already true, a no-op. `Skirmish._build` skips any kind the seat owns (`buildings.any(kind == kind)`) and each map has one `defence` slot per seat (skirmish.json and, via the converter, ashfall.json); a lost battery is rebuilt. Team match at tick 45000 (option B tree): team 1 (seats 1, 2, 8) holds `pow sup fac def` / `pow sup def` / `pow sup`, units 23 / 4 / 11; team 2 (seats 4, 5, 6) holds `com pow sup def` / `com pow sup bar def` / `com pow def`, units 4 / 17 / 18. No seat is defeated except none; all six still own a counting building. Blocked: needs a different lever.
+
+- Task 10 "stronger bot waves" (user ruling 2026-11-06): lever 1, the bot attacks only once 15 idle units are ready (`WAVE_SIZE`), plus dropping option B (early defence build, no saving rule). Result: team match still `cap tick=45000 winner=null units_peak=261`; S1 terminal 8899 (in window); the gate also broke D2, A3 x5 and TB1 (small-army bot tests). Reverted. Current tree: option B removed, bot builds the battery last in `build_order` as the plan says, no wave gate. Team match not won inside 45000, pins S1/TB3/TB4 un-re-pinned.
+
+- Task 10 ruling (user, 2026-11-06, after the lever log above): the bot does NOT build `usa_defence`. Plan departure: `build_order` stays at four kinds, `test_bot_builds_defence` is replaced by `test_bot_does_not_build_defence` (bot never builds one, builder `builds` includes it, a human seat can order one). The kind, `defence` slots in skirmish.json / ashfall.json, converter, `fire_defences` and the build menu entry stay. Pre-Task-10 flow restored: no S1, TB3, TB4 or netplay pin moved (S1 7731, TB3/TB4 as Task 8, netplay 8257); team match `won tick=23816 winner=2` inside 45000. Traces for the replay, economy and combat scripted matches should be identical to Task 9 (bot unchanged, no armed buildings); not compared with `cmp` this task. Earlier Task 10 pin rows were reverted.

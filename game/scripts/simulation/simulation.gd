@@ -521,6 +521,7 @@ func step() -> void:
 	Profiler.end(&"step.advance", zone)
 	zone = Profiler.begin()
 	Combat.fire(self,armed,moved)
+	Combat.fire_defences(self)
 	Profiler.end(&"step.combat_fire", zone)
 	zone = Profiler.begin()
 	if _match != null and _match.status == "ongoing": _evaluate_match()

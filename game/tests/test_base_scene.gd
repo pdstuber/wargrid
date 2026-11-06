@@ -275,7 +275,7 @@ func test_build_menu_from_capabilities(runner) -> bool:
 	var factory: int = Fixture.build(runner,main.simulation,"usa_factory",Vector2i(14,4))
 	main.selected_ids.assign([1])
 	main._refresh()
-	runner.check(_menu_texts(main) == ["1: Power Plant $800","2: Supply Depot $2000","3: Barracks $600","4: Vehicle Factory $2000"],"M1 builder menu lists its builds, got %s" % [_menu_texts(main)])
+	runner.check(_menu_texts(main) == ["1: Power Plant $800","2: Supply Depot $2000","3: Barracks $600","4: Vehicle Factory $2000","5: Missile Battery $1000"],"M1 builder menu lists its builds, got %s" % [_menu_texts(main)])
 	main.selected_ids.clear()
 	main.selected_building_id = factory
 	main._refresh()

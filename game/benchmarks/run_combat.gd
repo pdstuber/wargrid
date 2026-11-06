@@ -23,12 +23,14 @@ func _run() -> void:
 			breached.append(layout)
 	if not _measure("transports"):
 		breached.append("transports")
+	if not _measure("defences"):
+		breached.append("defences")
 	if not breached.is_empty():
 		for layout: String in breached:
 			push_error("Combat benchmark failed for " + layout)
 		quit(1)
 		return
-	print("COMBAT BENCHMARK PASSED 5")
+	print("COMBAT BENCHMARK PASSED 6")
 	quit(0)
 
 func _measure(layout: String) -> bool:
@@ -48,7 +50,11 @@ func _measure(layout: String) -> bool:
 	var riders: Dictionary = {}
 	for unit: Dictionary in sim.snapshot().entities:
 		if unit.has("container_id"): riders[unit.id] = true
+	var defenders: Dictionary = {}
+	for building: Dictionary in sim.snapshot().buildings:
+		if building.has("combat"): defenders[building.id] = true
 	var rider_shots: int = 0
+	var defence_shots: int = 0
 	for tick in range(WARMUP + SAMPLES):
 		var started: int = Time.get_ticks_usec()
 		sim.step()
@@ -60,6 +66,7 @@ func _measure(layout: String) -> bool:
 			if event.type == "shot":
 				shots += 1
 				if tick >= WARMUP and riders.has(event.attacker_id): rider_shots += 1
+				if tick >= WARMUP and defenders.has(event.attacker_id): defence_shots += 1
 				if first_shot == -1: first_shot = tick
 			else:
 				deaths += 1
@@ -83,6 +90,12 @@ func _measure(layout: String) -> bool:
 		print("COMBAT TRANSPORTS passenger_shots_window=", rider_shots, " passengers=", riders.size(), " report-only until gate 1")
 		if riders.size() != 100 or rider_shots == 0:
 			push_error("Combat benchmark: no passenger shots inside the timed window")
+			return false
+		return true
+	if layout == "defences":
+		print("COMBAT DEFENCES defence_shots_window=", defence_shots, " report-only until gate 1")
+		if defence_shots == 0:
+			push_error("Combat benchmark: no defence shots inside the timed window")
 			return false
 		return true
 	if STRESS_CEILING.has(layout):

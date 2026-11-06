@@ -332,6 +332,70 @@ static func fire(sim: Simulation, unit_ids: Array[int], moved_ids: Array[int]) -
 		sim._combat_events.append({"type": "death", "tick": sim._tick, "object_id": id})
 		sim.remove_object(id)
 
+static func fire_defences(sim: Simulation) -> void:
+	var ids: Array = sim._buildings.keys()
+	ids.sort()
+	var shots: Array[Dictionary] = []
+	var damage: Dictionary = {}
+	var dark: Dictionary = {}
+	for id: int in ids:
+		var building: Dictionary = sim._buildings[id]
+		if not building.completed or not building.has("combat") or _is_dark(sim, building, dark): continue
+		var combat: Dictionary = building.combat
+		var weapon: Dictionary = CombatDefinitions.weapon(CombatDefinitions.profile(building.kind).weapon)
+		if not _defence_target_valid(sim, building):
+			combat.target_id = _defence_pick(sim, building, weapon)
+		if combat.target_id == null or sim._tick < combat.next_fire_tick: continue
+		_hit(shots, damage, sim, id, record(sim, combat.target_id), weapon, false)
+		if weapon.primary_radius > 0.0: _splash(shots, damage, sim, building, record(sim, combat.target_id), weapon)
+		_reload(sim, combat, weapon)
+	sim._combat_events.append_array(shots)
+	var dead: Array = damage.keys().filter(func(target: int) -> bool: return record(sim, target).hp <= damage[target])
+	for target: Variant in damage: record(sim, target).hp = maxi(0, record(sim, target).hp - damage[target])
+	dead.sort()
+	for target: Variant in dead:
+		sim._combat_events.append({"type": "death", "tick": sim._tick, "object_id": target})
+		sim.remove_object(target)
+
+static func _is_dark(sim: Simulation, building: Dictionary, cache: Dictionary) -> bool:
+	if not Registry.kind(building.kind).get("powered", false): return false
+	if not cache.has(building.owner): cache[building.owner] = _short_of_power(sim, building.owner)
+	return cache[building.owner]
+
+static func _short_of_power(sim: Simulation, owner: int) -> bool:
+	var balance: int = 0
+	for building: Dictionary in sim._buildings.values():
+		if building.owner == owner and building.completed: balance += Definitions.building(building.kind).power
+	return balance < 0
+
+static func _defence_gap(building: Dictionary, target: Dictionary) -> float:
+	var from: Vector2 = _victim_centre(building)
+	var to: Vector2 = _victim_centre(target)
+	return _gap_between(to.x - from.x, to.y - from.y, CombatDefinitions.radius(building.kind), CombatDefinitions.radius(target.kind))
+
+static func _defence_in_reach(building: Dictionary, target: Dictionary, weapon_range: float) -> bool:
+	return _defence_gap(building, target) <= weapon_range - RANGE_SLACK + EDGE_EPS
+
+static func _defence_target_valid(sim: Simulation, building: Dictionary) -> bool:
+	var id: Variant = building.combat.target_id
+	if id == null or not valid_target(sim, building.owner, id): return false
+	return _defence_in_reach(building, record(sim, id), CombatDefinitions.weapon(CombatDefinitions.profile(building.kind).weapon).range)
+
+# shortcut: scans every object per idle defence per tick; grid it if the defences layout shows in the ledger.
+static func _defence_pick(sim: Simulation, building: Dictionary, weapon: Dictionary) -> Variant:
+	var best: Variant = null
+	var best_gap: float = INF
+	for pool: Variant in [sim._entities, sim._buildings]:
+		for target: Dictionary in pool.values():
+			if not valid_target(sim, building.owner, target.id): continue
+			sim._combat_work += 1
+			var gap: float = _defence_gap(building, target)
+			if gap > weapon.range - RANGE_SLACK + EDGE_EPS: continue
+			if gap < best_gap or (gap == best_gap and target.id < best):
+				best = target.id
+				best_gap = gap
+	return best
+
 static func _hit(shots: Array[Dictionary], damage: Dictionary, sim: Simulation, attacker_id: int, target: Dictionary, weapon: Dictionary, splash: bool) -> void:
 	var amount: int = weapon.damage * CombatDefinitions.armor_percent(CombatDefinitions.profile(target.kind).armor, weapon.damage_type) / 100
 	shots.append({"type": "shot", "tick": sim._tick, "attacker_id": attacker_id, "target_id": target.id, "damage": amount, "splash": splash})

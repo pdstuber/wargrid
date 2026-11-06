@@ -15,6 +15,7 @@ const WEAPONS := {
 	"rifle": {"damage": 5000, "damage_type": "small_arms", "range": 4.0, "delay_ticks": 4, "clip_size": 3, "reload_ticks": 22, "primary_radius": 0.0, "secondary_radius": 0.0, "secondary_damage": 0, "affects": []},
 	"cannon": {"damage": 60000, "damage_type": "armor_piercing", "range": 6.0, "delay_ticks": 60, "clip_size": 0, "reload_ticks": 0, "primary_radius": 0.2, "secondary_radius": 0.0, "secondary_damage": 0, "affects": ["allies", "enemies", "neutrals"]},
 	"rocket": {"damage": 40000, "damage_type": "infantry_missile", "range": 7.0, "delay_ticks": 30, "clip_size": 0, "reload_ticks": 0, "primary_radius": 0.2, "secondary_radius": 0.0, "secondary_damage": 0, "affects": ["allies", "enemies", "neutrals"]},
+	"battery": {"damage": 30000, "damage_type": "explosion", "range": 9.0, "delay_ticks": 8, "clip_size": 4, "reload_ticks": 60, "primary_radius": 0.2, "secondary_radius": 0.0, "secondary_damage": 0, "affects": ["allies", "enemies", "neutrals"]},
 	"scout_gun": {"damage": 10000, "damage_type": "rapid_fire", "range": 6.0, "delay_ticks": 6, "clip_size": 0, "reload_ticks": 0, "primary_radius": 0.0, "secondary_radius": 0.0, "secondary_damage": 0, "affects": []},
 }
 

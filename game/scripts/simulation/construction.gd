@@ -121,6 +121,8 @@ static func step(sim: Simulation, rates: Dictionary) -> void:
 		if building.work == required:
 			building.completed = true
 			sim._spawn_on_complete(building)
+			var combat: Variant = CombatDefinitions.initial_combat(building.kind)
+			if combat != null: building.combat = combat
 			builder.construction_id = null
 			building.builder_id = null
 			building.approach = null

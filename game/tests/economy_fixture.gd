@@ -43,6 +43,8 @@ static func add_completed(sim: RefCounted, owner: int, kind: String, origin: Vec
 	sim._next_entity_id += 1
 	var hp: int = CombatDefinitions.profile(kind).max_hp
 	sim._buildings[id] = {"id":id,"owner":owner,"kind":kind,"hp":hp,"max_hp":hp,"origin":[origin.x,origin.y],"completed":true,"work":0,"paid_cost":0,"builder_id":null,"approach":null,"queue":[],"active_collector_id":null}
+	var combat: Variant = CombatDefinitions.initial_combat(kind)
+	if combat != null: sim._buildings[id].combat = combat
 	sim._replace_union(sim._union_cells())
 	return id
 

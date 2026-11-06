@@ -9,7 +9,7 @@ const Navigation = preload("res://scripts/simulation/grid_navigation.gd")
 const Probe = preload("res://scenes/movement_benchmark.tscn")
 
 func cases() -> Array[Callable]:
-	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_transports_fixture, test_skirmish3v3_fixture, test_combat_work_ceiling, test_volley_retaliation_work]
+	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_transports_fixture, test_defences_fixture, test_skirmish3v3_fixture, test_combat_work_ceiling, test_volley_retaliation_work]
 
 func test_statistics(runner) -> bool:
 	runner.check(Stats.summary(PackedFloat64Array()) == {"n": 0, "p50": 0.0, "p95": 0.0, "p99": 0.0, "max": 0.0}, "BM1 empty")
@@ -136,6 +136,17 @@ func test_transports_fixture(runner) -> bool:
 	var riders: int = state.entities.filter(func(unit: Dictionary) -> bool: return unit.has("container_id")).size()
 	var cars: int = state.entities.filter(func(unit: Dictionary) -> bool: return unit.kind == "usa_light_vehicle" and unit.get("passengers", []).size() == 5).size()
 	runner.check(state.entities.size() == 220 and riders == 100 and cars == 20, "BM5 transports: 20 full cars against 100 riflemen")
+	return true
+
+func test_defences_fixture(runner) -> bool:
+	var sim: RefCounted = CombatWorkload.create("defences")
+	var state: Dictionary = sim.snapshot()
+	runner.check(state.buildings.filter(func(building: Dictionary) -> bool: return building.kind == "usa_defence").size() == 12 and state.entities.size() == 100, "BM5 defences: 12 batteries against 100 riflemen")
+	var shots: int = 0
+	for tick in range(900):
+		sim.step()
+		shots += sim.snapshot().combat_events.filter(func(event: Dictionary) -> bool: return event.type == "shot" and event.attacker_id <= 20).size()
+	runner.check(shots > 0, "BM5 defences fire once the attackers close in")
 	return true
 
 func test_skirmish3v3_fixture(runner) -> bool:

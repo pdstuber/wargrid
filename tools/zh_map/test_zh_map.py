@@ -162,7 +162,7 @@ class PlaceTest(unittest.TestCase):
         self.assertEqual((first["seat"], first["cell"]), (1, [10, 15]))
         self.assertEqual(first["slots"]["power_plant"], [12, 13])  # ring 2, y then x ascending, ring clear of the builder
         footprints = []
-        for kind, size in (("power_plant", 2), ("supply_center", 3), ("barracks", 2), ("factory", 3), ("command_center", 3)):
+        for kind, size in (("power_plant", 2), ("supply_center", 3), ("barracks", 2), ("factory", 3), ("command_center", 3), ("defence", 1)):
             x, y = first["slots"][kind]
             footprints.append({(i, j) for i in range(x, x + size) for j in range(y, y + size)})
         for n, a in enumerate(footprints):
