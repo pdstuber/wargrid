@@ -3,6 +3,7 @@ extends RefCounted
 const Wire = preload("res://scripts/net/wire.gd")
 const StateHash = preload("res://scripts/simulation/state_hash.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
+const Simulation = preload("res://scripts/simulation/simulation.gd")
 
 var send: Callable = func(_frame: String) -> void: pass
 
@@ -84,7 +85,7 @@ func waiting_for_tick(sim_tick: int) -> Array[int]:
 		if not _packets[s].has(sim_tick): missing.append(s)
 	return missing
 
-func advance(sim: RefCounted) -> bool:
+func advance(sim: Simulation) -> bool:
 	if _ended() or sim.match_over(): return false
 	var tick: int = sim.tick()
 	if _left_seat != 0 and (tick > _left_after or not _packets[_left_seat].has(tick)): return _end("ended_left", "player %d disconnected" % _left_seat)

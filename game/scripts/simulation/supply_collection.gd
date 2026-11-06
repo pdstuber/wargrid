@@ -1,6 +1,8 @@
 extends RefCounted
 
-static func release(sim: RefCounted, unit_id: int) -> void:
+const Simulation = preload("res://scripts/simulation/simulation.gd")
+
+static func release(sim: Simulation, unit_id: int) -> void:
 	var unit: Dictionary = sim._entities[unit_id]
 	var collection: Dictionary = unit.collection
 	if collection.target_id != null:
@@ -23,7 +25,7 @@ static func nearest(unit: Dictionary, targets: Array) -> Dictionary:
 	)
 	return {} if targets.is_empty() else targets[0]
 
-static func choose_target(sim: RefCounted, unit: Dictionary) -> Dictionary:
+static func choose_target(sim: Simulation, unit: Dictionary) -> Dictionary:
 	var collection: Dictionary = unit.collection
 	if collection.cargo > 0:
 		var depots: Array = []
@@ -38,7 +40,7 @@ static func choose_target(sim: RefCounted, unit: Dictionary) -> Dictionary:
 		if source.boxes > 0: sources.append(source)
 	return nearest(unit,sources)
 
-static func _seek(sim: RefCounted, unit: Dictionary) -> void:
+static func _seek(sim: Simulation, unit: Dictionary) -> void:
 	var collection: Dictionary = unit.collection
 	var target: Dictionary = choose_target(sim,unit)
 	if target.is_empty():
@@ -55,7 +57,7 @@ static func _seek(sim: RefCounted, unit: Dictionary) -> void:
 	unit.status = "moving"
 	if unit.position == goal: _admit(sim,unit,target)
 
-static func _admit(sim: RefCounted, unit: Dictionary, target: Dictionary) -> void:
+static func _admit(sim: Simulation, unit: Dictionary, target: Dictionary) -> void:
 	var collection: Dictionary = unit.collection
 	var depot: bool = collection.cargo > 0
 	if not depot and target.boxes == 0:
@@ -77,7 +79,7 @@ static func _admit(sim: RefCounted, unit: Dictionary, target: Dictionary) -> voi
 		collection.phase = "waiting_depot" if depot else "waiting_source"
 	sim._stop_unit(unit)
 
-static func step(sim: RefCounted, unit_ids: Array[int]) -> void:
+static func step(sim: Simulation, unit_ids: Array[int]) -> void:
 	for id in unit_ids:
 		if not sim._entities.has(id): continue
 		var unit: Dictionary = sim._entities[id]
@@ -114,7 +116,7 @@ static func step(sim: RefCounted, unit_ids: Array[int]) -> void:
 			release(sim,id)
 			collection.retry_tick = sim._tick + 1
 
-static func object_removed(sim: RefCounted, id: int) -> void:
+static func object_removed(sim: Simulation, id: int) -> void:
 	for unit: Dictionary in sim._entities.values():
 		if unit.collection == null or unit.collection.target_id != id: continue
 		release(sim,unit.id)

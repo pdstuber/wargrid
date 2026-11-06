@@ -38,8 +38,8 @@ static func blocked_cells(map: Dictionary) -> Array[Vector2i]:
 			if row[x] != ".": cells.append(Vector2i(x, y))
 	return cells
 
-static func create(map: Dictionary, seats: Array[Dictionary]) -> RefCounted:
-	var sim: RefCounted = Simulation.new(blocked_cells(map), Vector2i(int(map.size[0]), int(map.size[1])))
+static func create(map: Dictionary, seats: Array[Dictionary]) -> Simulation:
+	var sim: Simulation = Simulation.new(blocked_cells(map), Vector2i(int(map.size[0]), int(map.size[1])))
 	sim._map = map
 	for seat in seats: sim.add_player(seat.seat, seat.credits, seat.controller, seat.get("team", 0))
 	for seat in seats:

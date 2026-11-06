@@ -3,6 +3,7 @@ extends RefCounted
 const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
 const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
 const Navigation = preload("res://scripts/simulation/grid_navigation.gd")
+const Simulation = preload("res://scripts/simulation/simulation.gd")
 
 static func cells(kind: String, origin: Vector2i) -> Array[Vector2i]:
 	var result: Array[Vector2i] = []
@@ -19,7 +20,7 @@ static func perimeter(kind: String, origin: Vector2i) -> Array[Vector2i]:
 			if (x >= origin.x and x < origin.x + size.x) != (y >= origin.y and y < origin.y + size.y): result.append(Vector2i(x,y))
 	return result
 
-static func footprint_error(sim: RefCounted, footprint: Array[Vector2i]) -> String:
+static func footprint_error(sim: Simulation, footprint: Array[Vector2i]) -> String:
 	var members: Array[Dictionary] = []
 	var unavailable: Array[Vector2i] = sim._unavailable_cells(members)
 	for cell in footprint:
@@ -27,7 +28,7 @@ static func footprint_error(sim: RefCounted, footprint: Array[Vector2i]) -> Stri
 		if unavailable.has(cell): return "Footprint covers ground unit or destination"
 	return ""
 
-static func approach(sim: RefCounted, builder_id: int, kind: String, origin: Vector2i, navigation: RefCounted) -> Variant:
+static func approach(sim: Simulation, builder_id: int, kind: String, origin: Vector2i, navigation: RefCounted) -> Variant:
 	var unit: Dictionary = sim._entities[builder_id]
 	var position := Vector2(unit.position[0],unit.position[1])
 	var component: int = navigation.component_at(position)
@@ -44,7 +45,7 @@ static func approach(sim: RefCounted, builder_id: int, kind: String, origin: Vec
 	if candidates.is_empty(): return null
 	return [candidates[0].x + .5,candidates[0].y + .5]
 
-static func preview(sim: RefCounted, player: int, builder_id: int, kind: String, origin: Vector2i) -> Dictionary:
+static func preview(sim: Simulation, player: int, builder_id: int, kind: String, origin: Vector2i) -> Dictionary:
 	var result := {"ok":false,"error":"Invalid builder or building kind","cells":[],"approach":null}
 	var definition: Dictionary = Definitions.building(kind)
 	if definition.is_empty() or not sim._players.has(player) or not sim._entities.has(builder_id): return result
@@ -77,7 +78,7 @@ static func preview(sim: RefCounted, player: int, builder_id: int, kind: String,
 	result.ok = true
 	return result
 
-static func place(sim: RefCounted, command: Dictionary) -> Dictionary:
+static func place(sim: Simulation, command: Dictionary) -> Dictionary:
 	var origin := Vector2i(command.origin[0],command.origin[1])
 	var result: Dictionary = preview(sim,command.player,command.builder_id,command.building_kind,origin)
 	if not result.ok: return result
@@ -91,20 +92,20 @@ static func place(sim: RefCounted, command: Dictionary) -> Dictionary:
 	result.building_id = id
 	return result
 
-static func resume(sim: RefCounted, command: Dictionary) -> Dictionary:
+static func resume(sim: Simulation, command: Dictionary) -> Dictionary:
 	var building: Dictionary = sim._buildings[command.building_id]
 	var goal: Variant = approach(sim,command.builder_id,building.kind,Vector2i(building.origin[0],building.origin[1]),sim._navigation)
 	return {"ok":goal != null,"error":"" if goal != null else "No reachable builder approach","approach":goal}
 
-static func cancel(sim: RefCounted, building_id: int) -> void:
+static func cancel(sim: Simulation, building_id: int) -> void:
 	var building: Dictionary = sim._buildings[building_id]
 	sim._players[building.owner].credits += building.paid_cost
 	sim._remove_building(building_id)
 
-static func rebuild_navigation(sim: RefCounted) -> void:
+static func rebuild_navigation(sim: Simulation) -> void:
 	sim._replace_union(sim._union_cells())
 
-static func step(sim: RefCounted, rates: Dictionary) -> void:
+static func step(sim: Simulation, rates: Dictionary) -> void:
 	var ids: Array = sim._buildings.keys()
 	ids.sort()
 	for id: Variant in ids:

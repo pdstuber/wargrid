@@ -7,6 +7,7 @@ const Wire = preload("res://scripts/net/wire.gd")
 const StateHash = preload("res://scripts/simulation/state_hash.gd")
 const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 const ScriptedHuman = preload("res://scripts/simulation/scripted_human.gd")
+const Simulation = preload("res://scripts/simulation/simulation.gd")
 const UNCAPPED_STEPS: int = 64
 const CAPPED_STEPS: int = 2
 const CLOSE_WAIT_MSEC: int = 1000
@@ -15,7 +16,7 @@ const ORACLE_MAX_TICKS: int = 30000
 var _args: Dictionary = {}
 var _transport: RefCounted
 var _lockstep: RefCounted
-var _sim: RefCounted
+var _sim: Simulation
 var _seat: int = 0
 var _hello_sent: bool = false
 var _stalled: bool = false
@@ -200,7 +201,7 @@ func _replay_oracle() -> void:
 			return
 		by_tick[decoded.message.tick] = decoded.message.commands
 	var every: int = _int_arg("hash-every") if _args.has("hash-every") else 30
-	var sim: RefCounted = Skirmish.create(true, "human")
+	var sim: Simulation = Skirmish.create(true, "human")
 	_sim = sim
 	var rows := PackedStringArray(["0\t" + StateHash.digest(sim.snapshot())])
 	while not sim.match_over() and sim.tick() < ORACLE_MAX_TICKS:

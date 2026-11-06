@@ -9,7 +9,7 @@ func _ready() -> void:
 	super._ready()
 	$HUD/Restart.pressed.connect(_restart)
 
-func _create_simulation() -> RefCounted:
+func _create_simulation() -> Simulation:
 	return Skirmish.create()
 
 func _step_simulation() -> void:

@@ -2,6 +2,7 @@ extends SceneTree
 
 const Workload = preload("res://scripts/debug/movement_workload.gd")
 const Stats = preload("res://scripts/debug/timing_stats.gd")
+const Simulation = preload("res://scripts/simulation/simulation.gd")
 
 func _initialize() -> void:
 	_run.call_deferred()
@@ -17,7 +18,7 @@ func _run() -> void:
 	quit(0)
 
 func _measure(layout: String) -> bool:
-	var sim: RefCounted = Workload.create(layout)
+	var sim: Simulation = Workload.create(layout)
 	var samples := PackedFloat64Array()
 	var command_samples := PackedFloat64Array()
 	var leg: int = -1

@@ -28,11 +28,11 @@ static func _slot(sim: RefCounted, kind: String, player: int) -> Vector2i:
 	var map: Dictionary = sim.map_data()
 	return MapData.slot(map if not map.is_empty() else _default_map(), player, kind)
 
-static func create(with_match: bool = true, second_controller: String = "ai") -> RefCounted:
+static func create(with_match: bool = true, second_controller: String = "ai") -> Simulation:
 	var seats: Array[Dictionary] = [
 		{"seat": 1, "team": 1, "controller": "human", "credits": START_CREDITS},
 		{"seat": 2, "team": 2, "controller": second_controller, "credits": START_CREDITS}]
-	var sim: RefCounted = MapData.create(_default_map(), seats)
+	var sim: Simulation = MapData.create(_default_map(), seats)
 	if with_match: sim.start_match([1, 2] as Array[int])
 	return sim
 

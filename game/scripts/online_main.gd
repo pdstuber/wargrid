@@ -25,7 +25,7 @@ func _ready() -> void:
 func _exit_tree() -> void:
 	if _lockstep != null: _lockstep.send = Callable()
 
-func _create_simulation() -> RefCounted:
+func _create_simulation() -> Simulation:
 	return Skirmish.create(true, "human")
 
 func _step_simulation() -> void:

@@ -1,9 +1,11 @@
 extends RefCounted
 
-var _sim: RefCounted
+const Simulation = preload("res://scripts/simulation/simulation.gd")
+
+var _sim: Simulation
 var _lockstep: RefCounted
 
-func _init(sim: RefCounted, lockstep: RefCounted) -> void:
+func _init(sim: Simulation, lockstep: RefCounted) -> void:
 	_sim = sim
 	_lockstep = lockstep
 

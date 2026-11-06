@@ -4,6 +4,7 @@ const Workload = preload("res://scripts/debug/combat_workload.gd")
 const Stats = preload("res://scripts/debug/timing_stats.gd")
 const Lockstep = preload("res://scripts/net/lockstep.gd")
 const Wire = preload("res://scripts/net/wire.gd")
+const Simulation = preload("res://scripts/simulation/simulation.gd")
 
 const WARMUP: int = 300
 const SAMPLES: int = 1800
@@ -18,7 +19,7 @@ func _run() -> void:
 	quit(0 if _measure() else 1)
 
 func _measure() -> bool:
-	var sim: RefCounted = Workload.create("contact")
+	var sim: Simulation = Workload.create("contact")
 	var seats: Array[int] = [1, 2]
 	var mine := Lockstep.new(1, seats)
 	var peer := Lockstep.new(2, seats)

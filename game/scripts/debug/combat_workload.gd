@@ -2,7 +2,7 @@ extends RefCounted
 
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 
-static func create(layout: String) -> RefCounted:
+static func create(layout: String) -> Simulation:
 	assert(layout == "open" or layout == "dense" or layout == "contact" or layout == "skirmish3v3")
 	if layout == "skirmish3v3": return _skirmish3v3()
 	var solids: Array[Vector2i] = []
@@ -11,7 +11,7 @@ static func create(layout: String) -> RefCounted:
 			for y in range(64):
 				if not (y >= 20 and y <= 27 or y >= 44 and y <= 51):
 					solids.append(Vector2i(x, y))
-	var sim: RefCounted = Simulation.new(solids, Vector2i(64, 64))
+	var sim: Simulation = Simulation.new(solids, Vector2i(64, 64))
 	sim.add_player(1, 0)
 	sim.add_player(2, 0)
 	var contact: bool = layout == "contact"
@@ -31,7 +31,7 @@ static func create(layout: String) -> RefCounted:
 			assert(result.ok, result.error)
 	return sim
 
-static func _block(sim: RefCounted, player: int, front_x: int, direction: int, columns: int, top: int, interleave: bool) -> void:
+static func _block(sim: Simulation, player: int, front_x: int, direction: int, columns: int, top: int, interleave: bool) -> void:
 	@warning_ignore("integer_division")
 	var rows: int = 150 / columns
 	var placed: int = 0
@@ -43,8 +43,8 @@ static func _block(sim: RefCounted, player: int, front_x: int, direction: int, c
 			placed += 1
 
 # Three staggered lanes, 35 units per owner per lane (12 tanks); the last 9 of each group stay idle behind.
-static func _skirmish3v3() -> RefCounted:
-	var sim: RefCounted = Simulation.new([], Vector2i(64, 64))
+static func _skirmish3v3() -> Simulation:
+	var sim: Simulation = Simulation.new([], Vector2i(64, 64))
 	sim.add_player(1, 0)
 	sim.add_player(2, 0)
 	var lanes := [[10, 28], [30, 40], [50, 16]]
@@ -69,13 +69,13 @@ static func _skirmish3v3() -> RefCounted:
 # Profiling-only M6-scale probe: 196x196 with 8x8 mesas every 20 cells (10.5 % blocked), 3 lanes x 60 units per owner.
 const LARGE := Vector2i(196, 196)
 
-static func create_large() -> RefCounted:
+static func create_large() -> Simulation:
 	var solids: Array[Vector2i] = []
 	for top in range(10, 186, 20):
 		for left in range(30, 166, 20):
 			for y in range(top, top + 8):
 				for x in range(left, left + 8): solids.append(Vector2i(x, y))
-	var sim: RefCounted = Simulation.new(solids, LARGE)
+	var sim: Simulation = Simulation.new(solids, LARGE)
 	sim.add_player(1, 0)
 	sim.add_player(2, 0)
 	var lanes := [38, 98, 158]

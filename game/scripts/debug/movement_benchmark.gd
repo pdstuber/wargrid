@@ -5,10 +5,11 @@ const Stats = preload("res://scripts/debug/timing_stats.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
 const CombatWorkload = preload("res://scripts/debug/combat_workload.gd")
+const Simulation = preload("res://scripts/simulation/simulation.gd")
 # `-- --profile` adds profiling zones and a third, 196x196 combat leg (spike-performance only).
 var _profile: bool = OS.get_cmdline_user_args().has("--profile")
 var _large: bool = false
-var _simulation: RefCounted
+var _simulation: Simulation
 var _layout_index: int = 0
 var _layout_started: int
 var _sample_started: int = 0

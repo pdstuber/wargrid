@@ -4,7 +4,7 @@ const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
 const ZOOMS: Array[float] = [0.5, 1.0, 2.0]
-var simulation: RefCounted = Simulation.new()
+var simulation: Simulation = Simulation.new()
 var selected_ids: Array[int] = []
 var local_player: int = 1
 var _sequence: int = 0
@@ -144,7 +144,7 @@ func _show(state: Dictionary) -> void:
 	_refresh_hud(state)
 	Profiler.end(&"refresh.hud", zone)
 
-func _create_simulation() -> RefCounted:
+func _create_simulation() -> Simulation:
 	for y in range(4, 10):
 		for x in range(6, 9):
 			_base_blocked.append(Vector2i(x, y))

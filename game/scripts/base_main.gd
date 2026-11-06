@@ -15,8 +15,8 @@ func _ready() -> void:
 	$HUD/Economy/Produce.pressed.connect(_produce_selected)
 	$HUD/Economy/CancelBuild.pressed.connect(_cancel_build)
 
-func _create_simulation() -> RefCounted:
-	var sim: RefCounted = Simulation.new([],Vector2i(32,32))
+func _create_simulation() -> Simulation:
+	var sim: Simulation = Simulation.new([],Vector2i(32,32))
 	sim.add_player(1,10000)
 	sim.spawn(1,Vector2(4.5,4.5),"builder")
 	sim.add_supply_source(Vector2i(24,4),200)
