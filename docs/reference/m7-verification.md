@@ -6,7 +6,7 @@ Plan: [M7 plan](../superpowers/plans/2026-11-06-m7-factions.md). Design: [M7 des
 
 ```text
 Resume record (updated 2026-11-06, gate 1 signed off)
-Branch / base commit / working-tree state: m7-factions rebased onto main 025540d, HEAD after the rendered-row commit; tree clean; nothing pushed
+Branch / base commit / working-tree state: m7-factions rebased onto main 025540d; origin/m7-factions at 29507ed (CI green there), local HEAD adds the R1 planning docs (8f022b0, ed48b2e, not pushed); tree clean. R1 release workflow lives on its own branch r1-release (not pushed), see docs/reference/release-verification.md; it is not part of gate 2
 Last green task / next incomplete task: Task 11 (gate 1) signed off by the user 2026-11-06 / push for CI on Linux and Windows (approval needed), then STOP: gate 2 is an outline
 Changed paths since last commit: none
 Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 344 cases / 134,353 / 0, exit 0, TESTS PASSED 134353 (067bf58); lint, warnings, ruff, mypy, unittest, netplay match 8331, team match won tick 33205 winner 1, run_benchmark.sh exit 0, rendered movement benchmark PASSED 2 (all on the bot wave tree); ledger rows added
