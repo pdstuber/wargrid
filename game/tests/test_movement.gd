@@ -3,9 +3,13 @@ extends RefCounted
 
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Navigation = preload("res://scripts/simulation/grid_navigation.gd")
+const Economy = preload("res://tests/economy_fixture.gd")
 
 func cases() -> Array[Callable]:
-	return [test_distance, test_short_zero, test_replacement, test_retarget, test_obstacle, test_blocked, test_invalid, test_replay, test_far_coordinates, test_route_shared_read_only]
+	var wrapped: Array[Callable] = []
+	for test: Callable in [test_distance, test_short_zero, test_replacement, test_retarget, test_obstacle, test_blocked, test_invalid, test_replay, test_far_coordinates, test_route_shared_read_only]:
+		wrapped.append(func(runner: Variant) -> bool: return Economy.run_legacy_speed(runner, test))
+	return wrapped
 
 func order(sim, target: Vector2, sequence: int = 0, tick: int = -1) -> Dictionary:
 	return sim.issue_command({"tick": sim.snapshot().tick if tick < 0 else tick, "player": 1,

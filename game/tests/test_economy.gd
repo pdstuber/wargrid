@@ -14,7 +14,7 @@ func test_definitions(runner) -> bool:
 		runner.check(definition.get("cost") == row[1] and definition.get("ticks") == row[2] and definition.get("power") == row[3] and definition.get("footprint") == row[4], "E1 building " + row[0])
 		definition.cost = 1
 		runner.check(Definitions.building(row[0]).get("cost") == row[1], "E1 building copied")
-	for row in [["usa_collector",1200,300,6.0,true], ["usa_light_vehicle",700,300,3.0,false], ["usa_builder",1000,150,1.2,false]]:
+	for row in [["usa_collector",1200,300,6.0,true], ["usa_light_vehicle",700,300,2.4,false], ["usa_builder",1000,150,1.2,false]]:
 		var definition: Dictionary = Definitions.unit(row[0]).duplicate()
 		runner.check(definition.get("cost") == row[1] and definition.get("ticks") == row[2] and definition.get("speed") == row[3] and definition.get("air") == row[4], "E1 unit " + row[0])
 		definition.cost = 1

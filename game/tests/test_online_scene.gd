@@ -220,6 +220,7 @@ func test_launcher_faction_selectors_fit(runner) -> bool:
 		runner.check(not own.get_global_rect().intersects(opponent.get_global_rect()), "F5 selectors do not overlap at %s" % size)
 		for path in ["Offline", "RelayUrl", "Create", "JoinRow", "Status"]:
 			runner.check(not launcher.get_node("Center/Box/FactionRow").get_global_rect().intersects(launcher.get_node("Center/Box/" + path).get_global_rect()), "F5 row clear of %s at %s" % [path, size])
+		runner.check(launcher.get_node("Center/Box/FactionRow").get_global_rect().size.x <= 520.0, "F5 faction row stays compact at %s" % size)
 		runner.check(own.item_count >= 1 and own.get_item_text(0) == "United States", "F5 selector lists faction display names")
 		launcher.free()
 	runner.root.size = original

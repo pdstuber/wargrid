@@ -5,11 +5,11 @@ Plan: [M7 plan](../superpowers/plans/2026-11-06-m7-factions.md). Design: [M7 des
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-06, Task 11 checks done, uncommitted: parity scenarios in tools/zh_parity, this file, performance ledger)
+Resume record (updated 2026-11-06, gate 1 review fixes done, uncommitted)
 Branch / base commit / working-tree state: m7-factions at 7293c91 (Task 10 committed); Task 11 changes uncommitted
-Last green task / next incomplete task: Task 10 / Task 11 (gate 1): checks and parity done, gate review and playtest open
+Last green task / next incomplete task: gate 1 review fixes green (see 'Gate 1 review fixes' below) / user playtest, rendered benchmark
 Changed paths since last commit: tools/zh_parity/{parity,analyze}.py, docs/reference/{m7-verification,performance}.md
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 318 cases / 112,988 / 0, exit 0, TESTS PASSED 112988; lint, warnings, unittest (39), conformance (33), netplay x7, team match pass; run_benchmark.sh exit 1 (combat stress open/dense exceeded their ceilings, as at base)
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 326 cases / 134,257 / 0, exit 0, TESTS PASSED 134257 (after review fixes); lint, warnings, unittest (39), conformance (33), netplay x7, team match pass; run_benchmark.sh exit 1 (combat stress open/dense exceeded their ceilings, as at base)
 Known red case or blocker: none (benchmark ceilings exceeded: reported, not loosened)
 Approved decisions, pre-authorizations used, deferred gates: user ruling 2026-11-06: the bot does not build usa_defence; stress ceiling re-pin and rendered benchmark need the user
 Usage so far: not recorded
@@ -46,6 +46,12 @@ Next exact action: gate review (Opus high, fresh context), then user playtest (o
 | test_state_hash | H1 `PINNED` | 4b52b4564bdd4dfb → 01e256834bdd4dfb | Task 8 (default spawn kind is now armed) |
 | run_netplay.sh | `match` terminal tick | 9166 → 8257 | Task 8 |
 | test_combat, test_simulation | D1 legacy vehicle weapon, C1/C11 snapshots | weapon "" → scout_gun; combat null → guard record | Task 8 (scout car armed) |
+
+| test_skirmish_match | S1 `TERMINAL_TICK`; `S1_CORE_SERIES` | 7731 → 7685 (floor 7000 kept, below 8000); 1045294977236534214 → 2374153302354515980 | parity (scout speed 3.0 → 2.4 cells/s) |
+| test_team_match | TB3 `FINAL_DIGEST`; TB4 `TEAM_CORE_SERIES` | 4666c566ff0cf70d → 12ab49191b88eb61; 6345485798033620804 → 3361446751695866624 | parity (scout speed); team match now won tick 30687, winner 1 (was tick 23816, winner 2), inside cap 45000 |
+| run_netplay.sh | `match` terminal tick | 8257 → 7817 | parity (scout speed); inside the S1 window |
+| test_economy | E1 scout car speed | 3.0 → 2.4 | parity (scout speed); `check_reference.py` now reports a match, its speed departure entry removed |
+| test_movement, test_benchmark | M1-M9, BM3, BM5 ceilings | unchanged numbers; run with the scout car at 3.0 via `Economy.run_legacy_speed` | the pins were written for the 3.0 prototype speed; the movement benchmark workload itself now runs the 2.4 scout car (not rerun) |
 
 | test_base_scene | M1 builder menu | + `5: Missile Battery $1000` | Task 10 |
 
@@ -154,3 +160,26 @@ Decision list (no value changed; user decides):
 2. Battery cadence 8,8,8,60 stays formula-only: Patriot never fires in the harness (unpowered or anti-air only, unverified). Options: leave, or investigate the API (power/targeting) in a separate harness task.
 3. Dozer mid-turn dip to about 1 u/s vs Wargrid min turn speed 25 u/s: feel difference, candidate for the playtest.
 4. Rocket/scout/battery ranges: no change (geometry offsets as for Ranger/Crusader).
+
+### Patriot probe
+
+Measured (source build), 2026-11-06, `tools/zh_parity/probe_patriot.py` and `parity.py` (`power_for` spawns an `AmericaPowerPlant` beside a battery in `fire`/`reach`).
+
+- Cause of "never fires": no power. `AmericaPatriotBattery` has KindOf `POWERED`, `EnergyProduction -3`; a lone spawn gives `/resources` production 0 / consumption 3 and 0 shots in 200 frames (`a0`). With one spawned plant (production 5 / consumption 3, no construction step needed) it fires at once. Attempts 1 and 2 yielded shots, 3-6 not needed.
+- Auto-acquire (no order) and `attack_target` both work against an enemy Dozer at gap 150: 12 shots in 400 frames, first at order+3.
+- Burst `burst_battery` (GLA Command Center, gap 200, plant present): lastShotFrame 11, 19, 27, 35, 95, 103, 111, 119, 179 ...: intervals 8, 8, 8, 60, repeating, clip 4. Equals Wargrid `battery` (`delay_ticks 8`, `clip_size 4`, `reload_ticks 60`); `analyze.py` prints `8,8,8` only because it ends the pattern at the first reload gap, so its `8,8,8,60` expectation reads FAIL; metric wording, not a cadence difference.
+- Reach `reach_battery`: farthest idle firing gap 252 (fires at 252, not at 253) vs INI/Wargrid range 225 (9 cells). Offset +27 centre to centre, same kind as Ranger +22 and Crusader +33 (target and attacker footprint); analyze FAIL at tolerance 10 is the geometry offset, no value change.
+- `range_battery` still 0 shots: the battery is IMMOBILE, the 300 gap is out of range and an attack order cannot make it approach. Not a power issue; scenario is ill-posed for a building (use `reach_battery`).
+- Not tried: assist weapon with two Patriots (`a5_two` exists, not run), air target; unneeded.
+
+
+## Gate 1 review fixes (tree: m7-factions f6ceb9b + uncommitted, Apple M6)
+
+- Fixed test-first (each test seen red first, mutation noted): finding 1 bot filters contained units in `_attack`/`_defend` (D3, red by reverting skirmish.gd); finding 3 passengers sorted by id on boarding (CT10, red by `append`); finding 4 `_free_slots` ignores the command's own live ids (CT11, red before the fix); finding 7 `_can_join` parenthesised (not reachable by a unit test: a passenger's intent is always guard, behaviour unchanged; precedence only).
+- Finding 2, user ruling 2026-11-06 FIX NOW: building attackers trigger retaliation (`fire_defences` calls `_retaliate_trigger` before deaths; the trigger measures from the building centre). DF6 red first (reverting combat.gd), human infantry at 6.0 and 7.9 cells retaliate, at 8.5 stay in guard. No pin moved from this.
+- Test gaps: DF7 keep-current-target, DF8 splash, DF9 ignores air and contained, DF10 deaths after all shots (all four seen red by scratch mutations of combat.gd: skip validity check, drop the splash line, drop the air/contained filter in `valid_target`, remove the dead target inside the loop); F5 asserts FactionRow width <= 520 (red with a 1400 px minimum size).
+- Scout speed: `check_reference.py` against the retail INIZH.big: Humvee locomotor 2.4 cells/s (60 u/s), matches the parity row; set to 2.4. S1 7685 (not past 8000; floor stays 7000), team match won tick 30687 winner 1, netplay match 7817.
+- Suite 326 / 134,257 / 0, exit 0, TESTS PASSED 134257 (check count rose from 113,0xx: not investigated beyond the slower scout car lengthening per-tick scripted matches). Lint, warnings, unittest 39 pass. run_netplay match, run_team_match pass. No benchmarks run.
+- Open, user ruling pending: finding 8 defence scan cost (`Combat._defence_pick` scans all objects per idle defence per tick; the `defences` layout p95 2.87 ms over 1.82); left as is.
+- Open for gate 2 (plan outline carries them): finding 5 `setup_seat` placement unchecked online; finding 6 `build_order()` / `unit_for()` read `DEFAULT_FACTION` instead of the seat faction.
+- Plan/design: "Snapshot fields added at gate 1" now states the as-built keys (present only while set).

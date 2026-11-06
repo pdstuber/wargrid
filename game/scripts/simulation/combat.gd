@@ -352,6 +352,7 @@ static func fire_defences(sim: Simulation) -> void:
 	sim._combat_events.append_array(shots)
 	var dead: Array = damage.keys().filter(func(target: int) -> bool: return record(sim, target).hp <= damage[target])
 	for target: Variant in damage: record(sim, target).hp = maxi(0, record(sim, target).hp - damage[target])
+	_retaliate_trigger(sim, shots)
 	dead.sort()
 	for target: Variant in dead:
 		sim._combat_events.append({"type": "death", "tick": sim._tick, "object_id": target})
@@ -471,7 +472,7 @@ static func _retaliate_trigger(sim: Simulation, shots: Array[Dictionary]) -> voi
 		var victim: Dictionary = record(sim, shot.target_id)
 		var attacker: Dictionary = record(sim, shot.attacker_id)
 		if victim.is_empty() or attacker.is_empty() or is_ai(sim, victim.owner) or not hostile(sim, victim.owner, attacker.owner): continue
-		if distance_squared(Vector2(attacker.position[0], attacker.position[1]), victim) > RETALIATION_DISTANCE * RETALIATION_DISTANCE: continue
+		if distance_squared(_victim_centre(attacker), victim) > RETALIATION_DISTANCE * RETALIATION_DISTANCE: continue
 		if not built:
 			built = true
 			for unit: Dictionary in sim._entities.values():
@@ -488,7 +489,7 @@ static func _retaliate_trigger(sim: Simulation, shots: Array[Dictionary]) -> voi
 				_join_retaliation(sim, unit, attacker)
 
 static func _can_join(unit: Dictionary) -> bool:
-	return not unit.has("container_id") and _is_idle_guard(unit) or (unit.combat.mode == "retaliate" and unit.combat.target_id == null)
+	return not unit.has("container_id") and (_is_idle_guard(unit) or (unit.combat.mode == "retaliate" and unit.combat.target_id == null))
 
 static func _retarget_retaliation(sim: Simulation, unit: Dictionary, attacker: Dictionary) -> void:
 	unit.combat.target_id = attacker.id

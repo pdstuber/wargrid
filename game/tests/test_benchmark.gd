@@ -6,6 +6,7 @@ const Workload = preload("res://scripts/debug/movement_workload.gd")
 const CombatWorkload = preload("res://scripts/debug/combat_workload.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Navigation = preload("res://scripts/simulation/grid_navigation.gd")
+const Economy = preload("res://tests/economy_fixture.gd")
 const Probe = preload("res://scenes/movement_benchmark.tscn")
 
 func cases() -> Array[Callable]:
@@ -48,6 +49,9 @@ func test_fixtures(runner) -> bool:
 	return true
 
 func test_progression(runner) -> bool:
+	return Economy.run_legacy_speed(runner, _test_progression)
+
+func _test_progression(runner) -> bool:
 	var sim = Simulation.new([], Vector2i(64, 64))
 	sim.spawn(1, Vector2(51.5, 48.5))
 	runner.check(not Workload.settled(sim), "BM3 idle not arrived")
@@ -76,6 +80,9 @@ func test_rendered_probe_ticks(runner) -> bool:
 	return true
 
 func test_snapshot_size_ceiling(runner) -> bool:
+	return Economy.run_legacy_speed(runner, _test_snapshot_size_ceiling)
+
+func _test_snapshot_size_ceiling(runner) -> bool:
 	# Step 38 is the peak (routes full, queue just drained). The snapshot is copied twice per tick; raise a ceiling only deliberately and add a performance-ledger row.
 	var ceilings := {"open": 84119, "dense": 84983}
 	for layout in ceilings:

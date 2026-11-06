@@ -9,7 +9,7 @@ const Fixture = preload("res://tests/combat_fixture.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 
 func cases() -> Array[Callable]:
-	return [test_skirmish_initial_state, test_roster_production, test_bot_cycles_unit_list, test_opponent_pays_and_retries, test_opponent_attack_policy, test_opponent_defends_base, test_defence_skips_busy_units, test_match_lifecycle, test_restart_state]
+	return [test_skirmish_initial_state, test_roster_production, test_bot_cycles_unit_list, test_opponent_pays_and_retries, test_opponent_attack_policy, test_opponent_defends_base, test_defence_skips_busy_units, test_bot_ignores_contained_units, test_match_lifecycle, test_restart_state]
 
 func _owned(items: Array, player: int) -> Array:
 	return items.filter(func(item: Dictionary) -> bool: return item.owner == player)
@@ -224,6 +224,41 @@ func test_defence_skips_busy_units(runner) -> bool:
 	sim.step()
 	runner.check(_attack_targets(sim, [idle]).size() == 1, "D2 the wave picks up idle units after ATTACK_TICK")
 	return true
+
+func test_bot_ignores_contained_units(runner) -> bool:
+	var sim = _world(10000)
+	var row: Dictionary = Registry.kind("usa_light_vehicle").duplicate(true)
+	row.contains = {"slots": 5, "accepts": ["vehicle"], "passengers_fire": true, "passenger_damage_percent": 100}
+	Registry.add_test_kind("test_ferry", row)
+	var builder: int = sim.spawn(1, Vector2(30.5, 20.5), "usa_builder")
+	var ferry: int = sim.spawn(1, Vector2(31.5, 20.5), "test_ferry")
+	var plant: int = Economy.add_completed(sim, 1, "usa_power_plant", Vector2i(10, 20))
+	Economy.send(sim, {"type": "enter", "entity_ids": [builder], "target_id": ferry})
+	for i in range(100): sim.step()
+	runner.check(Economy.object(sim, builder).has("container_id"), "D3 setup: the builder boarded")
+	var army: Array = _army(sim)
+	_to_tick(sim, Skirmish.ATTACK_TICK)
+	Skirmish.issue_opponent(sim)
+	sim.step()
+	Registry.clear_test_kinds()
+	runner.check(_attack_targets(sim, army) == [plant, plant, plant, plant], "D3 the wave skips the contained builder and hits the next category, got " + str(_attack_targets(sim, army)))
+	var world: Array = _defence_world(runner)
+	var base = world[0]
+	var y: float = Skirmish.origin("usa_power_plant", 1).y + 0.5
+	var held: Array = _loaded_car_for(base, Vector2(world[1] + 5.0, y))
+	var tank: int = base.spawn(1, Vector2(30.5, 28.5), "usa_tank")
+	runner.check(Economy.object(base, held[0]).has("container_id"), "D3 setup: the intruder passenger boarded")
+	_decide_now(base)
+	var combat: Dictionary = _mode(base, tank)
+	runner.check(combat.mode == "attack" and combat.target_id == held[1], "D3 defence targets the loaded car, not its passenger, got " + str(combat))
+	return true
+
+func _loaded_car_for(sim: RefCounted, at: Vector2) -> Array:
+	var rifle: int = sim.spawn(2, at, "usa_rifle_infantry")
+	var car: int = sim.spawn(2, at + Vector2(0.0, 1.0), "usa_light_vehicle")
+	Economy.send(sim, {"type": "enter", "player": 2, "entity_ids": [rifle], "target_id": car})
+	for i in range(100): sim.step()
+	return [rifle, car]
 
 func _start(runner, sim: RefCounted, players: Array[int], ok: bool, label: String) -> void:
 	var before: Dictionary = sim.snapshot()

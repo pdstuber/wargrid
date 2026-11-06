@@ -130,7 +130,7 @@ static func _start_unit(state: Dictionary, player: int) -> String:
 	return ""
 
 static func _attack(ctx: Dictionary, state: Dictionary, skip: Dictionary = {}) -> void:
-	var enemies: Array = state.entities.filter(func(unit: Dictionary) -> bool: return _hostile(ctx, unit.owner) and not Registry.air_kinds.has(unit.kind))
+	var enemies: Array = state.entities.filter(func(unit: Dictionary) -> bool: return _hostile(ctx, unit.owner) and not Registry.air_kinds.has(unit.kind) and not unit.has("container_id"))
 	enemies.append_array(state.buildings.filter(func(building: Dictionary) -> bool: return _hostile(ctx, building.owner)))
 	var groups := {}
 	for unit: Dictionary in state.entities:
@@ -151,7 +151,7 @@ static func _idle(unit: Dictionary) -> bool:
 
 static func _defend(ctx: Dictionary, state: Dictionary, buildings: Array) -> Dictionary:
 	var intruders: Array = state.entities.filter(func(unit: Dictionary) -> bool:
-		if not _hostile(ctx, unit.owner) or Registry.air_kinds.has(unit.kind): return false
+		if not _hostile(ctx, unit.owner) or Registry.air_kinds.has(unit.kind) or unit.has("container_id"): return false
 		var at := Vector2(unit.position[0], unit.position[1])
 		return buildings.any(func(building: Dictionary) -> bool: return Combat.distance_squared(at, building) <= DEFENCE_RADIUS * DEFENCE_RADIUS))
 	var sent := {}

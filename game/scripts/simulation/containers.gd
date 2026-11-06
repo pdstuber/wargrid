@@ -19,16 +19,16 @@ static func enter_error(sim: Simulation, command: Dictionary, live: Array) -> St
 	for id: Variant in live:
 		var role: String = Registry.kind(sim._entities[id].kind)["class"]
 		if id == carrier.id or role == "air" or not rules(carrier).accepts.has(role): return CANNOT_ENTER
-	return "" if _free_slots(sim, carrier) > 0 else "Container is full"
+	return "" if _free_slots(sim, carrier, live) > 0 else "Container is full"
 
 static func unload_error(sim: Simulation, command: Dictionary) -> String:
 	var carrier: Dictionary = sim._entities.get(command.target_id, {})
 	return "" if not carrier.is_empty() and carrier.owner == command.player and not rules(carrier).is_empty() else "Cannot unload this container"
 
-static func _free_slots(sim: Simulation, carrier: Dictionary) -> int:
+static func _free_slots(sim: Simulation, carrier: Dictionary, reissued: Array) -> int:
 	var promised: int = 0
 	for unit: Dictionary in sim._entities.values():
-		if entering(unit) and unit.order.target_id == carrier.id: promised += 1
+		if entering(unit) and unit.order.target_id == carrier.id and not reissued.has(unit.id): promised += 1
 	return rules(carrier).slots - carrier.get("passengers", []).size() - promised
 
 static func head_for(sim: Simulation, unit: Dictionary, carrier: Dictionary) -> void:
@@ -71,7 +71,8 @@ static func _board(sim: Simulation, unit: Dictionary, carrier: Dictionary) -> vo
 	unit.status = "contained"
 	unit.position = carrier.position.duplicate()
 	unit.speed = 0.0
-	carrier.get_or_add("passengers", []).append(unit.id)
+	var passengers: Array = carrier.get_or_add("passengers", [])
+	passengers.insert(passengers.bsearch(unit.id), unit.id)
 	sim._set_intent(unit, "guard")
 	Combat.object_removed(sim, unit.id)
 

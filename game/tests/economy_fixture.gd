@@ -3,6 +3,16 @@ extends RefCounted
 
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
+const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
+
+# Movement pins were written for the 3.0 cells/s prototype speed; the shipped scout car is 2.4 (parity).
+static func run_legacy_speed(runner, test: Callable) -> bool:
+	var row: Dictionary = Registry.kind("usa_light_vehicle").duplicate(true)
+	row.speed = 3.0
+	Registry.add_test_kind("usa_light_vehicle", row)
+	var ok: bool = test.call(runner)
+	Registry.clear_test_kinds()
+	return ok
 
 static func make_world(credits: int = 10000, size: Vector2i = Vector2i(32,32)) -> RefCounted:
 	var sim = Simulation.new([],size)

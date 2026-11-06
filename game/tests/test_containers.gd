@@ -7,7 +7,7 @@ const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const Combat = preload("res://scripts/simulation/combat.gd")
 
 func cases() -> Array[Callable]:
-	return [test_scout_car_holds_five, test_enter_and_unload, test_passengers_fire_while_moving, test_passengers_hold_fire_when_flag_off, test_passenger_damage_full_kills, test_passenger_damage_partial_survivors_exit, test_unload_same_tick_as_death, test_full_container_rejects, test_enter_rejections, test_passenger_commands_rejected, test_contained_not_target, test_container_same_tick_cases, test_unload_with_container_move, test_container_removed_while_approaching]
+	return [test_scout_car_holds_five, test_enter_and_unload, test_passengers_fire_while_moving, test_passengers_hold_fire_when_flag_off, test_passenger_damage_full_kills, test_passenger_damage_partial_survivors_exit, test_unload_same_tick_as_death, test_full_container_rejects, test_enter_rejections, test_passenger_commands_rejected, test_contained_not_target, test_container_same_tick_cases, test_unload_with_container_move, test_container_removed_while_approaching, test_passengers_stay_in_id_order, test_reissued_enter_accepted]
 
 func _world() -> RefCounted:
 	var sim = Fixture.world()
@@ -332,4 +332,24 @@ func test_container_removed_while_approaching(runner) -> bool:
 	runner.check(state.status == "idle" and state.order == null and state.combat.mode == "guard", "CT11 walkers go idle when the container is removed")
 	for i in range(5): sim.step()
 	runner.check(Fixture.object(sim, rifle).status == "idle", "CT11 they stay idle")
+	return true
+
+func test_passengers_stay_in_id_order(runner) -> bool:
+	var sim = _world()
+	var car: int = sim.spawn(1, Vector2(5.5, 5.5), "usa_light_vehicle")
+	var far: int = sim.spawn(1, Vector2(15.5, 5.5), "usa_rifle_infantry")
+	var near: int = sim.spawn(1, Vector2(8.5, 5.5), "usa_rifle_infantry")
+	runner.check(_load(sim, car, [near, far]), "CT10 both board")
+	runner.check(Fixture.object(sim, car).passengers == [far, near], "CT10 the later boarder with the lower id still sorts first: " + str(Fixture.object(sim, car).passengers))
+	return true
+
+func test_reissued_enter_accepted(runner) -> bool:
+	var sim = _world()
+	var car: int = sim.spawn(1, Vector2(5.5, 5.5), "usa_light_vehicle")
+	var ids: Array = []
+	for i in range(5): ids.append(sim.spawn(1, Vector2(25.5, 3.5 + i), "usa_rifle_infantry"))
+	runner.check(Fixture.send(sim, {"type": "enter", "entity_ids": ids, "target_id": car}).ok, "CT11 five may enter")
+	sim.step()
+	var again: Dictionary = Fixture.send(sim, {"type": "enter", "entity_ids": ids, "target_id": car})
+	runner.check(again.ok, "CT11 re-issuing enter for units already walking is accepted: " + str(again.get("error", "")))
 	return true

@@ -8,7 +8,7 @@ const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.g
 const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 
 func cases() -> Array[Callable]:
-	return [test_defence_fires_edge_range, test_defence_clip_and_reload, test_defence_picks_nearest_hostile, test_powered_defence_dark_when_low_power, test_bot_does_not_build_defence]
+	return [test_defence_fires_edge_range, test_defence_clip_and_reload, test_defence_picks_nearest_hostile, test_powered_defence_dark_when_low_power, test_bot_does_not_build_defence, test_defence_shots_trigger_retaliation, test_defence_keeps_current_target, test_defence_splash, test_defence_ignores_air_and_contained, test_defence_deaths_after_all_shots]
 
 func _world() -> RefCounted:
 	var sim = Fixture.world()
@@ -81,4 +81,70 @@ func test_bot_does_not_build_defence(runner) -> bool:
 	var builder: int = human.spawn(1, Vector2(5.5, 5.5), "usa_builder")
 	var sent: Dictionary = EconomyFixture.send(human, {"type": "build", "builder_id": builder, "building_kind": "usa_defence", "origin": [10, 10]})
 	runner.check(sent.ok, "DF5 a human seat can order a battery: " + str(sent.get("error", "")))
+	return true
+
+func test_defence_shots_trigger_retaliation(runner) -> bool:
+	for case in [[6.0, true], [7.9, true], [8.5, false]]:
+		var sim = _world()
+		EconomyFixture.add_completed(sim, 2, "usa_power_plant", Vector2i(1, 20))
+		var defence: int = EconomyFixture.add_completed(sim, 2, "usa_defence", Vector2i(10, 10))
+		var victim: int = sim.spawn(1, Vector2(10.5 + case[0], 10.5), "usa_rifle_infantry")
+		sim.step()
+		runner.check(_shots(sim, defence).size() == 1, "DF6 the battery shot the infantry at " + str(case[0]))
+		var mode: String = Fixture.object(sim, victim).combat.mode
+		runner.check((mode == "retaliate") == case[1], "DF6 infantry shot from the battery at %s cells: retaliate=%s, mode %s" % [case[0], case[1], mode])
+	return true
+
+func test_defence_keeps_current_target(runner) -> bool:
+	var sim = _world()
+	var defence: int = EconomyFixture.add_completed(sim, 1, "usa_defence", Vector2i(10, 10))
+	var first: int = sim.spawn(2, Vector2(16.5, 10.5), "usa_tank")
+	sim.step()
+	sim.spawn(2, Vector2(13.5, 10.5), "usa_tank")
+	for i in range(8): sim.step()
+	var second: Array = sim.snapshot().combat_events.filter(func(e: Dictionary) -> bool: return e.type == "shot" and e.attacker_id == defence)
+	runner.check(second.size() == 1 and second[0].target_id == first, "DF7 the battery stays on its valid target while a nearer one appears, got " + str(second))
+	return true
+
+func test_defence_splash(runner) -> bool:
+	var sim = _world()
+	var defence: int = EconomyFixture.add_completed(sim, 1, "usa_defence", Vector2i(10, 10))
+	var target: int = sim.spawn(2, Vector2(16.5, 10.5), "usa_rifle_infantry")
+	var ring: Array = []
+	for offset in [Vector2(0.6, 0), Vector2(-0.6, 0), Vector2(0, 0.6), Vector2(0, -0.6)]: ring.append(sim.spawn(2, Vector2(16.5, 10.5) + offset, "usa_rifle_infantry"))
+	var apart: int = sim.spawn(2, Vector2(16.5, 14.5), "usa_rifle_infantry")
+	sim.step()
+	var hits: Dictionary = {}
+	for shot in _shots(sim, defence): hits[shot.target_id] = shot.splash
+	runner.check(ring.size() == 4 and hits.size() >= 2 and hits.values().has(true) and not hits.has(apart), "DF8 the shot also splashes neighbours, not a unit far away, got " + str(hits))
+	return true
+
+func test_defence_ignores_air_and_contained(runner) -> bool:
+	var sim = _world()
+	var defence: int = EconomyFixture.add_completed(sim, 1, "usa_defence", Vector2i(10, 10))
+	var air: int = sim.spawn(2, Vector2(12.5, 10.5), "usa_collector")
+	var passenger: int = sim.spawn(2, Vector2(14.5, 10.5), "usa_rifle_infantry")
+	var car: int = sim.spawn(2, Vector2(14.5, 11.5), "usa_light_vehicle")
+	EconomyFixture.send(sim, {"type": "enter", "player": 2, "entity_ids": [passenger], "target_id": car})
+	for i in range(40): sim.step()
+	runner.check(Fixture.object(sim, passenger).has("container_id"), "DF9 setup: the passenger boarded")
+	var targets: Dictionary = {}
+	for i in range(100):
+		sim.step()
+		for shot in _shots(sim, defence): targets[shot.target_id] = true
+	runner.check(not targets.has(air) and not targets.has(passenger) and targets.has(car), "DF9 neither aircraft nor passenger is shot, the car is: " + str(targets.keys()))
+	return true
+
+func test_defence_deaths_after_all_shots(runner) -> bool:
+	var sim = _world()
+	var first: int = EconomyFixture.add_completed(sim, 1, "usa_defence", Vector2i(10, 10))
+	var second: int = EconomyFixture.add_completed(sim, 1, "usa_defence", Vector2i(10, 12))
+	EconomyFixture.add_completed(sim, 1, "usa_power_plant", Vector2i(1, 5))
+	var tank: int = sim.spawn(2, Vector2(16.5, 11.5), "usa_tank")
+	sim._entities[tank].hp = 1
+	sim.step()
+	var events: Array = sim.snapshot().combat_events
+	var shooters: Array = events.filter(func(e: Dictionary) -> bool: return e.type == "shot" and e.target_id == tank).map(func(e: Dictionary) -> int: return e.attacker_id)
+	var deaths: Array = events.filter(func(e: Dictionary) -> bool: return e.type == "death" and e.object_id == tank)
+	runner.check(shooters == [first, second] and deaths.size() == 1, "DF10 both batteries fire on the tick the target dies, one death: " + str(shooters) + " " + str(deaths.size()))
 	return true

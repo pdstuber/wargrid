@@ -43,7 +43,6 @@ ARMORS = {
 }
 DAMAGE_TYPES = ["SMALL_ARMS", "ARMOR_PIERCING"]
 DEPARTURES = {
-    "usa_light_vehicle speed": "legacy M1/M2 prototype unit keeps 3.0",
     "usa_light_vehicle weapon": "legacy unit is unarmed; Humvee is not in the M4 roster",
 }
 NOT_MODELLED = {
