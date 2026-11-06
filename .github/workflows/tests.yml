@@ -1,8 +1,10 @@
 name: Tests
 on:
   push:
+    branches: ['**']
   pull_request:
   workflow_dispatch:
+  workflow_call:
 jobs:
   godot:
     needs: relay
@@ -51,27 +53,7 @@ jobs:
           name: relay-bin
           path: relay-bin
       - name: Install pinned Godot
-        run: |
-          "$PYTHON" - <<'PY'
-          import hashlib
-          import os
-          from pathlib import Path
-          import urllib.request
-          import zipfile
-
-          archive = Path(os.environ["RUNNER_TEMP"]) / os.environ["GODOT_ZIP"]
-          url = f"https://github.com/godotengine/godot/releases/download/{os.environ['GODOT_VERSION']}/{archive.name}"
-          urllib.request.urlretrieve(url, archive)
-          if hashlib.sha256(archive.read_bytes()).hexdigest() != os.environ["GODOT_SHA256"]:
-              raise SystemExit("Godot checksum mismatch")
-          directory = archive.parent / "godot"
-          with zipfile.ZipFile(archive) as bundle:
-              bundle.extractall(directory)
-          executable = directory / os.environ["GODOT_EXECUTABLE"]
-          executable.chmod(0o755)
-          with open(os.environ["GITHUB_ENV"], "a") as output:
-              output.write(f"GODOT_BIN={executable.resolve().as_posix()}\n")
-          PY
+        run: '"$PYTHON" tools/install_godot.py'
       - name: Test and produce replay trace
         run: |
           set -o pipefail

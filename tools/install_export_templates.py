@@ -11,7 +11,14 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
-WANTED = ("version.txt", "linux_release.x86_64", "windows_release_x86_64.exe", "windows_release_x86_64_console.exe")
+WANTED = (
+    "version.txt",
+    "linux_release.x86_64",
+    "windows_release_x86_64.exe",
+    "windows_release_x86_64_console.exe",
+    "macos.zip",
+    "web_nothreads_release.zip",
+)
 
 
 def templates_dir(version: str) -> Path:
