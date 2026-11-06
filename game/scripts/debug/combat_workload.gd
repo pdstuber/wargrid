@@ -3,8 +3,9 @@ extends RefCounted
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 
 static func create(layout: String) -> Simulation:
-	assert(layout == "open" or layout == "dense" or layout == "contact" or layout == "skirmish3v3")
+	assert(layout == "open" or layout == "dense" or layout == "contact" or layout == "skirmish3v3" or layout == "transports")
 	if layout == "skirmish3v3": return _skirmish3v3()
+	if layout == "transports": return _transports()
 	var solids: Array[Vector2i] = []
 	if layout == "dense":
 		for x: int in [26, 34, 42]:
@@ -41,6 +42,30 @@ static func _block(sim: Simulation, player: int, front_x: int, direction: int, c
 			var id: int = sim.spawn(player, Vector2(front_x + direction * column + 0.5, top + row + 0.5), "usa_tank" if tank else "usa_rifle_infantry")
 			assert(id > 0)
 			placed += 1
+
+# 20 scout cars with 5 riflemen each march on a block of 100 riflemen; contact comes after the warm-up, so passenger fire lands in the timed window.
+static func _transports() -> Simulation:
+	var sim: Simulation = Simulation.new([], Vector2i(64, 64))
+	sim.add_player(1, 0)
+	sim.add_player(2, 0)
+	var cars: Array[int] = []
+	for index in range(20):
+		var car_position := Vector2(3.5, 4.5 + 3 * index)
+		var car: int = sim.spawn(1, car_position, "usa_light_vehicle")
+		assert(car > 0)
+		cars.append(car)
+		var riders: Array[int] = []
+		for offset: Vector2 in [Vector2(1, 0), Vector2(-1, 0), Vector2(0, 1), Vector2(0, -1), Vector2(0.9, 0.9)]:
+			riders.append(sim.spawn(1, car_position + offset, "usa_rifle_infantry"))
+		var entered: Dictionary = sim.issue_command({"tick": 0, "player": 1, "sequence": index, "type": "enter", "entity_ids": riders, "target_id": car})
+		assert(entered.ok, entered.error)
+	for column in range(10):
+		for row in range(10):
+			assert(sim.spawn(2, Vector2(48.5 + column, 19.5 + row), "usa_rifle_infantry") > 0)
+	sim.step()
+	var marched: Dictionary = sim.issue_command({"tick": sim.tick(), "player": 1, "sequence": 20, "type": "attack_move", "entity_ids": cars, "target": [60.5, 24.5]})
+	assert(marched.ok, marched.error)
+	return sim
 
 # Three staggered lanes, 35 units per owner per lane (12 tanks); the last 9 of each group stay idle behind.
 static func _skirmish3v3() -> Simulation:

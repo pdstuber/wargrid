@@ -21,12 +21,14 @@ func _run() -> void:
 	for layout: String in ["open", "dense", "contact", "skirmish3v3"]:
 		if not _measure(layout):
 			breached.append(layout)
+	if not _measure("transports"):
+		breached.append("transports")
 	if not breached.is_empty():
 		for layout: String in breached:
 			push_error("Combat benchmark failed for " + layout)
 		quit(1)
 		return
-	print("COMBAT BENCHMARK PASSED 4")
+	print("COMBAT BENCHMARK PASSED 5")
 	quit(0)
 
 func _measure(layout: String) -> bool:
@@ -43,6 +45,10 @@ func _measure(layout: String) -> bool:
 	var deaths: int = 0
 	var first_shot: int = -1
 	var start_units: int = sim.snapshot().entities.size()
+	var riders: Dictionary = {}
+	for unit: Dictionary in sim.snapshot().entities:
+		if unit.has("container_id"): riders[unit.id] = true
+	var rider_shots: int = 0
 	for tick in range(WARMUP + SAMPLES):
 		var started: int = Time.get_ticks_usec()
 		sim.step()
@@ -53,6 +59,7 @@ func _measure(layout: String) -> bool:
 		for event: Dictionary in state.combat_events:
 			if event.type == "shot":
 				shots += 1
+				if tick >= WARMUP and riders.has(event.attacker_id): rider_shots += 1
 				if first_shot == -1: first_shot = tick
 			else:
 				deaths += 1
@@ -72,6 +79,12 @@ func _measure(layout: String) -> bool:
 		" combat_work=", JSON.stringify(Stats.summary(work)), " allocation_calls=", JSON.stringify(Stats.summary(allocations)),
 		" shots=", shots, " deaths=", deaths, " first_shot=", first_shot, " alive_start=", start_units, " alive_end=", alive,
 		" scan_chases_warmup=", warmup_chases, " scan_chases_window=", window_chases, " retaliations_window=", window_retaliations)
+	if layout == "transports":
+		print("COMBAT TRANSPORTS passenger_shots_window=", rider_shots, " passengers=", riders.size(), " report-only until gate 1")
+		if riders.size() != 100 or rider_shots == 0:
+			push_error("Combat benchmark: no passenger shots inside the timed window")
+			return false
+		return true
 	if STRESS_CEILING.has(layout):
 		var ceiling: Array = STRESS_CEILING[layout]
 		var within: bool = summary.p95 <= ceiling[0] and summary.p99 <= ceiling[1]

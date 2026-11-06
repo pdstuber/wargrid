@@ -5,15 +5,15 @@ Plan: [M7 plan](../superpowers/plans/2026-11-06-m7-factions.md). Design: [M7 des
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-06, Task 8 done, uncommitted)
-Branch / base commit / working-tree state: m7-factions at 50547a6; Task 8 changes uncommitted
-Last green task / next incomplete task: Task 8 (rocket infantry, armed scout car, bot unit lists) / Task 9 (containers)
-Changed paths since last commit: game/scripts/simulation/{skirmish.gd,definitions/{usa,shared,factions}.gd}, game/scripts/debug/movement_workload.gd, game/tests/{test_combat,test_skirmish,test_simulation,test_movement,test_repath,test_groups,test_skirmish_match,test_team_match,test_state_hash}.gd, tools/run_netplay.sh, this file
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 297 cases / 112,909 / 0, exit 0, TESTS PASSED 112909; lint, warnings, unittest pass; run_netplay.sh match ok (tick 8257)
+Resume record (updated 2026-11-06, Task 9 done, uncommitted)
+Branch / base commit / working-tree state: m7-factions at 589ac15 (Task 8 committed); Task 9 changes uncommitted
+Last green task / next incomplete task: Task 9 (containers) / Task 10 (firing buildings, missile battery, powered defences)
+Changed paths since last commit: game/scripts/simulation/{containers.gd (new),simulation.gd,combat.gd,definitions/usa.gd}, game/scripts/debug/combat_workload.gd, game/benchmarks/run_combat.gd, tools/run_benchmark.sh, game/tests/{test_containers.gd (new),run_tests.gd,test_benchmark.gd}, this file
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 312 cases / 112,983 / 0, exit 0, TESTS PASSED 112983; lint, warnings, unittest pass; the four traces identical to the pre-change run
 Known red case or blocker: none
-Approved decisions, pre-authorizations used, deferred gates: as Task 7; S1 floor 7000 (user, 2026-11-06)
+Approved decisions, pre-authorizations used, deferred gates: as Task 8; see Task 9 departures below
 Usage so far: not recorded
-Next exact action: commit Task 8, then Task 9. Benchmarks not run (bot/units changed).
+Next exact action: commit Task 9 (body lists the _entities loops, see Departures), then Task 10. Benchmarks not run (transports layout and the new per-tick Containers.step pass are unmeasured).
 ```
 
 ## Pins at base
@@ -96,3 +96,8 @@ Cadence, measured (source build, `~/CnC/parity/traces`, 2026-11-06):
 Gate-1 rows (cost, ticks, max_hp, armor, vision, radius, weapon, other) are the plan's Task 2 table, unchanged: no measured gap, so formula delays stand. Armor percentages and footprints as in the plan's Task 2 tables.
 
 - Task 8: armed scout car took S1 to 7731 (below 8000); user ruling 2026-11-06 widened the floor to 7000. Fixtures that compare whole entity dicts over time (M1, M6, RP2, G7, movement workload for BM5) set `combat = null` on their default-kind units, because an armed idle unit's `repath_tick` advances; no assertion weakened. New tests S8 (rocket scatter, damage table) and B3 (bot cycle), red first. Bot: `unit_for(producer, owned)` picks the fewest-owned kind, ties by list order; armor rows gained `infantry_missile`, `explosion`, `rapid_fire`, `base_defense`.
+
+- Task 9: snapshot shape departs from the plan's "container_id: int, 0 when outside" and "passengers" on every container: both keys exist only while set (`container_id` on a passenger, `passengers` on a loaded container, erased when empty). A key on every entity moves every full-snapshot trace and `PINNED`, which the stop condition forbids; readers use `.has("container_id")` / `.get("passengers", [])`. Gate reviewer: decide whether to keep or to re-pin with the literal fields.
+- Task 9: the enter intent is `unit.order = {"type":"enter","target","target_id"}` (no new entity key; `enter_id` would be outside the gate's snapshot list). `_advance` keeps an enter order on arrival so `Containers.step` can re-path or board; Combat.plan keeps combat mode "move" while a unit is entering. Aircraft cannot enter even when a container lists `air`. `unload` by a non-owner or on a non-container: "Cannot unload this container" (plan named no message). A command naming a passenger via `builder_id` is not caught (only `entity_ids`).
+- Task 9 `_entities` loops changed (skip `container_id`): `Simulation.occupied_cells`, `Simulation._unavailable_cells`, `Simulation.replace_blocked_cells` (unit-cover check), `Combat._hold_cells`, `Combat._build_grid`, `Combat.splash_victims`; the `moved` loop in `Simulation.step` excludes passengers. `Combat._can_join` (retaliation joiners) excludes passengers. `_advance` and `_service_paths` need no change (a passenger's status is "contained"). New loops: `Containers.step` (one pass per tick over `_entities`: copy positions, collect enterers), `Containers._free_slots` and `Containers._release` (per validation and per container death).
+- Task 9: transports layout (`combat_workload.gd`, `run_combat.gd`): 20 full scout cars march on 100 riflemen; the headless fixture check saw 180 passenger shots in the timed window (first at tick 479). Report-only, not run under the benchmark script; `run_benchmark.sh` now expects `COMBAT BENCHMARK PASSED 5`.

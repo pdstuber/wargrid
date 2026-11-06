@@ -5,6 +5,7 @@ const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
+const Containers = preload("res://scripts/simulation/containers.gd")
 const REPATH_TICKS: int = 8
 # Zero Hour fires at range - 0.1 cells measured edge to edge; EDGE_EPS absorbs float noise at the boundary.
 const RANGE_SLACK: float = 0.1
@@ -26,7 +27,7 @@ static func hostile(sim: Simulation, a: int, b: int) -> bool:
 
 static func valid_target(sim: Simulation, owner: int, target_id: int) -> bool:
 	var target: Dictionary = record(sim, target_id)
-	return not target.is_empty() and hostile(sim, owner, target.owner) and not Registry.air_kinds.has(target.kind)
+	return not target.is_empty() and hostile(sim, owner, target.owner) and not Registry.air_kinds.has(target.kind) and not target.has("container_id")
 
 static func distance_squared(position: Vector2, target: Dictionary) -> float:
 	if not target.has("origin"):
@@ -82,7 +83,10 @@ static func plan(sim: Simulation, unit_ids: Array[int]) -> void:
 	var held := {"ready": false, "cells": {}, "rings": {}}
 	for unit_id in unit_ids:
 		var unit: Dictionary = sim._entities[unit_id]
-		if unit.combat.mode == "move" and unit.status != "moving" and unit.status != "path_pending": unit.combat.mode = "guard"
+		if unit.has("container_id"):
+			_plan_passenger(sim, unit, grid_box)
+			continue
+		if unit.combat.mode == "move" and unit.status != "moving" and unit.status != "path_pending" and not Containers.entering(unit): unit.combat.mode = "guard"
 		var mode: String = unit.combat.mode
 		if mode == "attack":
 			_pursue(sim, unit, held)
@@ -128,6 +132,19 @@ static func plan(sim: Simulation, unit_ids: Array[int]) -> void:
 		elif not moving:
 			combat.mode = "guard"
 			combat.goal = null
+
+# A passenger only shoots what is already in reach of its container; it never approaches.
+static func _plan_passenger(sim: Simulation, unit: Dictionary, grid_box: Dictionary) -> void:
+	var combat: Dictionary = unit.combat
+	if not Containers.rules(sim._entities[unit.container_id]).passengers_fire:
+		combat.target_id = null
+		return
+	var kept: Dictionary = record(sim, combat.target_id) if combat.target_id != null else {}
+	if not kept.is_empty() and hostile(sim, unit.owner, kept.owner) and _reaches(unit, kept): return
+	combat.target_id = null
+	if sim._tick < combat.repath_tick: return
+	combat.target_id = _nearest(sim, unit, _grid(sim, grid_box), _reach(unit.kind), false, true)
+	if combat.target_id == null: combat.repath_tick = sim._tick + REPATH_TICKS - (sim._tick + unit.id) % REPATH_TICKS
 
 static func _grid(sim: Simulation, box: Dictionary) -> Dictionary:
 	if not box.ready:
@@ -202,7 +219,7 @@ static func _approach(sim: Simulation, unit: Dictionary, target: Dictionary, hel
 static func _hold_cells(sim: Simulation, held: Dictionary) -> void:
 	held.ready = true
 	for other: Dictionary in sim._entities.values():
-		if Registry.air_kinds.has(other.kind): continue
+		if Registry.air_kinds.has(other.kind) or other.has("container_id"): continue
 		held.cells[sim._cell(other.position)] = true
 		if other.destination != null: held.cells[sim._cell(other.destination)] = true
 
@@ -254,7 +271,7 @@ const GRID_CELL: int = 8
 static func _build_grid(sim: Simulation) -> Dictionary:
 	var grid: Dictionary = {}
 	for entity: Dictionary in sim._entities.values():
-		if Registry.air_kinds.has(entity.kind): continue
+		if Registry.air_kinds.has(entity.kind) or entity.has("container_id"): continue
 		_bucket(grid, int(floorf(entity.position[0] / GRID_CELL)), int(floorf(entity.position[1] / GRID_CELL)), entity)
 	for building: Dictionary in sim._buildings.values():
 		var size: Vector2i = Definitions.building(building.kind).footprint
@@ -342,7 +359,7 @@ static func splash_victims(sim: Simulation, impact: Vector2, radius: float, affe
 	var victims: Array[Dictionary] = []
 	for pool: Variant in [sim._entities, sim._buildings]:
 		for victim: Variant in pool.values():
-			if victim.id == attacker.id or Registry.air_kinds.has(victim.kind): continue
+			if victim.id == attacker.id or Registry.air_kinds.has(victim.kind) or victim.has("container_id"): continue
 			if (_victim_centre(victim).distance_to(impact) - CombatDefinitions.radius(victim.kind)) > radius + EDGE_EPS: continue
 			if affects.has("enemies" if hostile(sim, attacker.owner, victim.owner) else "allies"): victims.append(victim)
 	victims.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.id < b.id)
@@ -407,7 +424,7 @@ static func _retaliate_trigger(sim: Simulation, shots: Array[Dictionary]) -> voi
 				_join_retaliation(sim, unit, attacker)
 
 static func _can_join(unit: Dictionary) -> bool:
-	return _is_idle_guard(unit) or (unit.combat.mode == "retaliate" and unit.combat.target_id == null)
+	return not unit.has("container_id") and _is_idle_guard(unit) or (unit.combat.mode == "retaliate" and unit.combat.target_id == null)
 
 static func _retarget_retaliation(sim: Simulation, unit: Dictionary, attacker: Dictionary) -> void:
 	unit.combat.target_id = attacker.id

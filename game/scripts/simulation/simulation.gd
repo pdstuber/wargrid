@@ -7,6 +7,7 @@ const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
 const Combat = preload("res://scripts/simulation/combat.gd")
+const Containers = preload("res://scripts/simulation/containers.gd")
 const Locomotion = preload("res://scripts/simulation/locomotion.gd")
 const Allocation = preload("res://scripts/simulation/destination_allocation.gd")
 const Navigation = preload("res://scripts/simulation/grid_navigation.gd")
@@ -82,7 +83,7 @@ func spawn(owner: int, position: Vector2, kind: String = "", occupied: Variant =
 func occupied_cells() -> Dictionary:
 	var cells: Dictionary = {}
 	for unit: Dictionary in _entities.values():
-		if Registry.air_kinds.has(unit.kind): continue
+		if Registry.air_kinds.has(unit.kind) or unit.has("container_id"): continue
 		cells[_cell(unit.position)] = true
 		if unit.destination != null: cells[_cell(unit.destination)] = true
 	return cells
@@ -169,6 +170,8 @@ func _payload_fields(type: String) -> Array:
 		"gather": return ["entity_ids","source_id"]
 		"attack": return ["entity_ids","target_id"]
 		"attack_move": return ["entity_ids","target"]
+		"enter": return ["entity_ids","target_id"]
+		"unload": return ["target_id"]
 	return []
 
 func _validate(command: Dictionary, due: bool = false) -> String:
@@ -204,8 +207,11 @@ func _validate(command: Dictionary, due: bool = false) -> String:
 		if found is String: return found
 		live = found
 		if live.is_empty(): return "No units left" if due else "Missing entity or wrong owner"
+		if live.any(func(id: int) -> bool: return _entities[id].has("container_id")): return "Unit is inside a transport"
 	if command.type == "move": return _validate_target(command,due)
 	if command.type in ["stop","choose_faction"]: return ""
+	if command.type == "enter": return Containers.enter_error(self,command,live)
+	if command.type == "unload": return Containers.unload_error(self,command)
 	if command.type in ["attack","attack_move"]:
 		if command.type == "attack_move": return _validate_target(command,due)
 		if _armed(live).is_empty(): return "Attack requires armed units"
@@ -295,7 +301,7 @@ func _unavailable_cells(members: Array[Dictionary]) -> Array[Vector2i]:
 		ids[unit.id] = true
 	var unavailable: Dictionary = {}
 	for unit: Dictionary in _entities.values():
-		if Registry.air_kinds.has(unit.kind): continue
+		if Registry.air_kinds.has(unit.kind) or unit.has("container_id"): continue
 		if not ids.has(unit.id):
 			unavailable[_cell(unit.position)] = true
 		if unit.destination != null:
@@ -329,6 +335,7 @@ func _apply_orders() -> void:
 				"cancel_production": Production.cancel(self,command.building_id,command.production_id)
 				"set_rally": _buildings[command.building_id].rally = command.target.duplicate()
 				"choose_faction": setup_seat(command.player,command.faction)
+				"unload": Containers.unload(self,command.target_id)
 		if command.type != "move":
 			_command_results.append({"tick":_tick,"player":command.player,"sequence":command.sequence,"ok":error.is_empty(),"error":error})
 		if not error.is_empty(): continue
@@ -373,6 +380,9 @@ func _apply_orders() -> void:
 				_stop_unit(unit)
 				_set_intent(unit,"guard")
 				if unit.combat != null: unit.combat.repath_tick = _tick + Combat.REPATH_TICKS - (_tick + unit.id) % Combat.REPATH_TICKS
+			continue
+		if command.type == "enter":
+			for unit in members: Containers.head_for(self,unit,_entities[command.target_id])
 			continue
 		if command.type == "attack":
 			if not Combat.valid_target(self,command.player,command.target_id): continue
@@ -504,9 +514,10 @@ func step() -> void:
 		var unit: Dictionary = _entities[id]
 		if unit.status == "moving": _advance(unit)
 		elif unit.status != "path_pending": unit.speed = 0.0
+	Containers.step(self)
 	var moved: Array[int] = []
 	for id in armed:
-		if _entities[id].position != before[id]: moved.append(id)
+		if _entities[id].position != before[id] and not _entities[id].has("container_id"): moved.append(id)
 	Profiler.end(&"step.advance", zone)
 	zone = Profiler.begin()
 	Combat.fire(self,armed,moved)
@@ -565,7 +576,7 @@ func _advance(unit: Dictionary) -> void:
 			break
 	unit.position = [x, y]
 	if unit.route.is_empty():
-		unit.order = null
+		if not Containers.entering(unit): unit.order = null
 		unit.speed = 0.0
 		unit.status = "arrived"
 
@@ -601,7 +612,7 @@ func replace_blocked_cells(cells: Array[Vector2i]) -> Dictionary:
 		if not bounds.has_point(cell): return {"ok":false,"error":"Obstacle outside map"}
 		if objects.has(cell): return {"ok":false,"error":"Obstacle overlaps building or source"}
 		for unit: Dictionary in _entities.values():
-			if not Registry.air_kinds.has(unit.kind) and _cell(unit.position) == cell: return {"ok":false,"error":"Obstacle would cover a unit"}
+			if not Registry.air_kinds.has(unit.kind) and not unit.has("container_id") and _cell(unit.position) == cell: return {"ok":false,"error":"Obstacle would cover a unit"}
 	var unique: Dictionary = {}
 	for cell in cells: unique[cell] = true
 	_terrain_cells.assign(unique.keys())
@@ -685,6 +696,7 @@ func preview_build(player: int, builder_id: int, kind: String, origin: Vector2i)
 
 func remove_object(id: int) -> Dictionary:
 	if _entities.has(id):
+		Containers.object_removed(self,id)
 		_detach_task(_entities[id])
 		_path_queue.erase(id)
 		_entities.erase(id)
