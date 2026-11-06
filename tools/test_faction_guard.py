@@ -1,4 +1,5 @@
 """Simulation and net code reads capability data, never a faction id."""
+
 import re
 import tempfile
 import unittest

@@ -58,7 +58,7 @@ def big(files: dict) -> bytes:
     offset = 16 + index_size
     index = b""
     body = b""
-    for name, payload in zip(names, payloads):
+    for name, payload in zip(names, payloads, strict=True):
         index += struct.pack(">II", offset + len(body), len(payload)) + name
         body += payload
     data = (

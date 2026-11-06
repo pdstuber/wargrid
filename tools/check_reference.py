@@ -72,7 +72,10 @@ def load_archive(path: str, check_hash: bool = True) -> dict:
         data = Path(path).read_bytes()
     else:
         with tarfile.open(path, "r:gz") as tar:
-            data = tar.extractfile(TAR_MEMBER).read()
+            member = tar.extractfile(TAR_MEMBER)
+            if member is None:
+                raise ValueError(f"{TAR_MEMBER} is not a regular file in {path}")
+            data = member.read()
     if check_hash and hashlib.sha256(data).hexdigest() != PINNED_SHA256:
         raise ValueError("INIZH.big hash differs from the pinned reference; see docs/reference/installation.md")
     return read_big(data)
@@ -83,6 +86,8 @@ def block(text: str, kind: str, name: str):
     if not start:
         return None
     end = re.search(r"^End\b", text[start.end() :], re.M)
+    if not end:
+        raise ValueError(f"{kind} {name} has no End line")
     return text[start.start() : start.end() + end.start()]
 
 
@@ -95,7 +100,7 @@ def field(text: str, key: str) -> str:
 
 def armor_percent(armor_block: str, damage_type: str) -> int:
     # Armor.cpp starts every coefficient at 100%; DEFAULT then the named type override it.
-    entries = dict(
+    entries: dict[str, int] = dict(
         (kind.upper(), int(float(value)))
         for kind, value in re.findall(r"^\s*Armor\s*=\s*(\w+)\s+([\d.]+)%", armor_block, re.M)
     )
@@ -181,7 +186,7 @@ def reference_rows(files: dict, wargrid: dict, kinds: list) -> tuple:
                     wargrid["armor"][ARMORS[armor]][damage_type.lower()],
                 )
             )
-    return [row + (DEPARTURES.get(row[0]),) for row in rows], notes
+    return [(*row, DEPARTURES.get(row[0])) for row in rows], notes
 
 
 def wargrid_definitions() -> dict:

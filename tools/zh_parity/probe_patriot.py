@@ -1,4 +1,5 @@
 """Patriot probe: why does AmericaPatriotBattery never fire? Run: python3 -I tools/zh_parity/probe_patriot.py [attempt ...]"""
+
 import json
 import math
 import sys
@@ -10,7 +11,11 @@ import parity as P
 
 def info(g, ids):
     us = {u["id"]: u for u in g.call("/units")}
-    return {i: {k: us[i].get(k) for k in ("template", "health", "tags", "lastShotFrame", "status", "x", "y")} for i in ids if i in us}
+    return {
+        i: {k: us[i].get(k) for k in ("template", "health", "tags", "lastShotFrame", "status", "x", "y")}
+        for i in ids
+        if i in us
+    }
 
 
 def shots(rows, uid):
@@ -24,7 +29,14 @@ def attempt(name, setup, frames=400, order=None):
         ids = setup(g, x, y)
         rows = []
         g.record(ids["watch"], 5, rows)
-        print(name, "state", json.dumps(info(g, ids["watch"][:1]))[:400], "res", g.call(f"/resources?player={g.me}"), flush=True)
+        print(
+            name,
+            "state",
+            json.dumps(info(g, ids["watch"][:1]))[:400],
+            "res",
+            g.call(f"/resources?player={g.me}"),
+            flush=True,
+        )
         if order:
             order(g, ids)
         g.record(ids["watch"], frames, rows)
@@ -41,6 +53,7 @@ def enemy_target(tpl, gap=150, owner="enemy"):
         a = g.spawn("AmericaPatriotBattery", x + 20, y)
         t = g.spawn(tpl, x + 20 + gap, y, angle=math.pi, owner=getattr(g, owner))
         return {"watch": [a, t], "power": pw}
+
     return setup
 
 
