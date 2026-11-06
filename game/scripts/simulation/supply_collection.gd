@@ -1,6 +1,7 @@
 extends RefCounted
 
 const Simulation = preload("res://scripts/simulation/simulation.gd")
+const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 
 static func release(sim: Simulation, unit_id: int) -> void:
 	var unit: Dictionary = sim._entities[unit_id]
@@ -30,7 +31,7 @@ static func choose_target(sim: Simulation, unit: Dictionary) -> Dictionary:
 	if collection.cargo > 0:
 		var depots: Array = []
 		for building: Dictionary in sim._buildings.values():
-			if building.owner == unit.owner and building.kind == "usa_supply_center" and building.completed: depots.append(building)
+			if building.owner == unit.owner and Registry.kind(building.kind).receives_supply and building.completed: depots.append(building)
 		return nearest(unit,depots)
 	if collection.preferred_source_id != null and sim._sources.has(collection.preferred_source_id):
 		var preferred: Dictionary = sim._sources[collection.preferred_source_id]
@@ -74,7 +75,7 @@ static func _admit(sim: Simulation, unit: Dictionary, target: Dictionary) -> voi
 	if target.active_collector_id == null and not waiting_before:
 		target.active_collector_id = unit.id
 		collection.phase = "unloading" if depot else "loading"
-		collection.remaining_ticks = 87 if depot else 36
+		collection.remaining_ticks = Registry.collects(unit.kind).unload_ticks if depot else Registry.collects(unit.kind).load_ticks
 	else:
 		collection.phase = "waiting_depot" if depot else "waiting_source"
 	sim._stop_unit(unit)
@@ -106,12 +107,12 @@ static func step(sim: Simulation, unit_ids: Array[int]) -> void:
 		if collection.phase == "loading":
 			target.boxes -= 1
 			collection.cargo += 1
-			if collection.cargo == 8 or target.boxes == 0:
+			if collection.cargo == Registry.collects(unit.kind).boxes or target.boxes == 0:
 				release(sim,id)
 				collection.retry_tick = sim._tick + 1
-			else: collection.remaining_ticks = 36
+			else: collection.remaining_ticks = Registry.collects(unit.kind).load_ticks
 		elif collection.phase == "unloading":
-			sim._players[unit.owner].credits += collection.cargo * 75
+			sim._players[unit.owner].credits += collection.cargo * Registry.collects(unit.kind).box_value
 			collection.cargo = 0
 			release(sim,id)
 			collection.retry_tick = sim._tick + 1

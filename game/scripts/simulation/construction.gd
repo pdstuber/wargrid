@@ -1,13 +1,16 @@
 extends RefCounted
 
 const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
+const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
 const Navigation = preload("res://scripts/simulation/grid_navigation.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 
 static func cells(kind: String, origin: Vector2i) -> Array[Vector2i]:
+	return block(Definitions.building(kind).footprint, origin)
+
+static func block(size: Vector2i, origin: Vector2i) -> Array[Vector2i]:
 	var result: Array[Vector2i] = []
-	var size: Vector2i = Definitions.building(kind).footprint
 	for y in range(origin.y,origin.y + size.y):
 		for x in range(origin.x,origin.x + size.x): result.append(Vector2i(x,y))
 	return result
@@ -50,7 +53,7 @@ static func preview(sim: Simulation, player: int, builder_id: int, kind: String,
 	var definition: Dictionary = Definitions.building(kind)
 	if definition.is_empty() or not sim._players.has(player) or not sim._entities.has(builder_id): return result
 	var builder: Dictionary = sim._entities[builder_id]
-	if builder.owner != player or builder.kind != "usa_builder": return result
+	if builder.owner != player or not Registry.kind(builder.kind).get("builds", []).has(kind): return result
 	if not sim._has_prerequisite(player,definition.prerequisite):
 		result.error = "Missing completed prerequisite"
 		return result
@@ -117,7 +120,7 @@ static func step(sim: Simulation, rates: Dictionary) -> void:
 		building.work = mini(required,building.work + rates[building.owner])
 		if building.work == required:
 			building.completed = true
-			if building.kind == "usa_supply_center": sim._grant_collector(building)
+			sim._spawn_on_complete(building)
 			builder.construction_id = null
 			building.builder_id = null
 			building.approach = null

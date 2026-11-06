@@ -2,6 +2,7 @@ extends RefCounted
 
 # formerly in test_skirmish_match.gd
 const Skirmish = preload("res://scripts/simulation/skirmish.gd")
+const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 
 const HUMAN_ATTACK_TICK: int = 9000
 const STAGE := Vector2(18.5, 14.5)
@@ -15,7 +16,7 @@ static func _command(sim: RefCounted, state: Dictionary, ids: Array, target: Arr
 static func _threat(state: Dictionary) -> Variant:
 	var home: Array[Vector2] = []
 	for unit: Dictionary in state.entities:
-		if unit.owner == 1 and unit.kind == "usa_builder": home.append(Vector2(unit.position[0], unit.position[1]))
+		if unit.owner == 1 and Registry.is_builder(unit.kind): home.append(Vector2(unit.position[0], unit.position[1]))
 	for building: Dictionary in state.buildings:
 		if building.owner == 1: home.append(Vector2(building.origin[0] + 1.0, building.origin[1] + 1.0))
 	var best: Variant = null

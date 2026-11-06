@@ -1,6 +1,7 @@
 extends "res://scripts/main.gd"
 
 const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
+const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const Construction = preload("res://scripts/simulation/construction.gd")
 var selected_building_id: int = -1
 var _placement_kind: String = ""
@@ -101,7 +102,7 @@ func change_zoom(direction: int) -> void:
 func _builder() -> int:
 	if selected_ids.size() != 1: return -1
 	for unit: Dictionary in simulation.snapshot().entities:
-		if unit.id == selected_ids[0] and unit.kind == "usa_builder" and unit.owner == local_player: return unit.id
+		if unit.id == selected_ids[0] and Registry.is_builder(unit.kind) and unit.owner == local_player: return unit.id
 	return -1
 
 func _enter_placement(kind: String) -> void:
@@ -188,7 +189,7 @@ func _context_order(id: int) -> bool:
 		if source.id != id: continue
 		var collectors: bool = true
 		for unit: Dictionary in state.entities:
-			if selected_ids.has(unit.id) and unit.kind != "usa_collector": collectors = false
+			if selected_ids.has(unit.id) and Registry.collects(unit.kind).is_empty(): collectors = false
 		if collectors: _submit({"type":"gather","entity_ids":selected_ids.duplicate(),"source_id":id})
 		else:
 			_error = "Choose homogeneous collector selection"
@@ -205,7 +206,7 @@ func _context_order(id: int) -> bool:
 
 func _set_rally(plane: Vector2) -> bool:
 	var building: Dictionary = _building(simulation.snapshot(),selected_building_id)
-	if building.is_empty() or building.owner != local_player or not building.kind in ["usa_barracks","usa_factory"]: return false
+	if building.is_empty() or building.owner != local_player or not Registry.can_rally(building.kind): return false
 	var cell: Vector2 = Iso.plane_to_world(plane).floor() + Vector2(.5,.5)
 	_submit({"type":"set_rally","building_id":building.id,"target":[cell.x,cell.y]})
 	return true

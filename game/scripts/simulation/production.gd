@@ -1,6 +1,7 @@
 extends RefCounted
 
 const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
+const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const Construction = preload("res://scripts/simulation/construction.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 
@@ -50,8 +51,8 @@ static func rally_target(sim: Simulation, building: Dictionary, unit: Dictionary
 			best_distance = distance
 	return [best.x,best.y]
 
-static func spawn_collector(sim: Simulation, building: Dictionary) -> int:
-	var id: int = sim.spawn(building.owner,center(building),"usa_collector")
+static func spawn_air(sim: Simulation, building: Dictionary, kind: String) -> int:
+	var id: int = sim.spawn(building.owner,center(building),kind)
 	assert(id != -1)
 	sim._entities[id].collection.enabled = true
 	sim._entities[id].collection.phase = "seeking"
@@ -69,8 +70,8 @@ static func step(sim: Simulation, rates: Dictionary) -> void:
 		entry.work = mini(required,entry.work + rates[building.owner])
 		if entry.work != required: continue
 		var spawned: int = -1
-		if entry.kind == "usa_collector":
-			spawned = spawn_collector(sim,building)
+		if Registry.air_kinds.has(entry.kind):
+			spawned = spawn_air(sim,building,entry.kind)
 		else:
 			if occupied == null: occupied = sim.occupied_cells()
 			for cell in Construction.perimeter(building.kind,Vector2i(building.origin[0],building.origin[1])):

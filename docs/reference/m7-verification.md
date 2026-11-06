@@ -5,15 +5,15 @@ Plan: [M7 plan](../superpowers/plans/2026-11-06-m7-factions.md). Design: [M7 des
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-06, Task 3 done)
-Branch / base commit / working-tree state: m7-factions at 7d101f4 plus the Task 3 commit "Rename kinds to faction ids"; tree clean after it
-Last green task / next incomplete task: Task 3 (rename; suite red only in test_factions.gd by plan) / Task 4 (definition files, capability reads)
-Changed paths since last commit: none after the Task 3 commit
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 282 cases / 112,757 checks / 5 failures (F1, F2, F4 and one incomplete case, all test_factions.gd, owners Tasks 5-6), exit 1; python3 -m unittest discover -s tools: 39 OK; run_lint.sh and run_warnings.sh pass; run_netplay.sh match terminal tick 8242
+Resume record (updated 2026-11-06, Task 4 done)
+Branch / base commit / working-tree state: m7-factions at 6a7a6c9 plus the Task 4 commit "Read capabilities instead of kind ids"; tree clean after it
+Last green task / next incomplete task: Task 4 (capability reads) / Task 5 (Command Center, seat faction, Zero Hour survival, bot builder); a fresh session starts there (checkpoint restart after Task 5 per plan)
+Changed paths since last commit: none after the Task 4 commit
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 283 cases / 112,759 checks / 5 failures (F1, F2, F4 and one incomplete case, all test_factions.gd, owners Tasks 5-6), exit 1; the four replay traces equal the Task 3 run byte for byte; python3 -m unittest discover -s tools: OK (guard without allow-list); run_lint.sh and run_warnings.sh pass; run_netplay.sh match terminal tick 8242
 Known red case or blocker: test_factions.gd F1-F4 until Tasks 5-6
-Approved decisions, pre-authorizations used, deferred gates: local commit per green task (milestone prompt)
+Approved decisions, pre-authorizations used, deferred gates: local commit per green task (milestone prompt); D1 definition-dict pins kept via legacy projections (user, 2026-11-06, answer "Legacy projection")
 Usage so far: not recorded
-Next exact action: Task 4. Trace baseline for its "traces identical" check is this tree: rerun the four traced suites before the change into a fresh dir (the Task 3 run in scratch dir d1 is gone after a restart).
+Next exact action: Task 5. Before the change run the four traced suites into a fresh dir; Task 5 re-pins provisionally what it moves.
 ```
 
 ## Pins at base
@@ -35,6 +35,10 @@ Next exact action: Task 4. Trace baseline for its "traces identical" check is th
 - Base suite was 277 cases / 112,748 checks / 1 failure (MP5 count, above), not the plan's 277 / 112,744 / 0.
 
 - Task 3: `MapData.slot` and its start validation read `slots[kind.trim_prefix("usa_")]` because map slot keys are roles (`power_plant`, `supply_center`, `barracks`, `factory`) while kinds are `usa_*`. The plan left this bridge open; Task 4's `slot` field replaces it. Traces differ from the pre-rename run only because the state hash covers kind strings; core series, terminal tick (S1, team), BM6 and netplay 8242 are unchanged.
+
+- Task 4: `Economy.unit()` / `Economy.building()` / `Combat.profile()` return cached legacy-shaped views built from the merged rows in `definitions/usa.gd` (`Registry.unit_view` etc.), so the D1 dict pins and `is_same` identity stay unchanged (user decision, 2026-11-06). The views can go when the pins are rewritten on purpose.
+- Task 4: `usa_power_plant.counts_for_victory` is false to keep today's survival rule (a power plant never counted); Task 5 flips it to Zero Hour's rule. `Simulation.spawn` defaults an empty kind to `Registry.DEFAULT_SPAWN` (52 callers rely on the old default); `Skirmish.BUILD_ORDER` / `UNIT_FOR` became `build_order()` / `unit_for()`; `faction.start_building` is empty until Task 5. Hotkey build menus in `base_main.gd` / `skirmish_main.gd` keep their kind literals until Task 7 (outside the guarded directories).
+- Task 4 performance risk: air checks in `_build_grid` and friends are now `Registry.air_kinds.has(kind)` instead of a string compare; no benchmark run yet (WoW-skew question open, benchmarks wait for the user to quit it).
 
 ## Base rows (tree: m7-factions, M7 Task 0 working tree, Apple M6, idle-ish)
 

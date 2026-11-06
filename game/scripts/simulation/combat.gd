@@ -2,6 +2,7 @@ extends RefCounted
 
 const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
 const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
+const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const REPATH_TICKS: int = 8
@@ -25,7 +26,7 @@ static func hostile(sim: Simulation, a: int, b: int) -> bool:
 
 static func valid_target(sim: Simulation, owner: int, target_id: int) -> bool:
 	var target: Dictionary = record(sim, target_id)
-	return not target.is_empty() and hostile(sim, owner, target.owner) and target.kind != "usa_collector"
+	return not target.is_empty() and hostile(sim, owner, target.owner) and not Registry.air_kinds.has(target.kind)
 
 static func distance_squared(position: Vector2, target: Dictionary) -> float:
 	if not target.has("origin"):
@@ -201,7 +202,7 @@ static func _approach(sim: Simulation, unit: Dictionary, target: Dictionary, hel
 static func _hold_cells(sim: Simulation, held: Dictionary) -> void:
 	held.ready = true
 	for other: Dictionary in sim._entities.values():
-		if other.kind == "usa_collector": continue
+		if Registry.air_kinds.has(other.kind): continue
 		held.cells[sim._cell(other.position)] = true
 		if other.destination != null: held.cells[sim._cell(other.destination)] = true
 
@@ -253,7 +254,7 @@ const GRID_CELL: int = 8
 static func _build_grid(sim: Simulation) -> Dictionary:
 	var grid: Dictionary = {}
 	for entity: Dictionary in sim._entities.values():
-		if entity.kind == "usa_collector": continue
+		if Registry.air_kinds.has(entity.kind): continue
 		_bucket(grid, int(floorf(entity.position[0] / GRID_CELL)), int(floorf(entity.position[1] / GRID_CELL)), entity)
 	for building: Dictionary in sim._buildings.values():
 		var size: Vector2i = Definitions.building(building.kind).footprint
@@ -323,7 +324,7 @@ static func _hit(shots: Array[Dictionary], damage: Dictionary, sim: Simulation, 
 static func _splash(shots: Array[Dictionary], damage: Dictionary, sim: Simulation, unit: Dictionary, target: Dictionary, weapon: Dictionary) -> void:
 	var impact: Vector2 = _victim_centre(target)
 	var radius: float = weapon.primary_radius
-	if target.kind == "usa_rifle_infantry":
+	if Registry.kind(target.kind).get("class", "") == "infantry":
 		impact += _scatter(sim) * CombatDefinitions.SCATTER_VS_INFANTRY * sim.next_random() / 4294967296.0
 		radius = CombatDefinitions.INFANTRY_BLAST
 	for victim in splash_victims(sim, impact, radius, weapon.affects, unit):
@@ -341,7 +342,7 @@ static func splash_victims(sim: Simulation, impact: Vector2, radius: float, affe
 	var victims: Array[Dictionary] = []
 	for pool: Variant in [sim._entities, sim._buildings]:
 		for victim: Variant in pool.values():
-			if victim.id == attacker.id or victim.kind == "usa_collector": continue
+			if victim.id == attacker.id or Registry.air_kinds.has(victim.kind): continue
 			if (_victim_centre(victim).distance_to(impact) - CombatDefinitions.radius(victim.kind)) > radius + EDGE_EPS: continue
 			if affects.has("enemies" if hostile(sim, attacker.owner, victim.owner) else "allies"): victims.append(victim)
 	victims.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.id < b.id)

@@ -2,9 +2,7 @@ extends RefCounted
 
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
-
-const KINDS: Array[String] = ["usa_power_plant", "usa_supply_center", "usa_barracks", "usa_factory"]
-const SOURCE_FOOTPRINT := Vector2i(3, 3)
+const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 
 static func load(path: String) -> Dictionary:
 	var file := FileAccess.open(path, FileAccess.READ)
@@ -22,7 +20,7 @@ static func parse(text: String) -> Dictionary:
 
 static func slot(map: Dictionary, seat: int, kind: String) -> Vector2i:
 	for start: Dictionary in map.starts:
-		if int(start.seat) == seat: return _cell(start.slots[kind.trim_prefix("usa_")])
+		if int(start.seat) == seat: return _cell(start.slots[Registry.kind(kind).slot])
 	return Vector2i(-1, -1)
 
 static func start_cell(map: Dictionary, seat: int) -> Vector2i:
@@ -44,7 +42,7 @@ static func create(map: Dictionary, seats: Array[Dictionary]) -> Simulation:
 	for seat in seats: sim.add_player(seat.seat, seat.credits, seat.controller, seat.get("team", 0))
 	for seat in seats:
 		var cell := start_cell(map, seat.seat)
-		sim.spawn(seat.seat, Vector2(cell) + Vector2(0.5, 0.5), "usa_builder")
+		sim.spawn(seat.seat, Vector2(cell) + Vector2(0.5, 0.5), Registry.faction(Registry.Factions.DEFAULT_FACTION).start_unit)
 	for source: Dictionary in map.sources: sim.add_supply_source(_cell(source.origin), int(source.boxes))
 	return sim
 
@@ -62,13 +60,14 @@ static func _valid(map: Dictionary) -> bool:
 	for start: Variant in map.starts:
 		if not _start_valid(map, start, size): return false
 	for source: Variant in map.sources:
-		if not _open(map, size, _cell(source.origin), SOURCE_FOOTPRINT): return false
+		if not _open(map, size, _cell(source.origin), Registry.SOURCE_FOOTPRINT): return false
 	return true
 
 static func _start_valid(map: Dictionary, start: Dictionary, size: Vector2i) -> bool:
 	if not _open(map, size, _cell(start.cell), Vector2i.ONE): return false
-	for kind in KINDS:
-		if not start.slots.has(kind.trim_prefix("usa_")) or not _open(map, size, _cell(start.slots[kind.trim_prefix("usa_")]), Definitions.building(kind).footprint): return false
+	for kind: String in Registry.buildings():
+		var slot_key: String = Registry.kind(kind).slot
+		if not start.slots.has(slot_key) or not _open(map, size, _cell(start.slots[slot_key]), Definitions.building(kind).footprint): return false
 	return true
 
 static func _open(map: Dictionary, size: Vector2i, origin: Vector2i, footprint: Vector2i) -> bool:

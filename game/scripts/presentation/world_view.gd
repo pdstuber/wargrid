@@ -1,6 +1,8 @@
 extends Node2D
 
 const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
+const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
+const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
 const DEPTH_SCALE := 1024.0
@@ -67,16 +69,22 @@ static func building_label(building: Dictionary) -> String:
 func resume_candidate() -> int:
 	var builders: int = 0
 	for unit: Dictionary in _state.get("entities", []):
-		if _selected_ids.has(unit.id) and unit.owner == local_player and unit.kind == "usa_builder": builders += 1
+		if _selected_ids.has(unit.id) and unit.owner == local_player and Registry.is_builder(unit.kind): builders += 1
 	if builders != 1 or _selected_ids.size() != 1: return -1
 	for building: Dictionary in _state.get("buildings", []):
 		if building.id == _hovered_id and building.owner == local_player and not building.completed and building.builder_id == null: return building.id
 	return -1
 
+func _half_width(kind: String) -> float:
+	var row: Dictionary = Registry.kind(kind)
+	if row.get("class", "") == "infantry": return 6.0
+	var weapon: Dictionary = CombatDefinitions.weapon(row.get("weapon", ""))
+	return 15.0 if weapon.get("damage_type", "") == "armor_piercing" else 12.0
+
 func _vehicle_bounds(unit: Dictionary) -> Rect2:
 	var point := Vector2(unit.position[0], unit.position[1])
-	var half: float = {"usa_rifle_infantry": 6.0, "usa_tank": 15.0}.get(unit.get("kind"), 12.0)
-	return Rect2(Iso.world_to_plane(point) + Vector2(-half, -34 if unit.get("kind") == "usa_collector" else -16), Vector2(half * 2.0, 16))
+	var half: float = _half_width(unit.get("kind"))
+	return Rect2(Iso.world_to_plane(point) + Vector2(-half, -34 if Registry.air_kinds.has(unit.get("kind")) else -16), Vector2(half * 2.0, 16))
 
 func order_marks() -> Array[Vector2]:
 	var marks: Array[Vector2] = []
@@ -91,7 +99,7 @@ func health_rect(bounds: Rect2) -> Rect2:
 func heading_marks() -> Array[Dictionary]:
 	var marks: Array[Dictionary] = []
 	for unit: Dictionary in _state.get("entities", []):
-		if unit.get("kind") == "usa_collector": continue
+		if Registry.air_kinds.has(unit.get("kind")): continue
 		var point := Vector2(unit.position[0], unit.position[1])
 		var direction: Vector2 = (Iso.world_to_plane(point + Vector2(unit.heading[0], unit.heading[1])) - Iso.world_to_plane(point)).normalized()
 		var from: Vector2 = _vehicle_bounds(unit).get_center()
@@ -101,7 +109,7 @@ func heading_marks() -> Array[Dictionary]:
 func pick_target(plane_point: Vector2, own: int) -> int:
 	for i in range(_state.get("entities", []).size() - 1, -1, -1):
 		var unit: Dictionary = _state.entities[i]
-		if unit.owner != own and unit.get("kind") != "usa_collector" and _vehicle_bounds(unit).has_point(plane_point): return unit.id
+		if unit.owner != own and not Registry.air_kinds.has(unit.get("kind")) and _vehicle_bounds(unit).has_point(plane_point): return unit.id
 	var point: Vector2 = Iso.plane_to_world(plane_point)
 	for building: Dictionary in _state.get("buildings", []):
 		var definition: Dictionary = Definitions.building(building.kind)
@@ -141,7 +149,7 @@ func _draw() -> void:
 	for cell in _preview_cells:
 		_draw_footprint([cell.x,cell.y],Vector2i.ONE,Color(0.2,0.9,0.3,0.55) if _preview_valid else Color(0.9,0.2,0.2,0.55),false)
 	for unit: Dictionary in _state.get("entities",[]):
-		if unit.get("kind") == "usa_collector": draw_circle(Iso.world_to_plane(Vector2(unit.position[0],unit.position[1])),8,Color(0,0,0,.35))
+		if Registry.air_kinds.has(unit.get("kind")): draw_circle(Iso.world_to_plane(Vector2(unit.position[0],unit.position[1])),8,Color(0,0,0,.35))
 		var bounds: Rect2 = _vehicle_bounds(unit)
 		draw_rect(bounds, owner_color(unit.owner))
 		_draw_health(health_rect(bounds).position, unit, _selected_ids.has(unit.id))
@@ -218,7 +226,7 @@ func _draw_hints() -> void:
 
 func rally_marker() -> Array:
 	for building: Dictionary in _state.get("buildings", []):
-		if _selected_ids.has(building.id) and building.owner == local_player and building.kind in ["usa_barracks", "usa_factory"] and building.has("rally"): return building.rally
+		if _selected_ids.has(building.id) and building.owner == local_player and Registry.can_rally(building.kind) and building.has("rally"): return building.rally
 	return []
 
 func _draw_rally() -> void:

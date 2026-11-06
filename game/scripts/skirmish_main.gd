@@ -25,7 +25,7 @@ func _placement_kinds() -> Dictionary:
 	return kinds
 
 func _production_kind(building: Dictionary) -> String:
-	return Skirmish.UNIT_FOR.get(building.kind, super._production_kind(building))
+	return Skirmish.unit_for(building.kind) if not Skirmish.unit_for(building.kind).is_empty() else super._production_kind(building)
 
 func _process(delta: float) -> void:
 	pan_camera(Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down"), delta)

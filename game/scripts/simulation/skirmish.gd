@@ -5,17 +5,28 @@ const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
 const Combat = preload("res://scripts/simulation/combat.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
 const MapData = preload("res://scripts/simulation/map_data.gd")
+const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 
 const START_CREDITS: int = 10000
 const DECISION_TICKS: int = 30
 const ATTACK_TICK: int = 5400
 const DEFENCE_RADIUS: float = 10.0
-const BUILD_ORDER: Array[String] = ["usa_power_plant", "usa_supply_center", "usa_barracks", "usa_factory"]
 const MAP_PATH := "res://data/maps/skirmish.json"
-const UNIT_FOR := {"usa_barracks": "usa_rifle_infantry", "usa_factory": "usa_tank"}
-const TARGET_CATEGORIES: Array = [["usa_builder"], ["usa_barracks", "usa_factory"], ["usa_supply_center"], ["usa_power_plant"]]
 
 static var _skirmish_map: Dictionary = {}
+
+static func build_order() -> Array:
+	return Registry.faction(Registry.Factions.DEFAULT_FACTION).build_order
+
+static func unit_for(producer: String) -> String:
+	var units: Array = Registry.faction(Registry.Factions.DEFAULT_FACTION).units_for.get(producer, [])
+	return units[0] if not units.is_empty() else ""
+
+static func _target_categories() -> Array:
+	var producers: Array = Registry.buildings().filter(func(id: String) -> bool: return Registry.kind(id).produces.any(func(unit: String) -> bool: return Registry.collects(unit).is_empty()))
+	return [Registry.units().filter(Registry.is_builder), producers,
+		Registry.buildings().filter(func(id: String) -> bool: return Registry.kind(id).receives_supply),
+		Registry.buildings().filter(func(id: String) -> bool: return Registry.kind(id).power > 0)]
 
 static func origin(kind: String, player: int) -> Vector2i:
 	return MapData.slot(_default_map(), player, kind)
@@ -73,7 +84,7 @@ static func _send(ctx: Dictionary, payload: Dictionary) -> bool:
 static func _build(ctx: Dictionary, state: Dictionary, buildings: Array) -> void:
 	var builder: int = -1
 	for unit: Dictionary in state.entities:
-		if unit.owner == ctx.player and unit.kind == "usa_builder":
+		if unit.owner == ctx.player and Registry.is_builder(unit.kind):
 			builder = unit.id
 			break
 	if builder == -1: return
@@ -81,7 +92,7 @@ static func _build(ctx: Dictionary, state: Dictionary, buildings: Array) -> void
 		if building.completed: continue
 		if building.builder_id == null: _send(ctx, {"type": "resume_build", "builder_id": builder, "building_id": building.id})
 		return
-	for kind in BUILD_ORDER:
+	for kind: String in build_order():
 		if buildings.any(func(building: Dictionary) -> bool: return building.kind == kind): continue
 		var cost: int = Definitions.building(kind).cost
 		var site: Vector2i = _slot(ctx.sim, kind, ctx.player)
@@ -90,12 +101,12 @@ static func _build(ctx: Dictionary, state: Dictionary, buildings: Array) -> void
 
 static func _produce(ctx: Dictionary, buildings: Array) -> void:
 	for building: Variant in buildings:
-		if not building.completed or not building.queue.is_empty() or not UNIT_FOR.has(building.kind): continue
-		var cost: int = Definitions.unit(UNIT_FOR[building.kind]).cost
-		if ctx.credits >= cost and _send(ctx, {"type": "produce", "building_id": building.id, "unit_kind": UNIT_FOR[building.kind]}): ctx.credits -= cost
+		if not building.completed or not building.queue.is_empty() or unit_for(building.kind).is_empty(): continue
+		var cost: int = Definitions.unit(unit_for(building.kind)).cost
+		if ctx.credits >= cost and _send(ctx, {"type": "produce", "building_id": building.id, "unit_kind": unit_for(building.kind)}): ctx.credits -= cost
 
 static func _attack(ctx: Dictionary, state: Dictionary, skip: Dictionary = {}) -> void:
-	var enemies: Array = state.entities.filter(func(unit: Dictionary) -> bool: return _hostile(ctx, unit.owner) and unit.kind != "usa_collector")
+	var enemies: Array = state.entities.filter(func(unit: Dictionary) -> bool: return _hostile(ctx, unit.owner) and not Registry.air_kinds.has(unit.kind))
 	enemies.append_array(state.buildings.filter(func(building: Dictionary) -> bool: return _hostile(ctx, building.owner)))
 	var groups := {}
 	for unit: Dictionary in state.entities:
@@ -116,7 +127,7 @@ static func _idle(unit: Dictionary) -> bool:
 
 static func _defend(ctx: Dictionary, state: Dictionary, buildings: Array) -> Dictionary:
 	var intruders: Array = state.entities.filter(func(unit: Dictionary) -> bool:
-		if not _hostile(ctx, unit.owner) or unit.kind == "usa_collector": return false
+		if not _hostile(ctx, unit.owner) or Registry.air_kinds.has(unit.kind): return false
 		var at := Vector2(unit.position[0], unit.position[1])
 		return buildings.any(func(building: Dictionary) -> bool: return Combat.distance_squared(at, building) <= DEFENCE_RADIUS * DEFENCE_RADIUS))
 	var sent := {}
@@ -136,7 +147,7 @@ static func _defend(ctx: Dictionary, state: Dictionary, buildings: Array) -> Dic
 
 static func _pick(unit: Dictionary, enemies: Array) -> Variant:
 	var position := Vector2(unit.position[0], unit.position[1])
-	for category: Variant in TARGET_CATEGORIES:
+	for category: Variant in _target_categories():
 		var best: Variant = null
 		var best_distance: float = INF
 		for enemy: Variant in enemies:

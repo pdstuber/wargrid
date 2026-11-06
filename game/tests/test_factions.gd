@@ -6,11 +6,25 @@ const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 const StateHash = preload("res://scripts/simulation/state_hash.gd")
 const SeatSim = preload("res://scripts/net/seat_sim.gd")
 const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
+const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const EconomyFixture = preload("res://tests/economy_fixture.gd")
 const LockstepTests = preload("res://tests/test_lockstep.gd")
 
 func cases() -> Array[Callable]:
-	return [test_foundation_keeps_seat_alive, test_cancel_last_foundation_defeats, test_choose_faction_online_same_hash, test_match_waits_for_all_factions]
+	return [test_foundation_keeps_seat_alive, test_cancel_last_foundation_defeats, test_choose_faction_online_same_hash, test_match_waits_for_all_factions, test_capability_rules]
+
+func test_capability_rules(runner) -> bool:
+	Registry.add_test_kind("x_maker", {"class": "vehicle", "cost": 1, "ticks": 1, "speed": 1.0, "locomotor": "wheels", "max_hp": 1000, "armor": "builder_vehicle", "weapon": "", "builds": ["usa_barracks"]})
+	Registry.add_test_kind("x_hauler", {"class": "air", "cost": 1, "ticks": 1, "speed": 1.0, "locomotor": "air", "max_hp": 1000, "armor": "helicopter", "weapon": "", "collects": {"boxes": 2, "load_ticks": 3, "unload_ticks": 4, "box_value": 5}})
+	var sim = EconomyFixture.make_world()
+	var maker: int = sim.spawn(1, Vector2(10.5, 10.5), "x_maker")
+	var placed: Dictionary = EconomyFixture.send(sim, {"type": "build", "builder_id": maker, "building_kind": "usa_barracks", "origin": [16, 16]})
+	runner.check(placed.ok, "C1 a kind with builds places a foundation: " + placed.error)
+	var hauler: int = sim.spawn(1, Vector2(12.5, 12.5), "x_hauler")
+	var records: Array = sim.snapshot().entities.filter(func(unit: Dictionary) -> bool: return unit.id == hauler)
+	runner.check(records.size() == 1 and records[0].collection != null, "C1 a kind with collects gets a collection record")
+	Registry.clear_test_kinds()
+	return true
 
 func _add_completed(sim, owner: int, kind: String, origin: Vector2i) -> int:
 	var id: int = sim._next_entity_id
