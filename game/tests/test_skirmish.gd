@@ -9,7 +9,7 @@ const Fixture = preload("res://tests/combat_fixture.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 
 func cases() -> Array[Callable]:
-	return [test_skirmish_initial_state, test_roster_production, test_bot_cycles_unit_list, test_opponent_pays_and_retries, test_opponent_attack_policy, test_opponent_defends_base, test_defence_skips_busy_units, test_bot_ignores_contained_units, test_match_lifecycle, test_restart_state]
+	return [test_skirmish_initial_state, test_roster_production, test_bot_cycles_unit_list, test_bot_reads_seat_faction, test_opponent_pays_and_retries, test_opponent_attack_policy, test_opponent_defends_base, test_defence_skips_busy_units, test_bot_ignores_contained_units, test_match_lifecycle, test_restart_state]
 
 func _owned(items: Array, player: int) -> Array:
 	return items.filter(func(item: Dictionary) -> bool: return item.owner == player)
@@ -80,6 +80,22 @@ func test_bot_cycles_unit_list(runner) -> bool:
 	var scouts: int = kinds.count("usa_light_vehicle")
 	runner.check(rifles + rockets >= 2 and absi(rifles - rockets) <= 1 and rifles >= rockets, "B3 barracks cycles rifle then rocket, fewest owned first")
 	runner.check(tanks + scouts >= 1 and tanks >= scouts and tanks - scouts <= 1, "B3 factory cycles tank then scout car, fewest owned first")
+	return true
+
+func test_bot_reads_seat_faction(runner) -> bool:
+	Registry.add_test_faction("x_fac", {"display_name": "X", "start_building": "usa_command_center", "start_unit": "usa_builder", "build_order": ["usa_barracks"], "units_for": {"usa_barracks": ["usa_rocket_infantry"]}})
+	var sim = Skirmish.create(true, "ai", {1: "usa", 2: "x_fac"})
+	Skirmish.issue_opponent(sim)
+	sim.step()
+	var site: Array = _built(sim.snapshot().buildings, 2).map(func(b: Dictionary) -> String: return b.kind)
+	runner.check(site == ["usa_barracks"], "B4 the opponent reads the build order from its seat's faction, got " + str(site))
+	Economy.add_completed(sim, 2, "usa_barracks", Vector2i(20, 20))
+	for i in 59: sim.step()
+	Skirmish.issue_opponent(sim)
+	sim.step()
+	var queued: Array = _owned(sim.snapshot().buildings, 2).filter(func(b: Dictionary) -> bool: return not b.queue.is_empty())
+	runner.check(not queued.is_empty() and queued.all(func(b: Dictionary) -> bool: return b.queue[0].kind == "usa_rocket_infantry"), "B4 the opponent trains the faction's unit for the producer, got " + str(queued))
+	Registry.clear_test_kinds()
 	return true
 
 func test_opponent_pays_and_retries(runner) -> bool:

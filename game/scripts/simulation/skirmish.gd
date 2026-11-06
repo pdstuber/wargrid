@@ -23,11 +23,11 @@ static var _skirmish_map: Dictionary = {}
 static func default_faction() -> String:
 	return Registry.Factions.DEFAULT_FACTION
 
-static func build_order() -> Array:
-	return Registry.faction(Registry.Factions.DEFAULT_FACTION).build_order
+static func build_order(faction: String) -> Array:
+	return Registry.faction(faction).build_order
 
-static func unit_for(producer: String, owned: Array = []) -> String:
-	var units: Array = Registry.faction(Registry.Factions.DEFAULT_FACTION).units_for.get(producer, [])
+static func unit_for(faction: String, producer: String, owned: Array = []) -> String:
+	var units: Array = Registry.faction(faction).units_for.get(producer, [])
 	var pick: String = ""
 	for kind: String in units:
 		if pick.is_empty() or owned.count(kind) < owned.count(pick): pick = kind
@@ -78,8 +78,9 @@ static func _decide(sim: RefCounted, player: int, attack_tick: int, state: Dicti
 	for entry: Dictionary in state.players: teams[entry.id] = entry.team
 	var ctx := {"sim": sim, "player": player, "tick": state.tick, "sequence": sequence, "credits": credits, "teams": teams}
 	var buildings: Array = state.buildings.filter(func(building: Dictionary) -> bool: return building.owner == player)
-	_build(ctx, state, buildings)
-	_produce(ctx, state, buildings)
+	var faction: String = _faction(state, player)
+	_build(ctx, state, buildings, faction)
+	_produce(ctx, state, buildings, faction)
 	var defending: Dictionary = _defend(ctx, state, buildings)
 	if state.tick >= attack_tick: _attack(ctx, state, defending)
 
@@ -91,7 +92,7 @@ static func _send(ctx: Dictionary, payload: Dictionary) -> bool:
 	ctx.sequence += 1
 	return true
 
-static func _build(ctx: Dictionary, state: Dictionary, buildings: Array) -> void:
+static func _build(ctx: Dictionary, state: Dictionary, buildings: Array, faction: String) -> void:
 	var builder: int = -1
 	for unit: Dictionary in state.entities:
 		if unit.owner == ctx.player and Registry.is_builder(unit.kind):
@@ -102,20 +103,20 @@ static func _build(ctx: Dictionary, state: Dictionary, buildings: Array) -> void
 		if building.completed: continue
 		if building.builder_id == null: _send(ctx, {"type": "resume_build", "builder_id": builder, "building_id": building.id})
 		return
-	for kind: String in build_order():
+	for kind: String in build_order(faction):
 		if buildings.any(func(building: Dictionary) -> bool: return building.kind == kind): continue
 		var cost: int = Definitions.building(kind).cost
 		var site: Vector2i = _slot(ctx.sim, kind, ctx.player)
 		if ctx.credits >= cost and _send(ctx, {"type": "build", "builder_id": builder, "building_kind": kind, "origin": [site.x, site.y]}): ctx.credits -= cost
 		return
 
-static func _produce(ctx: Dictionary, state: Dictionary, buildings: Array) -> void:
+static func _produce(ctx: Dictionary, state: Dictionary, buildings: Array, faction: String) -> void:
 	var replace_builder: bool = not state.entities.any(func(unit: Dictionary) -> bool: return unit.owner == ctx.player and Registry.is_builder(unit.kind))
-	var start_unit: String = _start_unit(state, ctx.player)
+	var start_unit: String = Registry.faction(faction).start_unit
 	var owned: Array = state.entities.filter(func(unit: Dictionary) -> bool: return unit.owner == ctx.player).map(func(unit: Dictionary) -> String: return unit.kind)
 	for building: Variant in buildings:
 		if not building.completed or not building.queue.is_empty(): continue
-		var kind: String = start_unit if replace_builder and Registry.kind(building.kind).produces.has(start_unit) else unit_for(building.kind, owned)
+		var kind: String = start_unit if replace_builder and Registry.kind(building.kind).produces.has(start_unit) else unit_for(faction, building.kind, owned)
 		if kind.is_empty(): continue
 		var cost: int = Definitions.unit(kind).cost
 		if ctx.credits >= cost and _send(ctx, {"type": "produce", "building_id": building.id, "unit_kind": kind}):
@@ -123,10 +124,10 @@ static func _produce(ctx: Dictionary, state: Dictionary, buildings: Array) -> vo
 			owned.append(kind)
 		if kind == start_unit: replace_builder = false
 
-static func _start_unit(state: Dictionary, player: int) -> String:
+static func _faction(state: Dictionary, player: int) -> String:
 	for entry: Dictionary in state.players:
-		if entry.id == player: return Registry.faction(entry.get("faction", Registry.Factions.DEFAULT_FACTION)).start_unit
-	return ""
+		if entry.id == player: return entry.get("faction", Registry.Factions.DEFAULT_FACTION)
+	return Registry.Factions.DEFAULT_FACTION
 
 static func _attack(ctx: Dictionary, state: Dictionary, skip: Dictionary = {}) -> void:
 	var enemies: Array = state.entities.filter(func(unit: Dictionary) -> bool: return _hostile(ctx, unit.owner) and not Registry.air_kinds.has(unit.kind) and not unit.has("container_id"))

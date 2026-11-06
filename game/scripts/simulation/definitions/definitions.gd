@@ -9,6 +9,7 @@ const UNIT_KEYS: Array[String] = ["cost", "ticks", "speed", "accel", "brake", "l
 const BUILDING_KEYS: Array[String] = ["cost", "ticks", "power", "footprint", "prerequisite"]
 
 static var _extra: Dictionary = {}
+static var _extra_factions: Dictionary = {}
 static var _unit_cache: Dictionary = {}
 static var _building_cache: Dictionary = {}
 static var _profile_cache: Dictionary = {}
@@ -18,7 +19,7 @@ static func kind(id: String) -> Dictionary:
 	return _extra[id] if _extra.has(id) else Usa.KINDS.get(id, {})
 
 static func faction(id: String) -> Dictionary:
-	return Factions.FACTIONS.get(id, {})
+	return _extra_factions[id] if _extra_factions.has(id) else Factions.FACTIONS.get(id, {})
 
 static func units() -> Array[String]:
 	return _ids(true)
@@ -43,8 +44,12 @@ static func add_test_kind(id: String, row: Dictionary) -> void:
 	_extra[id] = row
 	_reset()
 
+static func add_test_faction(id: String, row: Dictionary) -> void:
+	_extra_factions[id] = row
+
 static func clear_test_kinds() -> void:
 	_extra = {}
+	_extra_factions = {}
 	_reset()
 
 # Projections that keep today's economy and combat dictionary shapes; cached so callers share one dictionary.

@@ -76,7 +76,7 @@ func test_bot_does_not_build_defence(runner) -> bool:
 		Skirmish.issue_opponent(sim)
 		sim.step()
 	runner.check(not sim.snapshot().buildings.any(func(b: Dictionary) -> bool: return b.kind == "usa_defence"), "DF5 the bot never builds a battery")
-	runner.check(Registry.kind("usa_builder").builds.has("usa_defence") and Skirmish.build_order().has("usa_defence") == false, "DF5 a builder may build one, the bot's build order omits it")
+	runner.check(Registry.kind("usa_builder").builds.has("usa_defence") and Skirmish.build_order(Skirmish.default_faction()).has("usa_defence") == false, "DF5 a builder may build one, the bot's build order omits it")
 	var human = _world()
 	var builder: int = human.spawn(1, Vector2(5.5, 5.5), "usa_builder")
 	var sent: Dictionary = EconomyFixture.send(human, {"type": "build", "builder_id": builder, "building_kind": "usa_defence", "origin": [10, 10]})

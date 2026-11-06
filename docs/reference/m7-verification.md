@@ -8,12 +8,12 @@ Plan: [M7 plan](../superpowers/plans/2026-11-06-m7-factions.md). Design: [M7 des
 Resume record (updated 2026-11-06, gate 1 signed off)
 Branch / base commit / working-tree state: m7-factions rebased onto main 025540d; origin/m7-factions at 29507ed (CI green there), local HEAD adds the R1 planning docs (8f022b0, ed48b2e, not pushed); tree clean. R1 release workflow lives on its own branch r1-release (not pushed), see docs/reference/release-verification.md; it is not part of gate 2
 Last green task / next incomplete task: Task 11 (gate 1) signed off by the user 2026-11-06 / push for CI on Linux and Windows (approval needed), then STOP: gate 2 is an outline
-Changed paths since last commit: none
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 344 cases / 134,353 / 0, exit 0, TESTS PASSED 134353 (067bf58); lint, warnings, ruff, mypy, unittest, netplay match 8331, team match won tick 33205 winner 1, run_benchmark.sh exit 0, rendered movement benchmark PASSED 2 (all on the bot wave tree); ledger rows added
+Changed paths since last commit: G2.0 files (skirmish.gd, skirmish_main.gd, simulation.gd, definitions.gd, test_skirmish.gd, test_factions.gd, test_defences.gd, test_skirmish_match.gd), this file
+Last command / cases / checks / failures / exit / marker: G2.0: sh tools/run_tests.sh, 346 cases / 134,359 / 0, exit 0, TESTS PASSED 134359 (baseline 344 / 134,353); lint, warnings, 9 netplay scenarios pass, match 8331; earlier (Task 11, 067bf58): lint, warnings, ruff, mypy, unittest, netplay match 8331, team match won tick 33205 winner 1, run_benchmark.sh exit 0, rendered movement benchmark PASSED 2 (all on the bot wave tree); ledger rows added
 Known red case or blocker: none (combat stress rows exceed the 1.82 / 3.64 budget: reported, not loosened). CI run 42295509369 on f44f081 green (Linux, Windows, relay, lints, compare-replays); macOS compare_local_traces matched all five (replay, economy, combat 1200, team 100, netplay 278)
 Approved decisions, pre-authorizations used, deferred gates: pushes approved 2026-11-06 (m7-factions only); user sign-off of gate 1 and its visuals 2026-11-06; WAVE_MIN 6 accepted "for now" (revisit at M8 research and gates 2-3); rulings as logged in the sections above. Open for the user: analyze.py burst/reach tolerance, Dozer mid-turn dip, team match winner flip (accepted by silence, not stated)
 Usage so far: not recorded
-Next exact action: gate 2 is expanded to step level (G2.0-G2.7, planning session 2026-11-06, docs only, uncommitted). The user reviews the plan and settles the review decisions (G2.1 full-load rule; G2.0 "Match has not started"; G2.5 new `defence_attack` command), then starts G2.0 on Sonnet (medium). Do not begin any G2 item before that.
+Next exact action: G2.0 done and uncommitted (commit "Bot plays the seat faction; no commands before every seat chose"); then dispatch G2.1 on Sonnet (medium). Settled by the user 2026-11-06: G2.1 full-load rule APPLIED, G2.0 "Match has not started" setup gate KEPT, G2.5 `defence_attack` command ADDED.
 ```
 
 ## Pins at base
@@ -363,3 +363,10 @@ Tree: m7-factions 06f570e + uncommitted. `game/scripts/simulation/skirmish.gd`, 
 
 - Run 42292961869 on 3a31be0: Linux and Windows Godot jobs failed on `BM5 transports: 20 full cars against 100 riflemen` in the exported suite only. Cause: `combat_workload.gd` `_transports()` spawned the 100 enemy riflemen inside `assert(...)`, which exported release builds strip. Fixed in f44f081 (spawn bound to a variable first); the local headless run never failed because asserts are active there. No other call inside an `assert` in game scripts, benchmarks or tests (searched).
 - Run 42295509369 on f44f081: all jobs green, including compare-replays. `sh tools/compare_local_traces.sh 42295509369` on macOS: REPLAYS MATCHED for replay, economy, combat (1200 each), team (100) and netplay (278).
+
+## G2.0 results (tree: m7-factions 8f835c0 + uncommitted G2.0, Apple M6)
+
+- Suite 346 / 134,359 / 0, exit 0, TESTS PASSED 134359 (baseline 344 / 134,353). Lint, warnings pass. All nine `run_netplay.sh` scenarios PASSED, `match` terminal tick 8331 (unchanged).
+- Trace check: replay, economy, combat (1200 rows) and team (100 rows) traces `cmp`-identical to a clean worktree at 8f835c0. No pin moved.
+- Red seen first: `test_setup_rejects_commands_until_all_chose` (S2). `test_bot_reads_seat_faction` (B4) was written after the bot change, not observed red; its rocket-first and barracks-only expectations differ from the USA list so it would fail on the old code.
+- Departures: `Definitions.add_test_faction` lives on the registry (`definitions.gd`; tests' `Registry`), cleared by `clear_test_kinds`. S2 steps one tick after each choice so the start unit exists, and seat 2 chooses at tick 9 (status ongoing at 10). `test_choose_faction_same_tick_cases` (T1) unchanged and green. `Skirmish._faction` replaced `_start_unit`; `skirmish_main._production_kind` reads the local seat's faction from the snapshot.

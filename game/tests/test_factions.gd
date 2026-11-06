@@ -8,10 +8,11 @@ const SeatSim = preload("res://scripts/net/seat_sim.gd")
 const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const EconomyFixture = preload("res://tests/economy_fixture.gd")
+const MapData = preload("res://scripts/simulation/map_data.gd")
 const LockstepTests = preload("res://tests/test_lockstep.gd")
 
 func cases() -> Array[Callable]:
-	return [test_foundation_keeps_seat_alive, test_cancel_last_foundation_defeats, test_choose_faction_online_same_hash, test_match_waits_for_all_factions, test_choose_faction_same_tick_cases, test_capability_rules, test_start_has_command_center_and_builder, test_survival_counts_buildings_only, test_bot_trains_builder_without_one, test_bot_without_command_center]
+	return [test_foundation_keeps_seat_alive, test_cancel_last_foundation_defeats, test_choose_faction_online_same_hash, test_match_waits_for_all_factions, test_setup_rejects_commands_until_all_chose, test_choose_faction_same_tick_cases, test_capability_rules, test_start_has_command_center_and_builder, test_survival_counts_buildings_only, test_bot_trains_builder_without_one, test_bot_without_command_center]
 
 func test_capability_rules(runner) -> bool:
 	Registry.add_test_kind("x_maker", {"class": "vehicle", "cost": 1, "ticks": 1, "speed": 1.0, "locomotor": "wheels", "max_hp": 1000, "armor": "builder_vehicle", "weapon": "", "builds": ["usa_barracks"]})
@@ -100,6 +101,27 @@ func test_match_waits_for_all_factions(runner) -> bool:
 	runner.check(seen.get(4) == "setup" and seen.get(5) == "setup", "F4 status stays setup through tick 5")
 	runner.check(seen.get(6) == "ongoing", "F4 status is ongoing from tick 6")
 	runner.check(net.clients[1].ls.rejections().any(func(r: Dictionary) -> bool: return r.error == "Choose a faction first"), "F4 seat 2's stops before its choice are rejected")
+	return true
+
+func test_setup_rejects_commands_until_all_chose(runner) -> bool:
+	var sim = _setup_sim()
+	var map: Dictionary = sim.map_data()
+	EconomyFixture.steps(sim, 4)
+	EconomyFixture.send(sim, {"type": "choose_faction", "faction": "usa"})
+	EconomyFixture.steps(sim, 1)
+	var unit: int = sim.snapshot().entities[0].id
+	var early: Dictionary = EconomyFixture.send(sim, {"type": "move", "tick": 5, "entity_ids": [unit], "target": [10.5, 10.5]})
+	runner.check(not early.ok and early.error == "Match has not started", "S2 seat 1's move waits for seat 2's choice: " + early.error)
+	EconomyFixture.steps(sim, 4)
+	EconomyFixture.send(sim, {"type": "choose_faction", "faction": "usa", "player": 2})
+	EconomyFixture.steps(sim, 1)
+	var state: Dictionary = sim.snapshot()
+	var origin: Vector2i = MapData.slot(map, 2, "usa_command_center")
+	var cell: Vector2 = Vector2(MapData.start_cell(map, 2)) + Vector2(0.5, 0.5)
+	runner.check(state.buildings.any(func(b: Dictionary) -> bool: return b.owner == 2 and b.kind == "usa_command_center" and b.origin == [origin.x, origin.y]), "S2 seat 2 has its command center at its slot")
+	runner.check(state.entities.any(func(e: Dictionary) -> bool: return e.owner == 2 and e.kind == "usa_builder" and Vector2(e.position[0], e.position[1]) == cell), "S2 seat 2's start unit stands on its start cell")
+	var late: Dictionary = EconomyFixture.send(sim, {"type": "move", "entity_ids": [unit], "target": [10.5, 10.5]})
+	runner.check(late.ok, "S2 seat 1's move is accepted once every seat chose: " + late.error)
 	return true
 
 const _SAME_TICK: Dictionary = {

@@ -18,7 +18,8 @@ func _step_simulation() -> void:
 	simulation.step()
 
 func _production_kind(building: Dictionary) -> String:
-	return Skirmish.unit_for(building.kind) if not Skirmish.unit_for(building.kind).is_empty() else super._production_kind(building)
+	var kind: String = Skirmish.unit_for(_local_state(simulation.snapshot()).get("faction", Skirmish.default_faction()), building.kind)
+	return kind if not kind.is_empty() else super._production_kind(building)
 
 func _process(delta: float) -> void:
 	pan_camera(Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down"), delta)

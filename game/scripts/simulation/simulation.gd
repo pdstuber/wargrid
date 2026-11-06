@@ -259,7 +259,8 @@ func _start_when_chosen() -> void:
 func _setup_error(command: Dictionary) -> String:
 	var chosen: bool = _players.get(command.player, {}).has("faction")
 	if command.type != "choose_faction":
-		return "Choose a faction first" if _match != null and _match.status == "setup" and _players.has(command.player) and not chosen else ""
+		if _match == null or _match.status != "setup" or not _players.has(command.player): return ""
+		return "Match has not started" if chosen else "Choose a faction first"
 	if not command.has("faction") or typeof(command.faction) != TYPE_STRING or Registry.faction(command.faction).is_empty(): return "Unknown faction"
 	return "Faction already chosen" if chosen or _match == null or _match.status != "setup" else ""
 
