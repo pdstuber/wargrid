@@ -5,15 +5,15 @@ Plan: [M7 plan](../superpowers/plans/2026-11-06-m7-factions.md). Design: [M7 des
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-06, defence scan throttle done, uncommitted)
-Branch / base commit / working-tree state: m7-factions at 7293c91 (Task 10 committed); Task 11 changes uncommitted
-Last green task / next incomplete task: gate 1 review fixes green (see 'Gate 1 review fixes' below) / user playtest, rendered benchmark
-Changed paths since last commit: game/scripts/simulation/combat.gd, game/tests/test_defences.gd, tools/{zh_parity/probe_patriot.py,test_check_reference.py}, docs/reference/m7-verification.md
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 326 cases / 134,257 / 0, exit 0, TESTS PASSED 134257 (after review fixes); lint, warnings, unittest (39), conformance (33), netplay x7, team match pass; run_benchmark.sh exit 1 (combat stress open/dense exceeded their ceilings, as at base)
-Known red case or blocker: none (benchmark ceilings exceeded: reported, not loosened)
-Approved decisions, pre-authorizations used, deferred gates: user ruling 2026-11-06: the bot does not build usa_defence; stress ceiling re-pin and rendered benchmark need the user
+Resume record (updated 2026-11-06, gate 1 complete except playtest and CI)
+Branch / base commit / working-tree state: m7-factions rebased onto main 025540d, HEAD ff3d571; tree clean; nothing pushed
+Last green task / next incomplete task: Task 11 / gate 1 stop: user playtest (offline and online) and CI on Linux and Windows (push needs approval)
+Changed paths since last commit: none
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 329 cases / 134,261 / 0, exit 0, TESTS PASSED 134261; lint, warnings, ruff, mypy, unittest (39), netplay match 7817, team match won tick 30687 winner 1 pass; run_benchmark.sh exit 0 after the user-approved stress ceiling re-pin (open 3.05 / 4.23, dense 3.31 / 5.01); rendered movement benchmark PASSED 2; ledger row added
+Known red case or blocker: none (combat stress rows still exceed the 1.82 / 3.64 budget: reported, not loosened)
+Approved decisions, pre-authorizations used, deferred gates: user rulings 2026-11-06: S1 floor 7000, bot builds no usa_defence, scout speed 2.4, retaliation for building attackers, defence idle scan throttle (8 ticks), ceiling re-pin, rendered benchmark. Open for the user: team match winner flipped to team 1 (scout speed); analyze.py burst/reach tolerance; Dozer mid-turn dip (playtest candidate)
 Usage so far: not recorded
-Next exact action: gate review (Opus high, fresh context), then user playtest (offline and online) and the rendered benchmark (ask first), then STOP: gate 2 is an outline (Opus planning session expands it with playtest findings in).
+Next exact action: user playtest offline and online, push for CI on Linux and Windows (approval needed), then STOP: gate 2 is an outline, an Opus (high) planning session expands it with the playtest findings.
 ```
 
 ## Pins at base
