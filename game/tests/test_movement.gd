@@ -29,7 +29,7 @@ func arrived(runner, sim, target: Vector2, label: String) -> void:
 
 func test_distance(runner) -> bool:
 	var sim = Simulation.new()
-	sim.spawn(1, Vector2(1.5, 1.5))
+	sim._entities[sim.spawn(1, Vector2(1.5, 1.5))].combat = null
 	runner.check(entity(sim).get("status") == "idle", "M1 idle")
 	runner.check(order(sim, Vector2(4.5, 1.5)).ok, "M1 accepted")
 	advance(sim, 3)
@@ -101,7 +101,7 @@ func test_blocked(runner) -> bool:
 	for y in range(16):
 		wall.append(Vector2i(3, y))
 	var sim = Simulation.new(wall)
-	sim.spawn(1, Vector2(1.5, 1.5))
+	sim._entities[sim.spawn(1, Vector2(1.5, 1.5))].combat = null
 	runner.check(order(sim, Vector2(5.5, 1.5)).ok, "M6 accepts unreachable walkable target")
 	sim.step()
 	var before: Dictionary = entity(sim)

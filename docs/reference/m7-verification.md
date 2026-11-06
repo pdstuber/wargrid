@@ -5,15 +5,15 @@ Plan: [M7 plan](../superpowers/plans/2026-11-06-m7-factions.md). Design: [M7 des
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-06, Task 7 done, uncommitted)
-Branch / base commit / working-tree state: m7-factions at bd29536 (Task 6 commit); Task 7 changes uncommitted
-Last green task / next incomplete task: Task 7 (launcher faction selectors and build menu) / Task 8 (rocket infantry, armed scout car, bot unit lists)
-Changed paths since last commit: game/scripts/{launcher,base_main,skirmish_main}.gd, game/scenes/launcher.tscn, game/tests/{test_base_scene,test_skirmish_scene,test_online_scene}.gd, this file
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 294 cases / 112,900 checks / 0 failures, exit 0, TESTS PASSED 112900; lint and warnings (80 files) pass
+Resume record (updated 2026-11-06, Task 8 done, uncommitted)
+Branch / base commit / working-tree state: m7-factions at 50547a6; Task 8 changes uncommitted
+Last green task / next incomplete task: Task 8 (rocket infantry, armed scout car, bot unit lists) / Task 9 (containers)
+Changed paths since last commit: game/scripts/simulation/{skirmish.gd,definitions/{usa,shared,factions}.gd}, game/scripts/debug/movement_workload.gd, game/tests/{test_combat,test_skirmish,test_simulation,test_movement,test_repath,test_groups,test_skirmish_match,test_team_match,test_state_hash}.gd, tools/run_netplay.sh, this file
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 297 cases / 112,909 / 0, exit 0, TESTS PASSED 112909; lint, warnings, unittest pass; run_netplay.sh match ok (tick 8257)
 Known red case or blocker: none
-Approved decisions, pre-authorizations used, deferred gates: local commit per green task (milestone prompt); D1 legacy projections (user, 2026-11-06); wider match windows (user, 2026-11-06)
+Approved decisions, pre-authorizations used, deferred gates: as Task 7; S1 floor 7000 (user, 2026-11-06)
 Usage so far: not recorded
-Next exact action: commit Task 7, then Task 8. Benchmarks and visible checks (launcher/menu look, rendered HUD) not run; batch for the gate.
+Next exact action: commit Task 8, then Task 9. Benchmarks not run (bot/units changed).
 ```
 
 ## Pins at base
@@ -40,6 +40,13 @@ Next exact action: commit Task 7, then Task 8. Benchmarks and visible checks (la
 | test_skirmish_scene | H1 build line | `1/2/3/4 build` (skirmish), `1/2/3 build` (base) → `1-9: menu` (both) | Task 7 (spec: hint drops the key list) |
 | test_base_scene, test_skirmish_scene | Bs5 queue label, E1 enemy line, K4 HUD line | kind id → display name (`Cancel Battle Tank (90%)`, `Enemy (P2) Battle Tank #`) | Task 7 display names |
 | debug/team_match.gd | `TEAM_TICK_CAP` | 27000 → 45000 | Task 5 (user window); match ends won, winner 1, tick 37074 |
+| test_skirmish_match | S1 `TERMINAL_TICK`, window floor | 9267 → 7731; `terminal >= 8000` → `>= 7000` | Task 8 (armed scout car; user ruling 2026-11-06: floor 7000, upper 17999, TICK_LIMIT 18000, winner 1) |
+| test_skirmish_match | S1 `S1_CORE_SERIES` | 5002559116398996570 → 1045294977236534214 | Task 8 |
+| test_team_match | TB3 `FINAL_DIGEST`; TB4 `TEAM_CORE_SERIES` | 0ef885e10e0de507 → 4666c566ff0cf70d; 5307413438668649372 → 6345485798033620804 | Task 8 |
+| test_state_hash | H1 `PINNED` | 4b52b4564bdd4dfb → 01e256834bdd4dfb | Task 8 (default spawn kind is now armed) |
+| run_netplay.sh | `match` terminal tick | 9166 → 8257 | Task 8 |
+| test_combat, test_simulation | D1 legacy vehicle weapon, C1/C11 snapshots | weapon "" → scout_gun; combat null → guard record | Task 8 (scout car armed) |
+
 
 ## Departures and deferrals
 
@@ -87,3 +94,5 @@ Cadence, measured (source build, `~/CnC/parity/traces`, 2026-11-06):
 | `burst_battery` | burst pattern | 8,8,8,60 | 0 shots in 600 frames | formula 8 / clip 4 / reload 60 (battery could not be measured; spawned without a power plant, so likely dark from the POWERED flag, not verified) |
 
 Gate-1 rows (cost, ticks, max_hp, armor, vision, radius, weapon, other) are the plan's Task 2 table, unchanged: no measured gap, so formula delays stand. Armor percentages and footprints as in the plan's Task 2 tables.
+
+- Task 8: armed scout car took S1 to 7731 (below 8000); user ruling 2026-11-06 widened the floor to 7000. Fixtures that compare whole entity dicts over time (M1, M6, RP2, G7, movement workload for BM5) set `combat = null` on their default-kind units, because an armed idle unit's `repath_tick` advances; no assertion weakened. New tests S8 (rocket scatter, damage table) and B3 (bot cycle), red first. Bot: `unit_for(producer, owned)` picks the fewest-owned kind, ties by list order; armor rows gained `infantry_missile`, `explosion`, `rapid_fire`, `base_defense`.

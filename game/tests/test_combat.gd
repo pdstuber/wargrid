@@ -10,14 +10,14 @@ const Fixture = preload("res://tests/combat_fixture.gd")
 const EconomyFixture = preload("res://tests/economy_fixture.gd")
 
 func cases() -> Array[Callable]:
-	return [test_combat_definitions, test_definitions_shared, test_health_snapshot_isolation, test_weapon_range_boundary, test_ranger_fires_at_edge_max, test_crusader_fires_at_edge_max, test_rifle_cycle_30, test_firing_cell_uses_edge, test_building_edge_range, test_damage_armor_matrix, test_weapon_cooldown, test_guard_priority, test_attack_validation_atomic, test_combat_intent_order, test_orders_preserve_reload, test_acquisition_throttle, test_mutual_lethal_fire, test_target_removed_cleanup, test_destroyed_unit_no_actions, test_destroyed_producer_accounting, test_same_tick_attack_and_cancel, test_removed_target_rescans, test_controller_and_scan_radius, test_scan_acquires_beyond_weapon_range, test_scan_radius_by_controller, test_scan_radius_boundary, test_removed_chaser_clears_chase, test_scan_keeps_target_leaving_radius, test_attack_move_resumes_after_chase, test_scan_same_tick_orders, test_scan_includes_buildings, test_human_guard_in_range_only, test_human_guard_holds_against_kiting, test_ai_guard_unchanged, test_human_attack_move_marches_in_range, test_human_attack_move_post_kill_rescan, test_human_attack_move_follows_retreat, test_rescan_same_tick_orders, test_human_attack_move_drops_target_out_of_range, test_human_attack_move_first_approach_has_no_leash, test_retarget_only_for_attack_move, test_missing_id_skipped, test_due_tick_death_skips_member, test_foreign_id_rejects, test_attack_move_mixed_selection, test_retaliate_trigger_distance, test_retaliate_joiners, test_retaliate_leash_and_return, test_retaliate_return_scan_and_rehit, test_retaliate_same_tick_cases, test_retaliate_go_home_queues_once, test_rng_sequence, test_splash_victims_boundary, test_splash_cluster, test_splash_mask, test_splash_last_builder_same_tick, test_splash_event_flag]
+	return [test_combat_definitions, test_definitions_shared, test_health_snapshot_isolation, test_weapon_range_boundary, test_ranger_fires_at_edge_max, test_crusader_fires_at_edge_max, test_rifle_cycle_30, test_firing_cell_uses_edge, test_building_edge_range, test_damage_armor_matrix, test_weapon_cooldown, test_guard_priority, test_attack_validation_atomic, test_combat_intent_order, test_orders_preserve_reload, test_acquisition_throttle, test_mutual_lethal_fire, test_target_removed_cleanup, test_destroyed_unit_no_actions, test_destroyed_producer_accounting, test_same_tick_attack_and_cancel, test_removed_target_rescans, test_controller_and_scan_radius, test_scan_acquires_beyond_weapon_range, test_scan_radius_by_controller, test_scan_radius_boundary, test_removed_chaser_clears_chase, test_scan_keeps_target_leaving_radius, test_attack_move_resumes_after_chase, test_scan_same_tick_orders, test_scan_includes_buildings, test_human_guard_in_range_only, test_human_guard_holds_against_kiting, test_ai_guard_unchanged, test_human_attack_move_marches_in_range, test_human_attack_move_post_kill_rescan, test_human_attack_move_follows_retreat, test_rescan_same_tick_orders, test_human_attack_move_drops_target_out_of_range, test_human_attack_move_first_approach_has_no_leash, test_retarget_only_for_attack_move, test_missing_id_skipped, test_due_tick_death_skips_member, test_foreign_id_rejects, test_attack_move_mixed_selection, test_retaliate_trigger_distance, test_retaliate_joiners, test_retaliate_leash_and_return, test_retaliate_return_scan_and_rehit, test_retaliate_same_tick_cases, test_retaliate_go_home_queues_once, test_rng_sequence, test_splash_victims_boundary, test_splash_cluster, test_splash_mask, test_splash_last_builder_same_tick, test_splash_event_flag, test_rocket_splash_and_scatter, test_damage_table_new_types]
 
 func test_combat_definitions(runner) -> bool:
 	runner.check(Definitions.profile("usa_rifle_infantry") == {"max_hp": 180000, "armor": "human", "weapon": "rifle"}, "D1 infantry")
 	runner.check(Definitions.profile("usa_tank") == {"max_hp": 480000, "armor": "tank", "weapon": "cannon"}, "D1 tank")
 	runner.check(Definitions.profile("usa_builder") == {"max_hp": 250000, "armor": "builder_vehicle", "weapon": ""}, "D1 builder")
 	runner.check(Definitions.profile("usa_collector") == {"max_hp": 300000, "armor": "helicopter", "weapon": ""}, "D1 collector")
-	runner.check(Definitions.profile("usa_light_vehicle") == {"max_hp": 240000, "armor": "light_vehicle", "weapon": ""}, "D1 legacy vehicle")
+	runner.check(Definitions.profile("usa_light_vehicle") == {"max_hp": 240000, "armor": "light_vehicle", "weapon": "scout_gun"}, "D1 legacy vehicle")
 	var hp := {"usa_power_plant": 800000, "usa_supply_center": 2000000, "usa_factory": 2000000, "usa_barracks": 1000000}
 	for kind in hp:
 		runner.check(Definitions.profile(kind) == {"max_hp": hp[kind], "armor": "structure", "weapon": ""}, "D1 " + kind)
@@ -1303,4 +1303,48 @@ func test_definitions_shared(runner) -> bool:
 	runner.check(is_same(Economy.unit("usa_tank"), Economy.unit("usa_tank")) and is_same(Economy.building("usa_supply_center"), Economy.building("usa_supply_center")), "DF1 economy definitions are shared")
 	runner.check(is_same(Definitions.weapon("rifle"), Definitions.weapon("rifle")) and is_same(Definitions.profile("usa_factory"), Definitions.profile("usa_factory")), "DF1 combat definitions are shared")
 	runner.check(Economy.unit("nope").is_empty() and Economy.building("nope").is_empty() and Definitions.profile("nope").is_empty() and Definitions.weapon("nope").is_empty(), "DF1 unknown kinds are empty")
+	return true
+
+func test_rocket_splash_and_scatter(runner) -> bool:
+	var sim = Fixture.world()
+	var rocket: int = sim.spawn(1, Vector2(10.5, 10.5), "usa_rocket_infantry")
+	var tank: int = sim.spawn(2, Vector2(10.5, 15.5), "usa_tank")
+	sim._entities[tank].combat = null
+	runner.check(Fixture.send(sim, {"type": "attack", "entity_ids": [rocket], "target_id": tank}).ok, "S8 rocket attack accepted")
+	var shots: Array = []
+	for tick in range(40):
+		sim.step()
+		shots.append_array(_shots(sim).filter(func(shot: Dictionary) -> bool: return shot.attacker_id == rocket))
+	runner.check(shots.size() == 2 and shots.all(func(shot: Dictionary) -> bool: return shot.target_id == tank and not shot.splash and shot.damage == 40000), "S8 vehicle takes the primary 40000, no scatter")
+	var world: Array = _cluster()
+	var cluster = world[0]
+	var row: Array = world[1]
+	var shooter: int = cluster.spawn(1, Vector2(13.5, 15.5), "usa_rocket_infantry")
+	runner.check(Fixture.send(cluster, {"type": "attack", "entity_ids": [shooter], "target_id": row[2]}).ok, "S8 cluster attack accepted")
+	var primary: int = 0
+	var neighbours: int = 0
+	for tick in range(600):
+		cluster._entities[shooter].combat.next_fire_tick = 0
+		cluster.step()
+		for shot in _shots(cluster).filter(func(shot: Dictionary) -> bool: return shot.attacker_id == shooter):
+			if shot.target_id == row[2]: primary += 1 if not shot.splash and shot.damage == 4000 else 1000
+			else: neighbours += 1 if shot.splash and shot.damage == 4000 else 1000
+	runner.check(primary == 600 and neighbours > 0 and neighbours < 1000, "S8 infantry impact scatters onto neighbours as the cannon's does")
+	return true
+
+func test_damage_table_new_types(runner) -> bool:
+	var table := {
+		"human": [100, 10, 10, 100, 100], "tank": [25, 100, 100, 100, 25], "builder_vehicle": [25, 100, 100, 100, 25],
+		"light_vehicle": [50, 100, 50, 100, 50], "helicopter": [50, 50, 25, 50, 50], "structure": [50, 100, 50, 100, 50],
+		"structure_tough": [50, 100, 50, 80, 50], "base_defense": [50, 100, 25, 100, 50]}
+	var types := ["small_arms", "armor_piercing", "infantry_missile", "explosion", "rapid_fire"]
+	var wrong: int = 0
+	for armor in table:
+		for i in range(types.size()):
+			wrong += 0 if Definitions.armor_percent(armor, types[i]) == table[armor][i] else 1
+	runner.check(wrong == 0, "S8 every damage type against every armor row equals the table")
+	var rocket: Dictionary = Definitions.weapon("rocket")
+	runner.check(rocket.damage == 40000 and rocket.damage_type == "infantry_missile" and rocket.range == 7.0 and rocket.delay_ticks == 30 and rocket.primary_radius == 0.2 and rocket.affects == Definitions.weapon("cannon").affects, "S8 rocket row")
+	var gun: Dictionary = Definitions.weapon("scout_gun")
+	runner.check(gun.damage == 10000 and gun.damage_type == "rapid_fire" and gun.range == 6.0 and gun.delay_ticks == 6 and gun.primary_radius == 0.0, "S8 scout gun row")
 	return true

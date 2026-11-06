@@ -6,9 +6,10 @@ const Economy = preload("res://tests/economy_fixture.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
 const Fixture = preload("res://tests/combat_fixture.gd")
+const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 
 func cases() -> Array[Callable]:
-	return [test_skirmish_initial_state, test_roster_production, test_opponent_pays_and_retries, test_opponent_attack_policy, test_opponent_defends_base, test_defence_skips_busy_units, test_match_lifecycle, test_restart_state]
+	return [test_skirmish_initial_state, test_roster_production, test_bot_cycles_unit_list, test_opponent_pays_and_retries, test_opponent_attack_policy, test_opponent_defends_base, test_defence_skips_busy_units, test_match_lifecycle, test_restart_state]
 
 func _owned(items: Array, player: int) -> Array:
 	return items.filter(func(item: Dictionary) -> bool: return item.owner == player)
@@ -64,6 +65,22 @@ func test_roster_production(runner) -> bool:
 
 func _decide(sim: RefCounted) -> void:
 	if sim.snapshot().tick % 30 == 0: Skirmish.issue_opponent(sim)
+
+func test_bot_cycles_unit_list(runner) -> bool:
+	var sim = Skirmish.create()
+	for tick in range(4000):
+		Skirmish.issue_opponent(sim)
+		sim.step()
+	var kinds: Array = []
+	for unit: Dictionary in sim.snapshot().entities:
+		if unit.owner == 2 and Registry.kind(unit.kind).get("class", "") in ["infantry", "vehicle"] and not Registry.is_builder(unit.kind): kinds.append(unit.kind)
+	var rifles: int = kinds.count("usa_rifle_infantry")
+	var rockets: int = kinds.count("usa_rocket_infantry")
+	var tanks: int = kinds.count("usa_tank")
+	var scouts: int = kinds.count("usa_light_vehicle")
+	runner.check(rifles + rockets >= 2 and absi(rifles - rockets) <= 1 and rifles >= rockets, "B3 barracks cycles rifle then rocket, fewest owned first")
+	runner.check(tanks + scouts >= 1 and tanks >= scouts and tanks - scouts <= 1, "B3 factory cycles tank then scout car, fewest owned first")
+	return true
 
 func test_opponent_pays_and_retries(runner) -> bool:
 	var sim = Skirmish.create()

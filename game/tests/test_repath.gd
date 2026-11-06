@@ -10,7 +10,7 @@ func cases() -> Array[Callable]:
 
 func _single() -> Simulation:
 	var sim = Simulation.new()
-	sim.spawn(1, Vector2(1.5, 1.5))
+	sim._entities[sim.spawn(1, Vector2(1.5, 1.5))].combat = null
 	var helper = Groups.new()
 	sim.issue_command(helper.command(sim, [1], [6.5, 1.5]))
 	for i in range(3):

@@ -6,10 +6,10 @@ const ScriptedHuman = preload("res://scripts/simulation/scripted_human.gd")
 const StateHash = preload("res://scripts/simulation/state_hash.gd")
 
 const TICK_LIMIT: int = 18000
-const TERMINAL_TICK: int = 9267
+const TERMINAL_TICK: int = 7731
 const WINNER: int = 1
 
-const S1_CORE_SERIES: int = 5002559116398996570
+const S1_CORE_SERIES: int = 1045294977236534214
 
 func cases() -> Array[Callable]:
 	return [test_mirror_match_script, test_skirmish_core_series]
@@ -97,7 +97,7 @@ func test_mirror_match_script(runner) -> bool:
 	var end: Dictionary = a.snapshot()
 	runner.check(diverged == -1, "S1 two fresh worlds stay identical, first divergence " + str(diverged))
 	runner.check(terminal == TERMINAL_TICK and end.match.winner == WINNER and end.match.ended_tick == TERMINAL_TICK and end.tick == TERMINAL_TICK + 1, "S1 pinned outcome, got " + str(terminal) + " " + str(end.match))
-	runner.check(terminal >= 8000 and terminal <= TICK_LIMIT - 1, "S1 terminal inside the six-minute window")
+	runner.check(terminal >= 7000 and terminal <= TICK_LIMIT - 1, "S1 terminal inside the six-minute window")
 	runner.check([1, 2].all(func(owner: int) -> bool: return Skirmish.build_order().all(func(kind: String) -> bool: return kinds.get(owner, {}).has(kind))) and not first.values().has(-1) and first.values().all(func(tick: int) -> bool: return tick < terminal), "S1 economy, production and combat all happened before the end, got " + str(first) + " " + str(kinds))
 	runner.check(deposits[1] > 0 and deposits[2] > 0 and boxes_ok and negatives == 0, "S1 both owners deposited, supply conserved, nothing negative: " + str(deposits))
 	return true

@@ -20,9 +20,9 @@ func test_spawn(runner) -> bool:
 		equal(runner, sim.snapshot(), before, "C1 rejection unchanged")
 	equal(runner, sim.spawn(1, Vector2(0.5, 2.5)), 3, "C1 next ID")
 	equal(runner, sim.snapshot().entities, [
-		{"id": 1, "owner": 1, "position": [1.0, 2.0], "order": null, "status": "idle", "route": [], "destination": null,"kind":"usa_light_vehicle","hp":240000,"max_hp":240000,"combat":null,"speed":0.0,"move_after":0,"heading":[1.0,0.0],"construction_id":null,"collection":null},
-		{"id": 2, "owner": 2, "position": [0.0, 0.0], "order": null, "status": "idle", "route": [], "destination": null,"kind":"usa_light_vehicle","hp":240000,"max_hp":240000,"combat":null,"speed":0.0,"move_after":0,"heading":[1.0,0.0],"construction_id":null,"collection":null},
-		{"id": 3, "owner": 1, "position": [0.5, 2.5], "order": null, "status": "idle", "route": [], "destination": null,"kind":"usa_light_vehicle","hp":240000,"max_hp":240000,"combat":null,"speed":0.0,"move_after":0,"heading":[1.0,0.0],"construction_id":null,"collection":null},
+		{"id": 1, "owner": 1, "position": [1.0, 2.0], "order": null, "status": "idle", "route": [], "destination": null,"kind":"usa_light_vehicle","hp":240000,"max_hp":240000,"combat":{"mode":"guard","target_id":null,"goal":null,"next_fire_tick":0,"shots_left":0,"repath_tick":0,"retarget":false,"until":0},"speed":0.0,"move_after":0,"heading":[1.0,0.0],"construction_id":null,"collection":null},
+		{"id": 2, "owner": 2, "position": [0.0, 0.0], "order": null, "status": "idle", "route": [], "destination": null,"kind":"usa_light_vehicle","hp":240000,"max_hp":240000,"combat":{"mode":"guard","target_id":null,"goal":null,"next_fire_tick":0,"shots_left":0,"repath_tick":0,"retarget":false,"until":0},"speed":0.0,"move_after":0,"heading":[1.0,0.0],"construction_id":null,"collection":null},
+		{"id": 3, "owner": 1, "position": [0.5, 2.5], "order": null, "status": "idle", "route": [], "destination": null,"kind":"usa_light_vehicle","hp":240000,"max_hp":240000,"combat":{"mode":"guard","target_id":null,"goal":null,"next_fire_tick":0,"shots_left":0,"repath_tick":0,"retarget":false,"until":0},"speed":0.0,"move_after":0,"heading":[1.0,0.0],"construction_id":null,"collection":null},
 	], "C1 entities in ID order")
 	return true
 
@@ -210,7 +210,7 @@ func test_repeatability(runner) -> bool:
 	equal(runner, a.snapshot(), b.snapshot(), "C11 equal worlds")
 	equal(runner, a.snapshot(), {
 		"tick": 1000, "next_entity_id": 2,
-		"entities": [{"id": 1, "owner": 1, "position": [8.0, 9.0], "order": null, "status": "arrived", "route": [], "destination": [8.0, 9.0],"kind":"usa_light_vehicle","hp":240000,"max_hp":240000,"combat":null,"speed":0.0,"move_after":2,"heading":[-0.7071067690849304,-0.7071067690849304],"construction_id":null,"collection":null}],
+		"entities": [{"id": 1, "owner": 1, "position": [8.0, 9.0], "order": null, "status": "arrived", "route": [], "destination": [8.0, 9.0],"kind":"usa_light_vehicle","hp":240000,"max_hp":240000,"combat":{"mode":"guard","target_id":null,"goal":null,"next_fire_tick":0,"shots_left":0,"repath_tick":1007,"retarget":false,"until":0},"speed":0.0,"move_after":2,"heading":[-0.7071067690849304,-0.7071067690849304],"construction_id":null,"collection":null}],
 		"map": {"size": [16, 16], "blocked_cells": []}, "path_queue": [],
 		"pending_commands": [], "last_sequences": [{"player": 1, "sequence": 1}],
 		"players":[],"buildings":[],"sources":[],"terrain_cells":[],"next_production_id":1,"command_results":[],"combat_events":[],"match":null,"rng":625341585,

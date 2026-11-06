@@ -21,9 +21,12 @@ static func default_faction() -> String:
 static func build_order() -> Array:
 	return Registry.faction(Registry.Factions.DEFAULT_FACTION).build_order
 
-static func unit_for(producer: String) -> String:
+static func unit_for(producer: String, owned: Array = []) -> String:
 	var units: Array = Registry.faction(Registry.Factions.DEFAULT_FACTION).units_for.get(producer, [])
-	return units[0] if not units.is_empty() else ""
+	var pick: String = ""
+	for kind: String in units:
+		if pick.is_empty() or owned.count(kind) < owned.count(pick): pick = kind
+	return pick
 
 static func _target_categories() -> Array:
 	var producers: Array = Registry.buildings().filter(func(id: String) -> bool: return Registry.kind(id).produces.any(func(unit: String) -> bool: return Registry.collects(unit).is_empty()))
@@ -110,12 +113,15 @@ static func _build(ctx: Dictionary, state: Dictionary, buildings: Array) -> void
 static func _produce(ctx: Dictionary, state: Dictionary, buildings: Array) -> void:
 	var replace_builder: bool = not state.entities.any(func(unit: Dictionary) -> bool: return unit.owner == ctx.player and Registry.is_builder(unit.kind))
 	var start_unit: String = _start_unit(state, ctx.player)
+	var owned: Array = state.entities.filter(func(unit: Dictionary) -> bool: return unit.owner == ctx.player).map(func(unit: Dictionary) -> String: return unit.kind)
 	for building: Variant in buildings:
 		if not building.completed or not building.queue.is_empty(): continue
-		var kind: String = start_unit if replace_builder and Registry.kind(building.kind).produces.has(start_unit) else unit_for(building.kind)
+		var kind: String = start_unit if replace_builder and Registry.kind(building.kind).produces.has(start_unit) else unit_for(building.kind, owned)
 		if kind.is_empty(): continue
 		var cost: int = Definitions.unit(kind).cost
-		if ctx.credits >= cost and _send(ctx, {"type": "produce", "building_id": building.id, "unit_kind": kind}): ctx.credits -= cost
+		if ctx.credits >= cost and _send(ctx, {"type": "produce", "building_id": building.id, "unit_kind": kind}):
+			ctx.credits -= cost
+			owned.append(kind)
 		if kind == start_unit: replace_builder = false
 
 static func _start_unit(state: Dictionary, player: int) -> String:

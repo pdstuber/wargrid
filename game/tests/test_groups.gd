@@ -157,7 +157,7 @@ func _twenty(blocked: Array[Vector2i] = []) -> Simulation:
 	var sim = Simulation.new(blocked)
 	for y in range(1, 5):
 		for x in range(1, 6):
-			sim.spawn(1, Vector2(x + 0.5, y + 0.5))
+			sim._entities[sim.spawn(1, Vector2(x + 0.5, y + 0.5))].combat = null
 	sim.issue_command(command(sim, range(1, 21), [13.5, 13.5]))
 	return sim
 

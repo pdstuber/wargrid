@@ -10,9 +10,9 @@ const Economy = preload("res://tests/economy_fixture.gd")
 
 const PREFIX_TICKS: int = 20000
 const TRACE_INTERVAL: int = 200
-const FINAL_DIGEST: String = "0ef885e10e0de507"
+const FINAL_DIGEST: String = "4666c566ff0cf70d"
 const BUILD_CHECK_TICK: int = 3000
-const TEAM_CORE_SERIES: int = 5307413438668649372
+const TEAM_CORE_SERIES: int = 6345485798033620804
 
 func cases() -> Array[Callable]:
 	return [test_bot_never_targets_ally, test_dead_seat_bot_is_silent, test_team_match_prefix, test_team_core_series]

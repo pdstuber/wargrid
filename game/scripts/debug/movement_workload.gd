@@ -15,6 +15,7 @@ static func create(layout: String) -> Simulation:
 		for x in range(2, 22):
 			var id: int = sim.spawn(1, Vector2(x + 0.5, y + 0.5))
 			assert(id > 0)
+			sim._entities[id].combat = null
 	return sim
 
 static func issue_leg(sim: Simulation, leg: int) -> void:
