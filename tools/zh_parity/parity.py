@@ -216,9 +216,16 @@ def turn(template):
     return run
 
 
+def power_for(g, attacker, x, y):
+    # A POWERED defence is dark without a plant; the spawn is complete (no construction needed).
+    if attacker == "AmericaPatriotBattery":
+        g.spawn("AmericaPowerPlant", x + 20, y + 120)
+
+
 def fire(attacker, target, gap, frames, target_owner="enemy"):
     def run(g):
         x, y = g.clear_strip(gap + 120)
+        power_for(g, attacker, x, y)
         aid = g.spawn(attacker, x + 20, y)
         tid = g.spawn(target, x + 20 + gap, y, angle=math.pi, owner=getattr(g, target_owner))
         rows: list[tuple[Any, ...]] = []
@@ -236,6 +243,7 @@ def reach(attacker, target, gap):
 
     def run(g):
         x, y = g.clear_strip(int(gap) + 120)
+        power_for(g, attacker, x, y)
         aid = g.spawn(attacker, x + 20, y)
         # Enemy, not civilian: idle units ignore neutral objects. Keep the target unarmed.
         tid = g.spawn(target, x + 20 + gap, y, angle=math.pi, owner=g.enemy)
