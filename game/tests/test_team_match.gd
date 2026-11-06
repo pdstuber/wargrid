@@ -11,9 +11,10 @@ const PREFIX_TICKS: int = 20000
 const TRACE_INTERVAL: int = 200
 const FINAL_DIGEST: String = "234f0b14453bc6c6"
 const BUILD_CHECK_TICK: int = 3000
+const TEAM_CORE_SERIES: int = 1490497313643459296
 
 func cases() -> Array[Callable]:
-	return [test_bot_never_targets_ally, test_dead_seat_bot_is_silent, test_team_match_prefix]
+	return [test_bot_never_targets_ally, test_dead_seat_bot_is_silent, test_team_match_prefix, test_team_core_series]
 
 func _bot_world() -> RefCounted:
 	var sim = Fixture.world()
@@ -78,6 +79,16 @@ func test_team_match_prefix(runner) -> bool:
 	runner.check(tanks, "TB3 a tank was produced")
 	runner.check(StateHash.digest(state) == FINAL_DIGEST, "TB3 final digest %s at tick %d" % [StateHash.digest(state), PREFIX_TICKS])
 	_write_trace(runner, rows)
+	return true
+
+func test_team_core_series(runner) -> bool:
+	var sim = TeamMatch.create()
+	var series: int = 0
+	for tick in range(PREFIX_TICKS):
+		TeamMatch.step(sim)
+		series = (series * 31 + StateHash.core_check(sim.snapshot())) & 0x7fffffffffffffff
+		if tick % 600 == 599: await runner.process_frame
+	runner.check(series == TEAM_CORE_SERIES, "TB4 team core series pinned, got " + str(series))
 	return true
 
 func _write_trace(runner, rows: PackedStringArray) -> void:
