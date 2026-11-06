@@ -11,8 +11,10 @@ var _report_path: String = ""
 var _finished: bool = false
 var _credit: int = 0
 var _rejections_seen: int = 0
+var _faction: String = Skirmish.default_faction()
 
-func setup(transport: RefCounted, lockstep: RefCounted, seat: int) -> void:
+func setup(transport: RefCounted, lockstep: RefCounted, seat: int, faction: String = Skirmish.default_faction()) -> void:
+	_faction = faction
 	_transport = transport
 	_lockstep = lockstep
 	local_player = seat
@@ -20,13 +22,14 @@ func setup(transport: RefCounted, lockstep: RefCounted, seat: int) -> void:
 func _ready() -> void:
 	super._ready()
 	_lockstep.send = _transport.send_text
+	_lockstep.submit({"type": "choose_faction", "faction": _faction})
 	_lockstep.start(simulation.snapshot())
 
 func _exit_tree() -> void:
 	if _lockstep != null: _lockstep.send = Callable()
 
 func _create_simulation() -> Simulation:
-	return Skirmish.create(true, "human")
+	return Skirmish.create(true, "human", {})
 
 func _step_simulation() -> void:
 	for text: Variant in _transport.poll(): _lockstep.receive(text)

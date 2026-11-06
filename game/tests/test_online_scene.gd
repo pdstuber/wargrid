@@ -44,7 +44,8 @@ func _online(runner, seat: int) -> Dictionary:
 
 func _peer_packets(transport: FakeTransport, peer: int, from_tick: int, to_tick: int) -> void:
 	for tick in range(from_tick, to_tick + 1):
-		transport.frames.append(Wire.encode(Wire.tick_message(peer, tick, [], null)))
+		var commands: Array = [{"type": "choose_faction", "faction": "usa", "tick": 4, "player": peer, "sequence": 0}] if tick == 4 else []
+		transport.frames.append(Wire.encode(Wire.tick_message(peer, tick, commands, null)))
 
 func _run(main, frames: int) -> void:
 	for i in frames: main._physics_process(0.0)
@@ -57,7 +58,7 @@ func _entity(main, id: int) -> Dictionary:
 func _own_commands(transport: FakeTransport) -> Array:
 	var commands: Array = []
 	for text in transport.sent:
-		commands.append_array(Wire.decode(text).message.get("commands", []))
+		commands.append_array(Wire.decode(text).message.get("commands", []).filter(func(command: Dictionary) -> bool: return command.type != "choose_faction"))
 	return commands
 
 func _layout_ok(runner, main, label: String) -> void:
@@ -70,24 +71,25 @@ func test_seat_two_controls_player_two(runner) -> bool:
 	var online: Dictionary = await _online(runner, 2)
 	var main = online.main
 	var view = main.get_node("WorldView")
-	var mine: Dictionary = _entity(main, 3)
-	var theirs: Dictionary = _entity(main, 1)
-	runner.check(mine.owner == 2 and theirs.owner == 1, "N1 fixture: entity 3 is player 2's builder")
+	_peer_packets(online.transport, 1, 4, PEER_TICKS)
+	_run(main, 8)
+	var mine: Dictionary = _entity(main, 5)
+	var theirs: Dictionary = _entity(main, 3)
+	runner.check(mine.owner == 2 and theirs.owner == 1, "N1 fixture: entity 5 is player 2's builder")
 	var mine_plane: Vector2 = Iso.world_to_plane(Vector2(mine.position[0], mine.position[1])) + Vector2(0, -8)
 	var theirs_plane: Vector2 = Iso.world_to_plane(Vector2(theirs.position[0], theirs.position[1])) + Vector2(0, -8)
-	runner.check(view.pick_entity(mine_plane) == 3, "N1 seat 2 picks its own unit")
+	runner.check(view.pick_entity(mine_plane) == 5, "N1 seat 2 picks its own unit")
 	runner.check(view.pick_entity(theirs_plane) == -1, "N1 seat 2 cannot select player 1's unit")
-	main.selected_ids.assign([3])
+	main.selected_ids.assign([5])
 	main._move(Vector2(40.5, 10.5))
-	_peer_packets(online.transport, 1, 4, PEER_TICKS)
 	_run(main, 20)
 	var commands: Array = _own_commands(online.transport)
 	runner.check(commands.size() == 1 and commands[0].type == "move" and commands[0].player == 2, "N1 move leaves as a player 2 command, got " + str(commands))
-	runner.check(_entity(main, 3).order != null, "N1 the move order reached player 2's builder through lockstep")
+	runner.check(_entity(main, 5).order != null, "N1 the move order reached player 2's builder through lockstep")
 	runner.check(main.simulation.tick() > 4 and online.lockstep.status() == "running", "N1 ticks advance with peer packets")
 	main.free()
 	var seat1: Dictionary = await _online(runner, 1)
-	seat1.main.selected_ids.assign([1])
+	seat1.main.selected_ids.assign([3])
 	seat1.main._move(Vector2(10.5, 14.5))
 	_peer_packets(seat1.transport, 2, 4, 12)
 	_run(seat1.main, 6)
@@ -131,8 +133,11 @@ func test_status_lines_and_layout(runner) -> bool:
 func test_match_end_reports_latency(runner) -> bool:
 	var online: Dictionary = await _online(runner, 2)
 	var main = online.main
-	main.simulation.remove_object(2)
+	_peer_packets(online.transport, 1, 4, PEER_TICKS)
+	_run(main, 8)
+	runner.check(main.simulation.snapshot().match.status == "ongoing", "N4 fixture: the match started")
 	main.simulation.remove_object(4)
+	main.simulation.remove_object(6)
 	_run(main, 2)
 	runner.check(online.transport.close_calls == 1, "N4 transport closed once at match end")
 	runner.check(main.latency_line().contains("RTT n=1 p95=40.0 ms"), "N4 latency line carries RTT p95, got " + main.latency_line())

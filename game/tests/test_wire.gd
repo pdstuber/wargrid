@@ -3,7 +3,7 @@ extends RefCounted
 
 const Wire = preload("res://scripts/net/wire.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
-const COMMAND_TYPES: Array[String] = ["move", "stop", "build", "resume_build", "cancel_build", "produce", "cancel_production", "set_rally", "gather", "attack", "attack_move"]
+const COMMAND_TYPES: Array[String] = ["move", "stop", "build", "resume_build", "cancel_build", "produce", "cancel_production", "set_rally", "gather", "attack", "attack_move", "choose_faction"]
 
 func cases() -> Array[Callable]:
 	return [test_round_trip_every_command, test_decode_rejects, test_vectors, test_command_list_matches_simulation]
@@ -16,6 +16,7 @@ func _command(type: String, sim: RefCounted) -> Dictionary:
 			"target": command[key] = [14.1, 0.30000000000000004]
 			"origin": command[key] = [5, 6]
 			"building_kind", "unit_kind": command[key] = "usa_factory"
+			"faction": command[key] = "usa"
 			_: command[key] = 9
 	return command
 

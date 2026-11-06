@@ -11,7 +11,7 @@ const EconomyFixture = preload("res://tests/economy_fixture.gd")
 const LockstepTests = preload("res://tests/test_lockstep.gd")
 
 func cases() -> Array[Callable]:
-	return [test_foundation_keeps_seat_alive, test_cancel_last_foundation_defeats, test_choose_faction_online_same_hash, test_match_waits_for_all_factions, test_capability_rules, test_start_has_command_center_and_builder, test_survival_counts_buildings_only, test_bot_trains_builder_without_one, test_bot_without_command_center]
+	return [test_foundation_keeps_seat_alive, test_cancel_last_foundation_defeats, test_choose_faction_online_same_hash, test_match_waits_for_all_factions, test_choose_faction_same_tick_cases, test_capability_rules, test_start_has_command_center_and_builder, test_survival_counts_buildings_only, test_bot_trains_builder_without_one, test_bot_without_command_center]
 
 func test_capability_rules(runner) -> bool:
 	Registry.add_test_kind("x_maker", {"class": "vehicle", "cost": 1, "ticks": 1, "speed": 1.0, "locomotor": "wheels", "max_hp": 1000, "armor": "builder_vehicle", "weapon": "", "builds": ["usa_barracks"]})
@@ -90,14 +90,53 @@ func test_match_waits_for_all_factions(runner) -> bool:
 	var net = _online_pair(runner)
 	net.clients[0].ls.submit({"type": "choose_faction", "faction": "usa"})
 	for i in 2: net.clients[1].ls.submit({"type": "stop", "entity_ids": [1]})
-	net.clients[1].ls.submit({"type": "choose_faction", "faction": "usa"})
 	var seen: Dictionary = {}
 	net.clients[0].hook = func(c, tick: int) -> void: seen[tick] = c.sim.snapshot().match.status
+	net.clients[1].hook = func(c, tick: int) -> void:
+		if tick == 0: c.ls.submit({"type": "choose_faction", "faction": "usa"})
 	for c in net.clients: c.target = 20
 	net.connect_all()
 	net.run()
 	runner.check(seen.get(4) == "setup" and seen.get(5) == "setup", "F4 status stays setup through tick 5")
 	runner.check(seen.get(6) == "ongoing", "F4 status is ongoing from tick 6")
+	runner.check(net.clients[1].ls.rejections().any(func(r: Dictionary) -> bool: return r.error == "Choose a faction first"), "F4 seat 2's stops before its choice are rejected")
+	return true
+
+const _SAME_TICK: Dictionary = {
+	"move": {"entity_ids": [1], "target": [10.5, 10.5]}, "stop": {"entity_ids": [1]},
+	"build": {"builder_id": 1, "building_kind": "usa_barracks", "origin": [8, 8]},
+	"resume_build": {"builder_id": 1, "building_id": 2}, "cancel_build": {"building_id": 2},
+	"produce": {"building_id": 2, "unit_kind": "usa_builder"}, "cancel_production": {"building_id": 2, "production_id": 1},
+	"set_rally": {"building_id": 2, "target": [10.5, 10.5]}, "gather": {"entity_ids": [1], "source_id": 5},
+	"attack": {"entity_ids": [1], "target_id": 4}, "attack_move": {"entity_ids": [1], "target": [10.5, 10.5]},
+}
+
+func _setup_sim() -> RefCounted:
+	var create: Callable = Skirmish.create
+	return create.callv([true, "human", {}])
+
+func test_choose_faction_same_tick_cases(runner) -> bool:
+	for type: String in _SAME_TICK:
+		var sim = _setup_sim()
+		var chosen: Dictionary = EconomyFixture.send(sim, {"type": "choose_faction", "faction": "usa"})
+		var early: Dictionary = EconomyFixture.send(sim, _SAME_TICK[type].merged({"type": type}))
+		runner.check(chosen.ok and not early.ok and early.error == "Choose a faction first", "T1 %s in the tick of its choose_faction is rejected before setup: %s" % [type, early.error])
+		EconomyFixture.send(sim, {"type": "choose_faction", "faction": "usa", "player": 2})
+		EconomyFixture.steps(sim, 1)
+		var later: Dictionary = EconomyFixture.send(sim, _SAME_TICK[type].merged({"type": type}))
+		runner.check(later.error != "Choose a faction first", "T1 %s the next tick follows its normal rules: %s" % [type, later.error])
+	var sim = _setup_sim()
+	EconomyFixture.send(sim, {"type": "choose_faction", "faction": "usa"})
+	var twice: Dictionary = EconomyFixture.send(sim, {"type": "choose_faction", "faction": "usa"})
+	EconomyFixture.steps(sim, 1)
+	var outcomes: Array = sim.snapshot().command_results
+	runner.check(twice.ok and outcomes.size() == 2 and outcomes[0].ok and outcomes[1].error == "Faction already chosen", "T2 a second choose_faction in the same tick is rejected")
+	var unknown: Dictionary = EconomyFixture.send(_setup_sim(), {"type": "choose_faction", "faction": "narnia"})
+	runner.check(not unknown.ok and unknown.error == "Unknown faction", "T2 an unknown faction is rejected")
+	EconomyFixture.send(sim, {"type": "choose_faction", "faction": "usa", "player": 2})
+	EconomyFixture.steps(sim, 1)
+	var started: Dictionary = EconomyFixture.send(sim, {"type": "choose_faction", "faction": "usa"})
+	runner.check(sim.snapshot().match.status == "ongoing" and not started.ok and started.error == "Faction already chosen", "T2 choose_faction after the match started is rejected")
 	return true
 
 func test_start_has_command_center_and_builder(runner) -> bool:

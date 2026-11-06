@@ -88,16 +88,22 @@ func occupied_cells() -> Dictionary:
 	return cells
 
 func start_match(players: Array[int]) -> Dictionary:
+	return _begin_match(players, "ongoing")
+
+func begin_setup(players: Array[int]) -> Dictionary:
+	return _begin_match(players, "setup")
+
+func _begin_match(players: Array[int], status: String) -> Dictionary:
 	var ids: Array[int] = players.duplicate()
 	ids.sort()
 	if _match != null or ids.size() < 2 or ids.size() > 8 or ids[0] <= 0: return {"ok":false,"error":"Invalid match players"}
 	var teams: Dictionary = {}
 	for i in ids.size():
 		if i > 0 and ids[i] == ids[i - 1]: return {"ok":false,"error":"Invalid match players"}
-		if not _players.has(ids[i]) or not _survives(ids[i]): return {"ok":false,"error":"Player cannot start a match"}
+		if not _players.has(ids[i]) or (status == "ongoing" and not _survives(ids[i])): return {"ok":false,"error":"Player cannot start a match"}
 		teams[team_of(ids[i])] = true
 	if teams.size() < 2: return {"ok":false,"error":"Invalid match players"}
-	_match = {"players":ids,"status":"ongoing","winner":null,"ended_tick":null}
+	_match = {"players":ids,"status":status,"winner":null,"ended_tick":null}
 	return {"ok":true,"error":""}
 
 func setup_seat(player: int, faction: String) -> void:
@@ -133,7 +139,7 @@ func _evaluate_match() -> void:
 	_match.ended_tick = _tick
 
 func match_over() -> bool:
-	return _match != null and _match.status != "ongoing"
+	return _match != null and _match.status in ["won","draw"]
 
 func issue_command(command: Dictionary) -> Dictionary:
 	if match_over(): return {"ok":false,"error":"Match ended"}
@@ -159,6 +165,7 @@ func _payload_fields(type: String) -> Array:
 		"produce": return ["building_id","unit_kind"]
 		"cancel_production": return ["building_id","production_id"]
 		"set_rally": return ["building_id","target"]
+		"choose_faction": return ["faction"]
 		"gather": return ["entity_ids","source_id"]
 		"attack": return ["entity_ids","target_id"]
 		"attack_move": return ["entity_ids","target"]
@@ -173,6 +180,8 @@ func _validate(command: Dictionary, due: bool = false) -> String:
 		return "Invalid tick, player or sequence"
 	if not due and command.sequence <= _last_sequences.get(command.player,-1): return "Sequence must increase"
 	if typeof(command.type) != TYPE_STRING or _payload_fields(command.type).is_empty(): return "Unsupported command type"
+	var setup_error: String = _setup_error(command)
+	if not setup_error.is_empty(): return setup_error
 	var fields: Array = _payload_fields(command.type)
 	for key: Variant in fields:
 		if not command.has(key): return "Missing field: " + key
@@ -196,7 +205,7 @@ func _validate(command: Dictionary, due: bool = false) -> String:
 		live = found
 		if live.is_empty(): return "No units left" if due else "Missing entity or wrong owner"
 	if command.type == "move": return _validate_target(command,due)
-	if command.type == "stop": return ""
+	if command.type in ["stop","choose_faction"]: return ""
 	if command.type in ["attack","attack_move"]:
 		if command.type == "attack_move": return _validate_target(command,due)
 		if _armed(live).is_empty(): return "Attack requires armed units"
@@ -236,6 +245,17 @@ func _validate(command: Dictionary, due: bool = false) -> String:
 			if _sources[command.source_id].boxes == 0 and _entities[id].collection.cargo == 0: return "Source is empty"
 		return ""
 	return "Economic command unavailable"
+
+func _start_when_chosen() -> void:
+	if _match != null and _match.status == "setup" and _match.players.all(func(player: int) -> bool: return _players[player].has("faction")):
+		_match.status = "ongoing"
+
+func _setup_error(command: Dictionary) -> String:
+	var chosen: bool = _players.get(command.player, {}).has("faction")
+	if command.type != "choose_faction":
+		return "Choose a faction first" if _match != null and _match.status == "setup" and _players.has(command.player) and not chosen else ""
+	if not command.has("faction") or typeof(command.faction) != TYPE_STRING or Registry.faction(command.faction).is_empty(): return "Unknown faction"
+	return "Faction already chosen" if chosen or _match == null or _match.status != "setup" else ""
 
 func _validate_target(command: Dictionary, due: bool) -> String:
 	if not command.target is Array or command.target.size() != 2: return "Expected two target coordinates"
@@ -308,6 +328,7 @@ func _apply_orders() -> void:
 				"produce": Production.enqueue(self,command.building_id,command.unit_kind)
 				"cancel_production": Production.cancel(self,command.building_id,command.production_id)
 				"set_rally": _buildings[command.building_id].rally = command.target.duplicate()
+				"choose_faction": setup_seat(command.player,command.faction)
 		if command.type != "move":
 			_command_results.append({"tick":_tick,"player":command.player,"sequence":command.sequence,"ok":error.is_empty(),"error":error})
 		if not error.is_empty(): continue
@@ -320,6 +341,7 @@ func _apply_orders() -> void:
 		due.append(command)
 		for id: Variant in command.entity_ids: final[id] = command
 	_pending = future
+	_start_when_chosen()
 	for id: Variant in final.keys():
 		var intent: Dictionary = final[id]
 		if intent.type in ["build","resume_build"] and not _buildings.has(intent.building_id): final.erase(id)
@@ -490,7 +512,7 @@ func step() -> void:
 	Combat.fire(self,armed,moved)
 	Profiler.end(&"step.combat_fire", zone)
 	zone = Profiler.begin()
-	if _match != null: _evaluate_match()
+	if _match != null and _match.status == "ongoing": _evaluate_match()
 	Profiler.end(&"step.evaluate_match", zone)
 	_tick += 1
 	Profiler.end(&"step", total)

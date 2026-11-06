@@ -96,9 +96,10 @@ func _welcome(message: Dictionary) -> void:
 func _start(message: Dictionary) -> void:
 	var seats: Array[int] = []
 	seats.assign(message.seats)
-	_sim = Skirmish.create(true, "human")
+	_sim = Skirmish.create(true, "human", {})
 	_lockstep = Lockstep.new(_seat, seats, message.delay)
 	_lockstep.send = _transport.send_text
+	_lockstep.submit({"type": "choose_faction", "faction": _args.get("faction", Skirmish.default_faction())})
 	_lockstep.start(_sim.snapshot())
 
 func _run_steps(limit: int) -> void:
@@ -201,7 +202,7 @@ func _replay_oracle() -> void:
 			return
 		by_tick[decoded.message.tick] = decoded.message.commands
 	var every: int = _int_arg("hash-every") if _args.has("hash-every") else 30
-	var sim: Simulation = Skirmish.create(true, "human")
+	var sim: Simulation = Skirmish.create(true, "human", {})
 	_sim = sim
 	var rows := PackedStringArray(["0\t" + StateHash.digest(sim.snapshot())])
 	while not sim.match_over() and sim.tick() < ORACLE_MAX_TICKS:

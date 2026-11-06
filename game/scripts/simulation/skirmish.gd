@@ -15,6 +15,9 @@ const MAP_PATH := "res://data/maps/skirmish.json"
 
 static var _skirmish_map: Dictionary = {}
 
+static func default_faction() -> String:
+	return Registry.Factions.DEFAULT_FACTION
+
 static func build_order() -> Array:
 	return Registry.faction(Registry.Factions.DEFAULT_FACTION).build_order
 
@@ -45,8 +48,11 @@ static func create(with_match: bool = true, second_controller: String = "ai", fa
 		{"seat": 2, "team": 2, "controller": second_controller, "credits": START_CREDITS}]
 	for seat in seats:
 		if factions.has(seat.seat): seat.faction = factions[seat.seat]
+		seat.defer = factions.is_empty()
 	var sim: Simulation = MapData.create(_default_map(), seats)
-	if with_match: sim.start_match([1, 2] as Array[int])
+	if not with_match: return sim
+	if factions.is_empty(): sim.begin_setup([1, 2] as Array[int])
+	else: sim.start_match([1, 2] as Array[int])
 	return sim
 
 static func issue_opponent(sim: RefCounted, player: int = 2, attack_tick: int = ATTACK_TICK) -> void:

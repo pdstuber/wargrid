@@ -5,15 +5,15 @@ Plan: [M7 plan](../superpowers/plans/2026-11-06-m7-factions.md). Design: [M7 des
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-06, Task 5 done, uncommitted)
-Branch / base commit / working-tree state: m7-factions at 413cc91 (Task 4 commit below it); Task 5 changes uncommitted
-Last green task / next incomplete task: Task 5 (Command Center, seat faction, Zero Hour survival, bot builder) / Task 6 (choose_faction and the setup phase)
-Changed paths since last commit: game/scripts/simulation/{simulation,skirmish,map_data}.gd, definitions/{usa,factions,shared}.gd, game/scripts/debug/team_match.gd, game/data/maps/{ashfall,skirmish}.json, tools/zh_map/{convert.py,test_zh_map.py}, tools/run_netplay.sh, game/tests/{economy_fixture,test_factions,test_skirmish,test_skirmish_scene,test_skirmish_match,test_online_scene,test_map,test_production,test_replay,test_teams,test_team_match,test_combat}.gd, this file
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 290 cases / 112,777 checks / 3 failures (F3, F4 x2, all Task 6), exit 1, no TESTS PASSED marker; replay trace equals pre-change, economy/combat/team traces differ (CC ids and buildings); lint, warnings, unittest discover (39), zh_map tests (11) pass; run_team_match won tick 37074 winner 1; run_netplay match terminal tick 9373
-Known red case or blocker: test_factions.gd F3, F4 until Task 6
+Resume record (updated 2026-11-06, Task 6 done, uncommitted)
+Branch / base commit / working-tree state: m7-factions at 2708377 (Task 5 commit); Task 6 changes uncommitted
+Last green task / next incomplete task: Task 6 (choose_faction and the setup phase) / Task 7 (launcher faction selectors and build menu)
+Changed paths since last commit: game/scripts/simulation/{simulation,skirmish,map_data}.gd, game/scripts/{online_main}.gd, game/scripts/net/headless_client.gd, tools/run_netplay.sh, game/tests/{test_factions,test_wire,test_online_scene}.gd, this file
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 291 cases / 112,810 checks / 0 failures, exit 0, TESTS PASSED 112810; lint, warnings (80 files), unittest discover (39), run_conformance (33) pass; run_netplay.sh all nine scenarios pass (match terminal tick 9166)
+Known red case or blocker: none
 Approved decisions, pre-authorizations used, deferred gates: local commit per green task (milestone prompt); D1 legacy projections (user, 2026-11-06); wider match windows (user, 2026-11-06)
 Usage so far: not recorded
-Next exact action: commit Task 5, then Task 6. Benchmarks (BM6 rendered/stress) not rerun in Task 5.
+Next exact action: commit Task 6, then Task 7. Benchmarks (BM6 rendered/stress) not rerun in Tasks 5-6.
 ```
 
 ## Pins at base
@@ -36,6 +36,7 @@ Next exact action: commit Task 5, then Task 6. Benchmarks (BM6 rendered/stress) 
 | test_team_match | TB3 `FINAL_DIGEST` | 6a389cd2453bc6c6 → 0ef885e10e0de507 | Task 5 |
 | test_team_match | TB3 completed buildings per seat | 4 → 5 | Task 5 (command center) |
 | run_netplay.sh | `match` terminal tick | 8242 → 9373 | Task 5 |
+| run_netplay.sh | `match` terminal tick | 9373 → 9166 | Task 6 (online ids shift: sources take ids 1-2, units follow at tick 4; inside window) |
 | debug/team_match.gd | `TEAM_TICK_CAP` | 27000 → 45000 | Task 5 (user window); match ends won, winner 1, tick 37074 |
 
 ## Departures and deferrals
@@ -52,6 +53,9 @@ Next exact action: commit Task 5, then Task 6. Benchmarks (BM6 rendered/stress) 
 - Task 5: ids become builder 1, command center 2, builder 3, command center 4, sources 5-6 (`setup_seat` runs per seat in order). `usa_power_plant.counts_for_victory` now true (Zero Hour rule). `structure_tough` armor added to `shared.gd` with the `structure` percentages (the plan's explosion column is not modelled yet). `setup_seat` writes int origins and a default rally (the command center produces). Seats without a `faction` in `MapData.create` still get the legacy builder-only start. The bot queues its faction's `start_unit` at the first idle completed building that produces it when it owns no builder.
 - Task 5 test changes (setup or semantics, not tolerance): builder-only survival setups now use `EconomyFixture.add_completed` (test_teams TM3/TM8/TM9/TM10, test_team_match TB1/TB2, test_combat S7 `_last_builder_world`, test_factions F1 steps one tick so the placed foundation exists); ids and removals shifted to the command centers/builder 3 in test_skirmish (K1, O1, A3 now includes the command center as producer target, M0 rewritten: a foundation now keeps a seat alive), test_skirmish_scene (K2, K4), test_online_scene (N1, N4), test_map (MP3), test_replay (R4 removes seat 2's command center at tick 1000 to end the match), test_production (R5). S7 intent changed: unit deaths never end a match while the team owns buildings; the team-out case removes the barracks.
 - Task 5 cadence: new tests B1, B2, C2, S2 passed on first run (written with the implementation, not observed red).
+
+- Task 6: online `Skirmish.create(true, "human", {})` defers seat setup (`MapData.create` seat key `defer`), so supply sources take entity ids 1-2 and the seats follow (builder 3, command center 4, builder 5, command center 6). `launcher.gd` unchanged: `online_main.setup` takes an optional `faction` (default from `Skirmish.default_faction()`), the launcher selector is Task 7. The headless client reads `--faction`. `match_over()` is now won or draw; `step()` evaluates only while `ongoing`.
+- Task 6 test changes: test_factions F4 rewritten (the plan's "third slot" is the same lockstep tick as the first two, so setup would end at tick 4; seat 2 now chooses at tick 5, its earlier stops are checked as rejected); test_wire COMMAND_TYPES gains `choose_faction` (test_lockstep L4 keeps its 11-type 121-pair matrix, not extended); test_online_scene feeds the peer's `choose_faction`, entity ids shifted (N1, N4), `_own_commands` ignores `choose_faction`. Red seen first for F3, F4, W0 and T1/T2 (new `test_choose_faction_same_tick_cases`); W1 and the N-tests broke on first implementation and were fixed (missing validator branch, test setup).
 
 ## Base rows (tree: m7-factions, M7 Task 0 working tree, Apple M6, idle-ish)
 
