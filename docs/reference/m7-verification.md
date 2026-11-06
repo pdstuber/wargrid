@@ -5,15 +5,15 @@ Plan: [M7 plan](../superpowers/plans/2026-11-06-m7-factions.md). Design: [M7 des
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-07, G2.4 done, uncommitted)
-Branch / base commit / working-tree state: m7-factions, HEAD 4cf82ee (G2.3 committed); G2.4 uncommitted
-Last green task / next incomplete task: G2.4 done (ramp, tower weapon, ramp benchmark) / commit it ("Add the rotary gun ramp-up"), then G2.5
-Changed paths since last commit: shared.gd, china.gd, combat_definitions.gd, combat.gd, combat_workload.gd, benchmarks/run_combat.gd, tools/run_benchmark.sh; tests test_ramp (new, registered), run_tests.gd; m7-verification.md
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 372 cases / 134,472 / 0, exit 0, TESTS PASSED 134472 (baseline HEAD 4cf82ee: 366 / 134,467 with traces on); four traces cmp-identical to HEAD; lint, warnings (88 tracked files; test_ramp.gd untracked, checked with --check-only), test_faction_guard.py OK; run_benchmark.sh exit 0, COMBAT BENCHMARK PASSED 9; netplay not rerun (no USA simulation change)
-Known red case or blocker: none (combat stress rows exceed the 1.82 / 3.64 budget: reported, not loosened)
-Approved decisions, pre-authorizations used, deferred gates: as before (pushes approved 2026-11-06 for m7-factions only; gate 1 signed off). Departures in the G2.4 record
+Resume record (updated 2026-11-07, G2.5 done, uncommitted)
+Branch / base commit / working-tree state: m7-factions, HEAD 6651285 (G2.4 committed); G2.5 uncommitted
+Last green task / next incomplete task: G2.5 done (defence_attack command, right-click order) / commit it ("Let players order a defence to attack"), then G2.6 (checkpoint restart after G2.5)
+Changed paths since last commit: simulation.gd, combat.gd, skirmish_main.gd; tests test_defences, test_skirmish_scene, test_wire, test_lockstep; m7-verification.md
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 377 cases / 134,563 / 0, exit 0, TESTS PASSED 134563 (baseline HEAD 6651285: 372 / 134,472); with trace env vars 134,570 vs HEAD 134,479, four traces cmp-identical to a clean HEAD worktree; all 9 run_netplay.sh scenarios PASSED (match, kill, stall, silent, spike, perturb, version, relay-down, relay-term); run_conformance.sh PASSED 33; run_lint.sh, run_warnings.sh (89 files), test_faction_guard.py OK; relay/ and protocol/ untouched
+Known red case or blocker: none
+Approved decisions, pre-authorizations used, deferred gates: as before. Departures in the G2.5 record
 Usage so far: not recorded
-Next exact action: commit G2.4, then G2.5 (manual attack for armed buildings)
+Next exact action: commit G2.5, then G2.6 (double-click selects the same kind)
 ```
 
 ## Pins at base
@@ -431,3 +431,12 @@ Departures and decisions (G2.4):
 - Ramp window check counts shots by objects that were at level 2 after the previous tick (shots at level 2), via an id set rebuilt each tick for the `ramp` layout only.
 - `ramp` layout: tanks 5x4 attack-move, towers in a column at x=10, 2 plants (supply 20, demand 18).
 - R5 uses supply 0 (plants removed) as the dark spell and `remove_object` on the plants.
+
+## G2.5 record (2026-11-07)
+
+- Red first: all new tests failed before the code (unsupported command type, no right-click order). Not seen red individually: the DA4 edge checks after the first one (removed target, removed defence, killed by fire, dark defence); the red run hit script errors (`_last_result` on an empty results array) and aborted that case, so only its first check was seen failing. They are green with the implementation.
+- Mutation check on the same-tick cases: apply the order only when the building has no target; DA3 `defence_attack after` and `before` failed (2 failures), restored afterwards.
+- Departure: `test_lockstep.gd` `COMMAND_TYPES` gains `defence_attack` as a 12th entry, but the L4 matrix keeps its `/ 11` and `% 11`, so the entry is not exercised there (the plan says the matrix stays 11, as for `choose_faction`, `enter` and `unload`, which are absent from that list). Online coverage of the command is the wire round trip (W0, W1) plus the sim tests.
+- Departure: the scene order is a method `_order_defence` in `skirmish_main.gd` that runs before the unit right-click branch; with a selected own armed completed building it submits `defence_attack`, an unreachable pick shows the simulation's "Target out of range". A right-click on ground with a selected defence still does nothing (set_rally does not apply to it).
+- Persistence after the target leaves reach is the existing keep-valid-target rule then the 8-tick scan; Zero Hour's behaviour was not verified (as the plan states).
+- Netplay `match` still ends at tick 8331 (scenario passed); no pin moved.

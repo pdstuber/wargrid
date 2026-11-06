@@ -7,7 +7,7 @@ const Wire = preload("res://scripts/net/wire.gd")
 const StateHash = preload("res://scripts/simulation/state_hash.gd")
 const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 const ScriptedHuman = preload("res://scripts/simulation/scripted_human.gd")
-const COMMAND_TYPES: Array[String] = ["move", "stop", "build", "resume_build", "cancel_build", "produce", "cancel_production", "set_rally", "gather", "attack", "attack_move"]
+const COMMAND_TYPES: Array[String] = ["move", "stop", "build", "resume_build", "cancel_build", "produce", "cancel_production", "set_rally", "gather", "attack", "attack_move", "defence_attack"]
 
 class Client extends RefCounted:
 	var seat: int

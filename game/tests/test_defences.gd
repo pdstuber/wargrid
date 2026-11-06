@@ -8,7 +8,7 @@ const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.g
 const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 
 func cases() -> Array[Callable]:
-	return [test_defence_fires_edge_range, test_defence_clip_and_reload, test_defence_picks_nearest_hostile, test_powered_defence_dark_when_low_power, test_bot_does_not_build_defence, test_defence_shots_trigger_retaliation, test_defence_keeps_current_target, test_defence_splash, test_defence_ignores_air_and_contained, test_defence_deaths_after_all_shots, test_idle_defence_scans_on_interval, test_defence_keeps_target_without_scanning, test_defence_scan_deterministic]
+	return [test_defence_fires_edge_range, test_defence_clip_and_reload, test_defence_picks_nearest_hostile, test_powered_defence_dark_when_low_power, test_bot_does_not_build_defence, test_defence_shots_trigger_retaliation, test_defence_keeps_current_target, test_defence_splash, test_defence_ignores_air_and_contained, test_defence_deaths_after_all_shots, test_idle_defence_scans_on_interval, test_defence_keeps_target_without_scanning, test_defence_scan_deterministic, test_defence_attack_overrides_nearest, test_defence_attack_rejections, test_defence_attack_same_tick_cases, test_defence_attack_edge_cases]
 
 func _world() -> RefCounted:
 	var sim = Fixture.world()
@@ -192,4 +192,141 @@ func test_defence_scan_deterministic(runner) -> bool:
 			for shot in _shots(sim, defence): ticks.append(shot.tick)
 		runs.append(ticks)
 	runner.check(runs[0] == runs[1] and not runs[0].is_empty(), "DF13 identical runs give identical shot ticks")
+	return true
+
+func _order(sim, defence: int, target: int, extra: Dictionary = {}) -> Dictionary:
+	var payload := {"type": "defence_attack", "building_id": defence, "target_id": target}
+	payload.merge(extra)
+	return Fixture.send(sim, payload)
+
+func _last_result(sim) -> Dictionary:
+	return sim.snapshot().command_results.back()
+
+func test_defence_attack_overrides_nearest(runner) -> bool:
+	var sim = _world()
+	var defence: int = EconomyFixture.add_completed(sim, 1, "usa_defence", Vector2i(10, 10))
+	var near: int = sim.spawn(2, Vector2(14.5, 10.5), "usa_tank")
+	var far: int = sim.spawn(2, Vector2(16.5, 10.5), "usa_tank")
+	runner.check(_order(sim, defence, far).ok, "DA1 order accepted")
+	sim.step()
+	var shots: Array = _shots(sim, defence)
+	runner.check(shots.size() == 1 and shots[0].target_id == far, "DA1 the first shot hits the named farther target, not " + str(near))
+	for i in range(8): sim.step()
+	shots = _shots(sim, defence)
+	runner.check(shots.size() == 1 and shots[0].target_id == far, "DA1 the next shots keep the named target")
+	return true
+
+func test_defence_attack_rejections(runner) -> bool:
+	var sim = _world()
+	var defence: int = EconomyFixture.add_completed(sim, 1, "usa_defence", Vector2i(10, 10))
+	var foreign: int = EconomyFixture.add_completed(sim, 2, "usa_defence", Vector2i(20, 20))
+	var plant: int = EconomyFixture.add_completed(sim, 1, "usa_power_plant", Vector2i(1, 5))
+	var tank: int = sim.spawn(1, Vector2(12.5, 12.5), "usa_tank")
+	var near: int = sim.spawn(2, Vector2(14.5, 10.5), "usa_tank")
+	var far: int = sim.spawn(2, Vector2(30.5, 30.5), "usa_tank")
+	for case in [[foreign, near, "Invalid owned defence"], [plant, near, "Invalid owned defence"], [tank, near, "Invalid owned defence"], [9999, near, "Invalid owned defence"], [defence, tank, "Invalid attack target"], [defence, 9999, "Invalid attack target"], [defence, far, "Target out of range"]]:
+		var result: Dictionary = _order(sim, case[0], case[1])
+		runner.check(not result.ok and result.error == case[2], "DA2 %s: got %s" % [case[2], result.error])
+	var unfinished: int = EconomyFixture.add_completed(sim, 1, "usa_defence", Vector2i(5, 20))
+	sim._buildings[unfinished].completed = false
+	runner.check(_order(sim, unfinished, near).error == "Invalid owned defence", "DA2 an unfinished defence is rejected")
+	runner.check(_order(sim, defence, near).ok, "DA2 a USA battery accepts a target in reach")
+	var china = _world()
+	var tower: int = EconomyFixture.add_completed(china, 1, "china_defence", Vector2i(10, 10))
+	var enemy: int = china.spawn(2, Vector2(14.5, 10.5), "usa_tank")
+	runner.check(_order(china, tower, enemy).ok, "DA2 a China tower accepts a target in reach")
+	return true
+
+func _same_tick_world() -> Dictionary:
+	var sim = _world()
+	var ids := {"sim": sim}
+	ids.defence = EconomyFixture.add_completed(sim, 1, "usa_defence", Vector2i(10, 10))
+	ids.near = sim.spawn(2, Vector2(14.5, 10.5), "usa_tank")
+	ids.far = sim.spawn(2, Vector2(16.5, 10.5), "usa_tank")
+	ids.tank = sim.spawn(1, Vector2(12.5, 14.5), "usa_tank")
+	ids.builder = sim.spawn(1, Vector2(4.5, 4.5), "usa_builder")
+	ids.barracks = EconomyFixture.add_completed(sim, 1, "usa_barracks", Vector2i(20, 4))
+	ids.foundation = EconomyFixture.add_completed(sim, 1, "usa_power_plant", Vector2i(25, 4))
+	sim._buildings[ids.foundation].completed = false
+	return ids
+
+func _other_commands(ids: Dictionary) -> Array:
+	return [
+		{"type": "move", "entity_ids": [ids.tank], "target": [8.5, 14.5]},
+		{"type": "stop", "entity_ids": [ids.tank]},
+		{"type": "build", "builder_id": ids.builder, "building_kind": "usa_power_plant", "origin": [6, 6]},
+		{"type": "resume_build", "builder_id": ids.builder, "building_id": ids.foundation},
+		{"type": "cancel_build", "building_id": ids.foundation},
+		{"type": "produce", "building_id": ids.barracks, "unit_kind": "usa_rifle_infantry"},
+		{"type": "cancel_production", "building_id": ids.barracks, "production_id": 1},
+		{"type": "set_rally", "building_id": ids.barracks, "target": [22.5, 8.5]},
+		{"type": "gather", "entity_ids": [ids.builder], "source_id": 9999},
+		{"type": "attack", "entity_ids": [ids.tank], "target_id": ids.near},
+		{"type": "attack_move", "entity_ids": [ids.tank], "target": [8.5, 14.5]},
+		{"type": "enter", "entity_ids": [ids.tank], "target_id": ids.builder},
+		{"type": "unload", "target_id": ids.builder},
+		{"type": "choose_faction", "faction": "usa"},
+		{"type": "defence_attack", "building_id": ids.defence, "target_id": ids.near}]
+
+func test_defence_attack_same_tick_cases(runner) -> bool:
+	var count: int = _other_commands(_same_tick_world()).size()
+	for index in range(count):
+		for defence_first in [true, false]:
+			var ids: Dictionary = _same_tick_world()
+			var sim = ids.sim
+			var other: Dictionary = _other_commands(ids)[index]
+			var label: String = "%s %s" % [other.type, "after" if defence_first else "before"]
+			if not defence_first: Fixture.send(sim, other)
+			var order: Dictionary = _order(sim, ids.defence, ids.far)
+			if defence_first: Fixture.send(sim, other)
+			runner.check(order.ok, "DA3 order accepted with " + label)
+			var pending: Array = sim.snapshot().pending_commands.filter(func(c: Dictionary) -> bool: return c.type == "defence_attack")
+			sim.step()
+			var sequences: Array = pending.map(func(c: Dictionary) -> int: return c.sequence)
+			var results: Array = sim.snapshot().command_results.filter(func(r: Dictionary) -> bool: return sequences.has(r.sequence))
+			var target: Variant = sim.snapshot().buildings.filter(func(b: Dictionary) -> bool: return b.id == ids.defence)[0].combat.target_id
+			var wanted: int = ids.near if other.type == "defence_attack" and defence_first else ids.far
+			var shot: Array = _shots(sim, ids.defence)
+			runner.check(results.all(func(r: Dictionary) -> bool: return r.ok) and shot.size() == 1 and shot[0].target_id == wanted and target == wanted, "DA3 %s: target %s expected %d, shots %s" % [label, str(target), wanted, str(shot)])
+	return true
+
+func test_defence_attack_edge_cases(runner) -> bool:
+	var ids: Dictionary = _same_tick_world()
+	var sim = ids.sim
+	Fixture.send(sim, {"type": "enter", "entity_ids": [ids.far], "target_id": ids.builder, "player": 2})
+	runner.check(_order(sim, ids.defence, ids.far).ok, "DA4 order for a target that is about to enter a carrier")
+	sim.step()
+	runner.check(_shots(sim, ids.defence).size() == 1, "DA4 the order applies the tick the target is told to enter")
+	ids = _same_tick_world()
+	sim = ids.sim
+	_order(sim, ids.defence, ids.far)
+	sim.remove_object(ids.far)
+	sim.step()
+	var result: Dictionary = _last_result(sim)
+	runner.check(not result.ok and result.error == "Invalid attack target" and _shots(sim, ids.defence).size() == 1 and _shots(sim, ids.defence)[0].target_id == ids.near, "DA4 removed target: error at due time, scan picks the other: " + str(result))
+	ids = _same_tick_world()
+	sim = ids.sim
+	_order(sim, ids.defence, ids.far)
+	sim.remove_object(ids.defence)
+	sim.step()
+	result = _last_result(sim)
+	runner.check(not result.ok and result.error == "Invalid owned defence" and _shots(sim, ids.defence).is_empty(), "DA4 defence removed before the order applies: error, no shot")
+	ids = _same_tick_world()
+	sim = ids.sim
+	var killer: int = EconomyFixture.add_completed(sim, 2, "usa_defence", Vector2i(10, 14))
+	sim._buildings[ids.defence].hp = 1
+	_order(sim, ids.defence, ids.far)
+	sim._buildings[killer].combat.target_id = ids.defence
+	sim.step()
+	runner.check(_last_result(sim).ok and not sim._buildings.has(ids.defence), "DA4 defence killed by fire the same tick: order ok, building gone")
+	sim.step()
+	runner.check(_shots(sim, ids.defence).is_empty(), "DA4 a dead defence fires no more")
+	ids = _same_tick_world()
+	sim = ids.sim
+	for i in range(3): EconomyFixture.add_completed(sim, 1, "usa_supply_center", Vector2i(2 + i * 4, 20))
+	_order(sim, ids.defence, ids.far)
+	sim.step()
+	runner.check(_last_result(sim).ok and _shots(sim, ids.defence).is_empty(), "DA4 a dark defence accepts the order and holds fire")
+	var target: Variant = sim.snapshot().buildings.filter(func(b: Dictionary) -> bool: return b.id == ids.defence)[0].combat.target_id
+	runner.check(target == ids.far, "DA4 a dark defence keeps its target")
 	return true

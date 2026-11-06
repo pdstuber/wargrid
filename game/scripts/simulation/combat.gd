@@ -389,6 +389,13 @@ static func _defence_gap(building: Dictionary, target: Dictionary) -> float:
 static func _defence_in_reach(building: Dictionary, target: Dictionary, weapon_range: float) -> bool:
 	return _defence_gap(building, target) <= weapon_range - RANGE_SLACK + EDGE_EPS
 
+static func defence_attack_error(sim: Simulation, command: Dictionary) -> String:
+	var building: Dictionary = sim._buildings.get(command.building_id, {})
+	if building.is_empty() or building.owner != command.player or not building.completed or not building.has("combat"): return "Invalid owned defence"
+	if not valid_target(sim, command.player, command.target_id): return "Invalid attack target"
+	var weapon: Dictionary = CombatDefinitions.weapon(CombatDefinitions.profile(building.kind).weapon)
+	return "" if _defence_in_reach(building, record(sim, command.target_id), weapon.range) else "Target out of range"
+
 static func _defence_target_valid(sim: Simulation, building: Dictionary) -> bool:
 	var id: Variant = building.combat.target_id
 	if id == null or not valid_target(sim, building.owner, id): return false

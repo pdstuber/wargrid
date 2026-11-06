@@ -3,7 +3,7 @@ extends RefCounted
 
 const Wire = preload("res://scripts/net/wire.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
-const COMMAND_TYPES: Array[String] = ["move", "stop", "build", "resume_build", "cancel_build", "produce", "cancel_production", "set_rally", "gather", "attack", "attack_move", "choose_faction"]
+const COMMAND_TYPES: Array[String] = ["move", "stop", "build", "resume_build", "cancel_build", "produce", "cancel_production", "set_rally", "gather", "attack", "attack_move", "choose_faction", "defence_attack"]
 
 func cases() -> Array[Callable]:
 	return [test_round_trip_every_command, test_decode_rejects, test_vectors, test_command_list_matches_simulation]

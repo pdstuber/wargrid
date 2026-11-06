@@ -10,7 +10,7 @@ const Fixture = preload("res://tests/economy_fixture.gd")
 const UiStyle = preload("res://scripts/presentation/ui_style.gd")
 
 func cases() -> Array[Callable]:
-	return [test_skirmish_ready_and_tick, test_combat_context_input, test_match_hud_and_restart, test_combat_view, test_hud_layout_and_focus, test_hud_build_line, test_enemy_selection_read_only, test_rally_input_and_marker, test_supply_pile_labels, test_attack_move_hint_and_rejection, test_selection_prunes_dead, test_order_marks_own_only, test_health_bar_clear_of_boxes, test_result_clear_of_status, test_silent_keys_explain, test_hud_strings_use_display_names, test_hud_font_size_is_shared]
+	return [test_skirmish_ready_and_tick, test_combat_context_input, test_match_hud_and_restart, test_combat_view, test_hud_layout_and_focus, test_hud_build_line, test_enemy_selection_read_only, test_rally_input_and_marker, test_supply_pile_labels, test_attack_move_hint_and_rejection, test_selection_prunes_dead, test_order_marks_own_only, test_health_bar_clear_of_boxes, test_result_clear_of_status, test_silent_keys_explain, test_hud_strings_use_display_names, test_hud_font_size_is_shared, test_defence_attack_scene]
 
 func _setup(runner):
 	var main = Scene.instantiate()
@@ -452,5 +452,25 @@ func test_hud_font_size_is_shared(runner) -> bool:
 	runner.check(controls.size() >= 4, "FS1 fixture: status, buttons and a queue entry")
 	for control in controls: runner.check(control.get_theme_font_size("font_size") == UiStyle.FONT_SIZE, "FS1 %s uses the shared HUD size" % control.name)
 	runner.check(UiStyle.FONT_SIZE < 16, "FS1 HUD text is smaller than the engine default")
+	main.free()
+	return true
+
+func test_defence_attack_scene(runner) -> bool:
+	var helper = BaseScene.new()
+	var main = await _setup(runner)
+	var sim = Skirmish.create(false)
+	var defence: int = Fixture.add_completed(sim, 1, "usa_defence", Vector2i(10, 10))
+	var enemy: int = sim.spawn(2, Vector2(15.5, 10.5), "usa_tank")
+	var distant: int = sim.spawn(2, Vector2(30.5, 30.5), "usa_tank")
+	sim.start_match([1, 2] as Array[int])
+	main.simulation = sim
+	main.selected_ids.clear()
+	main.selected_building_id = defence
+	main._refresh()
+	helper.pointer(main, Iso.world_to_plane(Vector2(15.5, 10.5)) + Vector2(0, -8), MOUSE_BUTTON_RIGHT, true)
+	var orders: Array = sim.snapshot().pending_commands.filter(func(command: Dictionary) -> bool: return command.type == "defence_attack")
+	runner.check(orders.size() == 1 and orders[0].building_id == defence and orders[0].target_id == enemy and main._error.is_empty(), "DA5 right-click on an enemy in reach submits defence_attack")
+	helper.pointer(main, Iso.world_to_plane(Vector2(30.5, 30.5)) + Vector2(0, -8), MOUSE_BUTTON_RIGHT, true)
+	runner.check(main._error == "Target out of range" and sim.snapshot().pending_commands.filter(func(command: Dictionary) -> bool: return command.type == "defence_attack").size() == 1, "DA5 out of reach shows Target out of range, got " + main._error + " " + str(distant))
 	main.free()
 	return true

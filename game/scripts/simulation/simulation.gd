@@ -177,6 +177,7 @@ func _payload_fields(type: String) -> Array:
 		"attack_move": return ["entity_ids","target"]
 		"enter": return ["entity_ids","target_id"]
 		"unload": return ["target_id"]
+		"defence_attack": return ["building_id","target_id"]
 	return []
 
 func _validate(command: Dictionary, due: bool = false) -> String:
@@ -217,6 +218,7 @@ func _validate(command: Dictionary, due: bool = false) -> String:
 	if command.type in ["stop","choose_faction"]: return ""
 	if command.type == "enter": return Containers.enter_error(self,command,live)
 	if command.type == "unload": return Containers.unload_error(self,command)
+	if command.type == "defence_attack": return Combat.defence_attack_error(self,command)
 	if command.type in ["attack","attack_move"]:
 		if command.type == "attack_move": return _validate_target(command,due)
 		if _armed(live).is_empty(): return "Attack requires armed units"
@@ -342,6 +344,7 @@ func _apply_orders() -> void:
 				"set_rally": _buildings[command.building_id].rally = command.target.duplicate()
 				"choose_faction": setup_seat(command.player,command.faction)
 				"unload": Containers.unload(self,command.target_id)
+				"defence_attack": _buildings[command.building_id].combat.target_id = command.target_id
 		if command.type != "move":
 			_command_results.append({"tick":_tick,"player":command.player,"sequence":command.sequence,"ok":error.is_empty(),"error":error})
 		if not error.is_empty(): continue

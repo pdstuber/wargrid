@@ -88,12 +88,22 @@ func _unhandled_input(event: InputEvent) -> void:
 			var target: Vector2 = _ground(event)
 			_submit({"type":"attack_move","entity_ids":selected_ids.duplicate(),"target":[target.x,target.y]})
 		return
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed and not is_selecting() and _order_defence(event):
+		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed and not is_selecting() and not selected_ids.is_empty():
 		var enemy: int = _view.pick_target(_view.make_canvas_position_local(event.position), local_player)
 		if enemy != -1:
 			_submit({"type":"attack","entity_ids":selected_ids.duplicate(),"target_id":enemy})
 			return
 	super._unhandled_input(event)
+
+func _order_defence(event: InputEventMouseButton) -> bool:
+	var building: Dictionary = _building(simulation.snapshot(), selected_building_id)
+	if building.is_empty() or building.owner != local_player or not building.completed or building.get("combat") == null: return false
+	var enemy: int = _view.pick_target(_view.make_canvas_position_local(event.position), local_player)
+	if enemy == -1: return false
+	_submit({"type":"defence_attack","building_id":building.id,"target_id":enemy})
+	return true
 
 func _selected_summary(state: Dictionary) -> String:
 	if selected_ids.size() != 1: return ""
