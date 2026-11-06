@@ -5,7 +5,7 @@ const Main = preload("res://scenes/main.tscn")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 
 func cases() -> Array[Callable]:
-	return [test_ready, test_clicks, test_rejection, test_camera, test_driver, test_boxes, test_drag_rules, test_obstacle_toggle]
+	return [test_ready, test_clicks, test_rejection, test_camera, test_driver, test_boxes, test_drag_rules, test_obstacle_toggle, test_double_click_same_kind_on_screen, test_double_click_alt_whole_map, test_double_click_shift_keeps, test_double_click_ctrl_ignored, test_double_click_enemy_or_building_plain]
 
 func setup(runner):
 	var main = Main.instantiate()
@@ -277,5 +277,90 @@ func test_obstacle_toggle(runner) -> bool:
 		main._physics_process(0.0)
 	await _key(runner, KEY_B, true)
 	runner.check(main.simulation.snapshot().map.blocked_cells.size() == 24, "S8 rejected toggle preserves next action")
+	main.free()
+	return true
+
+func _double_click(runner, main, plane: Vector2, shift: bool = false, ctrl: bool = false, alt: bool = false) -> void:
+	var point: Vector2 = main.get_node("WorldView").get_global_transform_with_canvas() * plane
+	for double in [false, true]:
+		for pressed in [true, false]:
+			var event := InputEventMouseButton.new()
+			event.position = runner.root.get_final_transform() * point
+			event.global_position = event.position
+			event.button_index = MOUSE_BUTTON_LEFT
+			event.pressed = pressed
+			event.double_click = double and pressed
+			event.shift_pressed = shift
+			event.ctrl_pressed = ctrl
+			event.alt_pressed = alt
+			Input.parse_input_event(event)
+			await runner.process_frame
+
+func _double_fixture(runner) -> Dictionary:
+	var main = await setup(runner)
+	var sim = main.simulation
+	var fixture := {"main": main, "tank": sim.spawn(1, Vector2(3.5, 6.5), "usa_tank"), "far": sim.spawn(1, Vector2(14.5, 14.5)), "enemy": sim.spawn(2, Vector2(2.5, 6.5))}
+	sim._entities[20].container_id = 1
+	var camera: Camera2D = main.get_node("Camera2D")
+	camera.position = Vector2(0, 128)
+	camera.zoom = Vector2.ONE * 2.0
+	camera.force_update_scroll()
+	main._refresh()
+	await runner.process_frame
+	return fixture
+
+func _light_ids(skip: Array) -> Array[int]:
+	var ids: Array[int] = []
+	for id in range(1, 21):
+		if not skip.has(id): ids.append(id)
+	return ids
+
+func test_double_click_same_kind_on_screen(runner) -> bool:
+	var fixture: Dictionary = await _double_fixture(runner)
+	var main = fixture.main
+	runner.check(fixture.far != -1 and fixture.tank != -1 and fixture.enemy != -1, "G26 fixture spawned")
+	await _double_click(runner, main, Iso.world_to_plane(Vector2(3.5, 1.5)) + Vector2(0, -8))
+	runner.check(main.selected_ids == _light_ids([20]), "G26 double click picks visible own same kind, not tank, off-screen or passenger")
+	main.free()
+	return true
+
+func test_double_click_alt_whole_map(runner) -> bool:
+	var fixture: Dictionary = await _double_fixture(runner)
+	var main = fixture.main
+	await _double_click(runner, main, Iso.world_to_plane(Vector2(3.5, 1.5)) + Vector2(0, -8), false, false, true)
+	var expected := _light_ids([20])
+	expected.append(fixture.far)
+	runner.check(main.selected_ids == expected, "G26 Alt double click spans the whole map")
+	main.free()
+	return true
+
+func test_double_click_shift_keeps(runner) -> bool:
+	var fixture: Dictionary = await _double_fixture(runner)
+	var main = fixture.main
+	await click(runner, main.get_node("WorldView"), Iso.world_to_plane(Vector2(3.5, 6.5)) + Vector2(0, -8), MOUSE_BUTTON_LEFT)
+	runner.check(main.selected_ids == [fixture.tank], "G26 tank selected first")
+	await _double_click(runner, main, Iso.world_to_plane(Vector2(3.5, 1.5)) + Vector2(0, -8), true)
+	var expected := _light_ids([20])
+	expected.append(fixture.tank)
+	expected.sort()
+	runner.check(main.selected_ids == expected, "G26 Shift double click keeps the earlier selection")
+	main.free()
+	return true
+
+func test_double_click_ctrl_ignored(runner) -> bool:
+	var fixture: Dictionary = await _double_fixture(runner)
+	var main = fixture.main
+	await _double_click(runner, main, Iso.world_to_plane(Vector2(3.5, 1.5)) + Vector2(0, -8), false, true)
+	runner.check(main.selected_ids == [3], "G26 Ctrl double click is a plain click")
+	main.free()
+	return true
+
+func test_double_click_enemy_or_building_plain(runner) -> bool:
+	var fixture: Dictionary = await _double_fixture(runner)
+	var main = fixture.main
+	await _double_click(runner, main, Iso.world_to_plane(Vector2(2.5, 6.5)) + Vector2(0, -8))
+	runner.check(main.selected_ids == [], "G26 double click on an enemy selects nothing")
+	await _double_click(runner, main, Iso.world_to_plane(Vector2(12.5, 12.5)))
+	runner.check(main.selected_ids == [], "G26 double click on empty ground selects nothing")
 	main.free()
 	return true

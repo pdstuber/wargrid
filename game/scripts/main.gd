@@ -14,6 +14,9 @@ var _dragged: bool = false
 var _start: Vector2
 var _start_selection: Array[int] = []
 var _shift: bool = false
+var _double: bool = false
+var _ctrl: bool = false
+var _alt: bool = false
 var _obstacle_added: bool = false
 var _base_blocked: Array[Vector2i] = []
 var _camera_bounds: Rect2
@@ -76,6 +79,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				_start = event.position
 				_start_selection = selected_ids.duplicate()
 				_shift = event.shift_pressed
+				_double = event.double_click
+				_ctrl = event.ctrl_pressed
+				_alt = event.alt_pressed
 			elif _selecting:
 				_finish_selection(event.position)
 		elif event.pressed and not _selecting:
@@ -104,7 +110,9 @@ func _finish_selection(point: Vector2) -> void:
 		picked = _view.pick_entities(Rect2(from, to - from))
 	else:
 		var id: int = _view.pick_entity(_view.make_canvas_position_local(point))
-		if id != -1:
+		if id != -1 and _double and not _ctrl:
+			picked = _matching_ids(id, _alt)
+		elif id != -1:
 			picked.append(id)
 	selected_ids.clear()
 	if _shift:
@@ -116,6 +124,17 @@ func _finish_selection(point: Vector2) -> void:
 	_selecting = false
 	_selection_box.hide()
 	_refresh()
+
+func _matching_ids(id: int, whole_map: bool) -> Array[int]:
+	var view_rect: Rect2 = _view.get_global_transform_with_canvas().affine_inverse() * get_viewport().get_visible_rect()
+	var kinds: Dictionary = {}
+	for unit: Dictionary in simulation.snapshot().entities:
+		kinds[unit.id] = {"kind": unit.kind, "inside": unit.has("container_id")}
+	var picked: Array[int] = []
+	for other: int in _view.pick_entities(Rect2(-1.0e6, -1.0e6, 2.0e6, 2.0e6) if whole_map else view_rect):
+		if kinds[other].kind == kinds[id].kind and not kinds[other].inside:
+			picked.append(other)
+	return picked
 
 func _toggle_obstacle() -> void:
 	var cells: Array[Vector2i] = _base_blocked.duplicate()

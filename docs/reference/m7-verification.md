@@ -5,15 +5,15 @@ Plan: [M7 plan](../superpowers/plans/2026-11-06-m7-factions.md). Design: [M7 des
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-07, G2.5 done, uncommitted)
-Branch / base commit / working-tree state: m7-factions, HEAD 6651285 (G2.4 committed); G2.5 uncommitted
-Last green task / next incomplete task: G2.5 done (defence_attack command, right-click order) / commit it ("Let players order a defence to attack"), then G2.6 (checkpoint restart after G2.5)
-Changed paths since last commit: simulation.gd, combat.gd, skirmish_main.gd; tests test_defences, test_skirmish_scene, test_wire, test_lockstep; m7-verification.md
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 377 cases / 134,563 / 0, exit 0, TESTS PASSED 134563 (baseline HEAD 6651285: 372 / 134,472); with trace env vars 134,570 vs HEAD 134,479, four traces cmp-identical to a clean HEAD worktree; all 9 run_netplay.sh scenarios PASSED (match, kill, stall, silent, spike, perturb, version, relay-down, relay-term); run_conformance.sh PASSED 33; run_lint.sh, run_warnings.sh (89 files), test_faction_guard.py OK; relay/ and protocol/ untouched
+Resume record (updated 2026-11-07, G2.6 done, uncommitted)
+Branch / base commit / working-tree state: m7-factions, HEAD 7ca9c82 (G2.5 committed); G2.6 uncommitted
+Last green task / next incomplete task: G2.6 done (double-click selects the same kind) / commit it ("Double-click selects all own units of that kind"), then G2.7 (gate 2)
+Changed paths since last commit: game/scripts/main.gd, game/tests/test_scene.gd, m7-verification.md
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 382 cases / 134,571 / 0, exit 0, TESTS PASSED 134571 (baseline HEAD 7ca9c82: 377 / 134,563); presentation only, no simulation file touched, so traces not rerun; run_lint.sh, run_warnings.sh (89 files), test_faction_guard.py OK
 Known red case or blocker: none
-Approved decisions, pre-authorizations used, deferred gates: as before. Departures in the G2.5 record
+Approved decisions, pre-authorizations used, deferred gates: as before. G2.6 departures: tests live in test_scene.gd on main.gd (prototype scene, 2x zoom, camera set to (0,128), far unit at (14.5,14.5) because the map is 16x16); the "building" half of test_double_click_enemy_or_building_plain is covered by empty ground (the prototype scene has no buildings; pick_entity returns own units only). Shift double-click unions with the earlier selection. Ctrl/Alt read at press. test_double_click_ctrl_ignored and test_double_click_enemy_or_building_plain passed before the implementation (they assert the unchanged plain-click behaviour), so not seen red; the other three were red.
 Usage so far: not recorded
-Next exact action: commit G2.5, then G2.6 (double-click selects the same kind)
+Next exact action: commit G2.6, then G2.7 (gate 2 checks)
 ```
 
 ## Pins at base
