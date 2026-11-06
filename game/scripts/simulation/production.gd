@@ -51,7 +51,7 @@ static func rally_target(sim: Simulation, building: Dictionary, unit: Dictionary
 	return [best.x,best.y]
 
 static func spawn_collector(sim: Simulation, building: Dictionary) -> int:
-	var id: int = sim.spawn(building.owner,center(building),"collector")
+	var id: int = sim.spawn(building.owner,center(building),"usa_collector")
 	assert(id != -1)
 	sim._entities[id].collection.enabled = true
 	sim._entities[id].collection.phase = "seeking"
@@ -69,7 +69,7 @@ static func step(sim: Simulation, rates: Dictionary) -> void:
 		entry.work = mini(required,entry.work + rates[building.owner])
 		if entry.work != required: continue
 		var spawned: int = -1
-		if entry.kind == "collector":
+		if entry.kind == "usa_collector":
 			spawned = spawn_collector(sim,building)
 		else:
 			if occupied == null: occupied = sim.occupied_cells()

@@ -6,7 +6,7 @@ const Simulation = preload("res://scripts/simulation/simulation.gd")
 static func make_world(credits: int = 10000, size: Vector2i = Vector2i(32,32)) -> RefCounted:
 	var sim = Simulation.new([],size)
 	sim.add_player(1,credits)
-	sim.spawn(1,Vector2(4.5,4.5),"builder")
+	sim.spawn(1,Vector2(4.5,4.5),"usa_builder")
 	return sim
 
 static func send(sim: RefCounted, payload: Dictionary) -> Dictionary:

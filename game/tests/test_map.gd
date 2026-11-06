@@ -12,7 +12,7 @@ func test_maps_load(runner) -> bool:
 	var skirmish := MapData.load("res://data/maps/skirmish.json")
 	var ashfall := MapData.load("res://data/maps/ashfall.json")
 	runner.check(Vector2i(int(skirmish.size[0]), int(skirmish.size[1])) == Vector2i(48, 32) and Vector2i(int(ashfall.size[0]), int(ashfall.size[1])) == Vector2i(194, 187), "MP1 map sizes")
-	runner.check(MapData.slot(skirmish, 1, "factory") == Vector2i(12, 18) and MapData.slot(skirmish, 2, "reactor") == Vector2i(38, 12) and MapData.slot(skirmish, 2, "depot") == Vector2i(37, 5) and MapData.slot(skirmish, 2, "barracks") == Vector2i(34, 12) and MapData.slot(skirmish, 2, "factory") == Vector2i(33, 18), "MP1 skirmish slots equal today's origins")
+	runner.check(MapData.slot(skirmish, 1, "usa_factory") == Vector2i(12, 18) and MapData.slot(skirmish, 2, "usa_power_plant") == Vector2i(38, 12) and MapData.slot(skirmish, 2, "usa_supply_center") == Vector2i(37, 5) and MapData.slot(skirmish, 2, "usa_barracks") == Vector2i(34, 12) and MapData.slot(skirmish, 2, "usa_factory") == Vector2i(33, 18), "MP1 skirmish slots equal today's origins")
 	runner.check(ashfall.starts.size() == 8 and ashfall.sources.size() == 12, "MP1 Ashfall starts and sources")
 	return true
 

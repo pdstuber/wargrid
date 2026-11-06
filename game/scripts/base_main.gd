@@ -18,12 +18,12 @@ func _ready() -> void:
 func _create_simulation() -> Simulation:
 	var sim: Simulation = Simulation.new([],Vector2i(32,32))
 	sim.add_player(1,10000)
-	sim.spawn(1,Vector2(4.5,4.5),"builder")
+	sim.spawn(1,Vector2(4.5,4.5),"usa_builder")
 	sim.add_supply_source(Vector2i(24,4),200)
 	return sim
 
 func _placement_kinds() -> Dictionary:
-	return {KEY_1:"reactor",KEY_2:"depot",KEY_3:"factory"}
+	return {KEY_1:"usa_power_plant",KEY_2:"usa_supply_center",KEY_3:"usa_factory"}
 
 func _hint_point(payload: Dictionary) -> Variant:
 	if payload.type != "resume_build": return super._hint_point(payload)
@@ -101,7 +101,7 @@ func change_zoom(direction: int) -> void:
 func _builder() -> int:
 	if selected_ids.size() != 1: return -1
 	for unit: Dictionary in simulation.snapshot().entities:
-		if unit.id == selected_ids[0] and unit.kind == "builder" and unit.owner == local_player: return unit.id
+		if unit.id == selected_ids[0] and unit.kind == "usa_builder" and unit.owner == local_player: return unit.id
 	return -1
 
 func _enter_placement(kind: String) -> void:
@@ -188,7 +188,7 @@ func _context_order(id: int) -> bool:
 		if source.id != id: continue
 		var collectors: bool = true
 		for unit: Dictionary in state.entities:
-			if selected_ids.has(unit.id) and unit.kind != "collector": collectors = false
+			if selected_ids.has(unit.id) and unit.kind != "usa_collector": collectors = false
 		if collectors: _submit({"type":"gather","entity_ids":selected_ids.duplicate(),"source_id":id})
 		else:
 			_error = "Choose homogeneous collector selection"
@@ -205,7 +205,7 @@ func _context_order(id: int) -> bool:
 
 func _set_rally(plane: Vector2) -> bool:
 	var building: Dictionary = _building(simulation.snapshot(),selected_building_id)
-	if building.is_empty() or building.owner != local_player or not building.kind in ["barracks","factory"]: return false
+	if building.is_empty() or building.owner != local_player or not building.kind in ["usa_barracks","usa_factory"]: return false
 	var cell: Vector2 = Iso.plane_to_world(plane).floor() + Vector2(.5,.5)
 	_submit({"type":"set_rally","building_id":building.id,"target":[cell.x,cell.y]})
 	return true

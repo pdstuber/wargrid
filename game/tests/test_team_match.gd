@@ -9,7 +9,7 @@ const Fixture = preload("res://tests/combat_fixture.gd")
 
 const PREFIX_TICKS: int = 20000
 const TRACE_INTERVAL: int = 200
-const FINAL_DIGEST: String = "234f0b14453bc6c6"
+const FINAL_DIGEST: String = "6a389cd2453bc6c6"
 const BUILD_CHECK_TICK: int = 3000
 const TEAM_CORE_SERIES: int = 1490497313643459296
 
@@ -23,10 +23,10 @@ func _bot_world() -> RefCounted:
 
 func test_bot_never_targets_ally(runner) -> bool:
 	var sim = _bot_world()
-	var tank: int = sim.spawn(1, Vector2(10.5, 10.5), "tank")
-	sim.spawn(1, Vector2(2.5, 2.5), "builder")
-	var ally: int = sim.spawn(3, Vector2(11.5, 10.5), "builder")
-	var enemy: int = sim.spawn(2, Vector2(28.5, 10.5), "builder")
+	var tank: int = sim.spawn(1, Vector2(10.5, 10.5), "usa_tank")
+	sim.spawn(1, Vector2(2.5, 2.5), "usa_builder")
+	var ally: int = sim.spawn(3, Vector2(11.5, 10.5), "usa_builder")
+	var enemy: int = sim.spawn(2, Vector2(28.5, 10.5), "usa_builder")
 	sim.start_match([1, 2, 3] as Array[int])
 	var attacks: int = 0
 	var bad: int = 0
@@ -42,8 +42,8 @@ func test_bot_never_targets_ally(runner) -> bool:
 
 func test_dead_seat_bot_is_silent(runner) -> bool:
 	var sim = _bot_world()
-	sim.spawn(2, Vector2(28.5, 10.5), "builder")
-	sim.spawn(3, Vector2(10.5, 10.5), "builder")
+	sim.spawn(2, Vector2(28.5, 10.5), "usa_builder")
+	sim.spawn(3, Vector2(10.5, 10.5), "usa_builder")
 	sim.start_match([2, 3] as Array[int])
 	var issued: int = 0
 	for tick in range(Skirmish.DECISION_TICKS * 2):
@@ -66,7 +66,7 @@ func test_team_match_prefix(runner) -> bool:
 			var digest: String = StateHash.digest(state)
 			if digest != StateHash.digest(b.snapshot()) and diverged == -1: diverged = tick
 			rows.append("%d\t%s" % [tick, digest])
-			if state.entities.any(func(unit: Dictionary) -> bool: return unit.kind == "tank"): tanks = true
+			if state.entities.any(func(unit: Dictionary) -> bool: return unit.kind == "usa_tank"): tanks = true
 		if tick == BUILD_CHECK_TICK: built = _completed_buildings(a)
 		TeamMatch.step(a)
 		TeamMatch.step(b)

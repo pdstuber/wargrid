@@ -87,12 +87,12 @@ func test_economy_repeatability(runner) -> bool:
 func _economy_world(runner) -> Dictionary:
 	var sim = Fixture.make_world(50000)
 	var source: int = sim.add_supply_source(Vector2i(24,4),200)
-	var reactor: int = Fixture.build(runner,sim,"reactor",Vector2i(5,5))
-	var depot: int = Fixture.build(runner,sim,"depot",Vector2i(10,4))
-	var factory: int = Fixture.build(runner,sim,"factory",Vector2i(16,4))
+	var reactor: int = Fixture.build(runner,sim,"usa_power_plant",Vector2i(5,5))
+	var depot: int = Fixture.build(runner,sim,"usa_supply_center",Vector2i(10,4))
+	var factory: int = Fixture.build(runner,sim,"usa_factory",Vector2i(16,4))
 	var collector: int = -1
 	for unit in sim.snapshot().entities:
-		if unit.kind == "collector": collector = unit.id
+		if unit.kind == "usa_collector": collector = unit.id
 	return {"sim":sim,"source":source,"reactor":reactor,"depot":depot,"factory":factory,"collector":collector,"temporary":-1}
 
 func _economy_send(runner, world: Dictionary, payload: Dictionary) -> void:
@@ -103,9 +103,9 @@ func _economy_events(runner, world: Dictionary, index: int) -> void:
 	var sim = world.sim
 	match index:
 		0:
-			_economy_send(runner,world,{"type":"produce","building_id":world.factory,"unit_kind":"vehicle"})
-			_economy_send(runner,world,{"type":"produce","building_id":world.factory,"unit_kind":"vehicle"})
-			_economy_send(runner,world,{"type":"build","builder_id":1,"building_kind":"reactor","origin":[8,12],"tick":sim.snapshot().tick + 10})
+			_economy_send(runner,world,{"type":"produce","building_id":world.factory,"unit_kind":"usa_light_vehicle"})
+			_economy_send(runner,world,{"type":"produce","building_id":world.factory,"unit_kind":"usa_light_vehicle"})
+			_economy_send(runner,world,{"type":"build","builder_id":1,"building_kind":"usa_power_plant","origin":[8,12],"tick":sim.snapshot().tick + 10})
 		20:
 			world.temporary = sim.snapshot().buildings.back().id
 			_economy_send(runner,world,{"type":"cancel_build","building_id":world.temporary,"tick":sim.snapshot().tick + 60})
@@ -116,7 +116,7 @@ func _economy_events(runner, world: Dictionary, index: int) -> void:
 		80: _economy_send(runner,world,{"type":"stop","entity_ids":[world.collector]})
 		100:
 			_economy_send(runner,world,{"type":"gather","entity_ids":[world.collector],"source_id":world.source})
-			_economy_send(runner,world,{"type":"produce","building_id":world.depot,"unit_kind":"collector"})
+			_economy_send(runner,world,{"type":"produce","building_id":world.depot,"unit_kind":"usa_collector"})
 		150: runner.check(sim.remove_object(world.reactor).ok,"R3 remove power")
 		250:
 			var before: Dictionary = sim.snapshot()
@@ -126,10 +126,10 @@ func _economy_events(runner, world: Dictionary, index: int) -> void:
 			world.source = sim.add_supply_source(Vector2i(24,12),9)
 			runner.check(world.source != -1,"R3 replacement finite source")
 			_economy_send(runner,world,{"type":"gather","entity_ids":[world.collector],"source_id":world.source})
-		650: _economy_send(runner,world,{"type":"produce","building_id":world.factory,"unit_kind":"vehicle"})
+		650: _economy_send(runner,world,{"type":"produce","building_id":world.factory,"unit_kind":"usa_light_vehicle"})
 		700: runner.check(sim.remove_object(world.depot).ok,"R3 remove depot refund")
 		900: runner.check(sim.remove_object(world.factory).ok,"R3 remove factory refund")
-		1000: _economy_send(runner,world,{"type":"build","builder_id":1,"building_kind":"reactor","origin":[12,12]})
+		1000: _economy_send(runner,world,{"type":"build","builder_id":1,"building_kind":"usa_power_plant","origin":[12,12]})
 		1080: _economy_send(runner,world,{"type":"stop","entity_ids":[world.collector],"tick":sim.snapshot().tick + 50})
 		1110: runner.check(sim.remove_object(world.collector).ok,"R3 remove future target")
 
@@ -169,14 +169,14 @@ func _economy_trace(runner) -> PackedStringArray:
 
 func _combat_world(runner) -> Dictionary:
 	var sim = Skirmish.create(false)
-	var barracks: int = Fixture.build(runner,sim,"barracks",Skirmish.origin("barracks",1))
+	var barracks: int = Fixture.build(runner,sim,"usa_barracks",Skirmish.origin("usa_barracks",1))
 	var ids := {"barracks":barracks}
 	for key in ["inf1","inf2"]:
-		ids[key] = sim.spawn(1,Vector2(20.5,10.5 if key == "inf1" else 11.5),"infantry")
-	ids.tank1 = sim.spawn(1,Vector2(22.5,10.5),"tank")
-	ids.enemy = sim.spawn(2,Vector2(26.5,10.5),"infantry")
-	ids.duel1 = sim.spawn(1,Vector2(30.5,24.5),"tank")
-	ids.duel2 = sim.spawn(2,Vector2(34.5,24.5),"tank")
+		ids[key] = sim.spawn(1,Vector2(20.5,10.5 if key == "inf1" else 11.5),"usa_rifle_infantry")
+	ids.tank1 = sim.spawn(1,Vector2(22.5,10.5),"usa_tank")
+	ids.enemy = sim.spawn(2,Vector2(26.5,10.5),"usa_rifle_infantry")
+	ids.duel1 = sim.spawn(1,Vector2(30.5,24.5),"usa_tank")
+	ids.duel2 = sim.spawn(2,Vector2(34.5,24.5),"usa_tank")
 	runner.check(sim.start_match([1,2] as Array[int]).ok,"R4 match starts after setup")
 	return {"sim":sim,"ids":ids,"refund":0}
 
@@ -185,7 +185,7 @@ func _combat_events(runner, world: Dictionary, index: int) -> void:
 	var ids: Dictionary = world.ids
 	match index:
 		0:
-			for i in range(2): runner.check(Fixture.send(sim,{"type":"produce","building_id":ids.barracks,"unit_kind":"infantry"}).ok,"R4 produce")
+			for i in range(2): runner.check(Fixture.send(sim,{"type":"produce","building_id":ids.barracks,"unit_kind":"usa_rifle_infantry"}).ok,"R4 produce")
 			runner.check(Fixture.send(sim,{"type":"attack","entity_ids":[ids.inf1,ids.inf2],"target_id":ids.enemy}).ok,"R4 attack")
 		5:
 			var credits: int = sim.snapshot().players[0].credits
@@ -199,7 +199,7 @@ func _combat_events(runner, world: Dictionary, index: int) -> void:
 			if not Fixture.object(sim,ids.enemy).is_empty(): runner.check(sim.remove_object(ids.enemy).ok,"R4 target removal")
 		600:
 			for at in [Vector2(38.5,14.5),Vector2(38.5,15.5),Vector2(38.5,13.5),Vector2(39.5,14.5),Vector2(39.5,15.5)]:
-				runner.check(sim.spawn(1,at,"tank") != -1,"R4 finishing group")
+				runner.check(sim.spawn(1,at,"usa_tank") != -1,"R4 finishing group")
 
 func _combat_trace(runner) -> Dictionary:
 	var a: Dictionary = _combat_world(runner)

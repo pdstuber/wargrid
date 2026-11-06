@@ -70,7 +70,7 @@ func test_pinch_build_falls_back(runner) -> bool:
 		if y != 4 and y != 5: wall.append(Vector2i(10, y))
 	sim.replace_blocked_cells(wall)
 	var before: int = sim.navigation_builds()
-	var result: Dictionary = Fixture.send(sim, {"type":"build","builder_id":1,"building_kind":"reactor","origin":[10,4]})
+	var result: Dictionary = Fixture.send(sim, {"type":"build","builder_id":1,"building_kind":"usa_power_plant","origin":[10,4]})
 	runner.check(sim.navigation_builds() == before + 1, "NI2 the gap-closing build does one full build at issue")
 	sim.step()
 	runner.check(result == {"ok": true, "error": ""}, "NI2 command result as before the change")
@@ -79,7 +79,7 @@ func test_pinch_build_falls_back(runner) -> bool:
 
 func test_death_updates_locally(runner) -> bool:
 	var sim = Fixture.make_world()
-	runner.check(Fixture.send(sim, {"type":"build","builder_id":1,"building_kind":"reactor","origin":[8,4]}).ok, "NI3 build accepted")
+	runner.check(Fixture.send(sim, {"type":"build","builder_id":1,"building_kind":"usa_power_plant","origin":[8,4]}).ok, "NI3 build accepted")
 	sim.step()
 	var id: int = sim.snapshot().buildings[0].id
 	var builds: int = sim.navigation_builds()
@@ -96,7 +96,7 @@ func test_map_lists_shared_read_only(runner) -> bool:
 	var b: Dictionary = sim.snapshot()
 	runner.check(is_same(a.map.blocked_cells, b.map.blocked_cells) and is_same(a.terrain_cells, b.terrain_cells), "SM1 map lists are shared between snapshots")
 	runner.check(a.map.blocked_cells.is_read_only() and a.terrain_cells.is_read_only(), "SM1 map lists are read-only")
-	runner.check(Fixture.send(sim, {"type":"build","builder_id":1,"building_kind":"reactor","origin":[8,4]}).ok, "SM1 build accepted")
+	runner.check(Fixture.send(sim, {"type":"build","builder_id":1,"building_kind":"usa_power_plant","origin":[8,4]}).ok, "SM1 build accepted")
 	sim.step()
 	var rebuilt = Simulation.new(sim._union_cells(), Vector2i(32, 32))
 	runner.check(sim.snapshot().map == rebuilt.snapshot().map, "SM1 map after placement equals a rebuilt simulation's")

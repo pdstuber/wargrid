@@ -15,7 +15,7 @@ static func _command(sim: RefCounted, state: Dictionary, ids: Array, target: Arr
 static func _threat(state: Dictionary) -> Variant:
 	var home: Array[Vector2] = []
 	for unit: Dictionary in state.entities:
-		if unit.owner == 1 and unit.kind == "builder": home.append(Vector2(unit.position[0], unit.position[1]))
+		if unit.owner == 1 and unit.kind == "usa_builder": home.append(Vector2(unit.position[0], unit.position[1]))
 	for building: Dictionary in state.buildings:
 		if building.owner == 1: home.append(Vector2(building.origin[0] + 1.0, building.origin[1] + 1.0))
 	var best: Variant = null

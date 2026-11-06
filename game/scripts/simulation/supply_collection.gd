@@ -30,7 +30,7 @@ static func choose_target(sim: Simulation, unit: Dictionary) -> Dictionary:
 	if collection.cargo > 0:
 		var depots: Array = []
 		for building: Dictionary in sim._buildings.values():
-			if building.owner == unit.owner and building.kind == "depot" and building.completed: depots.append(building)
+			if building.owner == unit.owner and building.kind == "usa_supply_center" and building.completed: depots.append(building)
 		return nearest(unit,depots)
 	if collection.preferred_source_id != null and sim._sources.has(collection.preferred_source_id):
 		var preferred: Dictionary = sim._sources[collection.preferred_source_id]

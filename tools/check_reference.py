@@ -22,29 +22,29 @@ UNITS_PER_CELL = 25.0
 TICKS_PER_SECOND = 30
 
 OBJECTS = {
-    "infantry": "AmericaInfantryRanger",
-    "tank": "AmericaTankCrusader",
-    "builder": "AmericaVehicleDozer",
-    "vehicle": "AmericaVehicleHumvee",
-    "collector": "AmericaVehicleChinook",
-    "barracks": "AmericaBarracks",
-    "reactor": "AmericaPowerPlant",
-    "depot": "AmericaSupplyCenter",
-    "factory": "AmericaWarFactory",
+    "usa_rifle_infantry": "AmericaInfantryRanger",
+    "usa_tank": "AmericaTankCrusader",
+    "usa_builder": "AmericaVehicleDozer",
+    "usa_light_vehicle": "AmericaVehicleHumvee",
+    "usa_collector": "AmericaVehicleChinook",
+    "usa_barracks": "AmericaBarracks",
+    "usa_power_plant": "AmericaPowerPlant",
+    "usa_supply_center": "AmericaSupplyCenter",
+    "usa_factory": "AmericaWarFactory",
 }
 WEAPONS = {"rifle": "RangerAdvancedCombatRifle", "cannon": "CrusaderTankGun"}
 ARMORS = {
     "HumanArmor": "human",
     "TankArmor": "tank",
-    "DozerArmor": "dozer",
-    "HumveeArmor": "humvee",
+    "DozerArmor": "builder_vehicle",
+    "HumveeArmor": "light_vehicle",
     "StructureArmor": "structure",
-    "ChinookArmor": "chinook",
+    "ChinookArmor": "helicopter",
 }
 DAMAGE_TYPES = ["SMALL_ARMS", "ARMOR_PIERCING"]
 DEPARTURES = {
-    "vehicle speed": "legacy M1/M2 prototype unit keeps 3.0",
-    "vehicle weapon": "legacy unit is unarmed; Humvee is not in the M4 roster",
+    "usa_light_vehicle speed": "legacy M1/M2 prototype unit keeps 3.0",
+    "usa_light_vehicle weapon": "legacy unit is unarmed; Humvee is not in the M4 roster",
 }
 NOT_MODELLED = {
     "Locomotor": ["SpeedDamaged", "Acceleration", "TurnRate"],
@@ -73,10 +73,7 @@ def load_archive(path: str, check_hash: bool = True) -> dict:
         data = Path(path).read_bytes()
     else:
         with tarfile.open(path, "r:gz") as tar:
-            member = tar.extractfile(TAR_MEMBER)
-            if member is None:
-                raise ValueError(f"{TAR_MEMBER} is not a regular file in {path}")
-            data = member.read()
+            data = tar.extractfile(TAR_MEMBER).read()
     if check_hash and hashlib.sha256(data).hexdigest() != PINNED_SHA256:
         raise ValueError("INIZH.big hash differs from the pinned reference; see docs/reference/installation.md")
     return read_big(data)
@@ -87,8 +84,6 @@ def block(text: str, kind: str, name: str):
     if not start:
         return None
     end = re.search(r"^End\b", text[start.end() :], re.M)
-    if not end:
-        raise ValueError(f"{kind} {name} has no End line")
     return text[start.start() : start.end() + end.start()]
 
 
@@ -101,7 +96,7 @@ def field(text: str, key: str) -> str:
 
 def armor_percent(armor_block: str, damage_type: str) -> int:
     # Armor.cpp starts every coefficient at 100%; DEFAULT then the named type override it.
-    entries: dict[str, int] = dict(
+    entries = dict(
         (kind.upper(), int(float(value)))
         for kind, value in re.findall(r"^\s*Armor\s*=\s*(\w+)\s+([\d.]+)%", armor_block, re.M)
     )
@@ -187,7 +182,7 @@ def reference_rows(files: dict, wargrid: dict, kinds: list) -> tuple:
                     wargrid["armor"][ARMORS[armor]][damage_type.lower()],
                 )
             )
-    return [(*row, DEPARTURES.get(row[0])) for row in rows], notes
+    return [row + (DEPARTURES.get(row[0]),) for row in rows], notes
 
 
 def wargrid_definitions() -> dict:

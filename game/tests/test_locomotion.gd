@@ -27,12 +27,12 @@ func start_gap(sim, id: int, limit: int = 60) -> int:
 func test_start_delay_three_ticks(runner) -> bool:
 	var sim = Simulation.new([], Vector2i(32, 32))
 	sim.add_player(1, 1000)
-	var id: int = sim.spawn(1, Vector2(5.5, 5.5), "infantry")
+	var id: int = sim.spawn(1, Vector2(5.5, 5.5), "usa_rifle_infantry")
 	Economy.send(sim, {"type": "move", "entity_ids": [id], "target": [15.5, 5.5]})
 	runner.check(start_gap(sim, id) == 2, "L1 move starts 2 snapshots after moving")
 	sim = Simulation.new([], Vector2i(32, 32))
 	sim.add_player(1, 1000)
-	id = sim.spawn(1, Vector2(5.5, 5.5), "infantry")
+	id = sim.spawn(1, Vector2(5.5, 5.5), "usa_rifle_infantry")
 	Economy.send(sim, {"type": "move", "entity_ids": [id], "target": [15.5, 5.5]})
 	sim.step()
 	sim.step()
@@ -41,27 +41,27 @@ func test_start_delay_three_ticks(runner) -> bool:
 	runner.check(unit_of(sim, id).position != [5.5, 5.5], "L1 first movement at command tick + g + 2")
 	sim = Simulation.new([], Vector2i(32, 32))
 	sim.add_player(1, 1000)
-	id = sim.spawn(1, Vector2(5.5, 5.5), "infantry")
+	id = sim.spawn(1, Vector2(5.5, 5.5), "usa_rifle_infantry")
 	Economy.send(sim, {"type": "attack_move", "entity_ids": [id], "target": [15.5, 5.5]})
 	runner.check(start_gap(sim, id) == 2, "L1 attack-move delay")
 	sim = Simulation.new([], Vector2i(32, 32))
 	sim.add_player(1, 1000)
 	sim.add_player(2, 1000)
-	id = sim.spawn(1, Vector2(5.5, 5.5), "infantry")
-	var target: int = sim.spawn(2, Vector2(11.5, 5.5), "infantry")
+	id = sim.spawn(1, Vector2(5.5, 5.5), "usa_rifle_infantry")
+	var target: int = sim.spawn(2, Vector2(11.5, 5.5), "usa_rifle_infantry")
 	Economy.send(sim, {"type": "attack", "entity_ids": [id], "target_id": target})
 	runner.check(start_gap(sim, id) == 2, "L1 chase delay")
 	sim = Economy.make_world(20000)
-	var barracks: int = Economy.build(runner, sim, "barracks", Vector2i(8, 8))
+	var barracks: int = Economy.build(runner, sim, "usa_barracks", Vector2i(8, 8))
 	var before: Array = sim.snapshot().entities.map(func(e): return e.id)
-	Economy.send(sim, {"type": "produce", "building_id": barracks, "unit_kind": "infantry"})
+	Economy.send(sim, {"type": "produce", "building_id": barracks, "unit_kind": "usa_rifle_infantry"})
 	var moving_at: int = -1
 	var gap: int = -1
 	var origin: Array = []
 	for index in range(600):
 		sim.step()
 		for e in sim.snapshot().entities:
-			if e.kind != "infantry" or before.has(e.id): continue
+			if e.kind != "usa_rifle_infantry" or before.has(e.id): continue
 			if moving_at < 0 and e.status == "moving":
 				moving_at = index
 				origin = e.position
@@ -71,7 +71,7 @@ func test_start_delay_three_ticks(runner) -> bool:
 	return true
 
 func test_acceleration_curve(runner) -> bool:
-	for row in [["infantry", 6, 0.8], ["builder", 30, 1.2]]:
+	for row in [["usa_rifle_infantry", 6, 0.8], ["usa_builder", 30, 1.2]]:
 		var sim = Simulation.new([], Vector2i(64, 8))
 		sim.add_player(1, 1000)
 		var id: int = sim.spawn(1, Vector2(1.5, 3.5), row[0])
@@ -91,7 +91,7 @@ func test_acceleration_curve(runner) -> bool:
 func test_short_hop_no_overshoot(runner) -> bool:
 	var sim = Simulation.new([], Vector2i(16, 16))
 	sim.add_player(1, 1000)
-	var id: int = sim.spawn(1, Vector2(5.2, 5.5), "builder")
+	var id: int = sim.spawn(1, Vector2(5.2, 5.5), "usa_builder")
 	Economy.send(sim, {"type": "move", "entity_ids": [id], "target": [5.5, 5.5]})
 	var over: bool = false
 	for index in range(120):
@@ -106,7 +106,7 @@ func test_group_arrival_unchanged(runner) -> bool:
 	var sim = Simulation.new([], Vector2i(32, 32))
 	sim.add_player(1, 1000)
 	var ids: Array = []
-	for index in range(6): ids.append(sim.spawn(1, Vector2(3.5 + index, 3.5), "infantry"))
+	for index in range(6): ids.append(sim.spawn(1, Vector2(3.5 + index, 3.5), "usa_rifle_infantry"))
 	Economy.send(sim, {"type": "move", "entity_ids": ids, "target": [20.5, 20.5]})
 	for index in range(2000):
 		sim.step()
@@ -120,7 +120,7 @@ func test_group_arrival_unchanged(runner) -> bool:
 func test_reorder_keeps_speed(runner) -> bool:
 	var sim = Simulation.new([], Vector2i(32, 32))
 	sim.add_player(1, 1000)
-	var id: int = sim.spawn(1, Vector2(5.5, 5.5), "infantry")
+	var id: int = sim.spawn(1, Vector2(5.5, 5.5), "usa_rifle_infantry")
 	Economy.send(sim, {"type": "move", "entity_ids": [id], "target": [25.5, 5.5]})
 	for index in range(12): sim.step()
 	var before: Dictionary = unit_of(sim, id)
@@ -160,8 +160,8 @@ func test_measured_turn_then_move(runner) -> bool:
 	# Ranger: 16.67 deg/tick, first move once 180 - 16.67 (k - 1) < 45: k = 9.1 -> 10 turns, offset 9 after the first moving tick.
 	# Crusader: 6 deg/tick, 180 - 6 (k - 1) < 45: k = 23.5 -> 24, offset 23. Measured 11 and 24 are counted from the command, one tick before the first moving snapshot.
 	# Dozer: wheels never stop, so the first move is the end of the start delay, offset 2.
-	var expected := {"infantry": 9, "tank": 23, "builder": 2}
-	var measured := {"infantry": 11, "tank": 24, "builder": 3}
+	var expected := {"usa_rifle_infantry": 9, "usa_tank": 23, "usa_builder": 2}
+	var measured := {"usa_rifle_infantry": 11, "usa_tank": 24, "usa_builder": 3}
 	for kind in expected:
 		var offset: int = first_move_offset(kind)
 		runner.check(offset == expected[kind], "L7 first move " + kind + " " + str(offset))
@@ -169,9 +169,9 @@ func test_measured_turn_then_move(runner) -> bool:
 	return true
 
 func test_heading_factors(runner) -> bool:
-	var tank: Dictionary = Definitions.unit("tank")
-	var infantry: Dictionary = Definitions.unit("infantry")
-	var builder: Dictionary = Definitions.unit("builder")
+	var tank: Dictionary = Definitions.unit("usa_tank")
+	var infantry: Dictionary = Definitions.unit("usa_rifle_infantry")
+	var builder: Dictionary = Definitions.unit("usa_builder")
 	runner.check(is_equal_approx(Locomotion.heading_factor("treads", 22.5, tank), 0.5), "L8 treads half")
 	runner.check(Locomotion.heading_factor("treads", 45.0, tank) == 0.0, "L8 treads zero at 45")
 	runner.check(is_equal_approx(Locomotion.heading_factor("legs", 22.5, infantry), 0.5), "L8 legs half")
@@ -183,7 +183,7 @@ func test_heading_factors(runner) -> bool:
 func test_reorder_mid_turn(runner) -> bool:
 	var sim = Simulation.new([], Vector2i(64, 16))
 	sim.add_player(1, 1000)
-	var id: int = sim.spawn(1, Vector2(30.5, 8.5), "tank")
+	var id: int = sim.spawn(1, Vector2(30.5, 8.5), "usa_tank")
 	Economy.send(sim, {"type": "move", "entity_ids": [id], "target": [5.5, 8.5]})
 	for index in range(8): sim.step()
 	var before: Dictionary = unit_of(sim, id)
@@ -199,7 +199,7 @@ func test_reorder_mid_turn(runner) -> bool:
 func test_reorder_mid_cell_straight(runner) -> bool:
 	var sim = Simulation.new([], Vector2i(64, 16))
 	sim.add_player(1, 1000)
-	var id: int = sim.spawn(1, Vector2(5.5, 8.5), "tank")
+	var id: int = sim.spawn(1, Vector2(5.5, 8.5), "usa_tank")
 	Economy.send(sim, {"type": "move", "entity_ids": [id], "target": [40.5, 8.5]})
 	for index in range(40): sim.step()
 	var before: Dictionary = unit_of(sim, id)
@@ -217,7 +217,7 @@ func test_reorder_mid_cell_straight(runner) -> bool:
 func test_dozer_turn_follows_speed(runner) -> bool:
 	var sim = Simulation.new([], Vector2i(64, 16))
 	sim.add_player(1, 1000)
-	var id: int = sim.spawn(1, Vector2(30.5, 8.5), "builder")
+	var id: int = sim.spawn(1, Vector2(30.5, 8.5), "usa_builder")
 	Economy.send(sim, {"type": "move", "entity_ids": [id], "target": [5.5, 8.5]})
 	var quarter: int = -1
 	for index in range(1, 301):

@@ -5,22 +5,22 @@ const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
 const ARMOR := {
 	"human": {"small_arms": 100, "armor_piercing": 10},
 	"tank": {"small_arms": 25, "armor_piercing": 100},
-	"dozer": {"small_arms": 25, "armor_piercing": 100},
-	"humvee": {"small_arms": 50, "armor_piercing": 100},
+	"builder_vehicle": {"small_arms": 25, "armor_piercing": 100},
+	"light_vehicle": {"small_arms": 50, "armor_piercing": 100},
 	"structure": {"small_arms": 50, "armor_piercing": 100},
-	"chinook": {"small_arms": 50, "armor_piercing": 50},
+	"helicopter": {"small_arms": 50, "armor_piercing": 50},
 }
 
 const PROFILES := {
-	"infantry": {"max_hp": 180000, "armor": "human", "weapon": "rifle"},
-	"tank": {"max_hp": 480000, "armor": "tank", "weapon": "cannon"},
-	"builder": {"max_hp": 250000, "armor": "dozer", "weapon": ""},
-	"collector": {"max_hp": 300000, "armor": "chinook", "weapon": ""},
-	"vehicle": {"max_hp": 240000, "armor": "humvee", "weapon": ""},
-	"reactor": {"max_hp": 800000, "armor": "structure", "weapon": ""},
-	"barracks": {"max_hp": 1000000, "armor": "structure", "weapon": ""},
-	"depot": {"max_hp": 2000000, "armor": "structure", "weapon": ""},
-	"factory": {"max_hp": 2000000, "armor": "structure", "weapon": ""},
+	"usa_rifle_infantry": {"max_hp": 180000, "armor": "human", "weapon": "rifle"},
+	"usa_tank": {"max_hp": 480000, "armor": "tank", "weapon": "cannon"},
+	"usa_builder": {"max_hp": 250000, "armor": "builder_vehicle", "weapon": ""},
+	"usa_collector": {"max_hp": 300000, "armor": "helicopter", "weapon": ""},
+	"usa_light_vehicle": {"max_hp": 240000, "armor": "light_vehicle", "weapon": ""},
+	"usa_power_plant": {"max_hp": 800000, "armor": "structure", "weapon": ""},
+	"usa_barracks": {"max_hp": 1000000, "armor": "structure", "weapon": ""},
+	"usa_supply_center": {"max_hp": 2000000, "armor": "structure", "weapon": ""},
+	"usa_factory": {"max_hp": 2000000, "armor": "structure", "weapon": ""},
 }
 
 static func profile(kind: String) -> Dictionary:
@@ -41,18 +41,18 @@ const INFANTRY_BLAST: float = 0.52
 # Source: Zero Hour geometry at 25 units per cell: infantry cylinder r 7, boxes as half-diagonals (docs/reference/m6-verification.md Values table).
 static func radius(kind: String) -> float:
 	match kind:
-		"infantry": return 0.28
-		"tank", "builder": return 0.7211102550927978
-		"vehicle": return 0.6260990336999411
-		"collector": return 0.835224520712844
+		"usa_rifle_infantry": return 0.28
+		"usa_tank", "usa_builder": return 0.7211102550927978
+		"usa_light_vehicle": return 0.6260990336999411
+		"usa_collector": return 0.835224520712844
 	var footprint: Vector2i = Definitions.building(kind).footprint
 	return 0.5 * sqrt(float(footprint.x * footprint.x + footprint.y * footprint.y))
 
 # Source: Zero Hour AmericaInfantryRanger/AmericaTankCrusader VisionRange 100/150 at 25 units per cell.
 static func vision(kind: String) -> float:
 	match kind:
-		"infantry": return 4.0
-		"tank": return 6.0
+		"usa_rifle_infantry": return 4.0
+		"usa_tank": return 6.0
 	return 0.0
 
 static func armor_percent(armor: String, damage_type: String) -> int:

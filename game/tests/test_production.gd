@@ -12,26 +12,26 @@ func cases() -> Array[Callable]:
 
 func ready(runner) -> Dictionary:
 	var sim = Fixture.make_world(50000)
-	var reactor: int = Fixture.build(runner,sim,"reactor",Vector2i(5,5))
-	var depot: int = Fixture.build(runner,sim,"depot",Vector2i(10,4))
-	var factory: int = Fixture.build(runner,sim,"factory",Vector2i(16,4))
+	var reactor: int = Fixture.build(runner,sim,"usa_power_plant",Vector2i(5,5))
+	var depot: int = Fixture.build(runner,sim,"usa_supply_center",Vector2i(10,4))
+	var factory: int = Fixture.build(runner,sim,"usa_factory",Vector2i(16,4))
 	return {"sim":sim,"reactor":reactor,"depot":depot,"factory":factory}
 
-func produce(sim, id: int, kind: String = "vehicle") -> Dictionary:
+func produce(sim, id: int, kind: String = "usa_light_vehicle") -> Dictionary:
 	return Fixture.send(sim,{"type":"produce","building_id":id,"unit_kind":kind})
 
 func test_producer_and_free_collector(runner) -> bool:
 	var world: Dictionary = ready(runner)
 	var sim = world.sim
-	var collectors: Array = sim.snapshot().entities.filter(func(unit: Dictionary) -> bool: return unit.kind == "collector")
+	var collectors: Array = sim.snapshot().entities.filter(func(unit: Dictionary) -> bool: return unit.kind == "usa_collector")
 	runner.check(collectors.size() == 1,"P1 exactly one free collector")
 	if not collectors.is_empty(): runner.check(collectors[0].collection.cargo == 0 and collectors[0].collection.enabled,"P1 free collector enabled empty")
 	Fixture.steps(sim,10)
-	runner.check(sim.snapshot().entities.filter(func(unit: Dictionary) -> bool: return unit.kind == "collector").size() == 1,"P1 grant never repeats")
-	for row in [[world.factory,"collector"],[world.depot,"vehicle"],[999,"vehicle"]]:
+	runner.check(sim.snapshot().entities.filter(func(unit: Dictionary) -> bool: return unit.kind == "usa_collector").size() == 1,"P1 grant never repeats")
+	for row in [[world.factory,"usa_collector"],[world.depot,"usa_light_vehicle"],[999,"usa_light_vehicle"]]:
 		var before: Dictionary = sim.snapshot()
 		runner.check(not produce(sim,row[0],row[1]).ok and sim.snapshot() == before,"P1 invalid producer atomic")
-	runner.check(produce(sim,world.depot,"collector").ok,"P1 paid collector accepted")
+	runner.check(produce(sim,world.depot,"usa_collector").ok,"P1 paid collector accepted")
 	sim.step()
 	var queue: Array = Fixture.object(sim,world.depot).queue
 	runner.check(queue.size() == 1 and sim.snapshot().players[0].credits == 44000,"P1 paid immediate")
@@ -45,9 +45,9 @@ func test_producer_and_free_collector(runner) -> bool:
 	runner.check(Fixture.object(sim,next).collection.phase == "idle","P1 new collector activates following tick")
 	var grant = Fixture.make_world()
 	grant.add_supply_source(Vector2i(24,4),8)
-	Fixture.build(runner,grant,"reactor",Vector2i(5,5))
-	Fixture.build(runner,grant,"depot",Vector2i(10,4))
-	var free: Dictionary = grant.snapshot().entities.filter(func(unit: Dictionary) -> bool: return unit.kind == "collector")[0]
+	Fixture.build(runner,grant,"usa_power_plant",Vector2i(5,5))
+	Fixture.build(runner,grant,"usa_supply_center",Vector2i(10,4))
+	var free: Dictionary = grant.snapshot().entities.filter(func(unit: Dictionary) -> bool: return unit.kind == "usa_collector")[0]
 	runner.check(free.collection.phase == "seeking" and free.order == null and free.position == [11.5,5.5],"P1 free completion collector also inactive until next tick")
 	return true
 
@@ -84,7 +84,7 @@ func test_blocked_exit(runner) -> bool:
 	var world: Dictionary = ready(runner)
 	var sim = world.sim
 	var first: int = -1
-	for cell in Construction.perimeter("factory",Vector2i(16,4)):
+	for cell in Construction.perimeter("usa_factory",Vector2i(16,4)):
 		var id: int = sim.spawn(1,Vector2(cell) + Vector2(.5,.5))
 		if first == -1 and id != -1: first = id
 	runner.check(produce(sim,world.factory).ok and produce(sim,world.factory).ok,"P3 queued blocked")
@@ -106,7 +106,7 @@ func test_blocked_exit(runner) -> bool:
 	runner.check(Fixture.object(sim,world.factory).queue.is_empty(),"P3 remaining cancellation")
 	var reserved_world: Dictionary = ready(runner)
 	var reserved = reserved_world.sim
-	for cell in Construction.perimeter("factory",Vector2i(16,4)):
+	for cell in Construction.perimeter("usa_factory",Vector2i(16,4)):
 		if cell != Vector2i(16,3): reserved.spawn(1,Vector2(cell) + Vector2(.5,.5))
 	var blocker: int = reserved.spawn(1,Vector2(16.5,1.5))
 	produce(reserved,reserved_world.factory)
@@ -161,12 +161,12 @@ func test_production_power_and_removal(runner) -> bool:
 	Fixture.steps(retained,149)
 	runner.check(Fixture.object(retained,retained_world.factory).queue[0].work == 299000 and retained.snapshot().players[0].credits == paid_credits,"P4 accepted paid queue survives prerequisite loss")
 	retained.step()
-	runner.check(Fixture.object(retained,retained_world.factory).queue.is_empty() and retained.snapshot().entities.filter(func(unit: Dictionary) -> bool: return unit.kind == "vehicle").size() == 1 and retained.snapshot().players[0].credits == paid_credits,"P4 retained queue completes without refund or second charge")
+	runner.check(Fixture.object(retained,retained_world.factory).queue.is_empty() and retained.snapshot().entities.filter(func(unit: Dictionary) -> bool: return unit.kind == "usa_light_vehicle").size() == 1 and retained.snapshot().players[0].credits == paid_credits,"P4 retained queue completes without refund or second charge")
 	return true
 
 func skirmish_barracks(runner) -> Dictionary:
 	var sim = Skirmish.create()
-	var barracks: int = Fixture.build(runner,sim,"barracks",Vector2i(12,12))
+	var barracks: int = Fixture.build(runner,sim,"usa_barracks",Vector2i(12,12))
 	return {"sim":sim,"barracks":barracks}
 
 func rally(sim, id: int, target: Array, extra: Dictionary = {}) -> Dictionary:
@@ -178,11 +178,11 @@ func test_default_rally_mirrored(runner) -> bool:
 	var world: Dictionary = skirmish_barracks(runner)
 	var sim = world.sim
 	runner.check(Fixture.object(sim,world.barracks).rally == [16.5,13.5],"R1 barracks rally in snapshot")
-	runner.check(Production.default_rally(sim,"barracks",Vector2i(34,12)) == [31.5,13.5],"R1 barracks mirrored")
-	runner.check(Production.default_rally(sim,"factory",Vector2i(12,18)) == [17.5,19.5],"R1 factory left")
-	runner.check(Production.default_rally(sim,"factory",Vector2i(33,18)) == [30.5,19.5],"R1 factory right")
-	runner.check(Production.default_rally(sim,"barracks",Vector2i(44,0)) == [41.5,1.5],"R1 right edge origin")
-	runner.check(Production.default_rally(sim,"barracks",Vector2i(0,30)) == [4.5,31.5],"R1 bottom clamp")
+	runner.check(Production.default_rally(sim,"usa_barracks",Vector2i(34,12)) == [31.5,13.5],"R1 barracks mirrored")
+	runner.check(Production.default_rally(sim,"usa_factory",Vector2i(12,18)) == [17.5,19.5],"R1 factory left")
+	runner.check(Production.default_rally(sim,"usa_factory",Vector2i(33,18)) == [30.5,19.5],"R1 factory right")
+	runner.check(Production.default_rally(sim,"usa_barracks",Vector2i(44,0)) == [41.5,1.5],"R1 right edge origin")
+	runner.check(Production.default_rally(sim,"usa_barracks",Vector2i(0,30)) == [4.5,31.5],"R1 bottom clamp")
 	return true
 
 func test_production_never_stalls(runner) -> bool:
@@ -191,9 +191,9 @@ func test_production_never_stalls(runner) -> bool:
 	var produced: int = 0
 	for tick in range(2400):
 		if Fixture.object(sim,world.barracks).queue.size() < 2 and sim.snapshot().players[0].credits >= 225 and produced < 12:
-			produced += 1 if produce(sim,world.barracks,"infantry").ok else 0
+			produced += 1 if produce(sim,world.barracks,"usa_rifle_infantry").ok else 0
 		sim.step()
-	var units: Array = sim.snapshot().entities.filter(func(unit: Dictionary) -> bool: return unit.kind == "infantry")
+	var units: Array = sim.snapshot().entities.filter(func(unit: Dictionary) -> bool: return unit.kind == "usa_rifle_infantry")
 	runner.check(produced == 12 and units.size() == 12,"R2 twelve infantry produced")
 	for unit in units:
 		runner.check(unit.status == "arrived" and unit.combat.mode == "guard","R2 unit parked in guard")
@@ -203,8 +203,8 @@ func test_set_rally_applies_to_next_spawn(runner) -> bool:
 	var world: Dictionary = skirmish_barracks(runner)
 	var sim = world.sim
 	runner.check(rally(sim,world.barracks,[20.5,20.5]).ok and rally(sim,world.barracks,[20.5,22.5]).ok,"R3 set accepted twice")
-	sim.spawn(2,Vector2(12.5,14.5),"builder")
-	runner.check(produce(sim,world.barracks,"infantry").ok,"R3 queued")
+	sim.spawn(2,Vector2(12.5,14.5),"usa_builder")
+	runner.check(produce(sim,world.barracks,"usa_rifle_infantry").ok,"R3 queued")
 	var next: int = sim.snapshot().next_entity_id
 	Fixture.steps(sim,152)
 	var unit: Dictionary = Fixture.object(sim,next)
@@ -218,14 +218,14 @@ func test_set_rally_applies_to_next_spawn(runner) -> bool:
 
 func spawn_one(sim, world: Dictionary) -> Dictionary:
 	var next: int = sim.snapshot().next_entity_id
-	produce(sim,world.barracks,"infantry")
+	produce(sim,world.barracks,"usa_rifle_infantry")
 	Fixture.steps(sim,152)
 	return Fixture.object(sim,next)
 
 func test_rally_blocked_cell_falls_back(runner) -> bool:
 	var world: Dictionary = skirmish_barracks(runner)
 	var sim = world.sim
-	var reactor: int = Fixture.build(runner,sim,"reactor",Vector2i(20,12))
+	var reactor: int = Fixture.build(runner,sim,"usa_power_plant",Vector2i(20,12))
 	runner.check(rally(sim,world.barracks,[20.5,12.5]).ok,"R4 rally on reactor footprint accepted")
 	var unit: Dictionary = spawn_one(sim,world)
 	var goal := Vector2i(Vector2(unit.destination[0],unit.destination[1]).floor()) if unit.get("destination") != null else Vector2i(-1,-1)
@@ -235,8 +235,8 @@ func test_rally_blocked_cell_falls_back(runner) -> bool:
 	for y in range(32): walled.append(Vector2i(30,y))
 	var split = Simulation.new(walled,Vector2i(48,32))
 	split.add_player(1,5000)
-	split.spawn(1,Vector2(4.5,4.5),"builder")
-	var barracks: int = Fixture.build(runner,split,"barracks",Vector2i(12,12))
+	split.spawn(1,Vector2(4.5,4.5),"usa_builder")
+	var barracks: int = Fixture.build(runner,split,"usa_barracks",Vector2i(12,12))
 	runner.check(rally(split,barracks,[40.5,12.5]).ok,"R4 far-side rally accepted")
 	var other: Dictionary = spawn_one(split,{"barracks":barracks})
 	runner.check(not other.is_empty() and other.destination != null and other.destination[0] < 30.0,"R4 other component falls back to reachable side")
@@ -249,7 +249,7 @@ func test_set_rally_same_tick_cases(runner) -> bool:
 	var tick: int = sim.snapshot().tick + 1
 	var results: Array = [
 		rally(sim,id,[18.5,14.5],{"tick":tick}),
-		produce(sim,id,"infantry"),
+		produce(sim,id,"usa_rifle_infantry"),
 		rally(sim,id,[19.5,15.5],{"tick":tick}),
 	]
 	for index in range(results.size()): runner.check(results[index].ok,"R5 accepted " + str(index))
@@ -258,7 +258,7 @@ func test_set_rally_same_tick_cases(runner) -> bool:
 	runner.check(Fixture.send(sim,{"type":"set_rally","building_id":id,"target":[21.5,15.5],"tick":sim.snapshot().tick + 150}).ok,"R5 queued for spawn tick")
 	Fixture.steps(sim,160)
 	runner.check(Fixture.object(sim,id).rally == [21.5,15.5],"R5 rally applied by spawn")
-	produce(sim,id,"infantry")
+	produce(sim,id,"usa_rifle_infantry")
 	sim.step()
 	var queued: int = Fixture.object(sim,id).queue[0].id
 	var same: int = sim.snapshot().tick + 1
@@ -285,5 +285,5 @@ func test_set_rally_same_tick_cases(runner) -> bool:
 
 func economy_depot(runner) -> Dictionary:
 	var sim = Fixture.make_world(50000)
-	Fixture.build(runner,sim,"reactor",Vector2i(5,5))
-	return {"sim":sim,"depot":Fixture.build(runner,sim,"depot",Vector2i(10,4))}
+	Fixture.build(runner,sim,"usa_power_plant",Vector2i(5,5))
+	return {"sim":sim,"depot":Fixture.build(runner,sim,"usa_supply_center",Vector2i(10,4))}

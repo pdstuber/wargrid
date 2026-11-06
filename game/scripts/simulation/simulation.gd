@@ -67,20 +67,20 @@ func add_player(player: int, credits: int, controller: String = "human", team: i
 func team_of(player: int) -> int:
 	return _players[player].team if _players.has(player) else 0
 
-func spawn(owner: int, position: Vector2, kind: String = "vehicle", occupied: Variant = null) -> int:
-	if Definitions.unit(kind).is_empty() or owner <= 0 or not _in_bounds(position) or (kind != "collector" and not _navigation.is_walkable(position)):
+func spawn(owner: int, position: Vector2, kind: String = "usa_light_vehicle", occupied: Variant = null) -> int:
+	if Definitions.unit(kind).is_empty() or owner <= 0 or not _in_bounds(position) or (kind != "usa_collector" and not _navigation.is_walkable(position)):
 		return -1
 	var cell := Vector2i(position.floor())
-	if kind != "collector" and (occupied if occupied != null else occupied_cells()).has(cell): return -1
+	if kind != "usa_collector" and (occupied if occupied != null else occupied_cells()).has(cell): return -1
 	var id: int = _next_entity_id
-	_entities[id] = {"id": id, "owner": owner, "position": [position.x, position.y], "order": null, "status": "idle", "route": [], "destination": null, "kind":kind,"hp":CombatDefinitions.profile(kind).max_hp,"max_hp":CombatDefinitions.profile(kind).max_hp,"combat":CombatDefinitions.initial_combat(kind),"speed":0.0,"move_after":0,"heading":[1.0,0.0],"construction_id":null,"collection": {"enabled":false,"preferred_source_id":null,"target_id":null,"phase":"idle","remaining_ticks":0,"retry_tick":0,"cargo":0} if kind == "collector" else null}
+	_entities[id] = {"id": id, "owner": owner, "position": [position.x, position.y], "order": null, "status": "idle", "route": [], "destination": null, "kind":kind,"hp":CombatDefinitions.profile(kind).max_hp,"max_hp":CombatDefinitions.profile(kind).max_hp,"combat":CombatDefinitions.initial_combat(kind),"speed":0.0,"move_after":0,"heading":[1.0,0.0],"construction_id":null,"collection": {"enabled":false,"preferred_source_id":null,"target_id":null,"phase":"idle","remaining_ticks":0,"retry_tick":0,"cargo":0} if kind == "usa_collector" else null}
 	_next_entity_id += 1
 	return id
 
 func occupied_cells() -> Dictionary:
 	var cells: Dictionary = {}
 	for unit: Dictionary in _entities.values():
-		if unit.kind == "collector": continue
+		if unit.kind == "usa_collector": continue
 		cells[_cell(unit.position)] = true
 		if unit.destination != null: cells[_cell(unit.destination)] = true
 	return cells
@@ -100,9 +100,9 @@ func start_match(players: Array[int]) -> Dictionary:
 
 func _survives(player: int) -> bool:
 	for unit: Dictionary in _entities.values():
-		if unit.owner == player and unit.kind == "builder": return true
+		if unit.owner == player and unit.kind == "usa_builder": return true
 	for building: Dictionary in _buildings.values():
-		if building.owner == player and building.completed and building.kind in ["depot","barracks","factory"]: return true
+		if building.owner == player and building.completed and building.kind in ["usa_supply_center","usa_barracks","usa_factory"]: return true
 	return false
 
 func _evaluate_match() -> void:
@@ -187,7 +187,7 @@ func _validate(command: Dictionary, due: bool = false) -> String:
 	# Due builds are checked once by Construction.place, which reuses that preview grid.
 	if command.type == "build": return "" if due else preview_build(command.player,command.builder_id,command.building_kind,Vector2i(command.origin[0],command.origin[1])).error
 	if command.type == "resume_build":
-		if not _entities.has(command.builder_id) or _entities[command.builder_id].owner != command.player or _entities[command.builder_id].kind != "builder": return "Invalid builder"
+		if not _entities.has(command.builder_id) or _entities[command.builder_id].owner != command.player or _entities[command.builder_id].kind != "usa_builder": return "Invalid builder"
 	if command.type in ["resume_build","cancel_build"]:
 		if not _buildings.has(command.building_id) or _buildings[command.building_id].owner != command.player or _buildings[command.building_id].completed: return "Missing owned foundation"
 		if command.type == "resume_build": return Construction.resume(self,command).error
@@ -195,7 +195,7 @@ func _validate(command: Dictionary, due: bool = false) -> String:
 	if command.type == "set_rally":
 		if not _buildings.has(command.building_id): return "Missing producer"
 		var producer: Dictionary = _buildings[command.building_id]
-		if producer.owner != command.player or not producer.kind in ["barracks","factory"]: return "Invalid owned producer"
+		if producer.owner != command.player or not producer.kind in ["usa_barracks","usa_factory"]: return "Invalid owned producer"
 		return _validate_target(command,due)
 	if command.type in ["produce","cancel_production"]:
 		if not _buildings.has(command.building_id): return "Missing producer"
@@ -214,7 +214,7 @@ func _validate(command: Dictionary, due: bool = false) -> String:
 	if command.type == "gather":
 		if not _sources.has(command.source_id): return "Missing supply source"
 		for id: Variant in live:
-			if _entities[id].kind != "collector": return "Gather requires collectors"
+			if _entities[id].kind != "usa_collector": return "Gather requires collectors"
 			if _sources[command.source_id].boxes == 0 and _entities[id].collection.cargo == 0: return "Source is empty"
 		return ""
 	return "Economic command unavailable"
@@ -228,7 +228,7 @@ func _validate_target(command: Dictionary, due: bool) -> String:
 	if not _in_bounds(target): return "Target outside map"
 	if not due and command.has("entity_ids"):
 		for id: Variant in command.entity_ids:
-			if _entities.has(id) and _entities[id].kind != "collector" and not _navigation.is_walkable(target): return "Target must be walkable and within map"
+			if _entities.has(id) and _entities[id].kind != "usa_collector" and not _navigation.is_walkable(target): return "Target must be walkable and within map"
 	return ""
 
 func _live_ids(player: int, ids: Array) -> Variant:
@@ -257,7 +257,7 @@ func _unavailable_cells(members: Array[Dictionary]) -> Array[Vector2i]:
 		ids[unit.id] = true
 	var unavailable: Dictionary = {}
 	for unit: Dictionary in _entities.values():
-		if unit.kind == "collector": continue
+		if unit.kind == "usa_collector": continue
 		if not ids.has(unit.id):
 			unavailable[_cell(unit.position)] = true
 		if unit.destination != null:
@@ -348,7 +348,7 @@ func _assign_move(members: Array[Dictionary], target: Array) -> void:
 	var point := Vector2(target[0], target[1])
 	var ground: Array[Dictionary] = []
 	for unit in members:
-		if unit.kind != "collector": ground.append(unit)
+		if unit.kind != "usa_collector": ground.append(unit)
 	_allocation_calls += 1
 	var zone: int = Profiler.begin()
 	var unavailable: Array[Vector2i] = _unavailable_cells(ground)
@@ -358,7 +358,7 @@ func _assign_move(members: Array[Dictionary], target: Array) -> void:
 	Profiler.end(&"allocation.assign", zone)
 	for unit in members:
 		unit.route = []
-		if unit.kind == "collector":
+		if unit.kind == "usa_collector":
 			unit.order = {"type":"move","target":target.duplicate()}
 			unit.destination = target.duplicate()
 			unit.route = [_frozen(target.duplicate())]
@@ -561,7 +561,7 @@ func replace_blocked_cells(cells: Array[Vector2i]) -> Dictionary:
 		if not bounds.has_point(cell): return {"ok":false,"error":"Obstacle outside map"}
 		if objects.has(cell): return {"ok":false,"error":"Obstacle overlaps building or source"}
 		for unit: Dictionary in _entities.values():
-			if unit.kind != "collector" and _cell(unit.position) == cell: return {"ok":false,"error":"Obstacle would cover a unit"}
+			if unit.kind != "usa_collector" and _cell(unit.position) == cell: return {"ok":false,"error":"Obstacle would cover a unit"}
 	var unique: Dictionary = {}
 	for cell in cells: unique[cell] = true
 	_terrain_cells.assign(unique.keys())
@@ -584,7 +584,7 @@ func _replace_union(cells: Array[Vector2i], prebuilt: RefCounted = null) -> Dict
 	ids.sort()
 	for id: Variant in ids:
 		var unit: Dictionary = _entities[id]
-		if unit.kind == "collector": continue
+		if unit.kind == "usa_collector": continue
 		if unit.status != "moving" and unit.status != "path_pending":
 			continue
 		unit.route = []
@@ -671,7 +671,7 @@ func _union_cells() -> Array[Vector2i]:
 	for building: Dictionary in _buildings.values():
 		cells.append_array(Construction.cells(building.kind,Vector2i(building.origin[0],building.origin[1])))
 	for source: Dictionary in _sources.values():
-		cells.append_array(Construction.cells("depot",Vector2i(source.origin[0],source.origin[1])))
+		cells.append_array(Construction.cells("usa_supply_center",Vector2i(source.origin[0],source.origin[1])))
 	return cells
 
 func _detach_task(unit: Dictionary) -> void:
@@ -721,7 +721,7 @@ func _grant_collector(building: Dictionary) -> void:
 
 func add_supply_source(origin: Vector2i, boxes: int) -> int:
 	if boxes < 0: return -1
-	if not Construction.footprint_error(self,Construction.cells("depot",origin)).is_empty(): return -1
+	if not Construction.footprint_error(self,Construction.cells("usa_supply_center",origin)).is_empty(): return -1
 	var id: int = _next_entity_id
 	_next_entity_id += 1
 	_sources[id] = {"id":id,"origin":[origin.x,origin.y],"boxes":boxes,"active_collector_id":null}

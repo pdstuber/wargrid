@@ -39,7 +39,7 @@ func hover(main, plane: Vector2) -> void:
 func test_base_ready(runner) -> bool:
 	var main = await setup(runner)
 	var state: Dictionary = main.simulation.snapshot()
-	runner.check(state.map.size == [32,32] and state.entities.size() == 1 and state.entities[0].kind == "builder" and state.entities[0].position == [4.5,4.5],"Bs1 authored builder map")
+	runner.check(state.map.size == [32,32] and state.entities.size() == 1 and state.entities[0].kind == "usa_builder" and state.entities[0].position == [4.5,4.5],"Bs1 authored builder map")
 	runner.check(state.players.size() == 1 and state.players[0].credits == 10000 and state.sources.size() == 1 and state.sources[0].origin == [24,4] and state.sources[0].boxes == 200 and state.buildings.is_empty(),"Bs1 authored economy")
 	main._physics_process(0.0)
 	runner.check(main.simulation.snapshot().tick == state.tick + 1,"Bs1 one physics tick")
@@ -64,7 +64,7 @@ func test_placement_input(runner) -> bool:
 			await runner.process_frame
 			key(main,KEY_1)
 			hover(main,Iso.world_to_plane(Vector2(8.25,4.25)))
-			runner.check(main._placement_kind == "reactor" and main.get_node("WorldView")._preview_cells == [Vector2i(8,4),Vector2i(9,4),Vector2i(8,5),Vector2i(9,5)],"Bs2 transformed snapped preview")
+			runner.check(main._placement_kind == "usa_power_plant" and main.get_node("WorldView")._preview_cells == [Vector2i(8,4),Vector2i(9,4),Vector2i(8,5),Vector2i(9,5)],"Bs2 transformed snapped preview")
 			var position: Vector2 = camera.position
 			main.pan_camera(Vector2.RIGHT,1.0)
 			main.change_zoom(1)
@@ -86,7 +86,7 @@ func test_placement_input(runner) -> bool:
 	key(main,KEY_2)
 	runner.check(main.is_selecting() and main._placement_kind.is_empty(),"Bs2 placement key waits for gesture")
 	pointer(main,Iso.world_to_plane(Vector2(4.5,4.5)) + Vector2(0,-8),MOUSE_BUTTON_LEFT,false)
-	runner.check(not main.is_selecting() and main._placement_kind == "depot","Bs2 deferred placement after selection")
+	runner.check(not main.is_selecting() and main._placement_kind == "usa_supply_center","Bs2 deferred placement after selection")
 	pointer(main,Iso.world_to_plane(Vector2(10,10)),MOUSE_BUTTON_RIGHT,true)
 	runner.check(main._placement_kind.is_empty() and main.selected_ids == [1] and main.simulation.snapshot() == queued,"Bs2 right cancel preserves state")
 	main.free()
@@ -95,8 +95,8 @@ func test_placement_input(runner) -> bool:
 func test_production_ui(runner) -> bool:
 	var main = await setup(runner)
 	main.simulation = Fixture.make_world(50000)
-	Fixture.build(runner,main.simulation,"reactor",Vector2i(5,5))
-	var depot: int = Fixture.build(runner,main.simulation,"depot",Vector2i(10,4))
+	Fixture.build(runner,main.simulation,"usa_power_plant",Vector2i(5,5))
+	var depot: int = Fixture.build(runner,main.simulation,"usa_supply_center",Vector2i(10,4))
 	main._refresh()
 	pointer(main,Iso.world_to_plane(Vector2(11.5,5.5)),MOUSE_BUTTON_LEFT,true)
 	pointer(main,Iso.world_to_plane(Vector2(11.5,5.5)),MOUSE_BUTTON_LEFT,false)
@@ -136,7 +136,7 @@ func test_production_ui(runner) -> bool:
 	main.simulation.remove_object(depot)
 	main._refresh()
 	runner.check(main.selected_building_id == -1,"Bs3 removed selection cleared")
-	Fixture.send(main.simulation,{"type":"build","builder_id":1,"building_kind":"reactor","origin":[8,12]})
+	Fixture.send(main.simulation,{"type":"build","builder_id":1,"building_kind":"usa_power_plant","origin":[8,12]})
 	main._physics_process(0.0)
 	var foundation: int = main.simulation.snapshot().buildings.back().id
 	main.selected_building_id = foundation
@@ -153,7 +153,7 @@ func test_context_orders(runner) -> bool:
 	var main = await setup(runner)
 	main.simulation = Fixture.make_world()
 	var source: int = main.simulation.add_supply_source(Vector2i(24,4),8)
-	var air: int = main.simulation.spawn(1,Vector2(2.5,2.5),"collector")
+	var air: int = main.simulation.spawn(1,Vector2(2.5,2.5),"usa_collector")
 	main.selected_ids.assign([air])
 	main._refresh()
 	pointer(main,Iso.world_to_plane(Vector2(25.5,5.5)),MOUSE_BUTTON_RIGHT,true)
@@ -166,7 +166,7 @@ func test_context_orders(runner) -> bool:
 	pointer(main,Iso.world_to_plane(Vector2(6.5,10.5)),MOUSE_BUTTON_RIGHT,true)
 	runner.check(main.simulation.snapshot().pending_commands.size() == 2 and main.simulation.snapshot().pending_commands.back().type == "move","Bs4 mixed ordinary ground move")
 	main.simulation = Fixture.make_world()
-	Fixture.send(main.simulation,{"type":"build","builder_id":1,"building_kind":"reactor","origin":[8,4]})
+	Fixture.send(main.simulation,{"type":"build","builder_id":1,"building_kind":"usa_power_plant","origin":[8,4]})
 	main.simulation.step()
 	Fixture.send(main.simulation,{"type":"stop","entity_ids":[1]})
 	main.simulation.step()
@@ -186,8 +186,8 @@ func test_context_orders(runner) -> bool:
 func test_execution_feedback(runner) -> bool:
 	var main = await setup(runner)
 	main.simulation = Fixture.make_world(800)
-	main._submit({"type":"build","builder_id":1,"building_kind":"reactor","origin":[8,4],"tick":2})
-	main._submit({"type":"build","builder_id":1,"building_kind":"reactor","origin":[12,4],"tick":2})
+	main._submit({"type":"build","builder_id":1,"building_kind":"usa_power_plant","origin":[8,4],"tick":2})
+	main._submit({"type":"build","builder_id":1,"building_kind":"usa_power_plant","origin":[12,4],"tick":2})
 	Fixture.steps(main.simulation,3)
 	main._refresh()
 	runner.check(main.get_node("HUD/Status").text.contains("Insufficient credits"),"Bs5 due rejection visible")
@@ -225,7 +225,7 @@ func test_preview_hover_cost(runner) -> bool:
 func test_resume_status(runner) -> bool:
 	var main = await setup(runner)
 	main.simulation = Fixture.make_world()
-	Fixture.send(main.simulation,{"type":"build","builder_id":1,"building_kind":"reactor","origin":[8,4]})
+	Fixture.send(main.simulation,{"type":"build","builder_id":1,"building_kind":"usa_power_plant","origin":[8,4]})
 	main.simulation.step()
 	Fixture.send(main.simulation,{"type":"stop","entity_ids":[1]})
 	main.simulation.step()
@@ -245,8 +245,8 @@ func test_resume_status(runner) -> bool:
 
 func test_queue_label(runner) -> bool:
 	var BaseMain = load("res://scripts/base_main.gd")
-	runner.check(BaseMain.queue_label({"id":10,"kind":"tank","work":270000}) == "Cancel tank (90%)","Bs5 started entry shows percent, no id or raw work")
-	runner.check(BaseMain.queue_label({"id":12,"kind":"tank","work":0}) == "Cancel tank (queued)","Bs5 unstarted entry shows queued")
+	runner.check(BaseMain.queue_label({"id":10,"kind":"usa_tank","work":270000}) == "Cancel usa_tank (90%)","Bs5 started entry shows percent, no id or raw work")
+	runner.check(BaseMain.queue_label({"id":12,"kind":"usa_tank","work":0}) == "Cancel usa_tank (queued)","Bs5 unstarted entry shows queued")
 	return true
 
 func test_one_snapshot_per_refresh(runner) -> bool:

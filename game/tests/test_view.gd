@@ -59,13 +59,13 @@ func test_box_and_order(runner) -> bool:
 func test_economy_picking(runner) -> bool:
 	var sim = Fixture.make_world()
 	var source: int = sim.add_supply_source(Vector2i(24,4),8)
-	var building: int = Fixture.build(runner,sim,"reactor",Vector2i(8,4))
+	var building: int = Fixture.build(runner,sim,"usa_power_plant",Vector2i(8,4))
 	var view = View.new()
 	view.set_state(sim.snapshot(),[building])
 	runner.check(view.pick_object(Iso.world_to_plane(Vector2(8,4))) == building,"V3 footprint inclusive origin")
 	runner.check(view.pick_object(Iso.world_to_plane(Vector2(10,6))) == building,"V3 footprint inclusive far edge")
 	runner.check(view.pick_object(Iso.world_to_plane(Vector2(25.5,5.5))) == source,"V3 neutral source")
-	var air: int = sim.spawn(1,Vector2(25.5,5.5),"collector")
+	var air: int = sim.spawn(1,Vector2(25.5,5.5),"usa_collector")
 	view.set_state(sim.snapshot(),[air])
 	runner.check(view.pick_object(Iso.world_to_plane(Vector2(25.5,5.5)) + Vector2(0,-26)) == air,"V3 air unit precedence over source")
 	view.set_state({},[])
@@ -119,7 +119,7 @@ func test_click_hint_lifetime(runner) -> bool:
 func test_resume_hint(runner) -> bool:
 	var view = View.new()
 	var sim = Fixture.make_world()
-	Fixture.send(sim, {"type":"build","builder_id":1,"building_kind":"reactor","origin":[8,4]})
+	Fixture.send(sim, {"type":"build","builder_id":1,"building_kind":"usa_power_plant","origin":[8,4]})
 	sim.step()
 	Fixture.send(sim, {"type":"stop","entity_ids":[1]})
 	sim.step()
@@ -132,7 +132,7 @@ func test_resume_hint(runner) -> bool:
 	runner.check(View.building_label(building).ends_with(" paused"), "H2 label ends paused, got " + View.building_label(building))
 	view.set_state(state, [])
 	runner.check(view.resume_candidate() == -1, "H2 no builder selected")
-	var second: int = sim.spawn(1, Vector2(5.5, 5.5), "builder")
+	var second: int = sim.spawn(1, Vector2(5.5, 5.5), "usa_builder")
 	state = sim.snapshot()
 	view.set_state(state, [1, second])
 	runner.check(view.resume_candidate() == -1, "H2 two builders selected")
@@ -147,7 +147,7 @@ func test_heading_mark_layout(runner) -> bool:
 	var sim = Simulation.new([], Vector2i(32, 32))
 	sim.add_player(1, 1000)
 	var ids: Array = []
-	for kind in ["infantry", "tank", "builder", "vehicle", "collector"]:
+	for kind in ["usa_rifle_infantry", "usa_tank", "usa_builder", "usa_light_vehicle", "usa_collector"]:
 		ids.append(sim.spawn(1, Vector2(3.5 + ids.size() * 2, 4.5), kind))
 	view.set_state(sim.snapshot(), [])
 	var marks: Array[Dictionary] = view.heading_marks()

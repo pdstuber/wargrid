@@ -15,7 +15,7 @@ func _command(type: String, sim: RefCounted) -> Dictionary:
 			"entity_ids": command[key] = [1, 2, 300]
 			"target": command[key] = [14.1, 0.30000000000000004]
 			"origin": command[key] = [5, 6]
-			"building_kind", "unit_kind": command[key] = "factory"
+			"building_kind", "unit_kind": command[key] = "usa_factory"
 			_: command[key] = 9
 	return command
 

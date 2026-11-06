@@ -21,7 +21,7 @@ func _build_hint() -> String:
 
 func _placement_kinds() -> Dictionary:
 	var kinds: Dictionary = super._placement_kinds()
-	kinds[KEY_4] = "barracks"
+	kinds[KEY_4] = "usa_barracks"
 	return kinds
 
 func _production_kind(building: Dictionary) -> String:

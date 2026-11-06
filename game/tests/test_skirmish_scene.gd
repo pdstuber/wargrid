@@ -24,7 +24,7 @@ func _pending(main, type: String = "") -> int:
 
 func _arena(main) -> Dictionary:
 	var sim = Skirmish.create(false)
-	var ids := {"infantry": sim.spawn(1, Vector2(10.5, 10.5), "infantry"), "tank": sim.spawn(1, Vector2(11.5, 10.5), "tank"), "enemy": sim.spawn(2, Vector2(15.5, 10.5), "tank")}
+	var ids := {"infantry": sim.spawn(1, Vector2(10.5, 10.5), "usa_rifle_infantry"), "tank": sim.spawn(1, Vector2(11.5, 10.5), "usa_tank"), "enemy": sim.spawn(2, Vector2(15.5, 10.5), "usa_tank")}
 	sim.start_match([1, 2] as Array[int])
 	main.simulation = sim
 	main.selected_ids.assign([ids.infantry, ids.tank])
@@ -38,7 +38,7 @@ func test_skirmish_ready_and_tick(runner) -> bool:
 	runner.check(main.simulation.snapshot() == Skirmish.create().snapshot(), "K2 exact scenario")
 	main._physics_process(0.0)
 	var state: Dictionary = main.simulation.snapshot()
-	runner.check(state.tick == 1 and state.buildings.size() == 1 and state.buildings[0].owner == 2 and state.buildings[0].kind == "reactor", "K2 one physics callback is one tick and the opponent command is due on the pre-step tick")
+	runner.check(state.tick == 1 and state.buildings.size() == 1 and state.buildings[0].owner == 2 and state.buildings[0].kind == "usa_power_plant", "K2 one physics callback is one tick and the opponent command is due on the pre-step tick")
 	main._process(0.1)
 	main._refresh()
 	runner.check(main.simulation.snapshot().tick == 1, "K2 _process and _refresh never step")
@@ -97,13 +97,13 @@ func test_combat_context_input(runner) -> bool:
 	helper.key(main, KEY_A)
 	main.selected_ids.assign([1])
 	helper.key(main, KEY_1)
-	runner.check(not main._attack_move_mode and main._placement_kind == "reactor", "K3 placement clears a stale attack-move mode")
+	runner.check(not main._attack_move_mode and main._placement_kind == "usa_power_plant", "K3 placement clears a stale attack-move mode")
 	helper.key(main, KEY_ESCAPE)
 	main.selected_ids.assign([1])
 	main._refresh()
 	helper.key(main, KEY_1)
 	helper.key(main, KEY_A)
-	runner.check(main._placement_kind == "reactor" and not main._attack_move_mode, "K3 placement mode consumes controls first")
+	runner.check(main._placement_kind == "usa_power_plant" and not main._attack_move_mode, "K3 placement mode consumes controls first")
 	main.free()
 	return true
 
@@ -124,7 +124,7 @@ func test_match_hud_and_restart(runner) -> bool:
 	main._submit({"type": "move", "entity_ids": [ids.tank], "target": [12.5, 12.5]})
 	main._unhandled_input(InputEventKey.new())
 	runner.check(main.simulation.snapshot() == before and main._error == "Match ended", "K4 terminal match accepts no orders")
-	main._placement_kind = "reactor"
+	main._placement_kind = "usa_power_plant"
 	main._attack_move_mode = true
 	main._sequence = 7
 	main._error = "old"
@@ -156,8 +156,8 @@ func test_combat_view(runner) -> bool:
 	var main = await _setup(runner)
 	var view = main.get_node("WorldView")
 	var sim = Skirmish.create(false)
-	var shooter: int = sim.spawn(1, Vector2(10.5, 10.5), "tank")
-	var victim: int = sim.spawn(2, Vector2(14.5, 10.5), "tank")
+	var shooter: int = sim.spawn(1, Vector2(10.5, 10.5), "usa_tank")
+	var victim: int = sim.spawn(2, Vector2(14.5, 10.5), "usa_tank")
 	var historical: Dictionary = sim.snapshot()
 	for unit in historical.entities:
 		unit.erase("hp")
@@ -214,8 +214,8 @@ func test_hud_layout_and_focus(runner) -> bool:
 func _pile_world(main) -> Dictionary:
 	var sim = Skirmish.create(false)
 	var source: int = sim.add_supply_source(Vector2i(8, 8), 10)
-	var first: int = sim.spawn(1, Vector2(9.5, 9.5), "collector")
-	var second: int = sim.spawn(1, Vector2(9.5, 9.5), "collector")
+	var first: int = sim.spawn(1, Vector2(9.5, 9.5), "usa_collector")
+	var second: int = sim.spawn(1, Vector2(9.5, 9.5), "usa_collector")
 	Fixture.send(sim, {"type": "gather", "entity_ids": [first, second], "source_id": source})
 	Fixture.steps(sim, 3)
 	sim.start_match([1, 2] as Array[int])
@@ -245,7 +245,7 @@ func test_enemy_selection_read_only(runner) -> bool:
 	helper.pointer(main, enemy_point, MOUSE_BUTTON_LEFT, false)
 	var text: String = main.get_node("HUD/Status").text
 	runner.check(main.inspected_id == ids.enemy and main.selected_ids.is_empty(), "E1 left-click selects the enemy read-only and replaces own selection")
-	runner.check(text.contains("Enemy (P2) tank #%d HP 480/480" % ids.enemy), "E1 enemy line, got " + text)
+	runner.check(text.contains("Enemy (P2) usa_tank #%d HP 480/480" % ids.enemy), "E1 enemy line, got " + text)
 	runner.check(text.contains("HP 480/480 | guard"), "E1 idle enemy shows its mode, got " + text)
 	var before: Dictionary = main.simulation.snapshot()
 	helper.key(main, KEY_E)
@@ -270,7 +270,7 @@ func test_rally_input_and_marker(runner) -> bool:
 	var helper = BaseScene.new()
 	var main = await _setup(runner)
 	var sim = Skirmish.create()
-	var barracks: int = Fixture.build(runner, sim, "barracks", Vector2i(12, 12))
+	var barracks: int = Fixture.build(runner, sim, "usa_barracks", Vector2i(12, 12))
 	main.simulation = sim
 	main.selected_ids.clear()
 	main._refresh()
@@ -287,7 +287,7 @@ func test_rally_input_and_marker(runner) -> bool:
 	runner.check(view.rally_marker() == [20.5, 14.5], "R1 marker follows the new rally")
 	helper.key(main, KEY_ESCAPE)
 	runner.check(view.rally_marker().is_empty(), "R1 marker absent when deselected")
-	var reactor: int = Fixture.build(runner, sim, "reactor", Vector2i(20, 20))
+	var reactor: int = Fixture.build(runner, sim, "usa_power_plant", Vector2i(20, 20))
 	main.selected_building_id = reactor
 	main.selected_ids.assign([reactor])
 	main._refresh()

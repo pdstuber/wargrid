@@ -3,7 +3,7 @@ extends RefCounted
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
 
-const KINDS: Array[String] = ["reactor", "depot", "barracks", "factory"]
+const KINDS: Array[String] = ["usa_power_plant", "usa_supply_center", "usa_barracks", "usa_factory"]
 const SOURCE_FOOTPRINT := Vector2i(3, 3)
 
 static func load(path: String) -> Dictionary:
@@ -22,7 +22,7 @@ static func parse(text: String) -> Dictionary:
 
 static func slot(map: Dictionary, seat: int, kind: String) -> Vector2i:
 	for start: Dictionary in map.starts:
-		if int(start.seat) == seat: return _cell(start.slots[kind])
+		if int(start.seat) == seat: return _cell(start.slots[kind.trim_prefix("usa_")])
 	return Vector2i(-1, -1)
 
 static func start_cell(map: Dictionary, seat: int) -> Vector2i:
@@ -44,7 +44,7 @@ static func create(map: Dictionary, seats: Array[Dictionary]) -> Simulation:
 	for seat in seats: sim.add_player(seat.seat, seat.credits, seat.controller, seat.get("team", 0))
 	for seat in seats:
 		var cell := start_cell(map, seat.seat)
-		sim.spawn(seat.seat, Vector2(cell) + Vector2(0.5, 0.5), "builder")
+		sim.spawn(seat.seat, Vector2(cell) + Vector2(0.5, 0.5), "usa_builder")
 	for source: Dictionary in map.sources: sim.add_supply_source(_cell(source.origin), int(source.boxes))
 	return sim
 
@@ -68,7 +68,7 @@ static func _valid(map: Dictionary) -> bool:
 static func _start_valid(map: Dictionary, start: Dictionary, size: Vector2i) -> bool:
 	if not _open(map, size, _cell(start.cell), Vector2i.ONE): return false
 	for kind in KINDS:
-		if not start.slots.has(kind) or not _open(map, size, _cell(start.slots[kind]), Definitions.building(kind).footprint): return false
+		if not start.slots.has(kind.trim_prefix("usa_")) or not _open(map, size, _cell(start.slots[kind.trim_prefix("usa_")]), Definitions.building(kind).footprint): return false
 	return true
 
 static func _open(map: Dictionary, size: Vector2i, origin: Vector2i, footprint: Vector2i) -> bool:

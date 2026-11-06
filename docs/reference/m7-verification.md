@@ -5,15 +5,15 @@ Plan: [M7 plan](../superpowers/plans/2026-11-06-m7-factions.md). Design: [M7 des
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-06, Task 2 done)
-Branch / base commit / working-tree state: m7-factions at 8171d00; Task 2 changes uncommitted until the Task 2 commit
-Last green task / next incomplete task: Task 2 (risk tests known red) / Task 3 (pure rename)
-Changed paths since last commit: tools/zh_parity/parity.py, tools/zh_parity/analyze.py, tools/test_faction_guard.py, game/tests/test_factions.gd, game/tests/run_tests.gd, this file
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 282 cases / 112,748 checks / 9 failures (all in test_factions.gd, known red until Tasks 5-6), exit 1; run_lint.sh and run_warnings.sh pass; test_faction_guard.py OK; analyze.py --self-test OK
-Known red case or blocker: test_factions.gd F1-F4 (owners: Task 5 F1-F2, Task 6 F3-F4); the suite is red until then by plan
+Resume record (updated 2026-11-06, Task 3 done)
+Branch / base commit / working-tree state: m7-factions at 7d101f4 plus the Task 3 commit "Rename kinds to faction ids"; tree clean after it
+Last green task / next incomplete task: Task 3 (rename; suite red only in test_factions.gd by plan) / Task 4 (definition files, capability reads)
+Changed paths since last commit: none after the Task 3 commit
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 282 cases / 112,757 checks / 5 failures (F1, F2, F4 and one incomplete case, all test_factions.gd, owners Tasks 5-6), exit 1; python3 -m unittest discover -s tools: 39 OK; run_lint.sh and run_warnings.sh pass; run_netplay.sh match terminal tick 8242
+Known red case or blocker: test_factions.gd F1-F4 until Tasks 5-6
 Approved decisions, pre-authorizations used, deferred gates: local commit per green task (milestone prompt)
 Usage so far: not recorded
-Next exact action: restart fresh session ("resume from prompt.txt"), Task 3. Task 3 needs fresh baseline traces ($d0) from the tree before Task 3; test_factions.gd red cases are expected in them.
+Next exact action: Task 4. Trace baseline for its "traces identical" check is this tree: rerun the four traced suites before the change into a fresh dir (the Task 3 run in scratch dir d1 is gone after a restart).
 ```
 
 ## Pins at base
@@ -26,10 +26,15 @@ Next exact action: restart fresh session ("resume from prompt.txt"), Task 3. Tas
 |---|---|---|---|
 | test_map | MP5 presets count | 9 → 10 | Web preset added in `b60edca`; base `main` was red on this one check before M7 (Task 0) |
 | test_team_match | TB4 `TEAM_CORE_SERIES` | new, 1490497313643459296 | Task 0 |
+| test_state_hash | H1 `PINNED` | 6374674a4bdd4dfb → 4b52b4564bdd4dfb | Task 3 rename |
+| test_team_match | TB3 `FINAL_DIGEST` | 234f0b14453bc6c6 → 6a389cd2453bc6c6 | Task 3 rename |
+| test_base_scene, test_skirmish_scene | Bs5 queue label, E1 enemy line | `tank` → `usa_tank` in the text | Task 3 rename (labels show the kind id until Task 7 display names) |
 
 ## Departures and deferrals
 
 - Base suite was 277 cases / 112,748 checks / 1 failure (MP5 count, above), not the plan's 277 / 112,744 / 0.
+
+- Task 3: `MapData.slot` and its start validation read `slots[kind.trim_prefix("usa_")]` because map slot keys are roles (`power_plant`, `supply_center`, `barracks`, `factory`) while kinds are `usa_*`. The plan left this bridge open; Task 4's `slot` field replaces it. Traces differ from the pre-rename run only because the state hash covers kind strings; core series, terminal tick (S1, team), BM6 and netplay 8242 are unchanged.
 
 ## Base rows (tree: m7-factions, M7 Task 0 working tree, Apple M6, idle-ish)
 

@@ -10,10 +10,10 @@ const START_CREDITS: int = 10000
 const DECISION_TICKS: int = 30
 const ATTACK_TICK: int = 5400
 const DEFENCE_RADIUS: float = 10.0
-const BUILD_ORDER: Array[String] = ["reactor", "depot", "barracks", "factory"]
+const BUILD_ORDER: Array[String] = ["usa_power_plant", "usa_supply_center", "usa_barracks", "usa_factory"]
 const MAP_PATH := "res://data/maps/skirmish.json"
-const UNIT_FOR := {"barracks": "infantry", "factory": "tank"}
-const TARGET_CATEGORIES: Array = [["builder"], ["barracks", "factory"], ["depot"], ["reactor"]]
+const UNIT_FOR := {"usa_barracks": "usa_rifle_infantry", "usa_factory": "usa_tank"}
+const TARGET_CATEGORIES: Array = [["usa_builder"], ["usa_barracks", "usa_factory"], ["usa_supply_center"], ["usa_power_plant"]]
 
 static var _skirmish_map: Dictionary = {}
 
@@ -73,7 +73,7 @@ static func _send(ctx: Dictionary, payload: Dictionary) -> bool:
 static func _build(ctx: Dictionary, state: Dictionary, buildings: Array) -> void:
 	var builder: int = -1
 	for unit: Dictionary in state.entities:
-		if unit.owner == ctx.player and unit.kind == "builder":
+		if unit.owner == ctx.player and unit.kind == "usa_builder":
 			builder = unit.id
 			break
 	if builder == -1: return
@@ -95,7 +95,7 @@ static func _produce(ctx: Dictionary, buildings: Array) -> void:
 		if ctx.credits >= cost and _send(ctx, {"type": "produce", "building_id": building.id, "unit_kind": UNIT_FOR[building.kind]}): ctx.credits -= cost
 
 static func _attack(ctx: Dictionary, state: Dictionary, skip: Dictionary = {}) -> void:
-	var enemies: Array = state.entities.filter(func(unit: Dictionary) -> bool: return _hostile(ctx, unit.owner) and unit.kind != "collector")
+	var enemies: Array = state.entities.filter(func(unit: Dictionary) -> bool: return _hostile(ctx, unit.owner) and unit.kind != "usa_collector")
 	enemies.append_array(state.buildings.filter(func(building: Dictionary) -> bool: return _hostile(ctx, building.owner)))
 	var groups := {}
 	for unit: Dictionary in state.entities:
@@ -116,7 +116,7 @@ static func _idle(unit: Dictionary) -> bool:
 
 static func _defend(ctx: Dictionary, state: Dictionary, buildings: Array) -> Dictionary:
 	var intruders: Array = state.entities.filter(func(unit: Dictionary) -> bool:
-		if not _hostile(ctx, unit.owner) or unit.kind == "collector": return false
+		if not _hostile(ctx, unit.owner) or unit.kind == "usa_collector": return false
 		var at := Vector2(unit.position[0], unit.position[1])
 		return buildings.any(func(building: Dictionary) -> bool: return Combat.distance_squared(at, building) <= DEFENCE_RADIUS * DEFENCE_RADIUS))
 	var sent := {}

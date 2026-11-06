@@ -9,12 +9,12 @@ func cases() -> Array[Callable]:
 	return [test_definitions, test_players_and_kinds, test_economy_snapshot_isolation, test_variant_rejection, test_future_results_and_copy, test_stop_and_intent_order, test_air_spawn, test_air_and_mixed_move, test_air_obstacle_isolation, test_power_rates,test_remove_objects,test_economy_loop]
 
 func test_definitions(runner) -> bool:
-	for row in [["reactor",800,300,5,Vector2i(2,2)], ["depot",2000,300,-1,Vector2i(3,3)], ["factory",2000,450,-1,Vector2i(3,3)]]:
+	for row in [["usa_power_plant",800,300,5,Vector2i(2,2)], ["usa_supply_center",2000,300,-1,Vector2i(3,3)], ["usa_factory",2000,450,-1,Vector2i(3,3)]]:
 		var definition: Dictionary = Definitions.building(row[0]).duplicate()
 		runner.check(definition.get("cost") == row[1] and definition.get("ticks") == row[2] and definition.get("power") == row[3] and definition.get("footprint") == row[4], "E1 building " + row[0])
 		definition.cost = 1
 		runner.check(Definitions.building(row[0]).get("cost") == row[1], "E1 building copied")
-	for row in [["collector",1200,300,6.0,true], ["vehicle",700,300,3.0,false], ["builder",1000,150,1.2,false]]:
+	for row in [["usa_collector",1200,300,6.0,true], ["usa_light_vehicle",700,300,3.0,false], ["usa_builder",1000,150,1.2,false]]:
 		var definition: Dictionary = Definitions.unit(row[0]).duplicate()
 		runner.check(definition.get("cost") == row[1] and definition.get("ticks") == row[2] and definition.get("speed") == row[3] and definition.get("air") == row[4], "E1 unit " + row[0])
 		definition.cost = 1
@@ -29,17 +29,17 @@ func test_players_and_kinds(runner) -> bool:
 	for row in [[1,10000], [0,0], [2,-1]]:
 		runner.check(not sim.add_player(row[0],row[1]).ok and sim.snapshot() == before, "E2 rejected unchanged")
 	runner.check(sim.spawn(1,Vector2(1.5,1.5)) == 1, "E2 default vehicle")
-	runner.check(sim.spawn(1,Vector2(2.5,1.5),"builder") == 2, "E2 builder")
+	runner.check(sim.spawn(1,Vector2(2.5,1.5),"usa_builder") == 2, "E2 builder")
 	before = sim.snapshot()
 	runner.check(sim.spawn(1,Vector2(3.5,1.5),"unknown") == -1 and sim.snapshot() == before, "E2 invalid kind unchanged")
-	runner.check(sim.snapshot().entities[0].get("kind") == "vehicle" and sim.snapshot().entities[1].get("kind") == "builder", "E2 kinds")
+	runner.check(sim.snapshot().entities[0].get("kind") == "usa_light_vehicle" and sim.snapshot().entities[1].get("kind") == "usa_builder", "E2 kinds")
 	return true
 
 func test_economy_snapshot_isolation(runner) -> bool:
 	var terrain: Array[Vector2i] = [Vector2i(8,8)]
 	var sim = Simulation.new(terrain)
 	sim.add_player(1,10000)
-	sim.spawn(1,Vector2(1.5,1.5),"collector")
+	sim.spawn(1,Vector2(1.5,1.5),"usa_collector")
 	var before: Dictionary = sim.snapshot()
 	runner.check(before.get("buildings") == [] and before.get("sources") == [] and before.get("command_results") == [] and before.get("next_production_id") == 1, "E3 initial roots")
 	if not before.has("players") or not before.entities[0].has("collection"):
@@ -47,7 +47,7 @@ func test_economy_snapshot_isolation(runner) -> bool:
 		return true
 	var changed: Dictionary = sim.snapshot().duplicate(true)
 	changed.players[0].credits = 0
-	changed.entities[0].kind = "vehicle"
+	changed.entities[0].kind = "usa_light_vehicle"
 	changed.entities[0].collection.cargo = 8
 	changed.terrain_cells[0][0] = 2
 	terrain.clear()
@@ -77,24 +77,24 @@ func test_variant_rejection(runner) -> bool:
 	runner.check(pending.size() == 1 and pending[0] == valid,"E4 normalize recognized variant fields only")
 	var variants = Fixture.make_world(50000)
 	var source: int = variants.add_supply_source(Vector2i(24,4),200)
-	Fixture.build(runner,variants,"reactor",Vector2i(5,5))
-	Fixture.build(runner,variants,"depot",Vector2i(10,4))
-	var factory: int = Fixture.build(runner,variants,"factory",Vector2i(16,4))
-	Fixture.send(variants,{"type":"build","builder_id":1,"building_kind":"reactor","origin":[8,12]})
-	Fixture.send(variants,{"type":"produce","building_id":factory,"unit_kind":"vehicle"})
+	Fixture.build(runner,variants,"usa_power_plant",Vector2i(5,5))
+	Fixture.build(runner,variants,"usa_supply_center",Vector2i(10,4))
+	var factory: int = Fixture.build(runner,variants,"usa_factory",Vector2i(16,4))
+	Fixture.send(variants,{"type":"build","builder_id":1,"building_kind":"usa_power_plant","origin":[8,12]})
+	Fixture.send(variants,{"type":"produce","building_id":factory,"unit_kind":"usa_light_vehicle"})
 	variants.step()
 	var foundation: int = variants.snapshot().buildings.back().id
 	var entry: int = Fixture.object(variants,factory).queue[0].id
 	var collector: int = -1
 	for unit in variants.snapshot().entities:
-		if unit.kind == "collector": collector = unit.id
+		if unit.kind == "usa_collector": collector = unit.id
 	variants.add_player(2,50000)
-	var foreign: int = variants.spawn(2,Vector2(2.5,2.5),"builder")
+	var foreign: int = variants.spawn(2,Vector2(2.5,2.5),"usa_builder")
 	var prototypes: Array = [
-		{"type":"build","builder_id":1,"building_kind":"reactor","origin":[12,12]},
+		{"type":"build","builder_id":1,"building_kind":"usa_power_plant","origin":[12,12]},
 		{"type":"resume_build","builder_id":1,"building_id":foundation},
 		{"type":"cancel_build","building_id":foundation},
-		{"type":"produce","building_id":factory,"unit_kind":"vehicle"},
+		{"type":"produce","building_id":factory,"unit_kind":"usa_light_vehicle"},
 		{"type":"cancel_production","building_id":factory,"production_id":entry},
 		{"type":"gather","entity_ids":[collector],"source_id":source},
 		{"type":"stop","entity_ids":[1]},
@@ -167,12 +167,12 @@ func test_air_spawn(runner) -> bool:
 	var blocked: Array[Vector2i] = [Vector2i(3,3)]
 	var sim = Simulation.new(blocked)
 	var ground: int = sim.spawn(1,Vector2(1.5,1.5))
-	runner.check(sim.spawn(1,Vector2(3.5,3.5),"collector") == 2,"E7 air on solid")
-	runner.check(sim.spawn(1,Vector2(1.5,1.5),"collector") == 3,"E7 air on ground")
+	runner.check(sim.spawn(1,Vector2(3.5,3.5),"usa_collector") == 2,"E7 air on solid")
+	runner.check(sim.spawn(1,Vector2(1.5,1.5),"usa_collector") == 3,"E7 air on ground")
 	runner.check(sim.spawn(1,Vector2(1.5,1.5)) == -1,"E7 ground occupied")
 	for point in [Vector2(-1,0),Vector2(16,0),Vector2(INF,0),Vector2(0,NAN)]:
 		var before: Dictionary = sim.snapshot()
-		runner.check(sim.spawn(1,point,"collector") == -1 and sim.snapshot() == before,"E7 air bounds unchanged")
+		runner.check(sim.spawn(1,point,"usa_collector") == -1 and sim.snapshot() == before,"E7 air bounds unchanged")
 	runner.check(ground == 1,"E7 ground retained")
 	return true
 
@@ -180,7 +180,7 @@ func test_air_and_mixed_move(runner) -> bool:
 	var blocked: Array[Vector2i] = []
 	for y in range(16): blocked.append(Vector2i(3,y))
 	var sim = Simulation.new(blocked)
-	var air: int = sim.spawn(1,Vector2(1.5,1.5),"collector")
+	var air: int = sim.spawn(1,Vector2(1.5,1.5),"usa_collector")
 	runner.check(Fixture.send(sim,{"type":"move","entity_ids":[air],"target":[4.5,1.5]}).ok,"E8 air across wall accepted")
 	for index in range(15):
 		sim.step()
@@ -198,7 +198,7 @@ func test_air_and_mixed_move(runner) -> bool:
 
 func test_air_obstacle_isolation(runner) -> bool:
 	var sim = Simulation.new()
-	sim.spawn(1,Vector2(1.5,1.5),"collector")
+	sim.spawn(1,Vector2(1.5,1.5),"usa_collector")
 	Fixture.send(sim,{"type":"move","entity_ids":[1],"target":[4.5,1.5]})
 	sim.step()
 	var cells: Array[Vector2i] = [Vector2i(1,1),Vector2i(3,1)]
@@ -219,7 +219,7 @@ func test_remove_objects(runner) -> bool:
 	var source: int = sim.add_supply_source(Vector2i(24,4),8)
 	var before: Dictionary = sim.snapshot()
 	runner.check(not sim.remove_object(999).ok and sim.snapshot() == before,"E11 unknown unchanged")
-	Fixture.send(sim,{"type":"build","builder_id":1,"building_kind":"reactor","origin":[8,4]})
+	Fixture.send(sim,{"type":"build","builder_id":1,"building_kind":"usa_power_plant","origin":[8,4]})
 	Fixture.send(sim,{"type":"move","entity_ids":[1],"target":[4.5,10.5]})
 	sim.step()
 	var building: int = sim.snapshot().buildings[0].id
@@ -230,7 +230,7 @@ func test_remove_objects(runner) -> bool:
 	var preserved: bool = Fixture.object(sim,1).destination == destination and Fixture.object(sim,1).construction_id == null
 	runner.check(preserved,"E11 discarded canceled intent preserves prior manual order")
 	if not preserved: return true
-	var air: int = sim.spawn(1,Vector2(25.5,5.5),"collector")
+	var air: int = sim.spawn(1,Vector2(25.5,5.5),"usa_collector")
 	Fixture.send(sim,{"type":"gather","entity_ids":[air],"source_id":source,"tick":sim.snapshot().tick + 1})
 	sim.remove_object(source)
 	var next: int = sim.snapshot().next_entity_id
@@ -241,24 +241,24 @@ func test_remove_objects(runner) -> bool:
 func test_economy_loop(runner) -> bool:
 	var sim = Fixture.make_world()
 	var source: int = sim.add_supply_source(Vector2i(24,4),8)
-	var reactor: int = Fixture.build(runner,sim,"reactor",Vector2i(5,5))
-	var depot: int = Fixture.build(runner,sim,"depot",Vector2i(10,4))
-	var factory: int = Fixture.build(runner,sim,"factory",Vector2i(16,4))
+	var reactor: int = Fixture.build(runner,sim,"usa_power_plant",Vector2i(5,5))
+	var depot: int = Fixture.build(runner,sim,"usa_supply_center",Vector2i(10,4))
+	var factory: int = Fixture.build(runner,sim,"usa_factory",Vector2i(16,4))
 	if reactor == -1 or depot == -1 or factory == -1: return true
 	var collector: int = -1
 	for unit in sim.snapshot().entities:
-		if unit.kind == "collector": collector = unit.id
+		if unit.kind == "usa_collector": collector = unit.id
 	for index in range(3000):
 		if sim.snapshot().players[0].credits == 5800: break
 		sim.step()
 	runner.check(sim.snapshot().players[0].credits == 5800,"E12 deposit600 after spend4800")
 	Fixture.send(sim,{"type":"stop","entity_ids":[collector]})
-	runner.check(Fixture.send(sim,{"type":"produce","building_id":factory,"unit_kind":"vehicle"}).ok,"E12 paid production accepted")
+	runner.check(Fixture.send(sim,{"type":"produce","building_id":factory,"unit_kind":"usa_light_vehicle"}).ok,"E12 paid production accepted")
 	Fixture.steps(sim,300)
 	var state: Dictionary = sim.snapshot()
 	runner.check(state.players[0].credits == 5100,"E12 10000-4800+600-700")
 	runner.check(Fixture.object(sim,source).boxes == 0 and Fixture.object(sim,collector).collection.cargo == 0,"E12 source exhausted entire load deposited")
-	runner.check(state.entities.filter(func(unit: Dictionary) -> bool: return unit.kind == "vehicle").size() == 1 and state.entities.filter(func(unit: Dictionary) -> bool: return unit.kind == "collector").size() == 1,"E12 one free collector one paid vehicle")
+	runner.check(state.entities.filter(func(unit: Dictionary) -> bool: return unit.kind == "usa_light_vehicle").size() == 1 and state.entities.filter(func(unit: Dictionary) -> bool: return unit.kind == "usa_collector").size() == 1,"E12 one free collector one paid vehicle")
 	runner.check(state.tick < 10000,"E12 bounded scenario")
 	return true
 

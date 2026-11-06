@@ -34,7 +34,7 @@ func _credits(state: Dictionary, player: int) -> int:
 func test_mirror_match_script(runner) -> bool:
 	var a = Skirmish.create()
 	var b = Skirmish.create()
-	var first := {"deposit": -1, "shot": -1, "death": -1, "infantry": -1, "tank": -1}
+	var first := {"deposit": -1, "shot": -1, "death": -1, "usa_rifle_infantry": -1, "usa_tank": -1}
 	var completed := {}
 	var kinds := {}
 	var deposits := {1: 0, 2: 0}
@@ -70,7 +70,7 @@ func test_mirror_match_script(runner) -> bool:
 		var cargo_now := {}
 		for unit in state.entities:
 			if unit.hp <= 0: negatives += 1
-			if (unit.kind == "infantry" or unit.kind == "tank") and first[unit.kind] == -1: first[unit.kind] = tick
+			if (unit.kind == "usa_rifle_infantry" or unit.kind == "usa_tank") and first[unit.kind] == -1: first[unit.kind] = tick
 			if unit.collection == null: continue
 			carried += unit.collection.cargo
 			cargo_now[unit.id] = unit.collection.cargo

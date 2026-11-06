@@ -20,8 +20,8 @@ func _shots_by(events: Array, attacker: int) -> Array:
 
 func test_attack_chase(runner) -> bool:
 	var sim = Fixture.world()
-	var attacker: int = sim.spawn(1, Vector2(2.5, 2.5), "infantry")
-	var target: int = sim.spawn(2, Vector2(12.5, 2.5), "builder")
+	var attacker: int = sim.spawn(1, Vector2(2.5, 2.5), "usa_rifle_infantry")
+	var target: int = sim.spawn(2, Vector2(12.5, 2.5), "usa_builder")
 	runner.check(Fixture.send(sim, {"type": "attack", "entity_ids": [attacker], "target_id": target}).ok, "A1 attack accepted")
 	var first_shot: int = -1
 	for tick in range(600):
@@ -48,7 +48,7 @@ func test_attack_chase(runner) -> bool:
 			refreshed = tick
 			break
 	runner.check(refreshed != -1 and refreshed <= 22, "A1 pursuit refresh within 15 ticks of the target leaving reach (the target's 3-tick start and infantry ramp add 6)")
-	var second: int = sim.spawn(1, Vector2(2.5, 3.5), "infantry")
+	var second: int = sim.spawn(1, Vector2(2.5, 3.5), "usa_rifle_infantry")
 	runner.check(Fixture.send(sim, {"type": "attack", "entity_ids": [attacker, second], "target_id": target}).ok, "A1 two attackers")
 	sim.step()
 	var state: Dictionary = sim.snapshot()
@@ -60,9 +60,9 @@ func test_attack_chase(runner) -> bool:
 	var b: Variant = Fixture.object(sim, second).destination
 	runner.check(a == null or b == null or a != b, "A1 distinct pursuit destinations")
 	var pair = Fixture.world()
-	var left: int = pair.spawn(1, Vector2(2.5, 2.5), "infantry")
-	var right: int = pair.spawn(1, Vector2(2.5, 3.5), "infantry")
-	var far: int = pair.spawn(2, Vector2(20.5, 10.5), "builder")
+	var left: int = pair.spawn(1, Vector2(2.5, 2.5), "usa_rifle_infantry")
+	var right: int = pair.spawn(1, Vector2(2.5, 3.5), "usa_rifle_infantry")
+	var far: int = pair.spawn(2, Vector2(20.5, 10.5), "usa_builder")
 	Fixture.send(pair, {"type": "attack", "entity_ids": [left, right], "target_id": far})
 	pair.step()
 	var da: Variant = Fixture.object(pair, left).destination
@@ -75,8 +75,8 @@ func test_unreachable_attack(runner) -> bool:
 	for y in range(32):
 		wall.append(Vector2i(16, y))
 	var sim = Simulation.new(wall, Vector2i(32, 32))
-	var attacker: int = sim.spawn(1, Vector2(2.5, 2.5), "infantry")
-	var target: int = sim.spawn(2, Vector2(28.5, 2.5), "builder")
+	var attacker: int = sim.spawn(1, Vector2(2.5, 2.5), "usa_rifle_infantry")
+	var target: int = sim.spawn(2, Vector2(28.5, 2.5), "usa_builder")
 	var full_hp: int = Fixture.object(sim, target).hp
 	Fixture.send(sim, {"type": "attack", "entity_ids": [attacker], "target_id": target})
 	var blocked_tick: int = -1
@@ -105,11 +105,11 @@ func test_unreachable_attack(runner) -> bool:
 			break
 	runner.check(progressed, "A2 opening the wall lets the attack progress at the next retry")
 	var many := Simulation.new([], Vector2i(32, 32))
-	var victim: int = many.spawn(2, Vector2(28.5, 16.5), "builder")
+	var victim: int = many.spawn(2, Vector2(28.5, 16.5), "usa_builder")
 	var ids: Array = []
 	for i in range(20):
 		@warning_ignore("integer_division")
-		ids.append(many.spawn(1, Vector2(2.5 + i % 5, 2.5 + i / 5), "infantry"))
+		ids.append(many.spawn(1, Vector2(2.5 + i % 5, 2.5 + i / 5), "usa_rifle_infantry"))
 	Fixture.send(many, {"type": "attack", "entity_ids": ids, "target_id": victim})
 	for tick in range(30):
 		var before := {}
@@ -121,7 +121,7 @@ func test_unreachable_attack(runner) -> bool:
 			if before[entity.id] == "path_pending" and entity.status != "path_pending":
 				assigned += 1
 		runner.check(assigned <= 8, "A2 at most 8 path queries per tick")
-	var late: int = many.spawn(1, Vector2(1.5, 20.5), "infantry")
+	var late: int = many.spawn(1, Vector2(1.5, 20.5), "usa_rifle_infantry")
 	Fixture.send(many, {"type": "attack", "entity_ids": [late], "target_id": victim})
 	many.step()
 	Fixture.send(many, {"type": "stop", "entity_ids": [late]})
@@ -137,8 +137,8 @@ func _run_to_first_shot(sim: RefCounted, attacker: int, limit: int) -> int:
 
 func test_attack_move_resumes(runner) -> bool:
 	var sim = Fixture.world()
-	var attacker: int = sim.spawn(1, Vector2(2.5, 2.5), "infantry")
-	var enemy: int = sim.spawn(2, Vector2(9.5, 4.5), "builder")
+	var attacker: int = sim.spawn(1, Vector2(2.5, 2.5), "usa_rifle_infantry")
+	var enemy: int = sim.spawn(2, Vector2(9.5, 4.5), "usa_builder")
 	runner.check(Fixture.send(sim, {"type": "attack_move", "entity_ids": [attacker], "target": [20.5, 2.5]}).ok, "M1 attack_move accepted")
 	runner.check(_run_to_first_shot(sim, attacker, 400) > 0, "M1 in-range enemy interrupts the advance")
 	var halted: Dictionary = Fixture.object(sim, attacker)
@@ -155,19 +155,19 @@ func test_attack_move_resumes(runner) -> bool:
 	var arrived: Dictionary = Fixture.object(sim, attacker)
 	runner.check(arrived.position == [20.5, 2.5] and arrived.combat.mode == "guard" and arrived.combat.goal == null, "M1 goal arrival switches to guard")
 	var plain = Fixture.world()
-	var scout: int = plain.spawn(1, Vector2(2.5, 2.5), "infantry")
-	var scout_mate: int = plain.spawn(1, Vector2(2.5, 3.5), "infantry")
+	var scout: int = plain.spawn(1, Vector2(2.5, 2.5), "usa_rifle_infantry")
+	var scout_mate: int = plain.spawn(1, Vector2(2.5, 3.5), "usa_rifle_infantry")
 	var move = Fixture.world()
-	var walker: int = move.spawn(1, Vector2(2.5, 2.5), "infantry")
-	var walker_mate: int = move.spawn(1, Vector2(2.5, 3.5), "infantry")
+	var walker: int = move.spawn(1, Vector2(2.5, 2.5), "usa_rifle_infantry")
+	var walker_mate: int = move.spawn(1, Vector2(2.5, 3.5), "usa_rifle_infantry")
 	Fixture.send(plain, {"type": "attack_move", "entity_ids": [scout, scout_mate], "target": [12.5, 8.5]})
 	Fixture.send(move, {"type": "move", "entity_ids": [walker, walker_mate], "target": [12.5, 8.5]})
 	plain.step()
 	move.step()
 	runner.check(Fixture.object(plain, scout).destination == Fixture.object(move, walker).destination and Fixture.object(plain, scout_mate).destination == Fixture.object(move, walker_mate).destination, "M1 quiet attack_move allocates like move")
 	var pass_by = Fixture.world()
-	var mover: int = pass_by.spawn(1, Vector2(2.5, 2.5), "infantry")
-	pass_by.spawn(2, Vector2(18.5, 5.5), "builder")
+	var mover: int = pass_by.spawn(1, Vector2(2.5, 2.5), "usa_rifle_infantry")
+	pass_by.spawn(2, Vector2(18.5, 5.5), "usa_builder")
 	Fixture.send(pass_by, {"type": "move", "entity_ids": [mover], "target": [20.5, 2.5]})
 	var arrival: int = -1
 	var first_shot: int = -1
@@ -180,8 +180,8 @@ func test_attack_move_resumes(runner) -> bool:
 	var group = Fixture.world()
 	var ids: Array = []
 	for i in range(6):
-		ids.append(group.spawn(1, Vector2(2.5, 2.5 + i), "infantry"))
-	var victim: int = group.spawn(2, Vector2(7.5, 4.5), "builder")
+		ids.append(group.spawn(1, Vector2(2.5, 2.5 + i), "usa_rifle_infantry"))
+	var victim: int = group.spawn(2, Vector2(7.5, 4.5), "usa_builder")
 	Fixture.send(group, {"type": "attack_move", "entity_ids": ids, "target": [24.5, 6.5]})
 	var engaged: bool = false
 	for tick in range(400):
@@ -200,11 +200,11 @@ func test_attack_move_resumes(runner) -> bool:
 
 func test_attack_move_resume_keeps_slots(runner) -> bool:
 	var sim = Fixture.world()
-	var enemy: int = sim.spawn(2, Vector2(8.5, 8.5), "builder")
+	var enemy: int = sim.spawn(2, Vector2(8.5, 8.5), "usa_builder")
 	var group_a: Array = []
 	for at in [Vector2(6.5, 7.5), Vector2(6.5, 8.5), Vector2(6.5, 9.5), Vector2(10.5, 7.5), Vector2(10.5, 8.5), Vector2(10.5, 9.5)]:
-		group_a.append(sim.spawn(1, at, "infantry"))
-	var group_b: Array = [sim.spawn(1, Vector2(8.5, 6.5), "infantry"), sim.spawn(1, Vector2(8.5, 10.5), "infantry")]
+		group_a.append(sim.spawn(1, at, "usa_rifle_infantry"))
+	var group_b: Array = [sim.spawn(1, Vector2(8.5, 6.5), "usa_rifle_infantry"), sim.spawn(1, Vector2(8.5, 10.5), "usa_rifle_infantry")]
 	Fixture.send(sim, {"type": "attack_move", "entity_ids": group_a, "target": [20.5, 8.5]})
 	Fixture.send(sim, {"type": "attack_move", "entity_ids": group_b, "target": [2.5, 20.5]})
 	sim.step()
@@ -230,9 +230,9 @@ func test_attack_move_resume_keeps_slots(runner) -> bool:
 func test_guard_retarget(runner) -> bool:
 	var sim = Fixture.world()
 	sim.add_player(1, 0, "ai")
-	var guard: int = sim.spawn(1, Vector2(10.5, 10.5), "infantry")
-	var leaving: int = sim.spawn(2, Vector2(13.5, 10.5), "builder")
-	var staying: int = sim.spawn(2, Vector2(10.5, 13.9), "builder")
+	var guard: int = sim.spawn(1, Vector2(10.5, 10.5), "usa_rifle_infantry")
+	var leaving: int = sim.spawn(2, Vector2(13.5, 10.5), "usa_builder")
+	var staying: int = sim.spawn(2, Vector2(10.5, 13.9), "usa_builder")
 	sim.step()
 	runner.check(Fixture.object(sim, guard).combat.target_id == leaving, "G2 nearest enemy acquired first")
 	sim._entities[leaving].position = [17.5, 10.5]
@@ -246,25 +246,25 @@ func test_guard_retarget(runner) -> bool:
 
 func test_pursuit_respects_reservations(runner) -> bool:
 	var sim = Fixture.world()
-	var reserver: int = sim.spawn(1, Vector2(16.5, 3.5), "vehicle")
-	sim.spawn(1, Vector2(17.5, 10.5), "vehicle")
-	var attacker: int = sim.spawn(1, Vector2(2.5, 10.5), "infantry")
-	var target: int = sim.spawn(2, Vector2(20.5, 10.5), "builder")
+	var reserver: int = sim.spawn(1, Vector2(16.5, 3.5), "usa_light_vehicle")
+	sim.spawn(1, Vector2(17.5, 10.5), "usa_light_vehicle")
+	var attacker: int = sim.spawn(1, Vector2(2.5, 10.5), "usa_rifle_infantry")
+	var target: int = sim.spawn(2, Vector2(20.5, 10.5), "usa_builder")
 	Fixture.send(sim, {"type": "move", "entity_ids": [reserver], "target": [16.5, 10.5]})
 	Fixture.send(sim, {"type": "attack", "entity_ids": [attacker], "target_id": target})
 	sim.step()
 	runner.check(Fixture.object(sim, reserver).destination == [16.5, 10.5], "P2 nearest firing cell is reserved")
 	runner.check(Fixture.object(sim, attacker).destination == [16.5, 9.5], "P2 skips reserved and occupied cells, ties by y")
 	var release = Fixture.world()
-	var first: int = release.spawn(1, Vector2(2.5, 10.5), "infantry")
-	var second: int = release.spawn(1, Vector2(1.5, 10.5), "infantry")
-	var moving: int = release.spawn(2, Vector2(20.5, 10.5), "vehicle")
+	var first: int = release.spawn(1, Vector2(2.5, 10.5), "usa_rifle_infantry")
+	var second: int = release.spawn(1, Vector2(1.5, 10.5), "usa_rifle_infantry")
+	var moving: int = release.spawn(2, Vector2(20.5, 10.5), "usa_light_vehicle")
 	Fixture.send(release, {"type": "attack", "entity_ids": [first], "target_id": moving})
 	release.step()
 	while release.tick() < Fixture.object(release, first).combat.repath_tick: release.step()
 	runner.check(Fixture.object(release, first).destination == [16.5, 10.5], "P2 first attacker holds the old firing cell")
 	release._entities[moving].position = [20.5, 0.5]
-	var still: int = release.spawn(2, Vector2(20.5, 10.5), "builder")
+	var still: int = release.spawn(2, Vector2(20.5, 10.5), "usa_builder")
 	runner.check(still > 0, "P2 stationary second target spawned")
 	Fixture.send(release, {"type": "attack", "entity_ids": [second], "target_id": still})
 	release.step()
@@ -274,9 +274,9 @@ func test_pursuit_respects_reservations(runner) -> bool:
 
 func test_new_attack_plans_immediately(runner) -> bool:
 	var sim = Fixture.world()
-	var attacker: int = sim.spawn(1, Vector2(2.5, 10.5), "infantry")
-	var first: int = sim.spawn(2, Vector2(20.5, 10.5), "builder")
-	var second: int = sim.spawn(2, Vector2(2.5, 28.5), "builder")
+	var attacker: int = sim.spawn(1, Vector2(2.5, 10.5), "usa_rifle_infantry")
+	var first: int = sim.spawn(2, Vector2(20.5, 10.5), "usa_builder")
+	var second: int = sim.spawn(2, Vector2(2.5, 28.5), "usa_builder")
 	Fixture.send(sim, {"type": "attack", "entity_ids": [attacker], "target_id": first})
 	for tick in range(5): sim.step()
 	runner.check(Fixture.object(sim, attacker).combat.repath_tick == Combat.REPATH_TICKS - attacker % Combat.REPATH_TICKS, "N1 chase refresh scheduled")
@@ -293,8 +293,8 @@ func test_unreachable_scan_target_dropped(runner) -> bool:
 		wall.append(Vector2i(3, y))
 	var sim = Simulation.new(wall, Vector2i(32, 32))
 	sim.add_player(1, 0, "ai")
-	var walker: int = sim.spawn(1, Vector2(2.5, 2.5), "infantry")
-	sim.spawn(2, Vector2(7.5, 2.5), "builder")
+	var walker: int = sim.spawn(1, Vector2(2.5, 2.5), "usa_rifle_infantry")
+	sim.spawn(2, Vector2(7.5, 2.5), "usa_builder")
 	var goal := [2.5, 20.5]
 	Fixture.send(sim, {"type": "attack_move", "entity_ids": [walker], "target": goal})
 	var stuck: bool = false
@@ -313,8 +313,8 @@ func test_chase_repaths_staggered(runner) -> bool:
 	var ids: Array = []
 	for i in range(20):
 		@warning_ignore("integer_division")
-		ids.append(sim.spawn(1, Vector2(1.5 + i % 5, 1.5 + i / 5), "infantry"))
-	var target: int = sim.spawn(2, Vector2(28.5, 10.5), "builder")
+		ids.append(sim.spawn(1, Vector2(1.5 + i % 5, 1.5 + i / 5), "usa_rifle_infantry"))
+	var target: int = sim.spawn(2, Vector2(28.5, 10.5), "usa_builder")
 	runner.check(Fixture.send(sim, {"type": "attack", "entity_ids": ids, "target_id": target}).ok, "RP1 attack accepted")
 	sim.step()
 	var last: Dictionary = {}

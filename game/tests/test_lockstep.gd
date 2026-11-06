@@ -155,14 +155,14 @@ func _own(state: Dictionary, owner: int) -> Dictionary:
 	var units: Array = state.entities.filter(func(u: Dictionary) -> bool: return u.owner == owner and u.combat != null)
 	var builder: int = 1
 	for u in state.entities:
-		if u.owner == owner and u.kind == "builder": builder = u.id
+		if u.owner == owner and u.kind == "usa_builder": builder = u.id
 	var buildings: Array = state.buildings.filter(func(b: Dictionary) -> bool: return b.owner == owner)
 	var enemy: Array = state.entities.filter(func(u: Dictionary) -> bool: return u.owner != owner and u.combat != null)
 	var enemy_buildings: Array = state.buildings.filter(func(b: Dictionary) -> bool: return b.owner != owner)
 	var enemy_target: int = enemy[0].id if not enemy.is_empty() else (enemy_buildings[0].id if not enemy_buildings.is_empty() else 1)
 	var ids: Array = units.map(func(u: Dictionary) -> int: return u.id)
 	if ids.is_empty(): ids = [builder]
-	var barracks: Array = buildings.filter(func(b: Dictionary) -> bool: return b.kind == "barracks")
+	var barracks: Array = buildings.filter(func(b: Dictionary) -> bool: return b.kind == "usa_barracks")
 	var incomplete: Array = buildings.filter(func(b: Dictionary) -> bool: return not b.completed)
 	var any_building: int = buildings[0].id if not buildings.is_empty() else 1
 	return {"ids": ids, "builder": builder, "producer": barracks[0].id if not barracks.is_empty() else any_building, "any": any_building, "cancel": incomplete[0].id if not incomplete.is_empty() else any_building, "enemy": enemy_target, "source": state.sources[0].id, "owner": owner, "buildings": buildings.size()}
@@ -171,10 +171,10 @@ func _make(type: String, o: Dictionary) -> Dictionary:
 	match type:
 		"move": return {"type": type, "entity_ids": o.ids, "target": [20.5, 14.5]}
 		"stop": return {"type": type, "entity_ids": o.ids}
-		"build": return {"type": type, "builder_id": o.builder, "building_kind": "reactor", "origin": [20 + o.owner, 2]}
+		"build": return {"type": type, "builder_id": o.builder, "building_kind": "usa_power_plant", "origin": [20 + o.owner, 2]}
 		"resume_build": return {"type": type, "builder_id": o.builder, "building_id": o.cancel}
 		"cancel_build": return {"type": type, "building_id": o.cancel}
-		"produce": return {"type": type, "building_id": o.producer, "unit_kind": "infantry"}
+		"produce": return {"type": type, "building_id": o.producer, "unit_kind": "usa_rifle_infantry"}
 		"cancel_production": return {"type": type, "building_id": o.producer, "production_id": 1}
 		"set_rally": return {"type": type, "building_id": o.producer, "target": [18.5, 14.5]}
 		"gather": return {"type": type, "entity_ids": [o.builder], "source_id": o.source}
@@ -216,7 +216,7 @@ func test_many_commands_one_tick(runner) -> bool:
 		ids = []
 		for y in range(16, 32):
 			for x in range(0, 24):
-				var id: int = c.sim.spawn(1, Vector2(x + 0.5, y + 0.5), "infantry")
+				var id: int = c.sim.spawn(1, Vector2(x + 0.5, y + 0.5), "usa_rifle_infantry")
 				if id > 0 and ids.size() < 300: ids.append(id)
 	runner.check(ids.size() == 300, "L5 300 units spawned")
 	var sender: Client = net.clients[0]

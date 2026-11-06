@@ -10,11 +10,11 @@ func cases() -> Array[Callable]:
 func ready(runner, boxes: int = 8) -> Dictionary:
 	var sim = Fixture.make_world(50000)
 	var source: int = sim.add_supply_source(Vector2i(24,4),boxes)
-	var reactor: int = Fixture.build(runner,sim,"reactor",Vector2i(5,5))
-	var depot: int = Fixture.build(runner,sim,"depot",Vector2i(10,4))
+	var reactor: int = Fixture.build(runner,sim,"usa_power_plant",Vector2i(5,5))
+	var depot: int = Fixture.build(runner,sim,"usa_supply_center",Vector2i(10,4))
 	var collector: int = -1
 	for unit in sim.snapshot().entities:
-		if unit.kind == "collector": collector = unit.id
+		if unit.kind == "usa_collector": collector = unit.id
 	return {"sim":sim,"source":source,"reactor":reactor,"depot":depot,"collector":collector}
 
 func until_phase(sim, id: int, phase: String, maximum: int = 1000) -> bool:
@@ -31,7 +31,7 @@ func test_source_and_gather_validation(runner) -> bool:
 	var source: int = sim.add_supply_source(Vector2i(24,4),200)
 	runner.check(source == 2 and sim.snapshot().map.blocked_cells.size() == 9,"Su1 source footprint")
 	var empty: int = sim.add_supply_source(Vector2i(24,10),0)
-	var air: int = sim.spawn(1,Vector2(2.5,2.5),"collector")
+	var air: int = sim.spawn(1,Vector2(2.5,2.5),"usa_collector")
 	before = sim.snapshot()
 	runner.check(not Fixture.send(sim,{"type":"gather","entity_ids":[air],"source_id":empty}).ok and sim.snapshot() == before,"Su1 empty source invalid empty cargo")
 	runner.check(not Fixture.send(sim,{"type":"gather","entity_ids":[1,air],"source_id":source}).ok and sim.snapshot() == before,"Su1 mixed gather atomic")
@@ -44,7 +44,7 @@ func test_dock_timing(runner) -> bool:
 	if source == -1:
 		runner.check(false,"Su2 source created")
 		return true
-	var air: int = sim.spawn(1,Vector2(25.5,5.5),"collector")
+	var air: int = sim.spawn(1,Vector2(25.5,5.5),"usa_collector")
 	runner.check(Fixture.send(sim,{"type":"gather","entity_ids":[air],"source_id":source}).ok,"Su2 gather stationary")
 	sim.step()
 	var unit: Dictionary = Fixture.object(sim,air)
@@ -101,7 +101,7 @@ func test_dock_competition_and_lookup(runner) -> bool:
 	if world.source == -1:
 		runner.check(false,"Su4 source created")
 		return true
-	var second: int = sim.spawn(1,Vector2(25.5,5.5),"collector")
+	var second: int = sim.spawn(1,Vector2(25.5,5.5),"usa_collector")
 	Fixture.send(sim,{"type":"gather","entity_ids":[world.collector,second],"source_id":world.source})
 	var credits: int = sim.snapshot().players[0].credits
 	for index in range(1500):
@@ -112,15 +112,15 @@ func test_dock_competition_and_lookup(runner) -> bool:
 		if sim.snapshot().players[0].credits == credits + 75: break
 	runner.check(sim.snapshot().players[0].credits == credits + 75 and Fixture.object(sim,world.source).active_collector_id == null,"Su4 exactly75 dock released")
 	var lone = Fixture.make_world()
-	var air: int = lone.spawn(1,Vector2(2.5,2.5),"collector")
+	var air: int = lone.spawn(1,Vector2(2.5,2.5),"usa_collector")
 	var source: int = lone.add_supply_source(Vector2i(8,8),0)
 	runner.check(not Fixture.send(lone,{"type":"gather","entity_ids":[air],"source_id":source}).ok,"Su4 empty rejection")
 	runner.check(lone.snapshot().path_queue.is_empty(),"Su4 no ground route for air")
 	var waiting = Fixture.make_world()
 	var dock: int = waiting.add_supply_source(Vector2i(8,8),10)
-	var low: int = waiting.spawn(1,Vector2(9.5,9.5),"collector")
-	var active: int = waiting.spawn(1,Vector2(9.5,9.5),"collector")
-	var high: int = waiting.spawn(1,Vector2(9.5,9.5),"collector")
+	var low: int = waiting.spawn(1,Vector2(9.5,9.5),"usa_collector")
+	var active: int = waiting.spawn(1,Vector2(9.5,9.5),"usa_collector")
+	var high: int = waiting.spawn(1,Vector2(9.5,9.5),"usa_collector")
 	Fixture.send(waiting,{"type":"gather","entity_ids":[active],"source_id":dock})
 	waiting.step()
 	Fixture.send(waiting,{"type":"gather","entity_ids":[low,high],"source_id":dock})
@@ -134,7 +134,7 @@ func test_dock_competition_and_lookup(runner) -> bool:
 	var preferred = Fixture.make_world()
 	var near: int = preferred.add_supply_source(Vector2i(8,8),8)
 	var far: int = preferred.add_supply_source(Vector2i(24,4),8)
-	var probe: int = preferred.spawn(1,Vector2(1.5,1.5),"collector")
+	var probe: int = preferred.spawn(1,Vector2(1.5,1.5),"usa_collector")
 	Fixture.send(preferred,{"type":"gather","entity_ids":[probe],"source_id":far})
 	preferred.step()
 	runner.check(Fixture.object(preferred,probe).collection.target_id == far,"Su4 preferred source beats nearer source")
@@ -153,20 +153,20 @@ func test_dock_competition_and_lookup(runner) -> bool:
 	runner.check(Fixture.object(retry,retry_world.collector).collection.target_id == fresh,"Su4 target lookup at retry boundary")
 	var choices = Fixture.make_world(50000)
 	var stock: int = choices.add_supply_source(Vector2i(24,4),1)
-	Fixture.build(runner,choices,"reactor",Vector2i(5,5))
-	var first_depot: int = Fixture.build(runner,choices,"depot",Vector2i(18,4))
+	Fixture.build(runner,choices,"usa_power_plant",Vector2i(5,5))
+	var first_depot: int = Fixture.build(runner,choices,"usa_supply_center",Vector2i(18,4))
 	stop_collectors(choices)
-	var second_depot: int = Fixture.build(runner,choices,"depot",Vector2i(24,10))
+	var second_depot: int = Fixture.build(runner,choices,"usa_supply_center",Vector2i(24,10))
 	stop_collectors(choices)
 	choices.add_player(2,50000)
-	var enemy_builder: int = choices.spawn(2,Vector2(14.5,12.5),"builder")
-	owned_build(runner,choices,2,enemy_builder,"reactor",Vector2i(10,16))
-	var enemy_depot: int = owned_build(runner,choices,2,enemy_builder,"depot",Vector2i(21,4))
+	var enemy_builder: int = choices.spawn(2,Vector2(14.5,12.5),"usa_builder")
+	owned_build(runner,choices,2,enemy_builder,"usa_power_plant",Vector2i(10,16))
+	var enemy_depot: int = owned_build(runner,choices,2,enemy_builder,"usa_supply_center",Vector2i(21,4))
 	stop_collectors(choices)
-	Fixture.send(choices,{"type":"build","builder_id":1,"building_kind":"depot","origin":[27,4]})
+	Fixture.send(choices,{"type":"build","builder_id":1,"building_kind":"usa_supply_center","origin":[27,4]})
 	choices.step()
 	var unfinished: int = choices.snapshot().buildings.back().id
-	var loaded: int = choices.spawn(1,Vector2(25.5,5.5),"collector")
+	var loaded: int = choices.spawn(1,Vector2(25.5,5.5),"usa_collector")
 	Fixture.send(choices,{"type":"gather","entity_ids":[loaded],"source_id":stock})
 	Fixture.steps(choices,37)
 	choices.step()
@@ -177,7 +177,7 @@ func test_dock_competition_and_lookup(runner) -> bool:
 	var preferred_source: int = tied.add_supply_source(Vector2i(4,4),8)
 	var first_source: int = tied.add_supply_source(Vector2i(8,4),8)
 	var second_source: int = tied.add_supply_source(Vector2i(4,8),8)
-	var tied_air: int = tied.spawn(1,Vector2(5.5,5.5),"collector")
+	var tied_air: int = tied.spawn(1,Vector2(5.5,5.5),"usa_collector")
 	Fixture.send(tied,{"type":"gather","entity_ids":[tied_air],"source_id":preferred_source})
 	tied.step()
 	tied.remove_object(preferred_source)
@@ -211,12 +211,12 @@ func test_dock_loss_recovery(runner) -> bool:
 		var world: Dictionary = ready(runner,9 if phase == "waiting_depot" else 16)
 		var sim = world.sim
 		if phase == "waiting_source":
-			var holder: int = sim.spawn(1,Vector2(25.5,5.5),"collector")
+			var holder: int = sim.spawn(1,Vector2(25.5,5.5),"usa_collector")
 			Fixture.send(sim,{"type":"gather","entity_ids":[holder],"source_id":world.source})
 			sim.step()
 		if phase == "waiting_depot":
 			runner.check(until_phase(sim,world.collector,"flying_depot"),"Su6 first full collector returning")
-			world.collector = sim.spawn(1,Vector2(25.5,5.5),"collector")
+			world.collector = sim.spawn(1,Vector2(25.5,5.5),"usa_collector")
 			Fixture.send(sim,{"type":"gather","entity_ids":[world.collector],"source_id":world.source})
 		var observed: String = "loading" if phase == "loading_final" else phase
 		runner.check(until_phase(sim,world.collector,observed),"Su6 reaches " + phase)
@@ -233,10 +233,10 @@ func test_dock_loss_recovery(runner) -> bool:
 		if cargo > 0 and target == world.depot:
 			Fixture.steps(sim,40)
 			runner.check(Fixture.object(sim,world.collector).collection.cargo == cargo and sim.snapshot().players[0].credits == credits_before,"Su6 no depot preserves load")
-			var depot: int = Fixture.build(runner,sim,"depot",Vector2i(10,10))
+			var depot: int = Fixture.build(runner,sim,"usa_supply_center",Vector2i(10,10))
 			runner.check(depot != -1 and until_phase(sim,world.collector,"unloading"),"Su6 replacement depot recovered")
 			for other in sim.snapshot().entities:
-				if other.kind == "collector" and other.id != world.collector: Fixture.send(sim,{"type":"stop","entity_ids":[other.id]})
+				if other.kind == "usa_collector" and other.id != world.collector: Fixture.send(sim,{"type":"stop","entity_ids":[other.id]})
 			sim.step()
 			var before_deposit: int = sim.snapshot().players[0].credits
 			Fixture.steps(sim,86)
@@ -261,7 +261,7 @@ func test_dock_loss_recovery(runner) -> bool:
 
 func stop_collectors(sim) -> void:
 	for unit in sim.snapshot().entities:
-		if unit.kind == "collector": Fixture.send(sim,{"type":"stop","entity_ids":[unit.id],"player":unit.owner})
+		if unit.kind == "usa_collector": Fixture.send(sim,{"type":"stop","entity_ids":[unit.id],"player":unit.owner})
 	sim.step()
 
 func owned_build(runner, sim, owner: int, builder: int, kind: String, origin: Vector2i) -> int:

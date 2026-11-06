@@ -47,11 +47,11 @@
     14
    ],
    "slots": {
-    "reactor": [
+    "power_plant": [
      8,
      12
     ],
-    "depot": [
+    "supply_center": [
      8,
      5
     ],
@@ -72,11 +72,11 @@
     14
    ],
    "slots": {
-    "reactor": [
+    "power_plant": [
      38,
      12
     ],
-    "depot": [
+    "supply_center": [
      37,
      5
     ],

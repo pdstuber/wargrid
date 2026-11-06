@@ -50,7 +50,7 @@ static func preview(sim: Simulation, player: int, builder_id: int, kind: String,
 	var definition: Dictionary = Definitions.building(kind)
 	if definition.is_empty() or not sim._players.has(player) or not sim._entities.has(builder_id): return result
 	var builder: Dictionary = sim._entities[builder_id]
-	if builder.owner != player or builder.kind != "builder": return result
+	if builder.owner != player or builder.kind != "usa_builder": return result
 	if not sim._has_prerequisite(player,definition.prerequisite):
 		result.error = "Missing completed prerequisite"
 		return result
@@ -117,7 +117,7 @@ static func step(sim: Simulation, rates: Dictionary) -> void:
 		building.work = mini(required,building.work + rates[building.owner])
 		if building.work == required:
 			building.completed = true
-			if building.kind == "depot": sim._grant_collector(building)
+			if building.kind == "usa_supply_center": sim._grant_collector(building)
 			builder.construction_id = null
 			building.builder_id = null
 			building.approach = null

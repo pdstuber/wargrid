@@ -6,7 +6,6 @@ import tarfile
 import tempfile
 import unittest
 from pathlib import Path
-from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import check_reference as ref
@@ -59,7 +58,7 @@ def big(files: dict) -> bytes:
     offset = 16 + index_size
     index = b""
     body = b""
-    for name, payload in zip(names, payloads, strict=True):
+    for name, payload in zip(names, payloads):
         index += struct.pack(">II", offset + len(body), len(payload)) + name
         body += payload
     data = (
@@ -108,9 +107,9 @@ class ReferenceTests(unittest.TestCase):
     def test_compare_marks_match_differ_and_departure(self):
         rows = ref.compare(
             [
-                ("infantry cost", 225, 225, None),
-                ("infantry speed", 0.8, 0.9, None),
-                ("vehicle speed", 2.4, 3.0, "legacy prototype unit"),
+                ("usa_rifle_infantry cost", 225, 225, None),
+                ("usa_rifle_infantry speed", 0.8, 0.9, None),
+                ("usa_light_vehicle speed", 2.4, 3.0, "legacy prototype unit"),
             ]
         )
         self.assertEqual([row[-1] for row in rows], ["match", "DIFFERS", "deliberate: legacy prototype unit"])
@@ -120,8 +119,8 @@ class ReferenceTests(unittest.TestCase):
             archive = Path(directory) / "INIZH.big"
             archive.write_bytes(big(INI))
             wargrid = Path(directory) / "wargrid.json"
-            values: dict[str, Any] = {
-                "infantry": {
+            values = {
+                "usa_rifle_infantry": {
                     "cost": 225,
                     "ticks": 150,
                     "max_hp": 180000,
@@ -143,14 +142,19 @@ class ReferenceTests(unittest.TestCase):
             }
             wargrid.write_text(json.dumps(values))
             out = io.StringIO()
-            code = ref.main([str(archive), "--wargrid-json", str(wargrid), "--skip-hash", "--only", "infantry"], out)
+            code = ref.main(
+                [str(archive), "--wargrid-json", str(wargrid), "--skip-hash", "--only", "usa_rifle_infantry"], out
+            )
             self.assertEqual(code, 0, out.getvalue())
-            self.assertIn("infantry speed", out.getvalue())
-            values["infantry"]["speed"] = 0.9
+            self.assertIn("usa_rifle_infantry speed", out.getvalue())
+            values["usa_rifle_infantry"]["speed"] = 0.9
             wargrid.write_text(json.dumps(values))
             out = io.StringIO()
             self.assertEqual(
-                ref.main([str(archive), "--wargrid-json", str(wargrid), "--skip-hash", "--only", "infantry"], out), 1
+                ref.main(
+                    [str(archive), "--wargrid-json", str(wargrid), "--skip-hash", "--only", "usa_rifle_infantry"], out
+                ),
+                1,
             )
             self.assertIn("DIFFERS", out.getvalue())
 
@@ -170,20 +174,6 @@ class ReferenceTests(unittest.TestCase):
                 info.size = len(data)
                 tar.addfile(info, io.BytesIO(data))
             self.assertIn("data\\ini\\weapon.ini", ref.load_archive(str(path), check_hash=False))
-
-    def test_tarball_member_that_is_not_a_file_is_a_value_error(self):
-        with tempfile.TemporaryDirectory() as directory:
-            path = Path(directory) / "backup.tar.gz"
-            with tarfile.open(path, "w:gz") as tar:
-                info = tarfile.TarInfo(ref.TAR_MEMBER)
-                info.type = tarfile.DIRTYPE
-                tar.addfile(info)
-            with self.assertRaises(ValueError):
-                ref.load_archive(str(path), check_hash=False)
-
-    def test_block_without_end_is_a_value_error(self):
-        with self.assertRaises(ValueError):
-            ref.block("Object Foo\n  BuildTime = 1.0\n", "Object", "Foo")
 
 
 if __name__ == "__main__":

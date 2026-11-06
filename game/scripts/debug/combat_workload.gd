@@ -38,7 +38,7 @@ static func _block(sim: Simulation, player: int, front_x: int, direction: int, c
 	for column in range(columns):
 		for row in range(rows):
 			var tank: bool = placed % 3 == 0 if interleave else placed < 50
-			var id: int = sim.spawn(player, Vector2(front_x + direction * column + 0.5, top + row + 0.5), "tank" if tank else "infantry")
+			var id: int = sim.spawn(player, Vector2(front_x + direction * column + 0.5, top + row + 0.5), "usa_tank" if tank else "usa_rifle_infantry")
 			assert(id > 0)
 			placed += 1
 
@@ -55,7 +55,7 @@ static func _skirmish3v3() -> Simulation:
 			var front: int = 32 + direction * (lane[1] / 2)
 			var ids: Array[int] = []
 			for placed in range(35):
-				var kind: String = "tank" if placed % 3 == 0 else "infantry"
+				var kind: String = "usa_tank" if placed % 3 == 0 else "usa_rifle_infantry"
 				@warning_ignore("integer_division")
 				var position := Vector2(front + direction * (placed / 5) + 0.5, lane[0] - 2 + placed % 5 + 0.5)
 				var id: int = sim.spawn(player, position, kind)
@@ -87,7 +87,7 @@ static func create_large() -> Simulation:
 			for placed in range(60):
 				@warning_ignore("integer_division")
 				var position := Vector2(front + direction * (placed / 6) + 0.5, lanes[index] - 3 + placed % 6 + 0.5)
-				var id: int = sim.spawn(player, position, "tank" if placed % 3 == 0 else "infantry")
+				var id: int = sim.spawn(player, position, "usa_tank" if placed % 3 == 0 else "usa_rifle_infantry")
 				assert(id > 0)
 				ids.append(id)
 			var target: Array = [190.5 if player == 1 else 5.5, lanes[index] + 0.5]

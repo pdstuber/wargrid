@@ -106,14 +106,14 @@ func test_combat_fixtures(runner) -> bool:
 		var sim: RefCounted = CombatWorkload.create(layout)
 		var state: Dictionary = sim.snapshot()
 		var size: Array = state.map.size
-		var kinds := {1: {"infantry": 0, "tank": 0}, 2: {"infantry": 0, "tank": 0}}
+		var kinds := {1: {"usa_rifle_infantry": 0, "usa_tank": 0}, 2: {"usa_rifle_infantry": 0, "usa_tank": 0}}
 		var cells := {}
 		for unit in state.entities:
 			kinds[unit.owner][unit.kind] += 1
 			cells[Vector2i(Vector2(unit.position[0], unit.position[1]).floor())] = true
 			runner.check(unit.position[0] > 0.0 and unit.position[1] > 0.0 and unit.position[0] < size[0] and unit.position[1] < size[1], "BM5 inside the map " + layout)
 		runner.check(state.entities.size() == 300 and cells.size() == 300, "BM5 300 unique cells " + layout)
-		runner.check(kinds[1] == {"infantry": 100, "tank": 50} and kinds[2] == {"infantry": 100, "tank": 50}, "BM5 100/50 mix per side " + layout)
+		runner.check(kinds[1] == {"usa_rifle_infantry": 100, "usa_tank": 50} and kinds[2] == {"usa_rifle_infantry": 100, "usa_tank": 50}, "BM5 100/50 mix per side " + layout)
 		runner.check(state.players.size() == 2 and CombatWorkload.create(layout).snapshot() == state, "BM5 players and deterministic creation " + layout)
 		var first_shot: int = -1
 		for tick in range(60):
@@ -127,7 +127,7 @@ func test_combat_fixtures(runner) -> bool:
 				fresh.step()
 				for event in fresh.snapshot().combat_events:
 					if event.type == "shot": kinds_fired[fresh.snapshot().entities.filter(func(unit: Dictionary) -> bool: return unit.id == event.attacker_id)[0].kind] = true
-			runner.check(kinds_fired.has("infantry") and kinds_fired.has("tank"), "BM5 contact exercises both rifles and cannons")
+			runner.check(kinds_fired.has("usa_rifle_infantry") and kinds_fired.has("usa_tank"), "BM5 contact exercises both rifles and cannons")
 	return true
 
 func test_skirmish3v3_fixture(runner) -> bool:
@@ -138,7 +138,7 @@ func test_skirmish3v3_fixture(runner) -> bool:
 	var idle := {1: 0, 2: 0}
 	var cells := {}
 	for unit in sim.snapshot().entities:
-		if unit.kind == "tank": tanks[unit.owner] += 1
+		if unit.kind == "usa_tank": tanks[unit.owner] += 1
 		if unit.status == "idle": idle[unit.owner] += 1
 		cells[Vector2i(Vector2(unit.position[0], unit.position[1]).floor())] = true
 	runner.check(state.entities.size() == 210 and cells.size() == 210, "BM7 210 units on unique cells")
