@@ -7,13 +7,13 @@ Plan: [M7 plan](../superpowers/plans/2026-11-06-m7-factions.md). Design: [M7 des
 ```text
 Resume record (updated 2026-11-06, gate 1 signed off)
 Branch / base commit / working-tree state: m7-factions rebased onto main 025540d; origin/m7-factions at 29507ed (CI green there), local HEAD adds the R1 planning docs (8f022b0, ed48b2e, not pushed); tree clean. R1 release workflow lives on its own branch r1-release (not pushed), see docs/reference/release-verification.md; it is not part of gate 2
-Last green task / next incomplete task: Task 11 (gate 1) signed off by the user 2026-11-06 / push for CI on Linux and Windows (approval needed), then STOP: gate 2 is an outline
-Changed paths since last commit: G2.0 files (skirmish.gd, skirmish_main.gd, simulation.gd, definitions.gd, test_skirmish.gd, test_factions.gd, test_defences.gd, test_skirmish_match.gd), this file
-Last command / cases / checks / failures / exit / marker: G2.0: sh tools/run_tests.sh, 346 cases / 134,359 / 0, exit 0, TESTS PASSED 134359 (baseline 344 / 134,353); lint, warnings, 9 netplay scenarios pass, match 8331; earlier (Task 11, 067bf58): lint, warnings, ruff, mypy, unittest, netplay match 8331, team match won tick 33205 winner 1, run_benchmark.sh exit 0, rendered movement benchmark PASSED 2 (all on the bot wave tree); ledger rows added
-Known red case or blocker: none (combat stress rows exceed the 1.82 / 3.64 budget: reported, not loosened). CI run 42295509369 on f44f081 green (Linux, Windows, relay, lints, compare-replays); macOS compare_local_traces matched all five (replay, economy, combat 1200, team 100, netplay 278)
+Last green task / next incomplete task: G2.1 done and uncommitted (ground docking, truck, ground-only full load) / commit it, then G2.2
+Changed paths since last commit: new china.gd (+uid); definitions.gd, supply_collection.gd, production.gd, simulation.gd, combat_workload.gd, run_combat.gd, run_benchmark.sh, test_supply.gd, test_production.gd; m7-verification.md, m7-factions.md, the plan
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 352 cases / 134,406 / 0, exit 0, TESTS PASSED 134406 (baseline 346 / 134,359; traces on 134,413); four traces cmp-identical to HEAD cbfce11; lint, warnings, faction guard; netplay match 8331; team match won tick 33205 winner 1; run_benchmark.sh exit 0, COMBAT BENCHMARK PASSED 7
+Known red case or blocker: none (combat stress rows exceed the 1.82 / 3.64 budget: reported, not loosened)
 Approved decisions, pre-authorizations used, deferred gates: pushes approved 2026-11-06 (m7-factions only); user sign-off of gate 1 and its visuals 2026-11-06; WAVE_MIN 6 accepted "for now" (revisit at M8 research and gates 2-3); rulings as logged in the sections above. Open for the user: analyze.py burst/reach tolerance, Dozer mid-turn dip, team match winner flip (accepted by silence, not stated)
 Usage so far: not recorded
-Next exact action: G2.0 done and uncommitted (commit "Bot plays the seat faction; no commands before every seat chose"); then dispatch G2.1 on Sonnet (medium). Settled by the user 2026-11-06: G2.1 full-load rule APPLIED, G2.0 "Match has not started" setup gate KEPT, G2.5 `defence_attack` command ADDED.
+Next exact action: commit G2.1 (message "Add ground docking and the supply truck"), then dispatch G2.2. Full load is ground-only (user ruling 2026-11-06), open item in Departures and deferrals.
 ```
 
 ## Pins at base
@@ -59,7 +59,16 @@ Next exact action: G2.0 done and uncommitted (commit "Bot plays the seat faction
 | run_netplay.sh | `match` terminal tick | 7817 → 8331 | bot wave update; inside the S1 window |
 | test_skirmish, test_team_match | D2, D3, A3, TB1 | run the bot until the wave releases (rally, then WAVE_TIMEOUT); A3 expects one shared target and the score order first, second, barracks, plant, depot, command center; D3 the carrier, TB1 any seat-2 object | bot wave update (semantics changed on purpose: shared wave target, score instead of categories; no assertion weakened) |
 
+| test_supply | Su2 capacity, Su4 higher-waiter and equal-depot cases, Gt1 truck load | departs on the last box, truck 120 ticks → one more delay: departs 36 ticks later (cargo 8 at 288, seeking at 324), truck 150 | G2.1 full load | REVERTED: ground-only ruling, old value restored |
+| test_skirmish_match | S1 `TERMINAL_TICK`; `S1_CORE_SERIES` | 9473 → 8472 (window 7000-17999, winner 1); 8505231937702596599 → 6003359071183333231 | G2.1 full load | REVERTED: ground-only ruling, old value restored |
+| test_team_match | TB3 `FINAL_DIGEST`; TB4 `TEAM_CORE_SERIES` | 6b81119ab5577115 → 28ab7309497cd4a7; 6113229322264627267 → 1719080097601549884 | G2.1 full load; REVERTED (ground-only ruling); was OUTSIDE WINDOW: `run_team_match.sh` now ends at the 45000 cap with no winner (was won tick 33205, winner 1) |
+| run_netplay.sh | `match` terminal tick | 8331 → 8285 | G2.1 full load; inside the S1 window | REVERTED: ground-only ruling, old value restored |
+| test_state_hash | H1 `PINNED` | unchanged | G2.1 full load; REVERTED (ground-only) |
+
+
 ## Departures and deferrals
+
+- **OPEN:** Full load for air collectors (Chinook) is NOT applied, ZH does apply it; applying it moved the 6-seat team match from won 33205 to won 61973 (cap 45000) via ~10% less income. Later check whether this asymmetry is fair (playtest ground vs air economy, or revisit with the M8 bot). Evidence: m7-factions.md Full load.
 
 - Base suite was 277 cases / 112,748 checks / 1 failure (MP5 count, above), not the plan's 277 / 112,744 / 0.
 

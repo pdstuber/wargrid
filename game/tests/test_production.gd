@@ -6,9 +6,10 @@ const Construction = preload("res://scripts/simulation/construction.gd")
 const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 const Production = preload("res://scripts/simulation/production.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
+const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 
 func cases() -> Array[Callable]:
-	return [test_producer_and_free_collector,test_fifo_payment_and_cancel,test_blocked_exit,test_production_power_and_removal,test_default_rally_mirrored,test_production_never_stalls,test_set_rally_applies_to_next_spawn,test_rally_blocked_cell_falls_back,test_set_rally_same_tick_cases]
+	return [test_producer_and_free_collector,test_fifo_payment_and_cancel,test_blocked_exit,test_production_power_and_removal,test_default_rally_mirrored,test_production_never_stalls,test_set_rally_applies_to_next_spawn,test_rally_blocked_cell_falls_back,test_set_rally_same_tick_cases,test_supply_center_spawns_ground_truck]
 
 func ready(runner) -> Dictionary:
 	var sim = Fixture.make_world(50000)
@@ -287,3 +288,26 @@ func economy_depot(runner) -> Dictionary:
 	var sim = Fixture.make_world(50000)
 	Fixture.build(runner,sim,"usa_power_plant",Vector2i(5,5))
 	return {"sim":sim,"depot":Fixture.build(runner,sim,"usa_supply_center",Vector2i(10,4))}
+
+func test_supply_center_spawns_ground_truck(runner) -> bool:
+	var row: Dictionary = Registry.kind("usa_builder").duplicate(true)
+	row.builds = row.builds + ["china_power_plant","china_supply_center"]
+	Registry.add_test_kind("usa_builder",row)
+	var sim = Fixture.make_world(50000)
+	Fixture.build(runner,sim,"china_power_plant",Vector2i(5,5))
+	var center: int = Fixture.build(runner,sim,"china_supply_center",Vector2i(10,4))
+	var trucks: Array = sim.snapshot().entities.filter(func(unit: Dictionary) -> bool: return unit.kind == "china_collector")
+	runner.check(trucks.size() == 1,"Pg1 completion spawns one truck")
+	if trucks.size() == 1: ground_truck_ok(runner,trucks[0],"completion")
+	runner.check(produce(sim,center,"china_collector").ok,"Pg1 truck order accepted")
+	Fixture.steps(sim,300)
+	trucks = sim.snapshot().entities.filter(func(unit: Dictionary) -> bool: return unit.kind == "china_collector")
+	runner.check(trucks.size() == 2,"Pg1 queued truck spawns")
+	if trucks.size() == 2: ground_truck_ok(runner,trucks[1],"queued")
+	Registry.clear_test_kinds()
+	return true
+
+func ground_truck_ok(runner, unit: Dictionary, label: String) -> void:
+	var cell := Vector2i(floori(unit.position[0]),floori(unit.position[1]))
+	var near: bool = cell.x >= 9 and cell.x <= 13 and cell.y >= 3 and cell.y <= 7 and not (cell.x >= 10 and cell.x <= 12 and cell.y >= 4 and cell.y <= 6)
+	runner.check(near and unit.collection.enabled and unit.order == null,"Pg1 " + label + " truck on a perimeter cell, collecting, no rally move")

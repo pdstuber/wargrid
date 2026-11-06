@@ -5,7 +5,7 @@ const Fixture = preload("res://tests/economy_fixture.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 
 func cases() -> Array[Callable]:
-	return [test_source_and_gather_validation,test_dock_timing,test_partial_load_and_conservation,test_dock_competition_and_lookup,test_collection_interruptions,test_dock_loss_recovery]
+	return [test_source_and_gather_validation,test_dock_timing,test_partial_load_and_conservation,test_dock_competition_and_lookup,test_collection_interruptions,test_dock_loss_recovery,test_ground_dock_cell,test_ground_dock_queue,test_ground_dock_full_perimeter,test_truck_timing,test_dock_loss_recovery_ground]
 
 func ready(runner, boxes: int = 8) -> Dictionary:
 	var sim = Fixture.make_world(50000)
@@ -274,3 +274,118 @@ func owned_build(runner, sim, owner: int, builder: int, kind: String, origin: Ve
 		if Fixture.object(sim,id).get("completed",false): return id
 	runner.check(false,"Su4 owned fixture completes " + kind)
 	return -1
+
+func truck(sim, position: Vector2) -> int:
+	var id: int = sim.spawn(1,position,"china_collector")
+	assert(id > 0)
+	return id
+
+func gather(sim, ids: Array, source: int) -> void:
+	Fixture.send(sim,{"type":"gather","entity_ids":ids,"source_id":source})
+
+func test_ground_dock_cell(runner) -> bool:
+	var sim = Fixture.make_world()
+	var source: int = sim.add_supply_source(Vector2i(24,4),8)
+	var unit: int = truck(sim,Vector2(30.5,5.5))
+	gather(sim,[unit],source)
+	until_phase(sim,unit,"loading",400)
+	var loaded: Dictionary = Fixture.object(sim,unit)
+	runner.check(loaded.collection.get("dock") == [27,5],"Gd1 claims the nearest perimeter cell on its side")
+	runner.check(loaded.collection.phase == "loading" and loaded.position == [27.5,5.5],"Gd1 loads only on the cell centre")
+	return true
+
+func test_ground_dock_queue(runner) -> bool:
+	var sim = Fixture.make_world()
+	var source: int = sim.add_supply_source(Vector2i(24,4),8)
+	var first: int = truck(sim,Vector2(29.5,5.5))
+	var second: int = truck(sim,Vector2(29.5,6.5))
+	gather(sim,[first,second],source)
+	until_phase(sim,second,"waiting_source")
+	var a: Dictionary = Fixture.object(sim,first)
+	var b: Dictionary = Fixture.object(sim,second)
+	runner.check(a.collection.phase == "loading" and b.collection.phase == "waiting_source" and a.collection.dock != b.collection.dock,"Gd2 second truck waits on its own cell")
+	runner.check(a.position != b.position,"Gd2 no overlap")
+	for index in range(600):
+		sim.step()
+		if Fixture.object(sim,first).collection.phase != "loading": break
+	runner.check(Fixture.object(sim,first).collection.get("dock") == null and Fixture.object(sim,second).collection.phase == "loading","Gd2 waiter loads the tick the active truck releases")
+	return true
+
+func test_ground_dock_full_perimeter(runner) -> bool:
+	var sim = Fixture.make_world()
+	var source: int = sim.add_supply_source(Vector2i(24,4),200)
+	var holders: Array = []
+	for y in range(3,8):
+		for x in range(23,28):
+			if x in [24,25,26] and y in [4,5,6]: continue
+			holders.append(truck(sim,Vector2(x + 0.5,y + 0.5)))
+	runner.check(holders.size() == 16,"Gd3 sixteen perimeter cells")
+	var extra: int = truck(sim,Vector2(30.5,10.5))
+	gather(sim,holders + [extra],source)
+	sim.step()
+	var idle: Dictionary = Fixture.object(sim,extra).collection
+	runner.check(idle.phase == "idle" and idle.retry_tick == sim.snapshot().tick + 29 and not idle.has("dock"),"Gd3 extra truck idles with a retry 30 ticks out")
+	var freed: Array = Fixture.object(sim,holders[5]).collection.dock
+	sim.remove_object(holders[5])
+	Fixture.steps(sim,30)
+	runner.check(Fixture.object(sim,extra).collection.get("dock") == freed,"Gd3 extra truck takes the freed cell")
+	runner.check(until_phase(sim,extra,"loading",4000),"Gd3 extra truck loads in the end")
+	return true
+
+func test_truck_timing(runner) -> bool:
+	var sim = Fixture.make_world()
+	var source: int = sim.add_supply_source(Vector2i(24,4),40)
+	var depot: int = Fixture.add_completed(sim,1,"china_supply_center",Vector2i(10,4))
+	var unit: int = truck(sim,Vector2(27.5,5.5))
+	gather(sim,[unit],source)
+	runner.check(until_phase(sim,unit,"loading"),"Gt1 loads")
+	var collection: Dictionary = Fixture.object(sim,unit).collection
+	runner.check(collection.remaining_ticks == 30,"Gt1 admit30")
+	var ticks: int = 0
+	while Fixture.object(sim,unit).collection.phase == "loading":
+		sim.step()
+		ticks += 1
+	runner.check(ticks == 150 and Fixture.object(sim,unit).collection.cargo == 4,"Gt1 four boxes at 30 ticks each, one more delay to leave")
+	runner.check(until_phase(sim,unit,"unloading"),"Gt1 reaches the depot")
+	var credits: int = sim.snapshot().players[0].credits
+	runner.check(Fixture.object(sim,unit).collection.remaining_ticks == 12 and Fixture.object(sim,unit).collection.target_id == depot,"Gt1 admit12")
+	Fixture.steps(sim,11)
+	runner.check(sim.snapshot().players[0].credits == credits,"Gt1 wait11")
+	sim.step()
+	runner.check(sim.snapshot().players[0].credits == credits + 300,"Gt1 trip pays 300")
+	var small = Fixture.make_world()
+	var pile: int = small.add_supply_source(Vector2i(24,4),3)
+	var partial: int = truck(small,Vector2(27.5,5.5))
+	gather(small,[partial],pile)
+	until_phase(small,partial,"loading")
+	Fixture.steps(small,90)
+	runner.check(Fixture.object(small,partial).collection.cargo == 3 and Fixture.object(small,partial).collection.phase == "loading","Gt2 empty pile still holds the dock for one more delay")
+	Fixture.steps(small,30)
+	runner.check(Fixture.object(small,partial).collection.phase != "loading" and Fixture.object(small,partial).collection.cargo == 3,"Gt2 leaves after the extra delay")
+	return true
+
+func test_dock_loss_recovery_ground(runner) -> bool:
+	for phase in ["flying_source","waiting_source","loading","flying_depot","unloading"]:
+		var sim = Fixture.make_world()
+		var source: int = sim.add_supply_source(Vector2i(24,4),40)
+		var other_source: int = sim.add_supply_source(Vector2i(24,12),40)
+		var depot: int = Fixture.add_completed(sim,1,"china_supply_center",Vector2i(10,4))
+		var other_depot: int = Fixture.add_completed(sim,1,"china_supply_center",Vector2i(10,12))
+		var unit: int = truck(sim,Vector2(29.5,6.5) if phase == "waiting_source" else Vector2(14.5,8.5))
+		var at_depot: bool = phase in ["flying_depot","unloading"]
+		if at_depot: sim._entities[unit].collection.cargo = 4
+		if phase == "waiting_source":
+			var holder: int = truck(sim,Vector2(29.5,5.5))
+			gather(sim,[holder],source)
+			sim.step()
+		gather(sim,[unit],source)
+		runner.check(until_phase(sim,unit,phase,2000),"Gl1 reaches " + phase)
+		var target: int = (depot if Fixture.object(sim,unit).collection.target_id == depot else other_depot) if at_depot else source
+		runner.check(sim.remove_object(target).ok,"Gl1 target removed " + phase)
+		var lost: Dictionary = Fixture.object(sim,unit).collection
+		runner.check(lost.target_id == null and not lost.has("dock"),"Gl1 dock erased " + phase)
+		Fixture.steps(sim,2)
+		var again: Dictionary = Fixture.object(sim,unit).collection
+		var wanted: Array = [depot,other_depot] if at_depot else [source,other_source]
+		runner.check(again.target_id != null and again.target_id != target and again.target_id in wanted and again.has("dock"),"Gl1 re-seeks with a new dock " + phase)
+	return true

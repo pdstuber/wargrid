@@ -25,12 +25,14 @@ func _run() -> void:
 		breached.append("transports")
 	if not _measure("defences"):
 		breached.append("defences")
+	if not _measure("docks"):
+		breached.append("docks")
 	if not breached.is_empty():
 		for layout: String in breached:
 			push_error("Combat benchmark failed for " + layout)
 		quit(1)
 		return
-	print("COMBAT BENCHMARK PASSED 6")
+	print("COMBAT BENCHMARK PASSED 7")
 	quit(0)
 
 func _measure(layout: String) -> bool:
@@ -55,6 +57,9 @@ func _measure(layout: String) -> bool:
 		if building.has("combat"): defenders[building.id] = true
 	var rider_shots: int = 0
 	var defence_shots: int = 0
+	var credits_at_window: int = 0
+	var waiting_ticks: int = 0
+	var stacked_ticks: int = 0
 	for tick in range(WARMUP + SAMPLES):
 		var started: int = Time.get_ticks_usec()
 		sim.step()
@@ -70,6 +75,18 @@ func _measure(layout: String) -> bool:
 				if first_shot == -1: first_shot = tick
 			else:
 				deaths += 1
+		if tick == WARMUP: credits_at_window = state.players[0].credits
+		if tick >= WARMUP:
+			var docked: Dictionary = {}
+			var waiting: bool = false
+			var stacked: bool = false
+			for unit: Dictionary in state.entities:
+				if unit.collection == null or not unit.collection.phase in ["waiting_source", "waiting_depot", "loading", "unloading"]: continue
+				waiting = waiting or unit.collection.phase.begins_with("waiting_")
+				stacked = stacked or docked.has(unit.position)
+				docked[unit.position] = true
+			waiting_ticks += 1 if waiting else 0
+			stacked_ticks += 1 if stacked else 0
 		if tick < WARMUP:
 			warmup.append(elapsed)
 			warmup_chases += sim.scan_chases()
@@ -96,6 +113,13 @@ func _measure(layout: String) -> bool:
 		print("COMBAT DEFENCES defence_shots_window=", defence_shots, " report-only until gate 1")
 		if defence_shots == 0:
 			push_error("Combat benchmark: no defence shots inside the timed window")
+			return false
+		return true
+	if layout == "docks":
+		var earned: int = sim.snapshot().players[0].credits - credits_at_window
+		print("COMBAT DOCKS credits_window=", earned, " waiting_ticks_window=", waiting_ticks, " stacked_ticks_window=", stacked_ticks, " report-only")
+		if earned <= 0 or waiting_ticks == 0 or stacked_ticks > 0:
+			push_error("Combat benchmark: no deliveries, no queued trucks or stacked trucks inside the timed window")
 			return false
 		return true
 	if STRESS_CEILING.has(layout):

@@ -58,6 +58,26 @@ static func spawn_air(sim: Simulation, building: Dictionary, kind: String) -> in
 	sim._entities[id].collection.phase = "seeking"
 	return id
 
+static func spawn_unit(sim: Simulation, building: Dictionary, kind: String, occupied: Variant) -> int:
+	if Registry.air_kinds.has(kind): return spawn_air(sim,building,kind)
+	if occupied == null: occupied = sim.occupied_cells()
+	var collector: bool = not Registry.collects(kind).is_empty()
+	for cell in Construction.perimeter(building.kind,Vector2i(building.origin[0],building.origin[1])):
+		var spawned: int = sim.spawn(building.owner,Vector2(cell) + Vector2(.5,.5),kind,occupied)
+		if spawned == -1: continue
+		var unit: Dictionary = sim._entities[spawned]
+		if collector:
+			unit.collection.enabled = true
+			unit.collection.phase = "seeking"
+		else:
+			var members: Array[Dictionary] = [unit]
+			sim._assign_move(members,rally_target(sim,building,unit))
+			sim._set_intent(unit,"move")
+		occupied[sim._cell(unit.position)] = true
+		if unit.destination != null: occupied[sim._cell(unit.destination)] = true
+		return spawned
+	return -1
+
 static func step(sim: Simulation, rates: Dictionary) -> void:
 	var ids: Array = sim._buildings.keys()
 	ids.sort()
@@ -69,19 +89,6 @@ static func step(sim: Simulation, rates: Dictionary) -> void:
 		var required: int = Definitions.unit(entry.kind).ticks * 1000
 		entry.work = mini(required,entry.work + rates[building.owner])
 		if entry.work != required: continue
-		var spawned: int = -1
-		if Registry.air_kinds.has(entry.kind):
-			spawned = spawn_air(sim,building,entry.kind)
-		else:
-			if occupied == null: occupied = sim.occupied_cells()
-			for cell in Construction.perimeter(building.kind,Vector2i(building.origin[0],building.origin[1])):
-				spawned = sim.spawn(building.owner,Vector2(cell) + Vector2(.5,.5),entry.kind,occupied)
-				if spawned != -1:
-					var unit: Dictionary = sim._entities[spawned]
-					var members: Array[Dictionary] = [unit]
-					sim._assign_move(members,rally_target(sim,building,unit))
-					sim._set_intent(unit,"move")
-					occupied[sim._cell(unit.position)] = true
-					if unit.destination != null: occupied[sim._cell(unit.destination)] = true
-					break
+		if not Registry.air_kinds.has(entry.kind) and occupied == null: occupied = sim.occupied_cells()
+		var spawned: int = spawn_unit(sim,building,entry.kind,occupied)
 		if spawned != -1: building.queue.pop_front()

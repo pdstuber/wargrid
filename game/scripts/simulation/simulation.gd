@@ -771,7 +771,7 @@ func _remove_building(id: int) -> void:
 	Construction.rebuild_navigation(self)
 
 func _spawn_on_complete(building: Dictionary) -> void:
-	for kind: String in Registry.kind(building.kind).spawns_on_complete: Production.spawn_air(self,building,kind)
+	for kind: String in Registry.kind(building.kind).spawns_on_complete: Production.spawn_unit(self,building,kind,null)
 
 func add_supply_source(origin: Vector2i, boxes: int) -> int:
 	if boxes < 0: return -1

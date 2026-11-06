@@ -4,10 +4,11 @@ const Simulation = preload("res://scripts/simulation/simulation.gd")
 const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
 
 static func create(layout: String) -> Simulation:
-	assert(layout == "open" or layout == "dense" or layout == "contact" or layout == "skirmish3v3" or layout == "transports" or layout == "defences")
+	assert(layout == "open" or layout == "dense" or layout == "contact" or layout == "skirmish3v3" or layout == "transports" or layout == "defences" or layout == "docks")
 	if layout == "skirmish3v3": return _skirmish3v3()
 	if layout == "transports": return _transports()
 	if layout == "defences": return _defences()
+	if layout == "docks": return _docks()
 	var solids: Array[Vector2i] = []
 	if layout == "dense":
 		for x: int in [26, 34, 42]:
@@ -85,6 +86,24 @@ static func _defences() -> Simulation:
 			attackers.append(id)
 	var marched: Dictionary = sim.issue_command({"tick": 0, "player": 2, "sequence": 0, "type": "attack_move", "entity_ids": attackers, "target": [4.5, 24.5]})
 	assert(marched.ok, marched.error)
+	return sim
+
+# 12 supply trucks gather from 2 piles of 400 boxes around one supply center; six per pile, so docks fill and trucks queue.
+static func _docks() -> Simulation:
+	var sim: Simulation = Simulation.new([], Vector2i(64, 64))
+	sim.add_player(1, 0)
+	sim.add_player(2, 0)
+	_building(sim, "china_supply_center", Vector2i(30, 30))
+	var piles: Array[int] = [sim.add_supply_source(Vector2i(18, 30), 400), sim.add_supply_source(Vector2i(42, 30), 400)]
+	assert(piles[0] > 0 and piles[1] > 0)
+	for index in range(2):
+		var trucks: Array[int] = []
+		for row in range(6):
+			var id: int = sim.spawn(1, Vector2(33.5 + 4 * index, 26.5 + row), "china_collector")
+			assert(id > 0)
+			trucks.append(id)
+		var gathered: Dictionary = sim.issue_command({"tick": 0, "player": 1, "sequence": index, "type": "gather", "entity_ids": trucks, "source_id": piles[index]})
+		assert(gathered.ok, gathered.error)
 	return sim
 
 static func _building(sim: Simulation, kind: String, origin: Vector2i) -> void:

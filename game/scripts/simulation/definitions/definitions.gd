@@ -1,6 +1,7 @@
 extends RefCounted
 
 const Usa = preload("res://scripts/simulation/definitions/usa.gd")
+const China = preload("res://scripts/simulation/definitions/china.gd")
 const Factions = preload("res://scripts/simulation/definitions/factions.gd")
 
 const DEFAULT_SPAWN := "usa_light_vehicle"
@@ -16,7 +17,8 @@ static var _profile_cache: Dictionary = {}
 static var air_kinds: Dictionary = _air_kinds()
 
 static func kind(id: String) -> Dictionary:
-	return _extra[id] if _extra.has(id) else Usa.KINDS.get(id, {})
+	if _extra.has(id): return _extra[id]
+	return Usa.KINDS[id] if Usa.KINDS.has(id) else China.KINDS.get(id, {})
 
 static func faction(id: String) -> Dictionary:
 	return _extra_factions[id] if _extra_factions.has(id) else Factions.FACTIONS.get(id, {})
@@ -95,7 +97,7 @@ static func _producer_of(unit_id: String) -> String:
 
 static func _ids(want_units: bool) -> Array[String]:
 	var found: Array[String] = []
-	for source: Dictionary in [Usa.KINDS, _extra]:
+	for source: Dictionary in [Usa.KINDS, China.KINDS, _extra]:
 		for id: String in source:
 			if source[id].has("class") == want_units: found.append(id)
 	found.sort()
