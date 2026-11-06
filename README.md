@@ -55,9 +55,11 @@ sh tools/run_tests.sh
 sh tools/run_lint.sh   # needs: uv tool install gdtoolkit==4.5.0
 sh tools/run_warnings.sh   # typing, shadowing, unused-parameter and integer-division warnings as errors
 python3 -m unittest discover -s tools -p 'test_*.py'
-sh tools/run_python_checks.sh   # ruff format + lint, mypy; needs: uv tool install ruff==0.17.2 && uv tool install mypy==2.4.0
+sh tools/run_python_checks.sh   # ruff format + lint, mypy; needs: xargs -n1 uv tool install < tools/requirements-dev.txt
 sh tools/run_benchmark.sh
 ```
+
+Python tooling: ruff and mypy are configured in `tools/pyproject.toml`, pinned in `tools/requirements-dev.txt` (CI installs from the same file). Once per clone, `git config blame.ignoreRevsFile .git-blame-ignore-revs` makes `git blame` skip the formatting-only commits listed there (GitHub reads the file by itself); add the SHA of any future repo-wide reformat.
 
 Profiling (report-only, never gates): `sh tools/run_profile.sh` prints per-zone timings for the benchmark workloads, the scripted skirmish match and a synthetic 196×196 map; the rendered benchmark takes `-- --profile` for the same zones plus a 196×196 leg. Results: [performance spike](docs/reference/performance-spike.md).
 
