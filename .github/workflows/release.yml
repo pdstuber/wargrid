@@ -57,9 +57,10 @@ jobs:
       - name: Package desktop zips
         run: |
           extras="LICENSE game/data/maps/NOTICE.md build/release/GODOT_LICENSES.txt"
-          python3 tools/package_release.py linux build/release/linux "release/Wargrid-$VERSION-linux.zip" $extras
-          python3 tools/package_release.py windows build/release/windows "release/Wargrid-$VERSION-windows.zip" $extras
-          python3 tools/package_release.py macos build/release/macos/Wargrid.zip "release/Wargrid-$VERSION-macos.zip" $extras
+          source="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/tree/$GITHUB_REF_NAME"
+          python3 tools/package_release.py linux build/release/linux "release/Wargrid-$VERSION-linux.zip" "$source" $extras
+          python3 tools/package_release.py windows build/release/windows "release/Wargrid-$VERSION-windows.zip" "$source" $extras
+          python3 tools/package_release.py macos build/release/macos/Wargrid.zip "release/Wargrid-$VERSION-macos.zip" "$source" $extras
       - uses: actions/upload-artifact@v4
         with:
           name: release-zips
@@ -120,6 +121,8 @@ jobs:
         run: |
           if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
             gh release upload "$GITHUB_REF_NAME" release/*.zip --clobber
+            # A failed first run can leave a draft behind; publishing it makes the rerun complete.
+            gh release edit "$GITHUB_REF_NAME" --draft=false --prerelease="$PRERELEASE"
           elif [ "$PRERELEASE" = true ]; then
             gh release create "$GITHUB_REF_NAME" release/*.zip --title "Wargrid $VERSION" --generate-notes --prerelease
           else

@@ -6,6 +6,8 @@ from pathlib import Path
 
 from package_release import package
 
+SOURCE = "https://github.com/pdstuber/wargrid/tree/v0.7.0"
+
 
 def _mode(info: zipfile.ZipInfo) -> int:
     return (info.external_attr >> 16) & 0o777
@@ -33,7 +35,7 @@ class PackageRelease(unittest.TestCase):
         return build
 
     def test_linux_contents(self) -> None:
-        out = package("linux", self._build("Wargrid.x86_64"), self.root / "linux.zip", self.extras)
+        out = package("linux", self._build("Wargrid.x86_64"), self.root / "linux.zip", SOURCE, self.extras)
         with zipfile.ZipFile(out) as bundle:
             self.assertEqual(
                 sorted(bundle.namelist()),
@@ -42,7 +44,9 @@ class PackageRelease(unittest.TestCase):
             self.assertEqual(_mode(bundle.getinfo("Wargrid.x86_64")), 0o755)
 
     def test_windows_contents(self) -> None:
-        out = package("windows", self._build("Wargrid.exe", "Wargrid.console.exe"), self.root / "w.zip", self.extras)
+        out = package(
+            "windows", self._build("Wargrid.exe", "Wargrid.console.exe"), self.root / "w.zip", SOURCE, self.extras
+        )
         with zipfile.ZipFile(out) as bundle:
             self.assertIn("Wargrid.exe", bundle.namelist())
             self.assertIn("Wargrid.console.exe", bundle.namelist())
@@ -57,21 +61,29 @@ class PackageRelease(unittest.TestCase):
         with zipfile.ZipFile(godot_zip, "w") as bundle:
             bundle.writestr(binary, b"binary")
             bundle.writestr(link, "A")
-        out = package("macos", godot_zip, self.root / "mac.zip", self.extras)
+        out = package("macos", godot_zip, self.root / "mac.zip", SOURCE, self.extras)
         with zipfile.ZipFile(out) as bundle:
             self.assertEqual(bundle.getinfo(binary.filename).external_attr, binary.external_attr)
             self.assertEqual(bundle.getinfo(link.filename).external_attr, link.external_attr)
             for name in ("LICENSE", "NOTICE.md", "GODOT_LICENSES.txt"):
                 self.assertIn(name, bundle.namelist())
-            self.assertIn("xattr -dr com.apple.quarantine", bundle.read("README.txt").decode())
+            readme = bundle.read("README.txt").decode()
+            self.assertIn("xattr -dr com.apple.quarantine", readme)
+            self.assertIn("Privacy & Security", readme)
+            self.assertNotIn("right-click", readme)
+
+    def test_readme_names_the_source(self) -> None:
+        out = package("linux", self._build("Wargrid.x86_64"), self.root / "src.zip", SOURCE, self.extras)
+        with zipfile.ZipFile(out) as bundle:
+            self.assertIn(SOURCE, bundle.read("README.txt").decode())
 
     def test_empty_build_fails(self) -> None:
         with self.assertRaises(SystemExit):
-            package("linux", self._build(), self.root / "empty.zip", self.extras)
+            package("linux", self._build(), self.root / "empty.zip", SOURCE, self.extras)
 
     def test_unknown_platform_fails(self) -> None:
         with self.assertRaises(SystemExit):
-            package("web", self._build("index.html"), self.root / "web.zip", self.extras)
+            package("web", self._build("index.html"), self.root / "web.zip", SOURCE, self.extras)
 
 
 if __name__ == "__main__":

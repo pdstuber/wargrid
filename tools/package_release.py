@@ -1,6 +1,6 @@
 """Packages one exported platform build into a release zip with license notices.
 
-usage: python3 tools/package_release.py PLATFORM BUILD OUT EXTRA...
+usage: python3 tools/package_release.py PLATFORM BUILD OUT SOURCE_URL EXTRA...
 PLATFORM is linux, windows or macos. BUILD is the export directory (linux, windows)
 or the zip Godot exported (macos).
 """
@@ -15,12 +15,15 @@ FIRST_RUN = {
     "linux": "Run: chmod +x Wargrid.x86_64 && ./Wargrid.x86_64\n",
     "windows": "Unsigned build: if SmartScreen warns, choose More info, then Run anyway.\n",
     "macos": (
-        "Unsigned build: right-click Wargrid.app and choose Open, or run\n"
+        "Unsigned build: after the first blocked start, open System Settings > Privacy & Security\n"
+        "and choose Open Anyway, or run once before the first start:\n"
         "  xattr -dr com.apple.quarantine Wargrid.app\n"
-        "once before the first start.\n"
     ),
 }
-README = "Wargrid {platform} build.\n\n{first_run}\nSource code and license: see LICENSE (GPL-3.0-or-later).\n"
+README = (
+    "Wargrid {platform} build.\n\n{first_run}\n"
+    "License: GPL-3.0-or-later, see LICENSE. Corresponding source for this build: {source}\n"
+)
 
 
 def _add(bundle: zipfile.ZipFile, path: Path, name: str) -> None:
@@ -29,7 +32,7 @@ def _add(bundle: zipfile.ZipFile, path: Path, name: str) -> None:
     bundle.writestr(info, path.read_bytes())
 
 
-def package(platform: str, build: Path, out: Path, extras: list[Path]) -> Path:
+def package(platform: str, build: Path, out: Path, source: str, extras: list[Path]) -> Path:
     if platform not in FIRST_RUN:
         raise SystemExit(f"unknown platform {platform}; expected one of {', '.join(FIRST_RUN)}")
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -45,14 +48,14 @@ def package(platform: str, build: Path, out: Path, extras: list[Path]) -> Path:
     with zipfile.ZipFile(out, mode, zipfile.ZIP_DEFLATED) as bundle:
         for path in files + sorted(extras):
             _add(bundle, path, path.name)
-        bundle.writestr("README.txt", README.format(platform=platform, first_run=FIRST_RUN[platform]))
+        bundle.writestr("README.txt", README.format(platform=platform, first_run=FIRST_RUN[platform], source=source))
     return out
 
 
 def main() -> None:
-    if len(sys.argv) < 4:
+    if len(sys.argv) < 5:
         raise SystemExit(__doc__)
-    package(sys.argv[1], Path(sys.argv[2]), Path(sys.argv[3]), [Path(arg) for arg in sys.argv[4:]])
+    package(sys.argv[1], Path(sys.argv[2]), Path(sys.argv[3]), sys.argv[4], [Path(arg) for arg in sys.argv[5:]])
 
 
 if __name__ == "__main__":
