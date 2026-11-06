@@ -10,9 +10,9 @@ const Economy = preload("res://tests/economy_fixture.gd")
 
 const PREFIX_TICKS: int = 20000
 const TRACE_INTERVAL: int = 200
-const FINAL_DIGEST: String = "12ab49191b88eb61"
+const FINAL_DIGEST: String = "6b81119ab5577115"
 const BUILD_CHECK_TICK: int = 3000
-const TEAM_CORE_SERIES: int = 3361446751695866624
+const TEAM_CORE_SERIES: int = 6113229322264627267
 
 func cases() -> Array[Callable]:
 	return [test_bot_never_targets_ally, test_dead_seat_bot_is_silent, test_team_match_prefix, test_team_core_series]
@@ -28,18 +28,19 @@ func test_bot_never_targets_ally(runner) -> bool:
 	sim.spawn(1, Vector2(2.5, 2.5), "usa_builder")
 	var ally: int = sim.spawn(3, Vector2(11.5, 10.5), "usa_builder")
 	var enemy: int = sim.spawn(2, Vector2(28.5, 10.5), "usa_builder")
-	for seat in [1, 2, 3]: Economy.add_completed(sim, seat, "usa_barracks", Vector2i(seat * 8, 25))
+	var barracks := {}
+	for seat in [1, 2, 3]: barracks[seat] = Economy.add_completed(sim, seat, "usa_barracks", Vector2i(seat * 8, 25))
 	sim.start_match([1, 2, 3] as Array[int])
 	var attacks: int = 0
 	var bad: int = 0
-	for tick in range(Skirmish.DECISION_TICKS * 2):
+	for tick in range(Skirmish.WAVE_TIMEOUT + Skirmish.DECISION_TICKS * 30):
 		sim.step()
 		Skirmish.issue_opponent(sim, 1, 0)
 		for command in sim.snapshot().pending_commands:
 			if command.player == 1 and command.type == "attack":
 				attacks += 1
-				if command.target_id != enemy or command.target_id == ally: bad += 1
-	runner.check(attacks > 0 and bad == 0 and tank != ally, "TB1 bot attacks the hostile builder, never the nearer ally")
+				if not [enemy, barracks[2]].has(command.target_id): bad += 1
+	runner.check(attacks > 0 and bad == 0 and tank != ally, "TB1 bot attacks the hostile seat, never the nearer ally")
 	return true
 
 func test_dead_seat_bot_is_silent(runner) -> bool:

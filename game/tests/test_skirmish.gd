@@ -139,6 +139,11 @@ func _attack_targets(sim: RefCounted, army: Array) -> Array:
 func _to_tick(sim: RefCounted, tick: int) -> void:
 	while sim.snapshot().tick < tick: sim.step()
 
+func _bot_until_attack(sim: RefCounted, army: Array, limit: int, player: int = 2) -> void:
+	while sim.tick() < limit and _attack_targets(sim, army).size() < army.size():
+		Skirmish.issue_opponent(sim, player)
+		sim.step()
+
 func test_opponent_attack_policy(runner) -> bool:
 	var sim = Skirmish.create(false)
 	Economy.build(runner, sim, "usa_power_plant", Skirmish.origin("usa_power_plant", 1))
@@ -149,22 +154,21 @@ func test_opponent_attack_policy(runner) -> bool:
 	var second: int = sim.spawn(1, Vector2(20.5, 11.5), "usa_builder")
 	_to_tick(sim, 5370)
 	var army: Array = _army(sim)
-	Skirmish.issue_opponent(sim)
-	_to_tick(sim, 5399)
-	sim.step()
-	runner.check(_attack_targets(sim, army).is_empty(), "A3 no attack orders before tick 5400")
-	Skirmish.issue_opponent(sim)
-	sim.step()
-	runner.check(_attack_targets(sim, army) == [first, second, first, second], "A3 builder first, nearest then lowest ID, got " + str(_attack_targets(sim, army)))
-	_to_tick(sim, 5430)
-	Skirmish.issue_opponent(sim)
-	runner.check(sim.snapshot().pending_commands.filter(func(command: Dictionary) -> bool: return command.type == "attack").is_empty(), "A3 attackers are not reissued")
-	for builder in [1, first, second]: sim.remove_object(builder)
-	for expected in [barracks, 2, depot, reactor]:
-		_to_tick(sim, (sim.snapshot().tick / 30 + 1) * 30)
+	while sim.tick() < 5399:
 		Skirmish.issue_opponent(sim)
 		sim.step()
-		runner.check(_attack_targets(sim, army) == [expected, expected, expected, expected], "A3 next category target " + str(expected) + ", got " + str(_attack_targets(sim, army)))
+	runner.check(_attack_targets(sim, army).is_empty(), "A3 no attack orders before tick 5400")
+	_bot_until_attack(sim, army, Skirmish.ATTACK_TICK + 4000)
+	runner.check(_attack_targets(sim, army) == [first, first, first, first], "A3 the wave shares the best-scored target, a builder, got " + str(_attack_targets(sim, army)))
+	_to_tick(sim, sim.tick() + Skirmish.DECISION_TICKS - sim.tick() % Skirmish.DECISION_TICKS)
+	Skirmish.issue_opponent(sim)
+	runner.check(sim.snapshot().pending_commands.filter(func(command: Dictionary) -> bool: return command.type == "attack").is_empty(), "A3 attackers are not reissued")
+	sim.remove_object(1)
+	for expected in [first, second, barracks, reactor, depot, 2]:
+		_to_tick(sim, sim.tick() + Skirmish.DECISION_TICKS - sim.tick() % Skirmish.DECISION_TICKS)
+		Skirmish.issue_opponent(sim)
+		sim.step()
+		runner.check(_attack_targets(sim, army) == [expected, expected, expected, expected], "A3 next target by score " + str(expected) + ", got " + str(_attack_targets(sim, army)))
 		sim.remove_object(expected)
 	var lone = _world(10000)
 	lone.remove_object(1)
@@ -220,8 +224,7 @@ func test_defence_skips_busy_units(runner) -> bool:
 	_decide_now(sim)
 	runner.check(_attack_targets(sim, [attacker, idle]).is_empty(), "D2 no wave before ATTACK_TICK")
 	_to_tick(sim, Skirmish.ATTACK_TICK)
-	Skirmish.issue_opponent(sim, 1)
-	sim.step()
+	_bot_until_attack(sim, [idle], Skirmish.ATTACK_TICK + 4000, 1)
 	runner.check(_attack_targets(sim, [idle]).size() == 1, "D2 the wave picks up idle units after ATTACK_TICK")
 	return true
 
@@ -232,16 +235,15 @@ func test_bot_ignores_contained_units(runner) -> bool:
 	Registry.add_test_kind("test_ferry", row)
 	var builder: int = sim.spawn(1, Vector2(30.5, 20.5), "usa_builder")
 	var ferry: int = sim.spawn(1, Vector2(31.5, 20.5), "test_ferry")
-	var plant: int = Economy.add_completed(sim, 1, "usa_power_plant", Vector2i(10, 20))
+	Economy.add_completed(sim, 1, "usa_power_plant", Vector2i(10, 20))
 	Economy.send(sim, {"type": "enter", "entity_ids": [builder], "target_id": ferry})
 	for i in range(100): sim.step()
 	runner.check(Economy.object(sim, builder).has("container_id"), "D3 setup: the builder boarded")
 	var army: Array = _army(sim)
 	_to_tick(sim, Skirmish.ATTACK_TICK)
-	Skirmish.issue_opponent(sim)
-	sim.step()
+	_bot_until_attack(sim, army, Skirmish.ATTACK_TICK + 4000)
 	Registry.clear_test_kinds()
-	runner.check(_attack_targets(sim, army) == [plant, plant, plant, plant], "D3 the wave skips the contained builder and hits the next category, got " + str(_attack_targets(sim, army)))
+	runner.check(_attack_targets(sim, army) == [ferry, ferry, ferry, ferry], "D3 the wave hits the carrier, never the contained builder, got " + str(_attack_targets(sim, army)))
 	var world: Array = _defence_world(runner)
 	var base = world[0]
 	var y: float = Skirmish.origin("usa_power_plant", 1).y + 0.5

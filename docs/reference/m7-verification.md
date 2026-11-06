@@ -5,15 +5,15 @@ Plan: [M7 plan](../superpowers/plans/2026-11-06-m7-factions.md). Design: [M7 des
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-06, gate 1 complete except playtest and CI)
-Branch / base commit / working-tree state: m7-factions rebased onto main 025540d, HEAD ff3d571; tree clean; nothing pushed
-Last green task / next incomplete task: Task 11 / gate 1 stop: user playtest (offline and online) and CI on Linux and Windows (push needs approval)
-Changed paths since last commit: none
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 329 cases / 134,261 / 0, exit 0, TESTS PASSED 134261; lint, warnings, ruff, mypy, unittest (39), netplay match 7817, team match won tick 30687 winner 1 pass; run_benchmark.sh exit 0 after the user-approved stress ceiling re-pin (open 3.05 / 4.23, dense 3.31 / 5.01); rendered movement benchmark PASSED 2; ledger row added
-Known red case or blocker: none (combat stress rows still exceed the 1.82 / 3.64 budget: reported, not loosened)
-Approved decisions, pre-authorizations used, deferred gates: user rulings 2026-11-06: S1 floor 7000, bot builds no usa_defence, scout speed 2.4, retaliation for building attackers, defence idle scan throttle (8 ticks), ceiling re-pin, rendered benchmark. Open for the user: team match winner flipped to team 1 (scout speed); analyze.py burst/reach tolerance; Dozer mid-turn dip (playtest candidate)
+Resume record (updated 2026-11-06, bot wave update on top of gate 1)
+Branch / base commit / working-tree state: m7-factions, HEAD 06f570e; UNCOMMITTED: game/scripts/simulation/skirmish.gd, game/tests/{run_tests,test_skirmish,test_skirmish_match,test_team_match}.gd, new game/tests/test_skirmish_waves.gd(+.uid), tools/run_netplay.sh, this file; nothing pushed
+Last green task / next incomplete task: Task 11 + bot wave update / gate 1 stop: user playtest (offline and online) and CI on Linux and Windows (push needs approval)
+Changed paths since last commit: see working-tree state
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 344 cases / 134,353 / 0, exit 0, TESTS PASSED 134353; lint, warnings (84 files), ruff, mypy, unittest pass; netplay match terminal 8331 pass; team match won tick 33205 winner 1; no benchmarks run (the bot change affects scripted-match benchmarks: rerun at the next benchmark pass)
+Known red case or blocker: none (combat stress rows still exceed the 1.82 / 3.64 budget: reported, not loosened). WAVE_MIN is 6, not the suggested 8: 8 left the team match unfinished at the cap (see Bot wave update)
+Approved decisions, pre-authorizations used, deferred gates: as before; user decision 2026-11-06 bot waves (rules 1-3). Open for the user: WAVE_MIN 6 vs 8; Dozer mid-turn dip; analyze.py burst/reach tolerance
 Usage so far: not recorded
-Next exact action: user playtest offline and online, push for CI on Linux and Windows (approval needed), then STOP: gate 2 is an outline, an Opus (high) planning session expands it with the playtest findings.
+Next exact action: user playtest offline and online, commit the bot wave update on approval, push for CI (approval needed), then STOP: gate 2 is an outline.
 ```
 
 ## Pins at base
@@ -54,6 +54,10 @@ Next exact action: user playtest offline and online, push for CI on Linux and Wi
 | test_movement, test_benchmark | M1-M9, BM3, BM5 ceilings | unchanged numbers; run with the scout car at 3.0 via `Economy.run_legacy_speed` | the pins were written for the 3.0 prototype speed; the movement benchmark workload itself now runs the 2.4 scout car (not rerun) |
 
 | test_base_scene | M1 builder menu | + `5: Missile Battery $1000` | Task 10 |
+| test_skirmish_match | S1 `TERMINAL_TICK`; `S1_CORE_SERIES` | 7685 → 9473 (window 7000-17999, winner 1); 2374153302354515980 → 8505231937702596599 | bot wave update |
+| test_team_match | TB3 `FINAL_DIGEST`; TB4 `TEAM_CORE_SERIES` | 12ab49191b88eb61 → 6b81119ab5577115; 3361446751695866624 → 6113229322264627267 | bot wave update (team match won tick 33205 winner 1, inside the 45000 cap) |
+| run_netplay.sh | `match` terminal tick | 7817 → 8331 | bot wave update; inside the S1 window |
+| test_skirmish, test_team_match | D2, D3, A3, TB1 | run the bot until the wave releases (rally, then WAVE_TIMEOUT); A3 expects one shared target and the score order first, second, barracks, plant, depot, command center; D3 the carrier, TB1 any seat-2 object | bot wave update (semantics changed on purpose: shared wave target, score instead of categories; no assertion weakened) |
 
 ## Departures and deferrals
 
@@ -343,3 +347,14 @@ Compact reference for the user's request. Escalation unit = 10 s on Normal/Hard,
 - The nine generals variants (lists 4-12), the Generals base-game and `ZH_Generals` copies, and `MultiplayerScripts.scb` were not read; the USA/China/GLA base lists were.
 - Unit counts in the wave table are team templates, not measured battle sizes: how many actually arrive depends on money and build timeouts. No play test or parity-harness run backs this section.
 - Checked on tree `m7-factions` @ `9573103`; decoder run once over the whole file; docs only, no game tests run.
+
+## Bot wave update (2026-11-06, user decision: small Pareto improvement, Zero Hour a baseline not a parity goal; the real bot is M8)
+
+Tree: m7-factions 06f570e + uncommitted. `game/scripts/simulation/skirmish.gd`, tests `test_skirmish_waves.gd` (W1-W5, T1-T5, each seen red on the old bot by mutation) plus edited D2/D3/A3/TB1.
+
+- Rule 1, waves: before `ATTACK_TICK` nothing changes. After it, idle armed units walk to the seat's `start.cell` (existing map data; `RALLY_RADIUS` 6 cells). A wave is released when `WAVE_MIN` units idle at the rally, or `WAVE_TIMEOUT` ticks passed since the first unit stood there. Units that arrive later form the next wave. State lives on the sim object (`set_meta`), per seat, not in the snapshot.
+- Rule 2, one score: priority minus `floor(distance / 4 cells)`, min 1, highest wins, ties to the lowest id. Priorities come from capability data, no kind or faction ids: armed building 29; vehicle class and builders 28; infantry, receives_supply, power > 0, any other producer 27; building that produces a builder (the HQ) 26; the rest 1.
+- Rule 3, one target per wave, re-picked from the wave's centre when it dies or becomes invalid; idle members are re-sent every decision. A wave with no enemy left is dropped.
+- Numbers: priorities 29/28/27/26 are from the decoded Normal Tank set (confirmed). Guesses: the 4-cell divisor (ZH 100 units, assumed 25 units per cell), `WAVE_TIMEOUT` 1800 (ZH `checkReadyTeams` 60 s), `RALLY_RADIUS` 6, and `WAVE_MIN`. `WAVE_MIN` 8 (the starting value) leaves the 6-seat team match unfinished at the 45000 cap (ended tick 54974, winner team 2); scratch runs with other values, same tree: 6 / 1800 won 33204 team 1, 8 / 900 won 39370 team 1, 10 / 1200 won 36521 team 2, 5 / 900 won 61243, 12 / 1800 won 59970, 5 / 1800 not done by 65000. The outcome is chaotic in the constant, not monotone; 6 was chosen as the one that keeps the old 60 s timeout and ends inside the cap. S1 with 8: 8384, with 6: 9473 (both window, winner 1).
+- Probe (scratch script, not tracked; 10 riflemen behind 3 batteries and 2 power plants, human does nothing else, bot seat 2 on the skirmish map, 30000 ticks): new bot killed 2 of 3 batteries (ticks 6990 and 18989), made 120 combat units, 112 died, no win in 30000 ticks, human riflemen all alive. Old bot at the same ticks: 0 batteries killed, 123 made, 123 died, no win. So the bot now deals with batteries but pays about 55 units per battery.
+- The bot still never builds `usa_defence` (user ruling kept).
