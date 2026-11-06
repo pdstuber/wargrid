@@ -219,3 +219,37 @@ Read-only research, no code changed. Zero Hour source `~/projects/CnC_Generals_Z
 - Verdict: no INI-value mismatch; Wargrid single battery is equal to ZH on paper and slightly stronger against moving targets (instant hit, never dodged), weaker in clusters (no assist). If the playtest felt too strong, likely causes are instant hit plus no visible projectile, not damage numbers. Unverified: ZH unit HP scale vs Wargrid (hp rows checked at gate 0).
 - Recommended: do not change damage. Optional: a projectile delay (hit resolved after distance/13 ticks) is a sim change with replay impact; a cheaper fix is the visual of item 2.
 - Open for the user: add assist weapon (post M7)? add flight delay? or keep instant hit and only improve visuals?
+
+## ZH skirmish AI vs defensive structures (2026-11-06)
+
+Question: does real ZH skirmish AI deliberately destroy Patriot batteries before sending waves? Source `~/projects/CnC_Generals_Zero_Hour` @ `0a05454`, tree `GeneralsMD/Code/GameEngine/Source/GameLogic` (below `GL/`). Read-only; no game run.
+
+### What the source confirms
+
+- Enemy player choice only: `GL/AI/AISkirmishPlayer.cpp:485-540` `acquireEnemy`: nearest enemy by distance from own base centre to centre of enemy structure bounds; crippled enemy (no units or no build facility) gets distance `HUGE*0.5`; +500 units penalty if another skirmish AI already targets him (no ganging up), -25 if he targets me. Recomputed every 5 s (`getAiEnemy`, :~560) and only while current enemy is not "in bad shape" (:491-494). It picks a PLAYER, never a structure.
+- No attack-wave logic in C++. Skirmish AI is script-driven: team templates and scripts (`SKIRMISH_*` actions, `ScriptActions.cpp:1678-1775` `doTeamFollowSkirmishApproachPath`, :5357 `doSkirmishAttackNearestGroupWithValue`) live in the shipped `SkirmishScripts.scb` / map scripts, binary, NOT in this source tree nor in `INIZH.big`. So wave size, "minimum force", target order per team are UNVERIFIED (scripts not read).
+- Team readiness (`AI/AIPlayer.cpp:2753-2830` `checkReadyTeams`): a built team is released when all members are idle at the rally point ("allIdle"), or when any member is idle and the team has an action script, or after 60 s anyway (`timeExpired`, "If 60 seconds passed, start anyway"). This is the only rally-before-attack rule in C++. Team size is the template's unit list (script data), unverified.
+- Approach: `doTeamFollowSkirmishApproachPath` takes team centre, finds the closest waypoint on path label `<label><enemyMpStartIndex+1>` (:1715-1722), follows it (as team or individually). So attacks go along per-start-position approach paths toward the enemy base, not to a specific building.
+- Per-unit target pick (`AI/AI.cpp:586-730` `AI::findClosestEnemy`): unless `ATTACK_BUILDINGS` is passed, buildings are rejected ("never target buildings (unless they can attack)", `PartitionFilterRejectBuildings`, :~600, :648). So ARMED structures (Patriot, bunkers) are always valid targets for hunting units; unarmed ones are not. Without an `AttackPriorityInfo` set it returns the CLOSEST valid enemy (:688-692). With a set (`AIUpdate::getAttackInfo`, set per team/unit by scripts `ScriptActions.cpp:1223-1260`): priority per ThingTemplate, 0 = never attack; effective priority = priority - floor(dist / `AttackPriorityDistanceModifier`), min 1; ties go to higher raw priority (:700-728). Default modifier 100 units (`data\ini\default\aidata.ini`: "AttackPriorityDistanceModifier = 100.0 ;The distance required to reduce attack priority by 1"). Priority sets are script data (`ScriptEngine.cpp:146-218`, `getAttackInfo` :6538), not INI: which ZH sets rank defences is UNVERIFIED.
+- Hunt state (`AI/AIStates.cpp:7160-7210`): scan every `ENEMY_SCAN_RATE` for `findClosestEnemy(owner, 9999, CAN_ATTACK, info)` with `AttackUsesLineOfSight=Yes`/`AttackIgnoreInsignificantBuildings=Yes` in aidata.ini; falls back to no-priority hunt when `getUnitsShouldHunt()`. Teams with `m_attackCommonTarget` (template flag, `Common/RTS/Team.cpp:724`) share one victim (`AIStates.cpp:7180-7200`).
+- Auto-acquire by AI players: `Object/PartitionManager.cpp:4955-4975`: `m_acquireEnemies` (AI controlled) accepts any enemy; `KINDOF_FS_BASE_DEFENSE` is "Don't reject base defenses" for others.
+- `KINDOF_FS_BASE_DEFENSE` / `TECH_BASE_DEFENSE` are used for AI target VALUE only in `AIPlayer.cpp:1288-1345` `getPlayerSuperweaponValue` (superweapon aim: defences and combat units count NEGATIVE when `includeMilitaryUnits` is false, i.e. the AI avoids dropping a superweapon on defended spots). No code scouts for the nearest defence or sends a dedicated defence-clearing force.
+- AI building defences: `AISkirmishPlayer.cpp:566-705` `buildAIBaseDefense(Structure)`: front/flank placement ring, +150 units (`SkirmishBaseDefenseExtraDistance`).
+
+### Verdict on the user's claim
+
+Not found in source. C++ gives: pick nearest enemy player, run teams along approach paths, each unit hunts the closest (or script-prioritised) valid enemy, armed structures included. Any "clear the Patriots first" behaviour would come from script attack-priority sets or team scripts in the .scb, which were not read. The observed feel (waves, not trickle) is consistent with the 60 s / allIdle rally gate plus team templates of fixed size, but that is inference, not confirmed.
+
+### Wargrid today (`game/scripts/simulation/skirmish.gd`)
+
+- `ATTACK_TICK 5400` (3 min): after it, every tick-30 decision sends EVERY idle unit (guard mode, no target) individually to `_pick` (:172): first category with any enemy, closest within category: builders, producers, supply receivers, power. Armed non-producer buildings (battery) are NOT in any category, so a unit never chooses a battery; it only fights it when auto-acquire fires on arrival. Units are sent as they become idle, so production trickles in one by one: no wave size, no rally, no regroup. `_defend` only reacts to intruders within `DEFENCE_RADIUS` 10 cells of own buildings.
+- Gap vs ZH: (1) no rally/release gate; (2) no armed-structure targeting; (3) no per-unit distance-weighted priority; (4) no player-level enemy selection (fine for 1v1).
+
+### Proposal (smallest rule set to approximate; not a ZH-confirmed number set)
+
+1. Wave gate (ZH `checkReadyTeams` analogue): bot gathers new combat units at a rally point near own base; releases the wave when count >= N (suggest 8, tunable) OR 60 s (1800 ticks) since the wave's first unit, whichever first. Idle units after release join the next wave. This replaces trickling.
+2. Targeting (ZH `findClosestEnemy` + priority-minus-distance): replace category order by a score `priority - floor(dist / 100 units = 4 cells)`, min 1, ties to higher priority. Suggested priorities: armed defences (battery) 3 within the path to base, producers 3, builders/supply 2, power 1. Simplest: "any armed enemy structure within ~12 cells of the wave centre is the wave's target before the base categories".
+3. Keep per-wave shared target (ZH `m_attackCommonTarget`): all wave units attack the same target id, re-picked when it dies.
+4. No scouting, no dedicated siege unit (ZH has none in C++). Optional: do not launch a wave into a lone battery with fewer than the minimum, which rule 1 already covers.
+
+Unverified: ZH wave sizes, script attack-priority sets, whether scripts retarget defences first. To close: decode `SkirmishScripts.scb` from the retail install (not done; outside INIZH.big). Checked on tree `m7-factions` @ `8f95d93`; no tests run (docs only).
