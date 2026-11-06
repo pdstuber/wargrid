@@ -12,7 +12,7 @@ const MapData = preload("res://scripts/simulation/map_data.gd")
 const LockstepTests = preload("res://tests/test_lockstep.gd")
 
 func cases() -> Array[Callable]:
-	return [test_foundation_keeps_seat_alive, test_cancel_last_foundation_defeats, test_choose_faction_online_same_hash, test_match_waits_for_all_factions, test_setup_rejects_commands_until_all_chose, test_choose_faction_same_tick_cases, test_capability_rules, test_start_has_command_center_and_builder, test_survival_counts_buildings_only, test_bot_trains_builder_without_one, test_bot_without_command_center]
+	return [test_foundation_keeps_seat_alive, test_cancel_last_foundation_defeats, test_choose_faction_online_same_hash, test_match_waits_for_all_factions, test_setup_rejects_commands_until_all_chose, test_choose_faction_same_tick_cases, test_capability_rules, test_start_has_command_center_and_builder, test_survival_counts_buildings_only, test_bot_trains_builder_without_one, test_bot_without_command_center, test_china_start, test_china_power_and_prerequisites]
 
 func test_capability_rules(runner) -> bool:
 	Registry.add_test_kind("x_maker", {"class": "vehicle", "cost": 1, "ticks": 1, "speed": 1.0, "locomotor": "wheels", "max_hp": 1000, "armor": "builder_vehicle", "weapon": "", "builds": ["usa_barracks"]})
@@ -219,4 +219,24 @@ func test_bot_without_command_center(runner) -> bool:
 	Skirmish.issue_opponent(sim)
 	EconomyFixture.steps(sim, 2)
 	runner.check(_bot_orders(sim, "usa_builder") == 0 and sim.snapshot().buildings.any(func(b: Dictionary) -> bool: return b.owner == 2 and not b.queue.is_empty() and b.queue[0].kind == "usa_rifle_infantry"), "B2 without a command center or builder the bot keeps producing elsewhere")
+	return true
+
+func test_china_start(runner) -> bool:
+	var state: Dictionary = Skirmish.create(true, "ai", {1: "china", 2: "usa"}).snapshot()
+	var homes: Array = state.buildings.filter(func(b: Dictionary) -> bool: return b.owner == 1)
+	runner.check(homes.size() == 1 and homes[0].kind == "china_command_center" and homes[0].completed, "Ch1 seat 1 starts with a completed china_command_center")
+	var builders: Array = state.entities.filter(func(u: Dictionary) -> bool: return u.owner == 1)
+	runner.check(builders.size() == 1 and builders[0].kind == "china_builder", "Ch1 seat 1 starts with one china_builder")
+	return true
+
+func test_china_power_and_prerequisites(runner) -> bool:
+	var sim = Simulation.new([], Vector2i(32, 32))
+	sim.add_player(1, 20000)
+	sim.spawn(1, Vector2(4.5, 4.5), "china_builder")
+	runner.check(not sim.preview_build(1, 1, "china_supply_center", Vector2i(10, 4)).ok, "Ch2 supply center needs a completed power plant")
+	var plant: int = EconomyFixture.build(runner, sim, "china_power_plant", Vector2i(5, 5))
+	runner.check(plant != -1 and sim.snapshot().players[0].power_supply == 10, "Ch2 power plant adds 10 supply")
+	runner.check(not sim.preview_build(1, 1, "china_factory", Vector2i(16, 4)).ok, "Ch2 factory needs a supply center")
+	var center: int = EconomyFixture.build(runner, sim, "china_supply_center", Vector2i(10, 4))
+	runner.check(center != -1 and sim.preview_build(1, 1, "china_factory", Vector2i(16, 4)).ok, "Ch2 supply center unlocks the factory")
 	return true

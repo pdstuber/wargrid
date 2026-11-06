@@ -9,7 +9,7 @@ const Fixture = preload("res://tests/combat_fixture.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 
 func cases() -> Array[Callable]:
-	return [test_skirmish_initial_state, test_roster_production, test_bot_cycles_unit_list, test_bot_reads_seat_faction, test_opponent_pays_and_retries, test_opponent_attack_policy, test_opponent_defends_base, test_defence_skips_busy_units, test_bot_ignores_contained_units, test_match_lifecycle, test_restart_state]
+	return [test_skirmish_initial_state, test_roster_production, test_bot_cycles_unit_list, test_bot_reads_seat_faction, test_bot_plays_china, test_opponent_pays_and_retries, test_opponent_attack_policy, test_opponent_defends_base, test_defence_skips_busy_units, test_bot_ignores_contained_units, test_match_lifecycle, test_restart_state]
 
 func _owned(items: Array, player: int) -> Array:
 	return items.filter(func(item: Dictionary) -> bool: return item.owner == player)
@@ -345,4 +345,17 @@ func test_restart_state(runner) -> bool:
 	runner.check(fresh.snapshot() == Skirmish.create().snapshot() and fresh.snapshot().match != null, "X1 fresh worlds are identical and have a match")
 	for tick in range(30): old.step()
 	runner.check(fresh.snapshot() == Skirmish.create().snapshot(), "X1 a used world cannot change its replacement")
+	return true
+
+func test_bot_plays_china(runner) -> bool:
+	var sim = Skirmish.create(true, "ai", {1: "usa", 2: "china"})
+	for tick in range(4000):
+		Skirmish.issue_opponent(sim)
+		sim.step()
+	var state: Dictionary = sim.snapshot()
+	var kinds: Array = _owned(state.buildings, 2).map(func(b: Dictionary) -> String: return b.kind).filter(func(k: String) -> bool: return k != "china_command_center")
+	runner.check(kinds.size() > 0 and kinds[0] == "china_power_plant", "B5 a China bot builds china_power_plant first, got " + str(kinds))
+	var owned: Array = state.entities.filter(func(u: Dictionary) -> bool: return u.owner == 2).map(func(u: Dictionary) -> String: return u.kind)
+	runner.check(owned.all(func(k: String) -> bool: return k.begins_with("china_")), "B5 a China bot owns only china_ units, got " + str(owned))
+	runner.check(owned.any(func(k: String) -> bool: return k == "china_rifle_infantry" or k == "china_rocket_infantry" or k == "china_tank" or k == "china_light_vehicle"), "B5 a China bot trains combat units, got " + str(owned))
 	return true

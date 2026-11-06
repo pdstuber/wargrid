@@ -8,7 +8,7 @@ const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
 
 func cases() -> Array[Callable]:
-	return [test_base_ready,test_placement_input,test_production_ui,test_context_orders,test_execution_feedback,test_preview_hover_cost,test_resume_status,test_queue_label,test_one_snapshot_per_refresh,test_build_menu_from_capabilities,test_build_menu_wraps_eleven]
+	return [test_base_ready,test_placement_input,test_production_ui,test_context_orders,test_execution_feedback,test_preview_hover_cost,test_resume_status,test_queue_label,test_one_snapshot_per_refresh,test_build_menu_from_capabilities,test_build_menu_wraps_eleven,test_build_menu_quantity_label]
 
 func setup(runner):
 	var main = Base.instantiate()
@@ -309,5 +309,19 @@ func test_build_menu_wraps_eleven(runner) -> bool:
 		for j in range(i + 1,buttons.size()):
 			runner.check(not buttons[i].get_global_rect().intersects(buttons[j].get_global_rect()),"M5 buttons %d and %d do not overlap" % [i,j])
 	Registry.clear_test_kinds()
+	main.free()
+	return true
+
+func test_build_menu_quantity_label(runner) -> bool:
+	var main = await setup(runner)
+	main._refresh_menu(["china_rifle_infantry","china_rocket_infantry"])
+	await runner.process_frame
+	await runner.process_frame
+	var buttons: Array = main.get_node("HUD/Economy/BuildMenu").get_children()
+	runner.check(buttons.size() == 2 and buttons[0].text == "1: Militia x2 $300" and buttons[1].text == "2: Anti-Tank Trooper $300","M6 militia button reads x2, got " + str(buttons.map(func(b: Button) -> String: return b.text)))
+	var status: Label = main.get_node("HUD/Status")
+	var status_rect := Rect2(status.global_position,status.get_minimum_size())
+	for button: Button in buttons: runner.check(not button.get_global_rect().intersects(status_rect),"M6 button clear of status")
+	runner.check(not buttons[0].get_global_rect().intersects(buttons[1].get_global_rect()),"M6 buttons do not overlap")
 	main.free()
 	return true

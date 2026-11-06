@@ -9,7 +9,7 @@ const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 
 func cases() -> Array[Callable]:
-	return [test_producer_and_free_collector,test_fifo_payment_and_cancel,test_blocked_exit,test_production_power_and_removal,test_default_rally_mirrored,test_production_never_stalls,test_set_rally_applies_to_next_spawn,test_rally_blocked_cell_falls_back,test_set_rally_same_tick_cases,test_supply_center_spawns_ground_truck]
+	return [test_producer_and_free_collector,test_fifo_payment_and_cancel,test_blocked_exit,test_production_power_and_removal,test_default_rally_mirrored,test_production_never_stalls,test_set_rally_applies_to_next_spawn,test_rally_blocked_cell_falls_back,test_set_rally_same_tick_cases,test_supply_center_spawns_ground_truck,test_quantity_trains_two]
 
 func ready(runner) -> Dictionary:
 	var sim = Fixture.make_world(50000)
@@ -311,3 +311,37 @@ func ground_truck_ok(runner, unit: Dictionary, label: String) -> void:
 	var cell := Vector2i(floori(unit.position[0]),floori(unit.position[1]))
 	var near: bool = cell.x >= 9 and cell.x <= 13 and cell.y >= 3 and cell.y <= 7 and not (cell.x >= 10 and cell.x <= 12 and cell.y >= 4 and cell.y <= 6)
 	runner.check(near and unit.collection.enabled and unit.order == null,"Pg1 " + label + " truck on a perimeter cell, collecting, no rally move")
+
+func quantity_world(runner, blocked: int) -> Dictionary:
+	var sim = Simulation.new([],Vector2i(32,32))
+	sim.add_player(1,20000)
+	sim.spawn(1,Vector2(4.5,4.5),"china_builder")
+	var barracks: int = Fixture.build(runner,sim,"china_barracks",Vector2i(12,12))
+	var cells: Array = Construction.perimeter("china_barracks",Vector2i(12,12))
+	for index in range(blocked): sim.spawn(1,Vector2(cells[index]) + Vector2(.5,.5))
+	return {"sim":sim,"barracks":barracks}
+
+func militia(sim) -> Array:
+	return sim.snapshot().entities.filter(func(unit: Dictionary) -> bool: return unit.kind == "china_rifle_infantry")
+
+func test_quantity_trains_two(runner) -> bool:
+	var world: Dictionary = quantity_world(runner,0)
+	var sim = world.sim
+	var credits: int = sim.snapshot().players[0].credits
+	runner.check(produce(sim,world.barracks,"china_rifle_infantry").ok,"Q1 militia order accepted")
+	sim.step()
+	runner.check(sim.snapshot().players[0].credits == credits - 300,"Q1 one order costs 300 once")
+	var seen: int = 0
+	for tick in range(400):
+		sim.step()
+		seen = militia(sim).size()
+		if seen > 0: break
+	runner.check(seen == 2 and Fixture.object(sim,world.barracks).queue.is_empty(),"Q1 both militia spawn the same tick and the entry leaves, got " + str(seen))
+	var cells: Array = Construction.perimeter("china_barracks",Vector2i(12,12))
+	var tight: Dictionary = quantity_world(runner,cells.size() - 1)
+	var squeezed = tight.sim
+	var first: int = Fixture.object(squeezed,tight.barracks).queue.size()
+	produce(squeezed,tight.barracks,"china_rifle_infantry")
+	Fixture.steps(squeezed,400)
+	runner.check(militia(squeezed).is_empty() and Fixture.object(squeezed,tight.barracks).queue.size() == first + 1,"Q1 with one free cell none spawn and the entry stays")
+	return true

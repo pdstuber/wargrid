@@ -7,13 +7,13 @@ Plan: [M7 plan](../superpowers/plans/2026-11-06-m7-factions.md). Design: [M7 des
 ```text
 Resume record (updated 2026-11-06, gate 1 signed off)
 Branch / base commit / working-tree state: m7-factions rebased onto main 025540d; origin/m7-factions at 29507ed (CI green there), local HEAD adds the R1 planning docs (8f022b0, ed48b2e, not pushed); tree clean. R1 release workflow lives on its own branch r1-release (not pushed), see docs/reference/release-verification.md; it is not part of gate 2
-Last green task / next incomplete task: G2.1 done and uncommitted (ground docking, truck, ground-only full load) / commit it, then G2.2
-Changed paths since last commit: new china.gd (+uid); definitions.gd, supply_collection.gd, production.gd, simulation.gd, combat_workload.gd, run_combat.gd, run_benchmark.sh, test_supply.gd, test_production.gd; m7-verification.md, m7-factions.md, the plan
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 352 cases / 134,406 / 0, exit 0, TESTS PASSED 134406 (baseline 346 / 134,359; traces on 134,413); four traces cmp-identical to HEAD cbfce11; lint, warnings, faction guard; netplay match 8331; team match won tick 33205 winner 1; run_benchmark.sh exit 0, COMBAT BENCHMARK PASSED 7
+Last green task / next incomplete task: G2.2 done and uncommitted (China roster, quantity, bot lists) / commit it (message "Add the China roster and two-unit militia orders"), then G2.3
+Changed paths since last commit: china.gd, factions.gd, shared.gd, production.gd, base_main.gd; tests test_factions, test_production, test_combat, test_skirmish, test_base_scene, test_online_scene, test_view; m7-verification.md
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 358 cases / 134,439 / 0, exit 0, TESTS PASSED 134439 (baseline 352 / 134,406; HEAD fe33064 with traces on: 352 / 134,413); four traces cmp-identical to HEAD fe33064; lint, warnings (86 files), test_faction_guard.py OK; netplay and benchmarks not rerun (no simulation change for USA)
 Known red case or blocker: none (combat stress rows exceed the 1.82 / 3.64 budget: reported, not loosened)
 Approved decisions, pre-authorizations used, deferred gates: pushes approved 2026-11-06 (m7-factions only); user sign-off of gate 1 and its visuals 2026-11-06; WAVE_MIN 6 accepted "for now" (revisit at M8 research and gates 2-3); rulings as logged in the sections above. Open for the user: analyze.py burst/reach tolerance, Dozer mid-turn dip, team match winner flip (accepted by silence, not stated)
 Usage so far: not recorded
-Next exact action: commit G2.1 (message "Add ground docking and the supply truck"), then dispatch G2.2. Full load is ground-only (user ruling 2026-11-06), open item in Departures and deferrals.
+Next exact action: commit G2.2, then dispatch G2.3 (horde). Departures from G2.2 recorded in Departures and deferrals.
 ```
 
 ## Pins at base
@@ -379,3 +379,19 @@ Tree: m7-factions 06f570e + uncommitted. `game/scripts/simulation/skirmish.gd`, 
 - Trace check: replay, economy, combat (1200 rows) and team (100 rows) traces `cmp`-identical to a clean worktree at 8f835c0. No pin moved.
 - Red seen first: `test_setup_rejects_commands_until_all_chose` (S2). `test_bot_reads_seat_faction` (B4) was written after the bot change, not observed red; its rocket-first and barracks-only expectations differ from the USA list so it would fail on the old code.
 - Departures: `Definitions.add_test_faction` lives on the registry (`definitions.gd`; tests' `Registry`), cleared by `clear_test_kinds`. S2 steps one tick after each choice so the start unit exists, and seat 2 chooses at tick 9 (status ongoing at 10). `test_choose_faction_same_tick_cases` (T1) unchanged and green. `Skirmish._faction` replaced `_start_unit`; `skirmish_main._production_kind` reads the local seat's faction from the snapshot.
+
+## G2.2 record
+
+Red first, all six seen red (missing china kinds, faction row, weapon, armor column, menu label): `test_china_start`, `test_china_power_and_prerequisites`, `test_quantity_trains_two`, `test_damage_table_gattling`, `test_bot_plays_china`, `test_build_menu_quantity_label`. Each is a new case; suite 352 → 358 cases.
+
+| test | assertion | old → new | cause |
+|---|---|---|---|
+| test_online_scene | F5 faction selector text | item 0 `United States` → item 0 `China`, selected item `United States`, 2 items | G2.2 (ids sort, china before usa; default selection stays usa) |
+| test_view | I1 every building defines an icon | all buildings → all except `china_defence` | G2.2 (plan: no icon, the view draws the fallback letter) |
+
+Departures and decisions (G2.2):
+- `china.gd` display names corrected to the Global Constraints table: `Power Plant`, `Supply Depot` (G2.1 had `Nuclear Reactor`, `Supply Center`).
+- `china_rifle_infantry` has `quantity 2` but no `horde` yet (G2.3); `china_tank` and `china_defence` have `weapon ""` (G2.4).
+- Quantity spawn: `Production.free_exits` counts walkable, in-bounds, unoccupied perimeter cells; fewer than `quantity` free means no spawn and the entry stays. Quantity 1 and air paths are unchanged, so USA traces did not move.
+- Button label comes from `base_main.menu_label` (skirmish shares it), so no `skirmish_main.gd` edit.
+- `test_bot_plays_china` runs the bot 4000 ticks and checks first building `china_power_plant`, only `china_` units, at least one combat unit.

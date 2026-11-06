@@ -94,7 +94,8 @@ func _menu_kinds(state: Dictionary, building: Dictionary) -> Array:
 	return Registry.kind(kind).get("builds",[])
 
 static func menu_label(index: int, kind: String) -> String:
-	return "%d: %s $%d" % [index + 1,Registry.kind(kind).display_name,Registry.kind(kind).cost]
+	var quantity: int = Registry.kind(kind).get("quantity",1)
+	return "%d: %s%s $%d" % [index + 1,Registry.kind(kind).display_name," x%d" % quantity if quantity > 1 else "",Registry.kind(kind).cost]
 
 func _refresh_menu(kinds: Array) -> void:
 	_menu = kinds

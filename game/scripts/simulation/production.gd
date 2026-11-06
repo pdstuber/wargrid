@@ -58,10 +58,21 @@ static func spawn_air(sim: Simulation, building: Dictionary, kind: String) -> in
 	sim._entities[id].collection.phase = "seeking"
 	return id
 
+static func free_exits(sim: Simulation, building: Dictionary, occupied: Dictionary) -> int:
+	var count: int = 0
+	for cell in Construction.perimeter(building.kind,Vector2i(building.origin[0],building.origin[1])):
+		var position := Vector2(cell) + Vector2(.5,.5)
+		if sim._in_bounds(position) and sim._navigation.is_walkable(position) and not occupied.has(cell): count += 1
+	return count
+
 static func spawn_unit(sim: Simulation, building: Dictionary, kind: String, occupied: Variant) -> int:
 	if Registry.air_kinds.has(kind): return spawn_air(sim,building,kind)
 	if occupied == null: occupied = sim.occupied_cells()
+	var quantity: int = Registry.kind(kind).get("quantity",1)
+	if quantity > 1 and free_exits(sim,building,occupied) < quantity: return -1
 	var collector: bool = not Registry.collects(kind).is_empty()
+	var first: int = -1
+	var spawned_count: int = 0
 	for cell in Construction.perimeter(building.kind,Vector2i(building.origin[0],building.origin[1])):
 		var spawned: int = sim.spawn(building.owner,Vector2(cell) + Vector2(.5,.5),kind,occupied)
 		if spawned == -1: continue
@@ -75,8 +86,10 @@ static func spawn_unit(sim: Simulation, building: Dictionary, kind: String, occu
 			sim._set_intent(unit,"move")
 		occupied[sim._cell(unit.position)] = true
 		if unit.destination != null: occupied[sim._cell(unit.destination)] = true
-		return spawned
-	return -1
+		if first == -1: first = spawned
+		spawned_count += 1
+		if spawned_count == quantity: break
+	return first
 
 static func step(sim: Simulation, rates: Dictionary) -> void:
 	var ids: Array = sim._buildings.keys()
