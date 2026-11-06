@@ -16,6 +16,7 @@ import subprocess
 import time
 import urllib.request
 from pathlib import Path
+from typing import Any
 
 HOME = Path.home()
 BIN = Path(
@@ -41,7 +42,7 @@ class Game:
             GEN_API_LOG_OFF="1",
             GEN_AUTO_MAP=MAP,
         )
-        self.log = open(log_path, "w")
+        self.log = open(log_path, "w")  # noqa: SIM115 - held open for the child process lifetime
         # -headless -noaudio always: a windowed run once blasted sound at the user.
         self.proc = subprocess.Popen(
             [str(BIN), "-headless", "-noaudio"], cwd=DATA, env=env, stdout=self.log, stderr=subprocess.STDOUT
@@ -191,7 +192,7 @@ def move(template, distance):
     def run(g):
         x, y = g.clear_strip(distance + 80)
         uid = g.spawn(template, x + 20, y)
-        rows = []
+        rows: list[tuple[Any, ...]] = []
         g.record([uid], 5, rows)
         g.command("move", [uid], pos=[x + 20 + distance, y, 0])
         meta = {"order_frame": g.frame, "unit": uid, "distance": distance}
@@ -205,7 +206,7 @@ def turn(template):
     def run(g):
         x, y = g.clear_strip(300)
         uid = g.spawn(template, x + 250, y, angle=0.0)
-        rows = []
+        rows: list[tuple[Any, ...]] = []
         g.record([uid], 5, rows)
         g.command("move", [uid], pos=[x + 50, y, 0])
         meta = {"order_frame": g.frame, "unit": uid}
@@ -220,7 +221,7 @@ def fire(attacker, target, gap, frames, target_owner="enemy"):
         x, y = g.clear_strip(gap + 120)
         aid = g.spawn(attacker, x + 20, y)
         tid = g.spawn(target, x + 20 + gap, y, angle=math.pi, owner=getattr(g, target_owner))
-        rows = []
+        rows: list[tuple[Any, ...]] = []
         g.record([aid, tid], 5, rows)
         g.command("attack_target", [aid], targetId=tid)
         meta = {"order_frame": g.frame, "unit": aid, "target": tid}
@@ -238,7 +239,7 @@ def reach(attacker, target, gap):
         aid = g.spawn(attacker, x + 20, y)
         # Enemy, not civilian: idle units ignore neutral objects. Keep the target unarmed.
         tid = g.spawn(target, x + 20 + gap, y, angle=math.pi, owner=g.enemy)
-        rows = []
+        rows: list[tuple[Any, ...]] = []
         meta = {"order_frame": g.frame, "unit": aid, "target": tid, "gap": gap}
         g.record([aid, tid], 90, rows)
         return rows, meta
@@ -257,11 +258,11 @@ def splash(gap=140, spacing=15):
         tids = [
             g.spawn("AmericaInfantryRanger", cx + dx, y + dy, angle=math.pi, owner=g.civilian) for dx, dy in offsets
         ]
-        rows = []
-        g.record([aid] + tids, 5, rows)
+        rows: list[tuple[Any, ...]] = []
+        g.record([aid, *tids], 5, rows)
         g.command("attack_target", [aid], targetId=tids[0])
         meta = {"order_frame": g.frame, "unit": aid, "target": tids[0], "neighbours": tids[1:], "spacing": spacing}
-        g.record([aid] + tids, 3000, rows, stop=dead_for(tids[0], 10))
+        g.record([aid, *tids], 3000, rows, stop=dead_for(tids[0], 10))
         return rows, meta
 
     return run
@@ -282,7 +283,7 @@ def supply():
         x, y = g.clear_strip(640, width=160)
         dock = g.spawn("SupplyDock", x + 560, y, owner=g.neutral)  # map warehouses belong to the neutral player
         dozer = g.spawn("AmericaVehicleDozer", x + 100, y)
-        rows = []
+        rows: list[tuple[Any, ...]] = []
         g.record([dock], 10, rows)  # a dozer ordered in its spawn frame gets "buildObjectNow failed"
         # A raw spawn never runs onBuildComplete and instant placement stays under construction,
         # so a dozer builds the centre; the API player is not American, hence its prerequisite first.
@@ -309,11 +310,11 @@ def retaliate(
         vx = x + 20 + gap
         # (dx, dy) from the victim; the first is the victim itself. Wargrid's joiner radius is 4.8 cells = 120 units.
         tids = [g.spawn("AmericaInfantryRanger", vx + dx, y + dy, angle=math.pi, owner=g.enemy) for dx, dy in offsets]
-        rows = []
-        g.record([aid] + tids, 5, rows)
+        rows: list[tuple[Any, ...]] = []
+        g.record([aid, *tids], 5, rows)
         g.command("attack_target", [aid], targetId=tids[0])
         meta = {"order_frame": g.frame, "unit": aid, "victim": tids[0], "group": tids[1:], "offsets": offsets}
-        g.record([aid] + tids, frames, rows)
+        g.record([aid, *tids], frames, rows)
         return rows, meta
 
     return run

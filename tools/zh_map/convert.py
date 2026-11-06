@@ -10,9 +10,10 @@ import math
 import os
 import struct
 import sys
+from typing import Any
 
 sys.path.insert(0, os.path.dirname(__file__))
-import refpack  # noqa: E402
+import refpack
 
 CELL = 25.0
 SAMPLE = 10.0
@@ -119,7 +120,7 @@ def read_map(data):
     for _ in range(r.take("i")):
         name = r.raw(r.take("B")).decode()
         names[r.take("I")] = name
-    raw = dict(water_polygons=[], objects=[], cliff=None)
+    raw: dict[str, Any] = dict(water_polygons=[], objects=[], cliff=None)
     for name, version, start, end in _chunks(r, len(data), names):
         c = _Reader(data, start)
         if name == "HeightMapData":
@@ -177,7 +178,7 @@ def _read_water(c, version):
 
 def _inside(poly, x, y):
     hit = False
-    for (x0, y0), (x1, y1) in zip(poly, poly[1:] + poly[:1]):
+    for (x0, y0), (x1, y1) in zip(poly, poly[1:] + poly[:1], strict=True):
         if (y0 > y) != (y1 > y) and x < x0 + (y - y0) * (x1 - x0) / (y1 - y0):
             hit = not hit
     return hit
@@ -263,7 +264,7 @@ def _find_slot(grid, size, taken):
 
 
 def place(grid, raw):
-    sources = []
+    sources: list[dict[str, Any]] = []
     for o in raw["objects"]:
         if o["template"] in BOXES:
             c = (int(o["x"] // CELL), int(o["y"] // CELL))

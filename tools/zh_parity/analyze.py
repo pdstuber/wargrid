@@ -7,16 +7,18 @@ Units: world units (1 Wargrid cell = 25), logic frames at 30 Hz. Expected values
 """
 
 import argparse
+import itertools
 import json
 import math
 import statistics
 from pathlib import Path
+from typing import Any
 
 FPS = 30
 TRACES = Path.home() / "CnC/parity/traces"
 
 # scenario -> [(metric, Wargrid value, tolerance or None, note)]
-EXPECT = {
+EXPECT: dict[str, Any] = {
     "move_ranger": [("top_speed", 20, 2, "0.8 cells/s"), ("accel", 100, None, "Wargrid instant; INI 100")],
     "move_crusader": [("top_speed", 30, 3, "1.2 cells/s"), ("accel", 1000, None, "Wargrid instant; INI 1000")],
     "move_dozer": [("top_speed", 30, 3, "1.2 cells/s"), ("accel", 30, None, "Wargrid instant; INI 30")],
@@ -40,7 +42,7 @@ def load(path):
     lines = path.read_text().splitlines()
     meta = json.loads(lines[0][2:])
     head = lines[1].split("\t")
-    return meta, [dict(zip(head, line.split("\t"))) for line in lines[2:]]
+    return meta, [dict(zip(head, line.split("\t"), strict=False)) for line in lines[2:]]
 
 
 def series(rows, uid, key):
@@ -57,8 +59,8 @@ def movement(meta, rows):
     start = next(f for f, v in sp if v > 0)
     peak = max(v for _, v in sp)
     top = statistics.median(v for _, v in sp if v > 0)  # cruise speed; peak can be a one-frame lurch
-    rising = [b - a for (_, a), (_, b) in zip(sp, sp[1:]) if b - a > 1e-3]
-    falling = [a - b for (_, a), (_, b) in zip(sp, sp[1:]) if a - b > 1e-3]
+    rising = [b - a for (_, a), (_, b) in itertools.pairwise(sp) if b - a > 1e-3]
+    falling = [a - b for (_, a), (_, b) in itertools.pairwise(sp) if a - b > 1e-3]
     return {
         "start_delay_frames": start - meta["order_frame"],
         "top_speed": round(top * FPS, 3),
@@ -71,7 +73,7 @@ def movement(meta, rows):
 
 def turning(meta, rows):
     ang = [v for _, v in series(rows, meta["unit"], "angle")]
-    deltas = [math.remainder(b - a, 2 * math.pi) for a, b in zip(ang, ang[1:])]
+    deltas = [math.remainder(b - a, 2 * math.pi) for a, b in itertools.pairwise(ang)]
     turning_deltas = [abs(d) for d in deltas if abs(d) > 1e-3]
     return {
         "turn_rate": round(math.degrees(max(turning_deltas)) * FPS, 1) if turning_deltas else 0.0,
@@ -101,7 +103,7 @@ def distance_at(rows, frame, a, b):
 def shots(meta, rows):
     fired = shot_rows(rows, meta["unit"])
     frames = [s for s, _ in fired]
-    intervals = [b - a for a, b in zip(frames, frames[1:])]
+    intervals = [b - a for a, b in itertools.pairwise(frames)]
     out = {"shots": len(frames), "intervals": intervals}
     if fired:
         out["first_shot_distance"] = distance_at(rows, fired[0][1], meta["unit"], meta["target"])
@@ -130,7 +132,7 @@ def duel(meta, rows):
 
 def damage_events(rows, uid, until):
     hp = [(f, v) for f, v in series(rows, uid, "health") if f <= until]
-    return [a - b for (_, a), (_, b) in zip(hp, hp[1:]) if a - b > 1e-6]
+    return [a - b for (_, a), (_, b) in itertools.pairwise(hp) if a - b > 1e-6]
 
 
 def splashing(meta, rows):
@@ -153,8 +155,8 @@ def splashing(meta, rows):
 
 def supplying(meta, rows):
     cash = [(int(r["frame"]), float(r["health"])) for r in rows if r["id"] == "money"]
-    deposits = [(f2, b - a) for (_, a), (f2, b) in zip(cash, cash[1:]) if b > a]
-    gaps = [b - a for (a, _), (b, _) in zip(deposits, deposits[1:])]
+    deposits = [(f2, b - a) for (_, a), (f2, b) in itertools.pairwise(cash) if b > a]
+    gaps = [b - a for (a, _), (b, _) in itertools.pairwise(deposits)]
     sp = [v for _, v in series(rows, meta["unit"], "speed") if v > 0]
     return {
         "deposits": len(deposits),
@@ -176,7 +178,7 @@ def reaching(meta, rows):
 KINDS = {"move": movement, "turn": turning, "duel": duel, "splash": splashing, "supply": supplying, "reach": reaching}
 
 
-def metrics(name, meta, rows):
+def metrics(name, meta, rows) -> dict[str, Any]:
     return KINDS.get(name.split("_")[0], shots)(meta, rows)
 
 
@@ -186,7 +188,11 @@ def verdict(value, expected, tol):
     if isinstance(expected, str):
         got = [int(x) for x in str(value).split(",") if x]
         want = [int(x) for x in expected.split(",")]
-        return "PASS" if len(got) == len(want) and all(abs(g - w) <= tol for g, w in zip(got, want)) else "FAIL"
+        return (
+            "PASS"
+            if len(got) == len(want) and all(abs(g - w) <= tol for g, w in zip(got, want, strict=True))
+            else "FAIL"
+        )
     return "PASS" if abs(value - expected) <= tol else "FAIL"
 
 
@@ -240,7 +246,7 @@ def self_test():
         return rows + hp_rows(2, health or [10] * len(speeds))
 
     jitter = [0.3, 0.30001, 0.29999] * 3  # plateau float noise must not count as acceleration or braking
-    m = movement({"unit": 1, "order_frame": 2}, trace([0, 0, 0, 0, 0.1, 0.2] + jitter + [0.2, 0.1, 0]))
+    m = movement({"unit": 1, "order_frame": 2}, trace([0, 0, 0, 0, 0.1, 0.2, *jitter, 0.2, 0.1, 0]))
     assert m["start_delay_frames"] == 2 and m["top_speed"] == 9.0 and m["accel"] == 90.0, m
     assert m["frames_to_top"] == 2 and m["braking"] == 90.0, m
     lurch = movement({"unit": 1, "order_frame": 0}, trace([0, 0.6] + [0.3] * 8 + [0]))

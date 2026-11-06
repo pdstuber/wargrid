@@ -1,7 +1,7 @@
 import argparse
-from pathlib import Path
 import re
 import sys
+from pathlib import Path
 
 
 def _tick(i: int, interval: int) -> int:
@@ -14,8 +14,8 @@ def read_trace(path: Path, interval: int, rows: int) -> tuple[list[str], int]:
         raise ValueError(f"{path}: no rows")
     if rows and len(lines) != rows:
         raise ValueError(f"{path}: expected {rows} rows, got {len(lines)}")
-    digests = []
-    width = None
+    digests: list[str] = []
+    width = 0
     for i, row in enumerate(lines):
         tick = _tick(i, interval)
         match = re.fullmatch(rf"{tick}\t([0-9a-f]{{16}}|[0-9a-f]{{64}})", row)
@@ -35,10 +35,10 @@ def compare_traces(paths: list[Path], interval: int = 1, rows: int = 1200) -> in
     traces = [digests for digests, _ in read]
     if len({len(t) for t in traces}) != 1:
         raise ValueError("traces have different numbers of rows")
-    for i, values in enumerate(zip(*traces)):
+    for i, values in enumerate(zip(*traces, strict=True)):
         if len(set(values)) != 1:
             tick = _tick(i, interval)
-            detail = ", ".join(f"{path.name}={value}" for path, value in zip(paths, values))
+            detail = ", ".join(f"{path.name}={value}" for path, value in zip(paths, values, strict=True))
             raise ValueError(f"Replay diverged at tick {tick}: {detail}")
     return len(traces[0])
 

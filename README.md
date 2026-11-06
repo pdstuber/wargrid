@@ -55,6 +55,7 @@ sh tools/run_tests.sh
 sh tools/run_lint.sh   # needs: uv tool install gdtoolkit==4.5.0
 sh tools/run_warnings.sh   # typing, shadowing, unused-parameter and integer-division warnings as errors
 python3 -m unittest discover -s tools -p 'test_*.py'
+sh tools/run_python_checks.sh   # ruff format + lint, mypy; needs: uv tool install ruff==0.17.2 && uv tool install mypy==2.4.0
 sh tools/run_benchmark.sh
 ```
 

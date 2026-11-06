@@ -5,8 +5,8 @@ import sys
 import unittest
 
 sys.path.insert(0, os.path.dirname(__file__))
-import convert  # noqa: E402
-import refpack  # noqa: E402
+import convert
+import refpack
 
 TYPE_INT, TYPE_ASCII = 1, 3
 

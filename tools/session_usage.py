@@ -9,6 +9,7 @@ import collections
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 
 def _events(path: Path):
@@ -21,7 +22,8 @@ def _events(path: Path):
 
 
 def claude(path: Path) -> dict:
-    seen, contexts, output, models = set(), [], 0, collections.Counter()
+    seen, contexts, output = set(), [], 0
+    models: collections.Counter[str] = collections.Counter()
     for event in _events(path):
         if event.get("type") != "assistant":
             continue
@@ -50,7 +52,7 @@ def claude(path: Path) -> dict:
 
 
 def codex(path: Path) -> dict:
-    result = {
+    result: dict[str, Any] = {
         "thread": None,
         "parent": None,
         "processed": 0,
@@ -60,7 +62,7 @@ def codex(path: Path) -> dict:
         "max_context": 0,
         "models": {},
     }
-    models = collections.Counter()
+    models: collections.Counter[str] = collections.Counter()
     for event in _events(path):
         payload = event.get("payload") or {}
         if event.get("type") == "session_meta":
@@ -94,7 +96,7 @@ def group_codex(threads: list) -> dict:
             thread, hops = by_id[thread["parent"]], hops + 1
         return thread["thread"]
 
-    groups = {}
+    groups: dict[Any, dict[str, int]] = {}
     for thread in threads:
         group = groups.setdefault(root(thread), {"processed": 0, "output": 0, "requests": 0, "threads": 0})
         group["processed"] += thread["processed"]

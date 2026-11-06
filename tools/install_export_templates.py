@@ -15,10 +15,7 @@ WANTED = ("version.txt", "linux_release.x86_64", "windows_release_x86_64.exe", "
 
 
 def templates_dir(version: str) -> Path:
-    if os.name == "nt":
-        base = Path(os.environ["APPDATA"]) / "Godot"
-    else:
-        base = Path.home() / ".local" / "share" / "godot"
+    base = Path(os.environ["APPDATA"]) / "Godot" if os.name == "nt" else Path.home() / ".local" / "share" / "godot"
     return base / "export_templates" / version.replace("-", ".")
 
 

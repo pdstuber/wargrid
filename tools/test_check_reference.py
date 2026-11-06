@@ -6,6 +6,7 @@ import tarfile
 import tempfile
 import unittest
 from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import check_reference as ref
@@ -58,7 +59,7 @@ def big(files: dict) -> bytes:
     offset = 16 + index_size
     index = b""
     body = b""
-    for name, payload in zip(names, payloads):
+    for name, payload in zip(names, payloads, strict=True):
         index += struct.pack(">II", offset + len(body), len(payload)) + name
         body += payload
     data = (
@@ -119,7 +120,7 @@ class ReferenceTests(unittest.TestCase):
             archive = Path(directory) / "INIZH.big"
             archive.write_bytes(big(INI))
             wargrid = Path(directory) / "wargrid.json"
-            values = {
+            values: dict[str, Any] = {
                 "infantry": {
                     "cost": 225,
                     "ticks": 150,
@@ -169,6 +170,20 @@ class ReferenceTests(unittest.TestCase):
                 info.size = len(data)
                 tar.addfile(info, io.BytesIO(data))
             self.assertIn("data\\ini\\weapon.ini", ref.load_archive(str(path), check_hash=False))
+
+    def test_tarball_member_that_is_not_a_file_is_a_value_error(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "backup.tar.gz"
+            with tarfile.open(path, "w:gz") as tar:
+                info = tarfile.TarInfo(ref.TAR_MEMBER)
+                info.type = tarfile.DIRTYPE
+                tar.addfile(info)
+            with self.assertRaises(ValueError):
+                ref.load_archive(str(path), check_hash=False)
+
+    def test_block_without_end_is_a_value_error(self):
+        with self.assertRaises(ValueError):
+            ref.block("Object Foo\n  BuildTime = 1.0\n", "Object", "Foo")
 
 
 if __name__ == "__main__":
