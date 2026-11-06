@@ -5,6 +5,7 @@ config/name="Wargrid"
 config/version="0.5.1"
 run/main_scene="res://scenes/launcher.tscn"
 run/main_loop_type.wargrid_tests="WargridTestRunner"
+run/main_loop_type.wargrid_bench="WargridBenchRunner"
 run/flush_stdout_on_print=true
 
 [display]
