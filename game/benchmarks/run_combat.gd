@@ -6,8 +6,8 @@ const Simulation = preload("res://scripts/simulation/simulation.gd")
 
 const WARMUP: int = 300
 const SAMPLES: int = 1800
-# Report-only stress rows, pinned at the worst of 13 runs + 5% (user decision 2026-11-03); raise only with user approval and a ledger line.
-const STRESS_CEILING := {"open": [2.05, 3.86], "dense": [2.52, 4.02]}
+# Report-only stress rows, pinned at the worst of the M7 runs (Task 0, 1, gate 1, gate 1 fixes) + 5% (user decision 2026-11-06, re-pinned after M7 armed units); raise only with user approval and a ledger line.
+const STRESS_CEILING := {"open": [3.05, 4.23], "dense": [3.31, 5.01]}
 const BUDGET_P95_MS: float = 1.82
 const BUDGET_P99_MS: float = 3.64
 
