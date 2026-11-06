@@ -22,10 +22,10 @@ func _run() -> void:
 		" warmup_ticks=", WARMUP, " sample_ticks=", SAMPLES, " unpaced=true zones=inclusive")
 	_view = View.new()
 	var done: int = 0
-	for layout in ["open", "dense"]:
+	for layout: String in ["open", "dense"]:
 		_movement(layout)
 		done += 1
-	for layout in ["contact", "skirmish3v3", "open"]:
+	for layout: String in ["contact", "skirmish3v3", "open"]:
 		_fixed("combat_" + layout, CombatWorkload.create(layout), 1)
 		done += 1
 	_skirmish()
@@ -43,9 +43,9 @@ func _frame(sim: RefCounted, snapshots: int) -> void:
 	_view.set_state(state, _no_selection)
 	Profiler.end_tick()
 
-func _harness(call: Callable) -> Variant:
+func _harness(workload: Callable) -> Variant:
 	Profiler.enabled = false
-	var result: Variant = call.call()
+	var result: Variant = workload.call()
 	Profiler.enabled = true
 	return result
 
@@ -53,7 +53,7 @@ func _phase(label: String, warmup: bool) -> void:
 	for line in Profiler.report(label + (".warmup" if warmup else "")): print(line)
 	var slow: Array = Array(Profiler.slow)
 	slow.sort_custom(func(a: String, b: String) -> bool: return a.get_slice(" ", 2).to_float() > b.get_slice(" ", 2).to_float())
-	for line in slow.slice(0, TOP_SLOW): print("PROFILE_SLOW ", label, " ", line)
+	for line: Variant in slow.slice(0, TOP_SLOW): print("PROFILE_SLOW ", label, " ", line)
 	print("PROFILE_SLOW_COUNT ", label, " ", slow.size())
 	Profiler.reset()
 

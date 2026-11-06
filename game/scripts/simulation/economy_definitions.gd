@@ -24,4 +24,5 @@ static func building(kind: String) -> Dictionary:
 static func work_rate(supply: int, demand: int) -> int:
 	if demand == 0 or supply >= demand:
 		return 1000
+	@warning_ignore("integer_division")
 	return clampi(int(supply * 1000 / demand),500,800)

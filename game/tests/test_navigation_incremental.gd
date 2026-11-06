@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 
 const Navigation = preload("res://scripts/simulation/grid_navigation.gd")

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 
 const Skirmish = preload("res://scripts/simulation/skirmish.gd")

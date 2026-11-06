@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 
 const Fixture = preload("res://tests/economy_fixture.gd")
@@ -13,6 +14,7 @@ func _world(runner):
 		blocked.append(Vector2i(8, y))
 	var sim = Simulation.new(blocked)
 	for i in range(8):
+		@warning_ignore("integer_division")
 		runner.check(sim.spawn(1, Vector2(1.25 + i % 4, 1.25 + 2 * (i / 4))) == i + 1, "R1 unique left spawn")
 	for i in range(4):
 		runner.check(sim.spawn(2, Vector2(10.25 + i, 2.25)) == 9 + i, "R1 unique right spawn")

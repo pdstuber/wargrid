@@ -15,13 +15,13 @@ static func digest(state: Dictionary) -> String:
 
 static func core_check(state: Dictionary) -> int:
 	var h: int = FNV_SEED
-	for entity in state.entities:
+	for entity: Dictionary in state.entities:
 		h = _mix(h, entity.id)
 		h = _mix(h, entity.owner)
 		h = _mix(h, entity.hp)
 		h = _mix(h, entity.position[0])
 		h = _mix(h, entity.position[1])
-	for player in state.players:
+	for player: Dictionary in state.players:
 		h = _mix(h, player.credits)
 	return h
 

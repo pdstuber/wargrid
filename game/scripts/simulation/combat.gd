@@ -199,7 +199,7 @@ static func _approach(sim: RefCounted, unit: Dictionary, target: Dictionary, hel
 
 static func _hold_cells(sim: RefCounted, held: Dictionary) -> void:
 	held.ready = true
-	for other in sim._entities.values():
+	for other: Dictionary in sim._entities.values():
 		if other.kind == "collector": continue
 		held.cells[sim._cell(other.position)] = true
 		if other.destination != null: held.cells[sim._cell(other.destination)] = true
@@ -214,7 +214,7 @@ static func _firing_cell(sim: RefCounted, unit: Dictionary, target: Dictionary, 
 	var best_distance: float = INF
 	var ring: Dictionary = _reach_ring(held.rings, unit.kind, target, reach)
 	sim._combat_work += ring.window_cells
-	for cell in ring.cells:
+	for cell: Variant in ring.cells:
 		var center := Vector2(cell) + Vector2(0.5, 0.5)
 		var distance: float = position.distance_squared_to(center)
 		if best != null and distance > best_distance: continue
@@ -251,10 +251,10 @@ const GRID_CELL: int = 8
 
 static func _build_grid(sim: RefCounted) -> Dictionary:
 	var grid: Dictionary = {}
-	for entity in sim._entities.values():
+	for entity: Dictionary in sim._entities.values():
 		if entity.kind == "collector": continue
 		_bucket(grid, int(floorf(entity.position[0] / GRID_CELL)), int(floorf(entity.position[1] / GRID_CELL)), entity)
-	for building in sim._buildings.values():
+	for building: Dictionary in sim._buildings.values():
 		var size: Vector2i = Definitions.building(building.kind).footprint
 		for y in range(int(floorf(building.origin[1] / GRID_CELL)), int(floorf((building.origin[1] + size.y) / GRID_CELL)) + 1):
 			for x in range(int(floorf(building.origin[0] / GRID_CELL)), int(floorf((building.origin[0] + size.x) / GRID_CELL)) + 1):
@@ -274,7 +274,7 @@ static func _nearest(sim: RefCounted, unit: Dictionary, grid: Dictionary, radius
 	var window: float = radius + CombatDefinitions.radius(unit.kind) + MAX_TARGET_RADIUS if edge else radius
 	for y in range(int(floorf((position.y - window) / GRID_CELL)), int(floorf((position.y + window) / GRID_CELL)) + 1):
 		for x in range(int(floorf((position.x - window) / GRID_CELL)), int(floorf((position.x + window) / GRID_CELL)) + 1):
-			for target in grid.get(Vector2i(x, y), []):
+			for target: Variant in grid.get(Vector2i(x, y), []):
 				if not hostile(sim, unit.owner, target.owner) or (units_only and target.has("origin")): continue
 				sim._combat_work += 1
 				var distance: float = edge_gap(unit, target) if edge else distance_squared(position, target)
@@ -302,14 +302,14 @@ static func fire(sim: RefCounted, unit_ids: Array[int], moved_ids: Array[int]) -
 		_reload(sim, combat, weapon)
 	sim._combat_events.append_array(shots)
 	var dead: Array = damage.keys().filter(func(id: int) -> bool: return record(sim, id).hp <= damage[id])
-	for id in damage:
+	for id: Variant in damage:
 		var hit: Dictionary = record(sim, id)
 		hit.hp = maxi(0, hit.hp - damage[id])
 	var zone: int = Profiler.begin()
 	_retaliate_trigger(sim, shots)
 	Profiler.end(&"combat.retaliate", zone)
 	dead.sort()
-	for id in dead:
+	for id: Variant in dead:
 		sim._combat_events.append({"type": "death", "tick": sim._tick, "object_id": id})
 		sim.remove_object(id)
 
@@ -338,8 +338,8 @@ static func _scatter(sim: RefCounted) -> Vector2:
 # shortcut: scans every object per cannon shot; grid it if cannon shots x objects shows in the ledger.
 static func splash_victims(sim: RefCounted, impact: Vector2, radius: float, affects: Array, attacker: Dictionary) -> Array[Dictionary]:
 	var victims: Array[Dictionary] = []
-	for pool in [sim._entities, sim._buildings]:
-		for victim in pool.values():
+	for pool: Variant in [sim._entities, sim._buildings]:
+		for victim: Variant in pool.values():
 			if victim.id == attacker.id or victim.kind == "collector": continue
 			if (_victim_centre(victim).distance_to(impact) - CombatDefinitions.radius(victim.kind)) > radius + EDGE_EPS: continue
 			if affects.has("enemies" if hostile(sim, attacker.owner, victim.owner) else "allies"): victims.append(victim)
@@ -358,7 +358,7 @@ static func _reload(sim: RefCounted, combat: Dictionary, weapon: Dictionary) -> 
 		combat.next_fire_tick = sim._tick + weapon.delay_ticks
 
 static func object_removed(sim: RefCounted, id: int) -> void:
-	for unit in sim._entities.values():
+	for unit: Dictionary in sim._entities.values():
 		if unit.combat == null or unit.combat.target_id != id: continue
 		unit.combat.target_id = null
 		unit.combat.repath_tick = sim._tick
@@ -391,12 +391,12 @@ static func _retaliate_trigger(sim: RefCounted, shots: Array[Dictionary]) -> voi
 		if distance_squared(Vector2(attacker.position[0], attacker.position[1]), victim) > RETALIATION_DISTANCE * RETALIATION_DISTANCE: continue
 		if not built:
 			built = true
-			for unit in sim._entities.values():
+			for unit: Dictionary in sim._entities.values():
 				if unit.combat != null and _can_join(unit): armed.append(unit)
 			armed.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.id < b.id)
 		var centre := _victim_centre(victim)
 		var radius: float = _friends_radius(victim)
-		for unit in armed:
+		for unit: Variant in armed:
 			sim._combat_work += 1
 			if unit.owner != victim.owner or unit.hp <= 0: continue
 			if unit.id == victim.id and unit.combat.mode == "retaliate" and unit.combat.target_id == null:

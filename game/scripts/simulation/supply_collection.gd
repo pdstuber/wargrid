@@ -27,14 +27,14 @@ static func choose_target(sim: RefCounted, unit: Dictionary) -> Dictionary:
 	var collection: Dictionary = unit.collection
 	if collection.cargo > 0:
 		var depots: Array = []
-		for building in sim._buildings.values():
+		for building: Dictionary in sim._buildings.values():
 			if building.owner == unit.owner and building.kind == "depot" and building.completed: depots.append(building)
 		return nearest(unit,depots)
 	if collection.preferred_source_id != null and sim._sources.has(collection.preferred_source_id):
 		var preferred: Dictionary = sim._sources[collection.preferred_source_id]
 		if preferred.boxes > 0: return preferred
 	var sources: Array = []
-	for source in sim._sources.values():
+	for source: Dictionary in sim._sources.values():
 		if source.boxes > 0: sources.append(source)
 	return nearest(unit,sources)
 
@@ -64,7 +64,7 @@ static func _admit(sim: RefCounted, unit: Dictionary, target: Dictionary) -> voi
 		collection.retry_tick = sim._tick + 1
 		return
 	var waiting_before: bool = false
-	for other in sim._entities.values():
+	for other: Dictionary in sim._entities.values():
 		if other.id >= unit.id or other.collection == null or not other.collection.enabled: continue
 		if other.collection.target_id == target.id and other.position == center(target) and other.collection.phase in ["flying_source","waiting_source","flying_depot","waiting_depot"]:
 			waiting_before = true
@@ -115,7 +115,7 @@ static func step(sim: RefCounted, unit_ids: Array[int]) -> void:
 			collection.retry_tick = sim._tick + 1
 
 static func object_removed(sim: RefCounted, id: int) -> void:
-	for unit in sim._entities.values():
+	for unit: Dictionary in sim._entities.values():
 		if unit.collection == null or unit.collection.target_id != id: continue
 		release(sim,unit.id)
 		sim._stop_unit(unit)

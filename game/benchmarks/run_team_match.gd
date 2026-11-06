@@ -42,7 +42,7 @@ func _report(label: String) -> void:
 	for line in Profiler.report(label): print(line)
 	var slow: Array = Array(Profiler.slow)
 	slow.sort_custom(func(a: String, b: String) -> bool: return a.get_slice(" ", 2).to_float() > b.get_slice(" ", 2).to_float())
-	for line in slow.slice(0, TOP_SLOW): print("PROFILE_SLOW ", label, " ", line)
+	for line: Variant in slow.slice(0, TOP_SLOW): print("PROFILE_SLOW ", label, " ", line)
 	print("PROFILE_SLOW_COUNT ", label, " ", slow.size())
 	Profiler.reset()
 	Profiler.enabled = label.ends_with("warmup")

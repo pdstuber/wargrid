@@ -107,7 +107,7 @@ static func rebuild_navigation(sim: RefCounted) -> void:
 static func step(sim: RefCounted, rates: Dictionary) -> void:
 	var ids: Array = sim._buildings.keys()
 	ids.sort()
-	for id in ids:
+	for id: Variant in ids:
 		var building: Dictionary = sim._buildings[id]
 		if building.completed or building.builder_id == null or not sim._entities.has(building.builder_id): continue
 		var builder: Dictionary = sim._entities[building.builder_id]

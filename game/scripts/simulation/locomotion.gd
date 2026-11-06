@@ -40,8 +40,8 @@ static func angle_between(a: Vector2, b: Vector2) -> float:
 
 static func turn(heading: Vector2, desired: Vector2, cos_step: float, sin_step: float) -> Vector2:
 	if heading.x * desired.x + heading.y * desired.y >= cos_step: return desired
-	var sign: float = -1.0 if heading.x * desired.y - heading.y * desired.x < 0.0 else 1.0
-	var turned := Vector2(heading.x * cos_step - sign * heading.y * sin_step, sign * heading.x * sin_step + heading.y * cos_step)
+	var turn_sign: float = -1.0 if heading.x * desired.y - heading.y * desired.x < 0.0 else 1.0
+	var turned := Vector2(heading.x * cos_step - turn_sign * heading.y * sin_step, turn_sign * heading.x * sin_step + heading.y * cos_step)
 	return turned / sqrt(turned.x * turned.x + turned.y * turned.y)
 
 static func heading_factor(locomotor: String, angle: float, kind_def: Dictionary) -> float:
@@ -71,7 +71,7 @@ static func _route_length_until(unit: Dictionary, two_brake: float, cap_squared:
 	var x: float = unit.position[0]
 	var y: float = unit.position[1]
 	var total: float = 0.0
-	for waypoint in unit.route:
+	for waypoint: Variant in unit.route:
 		var dx: float = waypoint[0] - x
 		var dy: float = waypoint[1] - y
 		total += sqrt(dx * dx + dy * dy)

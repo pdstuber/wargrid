@@ -20,7 +20,7 @@ static func cancel(sim: RefCounted, building_id: int, entry_id: int) -> void:
 
 static func refund_all(sim: RefCounted, building_id: int) -> void:
 	var building: Dictionary = sim._buildings[building_id]
-	for entry in building.queue: sim._players[building.owner].credits += entry.paid_cost
+	for entry: Variant in building.queue: sim._players[building.owner].credits += entry.paid_cost
 	building.queue.clear()
 
 static func center(building: Dictionary) -> Vector2:
@@ -31,6 +31,7 @@ static func default_rally(sim: RefCounted, kind: String, origin: Vector2i) -> Ar
 	var size: Array = sim._navigation.snapshot().size
 	var fp: Vector2i = Definitions.building(kind).footprint
 	var x: int = origin.x + fp.x + 2 if origin.x + fp.x / 2.0 < size[0] / 2.0 else origin.x - 3
+	@warning_ignore("integer_division")
 	var y: int = origin.y + fp.y / 2
 	return [clampi(x,0,size[0] - 1) + 0.5,clampi(y,0,size[1] - 1) + 0.5]
 
@@ -40,11 +41,11 @@ static func rally_target(sim: RefCounted, building: Dictionary, unit: Dictionary
 	if sim._navigation.component_at(target) == component: return building.rally
 	var best: Vector2 = Vector2(unit.position[0],unit.position[1])
 	var best_distance: float = INF
-	for cell in sim._navigation.cells_in_component(component):
-		var center := Vector2(cell) + Vector2(.5,.5)
-		var distance: float = center.distance_squared_to(target)
+	for cell: Variant in sim._navigation.cells_in_component(component):
+		var cell_center := Vector2(cell) + Vector2(.5,.5)
+		var distance: float = cell_center.distance_squared_to(target)
 		if distance < best_distance:
-			best = center
+			best = cell_center
 			best_distance = distance
 	return [best.x,best.y]
 
@@ -59,7 +60,7 @@ static func step(sim: RefCounted, rates: Dictionary) -> void:
 	var ids: Array = sim._buildings.keys()
 	ids.sort()
 	var occupied: Variant = null
-	for id in ids:
+	for id: Variant in ids:
 		var building: Dictionary = sim._buildings[id]
 		if not building.completed or building.queue.is_empty(): continue
 		var entry: Dictionary = building.queue[0]

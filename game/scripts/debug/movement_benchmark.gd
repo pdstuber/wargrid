@@ -94,7 +94,7 @@ func _physics_process(_delta: float) -> void:
 	if _leg_ticks > 3000:
 		_fail("Rendered workload leg exceeded 3000 ticks")
 		return
-	for unit in state.entities:
+	for unit: Dictionary in state.entities:
 		if unit.status == "blocked":
 			_fail("Rendered workload blocked unit " + str(unit.id))
 			return
@@ -135,7 +135,7 @@ func _process(_delta: float) -> void:
 
 func _finish_layout(state: Dictionary) -> void:
 	var goals: Dictionary = {}
-	for unit in state.entities:
+	for unit: Dictionary in state.entities:
 		if unit.destination == null or unit.position != unit.destination:
 			_fail("Rendered workload missed destination")
 			return

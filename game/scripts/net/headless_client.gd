@@ -125,7 +125,7 @@ func _step_once() -> bool:
 	return true
 
 func _run_script() -> void:
-	var seat_sim = SeatSim.new(_sim, _lockstep)
+	var seat_sim: RefCounted = SeatSim.new(_sim, _lockstep)
 	match _args.get("seat-script", "idle"):
 		"human":
 			if _seat == 1: ScriptedHuman.issue(seat_sim)
@@ -177,10 +177,10 @@ func _write_logs() -> void:
 		file.store_string(JSON.stringify(_lockstep.desync_report(), "", true, true))
 		file.close()
 
-func _command_lines(log: Array[Dictionary]) -> PackedStringArray:
+func _command_lines(log_rows: Array[Dictionary]) -> PackedStringArray:
 	var by_tick: Dictionary = {}
 	var order: Array[int] = []
-	for command in log:
+	for command in log_rows:
 		if not by_tick.has(command.tick):
 			by_tick[command.tick] = []
 			order.append(command.tick)
@@ -200,11 +200,11 @@ func _replay_oracle() -> void:
 			return
 		by_tick[decoded.message.tick] = decoded.message.commands
 	var every: int = _int_arg("hash-every") if _args.has("hash-every") else 30
-	var sim = Skirmish.create(true, "human")
+	var sim: RefCounted = Skirmish.create(true, "human")
 	_sim = sim
 	var rows := PackedStringArray(["0\t" + StateHash.digest(sim.snapshot())])
 	while not sim.match_over() and sim.tick() < ORACLE_MAX_TICKS:
-		for command in by_tick.get(sim.tick(), []): sim.issue_command(command)
+		for command: Variant in by_tick.get(sim.tick(), []): sim.issue_command(command)
 		sim.step()
 		if sim.tick() % every == 0: rows.append("%d\t%s" % [sim.tick(), StateHash.digest(sim.snapshot())])
 	if _args.has("hash-log"): _write_lines(_args["hash-log"], rows)

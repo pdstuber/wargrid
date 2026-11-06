@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 
 const Simulation = preload("res://scripts/simulation/simulation.gd")
@@ -107,6 +108,7 @@ func test_unreachable_attack(runner) -> bool:
 	var victim: int = many.spawn(2, Vector2(28.5, 16.5), "builder")
 	var ids: Array = []
 	for i in range(20):
+		@warning_ignore("integer_division")
 		ids.append(many.spawn(1, Vector2(2.5 + i % 5, 2.5 + i / 5), "infantry"))
 	Fixture.send(many, {"type": "attack", "entity_ids": ids, "target_id": victim})
 	for tick in range(30):
@@ -310,6 +312,7 @@ func test_chase_repaths_staggered(runner) -> bool:
 	var sim = Fixture.world()
 	var ids: Array = []
 	for i in range(20):
+		@warning_ignore("integer_division")
 		ids.append(sim.spawn(1, Vector2(1.5 + i % 5, 1.5 + i / 5), "infantry"))
 	var target: int = sim.spawn(2, Vector2(28.5, 10.5), "builder")
 	runner.check(Fixture.send(sim, {"type": "attack", "entity_ids": ids, "target_id": target}).ok, "RP1 attack accepted")

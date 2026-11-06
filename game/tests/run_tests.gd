@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 class_name WargridTestRunner
 extends SceneTree
 

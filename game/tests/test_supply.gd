@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 
 const Fixture = preload("res://tests/economy_fixture.gd")
@@ -86,6 +87,7 @@ func test_partial_load_and_conservation(runner) -> bool:
 			var cargo: int = Fixture.object(sim,world.collector).collection.cargo
 			var stock: int = Fixture.object(sim,world.source).boxes
 			var earned: int = sim.snapshot().players[0].credits - credits
+			@warning_ignore("integer_division")
 			runner.check(stock >= 0 and cargo >= 0 and stock + cargo + int(earned / 75) == boxes,"Su3 conservation every tick")
 			if earned == boxes * 75: break
 		runner.check(sim.snapshot().players[0].credits == credits + boxes * 75 and Fixture.object(sim,world.source).boxes == 0 and Fixture.object(sim,world.collector).collection.cargo == 0,"Su3 partial load fully deposited")

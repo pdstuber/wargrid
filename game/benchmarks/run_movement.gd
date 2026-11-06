@@ -9,7 +9,7 @@ func _initialize() -> void:
 func _run() -> void:
 	print("M2 HEADLESS engine=", Engine.get_version_info().string, " os=", OS.get_name(),
 		" cpu=", OS.get_processor_name(), " map=64x64 units=300 seed=none warmup_ticks=300 sample_ticks=1800 unpaced=true")
-	for layout in ["open", "dense"]:
+	for layout: String in ["open", "dense"]:
 		if not _measure(layout):
 			quit(1)
 			return
@@ -58,7 +58,7 @@ func _measure(layout: String) -> bool:
 			return false
 	completed += 1
 	var destinations: Dictionary = {}
-	for unit in sim.snapshot().entities:
+	for unit: Dictionary in sim.snapshot().entities:
 		if unit.destination == null or unit.position != unit.destination:
 			push_error("Benchmark did not arrive at destination")
 			return false
@@ -77,7 +77,7 @@ func _valid(state: Dictionary, leg_ticks: int) -> bool:
 	if leg_ticks > 3000:
 		push_error("Benchmark leg exceeded 3000 ticks")
 		return false
-	for unit in state.entities:
+	for unit: Dictionary in state.entities:
 		if unit.status == "blocked":
 			push_error("Benchmark blocked unit " + str(unit.id))
 			return false
@@ -85,6 +85,6 @@ func _valid(state: Dictionary, leg_ticks: int) -> bool:
 
 func _counts(state: Dictionary) -> Dictionary:
 	var counts := {"arrived": 0, "blocked": 0, "moving": 0, "path_pending": 0}
-	for unit in state.entities:
+	for unit: Dictionary in state.entities:
 		counts[unit.status] = counts.get(unit.status, 0) + 1
 	return counts

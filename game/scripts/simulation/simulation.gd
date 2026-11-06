@@ -43,7 +43,7 @@ var _rng: int = RNG_SEED
 
 func _init(blocked_cells: Array[Vector2i] = [], size: Vector2i = Navigation.SIZE) -> void:
 	_navigation = Navigation.new(blocked_cells, size)
-	for cell in _navigation.snapshot().blocked_cells:
+	for cell: Variant in _navigation.snapshot().blocked_cells:
 		_terrain_cells.append(Vector2i(cell[0],cell[1]))
 
 func next_random() -> int:
@@ -79,7 +79,7 @@ func spawn(owner: int, position: Vector2, kind: String = "vehicle", occupied: Va
 
 func occupied_cells() -> Dictionary:
 	var cells: Dictionary = {}
-	for unit in _entities.values():
+	for unit: Dictionary in _entities.values():
 		if unit.kind == "collector": continue
 		cells[_cell(unit.position)] = true
 		if unit.destination != null: cells[_cell(unit.destination)] = true
@@ -99,15 +99,15 @@ func start_match(players: Array[int]) -> Dictionary:
 	return {"ok":true,"error":""}
 
 func _survives(player: int) -> bool:
-	for unit in _entities.values():
+	for unit: Dictionary in _entities.values():
 		if unit.owner == player and unit.kind == "builder": return true
-	for building in _buildings.values():
+	for building: Dictionary in _buildings.values():
 		if building.owner == player and building.completed and building.kind in ["depot","barracks","factory"]: return true
 	return false
 
 func _evaluate_match() -> void:
 	var alive: Dictionary = {}
-	for player in _match.players:
+	for player: int in _match.players:
 		if _survives(player): alive[team_of(player)] = true
 	if alive.size() > 1: return
 	_match.status = "draw" if alive.is_empty() else "won"
@@ -123,7 +123,7 @@ func issue_command(command: Dictionary) -> Dictionary:
 	if not error.is_empty():
 		return {"ok":false,"error":error}
 	var normalized := {"tick":command.tick,"player":command.player,"sequence":command.sequence,"type":command.type}
-	for key in _payload_fields(command.type):
+	for key: Variant in _payload_fields(command.type):
 		normalized[key] = command[key].duplicate(true) if command[key] is Array else command[key]
 	if normalized.has("target"):
 		normalized.target = [float(command.target[0]),float(command.target[1])]
@@ -147,30 +147,30 @@ func _payload_fields(type: String) -> Array:
 	return []
 
 func _validate(command: Dictionary, due: bool = false) -> String:
-	for key in ["tick","player","sequence","type"]:
+	for key: String in ["tick","player","sequence","type"]:
 		if not command.has(key): return "Missing field: " + key
-	for key in ["tick","player","sequence"]:
+	for key: String in ["tick","player","sequence"]:
 		if typeof(command[key]) != TYPE_INT: return key + " must be an integer"
 	if (not due and command.tick < _tick) or command.player <= 0 or command.sequence < 0:
 		return "Invalid tick, player or sequence"
 	if not due and command.sequence <= _last_sequences.get(command.player,-1): return "Sequence must increase"
 	if typeof(command.type) != TYPE_STRING or _payload_fields(command.type).is_empty(): return "Unsupported command type"
 	var fields: Array = _payload_fields(command.type)
-	for key in fields:
+	for key: Variant in fields:
 		if not command.has(key): return "Missing field: " + key
-	for key in ["builder_id","building_id","production_id","source_id","target_id"]:
+	for key: String in ["builder_id","building_id","production_id","source_id","target_id"]:
 		if fields.has(key) and (typeof(command[key]) != TYPE_INT or command[key] <= 0): return "Invalid " + key
-	for key in ["building_kind","unit_kind"]:
+	for key: String in ["building_kind","unit_kind"]:
 		if fields.has(key) and typeof(command[key]) != TYPE_STRING: return "Invalid " + key
 	if fields.has("origin"):
 		if not command.origin is Array or command.origin.size() != 2: return "Expected integer origin"
-		for coordinate in command.origin:
+		for coordinate: Variant in command.origin:
 			if typeof(coordinate) != TYPE_INT: return "Expected integer origin"
 	var live: Array = []
 	if fields.has("entity_ids"):
 		if not command.entity_ids is Array or command.entity_ids.is_empty(): return "Expected nonempty entity array"
 		var seen: Dictionary = {}
-		for id in command.entity_ids:
+		for id: Variant in command.entity_ids:
 			if typeof(id) != TYPE_INT or id <= 0 or seen.has(id): return "Invalid or duplicate entity ID"
 			seen[id] = true
 		var found: Variant = _live_ids(command.player,command.entity_ids)
@@ -202,7 +202,7 @@ func _validate(command: Dictionary, due: bool = false) -> String:
 		var building: Dictionary = _buildings[command.building_id]
 		if building.owner != command.player or not building.completed: return "Invalid owned completed producer"
 		if command.type == "cancel_production":
-			for entry in building.queue:
+			for entry: Variant in building.queue:
 				if entry.id == command.production_id: return ""
 			return "Missing production entry"
 		var definition: Dictionary = Definitions.unit(command.unit_kind)
@@ -213,7 +213,7 @@ func _validate(command: Dictionary, due: bool = false) -> String:
 		return ""
 	if command.type == "gather":
 		if not _sources.has(command.source_id): return "Missing supply source"
-		for id in live:
+		for id: Variant in live:
 			if _entities[id].kind != "collector": return "Gather requires collectors"
 			if _sources[command.source_id].boxes == 0 and _entities[id].collection.cargo == 0: return "Source is empty"
 		return ""
@@ -221,29 +221,29 @@ func _validate(command: Dictionary, due: bool = false) -> String:
 
 func _validate_target(command: Dictionary, due: bool) -> String:
 	if not command.target is Array or command.target.size() != 2: return "Expected two target coordinates"
-	for coordinate in command.target:
+	for coordinate: Variant in command.target:
 		if typeof(coordinate) != TYPE_INT and typeof(coordinate) != TYPE_FLOAT: return "Target coordinates must be numbers"
 		if not is_finite(float(coordinate)): return "Target coordinates must be finite"
 	var target := Vector2(command.target[0],command.target[1])
 	if not _in_bounds(target): return "Target outside map"
 	if not due and command.has("entity_ids"):
-		for id in command.entity_ids:
+		for id: Variant in command.entity_ids:
 			if _entities.has(id) and _entities[id].kind != "collector" and not _navigation.is_walkable(target): return "Target must be walkable and within map"
 	return ""
 
 func _live_ids(player: int, ids: Array) -> Variant:
 	var live: Array = []
-	for id in ids:
+	for id: Variant in ids:
 		if not _entities.has(id): continue
 		if _entities[id].owner != player: return "Missing entity or wrong owner"
 		live.append(id)
 	return live
 
 func _armed(ids: Array) -> Array:
-	return ids.filter(func(id): return _entities[id].combat != null)
+	return ids.filter(func(id: int) -> bool: return _entities[id].combat != null)
 
 func _command_before(a: Dictionary, b: Dictionary) -> bool:
-	for key in ["tick", "player", "sequence"]:
+	for key: String in ["tick", "player", "sequence"]:
 		if a[key] != b[key]:
 			return a[key] < b[key]
 	return false
@@ -256,7 +256,7 @@ func _unavailable_cells(members: Array[Dictionary]) -> Array[Vector2i]:
 	for unit in members:
 		ids[unit.id] = true
 	var unavailable: Dictionary = {}
-	for unit in _entities.values():
+	for unit: Dictionary in _entities.values():
 		if unit.kind == "collector": continue
 		if not ids.has(unit.id):
 			unavailable[_cell(unit.position)] = true
@@ -300,12 +300,12 @@ func _apply_orders() -> void:
 			command.entity_ids = [command.builder_id]
 		if not command.has("entity_ids"): continue
 		due.append(command)
-		for id in command.entity_ids: final[id] = command
+		for id: Variant in command.entity_ids: final[id] = command
 	_pending = future
-	for id in final.keys():
+	for id: Variant in final.keys():
 		var intent: Dictionary = final[id]
 		if intent.type in ["build","resume_build"] and not _buildings.has(intent.building_id): final.erase(id)
-	for id in final:
+	for id: Variant in final:
 		_detach_task(_entities[id])
 		_entities[id].destination = null
 		_path_queue.erase(id)
@@ -313,7 +313,7 @@ func _apply_orders() -> void:
 		var members: Array[Dictionary] = []
 		var ids: Array = command.entity_ids.duplicate()
 		ids.sort()
-		for id in ids:
+		for id: Variant in ids:
 			if final.get(id) == command:
 				members.append(_entities[id])
 		if members.is_empty(): continue
@@ -443,7 +443,7 @@ func step() -> void:
 	Profiler.end(&"step.combat_plan", zone)
 	zone = Profiler.begin()
 	var rates: Dictionary = {}
-	for player in _player_snapshots(): rates[player.id] = player.work_rate
+	for player: Dictionary in _player_snapshots(): rates[player.id] = player.work_rate
 	Profiler.end(&"step.rates", zone)
 	zone = Profiler.begin()
 	Construction.step(self,rates)
@@ -481,7 +481,7 @@ func _assign_route(unit: Dictionary) -> void:
 	var from := Vector2(unit.position[0], unit.position[1])
 	var to := Vector2(unit.destination[0], unit.destination[1])
 	unit.route = []
-	for point in _navigation.route(from, to):
+	for point: Variant in _navigation.route(from, to):
 		unit.route.append(_frozen([point.x, point.y]))
 	if unit.route.size() > 1 and _behind(from, unit.route[0], unit.route[1]): unit.route.pop_front()
 	unit.status = "blocked" if unit.route.is_empty() else "moving"
@@ -500,7 +500,7 @@ static func _frozen(waypoint: Array) -> Array:
 
 func _entity_copy(unit: Dictionary) -> Dictionary:
 	var copy: Dictionary = unit.duplicate()
-	for key in copy:
+	for key: Variant in copy:
 		if key != "route" and (copy[key] is Array or copy[key] is Dictionary): copy[key] = copy[key].duplicate(true)
 	if not unit.route.is_read_only(): unit.route.make_read_only()
 	return copy
@@ -539,14 +539,14 @@ func _snapshot() -> Dictionary:
 	var entities: Array = []
 	var ids: Array = _entities.keys()
 	ids.sort()
-	for id in ids:
+	for id: Variant in ids:
 		entities.append(_entity_copy(_entities[id]))
 	var pending: Array = _pending.duplicate(true)
 	pending.sort_custom(_command_before)
 	var sequences: Array = []
 	var players: Array = _last_sequences.keys()
 	players.sort()
-	for player in players:
+	for player: Variant in players:
 		sequences.append({"player": player, "sequence": _last_sequences[player]})
 	return {"tick": _tick, "next_entity_id": _next_entity_id, "entities": entities,
 		"pending_commands": pending, "last_sequences": sequences, "map": _navigation.snapshot(), "path_queue": _path_queue.duplicate(), "players":_player_snapshots(true),"buildings":_sorted_copies(_buildings),"sources":_sorted_copies(_sources),"terrain_cells":_terrain_snapshot(),"next_production_id":_next_production_id,"command_results":_command_results.duplicate(true),"combat_events":_combat_events.duplicate(true),"match":_match.duplicate(true) if _match != null else null,"rng":_rng}
@@ -560,7 +560,7 @@ func replace_blocked_cells(cells: Array[Vector2i]) -> Dictionary:
 	for cell in cells:
 		if not bounds.has_point(cell): return {"ok":false,"error":"Obstacle outside map"}
 		if objects.has(cell): return {"ok":false,"error":"Obstacle overlaps building or source"}
-		for unit in _entities.values():
+		for unit: Dictionary in _entities.values():
 			if unit.kind != "collector" and _cell(unit.position) == cell: return {"ok":false,"error":"Obstacle would cover a unit"}
 	var unique: Dictionary = {}
 	for cell in cells: unique[cell] = true
@@ -582,7 +582,7 @@ func _replace_union(cells: Array[Vector2i], prebuilt: RefCounted = null) -> Dict
 	_path_queue.clear()
 	var ids: Array = _entities.keys()
 	ids.sort()
-	for id in ids:
+	for id: Variant in ids:
 		var unit: Dictionary = _entities[id]
 		if unit.kind == "collector": continue
 		if unit.status != "moving" and unit.status != "path_pending":
@@ -604,16 +604,16 @@ func _sorted_copies(records: Dictionary) -> Array:
 	var result: Array = []
 	var ids: Array = records.keys()
 	ids.sort()
-	for id in ids:
+	for id: Variant in ids:
 		result.append(records[id].duplicate(true))
 	return result
 
 func _player_snapshots(with_alive: bool = false) -> Array:
 	var result: Array = _sorted_copies(_players)
-	for player in result:
+	for player: Variant in result:
 		player.power_supply = 0
 		player.power_demand = 0
-		for building in _buildings.values():
+		for building: Dictionary in _buildings.values():
 			if building.owner != player.id or not building.completed: continue
 			var power: int = Definitions.building(building.kind).power
 			if power > 0: player.power_supply += power
@@ -662,15 +662,15 @@ func remove_object(id: int) -> Dictionary:
 
 func _has_prerequisite(player: int, kind: String) -> bool:
 	if kind.is_empty(): return true
-	for building in _buildings.values():
+	for building: Dictionary in _buildings.values():
 		if building.owner == player and building.kind == kind and building.completed: return true
 	return false
 
 func _union_cells() -> Array[Vector2i]:
 	var cells: Array[Vector2i] = _terrain_cells.duplicate()
-	for building in _buildings.values():
+	for building: Dictionary in _buildings.values():
 		cells.append_array(Construction.cells(building.kind,Vector2i(building.origin[0],building.origin[1])))
-	for source in _sources.values():
+	for source: Dictionary in _sources.values():
 		cells.append_array(Construction.cells("depot",Vector2i(source.origin[0],source.origin[1])))
 	return cells
 

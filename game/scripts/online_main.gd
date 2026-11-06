@@ -29,7 +29,7 @@ func _create_simulation() -> RefCounted:
 	return Skirmish.create(true, "human")
 
 func _step_simulation() -> void:
-	for text in _transport.poll(): _lockstep.receive(text)
+	for text: Variant in _transport.poll(): _lockstep.receive(text)
 	if not _finished and (_transport.closed() or _transport.silent(Time.get_ticks_usec())): _lockstep.set_relay_lost()
 	_credit = mini(_credit + 1, MAX_CATCH_UP_CREDIT)
 	for i in CATCH_UP_STEPS:

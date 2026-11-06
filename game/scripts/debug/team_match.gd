@@ -15,7 +15,7 @@ static func create() -> RefCounted:
 	for entry in SEATS:
 		seats.append({"seat": entry.seat, "team": entry.team, "controller": "ai", "credits": Skirmish.START_CREDITS})
 		ids.append(entry.seat)
-	var sim = MapData.create(MapData.load(MAP_PATH), seats)
+	var sim: RefCounted = MapData.create(MapData.load(MAP_PATH), seats)
 	sim.start_match(ids)
 	return sim
 

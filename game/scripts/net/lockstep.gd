@@ -94,7 +94,7 @@ func advance(sim: RefCounted) -> bool:
 	if not _verify_hashes(tick): return false
 	var now: int = _clock.call()
 	for s in _seats:
-		for command in _packets[s][tick].commands:
+		for command: Variant in _packets[s][tick].commands:
 			var result: Dictionary = sim.issue_command(command)
 			_command_log.append(command)
 			if s != _seat: continue
@@ -108,18 +108,18 @@ func advance(sim: RefCounted) -> bool:
 	return true
 
 func finish_tick(tick: int, state: Variant) -> void:
-	var hash: Variant = null
+	var hash_entry: Variant = null
 	if state != null and tick % _hash_interval == 0:
 		var value: String = StateHash.digest(state)
 		_own_hashes[tick] = value
 		_hash_order.append(tick)
 		_hash_snapshot = state
-		hash = {"tick": tick, "value": value}
+		hash_entry = {"tick": tick, "value": value}
 	var packet_tick: int = tick + _delay
 	var commands: Array = _queue
 	_queue = []
 	var zone: int = Profiler.begin()
-	var text: String = Wire.encode(Wire.tick_message(_seat, packet_tick, commands, hash))
+	var text: String = Wire.encode(Wire.tick_message(_seat, packet_tick, commands, hash_entry))
 	_packets[_seat][packet_tick] = Wire.decode(text).message
 	Profiler.end(&"lockstep.encode", zone)
 	_last_sent = packet_tick
@@ -161,8 +161,8 @@ func desync_report() -> Dictionary:
 func _ended() -> bool:
 	return _status.begins_with("ended")
 
-func _end(status: String, reason: String) -> bool:
-	_status = status
+func _end(final_status: String, reason: String) -> bool:
+	_status = final_status
 	_end_reason = reason
 	return false
 
@@ -174,7 +174,7 @@ func _receive_tick(message: Dictionary) -> void:
 	if message.tick != _last_received[s] + 1:
 		_end("ended_protocol", "tick out of order")
 		return
-	for command in message.commands:
+	for command: Dictionary in message.commands:
 		if command.get("player") != s or command.get("tick") != message.tick:
 			_end("ended_protocol", "bad command stamp")
 			return
@@ -192,9 +192,9 @@ func _verify_hashes(tick: int) -> bool:
 	for s in _seats:
 		var packet: Dictionary = _packets[s][tick]
 		if not packet.has("hash"): continue
-		var hash: Dictionary = packet.hash
-		if _own_hashes.get(hash.tick) != hash.value:
-			_desync_tick = hash.tick
-			_end("ended_desync", "hash mismatch at tick %d (seat %d)" % [hash.tick, s])
+		var hash_entry: Dictionary = packet.hash
+		if _own_hashes.get(hash_entry.tick) != hash_entry.value:
+			_desync_tick = hash_entry.tick
+			_end("ended_desync", "hash mismatch at tick %d (seat %d)" % [hash_entry.tick, s])
 			return false
 	return true

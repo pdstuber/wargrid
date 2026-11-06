@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 
 const Iso = preload("res://scripts/presentation/isometric.gd")
