@@ -17,7 +17,10 @@ var _inspected_id: int = -1
 var local_player: int = 1
 var _hints: Array[Dictionary] = []
 var _hovered_id: int = -1
+var _building_shots: Dictionary = {}
 const HINT_TICKS: int = 40
+const SHOT_TICKS: int = 6
+const MUZZLE_LIFT: float = 20.0
 const HEALTH_BAR := Vector2(24, 3)
 const OWNER_COLORS := {1: Color("376eac"), 2: Color("b04a3a")}
 
@@ -38,6 +41,7 @@ func set_state(state: Dictionary, selected_ids: Array[int]) -> void:
 	Profiler.end(&"view.sort", zone)
 	zone = Profiler.begin()
 	_remember_points()
+	_remember_building_shots()
 	Profiler.end(&"view.points", zone)
 	queue_redraw()
 
@@ -249,13 +253,37 @@ static func line_position(entities: Array, unit: Dictionary) -> int:
 	return place
 
 func _draw_cues() -> void:
+	for line: Dictionary in battery_target_lines(): draw_line(line.from, line.to, Color("ff3b30"), 1.5)
+	for line: Dictionary in _building_shots.values(): draw_line(line.from, line.to, Color("ffe680"), 2.0)
 	for event: Dictionary in _state.get("combat_events", []):
-		if event.type == "shot" and _last_points.has(event.attacker_id) and _last_points.has(event.target_id):
+		if event.type == "shot" and not _building_shots.has(event.attacker_id) and _last_points.has(event.attacker_id) and _last_points.has(event.target_id):
 			draw_line(_last_points[event.attacker_id], _last_points[event.target_id], Color("ffe680"), 2.0)
 		elif event.type == "death" and _last_points.has(event.object_id):
 			var at: Vector2 = _last_points[event.object_id]
 			draw_line(at - Vector2(7, 7), at + Vector2(7, 7), Color("ff5030"), 3.0)
 			draw_line(at - Vector2(7, -7), at + Vector2(7, -7), Color("ff5030"), 3.0)
+
+# Keyed by attacker so a stalled tick re-seeing the same event stays one line.
+func _remember_building_shots() -> void:
+	var tick: int = _state.get("tick", 0)
+	for id: int in _building_shots.keys():
+		if tick > _building_shots[id].tick + SHOT_TICKS: _building_shots.erase(id)
+	var building_ids := {}
+	for building: Dictionary in _state.get("buildings", []): building_ids[building.id] = true
+	for event: Dictionary in _state.get("combat_events", []):
+		if event.type == "shot" and building_ids.has(event.attacker_id) and _last_points.has(event.attacker_id) and _last_points.has(event.target_id):
+			_building_shots[event.attacker_id] = {"from": _last_points[event.attacker_id] + Vector2(0, -MUZZLE_LIFT), "to": _last_points[event.target_id], "tick": event.tick}
+
+func building_shot_lines() -> Array:
+	return _building_shots.values()
+
+func battery_target_lines() -> Array[Dictionary]:
+	var lines: Array[Dictionary] = []
+	for building: Dictionary in _state.get("buildings", []):
+		var combat: Variant = building.get("combat")
+		if not _selected_ids.has(building.id) or combat == null or combat.target_id == null or not _last_points.has(combat.target_id): continue
+		lines.append({"from": _last_points[building.id] + Vector2(0, -MUZZLE_LIFT), "to": _last_points[combat.target_id]})
+	return lines
 
 func _remember_points() -> void:
 	var points := {}

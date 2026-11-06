@@ -5,10 +5,11 @@ const View = preload("res://scripts/presentation/world_view.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Fixture = preload("res://tests/economy_fixture.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
+const CombatFixture = preload("res://tests/combat_fixture.gd")
 const MovementWorkload = preload("res://scripts/debug/movement_workload.gd")
 
 func cases() -> Array[Callable]:
-	return [test_pick, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_heading_mark_layout,test_depth_order_matches_comparator]
+	return [test_pick, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_heading_mark_layout,test_depth_order_matches_comparator,test_battery_shot_line,test_battery_target_line]
 
 func test_pick(runner) -> bool:
 	var view = View.new()
@@ -172,5 +173,54 @@ func test_depth_order_matches_comparator(runner) -> bool:
 		return a.id < b.id if depth_a == depth_b else depth_a < depth_b)
 	var got: Array = view._state.entities.map(func(u): return u.id)
 	runner.check(state.entities.size() == 300 and got == expected.map(func(u): return u.id), "VW2 depth order matches the comparator")
+	view.free()
+	return true
+
+func _battery_world(with_tank: bool = true) -> Array:
+	var sim = CombatFixture.world()
+	sim.add_player(1, 10000)
+	sim.add_player(2, 0)
+	Fixture.add_completed(sim, 1, "usa_power_plant", Vector2i(1, 1))
+	var battery: int = Fixture.add_completed(sim, 1, "usa_defence", Vector2i(10, 10))
+	var tank: int = sim.spawn(2, Vector2(16.5, 10.5), "usa_tank") if with_tank else -1
+	return [sim, battery, tank]
+
+func test_battery_shot_line(runner) -> bool:
+	var view = View.new()
+	var world: Array = _battery_world()
+	var sim = world[0]
+	sim.step()
+	var state: Dictionary = sim.snapshot()
+	view.set_state(state, [])
+	var lines: Array = view.building_shot_lines()
+	var centre: Vector2 = view._last_points[world[1]]
+	runner.check(lines.size() == 1 and lines[0].from == centre + Vector2(0, -View.MUZZLE_LIFT), "V5 battery shot starts at the lifted muzzle")
+	runner.check(lines.size() == 1 and lines[0].to == view._last_points[world[2]], "V5 battery shot ends at the target")
+	view.set_state(state, [])
+	runner.check(view.building_shot_lines().size() == 1, "V5 a stalled tick keeps one line")
+	var shot_tick: int = lines[0].tick
+	var alive := 0
+	for i in 8:
+		view.set_state(_tick_state(sim, 1), [])
+		if view.building_shot_lines().any(func(l: Dictionary) -> bool: return l.tick == shot_tick): alive += 1
+	runner.check(alive == View.SHOT_TICKS - 1, "V5 line lives SHOT_TICKS ticks, got " + str(alive + 1))
+	view.free()
+	return true
+
+func test_battery_target_line(runner) -> bool:
+	var view = View.new()
+	var world: Array = _battery_world()
+	var sim = world[0]
+	sim.step()
+	var state: Dictionary = sim.snapshot()
+	view.set_state(state, [])
+	runner.check(view.battery_target_lines().is_empty(), "V6 unselected battery draws no target line")
+	view.set_state(state, [world[1]])
+	var lines: Array = view.battery_target_lines()
+	runner.check(lines.size() == 1 and lines[0].to == view._last_points[world[2]], "V6 selected battery draws a line to its target")
+	var idle = _battery_world(false)
+	idle[0].step()
+	view.set_state(idle[0].snapshot(), [idle[1]])
+	runner.check(view.battery_target_lines().is_empty(), "V6 selected battery without a target draws none")
 	view.free()
 	return true
