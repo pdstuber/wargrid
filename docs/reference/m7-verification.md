@@ -5,15 +5,15 @@ Plan: [M7 plan](../superpowers/plans/2026-11-06-m7-factions.md). Design: [M7 des
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-06, bot wave update on top of gate 1)
-Branch / base commit / working-tree state: m7-factions, HEAD 06f570e; UNCOMMITTED: game/scripts/simulation/skirmish.gd, game/tests/{run_tests,test_skirmish,test_skirmish_match,test_team_match}.gd, new game/tests/test_skirmish_waves.gd(+.uid), tools/run_netplay.sh, this file; nothing pushed
-Last green task / next incomplete task: Task 11 + bot wave update / gate 1 stop: user playtest (offline and online) and CI on Linux and Windows (push needs approval)
-Changed paths since last commit: see working-tree state
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 344 cases / 134,353 / 0, exit 0, TESTS PASSED 134353; lint, warnings (84 files), ruff, mypy, unittest pass; netplay match terminal 8331 pass; team match won tick 33205 winner 1; no benchmarks run (the bot change affects scripted-match benchmarks: rerun at the next benchmark pass)
-Known red case or blocker: none (combat stress rows still exceed the 1.82 / 3.64 budget: reported, not loosened). WAVE_MIN is 6, not the suggested 8: 8 left the team match unfinished at the cap (see Bot wave update)
-Approved decisions, pre-authorizations used, deferred gates: as before; user decision 2026-11-06 bot waves (rules 1-3). Open for the user: WAVE_MIN 6 vs 8; Dozer mid-turn dip; analyze.py burst/reach tolerance
+Resume record (updated 2026-11-06, gate 1 signed off)
+Branch / base commit / working-tree state: m7-factions rebased onto main 025540d, HEAD after the rendered-row commit; tree clean; nothing pushed
+Last green task / next incomplete task: Task 11 (gate 1) signed off by the user 2026-11-06 / push for CI on Linux and Windows (approval needed), then STOP: gate 2 is an outline
+Changed paths since last commit: none
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 344 cases / 134,353 / 0, exit 0, TESTS PASSED 134353 (067bf58); lint, warnings, ruff, mypy, unittest, netplay match 8331, team match won tick 33205 winner 1, run_benchmark.sh exit 0, rendered movement benchmark PASSED 2 (all on the bot wave tree); ledger rows added
+Known red case or blocker: none (combat stress rows exceed the 1.82 / 3.64 budget: reported, not loosened)
+Approved decisions, pre-authorizations used, deferred gates: user sign-off of gate 1 and its visuals 2026-11-06; WAVE_MIN 6 accepted "for now" (revisit at M8 research and gates 2-3); rulings as logged in the sections above. Open for the user: analyze.py burst/reach tolerance, Dozer mid-turn dip, team match winner flip (accepted by silence, not stated)
 Usage so far: not recorded
-Next exact action: user playtest offline and online, commit the bot wave update on approval, push for CI (approval needed), then STOP: gate 2 is an outline.
+Next exact action: ask the user to approve a push for CI on Linux and Windows (compare_local_traces for macOS); then the user starts an Opus (high) planning session that expands gate 2 into steps with the playtest carry-over items (see the plan's gate 2 outline). Do not begin any G2 item.
 ```
 
 ## Pins at base
