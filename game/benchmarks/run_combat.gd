@@ -8,6 +8,8 @@ const WARMUP: int = 300
 const SAMPLES: int = 1800
 # Report-only stress rows, pinned at the worst of 13 runs + 5% (user decision 2026-11-03); raise only with user approval and a ledger line.
 const STRESS_CEILING := {"open": [2.05, 3.86], "dense": [2.52, 4.02]}
+const BUDGET_P95_MS: float = 1.82
+const BUDGET_P99_MS: float = 3.64
 
 func _initialize() -> void:
 	_run.call_deferred()
@@ -68,12 +70,12 @@ func _measure(layout: String) -> bool:
 	if STRESS_CEILING.has(layout):
 		var ceiling: Array = STRESS_CEILING[layout]
 		var within: bool = summary.p95 <= ceiling[0] and summary.p99 <= ceiling[1]
-		print("COMBAT STRESS ", "PASS" if within else "FAIL", " ", layout, " exceeds the 1.67/3.3 budget, report-only; ceiling p95/p99 ", ceiling)
+		print("COMBAT STRESS ", "PASS" if within else "FAIL", " ", layout, " exceeds the ", BUDGET_P95_MS, "/", BUDGET_P99_MS, " budget, report-only; ceiling p95/p99 ", ceiling)
 		if not within:
 			push_error("Combat stress ceiling exceeded for " + layout)
 			return false
 	else:
-		var within_budget: bool = summary.p95 <= 1.67 and summary.p99 <= 3.3
+		var within_budget: bool = summary.p95 <= BUDGET_P95_MS and summary.p99 <= BUDGET_P99_MS
 		print("COMBAT BUDGET ", "PASS" if within_budget else "FAIL", " ", layout, " simulation_only")
 		if not within_budget:
 			push_error("Combat budget exceeded for " + layout)

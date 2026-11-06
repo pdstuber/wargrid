@@ -8,7 +8,7 @@ const Simulation = preload("res://scripts/simulation/simulation.gd")
 
 const WARMUP: int = 300
 const SAMPLES: int = 1800
-const BUDGET_P99_MS: float = 0.55
+const BUDGET_P99_MS: float = 0.6
 
 func _initialize() -> void:
 	_run.call_deferred()

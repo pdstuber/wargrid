@@ -1,10 +1,10 @@
 # Performance ledger
 
-Status: **TARGET-DERIVED BUDGETS PROPOSED; TWO OF FOUR CURRENTLY EXCEEDED; TWO COMBAT STRESS LAYOUTS EXCEEDED (REPORT-ONLY); EXISTING GATES UNCHANGED**. One place to track performance across milestones for a low-end target, including a browser (WebAssembly) build. Measurements on this Mac are weak evidence for that target; this note makes the assumption explicit and replaceable.
+Status: **BUDGETS DERIVED FROM MEASURED F = 5.5 (2026-11-06); TWO OF FOUR CURRENTLY EXCEEDED; TWO COMBAT STRESS LAYOUTS EXCEEDED (REPORT-ONLY); EXISTING GATES UNCHANGED**. One place to track performance across milestones for a low-end target, including a browser (WebAssembly) build. Measurements on this Mac are weak evidence for that target; this note makes the assumption explicit and replaceable.
 
-## Target device (assumption, not measured)
+## Target device (measured 2026-11-06)
 
-- **Slowdown factor F = 6** relative to the development machine (Apple M6, 12 cores). This is a chosen planning number, not a measurement. Replace it with the factor from a real web export under Chrome CPU throttling or on real low-end hardware as soon as one exists; every derived budget below is `target budget ÷ F`. I have no data on how GDScript performs under WebAssembly, and render/GPU slowdown need not equal CPU slowdown.
+- **Slowdown factor F = 5.5** relative to the development machine (Apple M6, 12 cores, editor build as run by `run_benchmark.sh`). User decision 2026-11-06: the browser is a target next to desktop, so F comes from the browser run on a Steam Deck (Firefox, WebAssembly: 4.9–5.45 across rows); the Deck runs natively at 3.4–4.2. Replaces the chosen F = 6 (and the M6 Steam-survey/PassMark proxy of about 4.2). Every derived budget below is `target budget ÷ F`. Measurements and caveats (Chrome and rendering not measured): [target factor measurement](#target-factor-measurement-2026-11-06).
 - Simulation 30 Hz: a tick is 33.3 ms. Render goal 60 fps: 16.7 ms.
 
 ## Budgets
@@ -13,11 +13,11 @@ Existing gates (unchanged, in `game/benchmarks/run_movement.gd` and the rendered
 
 | Metric | Share chosen on target | Target budget | Dev-machine budget (÷F) | Current (dev machine) | Status |
 |---|---|---:|---:|---:|---|
-| Sim-only tick p95 (300 units moving, includes command allocation) | 30% of a tick | 10 ms | 1.67 ms | 1.50 open / 1.53 dense | passes, about 9–10% margin (headless benchmark 2026-11-03) |
-| Sim-only tick p99 | 60% of a tick | 20 ms | 3.3 ms | 1.57 / 1.60 | passes |
-| Presentation plumbing per tick (`snapshot` + view deep copy + sort) | 15% of a tick | 5 ms | 0.83 ms | about 1.9 ms (0.69 + 0.67 + 0.57, scratch probe, not a repo tool yet); snapshot size is gated by node count below | **exceeded** |
-| Rendered frame interval p95 (300 units, vsync off, includes tick frames) | full frame | 16.7 ms | 2.8 ms | 4.1 open / 6.5 dense | **exceeded** |
-| Lockstep overhead per tick p99 (`finish_tick` + `receive`: encode, decode, digest on hash ticks; excludes sim step and snapshot) | 10% of a tick | 3.3 ms | 0.55 ms | 0.060 (contact) | passes |
+| Sim-only tick p95 (300 units moving, includes command allocation) | 30% of a tick | 10 ms | 1.82 ms | 1.59 open / 1.58 dense | passes, about 13% margin (idle Mac 2026-11-06) |
+| Sim-only tick p99 | 60% of a tick | 20 ms | 3.64 ms | 1.78 / 1.83 | passes |
+| Presentation plumbing per tick (`snapshot` + view deep copy + sort) | 15% of a tick | 5 ms | 0.91 ms | about 1.9 ms (0.69 + 0.67 + 0.57, scratch probe, not a repo tool yet); snapshot size is gated by node count below | **exceeded** |
+| Rendered frame interval p95 (300 units, vsync off, includes tick frames) | full frame | 16.7 ms | 3.04 ms | 5.4 open / 6.7 dense (M6 Task 13) | **exceeded** |
+| Lockstep overhead per tick p99 (`finish_tick` + `receive`: encode, decode, digest on hash ticks; excludes sim step and snapshot) | 10% of a tick | 3.3 ms | 0.6 ms | 0.067 (contact) | passes |
 
 Watch items, no gate: worst sim tick 7.8 ms on the dev machine (command ticks, path queue burst), which would be about 47 ms on the target, longer than a tick. Dense-map worst rendered frame 19.5 ms.
 
@@ -127,7 +127,7 @@ Not feasible or not done:
 
 ## Not covered yet
 
-CI does not run any benchmark; trend logging on the Linux/Windows/macOS runners (slower than the dev machine) is a candidate. A web export under CPU throttling would replace F with a measurement.
+CI does not run any benchmark; trend logging on the Linux/Windows/macOS runners (slower than the dev machine) is a candidate. Not measured for F: Chrome (V8), rendering on the Deck, the Deck in Game Mode.
 Per-zone profiling (`sh tools/run_profile.sh`, report-only) and the ranked hotspot tasks live in the [performance spike](performance-spike.md); none is approved.
 | 2026-11-04 M5 Task 8 lockstep benchmark (`m5-online`, Apple M6, headless, `contact` layout, 300 warmup + 1800 sample ticks, delay 4, hash every 30) | lockstep overhead per tick p50 / p95 / p99 / max (ms); snapshot on the 60 hash ticks p50 / p95 / p99 (ms, reported, presentation cost) | 0.007 / 0.014 / 0.060 / 0.164; 0.059 / 0.140 / 0.179 | | `sh tools/run_benchmark.sh`, `LOCKSTEP BUDGET PASS`, `LOCKSTEP BENCHMARK PASSED 1`; window asserts 60 hash ticks and a non-empty packet in all 60 thirty-tick windows; 32 of 300 units alive at end. Two instances, one sim stepped; peer-side digest not timed. Rendered rerun pending user approval (batch with Task 10) |
 | 2026-11-04 M5 Task 11 exit-gate rerun (`m5-online` fd1c914, Apple M6, headless) | `sh tools/run_benchmark.sh` exit 0; lockstep overhead p50 / p95 / p99 / max 0.007 / 0.014 / 0.060 / 0.186 ms vs 0.55 ms budget, snapshot on hash ticks p99 0.183 ms; movement and combat budgets PASS unchanged; rendered rerun not run (needs approval) |
@@ -136,3 +136,38 @@ Per-zone profiling (`sh tools/run_profile.sh`, report-only) and the ranked hotsp
 | 2026-11-05 performance spike (`spike-performance` on 781ab5a plus uncommitted zones, Apple M6, idle machine) | `sh tools/run_benchmark.sh` exit 0 with zones compiled in and off: movement p95 1.587 / 1.615 ms, combat open / dense / contact / skirmish3v3 p95 1.634 / 2.155 / 0.739 / 0.856, lockstep p99 0.069; no measurable zone overhead. Rendered (`-- --profile`): open / dense frame p95 4.71 / 5.75 ms, 603 / 747 draw calls, `RENDERED BENCHMARK PASSED 2`; synthetic 196×196 leg about 5 fps. Breakdown and tasks: [performance spike](performance-spike.md) |
 | 2026-11-05 M6 Task 13 headless rerun (`m6-teams-map` 9310a2f, Apple M6) | `sh tools/run_benchmark.sh` exit 1: movement open / dense p95 1.514 / 1.506 ms, p99 1.637 / 1.686 PASS (BM6 re-pinned 18500/16000 by user 2026-11-05); COMBAT STRESS open p95 / p99 2.404 / 3.395 ms vs ceiling 2.05 / 3.86 EXCEEDED (user-accepted 2026-11-05, not loosened), the script stops at that `push_error` so combat dense / contact / skirmish3v3 are unmeasured on this tree. Team match (`run_team_match.sh`, exit 0, winner 1, tick 20000, units peak 301; units mean not printed with the profiler off): step wall p95 / p99 2.39 / 5.56 ms vs 1.67 / 3.3 EXCEEDED (path-finding bursts, user-accepted, options open) | budgets above |
 | 2026-11-05 M6 Task 13 rendered rerun (`m6-teams-map` 9310a2f, Apple M6, `vsync=off`, 300 units) | open: tick p50 / p95 / p99 2.351 / 2.532 / 2.669 ms, frame interval p50 / p95 / p99 1.545 / 5.363 / 7.157 ms, 603 draw calls; dense: tick 2.426 / 2.621 / 2.774, frame 1.824 / 6.674 / 8.641 ms, 747 draw calls; `RENDERED BENCHMARK PASSED 2`. Heading-mark look not checked (no screenshot requested) | budgets above |
+| 2026-11-06 target factor measurement (`spike-target-factor` on 63f5a9a, idle Apple M6 and a Steam Deck) | F per row in the section below; derived budgets now 1.82 / 3.64 ms (sim p95 / p99), 0.91 (plumbing), 3.04 (frame), 0.6 (lockstep) | user chose F = 5.5 (browser target) |
+
+## Target factor measurement (2026-11-06)
+
+Same tree (`63f5a9a`, plus the bench runner on branch `spike-target-factor`), Godot 4.7.2 `ed1daf0bf` on both machines, one run per configuration (expect about ±5%). Development machine: Apple M6, idle (load about 1.7, World of Warcraft closed; an earlier loaded run was 5–8% slower). Target: Steam Deck (AMD Custom APU 0932, SteamOS 3.9.5, Desktop Mode, on mains power). Browser runs used the no-threads release web export, cross-origin isolated (`crossOriginIsolated` true); without isolation Safari and Firefox round timers to 1 ms.
+
+p95 / p99 sim tick (ms); F = row ÷ Mac editor build.
+
+| Row | Mac editor | Deck editor | Deck release | Deck Firefox (WASM) | F native (editor) | F browser |
+|---|---|---|---|---|---|---|
+| movement open | 1.588 / 1.779 | 6.594 / 7.063 | 5.396 / 6.814 | 8.54 / 9.30 | 4.15 / 3.97 | 5.38 / 5.23 |
+| movement dense | 1.575 / 1.830 | 6.664 / 7.197 | 5.390 / 6.282 | 8.58 / 9.58 | 4.23 / 3.93 | 5.45 / 5.23 |
+| combat open | 2.380 / 3.342 | 8.451 / 11.719 | 6.793 / 9.408 | 11.86 / 16.70 | 3.55 / 3.51 | 4.98 / 5.00 |
+| combat dense | 2.665 / 4.228 | 9.317 / 14.268 | 7.516 / 11.521 | 13.32 / 21.16 | 3.50 / 3.37 | 5.00 / 5.00 |
+| combat contact | 1.006 / 1.401 | 3.530 / 4.836 | 2.800 / 3.802 | 5.04 / 6.88 | 3.51 / 3.45 | 5.01 / 4.91 |
+| combat skirmish3v3 | 1.209 / 1.369 | 4.247 / 4.842 | 3.427 / 3.920 | 6.02 / 6.86 | 3.51 / 3.54 | 4.98 / 5.01 |
+| team match (Ashfall 3v3, profiler on) | 2.411 / 5.512 | 9.100 / 20.448 | 7.544 / 17.402 | 12.74 / 28.04 | 3.77 / 3.71 | 5.28 / 5.09 |
+| lockstep overhead p99 | 0.067 | 0.226 | – | – | 3.37 | – |
+
+Other ratios: release builds run 18–20% faster than the editor build on both machines (Mac release p95 in table order: 1.312 / 1.316 / 1.900 / 2.114 / 0.821 / 0.981 / 1.948). WebAssembly against native release on the same hardware: 1.6–1.8× (Deck Firefox), about 1.6× (Mac Safari p95 in table order: 2.12 / 2.12 / 3.14 / 3.52 / 1.32 / 1.58 / 3.12). The bench runner reproduces the benchmark scripts within about 1% on the Mac editor build (team match ends at the same tick, 20425).
+
+Deck against the target budgets directly (10 / 20 ms): native editor build passes every row except the team match p99 (20.45 ms, 2% over); native release passes all. Firefox fails combat open p95 (11.9), combat dense (13.3 / 21.2) and the team match (12.7 / 28.0, worst tick 65 ms, about two ticks). The team match worst tick is longer than a 33.3 ms tick on every Deck configuration (47.6 editor, 38.6 release).
+
+Rerun (report-only, never gates):
+
+```sh
+godot --headless --path game --import
+godot --headless --path game --script res://benchmarks/bench_runner.gd        # editor build, any machine with the repo
+sh tools/export_build.sh "Linux Bench" build/linux/WargridBench.x86_64       # also "macOS Bench" → build/macos/WargridBench.app
+build/linux/WargridBench.x86_64 --headless                                    # release build
+sh tools/export_build.sh "Web Bench" build/web-bench/index.html
+python3 -I tools/serve_web_bench.py build/web-bench build/web-results         # then open http://127.0.0.1:8060/ in the browser, tab in front
+```
+
+The `wargrid_bench` feature tag (presets `Web Bench`, `macOS Bench`, `Linux Bench`) swaps the main loop to `WargridBenchRunner`, which runs the movement, combat and team-match workloads in 30-tick chunks per frame and prints the benchmark summary lines; the web build posts them to the server's `/result`, which writes one log per run. On another device, copy the export and the server there and open the page on its own localhost (cross-origin isolation needs a secure context).
