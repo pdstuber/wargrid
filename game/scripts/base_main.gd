@@ -3,6 +3,7 @@ extends "res://scripts/main.gd"
 const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const Construction = preload("res://scripts/simulation/construction.gd")
+const UiStyle = preload("res://scripts/presentation/ui_style.gd")
 const MENU_COLUMNS: int = 4
 var selected_building_id: int = -1
 var _placement_kind: String = ""
@@ -14,6 +15,8 @@ var _preview_key: Array = []
 var _menu: Array = []
 
 func _ready() -> void:
+	$HUD/Status.theme = UiStyle.hud_theme()
+	$HUD/Economy.theme = UiStyle.hud_theme()
 	var menu := GridContainer.new()
 	menu.name = "BuildMenu"
 	menu.columns = MENU_COLUMNS
@@ -75,7 +78,8 @@ func _refresh_hud(state: Dictionary) -> void:
 	var detail: String = "Units: " + str(selected_ids)
 	if not building.is_empty(): detail = "%s #%d | Work %d/%d" % [Registry.kind(building.kind).display_name,building.id,building.work,Definitions.building(building.kind).ticks * 1000]
 	var resume: String = "Right-click: resume\n" if _view.resume_candidate() != -1 else ""
-	_status.text = "Credits: %d | Power: %d/%d | Tick: %d\n%s | Place: %s\n%s | Right: context/move | E: produce | Esc: cancel\n%s%s" % [player.credits,player.power_supply,player.power_demand,state.tick,detail,_placement_kind,_build_hint(),resume,_error]
+	var placing: String = Registry.kind(_placement_kind).get("display_name","")
+	_status.text = "Credits: %d | Power: %d/%d | Tick: %d\n%s | Place: %s\n%s | Right: context/move | E: produce | Esc: cancel\n%s%s" % [player.credits,player.power_supply,player.power_demand,state.tick,detail,placing,_build_hint(),resume,_error]
 	$HUD/Economy/Produce.visible = not building.is_empty() and building.completed and not _production_kind(building).is_empty()
 	$HUD/Economy/CancelBuild.visible = not building.is_empty() and not building.completed
 	_refresh_menu(_menu_kinds(state,building))

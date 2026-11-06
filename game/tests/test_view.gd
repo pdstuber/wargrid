@@ -5,11 +5,12 @@ const View = preload("res://scripts/presentation/world_view.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Fixture = preload("res://tests/economy_fixture.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
+const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const CombatFixture = preload("res://tests/combat_fixture.gd")
 const MovementWorkload = preload("res://scripts/debug/movement_workload.gd")
 
 func cases() -> Array[Callable]:
-	return [test_pick, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_heading_mark_layout,test_depth_order_matches_comparator,test_battery_shot_line,test_battery_target_line]
+	return [test_pick, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_heading_mark_layout,test_depth_order_matches_comparator,test_battery_shot_line,test_battery_target_line,test_building_icons,test_building_label_has_no_kind_id]
 
 func test_pick(runner) -> bool:
 	var view = View.new()
@@ -223,4 +224,32 @@ func test_battery_target_line(runner) -> bool:
 	view.set_state(idle[0].snapshot(), [idle[1]])
 	runner.check(view.battery_target_lines().is_empty(), "V6 selected battery without a target draws none")
 	view.free()
+	return true
+
+func test_building_icons(runner) -> bool:
+	var expected := {"usa_command_center": "command", "usa_power_plant": "power", "usa_supply_center": "supply", "usa_barracks": "barracks", "usa_factory": "factory", "usa_defence": "battery"}
+	for kind: String in expected: runner.check(View.icon_name(kind) == expected[kind], "I1 %s icon, got %s" % [kind, View.icon_name(kind)])
+	for kind: String in Registry.buildings(): runner.check(not Registry.icon(kind).is_empty(), "I1 %s defines an icon" % kind)
+	Registry.add_test_kind("test_depot", {"display_name": "Zeta Depot", "footprint": Vector2i(1, 1)})
+	runner.check(View.icon_name("test_depot").is_empty() and View.fallback_letter("test_depot") == "Z", "I2 no icon falls back to the display-name initial")
+	Registry.add_test_kind("test_other", {"display_name": "Other", "icon": "factory", "footprint": Vector2i(1, 1)})
+	runner.check(View.icon_name("test_other") == "factory", "I2 a new kind picks its glyph from data alone")
+	Registry.add_test_kind("test_odd", {"display_name": "Odd", "icon": "unheard_of", "footprint": Vector2i(1, 1)})
+	runner.check(View.icon_name("test_odd").is_empty() and View.fallback_letter("test_odd") == "O", "I2 an unknown icon name falls back too")
+	Registry.clear_test_kinds()
+	for size in [1, 2, 3]:
+		var radius: float = View.icon_radius(Vector2i(size, size + 1))
+		runner.check(3.0 * radius <= 32.0 * size, "I3 glyph box stays inside a %d-cell diamond" % size)
+		runner.check(radius < 23.0, "I3 glyph clear of the health bar at %d cells" % size)
+	return true
+
+func test_building_label_has_no_kind_id(runner) -> bool:
+	var sim = Fixture.make_world()
+	Fixture.send(sim, {"type":"build","builder_id":1,"building_kind":"usa_power_plant","origin":[8,4]})
+	sim.step()
+	var building: Dictionary = sim.snapshot().buildings[0]
+	var label: String = View.building_label(building)
+	runner.check(not label.contains("usa_") and not label.contains("P1") and label.ends_with("%"), "I4 progress label is just the percent, got " + label)
+	building.completed = true
+	runner.check(View.building_label(building).is_empty(), "I4 a completed building has no world text")
 	return true

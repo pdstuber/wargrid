@@ -5,6 +5,9 @@ const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
+const UiStyle = preload("res://scripts/presentation/ui_style.gd")
+const ICONS: Array[String] = ["command", "power", "supply", "barracks", "factory", "battery"]
+const LABEL_WIDTH: float = 160.0
 const DEPTH_SCALE := 1024.0
 const INDEX_BITS := 20
 const INDEX_MASK := (1 << 20) - 1
@@ -65,10 +68,27 @@ func set_hovered(id: int) -> void:
 	_hovered_id = id
 
 static func building_label(building: Dictionary) -> String:
-	var definition: Dictionary = Definitions.building(building.kind)
-	if building.completed: return "P%d %s" % [building.owner,building.kind]
-	var label: String = "P%d %s %d%%" % [building.owner,building.kind,building.work * 100 / (definition.ticks * 1000)]
+	if building.completed: return ""
+	var label: String = "%d%%" % (building.work * 100 / (Definitions.building(building.kind).ticks * 1000))
 	return label + " paused" if building.builder_id == null else label
+
+static func icon_name(kind: String) -> String:
+	var icon: String = Registry.icon(kind)
+	return icon if ICONS.has(icon) else ""
+
+static func fallback_letter(kind: String) -> String:
+	return str(Registry.kind(kind).get("display_name", kind)).left(1).to_upper()
+
+# Keeps the glyph's bounding box inside the footprint diamond and below the health bar.
+static func icon_radius(footprint: Vector2i) -> float:
+	return 4.0 + 5.0 * minf(footprint.x, footprint.y)
+
+static func text_height() -> float:
+	return ThemeDB.fallback_font.get_height(UiStyle.FONT_SIZE)
+
+func pile_text_points(source: Dictionary) -> PackedVector2Array:
+	var top: Vector2 = Iso.world_to_plane(Vector2(source.origin[0], source.origin[1])) + Vector2(0, -8)
+	return PackedVector2Array([top - Vector2(0, text_height()), top])
 
 func resume_candidate() -> int:
 	var builders: int = 0
@@ -139,14 +159,14 @@ func _draw() -> void:
 	for source: Dictionary in _state.get("sources",[]):
 		_draw_footprint(source.origin,Vector2i(3,3),Color("9f8045"),_selected_ids.has(source.id))
 		var lines: PackedStringArray = pile_lines(source)
-		_draw_text(source.origin,lines[0])
-		_draw_text([source.origin[0],source.origin[1] + 0.8],lines[1])
+		var points: PackedVector2Array = pile_text_points(source)
+		for i in lines.size(): _draw_label(points[i],lines[i])
 	for building: Dictionary in _state.get("buildings",[]):
 		var definition: Dictionary = Definitions.building(building.kind)
 		if definition.is_empty(): continue
 		var tint: Color = owner_color(building.owner)
 		_draw_footprint(building.origin,definition.footprint,tint.lerp(Color("687b8c"),0.4) if building.completed else tint.lerp(Color("887966"),0.6),_selected_ids.has(building.id))
-		_draw_text(building.origin,building_label(building))
+		_draw_building_mark(building,definition)
 		_draw_health(Iso.world_to_plane(Vector2(building.origin[0],building.origin[1]) + Vector2(definition.footprint) / 2.0) + Vector2(-16,-26),building,_selected_ids.has(building.id))
 	Profiler.end(&"draw.structures", zone)
 	zone = Profiler.begin()
@@ -368,5 +388,46 @@ func _draw_footprint(origin: Array, size: Vector2i, color: Color, selected: bool
 		polygon.append(polygon[0])
 		draw_polyline(polygon,Color("8cff87"),2.0)
 
-func _draw_text(origin: Array, text: String) -> void:
-	draw_string(ThemeDB.fallback_font,Iso.world_to_plane(Vector2(origin[0],origin[1])) + Vector2(0,-8),text,HORIZONTAL_ALIGNMENT_LEFT,-1,14,Color.WHITE)
+func _draw_label(point: Vector2, text: String) -> void:
+	draw_string(ThemeDB.fallback_font,point + Vector2(-LABEL_WIDTH / 2.0,0),text,HORIZONTAL_ALIGNMENT_CENTER,LABEL_WIDTH,UiStyle.FONT_SIZE,Color.WHITE)
+
+func _draw_building_mark(building: Dictionary, definition: Dictionary) -> void:
+	var center: Vector2 = Iso.world_to_plane(Vector2(building.origin[0],building.origin[1]) + Vector2(definition.footprint) / 2.0)
+	var radius: float = icon_radius(definition.footprint)
+	var alpha: float = 0.9 if building.completed else 0.5
+	_draw_glyph(building.kind,center + Vector2.ONE,radius,Color(0,0,0,alpha * 0.5))
+	_draw_glyph(building.kind,center,radius,Color(1,1,1,alpha))
+	var progress: String = building_label(building)
+	if not progress.is_empty(): _draw_label(center + Vector2(0,radius + text_height()),progress)
+
+func _draw_glyph(kind: String, c: Vector2, r: float, color: Color) -> void:
+	match icon_name(kind):
+		"command": draw_colored_polygon(_star(c,r),color)
+		"power": draw_colored_polygon(_bolt(c,r),color)
+		"supply":
+			draw_rect(Rect2(c - Vector2(r,r) * 0.8,Vector2(r,r) * 1.6),color,false,2.0)
+			draw_line(c - Vector2(r * 0.8,0),c + Vector2(r * 0.8,0),color,2.0)
+			draw_line(c - Vector2(0,r * 0.8),c + Vector2(0,r * 0.8),color,2.0)
+		"barracks":
+			for dy: float in [-0.6,0.0,0.6]:
+				draw_polyline(PackedVector2Array([c + Vector2(-r * 0.8,r * (dy - 0.2)),c + Vector2(0,r * (dy + 0.2)),c + Vector2(r * 0.8,r * (dy - 0.2))]),color,2.0)
+		"factory":
+			draw_circle(c,r * 0.55,color)
+			for i in 8: draw_line(c + Vector2.RIGHT.rotated(i * TAU / 8.0) * r * 0.5,c + Vector2.RIGHT.rotated(i * TAU / 8.0) * r,color,3.0)
+		"battery": draw_colored_polygon(_missile(c,r),color)
+		_: draw_string(ThemeDB.fallback_font,c + Vector2(-r,r * 0.6),fallback_letter(kind),HORIZONTAL_ALIGNMENT_CENTER,r * 2.0,int(r * 1.8),color)
+
+static func _star(c: Vector2, r: float) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	for i in 10: points.append(c + Vector2.UP.rotated(i * TAU / 10.0) * (r if i % 2 == 0 else r * 0.45))
+	return points
+
+static func _bolt(c: Vector2, r: float) -> PackedVector2Array:
+	var points := PackedVector2Array([Vector2(0.2,-1),Vector2(-0.6,0.1),Vector2(-0.05,0.1),Vector2(-0.25,1),Vector2(0.6,-0.15),Vector2(0.05,-0.15)])
+	for i in points.size(): points[i] = c + points[i] * r
+	return points
+
+static func _missile(c: Vector2, r: float) -> PackedVector2Array:
+	var points := PackedVector2Array([Vector2(0,-1),Vector2(0.3,-0.4),Vector2(0.3,0.5),Vector2(0.75,1),Vector2(-0.75,1),Vector2(-0.3,0.5),Vector2(-0.3,-0.4)])
+	for i in points.size(): points[i] = c + points[i] * r
+	return points

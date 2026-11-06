@@ -7,9 +7,10 @@ const BaseScene = preload("res://tests/test_base_scene.gd")
 const View = preload("res://scripts/presentation/world_view.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 const Fixture = preload("res://tests/economy_fixture.gd")
+const UiStyle = preload("res://scripts/presentation/ui_style.gd")
 
 func cases() -> Array[Callable]:
-	return [test_skirmish_ready_and_tick, test_combat_context_input, test_match_hud_and_restart, test_combat_view, test_hud_layout_and_focus, test_hud_build_line, test_enemy_selection_read_only, test_rally_input_and_marker, test_supply_pile_labels, test_attack_move_hint_and_rejection, test_selection_prunes_dead, test_order_marks_own_only, test_health_bar_clear_of_boxes, test_result_clear_of_status, test_silent_keys_explain]
+	return [test_skirmish_ready_and_tick, test_combat_context_input, test_match_hud_and_restart, test_combat_view, test_hud_layout_and_focus, test_hud_build_line, test_enemy_selection_read_only, test_rally_input_and_marker, test_supply_pile_labels, test_attack_move_hint_and_rejection, test_selection_prunes_dead, test_order_marks_own_only, test_health_bar_clear_of_boxes, test_result_clear_of_status, test_silent_keys_explain, test_hud_strings_use_display_names, test_hud_font_size_is_shared]
 
 func _setup(runner):
 	var main = Scene.instantiate()
@@ -303,6 +304,8 @@ func test_supply_pile_labels(runner) -> bool:
 	var source: Dictionary = Fixture.object(main.simulation, pile.source)
 	runner.check(Fixture.object(main.simulation, pile.docked).collection.phase in ["loading"] and Fixture.object(main.simulation, pile.waiting).collection.phase == "waiting_source", "S1 fixture: one collector docked, one waiting")
 	runner.check(view.pile_lines(source) == PackedStringArray(["Boxes %d" % source.boxes, "docked 1 · waiting 1"]), "S1 pile label, got " + str(view.pile_lines(source)))
+	var points: PackedVector2Array = view.pile_text_points(source)
+	runner.check(points.size() == 2 and points[1].y - points[0].y >= ThemeDB.fallback_font.get_height(UiStyle.FONT_SIZE), "S1 pile lines are a full text height apart, got " + str(points))
 	main.selected_ids.assign([pile.waiting])
 	main._refresh()
 	runner.check(main.get_node("HUD/Status").text.contains("waiting_source (1st in line)"), "S1 waiting collector shows its place in line")
@@ -395,5 +398,59 @@ func test_silent_keys_explain(runner) -> bool:
 	main.selected_ids.clear()
 	helper.key(main, KEY_E)
 	runner.check(main.simulation.snapshot() == before and main._error == "Select a production building", "P4 E without a building says why, got '%s'" % main._error)
+	main.free()
+	return true
+
+func _hud_texts(main) -> Array[String]:
+	var texts: Array[String] = [main.get_node("HUD/Status").text, main.get_node("HUD/Economy/Produce").text, main.get_node("HUD/Economy/CancelBuild").text]
+	for group: String in ["BuildMenu", "Queue"]:
+		for button in main.get_node("HUD/Economy/" + group).get_children(): texts.append(button.text)
+	return texts
+
+func test_hud_strings_use_display_names(runner) -> bool:
+	var main = await _setup(runner)
+	var sim = Skirmish.create()
+	var barracks: int = Fixture.build(runner, sim, "usa_barracks", Vector2i(12, 12))
+	main.simulation = sim
+	main.selected_building_id = barracks
+	main._produce_selected()
+	main._produce_selected()
+	main._physics_process(0.0)
+	await runner.process_frame
+	runner.check(main.get_node("HUD/Economy/Produce").text == "Produce Rifleman (E)", "N1 produce button names the unit, got " + main.get_node("HUD/Economy/Produce").text)
+	runner.check(main.get_node("HUD/Economy/Queue").get_child_count() == 2, "N1 fixture: two queue entries")
+	var shown: Array[String] = _hud_texts(main)
+	var builder: int = sim.snapshot().entities.filter(func(unit: Dictionary) -> bool: return unit.owner == 1 and unit.kind == "usa_builder")[0].id
+	main.selected_building_id = -1
+	main.selected_ids.assign([builder])
+	main._enter_placement("usa_power_plant")
+	runner.check(main.get_node("HUD/Status").text.contains("Place: Power Plant"), "N1 placement line names the building")
+	shown.append_array(_hud_texts(main))
+	main._clear_placement()
+	var enemy: Dictionary = sim.snapshot().buildings.filter(func(building: Dictionary) -> bool: return building.owner == 2)[0]
+	main.inspected_id = enemy.id
+	main._refresh()
+	shown.append_array(_hud_texts(main))
+	main.selected_building_id = sim.snapshot().buildings.filter(func(building: Dictionary) -> bool: return building.owner == 1 and building.kind == "usa_command_center")[0].id
+	main._refresh()
+	shown.append_array(_hud_texts(main))
+	await runner.process_frame
+	for text in shown: runner.check(not text.contains("usa_"), "N1 no raw kind id in HUD text: " + text)
+	main.free()
+	return true
+
+func test_hud_font_size_is_shared(runner) -> bool:
+	var main = await _setup(runner)
+	var barracks: int = Fixture.build(runner, main.simulation, "usa_barracks", Vector2i(12, 12))
+	main.selected_building_id = barracks
+	main._produce_selected()
+	main._physics_process(0.0)
+	await runner.process_frame
+	var controls: Array = [main.get_node("HUD/Status"), main.get_node("HUD/Economy/Produce"), main.get_node("HUD/Economy/CancelBuild")]
+	controls.append_array(main.get_node("HUD/Economy/BuildMenu").get_children())
+	controls.append_array(main.get_node("HUD/Economy/Queue").get_children())
+	runner.check(controls.size() >= 4, "FS1 fixture: status, buttons and a queue entry")
+	for control in controls: runner.check(control.get_theme_font_size("font_size") == UiStyle.FONT_SIZE, "FS1 %s uses the shared HUD size" % control.name)
+	runner.check(UiStyle.FONT_SIZE < 16, "FS1 HUD text is smaller than the engine default")
 	main.free()
 	return true

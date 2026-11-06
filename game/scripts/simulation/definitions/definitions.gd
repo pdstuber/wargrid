@@ -26,6 +26,9 @@ static func units() -> Array[String]:
 static func buildings() -> Array[String]:
 	return _ids(false)
 
+static func icon(id: String) -> String:
+	return kind(id).get("icon", "")
+
 static func is_builder(id: String) -> bool:
 	return not kind(id).get("builds", []).is_empty()
 

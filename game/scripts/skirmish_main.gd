@@ -138,7 +138,7 @@ func _refresh_hud(state: Dictionary) -> void:
 	var building: Dictionary = _building(state, selected_building_id)
 	if _inspected(state).is_empty(): inspected_id = -1
 	_view.set_inspected(inspected_id)
-	$HUD/Economy/Produce.text = "Produce %s (E)" % _production_kind(building) if not building.is_empty() else "Produce (E)"
+	$HUD/Economy/Produce.text = "Produce %s (E)" % Registry.kind(_production_kind(building)).get("display_name", "") if not building.is_empty() else "Produce (E)"
 	_status.text += "\n" + (_selected_summary(state) + _enemy_summary(state)) + ("A: attack-move click | S: stop | You are %s (P%d)" % [("blue" if local_player == 1 else "red"), local_player] if result.is_empty() else "")
 	$HUD/Result.text = result
 	$HUD/Result.visible = not result.is_empty()
