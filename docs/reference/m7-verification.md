@@ -5,15 +5,15 @@ Plan: [M7 plan](../superpowers/plans/2026-11-06-m7-factions.md). Design: [M7 des
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-06, Task 10 done, uncommitted)
-Branch / base commit / working-tree state: m7-factions at 2a71a6d (Task 9 committed); Task 10 changes uncommitted
-Last green task / next incomplete task: Task 10 (firing buildings, missile battery, powered defences) / Task 11 (gate 1)
-Changed paths since last commit: game/scripts/simulation/{combat,construction,simulation}.gd, definitions/{usa,shared}.gd, game/scripts/debug/combat_workload.gd, game/benchmarks/run_combat.gd, game/data/maps/{skirmish,ashfall}.json, tools/{zh_map/convert.py,zh_map/test_zh_map.py,run_benchmark.sh}, game/tests/{test_defences.gd (new),run_tests,test_benchmark,test_base_scene,economy_fixture}.gd, this file
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 318 cases / 112,988 / 0, exit 0, TESTS PASSED 112988; lint, warnings, unittest, netplay match (8257) pass; run_team_match.sh: TEAM MATCH won tick=23816 winner=2
-Known red case or blocker: none
-Approved decisions, pre-authorizations used, deferred gates: user ruling 2026-11-06 (after the lever log below): the bot does not build usa_defence; see Task 10 departures
+Resume record (updated 2026-11-06, Task 11 checks done, uncommitted: parity scenarios in tools/zh_parity, this file, performance ledger)
+Branch / base commit / working-tree state: m7-factions at 7293c91 (Task 10 committed); Task 11 changes uncommitted
+Last green task / next incomplete task: Task 10 / Task 11 (gate 1): checks and parity done, gate review and playtest open
+Changed paths since last commit: tools/zh_parity/{parity,analyze}.py, docs/reference/{m7-verification,performance}.md
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 318 cases / 112,988 / 0, exit 0, TESTS PASSED 112988; lint, warnings, unittest (39), conformance (33), netplay x7, team match pass; run_benchmark.sh exit 1 (combat stress open/dense exceeded their ceilings, as at base)
+Known red case or blocker: none (benchmark ceilings exceeded: reported, not loosened)
+Approved decisions, pre-authorizations used, deferred gates: user ruling 2026-11-06: the bot does not build usa_defence; stress ceiling re-pin and rendered benchmark need the user
 Usage so far: not recorded
-Next exact action: commit Task 10, then Task 11 (gate 1). Benchmarks not run (defences layout unmeasured; run_combat now expects PASSED 6).
+Next exact action: gate review (Opus high, fresh context), then user playtest (offline and online) and the rendered benchmark (ask first), then STOP: gate 2 is an outline (Opus planning session expands it with playtest findings in).
 ```
 
 ## Pins at base
@@ -114,3 +114,43 @@ Gate-1 rows (cost, ticks, max_hp, armor, vision, radius, weapon, other) are the 
 - Task 10 "stronger bot waves" (user ruling 2026-11-06): lever 1, the bot attacks only once 15 idle units are ready (`WAVE_SIZE`), plus dropping option B (early defence build, no saving rule). Result: team match still `cap tick=45000 winner=null units_peak=261`; S1 terminal 8899 (in window); the gate also broke D2, A3 x5 and TB1 (small-army bot tests). Reverted. Current tree: option B removed, bot builds the battery last in `build_order` as the plan says, no wave gate. Team match not won inside 45000, pins S1/TB3/TB4 un-re-pinned.
 
 - Task 10 ruling (user, 2026-11-06, after the lever log above): the bot does NOT build `usa_defence`. Plan departure: `build_order` stays at four kinds, `test_bot_builds_defence` is replaced by `test_bot_does_not_build_defence` (bot never builds one, builder `builds` includes it, a human seat can order one). The kind, `defence` slots in skirmish.json / ashfall.json, converter, `fire_defences` and the build menu entry stay. Pre-Task-10 flow restored: no S1, TB3, TB4 or netplay pin moved (S1 7731, TB3/TB4 as Task 8, netplay 8257); team match `won tick=23816 winner=2` inside 45000. Traces for the replay, economy and combat scripted matches should be identical to Task 9 (bot unchanged, no armed buildings); not compared with `cmp` this task. Earlier Task 10 pin rows were reverted.
+
+## Task 11 (gate 1) results (tree: m7-factions 7293c91 + uncommitted parity tooling/docs, Apple M6)
+
+- Suite 318 / 112,988 / 0, exit 0. Lint, warnings pass. `python3 -m unittest discover -s tools`: 39 OK. `run_conformance.sh`: CONFORMANCE PASSED 33.
+- Trace check: replay, economy, combat and team traces at 7293c91 are `cmp`-identical to a clean worktree at 2a71a6d (Task 9); suites 318/112,995 vs 312/112,983, both 0 failures (counts differ with traces on). Traces vs pre-M7 base are not comparable (kind-string rename, armed scout car, command center).
+- Netplay: match (terminal tick 8257), kill, stall, silent, spike, perturb, version: all PASSED.
+- `run_team_match.sh` exit 0: won tick=23816 winner=2; TEAM TIMING n 23816, p50 1.2, p95 2.412, p99 6.169, max 12.932 (budget 1.82 / 3.64: exceeded; base 3.196 / 6.958).
+- `run_benchmark.sh` exit 1 (stops at combat stress, as at base; lockstep run alone afterwards, exit 0). Machine: no World of Warcraft process; Battle.net launcher and Codex renderer were running (about 20 % CPU), a stale headless Godot (pid 38232, idle) from a scratch script was present.
+  - movement open p95/p99 1.691 / 1.889, dense 1.738 / 2.06 (PASS).
+  - combat stress open 2.798 / 3.716 and dense 3.152 / 4.75: exceed the 1.82 / 3.64 budget and the ceilings (open 2.05 / 3.86, dense 2.52 / 4.02); base open 2.897 / 4.027. Not loosened.
+  - contact 1.191 / 1.665 PASS, skirmish3v3 1.406 / 1.588 PASS.
+  - transports (new, report-only): p95 1.504 / p99 1.802, 180 passenger shots in window, within budget; defences (new, report-only): p95 2.87 / p99 3.251, 590 defence shots, p95 over 1.82. `Containers.step` has no separate counter (cost is inside these totals; `run_profile.sh` not run).
+  - lockstep overhead p99 0.071 ms (limit 0.6) PASS.
+- Rendered benchmark: not run (visible window, needs user approval).
+
+### Provisional pins against window and cause
+
+S1 `TERMINAL_TICK` 7731 inside floor 7000..17999, TICK_LIMIT 18000, winner 1 (armed scout car, Task 8). Team match won tick 23816, winner 2, inside cap 45000 (result won). Netplay `match` 8257 inside the S1 window. `PINNED`, `FINAL_DIGEST`, `TEAM_CORE_SERIES`, `S1_CORE_SERIES`: each row above names its causing task; no pin moved in Tasks 9 and 10 (traces identical to Task 9). All confirmed.
+
+### Parity (measured, source build, fork branch wargrid-parity; traces `~/CnC/parity/traces` untouched, new run in scratch)
+
+New scenarios added in `tools/zh_parity/{parity,analyze}.py` (self-test OK): `move_/turn_/range_/reach_` for `rocket` (AmericaInfantryMissileDefender) and `scout` (AmericaVehicleHumvee), `range_/reach_battery` (AmericaPatriotBattery). Reruns of Ranger, Crusader, Dozer equal the stored rows exactly (reach 122 / 183, ranges 115.45 / 181.52, Dozer turn 102 frames).
+
+| scenario | metric | measured | Wargrid | verdict |
+|---|---|---|---|---|
+| move_rocket | top speed | 20.0 | 20 | PASS |
+| move_scout | top speed (peak) | 60.09 (66.7) | 75 | FAIL: Wargrid 3.0 cells/s, ZH 2.4 |
+| turn_rocket | turn rate | 500 deg/s, 11 frame start delay | 500 | feel |
+| turn_scout | turn rate | 180 deg/s, 37 frames; 20-27 u/s while turning, then 60 | 180, min_turn_speed 0.8 cells/s (20) | feel, matches |
+| range_rocket / reach_rocket | first shot / farthest fire | 186.6 / 197 | 175 | +22 |
+| range_scout / reach_scout | first shot / farthest fire | 178.8 / 183 | 150 | +33 |
+| range_battery / reach_battery | - | 0 shots (also with a spawned power plant) | 225 | not measurable |
+
+The +22 (infantry attacker) and +33 (vehicle attacker) offsets equal the Ranger (122 vs 100) and Crusader (183 vs 150) offsets against the same Dozer target: target and attacker geometry, not a range error. INI `AttackRange` 175 / 150 / 225 (HumveeGun, MissileDefenderMissileWeapon, PatriotMissileWeapon) equals Wargrid. Dozer mid-turn slowdown: `turn_dozer` speed falls to 1.1 u/s at frame 76 (frames 70-80: 6.0 to 4.5), a reverse/3-point-turn dip well under `min_turn_speed.builder` 25 u/s; the Humvee trace has no dip at frames 70-80 (steady 60.1 u/s until braking).
+
+Decision list (no value changed; user decides):
+1. Scout car speed 3.0 cells/s vs ZH cruise 2.4 (60 u/s): lower to 2.4 or keep? Needs a values-table cause check (INI speed unchecked here).
+2. Battery cadence 8,8,8,60 stays formula-only: Patriot never fires in the harness (unpowered or anti-air only, unverified). Options: leave, or investigate the API (power/targeting) in a separate harness task.
+3. Dozer mid-turn dip to about 1 u/s vs Wargrid min turn speed 25 u/s: feel difference, candidate for the playtest.
+4. Rocket/scout/battery ranges: no change (geometry offsets as for Ranger/Crusader).

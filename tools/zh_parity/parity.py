@@ -324,10 +324,17 @@ SCENARIOS = {
     "move_ranger": move("AmericaInfantryRanger", 300),
     "move_crusader": move("AmericaTankCrusader", 400),
     "move_dozer": move("AmericaVehicleDozer", 400),
+    "move_rocket": move("AmericaInfantryMissileDefender", 300),
+    "move_scout": move("AmericaVehicleHumvee", 400),
     "turn_ranger": turn("AmericaInfantryRanger"),
     "turn_crusader": turn("AmericaTankCrusader"),
     "turn_dozer": turn("AmericaVehicleDozer"),
+    "turn_rocket": turn("AmericaInfantryMissileDefender"),
+    "turn_scout": turn("AmericaVehicleHumvee"),
     "range_crusader": fire("AmericaTankCrusader", "AmericaVehicleDozer", 300, 300),
+    "range_rocket": fire("AmericaInfantryMissileDefender", "AmericaVehicleDozer", 300, 400),
+    "range_scout": fire("AmericaVehicleHumvee", "AmericaVehicleDozer", 250, 400),
+    "range_battery": fire("AmericaPatriotBattery", "AmericaVehicleDozer", 300, 400),
     "range_ranger": fire("AmericaInfantryRanger", "AmericaVehicleDozer", 250, 400),
     "rof_crusader": fire("AmericaTankCrusader", "GLACommandCenter", 300, 600),
     "burst_ranger": fire("AmericaInfantryRanger", "GLACommandCenter", 250, 600),
@@ -349,6 +356,9 @@ SCENARIOS = {
 REACH = {
     "reach_ranger": ("AmericaInfantryRanger", "AmericaVehicleDozer", 100, 160),
     "reach_crusader": ("AmericaTankCrusader", "AmericaVehicleDozer", 150, 220),
+    "reach_rocket": ("AmericaInfantryMissileDefender", "AmericaVehicleDozer", 150, 260),
+    "reach_scout": ("AmericaVehicleHumvee", "AmericaVehicleDozer", 100, 220),
+    "reach_battery": ("AmericaPatriotBattery", "AmericaVehicleDozer", 150, 300),
 }
 
 
