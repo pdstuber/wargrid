@@ -118,6 +118,18 @@ godot --headless --path game -- --probe-relay wss://wargrid-relay-jvm.fly.dev/ws
 WARGRID_RELAY_URL=wss://wargrid-relay-jvm.fly.dev/ws WARGRID_MATCH_WAIT=600 sh tools/run_netplay.sh match
 ```
 
+## Browser build
+
+Single-threaded Godot web export (preset `Web`), served by static-web-server as its own fly app `wargrid-web` (`web/`), live at `https://wargrid.pdstuber.dev` since 2026-11-06 (CNAME at Namecheap, Let's Encrypt cert issued by fly; the apex CAA records allow only Let's Encrypt). The image carries brotli/gzip copies made at build time and `Cache-Control: no-cache` (SWS answers `If-Modified-Since` with 304), so a redeploy cannot pair a new `.wasm` with an old `.pck`. No cross-origin isolation headers: they are only needed with threads. The page talks to the same relay over `wss://`.
+
+```sh
+sh tools/deploy_web.sh                     # export, then fly deploy; needs explicit approval
+fly certs add wargrid.pdstuber.dev -a wargrid-web   # then CNAME wargrid -> wargrid-web.fly.dev
+container build -t wargrid-web web         # local image check, after exporting to web/site/
+```
+
+Verified by the user 2026-11-06: Safari loads the live site and plays a skirmish against the bot. Unverified: a browser-to-browser match through the relay, a mixed browser and desktop match (floats in WASM versus native), Chrome and Firefox on the live site, and a hidden tab (browsers pause or throttle it, which stalls lockstep for everyone).
+
 M5 measurements of the Kotlin relay and the native decision: [M5 verification](docs/reference/m5-verification.md). Findings and M9 list: [M5 findings](docs/reference/m5-online.md). M5 status: implemented and locally verified (Tasks 0–11); reviews, CI on the final tree and the HUD look are done; the repeat friend match on the fixed build is deferred by the user to a later date and remains open (see verification file).
 
 ## Local references

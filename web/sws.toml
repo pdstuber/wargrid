@@ -1,0 +1,7 @@
+# Godot's exported file names never change; revalidate so a redeploy can't pair a new .wasm with an old .pck.
+[advanced]
+
+[[advanced.headers]]
+source = "**"
+[advanced.headers.headers]
+Cache-Control = "no-cache"
