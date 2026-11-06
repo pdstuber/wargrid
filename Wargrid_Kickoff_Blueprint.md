@@ -587,6 +587,12 @@ Make the converted map playable in the launcher: map choice, camera limits for 1
 
 The ground units that need only M7's systems plus veterancy, upgrades and the tech tree, poison, transports, and travelling shots with minimum range (artillery). Replaces the earlier proposed "M7.1 roster fill".
 
+### R1 — Releases (small separate task, not a milestone; user, 2026-11-06; planned, not started)
+
+A pushed `v*` tag runs the full test suite on that commit, builds Linux, Windows, macOS and Web, and after one approval (GitHub Environment `production`) deploys the relay, then the web build, to fly and publishes unsigned desktop builds as a GitHub Release. The repository goes public first, after a history scan. Execution plan: [release workflow plan](docs/superpowers/plans/2026-11-06-release-workflow.md). Fits between M7 gates; it changes no game behaviour.
+
+**R1.1 — Room matching on a simulation fingerprint (user, 2026-11-06; not planned yet):** clients send a hash of the simulation scripts and game data as the relay's `build` string instead of the exact version, so UI-only releases share rooms and any simulation change never does. The version stays for display and release names.
+
 ### M7.5 — Art pass (placement decided by the user 2026-11-05; scope proposed, not approved)
 
 Give the game a deliberate look instead of placeholder rectangles and text labels. Placed after ground batch A so most units are styled once, and before M8 so the bot playtests are played on the real look.
