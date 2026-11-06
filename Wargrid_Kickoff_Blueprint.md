@@ -21,7 +21,9 @@ Wargrid is a passion/learning project: a modern, scriptable, testable, pixel-art
 
 ### Long-term target (user, 2026-11-03)
 
-**Three friends play 3v3 against three bots over the internet**, as USA, China and GLA, on a map that roughly resembles the classic Twilight Flame. Zero Hour generals are not needed for that goal. Colored-rectangle graphics are acceptable until play shows they are not. The milestone sequence in §7 is ordered toward this target.
+**Three friends play 3v3 against three bots over the internet**, as USA, China and GLA, on a map that roughly resembles the classic Twilight Flame. Zero Hour generals are not needed for that goal. Colored-rectangle graphics are acceptable until play shows they are not.
+
+**Roster goal (user, 2026-11-06):** every military unit of the three factions as in Zero Hour (ground and air; no generals' variants, civilians or campaign units), under Wargrid's own names; GLA becomes the FRC (Free Resistance Coalition). The milestone sequence in §7 is ordered toward this target.
 
 ### What to preserve
 
@@ -567,33 +569,37 @@ Matches with up to eight players in teams with team victory; a map converted fro
 
 **Planned 2026-11-05 (not started):** [approved design](docs/superpowers/specs/2026-11-05-m6-teams-full-map-design.md), [evidence](docs/reference/m6-map-and-feel.md), [execution plan](docs/superpowers/plans/2026-11-05-m6-teams-full-map.md). User decisions: one milestone (not split); headless only; edge-to-edge range, Ranger cadence 4/4/22, tank splash hurting allies too, start delay, acceleration and turn-in-place; elevation affects passability only; firing ignores heading (no turrets yet).
 
-### M7 — China and GLA core
+### Ashfall playable (small task before M7; user, 2026-11-06)
 
-Add China and GLA distinct rules, core units and economy differences (for example GLA without power) using data definitions, behavior-specific tests and `tools/check_reference.py`.
+Make the converted map playable in the launcher: map choice, camera limits for 196 × 196, terrain drawn as one batch (the performance spike measured about 5 fps with per-cell drawing). No minimap yet (HUD milestone).
 
-**Pre-M7 gate (proposed 2026-11-03):** run or explicitly defer the reduced level 1 spot checks (S1–S3) in [Zero Hour verification](docs/reference/zero-hour-verification.md) before kickoff, because factions multiply unverified constants. **Met 2026-11-05 (user decision):** S1–S3 measured by the [parity harness](docs/reference/zero-hour-parity-harness.md) on a source build; the differences found are a decision list in the [spike](docs/reference/zero-hour-parity-spike.md#decision-list-proposal-for-the-next-combat-feel-work), not yet decided. New factions in M7 can measure their units with the same harness.
+### M7 — Three factions with their signature mechanics
+
+**Approved design (2026-11-06):** [M7 factions design](docs/superpowers/specs/2026-11-06-m7-factions-design.md), [evidence](docs/reference/m7-factions.md). USA, China and the FRC (Free Resistance Coalition, Wargrid's own name for Zero Hour's GLA) with the user's seven-row roster each, Command Centers, per-faction construction and gathering, GLA-style rebuild holes, horde, salvage, gattling ramp-up, transports and the tunnel network, buildings that fire; faction choice in the launcher offline and online; a plain data-driven build menu. Capability data, no faction branches in simulation code; Wargrid's own names in code and UI. Starts with a performance task on the three simulation rows over the F = 5.5 budget. Three stop gates with a user playtest each (USA, China, FRC).
+
+**Pre-M7 gate (proposed 2026-11-03):** run or explicitly defer the reduced level 1 spot checks (S1–S3) in [Zero Hour verification](docs/reference/zero-hour-verification.md) before kickoff. **Met 2026-11-05 (user decision)** by the [parity harness](docs/reference/zero-hour-parity-harness.md); its [decision list](docs/reference/zero-hour-parity-spike.md#decision-list-proposal-for-the-next-combat-feel-work) was decided in M6.
 
 **Turn, movement and attack check (user, 2026-11-05):** for every new China and GLA unit, and again for the USA units, run the [parity harness](docs/reference/zero-hour-parity-harness.md) `turn_`, `move_`, `range_` and `reach_` scenarios against the Wargrid simulation and compare whole traces (angle, speed and position per frame), not only the first-move frame. M6 compared the Dozer only at first move and at INI values; the full trace showed Wargrid turning twice as fast (fixed in M6: wheeled turn follows speed). The retail Dozer also slowed to 0.15 cells/s mid-turn at frames 70–80 (cause not identified); look for it in the other wheeled and tracked units.
 
-**Exit gate:** three playable faction prototypes; economy/production/combat parity tracked by faction.
+**Exit gate:** the three stop gates passed; a deterministic headless 3v3 bots-only match on Ashfall with all three factions, simulation ledger rows inside the budgets or reported as exceeded (design §1); parity results as a decision list.
 
-### M7.1 — Roster fill (proposed 2026-11-05, scope not approved; placement chosen by the user)
+### Ground batch A (after M7; user, 2026-11-06, scope not designed)
 
-M7 gives three prototype factions with a core unit list. This milestone fills each faction's roster so a 3v3 match has real choices: units, structures, tech prerequisites and upgrades, taken one faction at a time from the Zero Hour INI data (`INIZH.big`, see §4) and written as Wargrid's own data definitions. Placed before the M7.5 art pass so each unit is styled once, and before M8 so bots build from the full roster.
-
-**Proposed scope (not approved):** first fix the roster per faction with the user (what is in, what waits for "Later": aircraft, superweapons, generals); then add units in batches per faction, each batch measured with the [parity harness](docs/reference/zero-hour-parity-harness.md) where the mechanic exists in Zero Hour. Departures stay explicit, and measured numbers never change Wargrid values automatically.
-
-**Proposed exit gate:** the agreed roster playable for all three factions, behaviour tests per unit and per tech rule, parity results recorded as a decision list, ledger rows inside the budgets (more unit kinds raise scan, allocation and snapshot costs), and a user playtest.
+The ground units that need only M7's systems plus veterancy, upgrades and the tech tree, poison, transports, and travelling shots with minimum range (artillery). Replaces the earlier proposed "M7.1 roster fill".
 
 ### M7.5 — Art pass (placement decided by the user 2026-11-05; scope proposed, not approved)
 
-Give the game a deliberate look instead of placeholder rectangles and text labels. Placed after M7.1 so each unit is styled once, and before M8 so the bot playtests are played on the real look.
+Give the game a deliberate look instead of placeholder rectangles and text labels. Placed after ground batch A so most units are styled once, and before M8 so the bot playtests are played on the real look.
 
 **User note (2026-11-05):** the coloured-rectangle look is more fun than expected, so a stylised geometric direction is explored before sprites are committed to. Blueprint §2 chose pixel-art sprites; switching is a design change the user decides after the comparison below.
 
 **Proposed scope (not approved):** Task 1 is an art-direction spike on one scene with two candidates: (A) USA unit and building sprites (asset source decided first; no EA assets, see §1) and (B) the current geometry pushed further with per-faction shape language, outlines, shading and effects, kept varied at full-match unit counts. Each gets a rendered benchmark row. The user picks one (or a mix); the rest of M7.5 applies it to terrain, selection and health feedback, shot and death effects, and the other factions. Visuals only represent simulation state and never own rules (§2).
 
 **Proposed exit gate:** the user's chosen direction recorded (blueprint §2 updated if it changes), a rendered benchmark row in the [performance ledger](docs/reference/performance.md) with the chosen look and effects on, inside the same budgets and assumed slowdown; no simulation, replay or netplay trace change; user playtest of the look.
+
+### M7.6 — Generals-style HUD (user, 2026-11-06; scope not designed)
+
+The interface, not the world graphics: a bottom control bar with minimap, command buttons with icons, build queue with progress, credits and power, selection info, laid out like Zero Hour's. Own art only (§12). The minimap lands here.
 
 ### M7.9 — Fog of war (placement and need decided by the user 2026-11-05; scope proposed, not approved)
 
@@ -603,6 +609,10 @@ Fair bots only mean something when a human and a bot see the same limited pictur
 
 **Proposed exit gate:** visibility tests (own, allied, enemy, explored versus live), replay and netplay traces still matching, ledger rows for six players on Ashfall inside the budgets, and a user playtest.
 
+### Ground batch B (after M7.9; user, 2026-11-06, scope not designed)
+
+Stealth and detection, hacking, hijacking and capture: they need fog's visibility model first.
+
 ### M8 — Bots worth playing
 
 **Deliberate departure from Zero Hour (user, 2026-11-05):** fairness and challenge over parity. Zero Hour has three difficulties (`GameDifficulty`: easy, normal, hard); Wargrid bots follow the fair-play rules in the [fair bots research](docs/reference/fair-bots-research.md) (user-supplied input, partly unverified; read it with its status note). A bot plays by the same rules, sees only what its team could see, and is held to a human-plausible command budget. No reference bot is a fairness model: checked 2026-11-05, OpenRA's squad targeting ignores shroud and fog, and Zero-K CAI marks its own threat check `FIXME: … maphax` (details in the research note), so the invariance test below is the real gate.
@@ -611,7 +621,7 @@ Fair bots only mean something when a human and a bot see the same limited pictur
 
 - One observation entry point: own state, what its team currently sees, public information and its own timestamped last-seen memory. Nothing else from the snapshot. Commands only through `issue_command`.
 - A human-plausible attention budget (order changes per interval, squads under fine control); numbers chosen at planning from evidence, never guessed in this section.
-- Economy, per-faction production from the M7.1 roster with counters chosen from observed evidence, base defence, scouting, squads with missions, a combat estimate before committing and retreat with hysteresis, team coordination between bot seats through team-shared vision only.
+- Economy, per-faction production from the faction data (M7 and both ground batches) with counters chosen from observed evidence, base defence, scouting, squads with missions, a combat estimate before committing and retreat with hysteresis, team coordination between bot seats through team-shared vision only.
 - AI moods (Sleep, Alert 1.1, Aggressive 1.5), deferred from M4.1, and the parked chokepoint analysis from the M6 map-analyzer notes.
 - A headless decision trace (goal, evidence, alternatives rejected).
 - Deterministic on every lockstep client: simulation RNG only, a per-tick CPU budget in the [performance ledger](docs/reference/performance.md).
@@ -636,7 +646,7 @@ Lobby with slots, faction, team, bot difficulty and play style; three humans plu
 
 ### Later
 
-Zero Hour generals, superweapons, air combat, more maps, campaign tooling. Prioritize by what play shows, not by checklist completeness.
+Aircraft (USA 4, China 2) with air combat; superweapons; more maps; campaign tooling. The three factions' full military rosters are a goal (user, 2026-11-06); Zero Hour generals' variants are not. Order beyond that by what play shows.
 
 ### 7.1 M0 implementation plan — stop before movement
 
@@ -912,6 +922,8 @@ Do not edit the live gameplay implementation in this research task.
 | Bots | **Fair: same rules, same information, human-plausible command budget at every level** (user, 2026-11-05) | Challenge through decisions, not bonuses or machine-speed micro; deliberate departure from Zero Hour. |
 | Difficulty | **About five competence levels plus selectable play styles; strong bot first (M8), ladder after (M8.1)** (user, 2026-11-05) | Levels cut once from the finished bot; finer steps are not distinguishable by players. |
 | Fog of war | **M7.9, before the bots** (user, 2026-11-05) | Fair information limits need fog; otherwise bots would be built twice. |
+| Faction model | **Capability data, no faction branches in simulation code; own names (`usa`, `china`, `frc`)** (user, 2026-11-06) | Same pattern as Zero Hour and OpenRA; later units become data rows; AGENTS forbids EA names. |
+| Roster order | **M7, ground batch A, M7.5 art, M7.6 HUD, M7.9 fog, ground batch B, M8 bots, aircraft later** (user, 2026-11-06) | Each batch lands after the systems it needs (stealth after fog). |
 | Art | **Colored rectangles acceptable for now** (user, 2026-11-03) | Gameplay and online play first. |
 | Public release | **Undecided; legal review required** | Source and content rights must be distinguished. |
 
