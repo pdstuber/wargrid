@@ -5,15 +5,15 @@ Plan: [M7 plan](../superpowers/plans/2026-11-06-m7-factions.md). Design: [M7 des
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-06, Task 1 done)
-Branch / base commit / working-tree state: m7-factions at 063f724; Task 1 changes uncommitted until the Task 1 commit
-Last green task / next incomplete task: Task 1 (no fix kept) / Task 2 (values table, parity cadence, risk tests)
-Changed paths since last commit: game/benchmarks/run_combat.gd, this file
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 278 cases / 112,749 checks / 0 failures; run_lint.sh and run_warnings.sh pass
-Known red case or blocker: none (stress rows exceeded, recorded below)
+Resume record (updated 2026-11-06, Task 2 done)
+Branch / base commit / working-tree state: m7-factions at 8171d00; Task 2 changes uncommitted until the Task 2 commit
+Last green task / next incomplete task: Task 2 (risk tests known red) / Task 3 (pure rename)
+Changed paths since last commit: tools/zh_parity/parity.py, tools/zh_parity/analyze.py, tools/test_faction_guard.py, game/tests/test_factions.gd, game/tests/run_tests.gd, this file
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 282 cases / 112,748 checks / 9 failures (all in test_factions.gd, known red until Tasks 5-6), exit 1; run_lint.sh and run_warnings.sh pass; test_faction_guard.py OK; analyze.py --self-test OK
+Known red case or blocker: test_factions.gd F1-F4 (owners: Task 5 F1-F2, Task 6 F3-F4); the suite is red until then by plan
 Approved decisions, pre-authorizations used, deferred gates: local commit per green task (milestone prompt)
 Usage so far: not recorded
-Next exact action: restart fresh session ("resume from prompt.txt"), Task 2. Task 3 needs fresh baseline traces ($d0) from the tree before Task 3.
+Next exact action: restart fresh session ("resume from prompt.txt"), Task 3. Task 3 needs fresh baseline traces ($d0) from the tree before Task 3; test_factions.gd red cases are expected in them.
 ```
 
 ## Pins at base
@@ -48,4 +48,12 @@ Next exact action: restart fresh session ("resume from prompt.txt"), Task 2. Tas
 
 ## Values table
 
-(Task 2 fills this.)
+Cadence, measured (source build, `~/CnC/parity/traces`, 2026-11-06):
+
+| scenario | metric | formula | measured | Wargrid uses |
+|---|---|---|---|---|
+| `rof_rocket` | shot interval | 30 | 30 | 30 |
+| `rof_scout` | shot interval | 6 | 6 | 6 |
+| `burst_battery` | burst pattern | 8,8,8,60 | 0 shots in 600 frames | formula 8 / clip 4 / reload 60 (battery could not be measured; spawned without a power plant, so likely dark from the POWERED flag, not verified) |
+
+Gate-1 rows (cost, ticks, max_hp, armor, vision, radius, weapon, other) are the plan's Task 2 table, unchanged: no measured gap, so formula delays stand. Armor percentages and footprints as in the plan's Task 2 tables.
