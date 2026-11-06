@@ -2,6 +2,8 @@
 
 Status: **DESIGN APPROVED** by the user on 2026-11-06 (builder check done). Implementation starts only after a plan and an explicit kickoff.
 
+**Amended at planning 2026-11-06 (user decisions, see the [plan](../plans/2026-11-06-m7-factions.md)):** survival follows Zero Hour (§2); the performance task is limited to trace-preserving fixes, and the two candidates named in §1 already landed in M6 (§1); four Zero Hour behaviours join the scope (§6, §7); the match windows widen (Stop gates). Each is marked where it applies.
+
 Related docs:
 - Scope: blueprint §7 M7 (to be rewritten from this design on approval, together with the roster order and the new milestones below); long-term target §1.
 - Source evidence: [M7 faction evidence](../../reference/m7-factions.md). Per-unit stats not listed there are extracted at planning.
@@ -67,7 +69,7 @@ User picked A on 2026-11-06.
 
 ### 1. Performance task (gate 1, before anything else)
 
-Bring combat stress `open` and `dense` and the team match under 1.82 / 3.64 ms p95 / p99 on the idle development machine, measured with `run_benchmark.sh`, `run_team_match.sh` and the bench runner. Candidates from the [performance spike](../../reference/performance-spike.md): allocation without the full component sort, component lists without `sort_custom`; the plan picks from profiling. Proposal, needs the user's OK at the gate: once under budget, re-pin the stress ceilings lower so `run_benchmark.sh` passes again. Traces must not change, unless a change is recorded and justified as a deliberate behaviour change.
+Bring combat stress `open` and `dense` and the team match under 1.82 / 3.64 ms p95 / p99 on the idle development machine, measured with `run_benchmark.sh`, `run_team_match.sh` and the bench runner. Candidates from the [performance spike](../../reference/performance-spike.md): allocation without the full component sort and component lists without `sort_custom` **already landed in M6 (11a, 11b)**, so the plan picks new ones from profiling (amended 2026-11-06). **Fixes must preserve every trace and pin (user, 2026-11-06):** a fix that changes traces (staggered rescans, a path-request budget) is a stop for the user, not a recorded behaviour change. `run_combat.gd` also stops at the first breach (`open`), so `dense`, already over its own ceiling, is never reported; the plan makes it report every layout. Proposal, needs the user's OK at the gate: once under budget, re-pin the stress ceilings lower so `run_benchmark.sh` passes again. Traces must not change.
 
 **Scope and fallback (user, 2026-11-06):**
 - **Time box:** the task covers only these three simulation rows. The plan sets its length.
@@ -90,8 +92,8 @@ Bring combat stress `open` and `dense` and the team match under 1.82 / 3.64 ms p
   No field is added before a unit uses it.
 - **Faction table:** per faction the id, display name, starting structure and unit, the bot build order and the bot's unit choice per producer. Nothing else.
 - **Seat:** a `faction` field per seat, part of the snapshot and the state hash.
-- **Survival rule (my call, 2026-11-06):** a player survives while they own a unit with `builds`, a completed building with `produces`, or a GLA rebuild hole (it will rebuild). Defences, tunnels and units inside containers don't count. Before the rule is pinned, the plan checks Zero Hour's defeat condition in the source and records any departure.
-- **Rules read capabilities:** survival (today hard-coded `builder`, `depot`, `barracks`, `factory` in `simulation.gd:101-106`), production, construction, collection, targeting categories in the skirmish policy, HUD build keys. One guard test fails if a faction id appears in simulation code outside the definition files.
+- **Survival rule (Zero Hour, user 2026-11-06; replaces the earlier "my call"):** a seat survives while it owns a building, foundation or completed, whose kind has the capability `counts_for_victory`. Units never count, inside containers or not. The flag is set on Command Centers, power plants, supply centers, barracks, factories, the GLA Supply Stash, Arms Dealer and rebuild holes, and not on defences or tunnels. Source: `GameLogic.cpp:1630` sets `VICTORY_NOBUILDINGS`; `Team::hasAnyBuildings` (`Team.cpp:1711-1726`) needs STRUCTURE and `MP_COUNT_FOR_VICTORY` ([evidence](../../reference/m7-factions.md#findings)). Matches run longer than before, because Command Centers have 5000 HP and every counting building must fall.
+- **Rules read capabilities:** survival (today hard-coded `builder`, `depot`, `barracks`, `factory` in `simulation.gd:101-106`; reads `counts_for_victory`), production, construction, collection, targeting categories in the skirmish policy, HUD build keys. One guard test fails if a faction id appears in simulation code outside the definition files.
 - **Rename first:** today's generic kinds become the new per-faction ids in one task, before any new rule. All replay traces, digests and match pins change for that reason alone. The task records old against new values and proves no behaviour changed: same event sequence, only names differ.
 
 ### 3. Naming (constraint, proposal for the user)
@@ -128,6 +130,7 @@ Cargo and destroyed-destination rules stay as M3 defines them. Locomotion decide
 
 - **Firing buildings:** Patriot, Gattling Cannon and the Tunnel Network fire with today's weapon rules (instant hits, edge-to-edge range).
 - **Horde:** Red Guard, Tank Hunter and Battlemaster get their bonus while enough of the same kind stand close. The check runs on Zero Hour's cadence, not every tick, inside the combat budget.
+- **Added at planning (user, 2026-11-06):** passengers fire from a Humvee (not from a Technical); the Patriot and Gattling Cannon hold fire while the seat's power demand exceeds its supply; a Red Guard order trains two units; when a transport dies its passengers take its passenger-damage share first (Humvee 100 %, Technical 10 %) and the survivors exit.
 - **Gattling ramp-up:** consecutive shots on the same target raise the fire rate in two steps; the speed-up is lost after the coast time without firing.
 - **Salvage:** a vehicle killed by a GLA salvager drops a crate that only GLA sees. A weapon salvager picks it up for its next weapon tier (two tiers); others get money. **Departure:** Wargrid has no veterancy, so Zero Hour's 25 % level-up branch is money instead, until veterancy arrives in batch A.
 - **Rockets:** the three rocket infantry use instant hits (decided), with their own damage types and armor rows.
@@ -137,7 +140,7 @@ Cargo and destroyed-destination rules stay as M3 defines them. Locomotion decide
 - **One container system:** Humvee and Technical hold 5 each.
 - **Tunnel network:** all tunnels of one player share one container of 10. A unit enters one tunnel and exits from any other; occupants heal to full within 5 s.
 - **On completion,** the tunnel spawns 2 rocket infantry once.
-- **When the last tunnel dies,** whoever is inside dies too (Zero Hour behaviour to confirm at planning).
+- **When the last tunnel dies,** whoever is inside is removed without death events (source: `TunnelTracker.cpp:211-247` deletes them with `destroyObject`; confirmed at planning, [evidence](../../reference/m7-factions.md#findings)). With another tunnel left, occupants stay safe.
 - **Same-tick interaction cases** with every existing command and with removal go into the plan (AGENTS).
 
 ### 8. Faction choice and match start
@@ -166,6 +169,10 @@ Each gate is playable offline and online, followed by a user playtest. Each runs
 3. **GLA:** Worker building and collecting, no power, rebuild holes, Rebel, RPG Trooper, Technical with transport, Scorpion, salvage, tunnel network. This is also the M7 exit gate.
 
 **Exit gate (M7):** all three gates passed. A headless 3v3 bots-only team match on Ashfall with all three factions runs deterministically to a result. Its ledger rows are inside the simulation budgets, and anything still over is reported as exceeded under the fallback in §1. Parity results are recorded as a decision list.
+
+**Match windows (user, 2026-11-06).** Command Centers and the Zero Hour survival rule lengthen matches. From the Command Center task on, the scripted 1v1 test accepts a terminal tick in 8000-17999 (`TICK_LIMIT` 18000, winner still team 1) and the team match cap is 45000 with result `won`. A result beyond those is a stop.
+
+**Plan detail (user, 2026-11-06).** The [plan](../plans/2026-11-06-m7-factions.md) is written at step level for gate 1 only. Gates 2 and 3 are outlines that an Opus (high) planning session expands after the preceding gate's playtest, while execution runs on Sonnet (medium).
 
 ## Constraints
 
