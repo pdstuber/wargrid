@@ -27,12 +27,14 @@ func _run() -> void:
 		breached.append("defences")
 	if not _measure("docks"):
 		breached.append("docks")
+	if not _measure("hordes"):
+		breached.append("hordes")
 	if not breached.is_empty():
 		for layout: String in breached:
 			push_error("Combat benchmark failed for " + layout)
 		quit(1)
 		return
-	print("COMBAT BENCHMARK PASSED 7")
+	print("COMBAT BENCHMARK PASSED 8")
 	quit(0)
 
 func _measure(layout: String) -> bool:
@@ -60,6 +62,8 @@ func _measure(layout: String) -> bool:
 	var credits_at_window: int = 0
 	var waiting_ticks: int = 0
 	var stacked_ticks: int = 0
+	var horde_checks: int = 0
+	var horde_peak: int = 0
 	for tick in range(WARMUP + SAMPLES):
 		var started: int = Time.get_ticks_usec()
 		sim.step()
@@ -77,6 +81,9 @@ func _measure(layout: String) -> bool:
 				deaths += 1
 		if tick == WARMUP: credits_at_window = state.players[0].credits
 		if tick >= WARMUP:
+			horde_checks += sim.horde_checks()
+			var level_two: int = state.entities.filter(func(unit: Dictionary) -> bool: return unit.combat != null and unit.combat.get("horde", 0) == 2).size()
+			horde_peak = maxi(horde_peak, level_two)
 			var docked: Dictionary = {}
 			var waiting: bool = false
 			var stacked: bool = false
@@ -113,6 +120,12 @@ func _measure(layout: String) -> bool:
 		print("COMBAT DEFENCES defence_shots_window=", defence_shots, " report-only until gate 1")
 		if defence_shots == 0:
 			push_error("Combat benchmark: no defence shots inside the timed window")
+			return false
+		return true
+	if layout == "hordes":
+		print("COMBAT HORDES checks_window=", horde_checks, " level2_peak_window=", horde_peak, " report-only")
+		if horde_checks == 0 or horde_peak == 0:
+			push_error("Combat benchmark: no horde checks or no horde of five inside the timed window")
 			return false
 		return true
 	if layout == "docks":

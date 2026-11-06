@@ -19,7 +19,7 @@ code=$?
 cat "$log_dir/combat.log"
 [ "$code" -eq 0 ] || exit 1
 if grep -E 'ERROR:|SCRIPT ERROR:' "$log_dir/combat.log"; then exit 1; fi
-grep -Eq '^COMBAT BENCHMARK PASSED 7$' "$log_dir/combat.log" || exit 1
+grep -Eq '^COMBAT BENCHMARK PASSED 8$' "$log_dir/combat.log" || exit 1
 [ "$(grep -c '^COMBAT BUDGET PASS ' "$log_dir/combat.log")" -eq 2 ] || exit 1
 "$engine" --headless --path "$repo_root/game" --script res://benchmarks/run_lockstep.gd >"$log_dir/lockstep.log" 2>&1
 code=$?

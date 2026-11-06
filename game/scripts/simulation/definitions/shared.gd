@@ -21,5 +21,7 @@ const WEAPONS := {
 }
 
 # Zero Hour ScatterRadiusVsInfantry 10 and a 12-unit reach, scaled by 25/15 for Wargrid's one-unit-per-cell spacing, less the 7-unit Ranger radius (docs/reference/m6-verification.md, Splash finding).
+# gamedata.ini:319, applied as a rate multiplier in percent.
+const HORDE_RATE_PERCENT: int = 150
 const SCATTER_VS_INFANTRY: float = 2.0 / 3.0
 const INFANTRY_BLAST: float = 0.52

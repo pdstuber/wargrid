@@ -7,13 +7,13 @@ Plan: [M7 plan](../superpowers/plans/2026-11-06-m7-factions.md). Design: [M7 des
 ```text
 Resume record (updated 2026-11-06, gate 1 signed off)
 Branch / base commit / working-tree state: m7-factions rebased onto main 025540d; origin/m7-factions at 29507ed (CI green there), local HEAD adds the R1 planning docs (8f022b0, ed48b2e, not pushed); tree clean. R1 release workflow lives on its own branch r1-release (not pushed), see docs/reference/release-verification.md; it is not part of gate 2
-Last green task / next incomplete task: G2.2 done and uncommitted (China roster, quantity, bot lists) / commit it (message "Add the China roster and two-unit militia orders"), then G2.3
-Changed paths since last commit: china.gd, factions.gd, shared.gd, production.gd, base_main.gd; tests test_factions, test_production, test_combat, test_skirmish, test_base_scene, test_online_scene, test_view; m7-verification.md
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 358 cases / 134,439 / 0, exit 0, TESTS PASSED 134439 (baseline 352 / 134,406; HEAD fe33064 with traces on: 352 / 134,413); four traces cmp-identical to HEAD fe33064; lint, warnings (86 files), test_faction_guard.py OK; netplay and benchmarks not rerun (no simulation change for USA)
+Last green task / next incomplete task: G2.3 done and uncommitted (horde, marker, hordes benchmark) / commit it ("Add the horde bonus and its marker"), then checkpoint restart, then G2.4
+Changed paths since last commit: horde.gd (new), simulation.gd, combat.gd, shared.gd, china.gd, world_view.gd, combat_workload.gd, run_combat.gd, tools/run_benchmark.sh; tests test_horde (new, registered), test_view; m7-verification.md
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh (traces on), 366 cases / 134,467 / 0, exit 0, TESTS PASSED 134467 (baseline HEAD 95094e8 with traces on: 358 / 134,439); four traces cmp-identical to HEAD; lint, warnings (86 tracked files + the two new files checked by hand), test_faction_guard.py OK; run_benchmark.sh exit 0, COMBAT BENCHMARK PASSED 8; netplay not rerun (no USA simulation change)
 Known red case or blocker: none (combat stress rows exceed the 1.82 / 3.64 budget: reported, not loosened)
 Approved decisions, pre-authorizations used, deferred gates: pushes approved 2026-11-06 (m7-factions only); user sign-off of gate 1 and its visuals 2026-11-06; WAVE_MIN 6 accepted "for now" (revisit at M8 research and gates 2-3); rulings as logged in the sections above. Open for the user: analyze.py burst/reach tolerance, Dozer mid-turn dip, team match winner flip (accepted by silence, not stated)
 Usage so far: not recorded
-Next exact action: commit G2.2, then dispatch G2.3 (horde). Departures from G2.2 recorded in Departures and deferrals.
+Next exact action: commit G2.3, then G2.4 (ramp). Departures from G2.3 in the G2.3 record.
 ```
 
 ## Pins at base
@@ -395,3 +395,23 @@ Departures and decisions (G2.2):
 - Quantity spawn: `Production.free_exits` counts walkable, in-bounds, unoccupied perimeter cells; fewer than `quantity` free means no spawn and the entry stays. Quantity 1 and air paths are unchanged, so USA traces did not move.
 - Button label comes from `base_main.menu_label` (skirmish shares it), so no `skirmish_main.gd` edit.
 - `test_bot_plays_china` runs the bot 4000 ticks and checks first building `china_power_plant`, only `china_` units, at least one combat unit.
+
+## G2.3 record
+
+Red first (stubs for `bonus_delay` and `horde_marks` so the suite compiled; before them the suite did not compile): `test_horde_needs_five`, `test_horde_infantry_mix_counts`, `test_horde_rub_off`, `test_horde_cadence`, `test_horde_allies_only`, `test_horde_change_restarts_delay`, `test_horde_marks`. `test_horde_vehicle_exact_kind` failed only its positive half (5 tanks reach 2); its negative half (4 tanks + a rotary tank stay 0) passes without any horde code, so it was not red. Mutations: removing the container filter fails H6; disabling the restart fails H7 (wrong 4 of 4).
+
+| test | assertion | old → new | cause |
+|---|---|---|---|
+| run_benchmark.sh, run_combat.gd | `COMBAT BENCHMARK PASSED` | 7 → 8 | G2.3 `hordes` layout |
+
+Benchmark `hordes` (60 militia, 20 medium tanks vs 100 riflemen, Apple M6): p50 1.20 / p95 2.08 / p99 2.83 ms; window `horde_checks` 4662, level-2 peak 75. Report-only (over the 1.82 / 3.64 budget at p95 and under p99; no ceiling pinned, no budget loosened). The `docks` and `hordes` rows are not in the ledger yet.
+
+Departures and decisions (G2.3):
+- Resume record said G2.2 uncommitted; HEAD 95094e8 already holds it (record fixed).
+- `Combat.bonus_delay(combat, _weapon, ticks)` keeps the plan signature; the weapon is unused until G2.4 adds the ramp branch. `Combat.restart_wait(sim, combat, weapon)` is the shared "bonus change restarts the wait" helper (G2.4 calls it too).
+- `horde_checks()` counts units checked (due checks), not pair tests.
+- Marker is white, not the owner colour: the unit rectangle is owner-coloured and the mark sits inside it (test requirement), so an owner-coloured diamond would be invisible. Centre is 4 px below the rectangle top, radius 3.
+- The horde fields for `china_rifle_infantry`, `china_rocket_infantry`, `china_light_vehicle` were not in G2.2; added here per the values table.
+- `Horde.step` skips the whole pass when no armed unit has `horde`; `combat.horde` and `combat.horde_tick` exist only on horde kinds, so USA snapshots are unchanged.
+- H7 asserts at least one pending restart (all four flips happen, but infantry re-check and fire both run on a 30-tick cadence, so some flips coincide with the firing tick and nothing is pending then).
+- `tools/run_warnings.sh` reads `git ls-files`, so untracked new scripts are skipped until staged; the two new files were checked with `--check-only` by hand.

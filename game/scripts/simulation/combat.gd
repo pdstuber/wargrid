@@ -6,6 +6,7 @@ const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Containers = preload("res://scripts/simulation/containers.gd")
+const Shared = preload("res://scripts/simulation/definitions/shared.gd")
 const REPATH_TICKS: int = 8
 # Zero Hour fires at range - 0.1 cells measured edge to edge; EDGE_EPS absorbs float noise at the boundary.
 const RANGE_SLACK: float = 0.1
@@ -439,16 +440,27 @@ static func splash_victims(sim: Simulation, impact: Vector2, radius: float, affe
 	victims.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.id < b.id)
 	return victims
 
+# shortcut: horde wins over ramp; combine them when a kind has both.
+static func bonus_delay(combat: Dictionary, _weapon: Dictionary, ticks: int) -> int:
+	@warning_ignore("integer_division")
+	return ticks * 100 / (Shared.HORDE_RATE_PERCENT if combat.get("horde", 0) > 0 else 100)
+
+# Object.cpp:4674-4684: a bonus change restarts the wait that is pending, at the new rate.
+static func restart_wait(sim: Simulation, combat: Dictionary, weapon: Dictionary) -> void:
+	if combat.next_fire_tick <= sim._tick: return
+	var reloading: bool = weapon.clip_size > 0 and combat.shots_left == weapon.clip_size
+	combat.next_fire_tick = sim._tick + bonus_delay(combat, weapon, weapon.reload_ticks if reloading else weapon.delay_ticks)
+
 static func _reload(sim: Simulation, combat: Dictionary, weapon: Dictionary) -> void:
 	if weapon.clip_size == 0:
-		combat.next_fire_tick = sim._tick + weapon.delay_ticks
+		combat.next_fire_tick = sim._tick + bonus_delay(combat, weapon, weapon.delay_ticks)
 		return
 	combat.shots_left -= 1
 	if combat.shots_left == 0:
 		combat.shots_left = weapon.clip_size
-		combat.next_fire_tick = sim._tick + weapon.reload_ticks
+		combat.next_fire_tick = sim._tick + bonus_delay(combat, weapon, weapon.reload_ticks)
 	else:
-		combat.next_fire_tick = sim._tick + weapon.delay_ticks
+		combat.next_fire_tick = sim._tick + bonus_delay(combat, weapon, weapon.delay_ticks)
 
 static func object_removed(sim: Simulation, id: int) -> void:
 	for unit: Dictionary in sim._entities.values():

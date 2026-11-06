@@ -120,6 +120,15 @@ func order_marks() -> Array[Vector2]:
 func health_rect(bounds: Rect2) -> Rect2:
 	return Rect2(bounds.position + Vector2(0, -10), HEALTH_BAR)
 
+# Top edge of the unit rectangle, just under its health bar.
+func horde_marks() -> Array[Vector2]:
+	var marks: Array[Vector2] = []
+	for unit: Dictionary in _state.get("entities", []):
+		if unit.get("combat") != null and unit.combat.get("horde", 0) > 0:
+			var bounds: Rect2 = _vehicle_bounds(unit)
+			marks.append(Vector2(bounds.get_center().x, bounds.position.y + 4.0))
+	return marks
+
 func heading_marks() -> Array[Dictionary]:
 	var marks: Array[Dictionary] = []
 	for unit: Dictionary in _state.get("entities", []):
@@ -183,6 +192,7 @@ func _draw() -> void:
 		draw_line(point - Vector2(6, 0), point + Vector2(6, 0), Color("8cff87"), 2.0)
 		draw_line(point - Vector2(0, 6), point + Vector2(0, 6), Color("8cff87"), 2.0)
 	for mark in heading_marks(): draw_line(mark.from, mark.to, Color.WHITE, 2.0)
+	for mark in horde_marks(): draw_colored_polygon(PackedVector2Array([mark + Vector2(0, -3), mark + Vector2(3, 0), mark + Vector2(0, 3), mark + Vector2(-3, 0)]), Color.WHITE)
 	Profiler.end(&"draw.units", zone)
 	zone = Profiler.begin()
 	_draw_focus()

@@ -10,7 +10,7 @@ const CombatFixture = preload("res://tests/combat_fixture.gd")
 const MovementWorkload = preload("res://scripts/debug/movement_workload.gd")
 
 func cases() -> Array[Callable]:
-	return [test_pick, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_heading_mark_layout,test_depth_order_matches_comparator,test_battery_shot_line,test_battery_target_line,test_building_icons,test_building_label_has_no_kind_id]
+	return [test_pick, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_heading_mark_layout,test_depth_order_matches_comparator,test_battery_shot_line,test_battery_target_line,test_building_icons,test_building_label_has_no_kind_id,test_horde_marks]
 
 func test_pick(runner) -> bool:
 	var view = View.new()
@@ -252,4 +252,23 @@ func test_building_label_has_no_kind_id(runner) -> bool:
 	runner.check(not label.contains("usa_") and not label.contains("P1") and label.ends_with("%"), "I4 progress label is just the percent, got " + label)
 	building.completed = true
 	runner.check(View.building_label(building).is_empty(), "I4 a completed building has no world text")
+	return true
+
+func test_horde_marks(runner) -> bool:
+	var view = View.new()
+	var sim = Simulation.new([], Vector2i(32, 32))
+	sim.add_player(1, 1000)
+	var ids: Array = []
+	for kind in ["china_rifle_infantry", "china_rifle_infantry", "china_light_vehicle", "usa_rifle_infantry"]:
+		ids.append(sim.spawn(1, Vector2(3.5 + ids.size() * 3, 4.5), kind))
+	sim._entities[ids[0]].combat.horde = 2
+	sim._entities[ids[2]].combat.horde = 1
+	view.set_state(sim.snapshot(), [])
+	var marks: Array[Vector2] = view.horde_marks()
+	runner.check(marks.size() == 2, "V3 one horde mark per unit with a bonus")
+	for index in [0, 2]:
+		var bounds: Rect2 = view._vehicle_bounds(view._state.entities[index])
+		var hit: Array = marks.filter(func(mark: Vector2) -> bool: return bounds.has_point(mark) and mark.y > view.health_rect(bounds).end.y)
+		runner.check(hit.size() == 1, "V3 the mark of unit %d sits inside its bounds below the health bar" % index)
+	view.free()
 	return true

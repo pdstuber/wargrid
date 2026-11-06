@@ -8,6 +8,7 @@ const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
 const Combat = preload("res://scripts/simulation/combat.gd")
 const Containers = preload("res://scripts/simulation/containers.gd")
+const Horde = preload("res://scripts/simulation/horde.gd")
 const Locomotion = preload("res://scripts/simulation/locomotion.gd")
 const Allocation = preload("res://scripts/simulation/destination_allocation.gd")
 const Navigation = preload("res://scripts/simulation/grid_navigation.gd")
@@ -33,6 +34,7 @@ var _last_sequences: Dictionary = {}
 var _combat_events: Array[Dictionary] = []
 var _match: Variant = null
 var _combat_work: int = 0
+var _horde_checks: int = 0
 var _chases: Dictionary = {}
 var _scan_chases: int = 0
 var _retaliations: int = 0
@@ -78,6 +80,9 @@ func spawn(owner: int, position: Vector2, kind: String = "", occupied: Variant =
 	var id: int = _next_entity_id
 	_entities[id] = {"id": id, "owner": owner, "position": [position.x, position.y], "order": null, "status": "idle", "route": [], "destination": null, "kind":kind,"hp":CombatDefinitions.profile(kind).max_hp,"max_hp":CombatDefinitions.profile(kind).max_hp,"combat":CombatDefinitions.initial_combat(kind),"speed":0.0,"move_after":0,"heading":[1.0,0.0],"construction_id":null,"collection": {"enabled":false,"preferred_source_id":null,"target_id":null,"phase":"idle","remaining_ticks":0,"retry_tick":0,"cargo":0} if not Registry.collects(kind).is_empty() else null}
 	_next_entity_id += 1
+	if Registry.kind(kind).has("horde") and _entities[id].combat != null:
+		_entities[id].combat.horde = 0
+		_entities[id].combat.horde_tick = Horde.first_check(self,kind)
 	return id
 
 func occupied_cells() -> Dictionary:
@@ -451,6 +456,9 @@ func _service_paths() -> void:
 func combat_work() -> int:
 	return _combat_work
 
+func horde_checks() -> int:
+	return _horde_checks
+
 func scan_chases() -> int:
 	return _scan_chases
 
@@ -475,6 +483,7 @@ func step() -> void:
 	_command_results.clear()
 	_combat_events.clear()
 	_combat_work = 0
+	_horde_checks = 0
 	_scan_chases = 0
 	_retaliations = 0
 	_allocation_calls = 0
@@ -516,6 +525,7 @@ func step() -> void:
 		if unit.status == "moving": _advance(unit)
 		elif unit.status != "path_pending": unit.speed = 0.0
 	Containers.step(self)
+	Horde.step(self,armed)
 	var moved: Array[int] = []
 	for id in armed:
 		if _entities[id].position != before[id] and not _entities[id].has("container_id"): moved.append(id)
