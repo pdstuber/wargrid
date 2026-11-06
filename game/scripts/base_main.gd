@@ -3,6 +3,7 @@ extends "res://scripts/main.gd"
 const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const Construction = preload("res://scripts/simulation/construction.gd")
+const MENU_COLUMNS: int = 4
 var selected_building_id: int = -1
 var _placement_kind: String = ""
 var _pending_placement: String = ""
@@ -10,8 +11,14 @@ var _preview_origin: Vector2i
 var _last_result_tick: int = -1
 var _last_result_sequence: int = -1
 var _preview_key: Array = []
+var _menu: Array = []
 
 func _ready() -> void:
+	var menu := GridContainer.new()
+	menu.name = "BuildMenu"
+	menu.columns = MENU_COLUMNS
+	$HUD/Economy.add_child(menu)
+	$HUD/Economy.move_child(menu,0)
 	super._ready()
 	$HUD/Economy/Produce.pressed.connect(_produce_selected)
 	$HUD/Economy/CancelBuild.pressed.connect(_cancel_build)
@@ -23,9 +30,6 @@ func _create_simulation() -> Simulation:
 	sim.add_supply_source(Vector2i(24,4),200)
 	return sim
 
-func _placement_kinds() -> Dictionary:
-	return {KEY_1:"usa_power_plant",KEY_2:"usa_supply_center",KEY_3:"usa_factory"}
-
 func _hint_point(payload: Dictionary) -> Variant:
 	if payload.type != "resume_build": return super._hint_point(payload)
 	var building: Dictionary = _building(simulation.snapshot(),payload.building_id)
@@ -33,7 +37,7 @@ func _hint_point(payload: Dictionary) -> Variant:
 	return Vector2(building.origin[0],building.origin[1]) + Vector2(Definitions.building(building.kind).footprint) / 2.0
 
 func _build_hint() -> String:
-	return "1/2/3 build"
+	return "1-9: menu"
 
 func _production_kind(building: Dictionary) -> String:
 	return Definitions.building(building.kind).produces
@@ -69,12 +73,42 @@ func _refresh_hud(state: Dictionary) -> void:
 	var player: Dictionary = _local_state(state)
 	var building: Dictionary = _building(state,selected_building_id)
 	var detail: String = "Units: " + str(selected_ids)
-	if not building.is_empty(): detail = "%s #%d | Work %d/%d" % [building.kind,building.id,building.work,Definitions.building(building.kind).ticks * 1000]
+	if not building.is_empty(): detail = "%s #%d | Work %d/%d" % [Registry.kind(building.kind).display_name,building.id,building.work,Definitions.building(building.kind).ticks * 1000]
 	var resume: String = "Right-click: resume\n" if _view.resume_candidate() != -1 else ""
 	_status.text = "Credits: %d | Power: %d/%d | Tick: %d\n%s | Place: %s\n%s | Right: context/move | E: produce | Esc: cancel\n%s%s" % [player.credits,player.power_supply,player.power_demand,state.tick,detail,_placement_kind,_build_hint(),resume,_error]
 	$HUD/Economy/Produce.visible = not building.is_empty() and building.completed and not _production_kind(building).is_empty()
 	$HUD/Economy/CancelBuild.visible = not building.is_empty() and not building.completed
+	_refresh_menu(_menu_kinds(state,building))
 	_refresh_queue(building.get("queue",[]))
+
+func _menu_kinds(state: Dictionary, building: Dictionary) -> Array:
+	if not building.is_empty(): return Registry.kind(building.kind).produces if building.completed else []
+	var kind: String = Registry.faction(_local_state(state).get("faction",Registry.Factions.DEFAULT_FACTION)).get("start_unit","")
+	if selected_ids.size() == 1:
+		for unit: Dictionary in state.entities:
+			if unit.id == selected_ids[0] and Registry.is_builder(unit.kind): kind = unit.kind
+	return Registry.kind(kind).get("builds",[])
+
+static func menu_label(index: int, kind: String) -> String:
+	return "%d: %s $%d" % [index + 1,Registry.kind(kind).display_name,Registry.kind(kind).cost]
+
+func _refresh_menu(kinds: Array) -> void:
+	_menu = kinds
+	var grid: GridContainer = $HUD/Economy/BuildMenu
+	while grid.get_child_count() > kinds.size(): grid.get_child(grid.get_child_count() - 1).free()
+	for i in kinds.size():
+		var button: Button = grid.get_child(i) if i < grid.get_child_count() else null
+		if button == null:
+			button = Button.new()
+			button.pressed.connect(_menu_choose.bind(i,false))
+			grid.add_child(button)
+		button.text = menu_label(i,kinds[i])
+
+func _menu_choose(index: int, from_key: bool) -> void:
+	var kind: String = _menu[index]
+	if selected_building_id != -1: _submit({"type":"produce","building_id":selected_building_id,"unit_kind":kind})
+	elif from_key and is_selecting(): _pending_placement = kind
+	else: _enter_placement(kind)
 
 func _refresh_queue(queue: Array) -> void:
 	var ids: Array = queue.map(func(entry: Dictionary) -> String: return str(entry.id))
@@ -90,8 +124,9 @@ func _refresh_queue(queue: Array) -> void:
 		button.text = queue_label(entry)
 
 static func queue_label(entry: Dictionary) -> String:
-	if entry.work == 0: return "Cancel %s (queued)" % entry.kind
-	return "Cancel %s (%d%%)" % [entry.kind,entry.work * 100 / (Definitions.unit(entry.kind).ticks * 1000)]
+	var label: String = Registry.kind(entry.kind).display_name
+	if entry.work == 0: return "Cancel %s (queued)" % label
+	return "Cancel %s (%d%%)" % [label,entry.work * 100 / (Definitions.unit(entry.kind).ticks * 1000)]
 
 func pan_camera(direction: Vector2, delta: float) -> void:
 	if _placement_kind.is_empty(): super.pan_camera(direction,delta)
@@ -138,10 +173,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			_refresh()
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.physical_keycode == KEY_B: return
-		var kind: String = _placement_kinds().get(event.physical_keycode,"")
-		if not kind.is_empty():
-			if is_selecting(): _pending_placement = kind
-			else: _enter_placement(kind)
+		var index: int = event.physical_keycode - KEY_1
+		if index >= 0 and index < _menu.size():
+			_menu_choose(index,true)
 			return
 		if event.physical_keycode == KEY_E:
 			if not is_selecting() and _placement_kind.is_empty(): _produce_selected()

@@ -28,7 +28,7 @@ class FakeTransport extends RefCounted:
 	func rtt_samples() -> PackedInt64Array: return PackedInt64Array([40000])
 
 func cases() -> Array[Callable]:
-	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_rejection_line, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_launcher_layout]
+	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_rejection_line, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_launcher_layout, test_launcher_faction_selectors_fit]
 
 func _online(runner, seat: int) -> Dictionary:
 	var transport := FakeTransport.new()
@@ -203,4 +203,24 @@ func test_rejection_line(runner) -> bool:
 	runner.check(main.get_node("HUD/Status").text.contains("Rejected: No units left"), "H5 online rejection line, got " + main.get_node("HUD/Status").text)
 	_layout_ok(runner, main, "rejection")
 	main.free()
+	return true
+
+func test_launcher_faction_selectors_fit(runner) -> bool:
+	var original: Vector2i = runner.root.size
+	for size in [Vector2i(1280, 720), Vector2i(1920, 1080)]:
+		runner.root.size = size
+		var launcher = Launcher.instantiate()
+		runner.root.add_child(launcher)
+		await runner.process_frame
+		await runner.process_frame
+		var box: Control = launcher.get_node("Center/Box")
+		var own: OptionButton = launcher.get_node("Center/Box/FactionRow/Own")
+		var opponent: OptionButton = launcher.get_node("Center/Box/FactionRow/Opponent")
+		runner.check(box.get_global_rect().encloses(own.get_global_rect()) and box.get_global_rect().encloses(opponent.get_global_rect()), "F5 selectors inside the box at %s" % size)
+		runner.check(not own.get_global_rect().intersects(opponent.get_global_rect()), "F5 selectors do not overlap at %s" % size)
+		for path in ["Offline", "RelayUrl", "Create", "JoinRow", "Status"]:
+			runner.check(not launcher.get_node("Center/Box/FactionRow").get_global_rect().intersects(launcher.get_node("Center/Box/" + path).get_global_rect()), "F5 row clear of %s at %s" % [path, size])
+		runner.check(own.item_count >= 1 and own.get_item_text(0) == "United States", "F5 selector lists faction display names")
+		launcher.free()
+	runner.root.size = original
 	return true

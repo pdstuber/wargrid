@@ -4,6 +4,8 @@ const Lockstep = preload("res://scripts/net/lockstep.gd")
 const RelayTransport = preload("res://scripts/net/relay_transport.gd")
 const Wire = preload("res://scripts/net/wire.gd")
 const OnlineScene = preload("res://scenes/online_skirmish.tscn")
+const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
+const SkirmishMain = preload("res://scripts/skirmish_main.gd")
 const OFFLINE_SCENE: String = "res://scenes/skirmish.tscn"
 const HEADLESS_FLAGS: Array[String] = ["--netclient", "--relay", "--replay-log", "--probe-relay"]
 var _transport: RefCounted
@@ -19,12 +21,26 @@ func _ready() -> void:
 		if flag in OS.get_cmdline_user_args():
 			get_tree().change_scene_to_file.call_deferred("res://scenes/net_headless.tscn")
 			return
+	_fill_factions()
 	$Center/Box/Offline.pressed.connect(_play_offline)
 	$Center/Box/Create.pressed.connect(_connect.bind(""))
 	$Center/Box/JoinRow/Join.pressed.connect(func() -> void: _connect($Center/Box/JoinRow/Code.text.strip_edges().to_upper()))
 	set_process(false)
 
+func _fill_factions() -> void:
+	var ids: Array = Registry.Factions.FACTIONS.keys()
+	ids.sort()
+	for selector: OptionButton in [$Center/Box/FactionRow/Own, $Center/Box/FactionRow/Opponent]:
+		for id: String in ids:
+			selector.add_item(Registry.faction(id).display_name)
+			selector.set_item_metadata(selector.item_count - 1, id)
+		selector.select(maxi(ids.find(Registry.Factions.DEFAULT_FACTION), 0))
+
+func _faction(selector: OptionButton) -> String:
+	return selector.get_item_metadata(selector.selected)
+
 func _play_offline() -> void:
+	SkirmishMain.factions = {1: _faction($Center/Box/FactionRow/Own), 2: _faction($Center/Box/FactionRow/Opponent)}
 	get_tree().change_scene_to_file(OFFLINE_SCENE)
 
 func _connect(code: String) -> void:
@@ -40,7 +56,7 @@ func _connect(code: String) -> void:
 	set_process(true)
 
 func _set_busy(busy: bool) -> void:
-	for path: String in ["Offline", "Create", "RelayUrl", "JoinRow/Code", "JoinRow/Join"]:
+	for path: String in ["Offline", "Create", "RelayUrl", "JoinRow/Code", "JoinRow/Join", "FactionRow/Own", "FactionRow/Opponent"]:
 		var control: Control = get_node("Center/Box/" + path)
 		if control is BaseButton: control.disabled = busy
 		else: control.editable = not busy
@@ -86,7 +102,7 @@ func _start(message: Dictionary) -> void:
 	seats.assign(message.seats)
 	_lockstep = Lockstep.new(_seat, seats, message.delay)
 	var game: Node = OnlineScene.instantiate()
-	game.setup(_transport, _lockstep, _seat)
+	game.setup(_transport, _lockstep, _seat, _faction($Center/Box/FactionRow/Own))
 	get_tree().root.add_child(game)
 	get_tree().current_scene = game
 	queue_free()

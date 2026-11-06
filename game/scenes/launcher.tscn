@@ -30,6 +30,19 @@ theme_override_font_sizes/font_size = 40
 layout_mode = 2
 text = "Play offline"
 
+[node name="FactionRow" type="HBoxContainer" parent="Center/Box"]
+layout_mode = 2
+
+[node name="Own" type="OptionButton" parent="Center/Box/FactionRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Your faction"
+
+[node name="Opponent" type="OptionButton" parent="Center/Box/FactionRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Opponent faction (offline only)"
+
 [node name="RelayUrl" type="LineEdit" parent="Center/Box"]
 layout_mode = 2
 text = "wss://wargrid-relay-jvm.fly.dev/ws"

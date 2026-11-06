@@ -5,15 +5,15 @@ Plan: [M7 plan](../superpowers/plans/2026-11-06-m7-factions.md). Design: [M7 des
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-06, Task 6 done, uncommitted)
-Branch / base commit / working-tree state: m7-factions at 2708377 (Task 5 commit); Task 6 changes uncommitted
-Last green task / next incomplete task: Task 6 (choose_faction and the setup phase) / Task 7 (launcher faction selectors and build menu)
-Changed paths since last commit: game/scripts/simulation/{simulation,skirmish,map_data}.gd, game/scripts/{online_main}.gd, game/scripts/net/headless_client.gd, tools/run_netplay.sh, game/tests/{test_factions,test_wire,test_online_scene}.gd, this file
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 291 cases / 112,810 checks / 0 failures, exit 0, TESTS PASSED 112810; lint, warnings (80 files), unittest discover (39), run_conformance (33) pass; run_netplay.sh all nine scenarios pass (match terminal tick 9166)
+Resume record (updated 2026-11-06, Task 7 done, uncommitted)
+Branch / base commit / working-tree state: m7-factions at bd29536 (Task 6 commit); Task 7 changes uncommitted
+Last green task / next incomplete task: Task 7 (launcher faction selectors and build menu) / Task 8 (rocket infantry, armed scout car, bot unit lists)
+Changed paths since last commit: game/scripts/{launcher,base_main,skirmish_main}.gd, game/scenes/launcher.tscn, game/tests/{test_base_scene,test_skirmish_scene,test_online_scene}.gd, this file
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 294 cases / 112,900 checks / 0 failures, exit 0, TESTS PASSED 112900; lint and warnings (80 files) pass
 Known red case or blocker: none
 Approved decisions, pre-authorizations used, deferred gates: local commit per green task (milestone prompt); D1 legacy projections (user, 2026-11-06); wider match windows (user, 2026-11-06)
 Usage so far: not recorded
-Next exact action: commit Task 6, then Task 7. Benchmarks (BM6 rendered/stress) not rerun in Tasks 5-6.
+Next exact action: commit Task 7, then Task 8. Benchmarks and visible checks (launcher/menu look, rendered HUD) not run; batch for the gate.
 ```
 
 ## Pins at base
@@ -37,6 +37,8 @@ Next exact action: commit Task 6, then Task 7. Benchmarks (BM6 rendered/stress) 
 | test_team_match | TB3 completed buildings per seat | 4 → 5 | Task 5 (command center) |
 | run_netplay.sh | `match` terminal tick | 8242 → 9373 | Task 5 |
 | run_netplay.sh | `match` terminal tick | 9373 → 9166 | Task 6 (online ids shift: sources take ids 1-2, units follow at tick 4; inside window) |
+| test_skirmish_scene | H1 build line | `1/2/3/4 build` (skirmish), `1/2/3 build` (base) → `1-9: menu` (both) | Task 7 (spec: hint drops the key list) |
+| test_base_scene, test_skirmish_scene | Bs5 queue label, E1 enemy line, K4 HUD line | kind id → display name (`Cancel Battle Tank (90%)`, `Enemy (P2) Battle Tank #`) | Task 7 display names |
 | debug/team_match.gd | `TEAM_TICK_CAP` | 27000 → 45000 | Task 5 (user window); match ends won, winner 1, tick 37074 |
 
 ## Departures and deferrals
@@ -56,6 +58,8 @@ Next exact action: commit Task 6, then Task 7. Benchmarks (BM6 rendered/stress) 
 
 - Task 6: online `Skirmish.create(true, "human", {})` defers seat setup (`MapData.create` seat key `defer`), so supply sources take entity ids 1-2 and the seats follow (builder 3, command center 4, builder 5, command center 6). `launcher.gd` unchanged: `online_main.setup` takes an optional `faction` (default from `Skirmish.default_faction()`), the launcher selector is Task 7. The headless client reads `--faction`. `match_over()` is now won or draw; `step()` evaluates only while `ongoing`.
 - Task 6 test changes: test_factions F4 rewritten (the plan's "third slot" is the same lockstep tick as the first two, so setup would end at tick 4; seat 2 now chooses at tick 5, its earlier stops are checked as rejected); test_wire COMMAND_TYPES gains `choose_faction` (test_lockstep L4 keeps its 11-type 121-pair matrix, not extended); test_online_scene feeds the peer's `choose_faction`, entity ids shifted (N1, N4), `_own_commands` ignores `choose_faction`. Red seen first for F3, F4, W0 and T1/T2 (new `test_choose_faction_same_tick_cases`); W1 and the N-tests broke on first implementation and were fixed (missing validator branch, test setup).
+
+- Task 7: number keys follow the build menu order (`builds` list), so key 3 is now Barracks and key 4 Vehicle Factory (were Factory/Barracks); the base scene gains key 4. With nothing or a non-builder selected, the menu shows the local faction's `start_unit` builds so keys still say "Choose one builder". Launcher has one `FactionRow` (Own, Opponent); online uses Own only, Opponent is ignored there. `SkirmishMain.factions` static carries the offline choice. Bot still builds the default faction (Task 8 lists). New tests M1-M5 (base scene), F5 (launcher).
 
 ## Base rows (tree: m7-factions, M7 Task 0 working tree, Apple M6, idle-ish)
 

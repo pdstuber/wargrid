@@ -4,25 +4,18 @@ const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 const View = preload("res://scripts/presentation/world_view.gd")
 var _attack_move_mode: bool = false
 var inspected_id: int = -1
+static var factions: Dictionary = Registry.Factions.DEFAULT_SKIRMISH
 
 func _ready() -> void:
 	super._ready()
 	$HUD/Restart.pressed.connect(_restart)
 
 func _create_simulation() -> Simulation:
-	return Skirmish.create()
+	return Skirmish.create(true, "ai", factions)
 
 func _step_simulation() -> void:
 	Skirmish.issue_opponent(simulation)
 	simulation.step()
-
-func _build_hint() -> String:
-	return "1/2/3/4 build"
-
-func _placement_kinds() -> Dictionary:
-	var kinds: Dictionary = super._placement_kinds()
-	kinds[KEY_4] = "usa_barracks"
-	return kinds
 
 func _production_kind(building: Dictionary) -> String:
 	return Skirmish.unit_for(building.kind) if not Skirmish.unit_for(building.kind).is_empty() else super._production_kind(building)
@@ -105,7 +98,7 @@ func _selected_summary(state: Dictionary) -> String:
 	if selected_ids.size() != 1: return ""
 	for unit: Dictionary in state.entities:
 		if unit.id != selected_ids[0]: continue
-		var line: String = "%s #%d HP %d/%d" % [unit.kind, unit.id, unit.hp / 1000, unit.max_hp / 1000]
+		var line: String = "%s #%d HP %d/%d" % [Registry.kind(unit.kind).display_name, unit.id, unit.hp / 1000, unit.max_hp / 1000]
 		if unit.combat != null: line += " | %s%s" % [unit.combat.mode, "" if unit.combat.target_id == null else " -> #" + str(unit.combat.target_id)]
 		if unit.collection != null and unit.collection.enabled: line += _collection_suffix(state, unit)
 		return line + "\n"
@@ -129,7 +122,7 @@ func _inspected(state: Dictionary) -> Dictionary:
 func _enemy_summary(state: Dictionary) -> String:
 	var object: Dictionary = _inspected(state)
 	if object.is_empty(): return ""
-	var line: String = "Enemy (P%d) %s #%d HP %d/%d" % [object.owner, object.kind, object.id, object.hp / 1000, object.max_hp / 1000]
+	var line: String = "Enemy (P%d) %s #%d HP %d/%d" % [object.owner, Registry.kind(object.kind).display_name, object.id, object.hp / 1000, object.max_hp / 1000]
 	var combat: Variant = object.get("combat")
 	if combat != null: line += " | " + combat.mode + ("" if combat.target_id == null else " -> #%d" % combat.target_id)
 	return line + "\n"

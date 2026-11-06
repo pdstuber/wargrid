@@ -4,10 +4,11 @@ extends RefCounted
 const Base = preload("res://scenes/base.tscn")
 const Fixture = preload("res://tests/economy_fixture.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
+const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
 
 func cases() -> Array[Callable]:
-	return [test_base_ready,test_placement_input,test_production_ui,test_context_orders,test_execution_feedback,test_preview_hover_cost,test_resume_status,test_queue_label,test_one_snapshot_per_refresh]
+	return [test_base_ready,test_placement_input,test_production_ui,test_context_orders,test_execution_feedback,test_preview_hover_cost,test_resume_status,test_queue_label,test_one_snapshot_per_refresh,test_build_menu_from_capabilities,test_build_menu_wraps_eleven]
 
 func setup(runner):
 	var main = Base.instantiate()
@@ -245,8 +246,8 @@ func test_resume_status(runner) -> bool:
 
 func test_queue_label(runner) -> bool:
 	var BaseMain = load("res://scripts/base_main.gd")
-	runner.check(BaseMain.queue_label({"id":10,"kind":"usa_tank","work":270000}) == "Cancel usa_tank (90%)","Bs5 started entry shows percent, no id or raw work")
-	runner.check(BaseMain.queue_label({"id":12,"kind":"usa_tank","work":0}) == "Cancel usa_tank (queued)","Bs5 unstarted entry shows queued")
+	runner.check(BaseMain.queue_label({"id":10,"kind":"usa_tank","work":270000}) == "Cancel Battle Tank (90%)","Bs5 started entry shows percent, no id or raw work")
+	runner.check(BaseMain.queue_label({"id":12,"kind":"usa_tank","work":0}) == "Cancel Battle Tank (queued)","Bs5 unstarted entry shows queued")
 	return true
 
 func test_one_snapshot_per_refresh(runner) -> bool:
@@ -260,5 +261,53 @@ func test_one_snapshot_per_refresh(runner) -> bool:
 	Profiler.enabled = false
 	Profiler.reset()
 	runner.check(calls == 1, "RF1 a refresh takes one snapshot, got %d" % calls)
+	main.free()
+	return true
+
+func _menu_texts(main) -> Array:
+	return main.get_node("HUD/Economy/BuildMenu").get_children().map(func(button: Button) -> String: return button.text)
+
+func test_build_menu_from_capabilities(runner) -> bool:
+	var main = await setup(runner)
+	main.simulation = Fixture.make_world(50000)
+	Fixture.build(runner,main.simulation,"usa_power_plant",Vector2i(5,5))
+	Fixture.build(runner,main.simulation,"usa_supply_center",Vector2i(10,4))
+	var factory: int = Fixture.build(runner,main.simulation,"usa_factory",Vector2i(14,4))
+	main.selected_ids.assign([1])
+	main._refresh()
+	runner.check(_menu_texts(main) == ["1: Power Plant $800","2: Supply Depot $2000","3: Barracks $600","4: Vehicle Factory $2000"],"M1 builder menu lists its builds, got %s" % [_menu_texts(main)])
+	main.selected_ids.clear()
+	main.selected_building_id = factory
+	main._refresh()
+	runner.check(_menu_texts(main) == ["1: Scout Car $700","2: Battle Tank $900"],"M2 factory menu lists produces, got %s" % [_menu_texts(main)])
+	key(main,KEY_2)
+	var pending: Array = main.simulation.snapshot().pending_commands
+	runner.check(pending.size() == 1 and pending[0].type == "produce" and pending[0].unit_kind == "usa_tank","M3 number key trains the n-th entry")
+	main.selected_building_id = -1
+	main.selected_ids.assign([1])
+	main._refresh()
+	key(main,KEY_4)
+	runner.check(main._placement_kind == "usa_factory","M4 key 4 places the fourth build")
+	main.free()
+	return true
+
+func test_build_menu_wraps_eleven(runner) -> bool:
+	var main = await setup(runner)
+	var kinds: Array = []
+	for i in 11:
+		Registry.add_test_kind("test_k%d" % i,{"display_name":"Synthetic %d" % i,"cost":100 + i})
+		kinds.append("test_k%d" % i)
+	main._refresh_menu(kinds)
+	await runner.process_frame
+	await runner.process_frame
+	var buttons: Array = main.get_node("HUD/Economy/BuildMenu").get_children()
+	var status: Label = main.get_node("HUD/Status")
+	var status_rect := Rect2(status.global_position,status.get_minimum_size())
+	runner.check(buttons.size() == 11,"M5 eleven buttons")
+	for i in buttons.size():
+		runner.check(not buttons[i].get_global_rect().intersects(status_rect),"M5 button %d clear of status" % i)
+		for j in range(i + 1,buttons.size()):
+			runner.check(not buttons[i].get_global_rect().intersects(buttons[j].get_global_rect()),"M5 buttons %d and %d do not overlap" % [i,j])
+	Registry.clear_test_kinds()
 	main.free()
 	return true

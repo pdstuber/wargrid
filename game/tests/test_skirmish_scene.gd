@@ -113,7 +113,7 @@ func test_match_hud_and_restart(runner) -> bool:
 	main.selected_ids.assign([ids.tank])
 	main._refresh()
 	var text: String = main.get_node("HUD/Status").text
-	runner.check(text.contains("Credits") and text.contains("tank #" + str(ids.tank)) and text.contains("HP 480/480") and text.contains("guard"), "K4 credits, kind, HP and order in the HUD")
+	runner.check(text.contains("Credits") and text.contains("Battle Tank #" + str(ids.tank)) and text.contains("HP 480/480") and text.contains("guard"), "K4 credits, kind, HP and order in the HUD")
 	main.simulation.remove_object(3)
 	main.simulation.remove_object(4)
 	main._physics_process(0.0)
@@ -228,11 +228,11 @@ func _pile_world(main) -> Dictionary:
 func test_hud_build_line(runner) -> bool:
 	var main = await _setup(runner)
 	var text: String = main.get_node("HUD/Status").text
-	runner.check(text.contains("1/2/3/4 build") and not text.contains("4: barracks"), "H1 skirmish build line, got " + text)
+	runner.check(text.contains("1-9: menu") and not text.contains("1/2/3"), "H1 skirmish build line, got " + text)
 	var base_helper = BaseScene.new()
 	var base = await base_helper.setup(runner)
 	var base_text: String = base.get_node("HUD/Status").text
-	runner.check(base_text.contains("1/2/3 build") and not base_text.contains("1/2/3/4"), "H1 base scene keeps 1/2/3 build")
+	runner.check(base_text.contains("1-9: menu") and not base_text.contains("1/2/3"), "H1 base scene shares the menu hint")
 	base.free()
 	main.free()
 	return true
@@ -246,7 +246,7 @@ func test_enemy_selection_read_only(runner) -> bool:
 	helper.pointer(main, enemy_point, MOUSE_BUTTON_LEFT, false)
 	var text: String = main.get_node("HUD/Status").text
 	runner.check(main.inspected_id == ids.enemy and main.selected_ids.is_empty(), "E1 left-click selects the enemy read-only and replaces own selection")
-	runner.check(text.contains("Enemy (P2) usa_tank #%d HP 480/480" % ids.enemy), "E1 enemy line, got " + text)
+	runner.check(text.contains("Enemy (P2) Battle Tank #%d HP 480/480" % ids.enemy), "E1 enemy line, got " + text)
 	runner.check(text.contains("HP 480/480 | guard"), "E1 idle enemy shows its mode, got " + text)
 	var before: Dictionary = main.simulation.snapshot()
 	helper.key(main, KEY_E)
