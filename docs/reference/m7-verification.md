@@ -5,15 +5,15 @@ Plan: [M7 plan](../superpowers/plans/2026-11-06-m7-factions.md). Design: [M7 des
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-06, Task 0 done)
-Branch / base commit / working-tree state: m7-factions from main 2d8d776; Task 0 changes uncommitted until the Task 0 commit
-Last green task / next incomplete task: Task 0 / Task 1 (performance time box)
-Changed paths since last commit: game/tests/test_team_match.gd, game/tests/test_map.gd, this file
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 278 cases / 112,742 checks / 0 failures (two identical runs)
-Known red case or blocker: none
+Resume record (updated 2026-11-06, Task 1 done)
+Branch / base commit / working-tree state: m7-factions at 063f724; Task 1 changes uncommitted until the Task 1 commit
+Last green task / next incomplete task: Task 1 (no fix kept) / Task 2 (values table, parity cadence, risk tests)
+Changed paths since last commit: game/benchmarks/run_combat.gd, this file
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 278 cases / 112,749 checks / 0 failures; run_lint.sh and run_warnings.sh pass
+Known red case or blocker: none (stress rows exceeded, recorded below)
 Approved decisions, pre-authorizations used, deferred gates: local commit per green task (milestone prompt)
 Usage so far: not recorded
-Next exact action: restart fresh session ("resume from prompt.txt"), Task 1. Baseline trace files were in a scratch dir and are lost on restart: regenerate $d0 from this commit before Task 1 fixes.
+Next exact action: restart fresh session ("resume from prompt.txt"), Task 2. Task 3 needs fresh baseline traces ($d0) from the tree before Task 3.
 ```
 
 ## Pins at base
@@ -37,6 +37,14 @@ Next exact action: restart fresh session ("resume from prompt.txt"), Task 1. Bas
 - `run_benchmark.sh` exit 1: `open` HEADLESS p95 1.96 / p99 2.244 (pass), `dense` HEADLESS p95 1.953 / p99 2.227 (pass); combat stress `open` p95 2.897 / p99 4.027 against budget 1.82 / 3.64 and ceiling 2.05 / 3.86: exceeded, run stops there so `dense` is not reported.
 - `run_team_match.sh` exit 0: `TEAM TIMING` n 20425, p50 1.433, p95 3.196, p99 6.958, max 16.423 (budget 1.82 / 3.64: exceeded).
 - bench runner combat: open p95 3.466 / p99 4.75; dense p95 3.838 / p99 5.668; contact 1.318 / 2.173; skirmish3v3 1.633 / 2.077 (single run, runner is noisier than `run_combat.gd`).
+
+## Task 1 (performance time box)
+
+- `run_combat.gd` now prints every layout and fails once at the end (`open` and `dense` both print).
+- Profile (`run_profile.sh`, combat_open p95 ms): `step` 2.784, `step.combat_plan` 2.027, `combat.nearest` 1.288 (17.65 calls/tick), `step.advance` 0.652, `step.combat_fire` 0.375. `skirmish_match` p95: `step.combat_plan` 0.267, `combat.nearest` 0.106, `step.advance` 0.104; `step.ids`, rates and `combat.build_grid` are each under 0.035 ms mean.
+- None of the plan's three candidates (`step.ids`, `step.rates`, `combat.build_grid`) targets the top zone (`combat_plan` / `combat.nearest`). The plan says: no candidate for the top zone means stop. Ruling: zero fixes kept, no trace risk taken.
+- Stress rows at this tree: `open` p95 2.773 / p99 3.813, `dense` p95 3.113 / p99 4.774 (budget 1.82 / 3.64, ceilings open 2.05 / 3.86, dense 2.52 / 4.02): exceeded. `contact` 1.152 / 1.623 and `skirmish3v3` 1.379 / 1.635 inside budget. Team match `TEAM TIMING` p95 3.196 exceeded (Task 0 row).
+- Gate-1 proposal: `combat.nearest` is the real cost; a speedup there is a candidate for a later user-approved time box, not trace-preserving by default. Stress ceilings stay.
 
 ## Values table
 

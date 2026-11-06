@@ -17,10 +17,15 @@ func _initialize() -> void:
 func _run() -> void:
 	print("M4 COMBAT HEADLESS engine=", Engine.get_version_info().string, " os=", OS.get_name(),
 		" cpu=", OS.get_processor_name(), " map=64x64 units=150v150/105v105 warmup_ticks=", WARMUP, " sample_ticks=", SAMPLES, " unpaced=true")
+	var breached: Array[String] = []
 	for layout: String in ["open", "dense", "contact", "skirmish3v3"]:
 		if not _measure(layout):
-			quit(1)
-			return
+			breached.append(layout)
+	if not breached.is_empty():
+		for layout: String in breached:
+			push_error("Combat benchmark failed for " + layout)
+		quit(1)
+		return
 	print("COMBAT BENCHMARK PASSED 4")
 	quit(0)
 
