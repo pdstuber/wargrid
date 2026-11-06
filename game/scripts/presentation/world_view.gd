@@ -16,6 +16,7 @@ var local_player: int = 1
 var _hints: Array[Dictionary] = []
 var _hovered_id: int = -1
 const HINT_TICKS: int = 40
+const HEALTH_BAR := Vector2(24, 3)
 const OWNER_COLORS := {1: Color("376eac"), 2: Color("b04a3a")}
 
 static func owner_color(owner_id: int) -> Color:
@@ -77,6 +78,16 @@ func _vehicle_bounds(unit: Dictionary) -> Rect2:
 	var half: float = {"infantry": 6.0, "tank": 15.0}.get(unit.get("kind"), 12.0)
 	return Rect2(Iso.world_to_plane(point) + Vector2(-half, -34 if unit.get("kind") == "collector" else -16), Vector2(half * 2.0, 16))
 
+func order_marks() -> Array[Vector2]:
+	var marks: Array[Vector2] = []
+	for unit: Dictionary in _state.get("entities", []):
+		if unit.owner == local_player and unit.order != null: marks.append(Iso.world_to_plane(Vector2(unit.order.target[0], unit.order.target[1])))
+	return marks
+
+# Above the focus box's outer stroke (grow 4 + half of 3 px), so the bar stays readable under a target box.
+func health_rect(bounds: Rect2) -> Rect2:
+	return Rect2(bounds.position + Vector2(0, -10), HEALTH_BAR)
+
 func heading_marks() -> Array[Dictionary]:
 	var marks: Array[Dictionary] = []
 	for unit: Dictionary in _state.get("entities", []):
@@ -133,14 +144,12 @@ func _draw() -> void:
 		if unit.get("kind") == "collector": draw_circle(Iso.world_to_plane(Vector2(unit.position[0],unit.position[1])),8,Color(0,0,0,.35))
 		var bounds: Rect2 = _vehicle_bounds(unit)
 		draw_rect(bounds, owner_color(unit.owner))
-		_draw_health(bounds.position + Vector2(0, -6), unit, _selected_ids.has(unit.id))
+		_draw_health(health_rect(bounds).position, unit, _selected_ids.has(unit.id))
 		if _selected_ids.has(unit.id):
 			draw_rect(bounds, Color("8cff87"), false, 2.0)
-		if unit.order != null:
-			var target := Vector2(unit.order.target[0], unit.order.target[1])
-			var point: Vector2 = Iso.world_to_plane(target)
-			draw_line(point - Vector2(6, 0), point + Vector2(6, 0), Color("8cff87"), 2.0)
-			draw_line(point - Vector2(0, 6), point + Vector2(0, 6), Color("8cff87"), 2.0)
+	for point in order_marks():
+		draw_line(point - Vector2(6, 0), point + Vector2(6, 0), Color("8cff87"), 2.0)
+		draw_line(point - Vector2(0, 6), point + Vector2(0, 6), Color("8cff87"), 2.0)
 	for mark in heading_marks(): draw_line(mark.from, mark.to, Color.WHITE, 2.0)
 	Profiler.end(&"draw.units", zone)
 	zone = Profiler.begin()
@@ -155,8 +164,8 @@ func _draw() -> void:
 
 func _draw_health(top_left: Vector2, object: Dictionary, selected: bool) -> void:
 	if not object.has("hp") or (not selected and object.hp >= object.max_hp): return
-	draw_rect(Rect2(top_left, Vector2(24, 3)), Color(0, 0, 0, 0.7))
-	draw_rect(Rect2(top_left, Vector2(24.0 * hp_fraction(object.hp, object.max_hp), 3)), Color("e0d060"))
+	draw_rect(Rect2(top_left, HEALTH_BAR), Color(0, 0, 0, 0.7))
+	draw_rect(Rect2(top_left, Vector2(HEALTH_BAR.x * hp_fraction(object.hp, object.max_hp), HEALTH_BAR.y)), Color("e0d060"))
 
 func focus_targets() -> Dictionary:
 	var targets := {}
