@@ -352,7 +352,7 @@ func test_terrain_redraws_only_when_map_changes(runner) -> bool:
 		view.queue_redraw()
 	await runner.process_frame
 	runner.check(terrain.draws == first,"V9 ten ticks on one map keep the cached terrain")
-	Fixture.build(runner,sim,"reactor",Vector2i(8,4))
+	Fixture.build(runner,sim,"usa_power_plant",Vector2i(8,4))
 	view.set_state(sim.snapshot(),[])
 	await runner.process_frame
 	runner.check(terrain.draws == first + 1,"V9 a new building footprint redraws the terrain")
