@@ -100,6 +100,7 @@ User: "all of the points above worked perfect" (the offline China watch list giv
 
 ## Departures and deferrals
 
+- **Accepted by the user (2026-11-07), G3.1 Lb2:** asserts no two laborers dock (loading/unloading) on the same position, not literally "no two hold the same `collection.dock` cell". The literal form hit 72/1500 ticks, all with different `target_id` (depot ring and source ring overlap at x=13), i.e. false positives. Probe (read-only scratch copy): removing the `held.has(cell)` check in `_claim_dock` turns relaxed Lb2 red (658 stacked ticks); releasing the claim at admission stays green (benign, `active_collector_id` serialises per target). Same-target literal form: 0 hits clean, 1671 on the mutation, not added.
 - **OPEN:** Full load for air collectors (Chinook) is NOT applied, ZH does apply it; applying it moved the 6-seat team match from won 33205 to won 61973 (cap 45000) via ~10% less income. Later check whether this asymmetry is fair (playtest ground vs air economy, or revisit with the M8 bot). Evidence: m7-factions.md Full load.
 
 - Base suite was 277 cases / 112,748 checks / 1 failure (MP5 count, above), not the plan's 277 / 112,744 / 0.
