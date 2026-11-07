@@ -27,6 +27,10 @@ Checks: suite 396 cases / 134,602 / 0, exit 0, TESTS PASSED; lint, warnings (89 
 
 The user accepts the exceeded rows for now (combat stress open/dense, team match p99, hordes, hordes300, rendered horde x6 estimate). A performance improvement spike follows after M7. The rows stay reported as exceeded; no budget is loosened.
 
+## Gate 2 playtest (user statement 2026-11-07)
+
+User: "all of the points above worked perfect" (the offline China watch list given in the session; power use checked at 20 supply / 11 demand with 2 plants, 3 towers, supply center, factory = matches the data). Not stated: the online items (9-10), the Chinook full-load fairness, dock overlap detail, performance in 100+ unit fights. Findings logged: Esc menu to leave a running game back to the main menu (small task after M7; online leave needs a decision: client-side leave vs forfeit message, a protocol change); `run_game.sh` default scene changed to the launcher (9a8d07d).
+
 ## Pins at base
 
 `TERMINAL_TICK` 8286, `TICK_LIMIT` 10800, `S1_CORE_SERIES` 3600881543542644697 (`test_skirmish_match.gd`); `PINNED` 6374674a4bdd4dfb (`test_state_hash.gd`); `FINAL_DIGEST` 234f0b14453bc6c6 and new `TEAM_CORE_SERIES` 1490497313643459296 (`test_team_match.gd`); `TEAM_TICK_CAP` 27000; netplay `match` 8242; BM6 18500 / 16000; stress ceilings `run_combat.gd:10`.
