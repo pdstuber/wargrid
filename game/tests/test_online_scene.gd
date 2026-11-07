@@ -173,13 +173,16 @@ func test_launcher_layout(runner) -> bool:
 		await runner.process_frame
 		await runner.process_frame
 		var rects: Array[Rect2] = []
-		for path in ["Title", "Offline", "RelayUrl", "Create", "JoinRow/Code", "JoinRow/Join", "Status"]:
+		for path in ["Title", "Offline", "RelayUrl", "Create", "JoinRow/Code", "JoinRow/Join", "Status", "Legal"]:
 			var control: Control = launcher.get_node("Center/Box/" + path)
 			rects.append(control.get_global_rect())
 			runner.check(Rect2(Vector2.ZERO, Vector2(size)).encloses(control.get_global_rect()), "N5 %s inside %s" % [path, size])
 		for i in rects.size():
 			for j in range(i + 1, rects.size()):
 				runner.check(not rects[i].intersects(rects[j]), "N5 controls %d and %d do not overlap at %s" % [i, j, size])
+		var legal: String = launcher.get_node("Center/Box/Legal").text
+		for part in ["Electronic Arts", "GNU GPL", "no warranty", "github.com/pdstuber/wargrid"]:
+			runner.check(part in legal, "N5 launcher legal notice names %s" % part)
 		launcher.free()
 	runner.root.size = original
 	var offline = load(LauncherScript.OFFLINE_SCENE).instantiate()

@@ -56,3 +56,11 @@ text = "Join"
 custom_minimum_size = Vector2(520, 48)
 layout_mode = 2
 autowrap_mode = 3
+
+[node name="Legal" type="Label" parent="Center/Box"]
+custom_minimum_size = Vector2(520, 0)
+layout_mode = 2
+text = "© 2026 Philipp Stuber; Ashfall map © 2025 Electronic Arts Inc., modified. Free software under the GNU GPL, with no warranty. License and source: github.com/pdstuber/wargrid"
+horizontal_alignment = 1
+autowrap_mode = 3
+theme_override_font_sizes/font_size = 12
