@@ -116,6 +116,7 @@ jobs:
         if: matrix.platform == 'windows'
         with:
           name: wargrid-windows
+          retention-days: 1
           path: |
             build/game/windows/Wargrid.exe
             build/game/windows/Wargrid.console.exe
@@ -158,6 +159,7 @@ jobs:
         with:
           name: relay-bin
           path: relay-bin/
+          retention-days: 1
           if-no-files-found: error
   relay-lint:
     runs-on: ubuntu-latest
