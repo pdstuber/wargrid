@@ -5,15 +5,16 @@ Plan: [M7 plan](../superpowers/plans/2026-11-06-m7-factions.md). Design: [M7 des
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-07, gate 2 review fixes done, uncommitted)
-Branch / base commit / working-tree state: m7-factions, HEAD eb3fbed; gate 2 review fixes (I1-I4, M1-M4, M7, M8, M10, M11) uncommitted
-Last green task / next incomplete task: gate 2 review fixes green / /ponytail-review on the gate diff, commit (pre-authorized), push (approval), playtest
-Changed paths since last commit: game/scripts/simulation/{horde,production,simulation,supply_collection}.gd, game/scripts/debug/combat_workload.gd, game/benchmarks/run_combat.gd, game/tests/{test_defences,test_horde,test_production,test_scene,test_supply}.gd, tools/run_benchmark.sh, tools/zh_parity/analyze.py, docs/reference/{performance,m7-verification}.md
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 388 cases / 134,583 (traces off), 134,590 (traces on) / 0, exit 0, TESTS PASSED; lint, warnings (89 files), run_python_checks.sh, unittest discover, test_faction_guard.py OK; four traces cmp-identical to a clean eb3fbed worktree; run_netplay.sh all 7 PASSED (match 8331); run_conformance.sh PASSED 33; run_benchmark.sh exit 0 (COMBAT BENCHMARK PASSED 10); run_team_match.sh exit 0 (won 33205 winner 1)
-Known red case or blocker: none. Pending: rendered benchmark (visible window, needs approval, batch with playtest). Exceeded, not loosened: hordes p95 2.102, hordes300 p95 5.626 / p99 7.074 (budget 1.82 / 3.64; user's call)
-Approved decisions, pre-authorizations used, deferred gates: as before. Open minor items M5, M6, M9 (below)
+```text
+Resume record (updated 2026-11-07, gate 2 STOP GATE reached)
+Branch / base commit / working-tree state: m7-factions, HEAD = commit after cd8ba72 (review fixes committed), tree clean; origin/m7-factions at 8f835c0 (G2 work NOT pushed, CI not run on it)
+Last green task / next incomplete task: G2.0-G2.7 green, gate review (Opus) fixed, lean review done / user decisions below, then gate 3 is an outline (Opus high expansion session needed). Do not begin any G3 item.
+Changed paths since last commit: none
+Last command / cases / checks / failures / exit / marker: see "Gate 2 review fixes": 388 cases / 134,583 / 0, exit 0, TESTS PASSED; lint, warnings, python checks, netplay (match 8331), conformance 33, run_benchmark.sh PASSED 10, team match won 33205 winner 1; traces cmp-identical to eb3fbed
+Known red case or blocker: none. Exceeded, not loosened: hordes p95 2.102, hordes300 p95 5.626 / p99 7.074 (budget 1.82 / 3.64; user's call). Pending: rendered benchmark (visible window)
+Approved decisions, pre-authorizations used, deferred gates: full load ground only (user 2026-11-06, OPEN asymmetry item); setup gate kept; defence_attack added. Open minor items M5, M6, M9. Lean review findings not applied (user's call): drop the hordes layout (keep hordes300; plan pinned PASSED 8/9 counts), replace add_test_faction by the china faction in test_bot_reads_seat_faction, drop horde_pairs counter, merge duplicate release block in supply_collection loading, loop the parity tables
 Usage so far: not recorded
-Next exact action: /ponytail-review on the gate diff, local commit, then the user: push, playtest, decision on the horde cost
+Next exact action: user: push approval (CI Linux/Windows + compare_local_traces.sh), playtest offline and online (rendered benchmark batched), decide horde cost, lean findings, Chinook full-load fairness; then Opus (high) session expands gate 3.
 ```
 
 ## Pins at base
