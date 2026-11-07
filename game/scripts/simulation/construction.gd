@@ -2,9 +2,11 @@ extends RefCounted
 
 const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
+const Production = preload("res://scripts/simulation/production.gd")
 const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
 const Navigation = preload("res://scripts/simulation/grid_navigation.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
+const RebuildHoles = preload("res://scripts/simulation/rebuild_holes.gd")
 
 static func cells(kind: String, origin: Vector2i) -> Array[Vector2i]:
 	return block(Definitions.building(kind).footprint, origin)
@@ -53,7 +55,7 @@ static func preview(sim: Simulation, player: int, builder_id: int, kind: String,
 	var definition: Dictionary = Definitions.building(kind)
 	if definition.is_empty() or not sim._players.has(player) or not sim._entities.has(builder_id): return result
 	var builder: Dictionary = sim._entities[builder_id]
-	if builder.owner != player or not Registry.kind(builder.kind).get("builds", []).has(kind): return result
+	if builder.owner != player or builder.has("hole_id") or not Registry.kind(builder.kind).get("builds", []).has(kind): return result
 	if not sim._has_prerequisite(player,definition.prerequisite):
 		result.error = "Missing completed prerequisite"
 		return result
@@ -95,6 +97,15 @@ static func place(sim: Simulation, command: Dictionary) -> Dictionary:
 	result.building_id = id
 	return result
 
+static func place_rebuild(sim: Simulation, hole: Dictionary) -> int:
+	var kind: String = hole.rebuild.kind
+	var id: int = sim._next_entity_id
+	sim._next_entity_id += 1
+	var hp: int = CombatDefinitions.profile(kind).max_hp
+	var origin := Vector2i(hole.origin[0], hole.origin[1])
+	sim._buildings[id] = {"id":id,"owner":hole.owner,"kind":kind,"hp":hp,"max_hp":hp,"origin":hole.origin.duplicate(),"completed":false,"work":0,"paid_cost":0,"builder_id":null,"approach":null,"queue":[],"active_collector_id":null,"hole_id":hole.id,"rally":Production.default_rally(sim,kind,origin)}
+	return id
+
 static func resume(sim: Simulation, command: Dictionary) -> Dictionary:
 	var building: Dictionary = sim._buildings[command.building_id]
 	var goal: Variant = approach(sim,command.builder_id,building.kind,Vector2i(building.origin[0],building.origin[1]),sim._navigation)
@@ -103,7 +114,7 @@ static func resume(sim: Simulation, command: Dictionary) -> Dictionary:
 static func cancel(sim: Simulation, building_id: int) -> void:
 	var building: Dictionary = sim._buildings[building_id]
 	sim._players[building.owner].credits += building.paid_cost
-	sim._remove_building(building_id)
+	sim.remove_object(building_id)
 
 static func rebuild_navigation(sim: Simulation) -> void:
 	sim._replace_union(sim._union_cells())
@@ -112,6 +123,7 @@ static func step(sim: Simulation, rates: Dictionary) -> void:
 	var ids: Array = sim._buildings.keys()
 	ids.sort()
 	for id: Variant in ids:
+		if not sim._buildings.has(id): continue
 		var building: Dictionary = sim._buildings[id]
 		if building.completed or building.builder_id == null or not sim._entities.has(building.builder_id): continue
 		var builder: Dictionary = sim._entities[building.builder_id]
@@ -120,9 +132,11 @@ static func step(sim: Simulation, rates: Dictionary) -> void:
 		building.work = mini(required,building.work + rates[building.owner])
 		if building.work == required:
 			building.completed = true
-			sim._spawn_on_complete(building)
+			var rebuilt: bool = building.has("hole_id")
+			if not rebuilt: sim._spawn_on_complete(building)
 			var combat: Variant = CombatDefinitions.initial_combat(building.kind)
 			if combat != null: building.combat = combat
 			builder.construction_id = null
 			building.builder_id = null
 			building.approach = null
+			if rebuilt: RebuildHoles.site_completed(sim,building)

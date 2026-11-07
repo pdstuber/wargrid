@@ -8,6 +8,7 @@ const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
 const Combat = preload("res://scripts/simulation/combat.gd")
 const Containers = preload("res://scripts/simulation/containers.gd")
+const RebuildHoles = preload("res://scripts/simulation/rebuild_holes.gd")
 const Horde = preload("res://scripts/simulation/horde.gd")
 const Locomotion = preload("res://scripts/simulation/locomotion.gd")
 const Allocation = preload("res://scripts/simulation/destination_allocation.gd")
@@ -40,6 +41,7 @@ var _scan_chases: int = 0
 var _retaliations: int = 0
 var _allocation_calls: int = 0
 var _navigation_builds: int = 0
+var _units_removed: bool = false
 var _navigation_local: int = 0
 var _map: Dictionary = {}
 const RNG_SEED: int = 0x2545F491
@@ -213,6 +215,7 @@ func _validate(command: Dictionary, due: bool = false) -> String:
 		if found is String: return found
 		live = found
 		if live.is_empty(): return "No units left" if due else "Missing entity or wrong owner"
+		if live.any(func(id: int) -> bool: return _entities[id].has("hole_id")): return "Unit cannot be commanded"
 		if live.any(func(id: int) -> bool: return _entities[id].has("container_id")): return "Unit is inside a transport"
 	if command.type == "move": return _validate_target(command,due)
 	if command.type in ["stop","choose_faction"]: return ""
@@ -227,10 +230,12 @@ func _validate(command: Dictionary, due: bool = false) -> String:
 	# Due builds are checked once by Construction.place, which reuses that preview grid.
 	if command.type == "build": return "" if due else preview_build(command.player,command.builder_id,command.building_kind,Vector2i(command.origin[0],command.origin[1])).error
 	if command.type == "resume_build":
-		if not _entities.has(command.builder_id) or _entities[command.builder_id].owner != command.player or not Registry.is_builder(_entities[command.builder_id].kind): return "Invalid builder"
+		if not _entities.has(command.builder_id) or _entities[command.builder_id].owner != command.player or not Registry.is_builder(_entities[command.builder_id].kind) or _entities[command.builder_id].has("hole_id"): return "Invalid builder"
 	if command.type in ["resume_build","cancel_build"]:
 		if not _buildings.has(command.building_id) or _buildings[command.building_id].owner != command.player or _buildings[command.building_id].completed: return "Missing owned foundation"
-		if command.type == "resume_build": return Construction.resume(self,command).error
+		if command.type == "resume_build":
+			if RebuildHoles.being_rebuilt(self,_buildings[command.building_id]): return "Foundation is being rebuilt"
+			return Construction.resume(self,command).error
 		return ""
 	if command.type == "set_rally":
 		if not _buildings.has(command.building_id): return "Missing producer"
@@ -490,6 +495,7 @@ func step() -> void:
 	_scan_chases = 0
 	_retaliations = 0
 	_allocation_calls = 0
+	_units_removed = false
 	var zone: int = Profiler.begin()
 	_apply_orders()
 	Profiler.end(&"step.apply_orders", zone)
@@ -510,6 +516,10 @@ func step() -> void:
 	Profiler.end(&"step.rates", zone)
 	zone = Profiler.begin()
 	Construction.step(self,rates)
+	RebuildHoles.step(self)
+	if _units_removed:
+		ids.assign(ids.filter(func(id: int) -> bool: return _entities.has(id)))
+		armed.assign(armed.filter(func(id: int) -> bool: return _entities.has(id)))
 	Profiler.end(&"step.construction", zone)
 	zone = Profiler.begin()
 	Production.step(self,rates)
@@ -711,6 +721,8 @@ func preview_build(player: int, builder_id: int, kind: String, origin: Vector2i)
 
 func remove_object(id: int) -> Dictionary:
 	if _entities.has(id):
+		RebuildHoles.unit_removed(self,_entities[id])
+		_units_removed = true
 		Containers.object_removed(self,id)
 		_detach_task(_entities[id])
 		_path_queue.erase(id)
@@ -718,6 +730,7 @@ func remove_object(id: int) -> Dictionary:
 		_chases.erase(id)
 		Combat.object_removed(self,id)
 	elif _buildings.has(id):
+		RebuildHoles.building_removed(self,_buildings[id])
 		_remove_building(id)
 	elif _sources.has(id):
 		Supply.object_removed(self,id)

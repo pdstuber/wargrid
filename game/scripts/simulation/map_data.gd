@@ -70,7 +70,8 @@ static func _valid(map: Dictionary) -> bool:
 static func _start_valid(map: Dictionary, start: Dictionary, size: Vector2i) -> bool:
 	if not _open(map, size, _cell(start.cell), Vector2i.ONE): return false
 	for kind: String in Registry.buildings():
-		var slot_key: String = Registry.kind(kind).slot
+		var slot_key: String = Registry.kind(kind).get("slot", "")
+		if slot_key.is_empty(): continue
 		if not start.slots.has(slot_key) or not _open(map, size, _cell(start.slots[slot_key]), Definitions.building(kind).footprint): return false
 	return true
 

@@ -10,7 +10,7 @@ const CombatFixture = preload("res://tests/combat_fixture.gd")
 const MovementWorkload = preload("res://scripts/debug/movement_workload.gd")
 
 func cases() -> Array[Callable]:
-	return [test_pick, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_heading_mark_layout,test_depth_order_matches_comparator,test_battery_shot_line,test_battery_target_line,test_building_icons,test_building_label_has_no_kind_id,test_horde_marks]
+	return [test_pick, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_heading_mark_layout,test_depth_order_matches_comparator,test_battery_shot_line,test_battery_target_line,test_building_icons,test_building_label_has_no_kind_id,test_horde_marks,test_rebuild_laborer_unselectable]
 
 func test_pick(runner) -> bool:
 	var view = View.new()
@@ -229,7 +229,7 @@ func test_battery_target_line(runner) -> bool:
 func test_building_icons(runner) -> bool:
 	var expected := {"usa_command_center": "command", "usa_power_plant": "power", "usa_supply_center": "supply", "usa_barracks": "barracks", "usa_factory": "factory", "usa_defence": "battery"}
 	for kind: String in expected: runner.check(View.icon_name(kind) == expected[kind], "I1 %s icon, got %s" % [kind, View.icon_name(kind)])
-	for kind: String in Registry.buildings().filter(func(id: String) -> bool: return id not in ["china_defence", "frc_defence"]): runner.check(not Registry.icon(kind).is_empty(), "I1 %s defines an icon" % kind)
+	for kind: String in Registry.buildings().filter(func(id: String) -> bool: return id not in ["china_defence", "frc_defence", "frc_hole_1", "frc_hole_2", "frc_hole_3"]): runner.check(not Registry.icon(kind).is_empty(), "I1 %s defines an icon" % kind)
 	Registry.add_test_kind("test_depot", {"display_name": "Zeta Depot", "footprint": Vector2i(1, 1)})
 	runner.check(View.icon_name("test_depot").is_empty() and View.fallback_letter("test_depot") == "Z", "I2 no icon falls back to the display-name initial")
 	Registry.add_test_kind("test_other", {"display_name": "Other", "icon": "factory", "footprint": Vector2i(1, 1)})
@@ -270,5 +270,27 @@ func test_horde_marks(runner) -> bool:
 		var bounds: Rect2 = view._vehicle_bounds(view._state.entities[index])
 		var hit: Array = marks.filter(func(mark: Vector2) -> bool: return bounds.has_point(mark) and mark.y > view.health_rect(bounds).end.y)
 		runner.check(hit.size() == 1, "V3 the mark of unit %d sits inside its bounds below the health bar" % index)
+	view.free()
+	return true
+
+func test_rebuild_laborer_unselectable(runner) -> bool:
+	var view = View.new()
+	var sim = CombatFixture.world()
+	sim.add_player(1, 1000)
+	sim.add_player(2, 1000)
+	var id: int = Fixture.add_completed(sim, 1, "frc_barracks", Vector2i(10, 10))
+	sim.remove_object(id)
+	var hole: Dictionary = sim.snapshot().buildings[0]
+	while sim.tick() < hole.rebuild.respawn_tick: sim.step()
+	sim.step()
+	var state: Dictionary = sim.snapshot()
+	var worker: Dictionary = state.entities.filter(func(u: Dictionary) -> bool: return u.has("hole_id"))[0]
+	var site: Dictionary = state.buildings.filter(func(b: Dictionary) -> bool: return b.has("hole_id"))[0]
+	view.set_state(state, [])
+	var anchor := Iso.world_to_plane(Vector2(worker.position[0], worker.position[1])) + Vector2(0, -8)
+	runner.check(view.pick_entity(anchor) == -1 and view.pick_entity(anchor, true) == -1, "V9 a click on the rebuild laborer selects nothing")
+	runner.check(view.pick_entities(Rect2(anchor - Vector2(40, 40), Vector2(80, 80))).is_empty(), "V9 a drag box over the rebuild laborer selects nothing")
+	var inside: Vector2 = Iso.world_to_plane(Vector2(11, 11))
+	runner.check(view.pick_target(inside, 2) == site.id, "V9 pick_target over a masked hole returns the site")
 	view.free()
 	return true

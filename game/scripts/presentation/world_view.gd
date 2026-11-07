@@ -3,6 +3,7 @@ extends Node2D
 const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
+const Combat = preload("res://scripts/simulation/combat.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
 const UiStyle = preload("res://scripts/presentation/ui_style.gd")
@@ -146,14 +147,14 @@ func pick_target(plane_point: Vector2, own: int) -> int:
 	var point: Vector2 = Iso.plane_to_world(plane_point)
 	for building: Dictionary in _state.get("buildings", []):
 		var definition: Dictionary = Definitions.building(building.kind)
-		if building.owner == own or definition.is_empty(): continue
+		if building.owner == own or definition.is_empty() or Combat.masked(building): continue
 		if Rect2(Vector2(building.origin[0], building.origin[1]), Vector2(definition.footprint)).has_point(point): return building.id
 	return -1
 
 func pick_entity(plane_point: Vector2, any_owner: bool = false) -> int:
 	for i in range(_state.get("entities", []).size() - 1, -1, -1):
 		var unit: Dictionary = _state.entities[i]
-		if (any_owner or unit.owner == local_player) and _vehicle_bounds(unit).has_point(plane_point):
+		if (any_owner or unit.owner == local_player) and not unit.has("hole_id") and _vehicle_bounds(unit).has_point(plane_point):
 			return unit.id
 	return -1
 
@@ -363,7 +364,7 @@ func pick_entities(plane_rect: Rect2) -> Array[int]:
 	var ids: Array[int] = []
 	for unit: Dictionary in _state.get("entities", []):
 		var point: Vector2 = Iso.world_to_plane(Vector2(unit.position[0], unit.position[1]))
-		if unit.owner == local_player and point.x >= rect.position.x and point.y >= rect.position.y and point.x <= rect.end.x and point.y <= rect.end.y:
+		if unit.owner == local_player and not unit.has("hole_id") and point.x >= rect.position.x and point.y >= rect.position.y and point.x <= rect.end.x and point.y <= rect.end.y:
 			ids.append(unit.id)
 	ids.sort()
 	return ids

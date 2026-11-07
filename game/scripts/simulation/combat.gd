@@ -26,9 +26,12 @@ static func hostile(sim: Simulation, a: int, b: int) -> bool:
 	var team_b: int = sim.team_of(b)
 	return team_a == 0 or team_b == 0 or team_a != team_b
 
+static func masked(target: Dictionary) -> bool:
+	return target.has("rebuild") and target.rebuild.worker_id != null
+
 static func valid_target(sim: Simulation, owner: int, target_id: int) -> bool:
 	var target: Dictionary = record(sim, target_id)
-	return not target.is_empty() and hostile(sim, owner, target.owner) and not Registry.air_kinds.has(target.kind) and not target.has("container_id")
+	return not target.is_empty() and hostile(sim, owner, target.owner) and not Registry.air_kinds.has(target.kind) and not target.has("container_id") and not masked(target)
 
 static func distance_squared(position: Vector2, target: Dictionary) -> float:
 	if not target.has("origin"):
@@ -275,6 +278,7 @@ static func _build_grid(sim: Simulation) -> Dictionary:
 		if Registry.air_kinds.has(entity.kind) or entity.has("container_id"): continue
 		_bucket(grid, int(floorf(entity.position[0] / GRID_CELL)), int(floorf(entity.position[1] / GRID_CELL)), entity)
 	for building: Dictionary in sim._buildings.values():
+		if masked(building): continue
 		var size: Vector2i = Definitions.building(building.kind).footprint
 		for y in range(int(floorf(building.origin[1] / GRID_CELL)), int(floorf((building.origin[1] + size.y) / GRID_CELL)) + 1):
 			for x in range(int(floorf(building.origin[0] / GRID_CELL)), int(floorf((building.origin[0] + size.x) / GRID_CELL)) + 1):
@@ -443,7 +447,7 @@ static func splash_victims(sim: Simulation, impact: Vector2, radius: float, affe
 	var victims: Array[Dictionary] = []
 	for pool: Variant in [sim._entities, sim._buildings]:
 		for victim: Variant in pool.values():
-			if victim.id == attacker.id or Registry.air_kinds.has(victim.kind) or victim.has("container_id"): continue
+			if victim.id == attacker.id or Registry.air_kinds.has(victim.kind) or victim.has("container_id") or masked(victim): continue
 			if (_victim_centre(victim).distance_to(impact) - CombatDefinitions.radius(victim.kind)) > radius + EDGE_EPS: continue
 			if affects.has("enemies" if hostile(sim, attacker.owner, victim.owner) else "allies"): victims.append(victim)
 	victims.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.id < b.id)

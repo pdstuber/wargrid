@@ -9,7 +9,7 @@ const Fixture = preload("res://tests/combat_fixture.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 
 func cases() -> Array[Callable]:
-	return [test_skirmish_initial_state, test_roster_production, test_bot_cycles_unit_list, test_bot_reads_seat_faction, test_bot_plays_china, test_bot_keeps_one_builder_six_gatherers, test_opponent_pays_and_retries, test_opponent_attack_policy, test_opponent_defends_base, test_defence_skips_busy_units, test_bot_ignores_contained_units, test_match_lifecycle, test_restart_state]
+	return [test_skirmish_initial_state, test_roster_production, test_bot_cycles_unit_list, test_bot_reads_seat_faction, test_bot_plays_china, test_bot_keeps_one_builder_six_gatherers, test_bot_leaves_rebuild_alone, test_opponent_pays_and_retries, test_opponent_attack_policy, test_opponent_defends_base, test_defence_skips_busy_units, test_bot_ignores_contained_units, test_match_lifecycle, test_restart_state]
 
 func _owned(items: Array, player: int) -> Array:
 	return items.filter(func(item: Dictionary) -> bool: return item.owner == player)
@@ -94,6 +94,45 @@ func test_bot_reads_seat_faction(runner) -> bool:
 	sim.step()
 	var queued: Array = _owned(sim.snapshot().buildings, 2).filter(func(b: Dictionary) -> bool: return not b.queue.is_empty())
 	runner.check(not queued.is_empty() and queued.all(func(b: Dictionary) -> bool: return b.queue[0].kind == "china_rifle_infantry"), "B4 the opponent trains the faction's unit for the producer, got " + str(queued))
+	return true
+
+func test_bot_leaves_rebuild_alone(runner) -> bool:
+	var sim = Skirmish.create(true, "ai", {1: "usa", 2: "frc"})
+	var barracks: int = -1
+	for tick in range(6000):
+		Skirmish.issue_opponents(sim, [2])
+		sim.step()
+		for building: Dictionary in sim.snapshot().buildings:
+			if building.owner == 2 and building.kind == "frc_barracks" and building.completed: barracks = building.id
+		if barracks != -1: break
+	runner.check(barracks != -1, "Fb2 the FRC bot builds its barracks")
+	if barracks == -1: return true
+	sim.remove_object(barracks)
+	var rebuilt: bool = false
+	var killed: bool = false
+	var spawned: int = -1
+	var interfered: String = ""
+	var most: int = 0
+	for tick in range(1800):
+		Skirmish.issue_opponents(sim, [2])
+		sim.step()
+		var state: Dictionary = sim.snapshot()
+		var worker: Array = state.entities.filter(func(u: Dictionary) -> bool: return u.has("hole_id"))
+		if not worker.is_empty() and not killed and state.tick > spawned + 40:
+			sim.remove_object(worker[0].id)
+			killed = true
+		if not worker.is_empty() and spawned < 0: spawned = state.tick
+		var mine: Array = state.buildings.filter(func(b: Dictionary) -> bool: return b.owner == 2 and b.kind == "frc_barracks")
+		if mine.size() > 1: interfered = "second barracks"
+		for site: Dictionary in mine.filter(func(b: Dictionary) -> bool: return b.has("hole_id")):
+			var builder: Array = state.entities.filter(func(u: Dictionary) -> bool: return u.id == site.builder_id)
+			if not builder.is_empty() and not builder[0].has("hole_id"): interfered = "bot builder on the site"
+		var free: int = state.entities.filter(func(u: Dictionary) -> bool: return u.owner == 2 and u.kind == "frc_builder" and not u.has("hole_id")).size()
+		most = maxi(most, free)
+		rebuilt = rebuilt or mine.any(func(b: Dictionary) -> bool: return b.completed and not b.has("hole_id") and b.id != barracks)
+	runner.check(interfered.is_empty(), "Fb2 the bot leaves the rebuild alone, saw: " + interfered)
+	runner.check(rebuilt, "Fb2 the hole rebuilt the barracks")
+	runner.check(most == Skirmish.LABORERS, "Fb2 the bot keeps %d laborers without the rebuild laborer, most %d" % [Skirmish.LABORERS, most])
 	return true
 
 func test_opponent_pays_and_retries(runner) -> bool:

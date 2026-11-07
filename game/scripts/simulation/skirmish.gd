@@ -97,16 +97,16 @@ static func _send(ctx: Dictionary, payload: Dictionary) -> bool:
 static func _build(ctx: Dictionary, state: Dictionary, buildings: Array, faction: String) -> void:
 	var builder: int = -1
 	for unit: Dictionary in state.entities:
-		if unit.owner == ctx.player and Registry.is_builder(unit.kind):
+		if unit.owner == ctx.player and Registry.is_builder(unit.kind) and not unit.has("hole_id"):
 			builder = unit.id
 			break
 	if builder == -1: return
 	for building: Variant in buildings:
-		if building.completed: continue
+		if building.completed or building.has("hole_id"): continue
 		if building.builder_id == null: _send(ctx, {"type": "resume_build", "builder_id": builder, "building_id": building.id})
 		return
 	for kind: String in build_order(faction):
-		if buildings.any(func(building: Dictionary) -> bool: return building.kind == kind): continue
+		if buildings.any(func(building: Dictionary) -> bool: return building.kind == kind or building.get("rebuild", {}).get("kind") == kind): continue
 		var cost: int = Definitions.building(kind).cost
 		var site: Vector2i = _slot(ctx.sim, kind, ctx.player)
 		if ctx.credits >= cost and _send(ctx, {"type": "build", "builder_id": builder, "building_kind": kind, "origin": [site.x, site.y]}): ctx.credits -= cost
@@ -137,7 +137,7 @@ static func _faction(state: Dictionary, player: int) -> String:
 
 static func _attack(ctx: Dictionary, state: Dictionary, skip: Dictionary = {}) -> void:
 	var enemies: Array = state.entities.filter(func(unit: Dictionary) -> bool: return _hostile(ctx, unit.owner) and not Registry.air_kinds.has(unit.kind) and not unit.has("container_id"))
-	enemies.append_array(state.buildings.filter(func(building: Dictionary) -> bool: return _hostile(ctx, building.owner)))
+	enemies.append_array(state.buildings.filter(func(building: Dictionary) -> bool: return _hostile(ctx, building.owner) and not Combat.masked(building)))
 	var mine := {}
 	for unit: Dictionary in state.entities:
 		if unit.owner == ctx.player: mine[unit.id] = unit
