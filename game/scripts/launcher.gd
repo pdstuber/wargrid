@@ -7,6 +7,7 @@ const OnlineScene = preload("res://scenes/online_skirmish.tscn")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const SkirmishMain = preload("res://scripts/skirmish_main.gd")
 const OFFLINE_SCENE: String = "res://scenes/skirmish.tscn"
+const PLAY_MAP_PATH: String = "res://data/maps/dry_wells.json"
 const HEADLESS_FLAGS: Array[String] = ["--netclient", "--relay", "--replay-log", "--probe-relay"]
 var _transport: RefCounted
 var _match: String = ""
@@ -41,6 +42,7 @@ func _faction(selector: OptionButton) -> String:
 
 func _play_offline() -> void:
 	SkirmishMain.factions = {1: _faction($Center/Box/FactionRow/Own), 2: _faction($Center/Box/FactionRow/Opponent)}
+	SkirmishMain.map_path = PLAY_MAP_PATH
 	get_tree().change_scene_to_file(OFFLINE_SCENE)
 
 func _connect(code: String) -> void:
@@ -101,6 +103,7 @@ func _start(message: Dictionary) -> void:
 	var seats: Array[int] = []
 	seats.assign(message.seats)
 	_lockstep = Lockstep.new(_seat, seats, message.delay)
+	SkirmishMain.map_path = PLAY_MAP_PATH
 	var game: Node = OnlineScene.instantiate()
 	game.setup(_transport, _lockstep, _seat, _faction($Center/Box/FactionRow/Own))
 	get_tree().root.add_child(game)

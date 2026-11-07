@@ -27,6 +27,10 @@ Dry Wells: route 1-2 1525.0 (source grid 1524.1, ratio 1.001), width t = 10; bui
 
 Broken Crown: routes 1-2 1850.0, 1-3 2512.7, 1-4 1600.0, 2-3 1600.0, 2-4 2512.7, 3-4 1850.0 (ratios 0.985 to 0.995); widths t = 13 to 15; buildable within 12: 625 each; supply Chebyshev 13 to 16.
 
-## Not done
+## Dry Wells is the play map (user, 2026-11-07)
 
-No map choice exists in the launcher, offline or online: the online `start` message carries no map. That belongs to the "Ashfall playable" task (blueprint §7), which has no design yet.
+Real play uses Dry Wells: the launcher sets `SkirmishMain.map_path` (as it sets `SkirmishMain.factions`) before it opens the offline or online scene, and the scenes pass it to `Skirmish.create` as the fourth argument after `factions`. Without the launcher, scenes, tests, replays, the netplay client and benchmarks keep the 48 × 32 `skirmish.json`, so every pin is unchanged (user, 2026-11-08: tests may use the old map). The camera starts on the local player's base instead of the map centre.
+
+- The terrain cache this needed (`terrain_view.gd`, ledger row 2026-11-07) reached `main` through M7 (`a1dfb03`).
+- Online play uses a different map than the CI netplay client, which still plays `skirmish.json`. Old and new builds must not play each other online.
+- Still no map choice in the launcher and the online `start` message carries no map: that belongs to the "Ashfall playable" task (blueprint §7).

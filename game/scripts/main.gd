@@ -6,6 +6,7 @@ const Profiler = preload("res://scripts/debug/profiler.gd")
 const PerfOverlay = preload("res://scripts/presentation/perf_overlay.gd")
 const PauseMenu = preload("res://scripts/presentation/pause_menu.gd")
 const LAUNCHER_SCENE: String = "res://scenes/launcher.tscn"
+const MapData = preload("res://scripts/simulation/map_data.gd")
 const ZOOMS: Array[float] = [0.5, 1.0, 2.0]
 var simulation: Simulation = Simulation.new()
 var selected_ids: Array[int] = []
@@ -50,7 +51,10 @@ func _reset_camera() -> void:
 	_camera_bounds = Rect2(Vector2.ZERO, Vector2.ZERO)
 	for corner: Variant in [Vector2(size[0], 0), Vector2(0, size[1]), Vector2(size[0], size[1])]:
 		_camera_bounds = _camera_bounds.expand(Iso.world_to_plane(corner))
-	_camera.position = Iso.world_to_plane(Vector2(size[0], size[1]) / 2.0)
+	var map: Dictionary = simulation.map_data()
+	var focus := Vector2(size[0], size[1]) / 2.0
+	if not map.is_empty() and MapData.start_cell(map, local_player).x >= 0: focus = Vector2(MapData.start_cell(map, local_player)) + Vector2(0.5, 0.5)
+	_camera.position = Iso.world_to_plane(focus)
 
 func _step_simulation() -> void:
 	simulation.step()
