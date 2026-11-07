@@ -221,7 +221,7 @@ static func _defend(ctx: Dictionary, state: Dictionary, buildings: Array) -> Dic
 		for id: Variant in groups[target]: sent[id] = true
 	return sent
 
-# Score = priority - one point per DISTANCE_STEP cells (min 1): the Zero Hour attack-priority rule, numbers in docs/reference/m7-verification.md.
+# Score = priority - one point per DISTANCE_STEP cells (min 1): the Zero Hour attack-priority rule, numbers in docs/reference/m7-verification-archive-research.md.
 static func _pick(position: Vector2, enemies: Array) -> Variant:
 	var best: Variant = null
 	var best_score: int = 0

@@ -1,6 +1,6 @@
 # Parity harness improvements: measured findings and the pending fork gate (2026-11-07)
 
-Review of `tools/zh_parity/` by an Opus reviewer. Python steps 1-6 and the Python part of 7 are implemented (record: [m7-verification](m7-verification.md), "Parity harness improvements"); usage lives in [zero-hour-parity-harness](zero-hour-parity-harness.md). Fork: `~/projects/GeneralsGameCode-macOS` branch `wargrid-parity` @ `eb595cfc9`; Apple M-series, 12 cores.
+Review of `tools/zh_parity/` by an Opus reviewer. Python steps 1-6 and the Python part of 7 are implemented (record: [m7-verification archive, gate 3](m7-verification-archive-gate3.md), "Parity harness improvements"); usage lives in [zero-hour-parity-harness](zero-hour-parity-harness.md). Fork: `~/projects/GeneralsGameCode-macOS` branch `wargrid-parity` @ `eb595cfc9`; Apple M-series, 12 cores.
 
 ## Measured findings
 

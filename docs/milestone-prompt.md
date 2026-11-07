@@ -38,7 +38,8 @@ Fresh context per task keeps the token saving of the old restart rule (retrospec
 - **No per-task reviewer subagents.** One review per stop gate.
 - If the coordinator compacts, it writes the resume record and ends; the user starts it again. The record is the handoff; the conversation is not.
 - Push only as plain `git push`: the ask rule matches the command prefix, so `git -C … push` would bypass it.
-- **Long commands** (suite about 75 s, `run_team_match.sh` about 110 s, benchmarks, parity sweeps) run in the background; wait for the completion notification. Foreground `sleep N; cat` polling is blocked by the agent harness.
+- **Long commands.** Every suite, benchmark, netplay, lint and parity call passes `timeout: 600000` (the suite takes about 78 s; the default 120 s timeout fired 57 times in two days). Anything longer runs in the background; wait only for the completion notification or a `Monitor` with a `description` and an until-loop, never `sleep N; cat` (blocked by the harness; 321 poll requests, about 5 % of tokens).
+- **Diagnose before asking.** Before asking the user a question that a default or a rule can decide, dispatch an Opus (high) agent to diagnose and recommend (G3.5: five phone questions in 30 minutes). Ask only for what stays a real choice, with the diagnosis and options. The stop conditions below still need the user.
 - **No leftovers.** A subagent stops every loop or watcher it started (until-loops, monitors) before it returns; after each task the coordinator checks `pgrep -fl 'godot|generalszh'` and closes what the run started, never another session's processes.
 - **Opus work stays on Opus.** Plan or outline expansion and gate reviews go to an Opus (high) subagent even when the coordinator runs on Sonnet.
 
@@ -57,6 +58,10 @@ Still require explicit approval: push, PR, merge, visible game windows, design c
 - **Risk first.** Name the 3–5 riskiest contracts, interactions and costs. Task 1 writes their failing tests, or a load spike measured against the [performance ledger](reference/performance.md), before any task depends on them.
 - **Interactions.** Every new command gets same-tick cases against every existing command and against removal of its target or actor. Every AI policy rule gets a test using the spec's own wording.
 - **Benchmarks.** Each workload asserts that its mechanics happen inside the timed window, for example each weapon fires or chases and repaths occur. Startup, mass-order, placement and death spikes are reported separately.
+- **Outcome tests.** Never recommend relaxing an assertion; one that fails on real behaviour is a defect until a measurement says otherwise. A tuned system (rates, timings, costs) gets an outcome test against the measured reference (e.g. credits per minute), not only an invariant (e.g. one collector per dock).
+- **New entity states.** Each new state (contained, held, masked) is tested against all existing queries and commands (pick, target, validate, retaliate, salvage, bot), and the whole class is fixed at once (about eight findings came from the contained state).
+- **Long sweeps.** Before a parity or benchmark sweep expected to take over 15 minutes, measure one row end to end and check for caps (frame cap, rate limits) first; the parity harness ran 157 minutes before a 27x speed-up was found.
+- **Briefs state units.** A coordinator brief states units explicitly and checks them in the repo (e.g. 1 cell = 25 world units, [Zero Hour verification](reference/zero-hour-verification.md)) before it is sent.
 - **Presentation.** HUD changes get a headless layout test, so that no control overlaps status text.
 - **Task contracts.** Each task is written as:
 

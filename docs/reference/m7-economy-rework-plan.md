@@ -1,6 +1,6 @@
 # M7 economy-parity rework: decision record (2026-11-07)
 
-Status: implemented on `m7-factions` (see [m7-verification](m7-verification.md)); this note keeps the root causes, the minimum-distance facts and the final design (Revision 2). Decided by Opus agents with the user away.
+Status: implemented on `m7-factions` (see [m7-verification archive, economy](m7-verification-archive-economy.md)); this note keeps the root causes, the minimum-distance facts and the final design (Revision 2). Decided by Opus agents with the user away.
 
 Target (user): one collector's credits/min within 5 % of measured Zero Hour, every faction, at 6, 12, 30 cells and at the closest legal gap. 30 ticks = 30 frames per second; rate = 1800 x credits per cycle / cycle ticks.
 

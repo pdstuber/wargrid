@@ -94,4 +94,4 @@ Resolved since: pile/depot minimum distance and the d=1 laborer loop (`supply_cl
 
 - Pile centre to dock spot geometry for Stash and Dock is formula only.
 - No selectable starting-money options in Wargrid (not requested).
-- `skirmish.json` piles 200 -> 400 boxes (the `SupplyDock` value) after the parity economy starved Fm1: outcome in [m7-verification](m7-verification.md) (T4 record).
+- `skirmish.json` piles 200 -> 400 boxes (the `SupplyDock` value) after the parity economy starved Fm1: outcome in [m7-verification archive, economy](m7-verification-archive-economy.md) (T4 record).
