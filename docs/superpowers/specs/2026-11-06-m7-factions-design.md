@@ -1,6 +1,6 @@
 # M7: three factions with their signature mechanics design
 
-Status: **DESIGN APPROVED** by the user on 2026-11-06 (builder check done). Implementation started after the plan and an explicit kickoff; gates 1 and 2 are done (gate 2 signed off 2026-11-07), see the [plan](../plans/2026-11-06-m7-factions.md).
+Status: **DESIGN APPROVED** by the user on 2026-11-06 (builder check done). Implementation started after the plan and an explicit kickoff; gates 1-3 are done (gate 2 signed off 2026-11-07) and merged to `main` at the exit gate (2026-11-07), see the [plan](../plans/2026-11-06-m7-factions.md).
 
 **Amended at planning 2026-11-06 (user decisions, see the [plan](../plans/2026-11-06-m7-factions.md)):** survival follows Zero Hour (§2); the performance task is limited to trace-preserving fixes, and the two candidates named in §1 already landed in M6 (§1); four Zero Hour behaviours join the scope (§6, §7); the match windows widen (Stop gates). Each is marked where it applies.
 

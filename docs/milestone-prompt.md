@@ -38,6 +38,9 @@ Fresh context per task keeps the token saving of the old restart rule (retrospec
 - **No per-task reviewer subagents.** One review per stop gate.
 - If the coordinator compacts, it writes the resume record and ends; the user starts it again. The record is the handoff; the conversation is not.
 - Push only as plain `git push`: the ask rule matches the command prefix, so `git -C … push` would bypass it.
+- **Long commands** (suite about 75 s, `run_team_match.sh` about 110 s, benchmarks, parity sweeps) run in the background; wait for the completion notification. Foreground `sleep N; cat` polling is blocked by the agent harness.
+- **No leftovers.** A subagent stops every loop or watcher it started (until-loops, monitors) before it returns; after each task the coordinator checks `pgrep -fl 'godot|generalszh'` and closes what the run started, never another session's processes.
+- **Opus work stays on Opus.** Plan or outline expansion and gate reviews go to an Opus (high) subagent even when the coordinator runs on Sonnet.
 
 ## Pre-authorized actions
 
@@ -77,6 +80,8 @@ At each stop gate, dispatch one fresh-context reviewer on the strongest availabl
 - the instruction to name, for each new test, the production change that makes it fail;
 - read-only scratch copies only for mutations.
 
+A cloud ultra review (`/code-review ultra`) runs only when the user asks; it is costly and its usage is limited. It reviews a branch against a base, so commit unrelated docs and tooling first on a scratch base branch, merge that into the branch, and review against the scratch base (M7: `m7-ultra-base`, `4c6cb53`; delete the scratch branch afterwards).
+
 An empty or one-line report is a failed review. Record it and dispatch a second fresh-context reviewer at once with a narrower brief. Fix critical and important findings test-first, record rulings for the rest, then restart.
 
 ## Exit gate
@@ -84,7 +89,7 @@ An empty or one-line report is a failed review. Record it and dispatch a second 
 All of the following, run on the final tree, with each result recorded with the tree it ran on:
 
 - full suite;
-- `sh tools/run_benchmark.sh` with a new ledger row;
+- `sh tools/run_benchmark.sh` with a new ledger row, run alone on a quiet host with the `uptime` load average at start and end in the row;
 - a rendered rerun if presentation changed;
 - CI on Linux and Windows, plus `sh tools/compare_local_traces.sh <run id>` for macOS;
 - one substantive review and one lean-only `/ponytail-review`;
@@ -97,7 +102,8 @@ Report implemented, verified and pending separately.
 Stop and ask when:
 
 - a contract or phase order in the approved design would have to change;
-- a budget is exceeded;
+- a budget is exceeded (a row the user already accepted as exceeded is recorded with its numbers, not re-asked; `run_benchmark.sh` then exits 1, so name the failing line);
+- a pinned outcome changes (winner, a match no longer ending inside its window) or a stress ceiling would need a re-pin: record old and new values and ask for sign-off;
 - an assertion would have to be weakened;
 - calibration cannot meet a gate within its permitted parameters;
 - the resume record disagrees with the tree.
