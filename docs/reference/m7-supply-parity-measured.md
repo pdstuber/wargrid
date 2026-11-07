@@ -53,7 +53,7 @@ From the placement-rules note (`SupplyBuildBorder` 20 units, centre to centre al
 ## Harness notes
 
 - The macOS loop is capped at 30 Hz; `GEN_FPS_CAP=0` in the game environment makes a recorded frame about 27x cheaper (a 14000-frame collect run took 12 s instead of 7 min). `parity.py` now sets it by default (`ZH_PARITY_FPS_CAP` overrides).
-- Each game now runs in its own session and `close()` kills its process group; SIGTERM is turned into `SystemExit` so the lane's `finally` runs. The batched `step(n)` option is kept but not needed and unproven; use `batch=1`.
+- Each game now runs in its own session and `close()` kills its process group; SIGTERM is turned into `SystemExit` so the lane's `finally` runs. The unproven `batch=` sampling option and `collect_truck_6_b*` were deleted (2026-11-07).
 - Ports: REST `p` and WS `p+1`, so lanes need ports at least 2 apart.
 - Control for the spawned neutral `SupplyDock` (may not be a pathfinding obstacle): not run.
 
