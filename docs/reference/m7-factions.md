@@ -36,6 +36,51 @@ Sources: EA source `CnC_Generals_Zero_Hour` at `0a05454` (`GeneralsMD/Code/GameE
 
 After M7: 32 ground units (USA 9, China 9, GLA 14) and 6 aircraft (USA Raptor, Comanche, Aurora, Stealth Fighter; China MiG, Helix; GLA none). Stealth (`StealthUpdate`) on 10 of the 32 plus the Rebel camouflage upgrade; detectors include Dozers and the Worker. Artillery minimum / maximum range: Tomahawk 100 / 350, Inferno 50 / 300, Nuke Cannon 150 / 350, Scud 200 / 350, all travelling projectiles.
 
+### Batch classification (config, 2026-11-07)
+
+Status: **SOURCE/CONFIG, NOT MEASURED.** Root `INIZH.big` (pinned hash), `data\ini\commandset.ini` production sets, `object\*.ini` modules and `Prerequisites`. Batch per the blueprint (§7 ground batch A, user decisions 2026-11-07). Per-unit stats are extracted at planning.
+
+| Object | $ / s | Prerequisites | Modules that decide the batch | Batch |
+|---|---|---|---|---|
+| AmericaInfantryBiohazardTech | 200 / 5 | Barracks | `CleanupHazardUpdate` | A |
+| AmericaVehicleTomahawk | 1200 / 20 | War Factory, Strategy Center | artillery | A |
+| AmericaVehicleMedic | 600 / 10 | War Factory | `TransportContain`, `AutoHealBehavior`, `CleanupHazardUpdate` | A |
+| AmericaTankPaladin | 1100 / 12 | War Factory, `SCIENCE_PaladinTank` (rank 1) | `PointDefenseLaserUpdate` | A |
+| AmericaTankAvenger | 2000 / 10 | War Factory | `OverlordContain`, `PointDefenseLaserUpdate`, target designator | A |
+| AmericaTankMicrowave | 800 / 10 | War Factory, Strategy Center | building disabler, garrison clearer | A |
+| AmericaInfantryColonelBurton | 1500 / 20 | Barracks, Strategy Center | `StealthUpdate`, `SpecialAbility` | B |
+| AmericaInfantryPathfinder | 600 / 10 | Barracks, `SCIENCE_Pathfinder` (rank 3) | `StealthUpdate`, `StealthDetectorUpdate` | B |
+| AmericaVehicleSentryDrone | 800 / 10 | War Factory | `StealthUpdate` (forbidden while moving or firing), detector | B |
+| ChinaTankOverlord | 2000 / 20 | War Factory, Propaganda Center | `OverlordContain` add-ons (bunker, gattling, propaganda tower) | A |
+| ChinaVehicleTroopCrawler | 1400 / 15 | War Factory | `TransportContain`, `AssaultTransportAIUpdate` | A |
+| ChinaTankDragon | 800 / 10 | War Factory | flame weapon, fire wall | A |
+| ChinaVehicleInfernoCannon | 900 / 15 | War Factory, Propaganda Center | artillery | A |
+| ChinaVehicleNukeLauncher | 1600 / 20 | War Factory, Propaganda Center, `SCIENCE_NukeLauncher` (rank 1) | artillery, `DeployStyleAIUpdate` | A |
+| ChinaTankECM | 800 / 10 | War Factory, Propaganda Center | missile jammer, vehicle disabler | A |
+| ChinaInfantryHacker | 625 / 20 | Barracks, Propaganda Center | `HackInternetAIUpdate` | B |
+| ChinaInfantryBlackLotus | 1500 / 20 | Barracks, Propaganda Center | `StealthUpdate`, `SpecialAbility` | B |
+| ChinaVehicleListeningOutpost | 800 / 15 | War Factory | `StealthUpdate`, detector, `TransportContain` | B |
+| GLAInfantryTerrorist | 200 / 5 | Barracks | suicide weapon; car bomb (`ConvertToCarBombCrateCollide`) goes to B | A |
+| GLAInfantryAngryMobNexus | 800 / 15 | Barracks, Palace | `SpawnBehavior` 10 members, replace delay 30 s, `ImmortalBody` nexus | A |
+| GLAVehicleQuadCannon | 700 / 6 | Arms Dealer | weapon salvager (3 tiers) | A |
+| GLAVehicleToxinTruck | 600 / 5 | Arms Dealer | poison gun and sprayer, salvage tiers | A |
+| GLAVehicleRocketBuggy | 900 / 10 | Arms Dealer, Palace | rockets: min range 50, range 300, speed 600, clip 6 (`weapon.ini:2088`) | A |
+| GLATankMarauder | 800 / 10 | Arms Dealer, `SCIENCE_MarauderTank` (rank 1) | weapon salvager (3 tiers) | A |
+| GLAVehicleScudLauncher | 1200 / 15 | Arms Dealer, Palace, `SCIENCE_ScudLauncher` (rank 1) | artillery, explosive / anthrax / toxin warheads | A |
+| GLAVehicleCombatBike | 500 / 4 | Arms Dealer | `RiderChangeContain` (weapon set follows the rider) | A |
+| GLAVehicleBattleBus | 1000 / 15 | Arms Dealer, Palace | `TransportContain`, `UndeadBody` 400 HP, second life 650 HP | A |
+| GLAInfantryHijacker | 400 / 10 | Barracks, Palace, `SCIENCE_Hijacker` (rank 3) | `HijackerUpdate`, `StealthUpdate` | B |
+| GLAInfantryJarmenKell | 1500 / 20 | Barracks, Palace | `StealthUpdate`, pilot sniper | B |
+| GLAInfantrySaboteur | 800 / 15 | Arms Dealer | `StealthUpdate`, sabotage collides | B |
+| GLAVehicleRadarVan | 500 / 10 | Arms Dealer | radar, scan power, detector | B |
+| GLAVehicleBombTruck | 1200 / 15 | Arms Dealer, Palace | `StealthUpdate` disguise | B |
+
+- **Tech buildings** (`factionbuilding.ini`): AmericaStrategyCenter (:5848) $2500, 60 s, −2 power, 1500 HP, needs War Factory; ChinaPropagandaCenter (:29799) $2000, 45 s, −2, 1000 HP, needs War Factory; GLAPalace (:16261) $2500, 45 s, 3000 HP, needs Arms Dealer, `GarrisonContain` 5 (:16997); GLABlackMarket (:9421) $2500, 30 s, 1000 HP, needs Palace; ChinaNuclearMissileLauncher (:12297) $5000, 60 s, −10, 4000 HP, needs Propaganda Center.
+- **Upgrade sites** (`commandset.ini`): Strategy Center: battle plans (Bombardment, Hold the Line, Search and Destroy), CIA Intelligence, Chemical Suits, MOAB, Composite Armor, Advanced Training, Drone Armor, Supply Lines. Propaganda Center: Nationalism, Subliminal Messaging, Mines. Palace: Fortified Structure, Arm the Mob, Camouflage, Toxin Shells, Anthrax Beta. Black Market: AP Bullets, AP Rockets, Junk Repair, Buggy Ammo, Radar Van Scan, Worker Shoes. Nuclear silo: Uranium Shells, Nuclear Tanks, Neutron Shells. Barracks / factories: Flash-Bang, capture building, TOW Missile, Sentry Drone Gun, Chain Guns, Black Napalm, Scorpion Rocket, Booby Trap. USA vehicles (Crusader, Humvee, Paladin, Microwave): Battle, Scout and Hellfire drones.
+- **Veterancy** (`gamedata.ini` weapon bonuses; per object `ExperienceValue` / `ExperienceRequired`): Veteran ROF 120 % damage 110 % health 120 %; Elite 140 / 120 / 130 %; Heroic 160 / 130 / 150 %. Example China vehicles: value 100/100/200/400 with required 0/200/300/600, and 200/200/400/600 with 0/400/600/1200. The kill grant rule and heroic extras are read from source at planning.
+- **Poison** (`PoisonedBehavior`, Ranger as example): damage retaken every 100 ms for 3000 ms after the last poison hit.
+- **Rank** (`rank.ini`, `science.ini`): skill points 0 / 800 / 1500 / 2500 / 5000 per rank; the six rank-gated units above cost 1 science point. Wargrid departure: building prerequisites only (user, 2026-11-07).
+
 ## Per-unit values extracted at planning (config, 2026-11-06)
 
 Status: **SOURCE/CONFIG, NOT MEASURED.** Read from the root `INIZH.big` (hash pinned in [installation](installation.md)) and the EA source at `0a05454` (`GeneralsMD/Code/GameEngine/`). INI paths below are inside `data\ini\`. The defeat rule, ROF, heal and rub-off readings are interpretations of the source; the [parity harness](zero-hour-parity-harness.md) has not measured them.

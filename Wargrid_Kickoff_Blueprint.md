@@ -591,9 +591,36 @@ Make the converted map playable in the launcher: map choice, camera limits for 1
 - **Unit avoidance milestone** after the spike: units go around each other instead of through each other (a firm requirement from the M7 gate 2 playtest; today the M2 design permits overlap in transit). It changes pathing for every unit, so it re-pins every trace and needs its own benchmarks, a design spike on one map first, and a playtest. Risks to design for: deadlocks at docks and chokepoints, trucks, container boarding, horde clusters, lockstep determinism and WASM cost.
 - **Why this order:** the spike gives avoidance a measured per-tick baseline and probably its spatial grid; avoidance comes before new content so later rosters, the art pass and the M8 bots are tuned once against the final movement, and the trace re-pin happens once. Fog and art do not touch movement.
 
-### Ground batch A (after M7; user, 2026-11-06, scope not designed)
+### Ground batch A (after unit avoidance; user, 2026-11-06; scope refined 2026-11-07, not designed)
 
-The ground units that need only M7's systems plus veterancy, upgrades and the tech tree, poison, transports, and travelling shots with minimum range (artillery). Replaces the earlier proposed "M7.1 roster fill".
+The ground units that need only M7's systems plus veterancy, upgrades and the tech tree, hazard fields (poison, fire, radiation), new transport kinds, and travelling shots with minimum range (artillery). Replaces the earlier proposed "M7.1 roster fill". Per-unit evidence and the 32-unit split: [batch classification](docs/reference/m7-factions.md#batch-classification-config-2026-11-07).
+
+**User decisions (2026-11-07):**
+- **Rank-gated units** (Paladin, Nuke Cannon, Marauder, Scud Launcher need a rank-1 promotion in Zero Hour) are gated by their building prerequisites only. No player rank; recorded departure until general's powers.
+- **All rockets and shells travel**, the existing ones and the Patriot assist weapon included (the M7 weapon parity carry-over). Every combat trace re-pins once.
+- **Upgrades:** every upgrade whose effect needs no batch B system. Camouflage, capture building, mines, booby traps, Radar Van Scan, CIA Intelligence and the Scout Drone go to batch B; MOAB waits for general's powers.
+- **China's nuclear silo** arrives as an upgrade building without its missile power, for Uranium Shells, Nuclear Tanks and Neutron Shells.
+- **To batch B:** Sentry Drone and Bomb Truck (stealth is their identity), the Terrorist's car bomb (with the Hijacker). The Terrorist itself ships in A with its suicide attack.
+- **Cut:** a systems gate first, then one gate per faction, each with a user playtest.
+
+**Roster (21 units, USA 6, China 6, FRC 9):**
+
+| | USA | China | FRC |
+|---|---|---|---|
+| Units | Hazmat tech, Tomahawk, Ambulance, Paladin, Avenger, Microwave tank | Overlord (bunker, gattling and propaganda add-ons), Troop Crawler, Dragon tank, Inferno cannon, Nuke cannon, ECM tank | Terrorist, Angry Mob, Quad Cannon, Toxin Truck, Rocket Buggy, Marauder, Scud Launcher, Combat Cycle, Battle Bus |
+| Add-ons | Battle and Hellfire drones on USA vehicles | Overlord add-ons | – |
+| Buildings | Strategy Center | Propaganda Center, nuclear silo (no missile) | Palace (garrison 5), Black Market |
+
+Batch B keeps the other 11: Burton, Pathfinder, Sentry Drone, Hacker, Black Lotus, Listening Outpost, Hijacker, Jarmen Kell, Saboteur, Radar Van, Bomb Truck.
+
+**Proposed gates (not approved):**
+- **A1 systems, on existing units:** veterancy (levels, experience from kills, rate-of-fire, damage and health bonuses; salvage's level-up branch replaces the M7 money departure); travelling shots with flight time and minimum range; hazard fields (damage ticks, duration after the last hit, cleanup by Hazmat and Ambulance later); upgrades as capability data (per player and per object) and building prerequisites. User playtest of veterancy and travelling shots.
+- **A2 USA, A3 China, A4 FRC:** units, buildings and upgrades as data, plus each faction's new mechanics. USA: point-defence laser, target designator, building disable, drones as follower units. China: Overlord add-ons, assault deploy, missile jammer and vehicle disable, deploy-to-fire, Nationalism and Subliminal on horde. FRC: spawn nexus, rider-dependent weapons, second life, suicide weapons, three salvage tiers, garrison.
+- **Exit gate:** a deterministic headless 3v3 bot match on Ashfall with the new units in the bot lists, ledger rows inside budgets or reported as exceeded, parity decision list (`turn_`, `move_`, `range_`, `reach_` per new unit, flight time per projectile), CI, one review and `/ponytail-review`, user playtest.
+
+**Not in batch A:** aircraft; anti-air halves of ground weapons have no targets until then (Avenger's air laser, Quad Cannon's air gun); superweapons, general's powers and promotions.
+
+**Risks:** as many units as M7's whole roster plus five new systems, so the design session may still split it. Travelling shots and hazard fields add per-tick objects on the rows the performance spike works on; measure in A1 before any roster gate. Scatter and jammer redirection must use simulation randomness only.
 
 ### R1 — Releases (small separate task, not a milestone; user, 2026-11-06; done 2026-11-07, `v0.6.0` released)
 
