@@ -12,7 +12,7 @@ const Fixture = preload("res://tests/combat_fixture.gd")
 const EconomyFixture = preload("res://tests/economy_fixture.gd")
 
 func cases() -> Array[Callable]:
-	return [test_combat_definitions, test_definitions_shared, test_health_snapshot_isolation, test_weapon_range_boundary, test_ranger_fires_at_edge_max, test_crusader_fires_at_edge_max, test_rifle_cycle_30, test_firing_cell_uses_edge, test_building_edge_range, test_damage_armor_matrix, test_weapon_cooldown, test_guard_priority, test_attack_validation_atomic, test_combat_intent_order, test_orders_preserve_reload, test_acquisition_throttle, test_mutual_lethal_fire, test_target_removed_cleanup, test_destroyed_unit_no_actions, test_destroyed_producer_accounting, test_same_tick_attack_and_cancel, test_removed_target_rescans, test_controller_and_scan_radius, test_scan_acquires_beyond_weapon_range, test_scan_radius_by_controller, test_scan_radius_boundary, test_removed_chaser_clears_chase, test_scan_keeps_target_leaving_radius, test_attack_move_resumes_after_chase, test_scan_same_tick_orders, test_scan_includes_buildings, test_human_guard_in_range_only, test_human_guard_holds_against_kiting, test_ai_guard_unchanged, test_human_attack_move_marches_in_range, test_human_attack_move_post_kill_rescan, test_human_attack_move_follows_retreat, test_rescan_same_tick_orders, test_human_attack_move_drops_target_out_of_range, test_human_attack_move_first_approach_has_no_leash, test_retarget_only_for_attack_move, test_missing_id_skipped, test_due_tick_death_skips_member, test_foreign_id_rejects, test_attack_move_mixed_selection, test_retaliate_trigger_distance, test_retaliate_joiners, test_retaliate_leash_and_return, test_retaliate_return_scan_and_rehit, test_retaliate_same_tick_cases, test_retaliate_go_home_queues_once, test_rng_sequence, test_splash_victims_boundary, test_splash_cluster, test_splash_mask, test_splash_last_builder_same_tick, test_splash_event_flag, test_rocket_splash_and_scatter, test_damage_table_new_types, test_damage_table_gattling, test_damage_table_frc_weapons, test_nearest_matches_oracle]
+	return [test_combat_definitions, test_definitions_shared, test_health_snapshot_isolation, test_weapon_range_boundary, test_ranger_fires_at_edge_max, test_crusader_fires_at_edge_max, test_rifle_cycle_30, test_firing_cell_uses_edge, test_building_edge_range, test_damage_armor_matrix, test_weapon_cooldown, test_guard_priority, test_attack_validation_atomic, test_combat_intent_order, test_orders_preserve_reload, test_acquisition_throttle, test_mutual_lethal_fire, test_target_removed_cleanup, test_destroyed_unit_no_actions, test_destroyed_producer_accounting, test_same_tick_attack_and_cancel, test_removed_target_rescans, test_controller_and_scan_radius, test_scan_acquires_beyond_weapon_range, test_scan_radius_by_controller, test_scan_radius_boundary, test_removed_chaser_clears_chase, test_scan_keeps_target_leaving_radius, test_attack_move_resumes_after_chase, test_scan_same_tick_orders, test_scan_includes_buildings, test_human_guard_in_range_only, test_human_guard_holds_against_kiting, test_ai_guard_unchanged, test_human_attack_move_marches_in_range, test_human_attack_move_post_kill_rescan, test_human_attack_move_follows_retreat, test_rescan_same_tick_orders, test_human_attack_move_drops_target_out_of_range, test_human_attack_move_first_approach_has_no_leash, test_retarget_only_for_attack_move, test_missing_id_skipped, test_due_tick_death_skips_member, test_foreign_id_rejects, test_attack_move_mixed_selection, test_retaliate_trigger_distance, test_retaliate_joiners, test_retaliate_leash_and_return, test_retaliate_return_scan_and_rehit, test_retaliate_same_tick_cases, test_retaliate_go_home_queues_once, test_rng_sequence, test_splash_victims_boundary, test_splash_cluster, test_splash_mask, test_splash_last_builder_same_tick, test_splash_event_flag, test_rocket_splash_and_scatter, test_damage_table_new_types, test_damage_table_gattling, test_damage_table_frc_weapons, test_nearest_matches_oracle, test_radius_cache]
 
 func test_combat_definitions(runner) -> bool:
 	runner.check(Definitions.profile("usa_rifle_infantry") == {"max_hp": 180000, "armor": "human", "weapon": "rifle"}, "D1 infantry")
@@ -1392,6 +1392,26 @@ func test_damage_table_frc_weapons(runner) -> bool:
 	for shot in _shots(sim):
 		if shot.attacker_id == pickup: hit[shot.target_id] = shot.splash
 	runner.check(hit == {target: false, close: true}, "S10 the pickup cannon hits a vehicle whose edge is within 1.0 cell, not one at 1.1")
+	return true
+
+func test_radius_cache(runner) -> bool:
+	var mismatches: int = 0
+	for id: String in Registry.units() + Registry.buildings():
+		var row: Dictionary = Registry.kind(id)
+		var footprint: Vector2i = row.get("footprint", Vector2i.ZERO)
+		var expected: float = row.radius if row.has("radius") else 0.5 * sqrt(float(footprint.x * footprint.x + footprint.y * footprint.y))
+		if Definitions.radius(id) != expected or Definitions.radius(id) != expected: mismatches += 1
+	runner.check(mismatches == 0, "RC1 cached radius equals the formula for every kind (%d mismatches)" % mismatches)
+	var tank: Dictionary = Registry.kind("usa_tank").duplicate()
+	tank.radius = 0.25
+	Registry.add_test_kind("rc_test", tank)
+	var first: float = Definitions.radius("rc_test")
+	tank.radius = 0.75
+	Registry.add_test_kind("rc_test", tank)
+	var second: float = Definitions.radius("rc_test")
+	Registry.clear_test_kinds()
+	runner.check(first == 0.25 and second == 0.75, "RC2 test kind radius is not stale after add_test_kind")
+	runner.check(not Registry.radius_cache.has("rc_test"), "RC3 clear_test_kinds drops cached radius")
 	return true
 
 func test_nearest_matches_oracle(runner) -> bool:

@@ -16,6 +16,7 @@ static var _extra: Dictionary = {}
 static var _unit_cache: Dictionary = {}
 static var _building_cache: Dictionary = {}
 static var _profile_cache: Dictionary = {}
+static var radius_cache: Dictionary = {}
 static var air_kinds: Dictionary = _air_kinds()
 
 static func kind(id: String) -> Dictionary:
@@ -114,4 +115,5 @@ static func _reset() -> void:
 	_unit_cache = {}
 	_building_cache = {}
 	_profile_cache = {}
+	radius_cache = {}
 	air_kinds = _air_kinds()

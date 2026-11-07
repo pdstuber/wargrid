@@ -14,10 +14,16 @@ static func weapon(kind: String) -> Dictionary:
 	return Shared.WEAPONS.get(kind, {})
 
 static func radius(kind: String) -> float:
+	if Registry.radius_cache.has(kind): return Registry.radius_cache[kind]
 	var row: Dictionary = Registry.kind(kind)
-	if row.has("radius"): return row.radius
-	var footprint: Vector2i = Definitions.building(kind).footprint
-	return 0.5 * sqrt(float(footprint.x * footprint.x + footprint.y * footprint.y))
+	var found: float
+	if row.has("radius"):
+		found = row.radius
+	else:
+		var footprint: Vector2i = Definitions.building(kind).footprint
+		found = 0.5 * sqrt(float(footprint.x * footprint.x + footprint.y * footprint.y))
+	Registry.radius_cache[kind] = found
+	return found
 
 static func vision(kind: String) -> float:
 	return Registry.kind(kind).get("vision", 0.0)

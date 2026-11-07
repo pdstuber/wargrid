@@ -3,15 +3,15 @@
 Handoff: [performance-spike-prompt.txt](../performance-spike-prompt.txt). Ledger: [performance.md](performance.md). Dated evidence rows below the record are append-only.
 
 ```text
-Resume record (updated 2026-11-07 22:50)
-Branch / base commit / working-tree state: main / e11b2fe (baseline measured on 20a4d06; e11b2fe adds docs only) / uncommitted: game/scripts/simulation/combat.gd, game/tests/test_combat.gd (Task 2b), this file, docs/reference/performance.md (ledger row)
-Last green task / next incomplete task: Task 2b (per-owner target grid, see '2b result'; awaits coordinator commit) / Task 2c
-Changed paths since last commit: game/scripts/simulation/combat.gd, game/tests/test_combat.gd, this file, docs/reference/performance.md
-Last command / cases / checks / failures / exit / marker: Task 1b baseline chain on a git archive of HEAD 20a4d06 (3x movement, combat, lockstep, team match, 1x profile), all exit 0; Task 1c only read logs (no benchmark run); Task 1d one scratch bucket run per layout (open, dense, hordes300), all exit 0
-Known red case or blocker: none. Report-only rows exceeded: combat open, dense, hordes300 (see Workstream 1 finding)
-Approved decisions, pre-authorizations used, deferred gates: user invoked the spike 2026-11-07; works on main; local commits after green checkpoints pre-authorized; no push/PR/merge/fly/Sprite/window without approval; host = this Mac only (user)
+Resume record (updated 2026-11-08 00:00)
+Branch / base commit / working-tree state: main / bce4b79 (Task 2b committed) / uncommitted: game/scripts/simulation/combat.gd, combat_definitions.gd, definitions/definitions.gd, game/tests/test_combat.gd (Task 2c), this file, docs/reference/performance.md (ledger rows 2b and 2c)
+Last green task / next incomplete task: Task 2c (cached radius per kind, see '2c result'; awaits coordinator commit) / Task 2d (`Horde.step`, H3 confirmed)
+Changed paths since last commit: game/scripts/simulation/combat.gd, combat_definitions.gd, definitions/definitions.gd, game/tests/test_combat.gd, this file, docs/reference/performance.md
+Last command / cases / checks / failures / exit / marker: accept.sh bce4b79 PASS (suite 484 cases / 136037 checks / 0 failures); A/B bench_ab.sh 3 rounds exit 0 ALLDONE
+Known red case or blocker: none. Report-only rows exceeded: combat open, dense, hordes300
+Approved decisions, pre-authorizations used, deferred gates: user invoked the spike 2026-11-07; works on main; local commits after green checkpoints pre-authorized; no push/PR/merge/fly/Sprite/window without approval; host = this Mac only (user). Decisions of 2026-11-07 evening: BM6 retune approved together with 2e; 2f approved with a version bump and a ZH AIUpdate comparison; second round for 2d and per-cell enemy counts; hordes300 "improved, still exceeded" is acceptable; C++/GDExtension NOT investigated (user decision); threads PoC local first, fly web deploy allowed for the threaded-web test only, Safari failure is not a blocker, a Chromium-based browser (e.g. Vivaldi, not installed yet) is acceptable for the Chrome check; Steam Deck check tomorrow; user asleep, run all approved work, pausing only on a stop condition
 Usage so far (python3 tools/session_usage.py <session files>): not recorded
-Next exact action: commit Task 2b, then dispatch Task 2c; Task 2d target is `Horde.step` (H3 confirmed). The 2a scratch copy under the scratchpad (ws2a) is not part of the repo
+Next exact action: commit Task 2c, then dispatch Task 2d (`Horde.step`)
 ```
 
 ## Evidence
@@ -27,6 +27,7 @@ Next exact action: commit Task 2b, then dispatch Task 2c; Task 2d target is `Hor
 | 2026-11-07 | e11b2fe (git archive) + scratch run_bucket.gd | Apple M6 | Task 1d bucket measurement: open, dense, hordes300 one at a time, no godot/ZH process before each | exit 0 x3; load 1.75 start / 1.76 end (22:16); table in the finding |
 | 2026-11-07 | e11b2fe-equivalent HEAD c683426 (git archive) + scratch sub-zones, `_nearest` counters, `run_2a.gd` | Apple M6 | Task 2a: open, dense, hordes300 one at a time, headless, profiler on, no godot/ZH process before each (pgrep empty), 22:25; the scratch copy was not linted or run through the suite (Task 2a keeps no code) | exit 0 x3, `TWO_A COMPLETE`; load 1.56 start / 1.40 end; result below |
 | 2026-11-07 | HEAD c17e88d + Task 2b working tree (uncommitted) vs git archive of c17e88d | Apple M6 | Task 2b acceptance: suite, lint, warnings, 4 traces cmp, netplay, team match, A/B A B A B A B of run_movement.gd and run_combat.gd (headless), no godot/ZH process before | suite 483 cases / 136034 checks / 0 failures (base 482 / 136033 with traces); lint, warnings exit 0; traces identical (1200, 1200, 1200, 100 rows); netplay match PASSED tick 8400; team match exit 0 `cap tick=45000 winner=null units_peak=160`; load 1.82 start / 1.69 end; table in '2b result' |
+| 2026-11-07 | HEAD bce4b79 + Task 2c working tree (uncommitted) vs git archive of bce4b79 | Apple M6 | Task 2c acceptance via scratchpad accept.sh and bench_ab.sh: suite, lint, warnings, 4 traces cmp, pins, netplay, team match, A/B A B A B A B of run_movement.gd and run_combat.gd (headless), no godot/ZH process before | suite 484 cases / 136037 checks / 0 failures (base 483 / 136034); lint, warnings exit 0; traces identical; 7 pin lines equal; netplay match PASSED tick 8400; team match exit 0 `cap tick=45000 winner=null units_peak=160`; load 1.93 start / 1.25 end; table in '2c result' |
 
 ## Workstream 1 finding (baseline, 2026-11-07, 20a4d06, Apple M6, 3 runs each)
 
@@ -172,3 +173,21 @@ A/B median of 3 runs each (ms), A = base, B = Task 2b, A/A spread = max - min of
 | movement dense | 1.541 / 1.537 | 1.589 / 1.596 | 1.800 / 1.788 | 0.010 / 0.016 / 0.017 |
 
 Movement rows: differences are below the spread, noise (the change does not touch movement). Other combat rows (A -> B p95): contact 1.203 -> 1.198, skirmish3v3 1.436 -> 1.370, transports 1.470 -> 1.287, defences 0.958 -> 0.883, docks 0.880 -> 0.723, ramp 0.760 -> 0.693, frc 0.948 -> 0.918; none worse beyond its spread. Open / dense / hordes300 still exceed the 1.82 / 3.64 budget (report-only, ceilings untouched). Logs in the scratchpad (`ab/`), not in the repo. Lockstep and team-match timing runs were not repeated; team match was run for its exit line only. performance.md ledger row not written (coordinator decides).
+
+## 2c result (2026-11-08, working tree on bce4b79 vs git archive of bce4b79, Apple M6, load 1.93 start / 1.25 end)
+
+Kept fix 2: `CombatDefinitions.radius` memoizes per kind in `Registry.radius_cache` (cleared in `Registry._reset`, so `add_test_kind` / `clear_test_kinds` cannot leave it stale); `_gap_at` branches once on `has("origin")` and calls `Definitions.building` once. Same float expressions. New case `test_radius_cache` (RC1-RC3, game/tests/test_combat.gd): cached radius equals the formula for every Registry kind, a test kind re-added with another radius is not stale, and `clear_test_kinds` drops the entry. Not mutation-checked (the `_reset` line was not removed to see RC2 go red). A first draft of `_gap_at` read `target.position` for buildings and broke 34 checks (buildings carry no `position`); the suite caught it, fixed before the numbers below.
+
+Acceptance: suite 484 cases / 136037 checks / 0 failures (base 483 / 136034); lint and warnings exit 0; four traces cmp-identical to the base archive; 7 pin lines equal to base; netplay match PASSED at tick 8400; team match exit 0 with the expected line; `combat_work=` identical A vs B on open, dense, hordes300.
+
+A/B median of 3 runs (ms), spreads are max - min of the runs of that arm:
+
+| Row | p50 A / B | p95 A / B | p99 A / B | A/A spread p50 / p95 / p99 |
+|-----|-----------|-----------|-----------|----------------------------|
+| combat open | 1.333 / 1.312 | 2.170 / 2.111 | 2.584 / 2.525 | 0.008 / 0.017 / 0.053 |
+| combat dense | 1.123 / 1.089 | 2.379 / 2.284 | 2.935 / 2.845 | 0.015 / 0.023 / 0.034 |
+| combat hordes300 | 2.699 / 2.614 | 4.069 / 3.921 | 4.733 / 4.569 | 0.015 / 0.018 / 0.070 |
+| movement open | 1.526 / 1.520 | 1.588 / 1.589 | 1.766 / 1.755 | 0.018 / 0.025 / 0.011 |
+| movement dense | 1.537 / 1.526 | 1.579 / 1.577 | 1.788 / 1.790 | 0.018 / 0.020 / 0.018 |
+
+Gain is real (beyond spread in all combat percentiles) but far below the 0.1-0.4 ms estimate: 0.02-0.09 ms p50, 0.06-0.15 ms p95. Movement differences are within spread. Rows still exceed the budget (report-only). Logs in the scratchpad (`ab2c/`), not in the repo. Lockstep and team-match timing were not rerun.

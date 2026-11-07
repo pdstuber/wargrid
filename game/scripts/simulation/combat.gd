@@ -45,8 +45,15 @@ static func edge_gap(unit: Dictionary, target: Dictionary) -> float:
 	return _gap_at(unit.position[0], unit.position[1], unit.kind, target)
 
 static func _gap_at(x: float, y: float, kind: String, target: Dictionary) -> float:
-	var cx: float = target.position[0] if not target.has("origin") else target.origin[0] + Definitions.building(target.kind).footprint.x * 0.5
-	var cy: float = target.position[1] if not target.has("origin") else target.origin[1] + Definitions.building(target.kind).footprint.y * 0.5
+	var cx: float
+	var cy: float
+	if target.has("origin"):
+		var footprint: Vector2i = Definitions.building(target.kind).footprint
+		cx = target.origin[0] + footprint.x * 0.5
+		cy = target.origin[1] + footprint.y * 0.5
+	else:
+		cx = target.position[0]
+		cy = target.position[1]
 	return _gap_between(x - cx, y - cy, CombatDefinitions.radius(kind), CombatDefinitions.radius(target.kind))
 
 static func _gap_between(dx: float, dy: float, radius_a: float, radius_b: float) -> float:
