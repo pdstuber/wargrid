@@ -21,6 +21,7 @@ func setup(transport: RefCounted, lockstep: RefCounted, seat: int, faction: Stri
 
 func _ready() -> void:
 	super._ready()
+	_perf.extra = _net_line
 	_lockstep.send = _transport.send_text
 	_lockstep.submit({"type": "choose_faction", "faction": _faction})
 	_lockstep.start(simulation.snapshot())
@@ -70,6 +71,11 @@ func _write_report() -> String:
 	file.store_string(JSON.stringify(report, "", true, true))
 	file.close()
 	return ProjectSettings.globalize_path(path)
+
+func _net_line() -> String:
+	var latency: Dictionary = TimingStats.summary(_ms(_lockstep.latency_samples()))
+	var rtt: Dictionary = TimingStats.summary(_ms(_transport.rtt_samples()))
+	return "Cmd latency p95 %.0f ms | RTT p95 %.0f ms" % [latency.p95, rtt.p95]
 
 func _write_latency() -> void:
 	var line: String = latency_line()

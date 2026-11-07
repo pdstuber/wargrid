@@ -3,6 +3,7 @@ extends Node
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
+const PerfOverlay = preload("res://scripts/presentation/perf_overlay.gd")
 const ZOOMS: Array[float] = [0.5, 1.0, 2.0]
 var simulation: Simulation = Simulation.new()
 var selected_ids: Array[int] = []
@@ -22,10 +23,13 @@ var _base_blocked: Array[Vector2i] = []
 var _camera_bounds: Rect2
 @onready var _view: Node2D = $WorldView
 @onready var _camera: Camera2D = $Camera2D
+var _perf: Label
 @onready var _status: Label = $HUD/Status
 @onready var _selection_box: ReferenceRect = $HUD/SelectionBox
 
 func _ready() -> void:
+	_perf = PerfOverlay.new()
+	$HUD.add_child(_perf)
 	_view.local_player = local_player
 	simulation = _create_simulation()
 	_reset_camera()
@@ -42,7 +46,9 @@ func _step_simulation() -> void:
 	simulation.step()
 
 func _physics_process(_delta: float) -> void:
+	var started: int = Time.get_ticks_usec()
 	_step_simulation()
+	_perf.record_step((Time.get_ticks_usec() - started) / 1000.0)
 	_refresh()
 
 func _process(delta: float) -> void:
@@ -62,7 +68,9 @@ func change_zoom(direction: int) -> void:
 	_camera.zoom = Vector2.ONE * ZOOMS[index]
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("deselect"):
+	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_F3:
+		_perf.toggle()
+	elif event.is_action_pressed("deselect"):
 		selected_ids.clear()
 		_selecting = false
 		_selection_box.hide()
@@ -154,6 +162,7 @@ func _refresh() -> void:
 	_show(simulation.snapshot())
 
 func _show(state: Dictionary) -> void:
+	_perf.set_counts(state.entities.size(), state.get("buildings", []).size(), state.tick)
 	var zone: int = Profiler.begin()
 	var live: Array = state.entities.map(func(unit: Dictionary) -> int: return unit.id)
 	selected_ids.assign(selected_ids.filter(func(id: int) -> bool: return live.has(id)))

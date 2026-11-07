@@ -9,13 +9,19 @@ Plan: [M7 plan](../superpowers/plans/2026-11-06-m7-factions.md). Design: [M7 des
 Resume record (updated 2026-11-07, gate 2 STOP GATE reached)
 Branch / base commit / working-tree state: m7-factions, HEAD = commit after cd8ba72 (review fixes committed), tree clean; origin/m7-factions at 8f835c0 (G2 work NOT pushed, CI not run on it)
 Last green task / next incomplete task: G2.0-G2.7 green, gate review (Opus) fixed, lean review done / user decisions below, then gate 3 is an outline (Opus high expansion session needed). Do not begin any G3 item.
-Changed paths since last commit: none
+Changed paths since last commit: F3 overlay task (uncommitted): game/scripts/main.gd, online_main.gd, presentation/perf_overlay.gd, tests/test_perf_overlay.gd, run_tests.gd, test_online_scene.gd, this file
 Last command / cases / checks / failures / exit / marker: see "Gate 2 review fixes": 388 cases / 134,583 / 0, exit 0, TESTS PASSED; lint, warnings, python checks, netplay (match 8331), conformance 33, run_benchmark.sh PASSED 10, team match won 33205 winner 1; traces cmp-identical to eb3fbed
 Known red case or blocker: none. Exceeded, not loosened: hordes p95 2.102, hordes300 p95 5.626 / p99 7.074 (budget 1.82 / 3.64; user's call). Rendered benchmark: done 2026-11-07, see "Rendered China layout"
 Approved decisions, pre-authorizations used, deferred gates: full load ground only (user 2026-11-06, OPEN asymmetry item); setup gate kept; defence_attack added. Open minor item M6 (M5 and M9 closed 2026-11-07). Lean review findings not applied (user's call): drop the hordes layout (keep hordes300; plan pinned PASSED 8/9 counts), replace add_test_faction by the china faction in test_bot_reads_seat_faction, drop horde_pairs counter, merge duplicate release block in supply_collection loading, loop the parity tables
 Usage so far: not recorded
 Next exact action: user: push approval (CI Linux/Windows + compare_local_traces.sh), playtest offline and online (rendered benchmark batched), decide horde cost, lean findings, Chinook full-load fairness; then Opus (high) session expands gate 3.
 ```
+
+## F3 overlay (2026-11-07, tree: m7-factions 557afa4 plus uncommitted, Apple M6)
+
+Presentation only. `scripts/presentation/perf_overlay.gd` (Label, top-right, hidden by default) is created in `main.gd` `_ready`, so base, skirmish and online all get it; F3 toggles it in `main._unhandled_input`. Shows FPS, frame ms (current / p95 / max over 120 frames), sim step ms (current / p95, `Time.get_ticks_usec` around `_step_simulation()` in `_physics_process`, view layer), units, buildings, tick; online adds command latency p95 and RTT p95 (`_net_line`). Text refreshes 4x per second; rings are preallocated. Moved/removed: nothing. The `Tick:` in the base status line and the debug line of the plain `main.gd` HUD stay (the base one is useful to the player; the main.gd line is its whole test HUD).
+Tests: `test_perf_overlay.gd` PO1 summary math, PO2 F3 and hidden default, PO3 layout clear of Status/Economy and inside the viewport, PO4 counts/step timed, PO5 skirmish wired; N9 in `test_online_scene.gd`. Seen red: PO2-PO5 (5 failures before wiring). Not seen red: PO1 (pure function written with the overlay; its first run caught my own wrong expectation 195 vs 194, not a code bug), N9 (added after wiring). A first draft created the Label in a member initializer and leaked at exit (suite exit 1 with 0 failures); now created in `_ready`.
+Checks: suite 396 cases / 134,602 / 0, exit 0, TESTS PASSED; lint, warnings (89 files) pass; `run_benchmark.sh` exit 0 (PASSED 2, COMBAT 10, LOCKSTEP 1), run before the leak fix, which touched only view code. No simulation file changed, traces not re-compared. Not viewed on screen.
 
 ## User acceptance of exceeded performance rows (2026-11-07)
 

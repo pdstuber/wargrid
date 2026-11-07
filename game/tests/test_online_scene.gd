@@ -28,7 +28,7 @@ class FakeTransport extends RefCounted:
 	func rtt_samples() -> PackedInt64Array: return PackedInt64Array([40000])
 
 func cases() -> Array[Callable]:
-	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_rejection_line, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_launcher_layout, test_launcher_faction_selectors_fit]
+	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_rejection_line, test_overlay_net_line, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_launcher_layout, test_launcher_faction_selectors_fit]
 
 func _online(runner, seat: int) -> Dictionary:
 	var transport := FakeTransport.new()
@@ -193,6 +193,14 @@ func test_launcher_layout(runner) -> bool:
 	var offline = load(LauncherScript.OFFLINE_SCENE).instantiate()
 	runner.check(offline.get_script().resource_path == "res://scripts/skirmish_main.gd", "N5 Play offline loads the offline skirmish")
 	offline.free()
+	return true
+
+func test_overlay_net_line(runner) -> bool:
+	var online: Dictionary = await _online(runner, 1)
+	var overlay = online.main.get_node("HUD/PerfOverlay")
+	overlay.toggle()
+	runner.check(overlay.text.contains("RTT p95 40 ms"), "N9 overlay shows the transport RTT")
+	online.main.free()
 	return true
 
 func test_rejection_line(runner) -> bool:
