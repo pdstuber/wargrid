@@ -763,7 +763,10 @@ Changed paths: new `game/tests/test_supply_parity.gd` (registered last in `game/
 
 ## T4 record (2026-11-07, tree: m7-factions b7c9ae3 plus the uncommitted tree incl. T1-T4, Apple M6; supersedes the BLOCKER line of the T3 record)
 
-- Fm1 stalemate cause and decision D (skirmish.json piles 200 -> 400, the SupplyDock value): [m7-fm1-decision](m7-fm1-decision.md). Applied.
+- Fm1 stalemate (folded from the deleted decision note):
+  - Diagnosis: map data. The 200-box piles of `skirmish.json` were exhausted by tick about 17,500 on the parity economy; rates were right.
+  - Decision D: piles 200 -> 400 (the Zero Hour `SupplyDock` value), data only, no bot or rate change. Applied.
+  - Outcome: Fm1 won at 23534 by seat 1 (FRC); sign-offs below.
 - Pins old (b7c9ae3) -> new: S1 terminal 9473 -> 8501 (winner 1); S1 series 8505231937702596599 -> 8576069817585818203 (the decision doc predicted 7172030720134552603, which was the 200-box value; with 400 boxes the series differs); Cs1 16258 -> 26359 (winner 2, inside cap); Fm1 10512 -> 23534 and **winner 2 -> 1** (accepted outcome change: the pre-parity economy bought the old winner); TB3 f21dde02dd0e80a7 -> 020f659e77ee6c20; TB4 3691462617852479071 -> 7692526877276561850; netplay `match` terminal 8331 -> 8400 (inside 7000-17999); team cap `units_peak` 171 -> 160, winner null at 45000 (two runs identical; **user sign-off pending**).
 - Literals changed (meaning kept unless noted): S1 box conservation 400 -> 800; K1 sources boxes 200 -> 400; Su2 admit 36/87 -> 43/213, waits 35/86 -> 42/212, first box 36 -> 43; Su2 "capacity departs no extra delay" -> **meaning changed by design** (air early-leave deleted): 343 steps still loading with 8 boxes, one more step departs; Su4 ordering 286 -> 342 steps (+44 steps to the release boundary), admit 36 -> 43, equal-nearest-depot wait 37 -> 87 steps; Su5/Su6 loading waits 36 -> 43, 35 -> 42, unloading 86 -> 212; Gt1 30/150/12/11 -> 38/190/37/36; Gt2 90/30 -> 114/38; Lb1 5/10/5/4 -> 42/84/45/44.
 - DEPARTURE, awaiting user sign-off: Fm1's `seen` list no longer requires `hole` (old assertion text: "Fm1 laborer delivery, a hole, two rocket fighters on the hub tick and a crate all happened"). Why: no FRC building dies in the parity-economy match (FRC wins). One attempt at a replacement (Fm1 with seats swapped {1:usa, 2:frc}) ended at 23909, winner 2, and showed no hole either, so no Fm2 was added. Holes remain covered by the RH1 unit test (`test_rebuild_holes.gd`).
@@ -786,3 +789,19 @@ Plan: [parity-harness-improvements](parity-harness-improvements.md) steps 1-6; t
 - Supply proof: `collect_truck_u1625` x3 uncapped, pooled 1288.2 credits/min against the measured 1294 (-0.45 %, spread 4.7 %); `collect_truck_6` x3 pooled 1351.1. 6 jobs took 40 s on 3 lanes against about 7 min per capped run before.
 - Throughput: 6 `collect_truck_6` jobs took 35 s on 3 lanes and 30 s on 6, so lanes are capped at 6 and the default is cpus/2 (at most 6).
 - Waits for the user: fork changes F1 (spawn completes structures like map objects), F2 (`GEN_AUTO_SEED`, Zero Hour faction names) and F3 (idle wait and `pid` in `/healthz`); `probe_patriot.py` deletion; the Wargrid supply script (`wg_supply2.gd`) is still scratch-only; `--wargrid` joins only a JSON file for `collect_*` rows; range/reach `accepted` values are not filled in (mechanism only).
+
+## Review fixes (2026-11-07, tree: m7-factions 4e1ee2d plus uncommitted, Apple M-series)
+
+- Harness: `stop_group` and `Game.close` treat macOS EPERM (a group that is only an unreaped zombie) as gone; `close` unlinks its pidfile in a `finally`; `kill_run` reads and kills the `sweep-parent` pidfiles first, then reads the rest (the remaining window: a job a parent launched before it died). Tests: stop_group on a zombie group (red before the fix) and a dead group, kill_run kills the recorded parent, clears pidfiles and spares a foreign pid.
+- Converter: piles are 4x5 (origin = cell - (2, 2), clamped), slots keep the edge margin 1; constants mirror `definitions.gd` (`SOURCE_FOOTPRINT`, `BUILD_EDGE_MARGIN`) and `supply_clearance` 1 (the 1-cell ring around each slot already gives the pile clearance). `ashfall.json` and `skirmish.json` untouched, so re-running the converter would still differ from the hand-shifted ashfall slots. `test_supply.gd` Pl3 now iterates every `res://data/maps/*.json`.
+- New tests, mutation-checked: Pl1 corner case (Chebyshev -> Manhattan in `_near_source` now fails 3 checks); Gd10 air arrival admitted ahead of an earlier ground waiter (deleting `if not _is_ground(other): return true` fails it; the older Gd9 never discriminated because its ground waiter stood off its arrival point); Gd11 helicopter on a 3-box pile waits 4 x load delay (early release after the last box fails it). `test_supply_parity.gd` Chinook wording replaced by "helicopter collector".
+- Docs: placement/clearance comments, rework plan pruned to Revision 2 plus the root causes, Fm1 decision note folded into the T4 record and deleted, parity docs trimmed, README and AGENTS M7 status updated.
+- Checks on this tree: suite 482 cases / 136,026 checks / 0 failures; lint, warnings, python checks pass; `python3 -m unittest discover -s tools` 85 OK. Replay, economy, combat and team traces cmp-identical to a `git archive` of 4e1ee2d (no simulation change).
+- Resume: Next exact action: coordinator commits; exit gate otherwise as in the T4 record.
+
+### Open rulings for the user (not decided)
+
+1. Two or more helicopter collectors on one pile lock every ground collector of any owner out permanently (reviewer scratch run: 2 helicopters, an enemy truck earned 0 credits in 20,000 ticks; with 1 helicopter +8,100). True since 8eac2cf; follows from the ruling that air goes first (F4). Zero Hour behaviour for mixed air and ground queues is unverified; suggest measuring 2 Chinooks + 1 truck on one pile with the parity harness before ruling.
+2. A rendered benchmark rerun is still required by AGENTS because presentation changed (terrain cache, 4x5 piles, label order, pick_source). Batch it with the playtest; needs the user's go-ahead (opens a window).
+3. The edge margin could be 2 cells (closer to Zero Hour's 1.2; the user chose 1; both maps pass at 2).
+4. The usa/china load/unload split between pile and depot is a modelling choice: the 5 % parity rows constrain the cycle sum only.

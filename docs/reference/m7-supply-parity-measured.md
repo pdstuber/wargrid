@@ -1,4 +1,4 @@
-# M7 supply cycle measured in Zero Hour (2026-11-07, narrowed sweep, 30-cell rows pending)
+# M7 supply cycle measured in Zero Hour (2026-11-07, narrowed sweep)
 
 Status: harness extended and working; the narrowed sweep ran as parallel instances (ports via `ZH_PARITY_PORT`, no clashes seen with 5-8 concurrent games). Labels: **measured (source build)**, **formula** ([m7-economy-parity.md](m7-economy-parity.md) section 3), **Wargrid today** (headless scratch sim on the working tree, see below), **unverified**. Zero Hour names appear only here as evidence.
 
@@ -40,24 +40,16 @@ Method: each run builds a depot (builder), then records one collector (or severa
 | GLA worker | 762.5 | 0 | **not measured**: the worker made 1 deposit in 22000 frames (all 3 runs) | | | 84 | n/a | n/a |
 
 Findings:
-- **Worker x4 / x1 = 3.66 (spread 1.1 %), above the plan's 3.6 stop line by 1.8 %.** Two workers give 1.97x, four 3.66x: dock handling of several workers overlaps, so it is not held per dock. A ZH deposit costs the same time per worker with 4 on a pile (the pile does not serialise them, unlike Wargrid's one-docker rule). Whether 3.66 is "above 3.6" is inside the noise of a 1 % spread; it is the sign, not the margin, that matters for the fold rule.
+- **Worker x4 / x1 = 3.66 (spread 1.1 %), above the plan's 3.6 stop line by 1.8 %.** Two workers give 1.97x, four 3.66x: ZH holds the dock per collector, and 3.66x fits a held pile: while one worker loads or unloads, the others walk. The sub-4x scaling is the queue at the pile, not an overlap of docking. Whether 3.66 is "above 3.6" is inside the noise of a 1 % spread; it is the sign, not the margin, that matters for the fold rule.
 - Chinook: the 762.5-unit pooled 1181 matches the plan's constant-model prediction of 1180 (identical in all 3 runs; Chinook runs are fully deterministic here). Multi-Chinook scaling is weak: 2 give 1.89x, 4 give 2.12x one.
 - Truck: scales to 2.01x with 2 and 3.39x with 4.
 - Truck phases differ between sweeps: capped-loop runs earlier today gave 424 (186 / 188 / 50) at 162.5; this uncapped sweep 410 (172 / 188 / 50), and the 6-cell run 388-389 (150-151 / 188 / 50) against 409 (171 / 188 / 50) in the first capped run. Chinook and worker phases are identical between the capped and uncapped sweeps. The truck differences are 14-21 travel frames, i.e. the truck's route depends on something that varies between sweeps (random faction and builder position, strip choice); treat the truck pooled value as +-3 % uncertain, which is smaller than every Wargrid deviation but matters at the 5 % gate for the 762.5 row (+7 %).
 - Wargrid worker x4 and the worker 762.5 rows need harness work (spawn spacing, a collector that keeps working beyond the 700-unit scan).
 
-## Legal minimum depot-to-pile distance (source-read, not measured)
+## Legal minimum depot-to-pile distance
 
-From the placement-rules note (`SupplyBuildBorder` 20 units, centre to centre along the pile's 50-unit half-extent): USA supply centre 114 units (4.56 cells), China supply centre 122 units (4.88 cells), GLA stash 106 units (4.24 cells). The coordinator's message listed stash 114 / USA 122 / China 106; the planning doc, which I follow, has USA 114 / China 122 / stash 106. **Unverified.** The API's own legality check could not measure it (it accepted overlapping placements 5 units from a spawned dock), so the closest-legal (`_0`) rows were dropped.
-
-## Harness notes
-
-- The macOS loop is capped at 30 Hz; `GEN_FPS_CAP=0` in the game environment makes a recorded frame about 27x cheaper (a 14000-frame collect run took 12 s instead of 7 min). `parity.py` now sets it by default (`ZH_PARITY_FPS_CAP` overrides).
-- Each game now runs in its own session and `close()` kills its process group; SIGTERM is turned into `SystemExit` so the lane's `finally` runs. The unproven `batch=` sampling option and `collect_truck_6_b*` were deleted (2026-11-07).
-- Ports: REST `p` and WS `p+1`, so lanes need ports at least 2 apart.
-- Control for the spawned neutral `SupplyDock` (may not be a pathfinding obstacle): not run.
+Source-read, not measured, unverified: the rule and its derivation are in [m7-placement-rules](m7-placement-rules.md) (rule 1). The API's own legality check could not measure it (it accepted overlapping placements 5 units from a spawned dock), so the closest-legal (`_0`) rows were dropped.
 
 ## Unverified / missing
 
-- Worker at 762.5 units; Wargrid worker x4; map-placed-pile control; legal minimum distances; capped-versus-uncapped equality for the truck (one capped control run was still unfinished).
-- The Wargrid scratch script lives only in the scratch dir (`wg_supply2.gd`).
+Harness usage and API quirks: [zero-hour-parity-harness](zero-hour-parity-harness.md). Not run: worker at 762.5 units; Wargrid worker x4; map-placed-pile control (the spawned neutral `SupplyDock` may not be a pathfinding obstacle); legal minimum distances; capped-versus-uncapped equality for the truck. The Wargrid scratch script `wg_supply2.gd` lives only in the scratch dir.

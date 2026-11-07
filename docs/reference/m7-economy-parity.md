@@ -1,6 +1,6 @@
 # M7 economy parity vs Zero Hour (research, 2026-11-07)
 
-Status: research only, no game file changed. Labels: **source-read** (INI/C++ read), **formula** (derived here), **map-decoded** (retail `.map` object list), **unverified**. Nothing measured in the parity harness (not run: the cycle is fully determined by the INI delays plus path length, and dock-approach overhead is not measurable without a layout fixture).
+Status: research only, no game file changed. Labels: **source-read** (INI/C++ read), **formula** (derived here), **map-decoded** (retail `.map` object list), **unverified**. The cycle was later measured in the parity harness and implemented: [m7-supply-parity-measured](m7-supply-parity-measured.md), [m7-economy-rework-plan](m7-economy-rework-plan.md). Items below that were mismatches then and are fixed now are marked resolved.
 
 ## Provenance
 
@@ -35,7 +35,7 @@ Status: research only, no game file changed. Labels: **source-read** (INI/C++ re
 | `SupplyPile` / `SupplyWarehouse` | 150 / 400 boxes, 5 / 9 approach positions (not on Tournament Desert) | not converted | n/a |
 | Tournament Desert piles (map-decoded) | 4 `SupplyDock` (2 start docks `SupplyDockNorth/South`, 2 corner docks) + 12 `SupplyPileSmall` in two clusters (6 at x~1300-1540,y~1190-1450; 6 at x~490-760,y~1230-1460) = 1600 + 600 = 2200 boxes | branch `dry_wells.json`: 11 sources, 2200 boxes (the 12 piles became 7 sources) | boxes yes; **pile count no** |
 | Piles per start | 1 `SupplyDock` per start base (North 1408,2547 / South 633,127) | seat start vs nearest source: Chebyshev 19 / 16 (converter report) | roughly |
-| Pile size on map | `SupplyDock` geometry BOX 50 x 61 (`civilianbuilding.ini:509-512`), i.e. 4 x 5 cells at 25 units | `SOURCE_FOOTPRINT` 3 x 3 (`definitions.gd:9`) | no (smaller) |
+| Pile size on map | `SupplyDock` geometry BOX 50 x 61 (`civilianbuilding.ini:509-512`), i.e. 4 x 5 cells at 25 units | `SOURCE_FOOTPRINT` 4 x 5 (`definitions.gd:9`) | yes (resolved) |
 | Concurrency | each pile is its own dock with its own single active docker; small piles in a cluster serve several collectors in parallel | one `active_collector_id` per source; merged clusters (up to 6 piles into one source) serve one collector | **no** |
 
 Proposed: unmerge small piles into separate 50-box sources (or cap merge at one pile), add `SupplyPileSmall: 50` to `BOXES` on `main` when the branch lands.
@@ -61,13 +61,7 @@ Credits per minute for one collector, formula only: `60 x capacity x 75 / (2d/v 
 | | 12 | 184 | 184 |
 | | 30 | 74 | 74 |
 
-Wargrid ground collectors already take (boxes + 1) x delay (`supply_collection.gd`, comment "Zero Hour waits one more delay after the last box"); the air collector departs at capacity (M3 shortcut, 1 delay shorter, +9 % at d=1, +1 s per cycle). Per-collector rates match; what differs is the geometry.
-
-### The FRC Laborer at distance 1 (user playtest)
-
-- Wargrid: laborer cycle is 5 (box) + 5 (extra delay) + 5 (unload) = 15 ticks + about 2 x 1 cell at 1 cell/s = about 2.3 s, i.e. about 1800 credits/min from one laborer at d=1 (formula above). A Dry Wells small pile is 50 boxes = 3750 credits, so it drains in about 2 min; a 150-box merged cluster in about 6 min; with several laborers on a cluster still one at a time. Starting 10,000 + about 10,000 in a few minutes is therefore consistent with the formula (formula, not reproduced).
-- ZH: the same arithmetic gives about 1840/min at d=1, so the rate is not the discrepancy. What ZH does not allow is d=1: the dock spot is the pile centre plus a unit vector toward the collector times half the major radius (`DockUpdate.cpp:446-487`, boneless): a `SupplyDock` major radius 50 puts the approach spot 25 units out, and the Stash (BOX 36 x 35, major 18 per m7-factions.md) has its own spot about 9 units from its centre. Building and pile footprints cannot overlap, so a pile touching a Stash sits at least about 50 + 18 = 68 units (2.7 cells) centre to centre, about 1.7-2 cells walk between approach spots, and the worker does walk (it is not stationary; it stands only during the 150 ms actions). ZH piles normally lie 15-20 cells from the start (converter report supply Chebyshev 14-19), where the rate is about 150-250 credits/min per worker (formula, d=12-30 gives 74-184).
-- So the playtest symptom is a placement/footprint effect: on Wargrid maps the converted piles can be within 1 cell of a cache, and small piles are merged. Not a rate bug.
+Wargrid ground collectors already take (boxes + 1) x delay (`supply_collection.gd`, comment "Zero Hour waits one more delay after the last box"). The air collector now waits the extra delay too. The formula omits the dock hold, so the shipped load/unload ticks are larger; the measured rows decide.
 
 ## 4. Per-faction table
 
@@ -77,27 +71,27 @@ Wargrid ground collectors already take (boxes + 1) x delay (`supply_collection.g
 | Box value, all | 75 (`gamedata.ini:248`) | 75 (`usa.gd:7`, `china.gd:5`, `frc.gd:6`) | yes | none |
 | Dock 400 / small pile 50 | `civilianbuilding.ini` | 400 yes; 50 only on branch | partial | land branch handling; add to `BOXES` |
 | Merged small piles | separate docks | merged sources (branch) | no | unmerge |
-| Pile footprint | 4 x 5 cells | 3 x 3 | no | footprint or min-distance decision (user) |
+| Pile footprint | 4 x 5 cells | 4 x 5 | yes (resolved) | none |
 | Start unit | USA Dozer / China Dozer / GLA Worker (`playertemplate.ini`) | `usa_builder` / `china_builder` / `frc_builder` (collects) | yes | none |
-| USA collector | Chinook 1 free per Supply Center; 8 boxes; 1200 ms/box; centre 2900 ms; 6 cells/s | `usa_collector` boxes 8, load 36, unload 87, speed 6.0; spawns_on_complete (`usa.gd:7,13`) | yes except departs at capacity (1 delay early) | optional: add the extra delay for air |
-| China collector | Truck 1 free; 4 boxes; 1000 / 400 ms; 1.6 cells/s | `china_collector` boxes 4, load 30, unload 12, speed 1.6 (`china.gd:5`) | yes | none |
-| FRC collector (GLA Worker) | Worker 1 free from Stash; 1 box; 150 / 150 ms; 1.0 cells/s | `frc_builder` boxes 1, load 5, unload 5, speed 1.0; spawns_on_complete (`frc.gd:6,11`) | yes | none |
+| USA collector | Chinook 1 free per Supply Center; 8 boxes; 1200 ms/box; centre 2900 ms; 6 cells/s | `usa_collector` boxes 8, speed 6.0, load/unload per `usa.gd` (INI delay plus measured dock hold); spawns_on_complete | yes (air early departure resolved) | none |
+| China collector | Truck 1 free; 4 boxes; 1000 / 400 ms; 1.6 cells/s | `china_collector` boxes 4, speed 1.6, load/unload per `china.gd` | yes | none |
+| FRC collector (GLA Worker) | Worker 1 free from Stash; 1 box; 150 / 150 ms; 1.0 cells/s | `frc_builder` boxes 1, speed 1.0, load/unload per `frc.gd`; spawns_on_complete | yes | none |
 | Collectors per player at start | 0 (USA/China) / 1 Worker (GLA, also the builder) | 0 / 0 / 1 builder | yes | none |
 | Bot collector count | AI builds more over time | FRC bot builds up to `LABORERS = 7` (`skirmish.gd:19`) | n/a (bot) | note, not ZH-derived |
 | Dock concurrency | one active docker per dock; depot docks: Supply Center 9 approach bones, Stash/China centre boneless | one active collector per source/depot; queueing by `_ahead` | yes for single dock | none |
 | Depot dock position | boneless: centre + half major radius toward collector | `supply_collection.gd` footprint-edge cells | approximate | unverified |
 | Scan distance | 700 units = 28 cells for automatic warehouse search (explicit dock order ignores it) | all-map search | no (M3 choice) | optional |
 
-## Mismatch list (most important first)
+## Mismatch list (open items)
 
 1. Small-pile merge on the branch (concurrency and pile count differ from Tournament Desert).
 2. `main` converter ignores `SupplyPileSmall` (only docks), so a main-based Tournament Desert loses 600 boxes.
-3. Pile/depot minimum distance (footprint 3 x 3 vs 4 x 5, adjacent placement): causes the d=1 laborer loop.
-4. Air collector departs at capacity (small, known).
-5. Search radius 28 cells not used (small).
+3. Search radius 28 cells not used (small; see rework plan R2.4).
 
-## Blocking / unverified
+Resolved since: pile/depot minimum distance and the d=1 laborer loop (`supply_clearance`, 4 x 5 pile, distinct dock points), air early departure.
 
-- Real cycle times include approach, turn and queue overhead (not measured; parity harness not run). Pile centre to dock spot geometry for Stash and Dock is formula only.
+## Unverified
+
+- Pile centre to dock spot geometry for Stash and Dock is formula only.
 - No selectable starting-money options in Wargrid (not requested).
-- `skirmish.json` piles 200 -> 400 boxes (the `SupplyDock` value) after the parity economy starved Fm1: [m7-fm1-decision](m7-fm1-decision.md).
+- `skirmish.json` piles 200 -> 400 boxes (the `SupplyDock` value) after the parity economy starved Fm1: outcome in [m7-verification](m7-verification.md) (T4 record).
