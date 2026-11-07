@@ -16,7 +16,7 @@ Known red case or blocker: none. Exceeded, not loosened, accepted by the user un
 Approved decisions, pre-authorizations used, deferred gates: unchanged, plus the user decisions of 2026-11-07 in the G3.5 record (FRC bot builds the factory before the hub; "won inside 45000" waived for the three-faction match).
 Open items: Chinook full-load fairness; M6 shared dock cells (latent); unverified online: China vs USA online, Chrome/Firefox, two WASM clients, hidden tab; Esc menu, enter / unload controls, tunnel and crate marks not played; rendered benchmark pending approval (presentation changed); quiet-host rerun of run_benchmark.sh for the `COMBAT BENCHMARK PASSED 10` line (the same two exceeded rows block it).
 Usage so far: not recorded
-Next exact action: commit G3.5 part A plus the gate 3 review fixes (local, pre-authorized), re-review if the coordinator wants, push for CI (approval).
+Next exact action: M7 EXIT GATE REACHED (2026-11-07, 98bf150 plus the ledger row). Open: the user's local merge decision (merge m7-factions to main locally, no push before the playtest; delete the scratch branch m7-ultra-base), push for CI and compare_local_traces.sh after the playtest, rendered benchmark rerun and playtest (batch, ask first), final run_benchmark.sh exit is 1 only because combat stress dense p95 3.335 exceeded its report-only ceiling 3.31 once (comparison runs 3.10-3.22, inside), no re-pin proposed. Then the performance spike (docs/performance-spike-prompt.txt, includes the large-map rendering item) and unit avoidance.
 ```
 
 ## G3.1 record (2026-11-07, tree: m7-factions b354098 plus uncommitted G3.1, Apple M6)
