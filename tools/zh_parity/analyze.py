@@ -234,6 +234,52 @@ def supplying(meta, rows):
     }
 
 
+def collecting(meta, rows):
+    cash = [(int(r["frame"]), float(r["health"])) for r in rows if r["id"] == "money"]
+    deps = [(f2, b - a) for (_, a), (f2, b) in itertools.pairwise(cash) if b > a]
+    out: dict[str, Any] = {
+        "deposits": len(deps),
+        "collectors": meta["collectors"],
+        "dist_units": round(meta["dist"], 1),
+    }
+    if len(deps) < 3:
+        return out
+    span = deps[-1][0] - deps[0][0]
+    out["credits_per_deposit"] = statistics.median(d for _, d in deps)
+    out["credits_per_min"] = round(sum(d for _, d in deps[1:]) / span * FPS * 60, 1)
+    if meta["collectors"] == 1:
+        out.update(phases(meta, rows, deps))
+    return out
+
+
+def phases(meta, rows, deps):
+    """Per-cycle frames split into travel (moving), load (standing nearer the pile) and unload (standing nearer the depot)."""
+    pile, depot = meta["pile"], meta["depot"]
+    pos = {
+        int(r["frame"]): (float(r["x"]), float(r["y"]), float(r["speed"]))
+        for r in rows
+        if r["id"] == str(meta["unit"]) and r["x"] != ""
+    }
+    last = None
+    for f in range(min(pos), max(pos) + 1):  # batched traces sample every n frames; hold the last sample
+        last = pos.get(f, last)
+        pos[f] = last  # type: ignore[assignment]
+    cycles = []
+    for (f0, _), (f1, _) in itertools.pairwise(deps):
+        travel = load = unload = 0
+        for f in range(f0 + 1, f1 + 1):
+            x, y, v = pos[f]
+            if v > 0:
+                travel += 1
+            elif math.dist((x, y), pile) < math.dist((x, y), depot):
+                load += 1
+            else:
+                unload += 1
+        cycles.append((f1 - f0, travel, load, unload))
+    med = [statistics.median(c[i] for c in cycles) for i in range(4)]
+    return dict(zip(("cycle_frames", "travel_frames", "load_frames", "unload_frames"), med, strict=True))
+
+
 def reaching(meta, rows):
     return {
         "farthest_fire": meta["farthest_fire"],
@@ -241,7 +287,15 @@ def reaching(meta, rows):
     }
 
 
-KINDS = {"move": movement, "turn": turning, "duel": duel, "splash": splashing, "supply": supplying, "reach": reaching}
+KINDS = {
+    "move": movement,
+    "turn": turning,
+    "duel": duel,
+    "splash": splashing,
+    "supply": supplying,
+    "reach": reaching,
+    "collect": collecting,
+}
 
 
 def metrics(name, meta, rows) -> dict[str, Any]:
@@ -263,6 +317,7 @@ def verdict(value, expected, tol):
 
 
 def report(traces):
+    report_collect(traces)
     print("scenario\tmetric\tmeasured\twargrid\tverdict\tnote\tother")
     for name, checks in EXPECT.items():
         path = traces / f"{name}.tsv"
@@ -273,6 +328,41 @@ def report(traces):
         for key, exp, tol, note in checks:
             other = {k: v for k, v in m.items() if k != key and k != "intervals"}
             print(f"{name}\t{key}\t{m.get(key)}\t{exp}\t{verdict(m.get(key), exp, tol)}\t{note}\t{other}")
+
+
+def pool(runs):
+    """Pooled credits/min over runs (all credits after each first deposit / all frames first to last) and run spread."""
+    credits = frames = 0.0
+    rates = []
+    for _meta, rows in runs:
+        cash = [(int(r["frame"]), float(r["health"])) for r in rows if r["id"] == "money"]
+        deps = [(f2, b - a) for (_, a), (f2, b) in itertools.pairwise(cash) if b > a]
+        if len(deps) < 3:
+            continue
+        c, f = sum(d for _, d in deps[1:]), deps[-1][0] - deps[0][0]
+        credits, frames = credits + c, frames + f
+        rates.append(c / f * FPS * 60)
+    if not rates:
+        return None
+    pooled = credits / frames * FPS * 60
+    return {"runs": len(rates), "pooled": round(pooled, 1), "spread": round((max(rates) - min(rates)) / pooled, 3)}
+
+
+def report_pool(dirs):
+    names = sorted({p.name for d in dirs for p in d.glob("collect_*.tsv")})
+    for name in names:
+        runs = [load(d / name) for d in dirs if (d / name).exists()]
+        phase = collecting(*runs[0]) if runs else {}
+        print(
+            name.removesuffix(".tsv"),
+            json.dumps({**(pool(runs) or {}), **{k: v for k, v in phase.items() if k.endswith("_frames")}}),
+        )
+
+
+def report_collect(traces):
+    for path in sorted(traces.glob("collect_*.tsv")):
+        meta, rows = load(path)
+        print(path.stem, json.dumps(collecting(meta, rows)))
 
 
 def self_test():
@@ -364,6 +454,29 @@ def self_test():
     assert su["deposits"] == 2 and su["deposit"] == 600 and su["cycle_frames"] == 3 and su["cruise_speed"] == 150, su
     assert verdict("3,4,20", "3,3,21", 1) == "PASS" and verdict("3,3", "3,3,21", 1) == "FAIL"
     assert verdict(152.0, 150, 10) == "PASS" and verdict(161, 150, 10) == "FAIL"
+
+    def mrow(f, cash, uid="money", x="", v=""):
+        return {
+            "frame": str(f),
+            "id": str(uid),
+            "template": "t",
+            "x": x,
+            "y": "0" if x else "",
+            "speed": v,
+            "health": str(cash),
+        }
+
+    # one collector: 2 frames moving, 1 at the pile (x=10), 2 moving, 1 at the depot (x=0), deposit 75 on frames 6 and 12
+    path = [(10, 0), (10, 0), (5, 1), (0, 1), (0, 0), (0, 0)] * 3
+    rs = []
+    for f, (px, v) in enumerate(path, 1):
+        rs += [mrow(f, 75 * (f // 6), 7, str(px), str(v)), mrow(f, 75 * (f // 6))]
+    co = collecting({"unit": 7, "collectors": 1, "dist": 10, "pile": [10, 0], "depot": [0, 0]}, rs)
+    assert co["credits_per_deposit"] == 75 and co["cycle_frames"] == 6 and co["travel_frames"] == 2, co
+    assert co["load_frames"] == 2 and co["unload_frames"] == 2, co
+    two: list[Any] = [({}, rs), ({}, rs)]
+    po = pool(two)
+    assert po and po["runs"] == 2 and po["spread"] == 0 and po["pooled"] == round(75 / 6 * 1800, 1), po
     print("self-test OK")
 
 
@@ -371,5 +484,11 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--traces", type=Path, default=TRACES)
     ap.add_argument("--self-test", action="store_true")
+    ap.add_argument(
+        "--pool", nargs="+", type=Path, help="run directories of repeats: pooled rate and spread per collect_*"
+    )
     a = ap.parse_args()
-    self_test() if a.self_test else report(a.traces)
+    if a.pool:
+        report_pool(a.pool)
+    else:
+        self_test() if a.self_test else report(a.traces)

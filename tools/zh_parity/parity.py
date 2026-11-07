@@ -12,6 +12,7 @@ import base64
 import json
 import math
 import os
+import signal
 import subprocess
 import time
 import urllib.request
@@ -27,7 +28,8 @@ BIN = Path(
 )
 DATA = Path(os.environ.get("ZH_PARITY_DATA", HOME / "CnC/run/Command & Conquer Generals - Zero Hour"))
 OUT = HOME / "CnC/parity/traces"
-API = "http://127.0.0.1:3459"
+PORT = int(os.environ.get("ZH_PARITY_PORT", "3459"))
+API = f"http://127.0.0.1:{PORT}"
 MAP = r"maps\Killing Fields\Killing Fields.map"
 FIELDS = ("frame", "id", "template", "x", "y", "angle", "speed", "lastShotFrame", "health")
 
@@ -40,12 +42,19 @@ class Game:
             GEN_AUTO_EXTERNAL="1",
             GEN_NO_VIEWS="1",
             GEN_API_LOG_OFF="1",
+            GEN_FPS_CAP=os.environ.get("ZH_PARITY_FPS_CAP", "0"),
+            GEN_API_PORT=str(PORT),
             GEN_AUTO_MAP=MAP,
         )
         self.log = open(log_path, "w")  # noqa: SIM115 - held open for the child process lifetime
         # -headless -noaudio always: a windowed run once blasted sound at the user.
         self.proc = subprocess.Popen(
-            [str(BIN), "-headless", "-noaudio"], cwd=DATA, env=env, stdout=self.log, stderr=subprocess.STDOUT
+            [str(BIN), "-headless", "-noaudio"],
+            cwd=DATA,
+            env=env,
+            stdout=self.log,
+            stderr=subprocess.STDOUT,
+            start_new_session=True,  # own process group, so close() never needs a broad pkill
         )
         deadline = time.time() + 180
         while True:
@@ -106,17 +115,17 @@ class Game:
     def own(self, fragment):
         return [u["id"] for u in self.call(f"/units?player={self.me}") if fragment in u["template"]]
 
-    def step(self):
-        self.call("/control", {"action": "step"})
-        target = self.frame + 1
+    def step(self, n=1):
+        self.call("/control", {"action": "step", "value": n})
+        target = self.frame + n
         while (f := self.call("/healthz")["frame"]) < target:
             pass
         assert f == target, f"stepped past frame {target} to {f}"
         self.frame = f
 
-    def record(self, ids, frames, rows, stop=None, money=False):
-        for _ in range(frames):
-            self.step()
+    def record(self, ids, frames, rows, stop=None, money=False, batch=1):
+        for _ in range(0, frames, batch):
+            self.step(batch)
             units = {u["id"]: u for u in self.call("/units")}
             cash = self.call(f"/resources?player={self.me}")["money"] if money else None
             assert self.call("/healthz")["frame"] == self.frame, "frame advanced during sampling"
@@ -143,13 +152,13 @@ class Game:
             if stop and stop(rows):
                 break
 
-    def clear_strip(self, length, width=80):
+    def clear_strip(self, length, width=80, slope=2):
         """World (x, y) of the west end of a flat, passable east-west strip nearest the map centre."""
         m = self.call("/map?ds=1")
         size, w, h = m["cellSize"], m["width"], m["height"]
         types = base64.b64decode(m["type"])
         heights = base64.b64decode(m["heightField"]["data"])
-        lx, wy = -(-length // size), -(-width // size)
+        lx, wy = math.ceil(length / size), math.ceil(width / size)
         cells = sorted(
             ((cx, cy) for cy in range(h - wy) for cx in range(w - lx)),
             key=lambda c: (c[0] + lx / 2 - w / 2) ** 2 + (c[1] - h / 2) ** 2,
@@ -157,16 +166,16 @@ class Game:
         for cx, cy in cells:
             block = [(cy + j) * w + cx + i for j in range(wy) for i in range(lx)]
             hs = [heights[k] for k in block]
-            if all(types[k] == 0 for k in block) and max(hs) - min(hs) <= 2:
+            if all(types[k] == 0 for k in block) and max(hs) - min(hs) <= slope:
                 return cx * size + size / 2, (cy + wy / 2) * size
         raise RuntimeError("no clear strip")
 
     def close(self):
-        self.proc.terminate()
+        os.killpg(self.proc.pid, signal.SIGTERM)
         try:
             self.proc.wait(timeout=10)
         except subprocess.TimeoutExpired:
-            self.proc.kill()
+            os.killpg(self.proc.pid, signal.SIGKILL)
         self.log.close()
 
 
@@ -326,6 +335,77 @@ def supply():
     return run
 
 
+# faction -> (builder, depot, power plant or None, collector template, units per frame is read from the trace)
+COLLECTORS = {
+    "chinook": ("AmericaVehicleDozer", "AmericaSupplyCenter", "AmericaPowerPlant", "AmericaVehicleChinook"),
+    "truck": ("ChinaVehicleDozer", "ChinaSupplyCenter", "ChinaPowerPlant", "ChinaVehicleSupplyTruck"),
+    "worker": ("GLAInfantryWorker", "GLASupplyStash", None, "GLAInfantryWorker"),
+}
+
+
+def place_depot(g, builder, depot, pile_x, y, dist):
+    """Order the depot at distance dist (centre to centre) west of the pile, or at the nearest legal distance if dist is None."""
+    gaps = [dist] if dist else range(5, 400, 5)
+    for gap in gaps:
+        try:
+            g.command("build_structure", [builder], template=depot, pos=[pile_x - gap, y, 0])
+        except RuntimeError as e:
+            if "illegal build location" not in str(e) and "buildObjectNow failed" not in str(e):
+                raise
+            continue
+        return pile_x - gap
+    raise RuntimeError(f"no legal {depot} placement at {dist or 'any'} units from the pile")
+
+
+def collect(kind, dist, collectors=1, deposits=8, limit=22000, batch=1):
+    """Build a depot dist units from one SupplyDock (dist None: the nearest legal spot) and record the first collector's trips."""
+    builder_t, depot_t, power_t, collector_t = COLLECTORS[kind]
+
+    def run(g):
+        x, y = g.clear_strip((dist or 400) + 250, *((200, 2) if (dist or 0) <= 400 else (60, 12)))
+        pile_x = x + (dist or 0) + 150 if dist else x + 400
+        pile = g.spawn("SupplyDock", pile_x, y, owner=g.neutral)  # map warehouses belong to the neutral player
+        builder = g.spawn(builder_t, x + 40, y)
+        rows: list[tuple[Any, ...]] = []
+        g.record([pile], 10, rows)  # a builder ordered in its spawn frame gets "buildObjectNow failed"
+        if g.can_make(depot_t) != "ok":
+            g.command("build_structure", [builder], template=power_t, pos=[x + 40, y + 70, 0])
+            until(g, rows, pile, lambda: g.can_make(depot_t) == "ok", f"buildable {depot_t}")
+        before = set(g.own(""))
+        place_depot(g, builder, depot_t, pile_x, y, dist)
+        until(g, rows, pile, lambda: set(g.own(collector_t)) - before - {builder}, f"{depot_t}'s collector")
+        first = next(iter(set(g.own(collector_t)) - before - {builder}))
+        depot = next(u for u in g.call(f"/units?player={g.me}") if u["template"] == depot_t)
+        order = g.frame
+        if dist and dist > 650:  # beyond the 700-unit warehouse scan an idle collector never starts; walk it into range
+            g.command("move", [first], pos=[pile_x - 450, y, 0])
+        units = [first]
+        if collectors > 1:
+            for _ in range(collectors - 1):
+                g.command("train_unit", [depot["id"]], template=collector_t)
+        meta = {
+            "order_frame": order, "unit": first, "dock": pile, "builder": builder, "kind": kind, "collectors": collectors,
+            "pile": [pile_x, y], "depot": [depot["x"], depot["y"]], "dist": abs(pile_x - depot["x"]), "requested": dist,
+            "depot_template": depot_t, "build_frames": g.frame - rows[0][0] + 1,
+        }  # fmt: skip
+
+        extra: list[int] = []
+        seen, last = 0, None
+        for _ in range(0, limit, batch):
+            if len(extra) < collectors - 1:  # trained collectors appear later; record them as they do
+                extra += [u for u in g.own(collector_t) if u not in {*units, *extra, builder, *before}]
+            g.record([*units, *extra, builder, pile], batch, rows, money=True, batch=batch)
+            cash = rows[-1][8]
+            seen += last is not None and cash > last
+            last = cash
+            if seen >= deposits * collectors:
+                break
+        meta["collector_ids"] = [*units, *extra]
+        return rows, meta
+
+    return run
+
+
 def retaliate(
     gap=140, offsets=((0, 0), (0, 25), (0, -25), (0, 70), (0, -140)), attacker="AmericaTankCrusader", frames=900
 ):
@@ -410,6 +490,20 @@ SCENARIOS = {
     "rof_tunnel": fire("GLATunnelNetwork", "GLACommandCenter", 200, 600),
     "splash_crusader": splash(),
     "supply_chinook": supply(),
+    **{
+        f"collect_{kind}_{d}{'_x2' if n == 2 else ''}": collect(kind, d * 25 if d else None, n)
+        for kind in COLLECTORS
+        for d, n in ((6, 1), (12, 1), (30, 1), (0, 1), (12, 2))  # d 0: the nearest legal depot spot
+    },
+    # Wargrid layouts reach 162.5 / 312.5 / 762.5 units exactly (4x5 pile, 3x3 depot); name = units x 10.
+    **{
+        f"collect_{kind}_u{int(units * 10)}{f'_x{n}' if n > 1 else ''}": collect(kind, units, n)
+        for kind in COLLECTORS
+        for units, n in ((162.5, 1), (312.5, 1), (762.5, 1))
+    },
+    **{f"collect_{kind}_u3125_x{n}": collect(kind, 312.5, n) for kind in ("chinook", "truck") for n in (2, 4)},
+    **{f"collect_worker_u1625_x{n}": collect("worker", 162.5, n) for n in (2, 4)},
+    **{f"collect_truck_6_b{b}": collect("truck", 150, 1, 8, batch=b) for b in (1, 5, 10)},
     "retaliate_ranger": retaliate(),
     # An API Ranger attacker (range 100) 95 units away; the group stands behind the victim and walks out to kill it, then home.
     "retaliate_return": retaliate(
@@ -483,7 +577,12 @@ def bisect(out, name, attacker, target, lo, hi):
     return lo
 
 
+def raise_exit():
+    raise SystemExit(143)
+
+
 def main():
+    signal.signal(signal.SIGTERM, lambda *_: raise_exit())  # run the finally blocks so the game dies with its lane
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", type=Path, default=OUT)
     ap.add_argument("names", nargs="*")
