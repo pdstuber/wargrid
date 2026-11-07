@@ -145,10 +145,11 @@ WARGRID_RELAY_URL=wss://wargrid-relay-jvm.fly.dev/ws WARGRID_MATCH_WAIT=600 sh t
 
 ## Browser build
 
-Single-threaded Godot web export (preset `Web`), served by static-web-server as its own fly app `wargrid-web` (`web/`), live at `https://wargrid.pdstuber.dev` since 2026-11-06 (CNAME at Namecheap, Let's Encrypt cert issued by fly; the apex CAA records allow only Let's Encrypt). The image carries brotli/gzip copies made at build time and `Cache-Control: no-cache` (SWS answers `If-Modified-Since` with 304), so a redeploy cannot pair a new `.wasm` with an old `.pck`. No cross-origin isolation headers: they are only needed with threads. The page talks to the same relay over `wss://`.
+Single-threaded Godot web export (preset `Web`), served by static-web-server as its own fly app `wargrid-web` (`web/`), live at `https://wargrid.pdstuber.dev` since 2026-11-06 (CNAME at Namecheap, Let's Encrypt cert issued by fly; the apex CAA records allow only Let's Encrypt). The image carries brotli/gzip copies made at build time and `Cache-Control: no-cache` (SWS answers `If-Modified-Since` with 304), so a redeploy cannot pair a new `.wasm` with an old `.pck`. No cross-origin isolation headers: they are only needed with threads. The page talks to the same relay over `wss://`. Playtest builds go to the separate app `wargrid-web-test` and share that relay; the relay only puts equal build strings in one room, so `main` carries a `-dev` version between releases.
 
 ```sh
-sh tools/deploy_web.sh                     # export, then fly deploy; needs explicit approval
+sh tools/deploy_web.sh                     # export, then fly deploy; needs a release version and explicit approval
+sh tools/deploy_web.sh test                # same, to https://wargrid-web-test.fly.dev; needs a -dev version and explicit approval
 fly certs add wargrid.pdstuber.dev -a wargrid-web   # then CNAME wargrid -> wargrid-web.fly.dev
 container build -t wargrid-web web         # local image check, after exporting to web/site/
 ```
@@ -162,6 +163,7 @@ A pushed tag `v<version>` runs [`release.yml`](.github/workflows/release.yml) (p
 1. Set `config/version` in `game/project.godot` to `<version>`, commit, push. The tag must equal `v` plus that value: the relay only lets clients with equal versions share a room.
 2. Push the tag. The full Tests workflow runs on that commit, then Linux, Windows, macOS and Web are exported and packaged.
 3. Approve the `production` Environment. The job deploys the relay (`wargrid-relay-jvm`), checks `/health`, deploys the web build (`wargrid-web`), checks `/health`, then publishes the three desktop zips as a GitHub Release.
+4. Bump `config/version` on `main` to the next `-dev` version (`0.8.0-dev`), so local and test builds stay out of production rooms.
 
 A prerelease tag (`v0.7.0-rc.1`) skips both fly deploys and publishes a GitHub prerelease only. A relay deploy ends matches in progress, so release when nobody is playing. Builds are unsigned: on macOS 15 and later open System Settings > Privacy & Security > Open Anyway after the first blocked start (or run `xattr -dr com.apple.quarantine Wargrid.app` once); Windows SmartScreen needs More info, Run anyway. Each zip's `README.txt` says so and links the source for its tag. Re-running a failed release redeploys both fly apps, which ends live matches again.
 
