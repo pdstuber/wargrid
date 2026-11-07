@@ -531,6 +531,12 @@ Closed 2026-11-07: M5 test `test_ground_admit_lowest_id_first` (renamed `test_gr
 
 Checks on this tree: suite 388 / 134,583 / 0 exit 0 (traces off), 134,590 (traces on); four traces `cmp`-identical to a clean eb3fbed worktree (replay, economy, combat 1200 rows each, team 100); lint, warnings (89 files), `run_python_checks.sh`, unittest discover, `test_faction_guard.py` pass; netplay match 8331, kill, stall, silent, spike, perturb, version PASSED; conformance PASSED 33; `run_benchmark.sh` exit 0, `COMBAT BENCHMARK PASSED 10` (ledger row 2026-11-07 gate-2 review fixes); `run_team_match.sh` won 33205 winner 1. Rendered benchmark not run.
 
+## G2.6 record (2026-11-07, commit e2d48fc)
+
+- Tests (`game/tests/test_scene.gd`): `test_double_click_same_kind_on_screen`, `_alt_whole_map`, `_shift_keeps`, `_ctrl_ignored`, `_enemy_or_ground_plain` (renamed from `_enemy_or_building_plain`, see "Gate 2 review fixes" M4). They run on the prototype scene `main.gd` (no buildings, so the building case is covered by empty ground), 16x16 map, off-screen unit at (14.5, 14.5), camera zoom 2, position (0, 128). Shift double-click unions with the earlier selection.
+- Red first: same_kind_on_screen, alt_whole_map, shift_keeps. `ctrl_ignored` and the enemy/ground test passed before the change (they assert the old plain-click behaviour). The reviewer judged ctrl valid by mutation and the enemy/building test vacuous for the feature (not re-verified here).
+- Suite after G2.6: 382 cases / 134,571 / 0 (from the commit's resume record). Presentation only; traces not rerun then.
+
 ## Rendered China layout
 
 New `horde` leg in `movement_benchmark.gd` (workload `CombatWorkload.create("horde_render")`: 300 China rifle / rocket / light vehicle / tank units attack-move onto 100 USA riflemen). Test first: `test_horde_render_layout` (BM9, 300 units, marks drawn, units moved). Suite on this tree: 389 cases / 134,586 checks / 0 failures, exit 0; lint, warnings (89 files) pass; `run_benchmark.sh` exit 0 (`BENCHMARK PASSED 2`, `COMBAT BENCHMARK PASSED 10`, lockstep 1); no simulation file changed, so traces are unchanged by construction (not re-compared). Rendered run (user-approved, one window, closed on exit 0): `RENDERED BENCHMARK PASSED 3`; horde frame interval p95 4.374 ms (open 0.591, dense 2.584), peak 233 horde marks, marked on 1800 of 1800 ticks, 300 units moved, draw calls p50 222. Numbers and caveats in the performance ledger row of 2026-11-07 (rendered rerun with the `horde` layout). Not viewed by a person (no screenshot). Resume record next action unchanged.
