@@ -83,19 +83,17 @@ func test_bot_cycles_unit_list(runner) -> bool:
 	return true
 
 func test_bot_reads_seat_faction(runner) -> bool:
-	Registry.add_test_faction("x_fac", {"display_name": "X", "start_building": "usa_command_center", "start_unit": "usa_builder", "build_order": ["usa_barracks"], "units_for": {"usa_barracks": ["usa_rocket_infantry"]}})
-	var sim = Skirmish.create(true, "ai", {1: "usa", 2: "x_fac"})
+	var sim = Skirmish.create(true, "ai", {1: "usa", 2: "china"})
 	Skirmish.issue_opponent(sim)
 	sim.step()
 	var site: Array = _built(sim.snapshot().buildings, 2).map(func(b: Dictionary) -> String: return b.kind)
-	runner.check(site == ["usa_barracks"], "B4 the opponent reads the build order from its seat's faction, got " + str(site))
-	Economy.add_completed(sim, 2, "usa_barracks", Vector2i(20, 20))
+	runner.check(site == ["china_command_center", "china_power_plant"], "B4 the opponent reads the build order from its seat's faction, got " + str(site))
+	Economy.add_completed(sim, 2, "china_barracks", Vector2i(20, 20))
 	for i in 59: sim.step()
 	Skirmish.issue_opponent(sim)
 	sim.step()
 	var queued: Array = _owned(sim.snapshot().buildings, 2).filter(func(b: Dictionary) -> bool: return not b.queue.is_empty())
-	runner.check(not queued.is_empty() and queued.all(func(b: Dictionary) -> bool: return b.queue[0].kind == "usa_rocket_infantry"), "B4 the opponent trains the faction's unit for the producer, got " + str(queued))
-	Registry.clear_test_kinds()
+	runner.check(not queued.is_empty() and queued.all(func(b: Dictionary) -> bool: return b.queue[0].kind == "china_rifle_infantry"), "B4 the opponent trains the faction's unit for the producer, got " + str(queued))
 	return true
 
 func test_opponent_pays_and_retries(runner) -> bool:

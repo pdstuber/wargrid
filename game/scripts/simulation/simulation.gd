@@ -35,7 +35,6 @@ var _combat_events: Array[Dictionary] = []
 var _match: Variant = null
 var _combat_work: int = 0
 var _horde_checks: int = 0
-var _horde_pairs: int = 0
 var _chases: Dictionary = {}
 var _scan_chases: int = 0
 var _retaliations: int = 0
@@ -463,9 +462,6 @@ func combat_work() -> int:
 func horde_checks() -> int:
 	return _horde_checks
 
-func horde_pairs() -> int:
-	return _horde_pairs
-
 func scan_chases() -> int:
 	return _scan_chases
 
@@ -491,7 +487,6 @@ func step() -> void:
 	_combat_events.clear()
 	_combat_work = 0
 	_horde_checks = 0
-	_horde_pairs = 0
 	_scan_chases = 0
 	_retaliations = 0
 	_allocation_calls = 0

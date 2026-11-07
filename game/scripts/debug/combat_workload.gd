@@ -4,12 +4,11 @@ const Simulation = preload("res://scripts/simulation/simulation.gd")
 const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
 
 static func create(layout: String) -> Simulation:
-	assert(layout == "open" or layout == "dense" or layout == "contact" or layout == "skirmish3v3" or layout == "transports" or layout == "defences" or layout == "docks" or layout == "hordes" or layout == "hordes300" or layout == "horde_render" or layout == "ramp")
+	assert(layout == "open" or layout == "dense" or layout == "contact" or layout == "skirmish3v3" or layout == "transports" or layout == "defences" or layout == "docks" or layout == "hordes300" or layout == "horde_render" or layout == "ramp")
 	if layout == "skirmish3v3": return _skirmish3v3()
 	if layout == "transports": return _transports()
 	if layout == "defences": return _defences()
 	if layout == "docks": return _docks()
-	if layout == "hordes": return _hordes()
 	if layout == "hordes300": return _hordes300()
 	if layout == "horde_render": return _horde_render()
 	if layout == "ramp": return _ramp()
@@ -113,27 +112,7 @@ static func _docks() -> Simulation:
 		assert(idle > 0)
 	return sim
 
-# 60 militia and 20 medium tanks attack-move onto 100 riflemen; packed ranks keep five neighbours in reach, so hordes form and re-check.
-static func _hordes() -> Simulation:
-	var sim: Simulation = Simulation.new([], Vector2i(64, 64))
-	sim.add_player(1, 0)
-	sim.add_player(2, 0)
-	var army: Array[int] = []
-	for column in range(10):
-		for row in range(6):
-			army.append(sim.spawn(1, Vector2(3.5 + column, 20.5 + row), "china_rifle_infantry"))
-		for row in range(2):
-			army.append(sim.spawn(1, Vector2(3.5 + column, 28.5 + row), "china_light_vehicle"))
-	for column in range(10):
-		for row in range(10):
-			var target: int = sim.spawn(2, Vector2(48.5 + column, 19.5 + row), "usa_rifle_infantry")
-			assert(target > 0)
-	assert(army.all(func(id: int) -> bool: return id > 0))
-	var marched: Dictionary = sim.issue_command({"tick": 0, "player": 1, "sequence": 0, "type": "attack_move", "entity_ids": army, "target": [60.5, 24.5]})
-	assert(marched.ok, marched.error)
-	return sim
-
-# 300 packed militia (20 by 15) against the same 100 riflemen: the horde scan at three times the hordes layout's army.
+# 300 packed militia (20 by 15) attack-move onto 100 riflemen; packed ranks keep five neighbours in reach, so hordes form and re-check.
 static func _hordes300() -> Simulation:
 	var sim: Simulation = Simulation.new([], Vector2i(64, 64))
 	sim.add_player(1, 0)
@@ -146,8 +125,7 @@ static func _hordes300() -> Simulation:
 		for row in range(10):
 			assert(sim.spawn(2, Vector2(48.5 + column, 19.5 + row), "usa_rifle_infantry") > 0)
 	assert(army.all(func(id: int) -> bool: return id > 0))
-	var marched: Dictionary = sim.issue_command({"tick": 0, "player": 1, "sequence": 0, "type": "attack_move", "entity_ids": army, "target": [60.5, 24.5]})
-	assert(marched.ok, marched.error)
+	_attack_move(sim, army, [60.5, 24.5])
 	return sim
 
 # Rendered benchmark: 300 packed China units (rifle, rocket, light vehicle, tank rows) attack-move onto 100 riflemen so hordes form on screen.
@@ -164,8 +142,7 @@ static func _horde_render() -> Simulation:
 		for row in range(10):
 			assert(sim.spawn(2, Vector2(48.5 + column, 19.5 + row), "usa_rifle_infantry") > 0)
 	assert(army.all(func(id: int) -> bool: return id > 0))
-	var marched: Dictionary = sim.issue_command({"tick": 0, "player": 1, "sequence": 0, "type": "attack_move", "entity_ids": army, "target": [60.5, 24.5]})
-	assert(marched.ok, marched.error)
+	_attack_move(sim, army, [60.5, 24.5])
 	return sim
 
 # 20 rotary gun tanks attack-move and 6 powered towers (2 power plants) hold the line against 100 riflemen, so shots ramp to level 2.
@@ -184,9 +161,12 @@ static func _ramp() -> Simulation:
 			var target: int = sim.spawn(2, Vector2(30.5 + column, 19.5 + row), "usa_rifle_infantry")
 			assert(target > 0)
 	assert(army.all(func(id: int) -> bool: return id > 0))
-	var marched: Dictionary = sim.issue_command({"tick": 0, "player": 1, "sequence": 0, "type": "attack_move", "entity_ids": army, "target": [48.5, 24.5]})
-	assert(marched.ok, marched.error)
+	_attack_move(sim, army, [48.5, 24.5])
 	return sim
+
+static func _attack_move(sim: Simulation, army: Array[int], target: Array) -> void:
+	var marched: Dictionary = sim.issue_command({"tick": 0, "player": 1, "sequence": 0, "type": "attack_move", "entity_ids": army, "target": target})
+	assert(marched.ok, marched.error)
 
 static func _building(sim: Simulation, kind: String, origin: Vector2i) -> void:
 	var id: int = sim._next_entity_id

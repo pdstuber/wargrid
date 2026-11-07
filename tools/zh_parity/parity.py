@@ -347,6 +347,15 @@ def retaliate(
     return run
 
 
+CHINA_MOVERS = [
+    ("redguard", "ChinaInfantryRedguard", 300),
+    ("tankhunter", "ChinaInfantryTankHunter", 300),
+    ("battlemaster", "ChinaTankBattleMaster", 400),
+    ("gattlingtank", "ChinaTankGattling", 400),
+    ("cndozer", "ChinaVehicleDozer", 400),
+    ("truck", "ChinaVehicleSupplyTruck", 400),
+]
+
 SCENARIOS = {
     "move_ranger": move("AmericaInfantryRanger", 300),
     "move_crusader": move("AmericaTankCrusader", 400),
@@ -370,18 +379,8 @@ SCENARIOS = {
     "burst_battery": fire("AmericaPatriotBattery", "GLACommandCenter", 200, 600),
     "duel_ranger": fire("AmericaInfantryRanger", "AmericaInfantryRanger", 90, 1200),
     "duel_crusader": fire("AmericaTankCrusader", "AmericaTankCrusader", 140, 1200),
-    "move_redguard": move("ChinaInfantryRedguard", 300),
-    "move_tankhunter": move("ChinaInfantryTankHunter", 300),
-    "move_battlemaster": move("ChinaTankBattleMaster", 400),
-    "move_gattlingtank": move("ChinaTankGattling", 400),
-    "move_cndozer": move("ChinaVehicleDozer", 400),
-    "move_truck": move("ChinaVehicleSupplyTruck", 400),
-    "turn_redguard": turn("ChinaInfantryRedguard"),
-    "turn_tankhunter": turn("ChinaInfantryTankHunter"),
-    "turn_battlemaster": turn("ChinaTankBattleMaster"),
-    "turn_gattlingtank": turn("ChinaTankGattling"),
-    "turn_cndozer": turn("ChinaVehicleDozer"),
-    "turn_truck": turn("ChinaVehicleSupplyTruck"),
+    **{f"move_{name}": move(template, distance) for name, template, distance in CHINA_MOVERS},
+    **{f"turn_{name}": turn(template) for name, template, _ in CHINA_MOVERS},
     "range_redguard": fire("ChinaInfantryRedguard", "AmericaVehicleDozer", 250, 400),
     "range_tankhunter": fire("ChinaInfantryTankHunter", "AmericaVehicleDozer", 300, 400),
     "range_battlemaster": fire("ChinaTankBattleMaster", "AmericaVehicleDozer", 300, 300),

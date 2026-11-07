@@ -17,6 +17,16 @@ from typing import Any
 FPS = 30
 TRACES = Path.home() / "CnC/parity/traces"
 
+# name, top speed, tolerance, turn rate (deg/s)
+CHINA_MOVERS = [
+    ("redguard", 25, 3, 500),
+    ("tankhunter", 20, 2, 500),
+    ("battlemaster", 25, 3, 180),
+    ("gattlingtank", 40, 4, 180),
+    ("cndozer", 30, 3, 90),
+    ("truck", 40, 4, 90),
+]
+
 # scenario -> [(metric, Wargrid value, tolerance or None, note)]
 EXPECT: dict[str, Any] = {
     "move_ranger": [("top_speed", 20, 2, "0.8 cells/s"), ("accel", 100, None, "Wargrid instant; INI 100")],
@@ -46,18 +56,10 @@ EXPECT: dict[str, Any] = {
     "burst_battery": [("burst_pattern", "8,8,8,60", 1, "delay 8, clip 4, reload 60")],
     "duel_ranger": [("ttk_frames", 303, None, "36 hits of 5 HP at 3/3/21")],
     "duel_crusader": [("ttk_frames", 420, None, "8 hits of 60 HP every 60 ticks")],
-    "move_redguard": [("top_speed", 25, 3, "1.0 cells/s")],
-    "move_tankhunter": [("top_speed", 20, 2, "0.8 cells/s")],
-    "move_battlemaster": [("top_speed", 25, 3, "1.0 cells/s")],
-    "move_gattlingtank": [("top_speed", 40, 4, "1.6 cells/s")],
-    "move_cndozer": [("top_speed", 30, 3, "1.2 cells/s")],
-    "move_truck": [("top_speed", 40, 4, "1.6 cells/s")],
-    "turn_redguard": [("turn_rate", 500, None, "Wargrid 500 deg/s")],
-    "turn_tankhunter": [("turn_rate", 500, None, "Wargrid 500 deg/s")],
-    "turn_battlemaster": [("turn_rate", 180, None, "Wargrid 180 deg/s")],
-    "turn_gattlingtank": [("turn_rate", 180, None, "Wargrid 180 deg/s")],
-    "turn_cndozer": [("turn_rate", 90, None, "Wargrid 90 deg/s")],
-    "turn_truck": [("turn_rate", 90, None, "Wargrid 90 deg/s")],
+    **{
+        f"move_{name}": [("top_speed", speed, tol, f"{speed / 25:.1f} cells/s")] for name, speed, tol, _ in CHINA_MOVERS
+    },
+    **{f"turn_{name}": [("turn_rate", rate, None, f"Wargrid {rate} deg/s")] for name, _, _, rate in CHINA_MOVERS},
     "range_redguard": [("first_shot_distance", 100, 10, "4 cells")],
     "range_tankhunter": [("first_shot_distance", 175, 10, "7 cells")],
     "range_battlemaster": [("first_shot_distance", 150, 10, "6 cells")],

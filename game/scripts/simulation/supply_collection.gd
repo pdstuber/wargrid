@@ -169,21 +169,22 @@ static func step(sim: Simulation, unit_ids: Array[int]) -> void:
 		if collection.remaining_ticks > 0: continue
 		if collection.phase == "loading":
 			# Zero Hour waits one more delay after the last box; the air collector keeps M3's early departure (open item in m7-verification.md).
-			if ground and (collection.cargo == Registry.collects(unit.kind).boxes or target.boxes == 0):
+			if not ground: _load_box(collection, target)
+			if collection.cargo == Registry.collects(unit.kind).boxes or target.boxes == 0:
 				release(sim,id)
 				collection.retry_tick = sim._tick + 1
 				continue
-			target.boxes -= 1
-			collection.cargo += 1
-			if not ground and (collection.cargo == Registry.collects(unit.kind).boxes or target.boxes == 0):
-				release(sim,id)
-				collection.retry_tick = sim._tick + 1
-			else: collection.remaining_ticks = Registry.collects(unit.kind).load_ticks
+			if ground: _load_box(collection, target)
+			collection.remaining_ticks = Registry.collects(unit.kind).load_ticks
 		elif collection.phase == "unloading":
 			sim._players[unit.owner].credits += collection.cargo * Registry.collects(unit.kind).box_value
 			collection.cargo = 0
 			release(sim,id)
 			collection.retry_tick = sim._tick + 1
+
+static func _load_box(collection: Dictionary, target: Dictionary) -> void:
+	target.boxes -= 1
+	collection.cargo += 1
 
 static func object_removed(sim: Simulation, id: int) -> void:
 	for unit: Dictionary in sim._entities.values():

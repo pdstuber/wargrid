@@ -55,7 +55,6 @@ static func _level(sim: Simulation, unit: Dictionary, grid: Dictionary, size: fl
 	for dy in range(-1, 2):
 		for dx in range(-1, 2):
 			for other: Dictionary in grid.get(home + Vector2i(dx, dy), []):
-				sim._horde_pairs += 1
 				if other.id == unit.id or other.has("container_id") or Combat.hostile(sim, unit.owner, other.owner) or not _matches(rule, unit, other): continue
 				var ox: float = other.position[0] - unit.position[0]
 				var oy: float = other.position[1] - unit.position[1]

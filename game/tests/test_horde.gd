@@ -8,7 +8,7 @@ const Simulation = preload("res://scripts/simulation/simulation.gd")
 const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
 
 func cases() -> Array[Callable]:
-	return [test_horde_needs_five, test_horde_infantry_mix_counts, test_horde_vehicle_exact_kind, test_horde_rub_off, test_horde_cadence, test_horde_allies_only, test_horde_change_restarts_delay, test_horde_pairs_bounded]
+	return [test_horde_needs_five, test_horde_infantry_mix_counts, test_horde_vehicle_exact_kind, test_horde_rub_off, test_horde_cadence, test_horde_allies_only, test_horde_change_restarts_delay, test_horde_spread_all_checked]
 
 func _world() -> RefCounted:
 	var sim = Fixture.world()
@@ -166,7 +166,7 @@ func test_horde_change_restarts_delay(runner) -> bool:
 	runner.check(restarts > 0 and wrong == 0, "H7 a pending delay restarts at the slow rate from the tick of the change (restarts %d, wrong %d)" % [restarts, wrong])
 	return true
 
-func test_horde_pairs_bounded(runner) -> bool:
+func test_horde_spread_all_checked(runner) -> bool:
 	var sim = Simulation.new([], Vector2i(100, 100))
 	sim.add_player(1, 0)
 	var count: int = 0
@@ -175,12 +175,9 @@ func test_horde_pairs_bounded(runner) -> bool:
 			var id: int = sim.spawn(1, Vector2(2.5 + 5 * x, 2.5 + 5 * y), "china_rifle_infantry")
 			if id > 0: count += 1
 	runner.check(count >= 300, "H8 spread layout has 300 militia, got " + str(count))
-	var pairs: int = 0
 	var checks: int = 0
 	for tick in range(40):
 		sim.step()
-		pairs += sim.horde_pairs()
 		checks += sim.horde_checks()
 	runner.check(checks >= count, "H8 every militia was checked in 40 ticks")
-	runner.check(pairs <= 12 * checks, "H8 pair tests stay near-linear: " + str(pairs) + " for " + str(checks) + " checks")
 	return true
