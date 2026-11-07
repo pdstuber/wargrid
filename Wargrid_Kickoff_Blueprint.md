@@ -652,7 +652,12 @@ Fair bots only mean something when a human and a bot see the same limited pictur
 
 ### Ground batch B (after M7.9; user, 2026-11-06, scope not designed)
 
-Stealth and detection, hacking, hijacking and capture: they need fog's visibility model first.
+Stealth and detection, hacking, hijacking and capture: they need fog's visibility model first. Refine after the M7.9 design is approved.
+
+**Moved here by the ground batch A decisions (user, 2026-11-07; evidence in the [batch classification](docs/reference/m7-factions.md#batch-classification-config-2026-11-07)):**
+- Units: Burton, Pathfinder, Sentry Drone, Hacker, Black Lotus, Listening Outpost, Hijacker, Jarmen Kell, Saboteur, Radar Van, Bomb Truck; the Scout Drone add-on.
+- The Terrorist's car bomb, with the Hijacker.
+- Upgrades: Camouflage, capture building, Mines, Booby Trap, Radar Van Scan, CIA Intelligence.
 
 ### M8 — Bots worth playing
 
