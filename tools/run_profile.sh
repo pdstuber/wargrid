@@ -14,4 +14,4 @@ code=$?
 cat "$log_dir/profile.log"
 [ "$code" -eq 0 ] || exit 1
 if grep -E 'ERROR:|SCRIPT ERROR:' "$log_dir/profile.log"; then exit 1; fi
-grep -Eq '^PROFILE COMPLETE 7$' "$log_dir/profile.log" || exit 1
+grep -Eq '^PROFILE COMPLETE 10$' "$log_dir/profile.log" || exit 1

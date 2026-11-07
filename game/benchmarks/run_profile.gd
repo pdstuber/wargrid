@@ -3,6 +3,7 @@ extends SceneTree
 const Profiler = preload("res://scripts/debug/profiler.gd")
 const MovementWorkload = preload("res://scripts/debug/movement_workload.gd")
 const CombatWorkload = preload("res://scripts/debug/combat_workload.gd")
+const TeamMatch = preload("res://scripts/debug/team_match.gd")
 const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 const ScriptedHuman = preload("res://scripts/simulation/scripted_human.gd")
 const View = preload("res://scripts/presentation/world_view.gd")
@@ -23,15 +24,23 @@ func _run() -> void:
 		" warmup_ticks=", WARMUP, " sample_ticks=", SAMPLES, " unpaced=true zones=inclusive")
 	_view = View.new()
 	var done: int = 0
-	for layout: String in ["open", "dense"]:
-		_movement(layout)
+	# `-- new` runs only the three cases added by the perf spike.
+	var only_new: bool = OS.get_cmdline_user_args().has("new")
+	if not only_new:
+		for layout: String in ["open", "dense"]:
+			_movement(layout)
+			done += 1
+		for layout: String in ["contact", "skirmish3v3", "open"]:
+			_fixed("combat_" + layout, CombatWorkload.create(layout), 1)
+			done += 1
+		_skirmish()
 		done += 1
-	for layout: String in ["contact", "skirmish3v3", "open"]:
+		_large()
+		done += 1
+	for layout: String in ["dense", "hordes300"]:
 		_fixed("combat_" + layout, CombatWorkload.create(layout), 1)
 		done += 1
-	_skirmish()
-	done += 1
-	_large()
+	_team_match()
 	done += 1
 	_view.free()
 	print("PROFILE COMPLETE ", done)
@@ -118,3 +127,17 @@ func _large() -> void:
 		sim._replace_union(cells)
 	var remove := func() -> void: sim._replace_union(sim._union_cells())
 	_fixed("large_196", sim, 1, {600: add, 1200: remove})
+
+func _team_match() -> void:
+	var sim: Simulation = TeamMatch.create()
+	Profiler.reset()
+	Profiler.enabled = true
+	var peak: int = 0
+	while sim.snapshot().match.status == "ongoing" and sim.tick() < TeamMatch.TEAM_TICK_CAP:
+		if sim.tick() == WARMUP: _phase("team_match", true)
+		TeamMatch.step(sim)
+		_frame(sim, 1)
+		peak = maxi(peak, sim.snapshot().entities.size())
+	_phase("team_match", false)
+	Profiler.enabled = false
+	print("PROFILE_END team_match ticks=", sim.tick(), " status=", sim.snapshot().match.status, " peak_entities=", peak)
