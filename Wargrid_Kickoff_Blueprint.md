@@ -583,10 +583,13 @@ Make the converted map playable in the launcher: map choice, camera limits for 1
 
 **Exit gate:** the three stop gates passed; a deterministic headless 3v3 bots-only match on Ashfall with all three factions, simulation ledger rows inside the budgets or reported as exceeded (design §1); parity results as a decision list.
 
-### Performance spike, then unit avoidance (user, 2026-11-07; scope not designed, placement among the M7.x entries not decided)
+### Performance spike, then unit avoidance (user, 2026-11-07; order recommended and accepted 2026-11-07, scope not designed)
 
-- **Performance spike** after M7: the exceeded rows in the [performance ledger](docs/reference/performance.md) are accepted until then (combat stress, team match p99, the horde layouts). Reported as exceeded, never loosened.
-- **Unit avoidance milestone** after the spike: units go around each other instead of through each other (a firm requirement from the M7 gate 2 playtest; today the M2 design permits overlap in transit). It changes pathing for every unit, so it re-pins every trace and needs its own benchmarks and playtest. The spike runs first so avoidance starts from a measured per-tick baseline.
+**Order:** M7 exit gate, performance spike, unit avoidance milestone, then ground batch A, M7.5, M7.6, M7.9, ground batch B, M8, M8.1, M9. Handoff for the spike: [performance spike prompt](docs/performance-spike-prompt.txt).
+
+- **Performance spike** right after M7, simulation cost only (rendered frame cost is out of scope). The exceeded rows in the [performance ledger](docs/reference/performance.md) are accepted until then (combat stress, team match p99, the horde layout). Reported as exceeded, never loosened. It also answers whether a threaded web export is feasible.
+- **Unit avoidance milestone** after the spike: units go around each other instead of through each other (a firm requirement from the M7 gate 2 playtest; today the M2 design permits overlap in transit). It changes pathing for every unit, so it re-pins every trace and needs its own benchmarks, a design spike on one map first, and a playtest. Risks to design for: deadlocks at docks and chokepoints, trucks, container boarding, horde clusters, lockstep determinism and WASM cost.
+- **Why this order:** the spike gives avoidance a measured per-tick baseline and probably its spatial grid; avoidance comes before new content so later rosters, the art pass and the M8 bots are tuned once against the final movement, and the trace re-pin happens once. Fog and art do not touch movement.
 
 ### Ground batch A (after M7; user, 2026-11-06, scope not designed)
 
