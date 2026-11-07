@@ -1,3 +1,4 @@
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -5,6 +6,7 @@ from pathlib import Path
 from release_version import check_tag, is_prerelease, read_version
 
 REPO = Path(__file__).resolve().parent.parent
+WORKFLOWS = REPO / ".github/workflows"
 
 
 class ReleaseVersion(unittest.TestCase):
@@ -37,6 +39,14 @@ class ReleaseVersion(unittest.TestCase):
 
     def test_reads_repo_project(self) -> None:
         self.assertTrue(read_version(REPO / "game/project.godot"))
+
+    def test_release_builds_with_the_tested_engine(self) -> None:
+        tests = (WORKFLOWS / "tests.yml").read_text()
+        release = (WORKFLOWS / "release.yml").read_text()
+        pins = re.findall(r"^  (GODOT_\w+|TEMPLATES_SHA256): (\S+)$", release, re.M)
+        self.assertEqual(len(pins), 5)
+        for name, value in pins:
+            self.assertIn(value, tests, name)
 
 
 if __name__ == "__main__":

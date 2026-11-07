@@ -26,12 +26,6 @@ README = (
 )
 
 
-def _add(bundle: zipfile.ZipFile, path: Path, name: str) -> None:
-    info = zipfile.ZipInfo.from_file(path, name)
-    info.compress_type = zipfile.ZIP_DEFLATED
-    bundle.writestr(info, path.read_bytes())
-
-
 def package(platform: str, build: Path, out: Path, source: str, extras: list[Path]) -> Path:
     if platform not in FIRST_RUN:
         raise SystemExit(f"unknown platform {platform}; expected one of {', '.join(FIRST_RUN)}")
@@ -47,7 +41,7 @@ def package(platform: str, build: Path, out: Path, source: str, extras: list[Pat
             raise SystemExit(f"{build} has no exported files")
     with zipfile.ZipFile(out, mode, zipfile.ZIP_DEFLATED) as bundle:
         for path in files + sorted(extras):
-            _add(bundle, path, path.name)
+            bundle.write(path, path.name)
         bundle.writestr("README.txt", README.format(platform=platform, first_run=FIRST_RUN[platform], source=source))
     return out
 
