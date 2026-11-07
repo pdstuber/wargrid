@@ -12,7 +12,7 @@ const WINNER: int = 1
 const S1_CORE_SERIES: int = 8505231937702596599
 
 func cases() -> Array[Callable]:
-	return [test_mirror_match_script, test_skirmish_core_series]
+	return [test_mirror_match_script, test_skirmish_core_series, test_china_skirmish_match]
 
 func test_skirmish_core_series(runner) -> bool:
 	var sim = Skirmish.create()
@@ -100,4 +100,41 @@ func test_mirror_match_script(runner) -> bool:
 	runner.check(terminal >= 7000 and terminal <= TICK_LIMIT - 1, "S1 terminal inside the six-minute window")
 	runner.check([1, 2].all(func(owner: int) -> bool: return Skirmish.build_order(Skirmish.default_faction()).all(func(kind: String) -> bool: return kinds.get(owner, {}).has(kind))) and not first.values().has(-1) and first.values().all(func(tick: int) -> bool: return tick < terminal), "S1 economy, production and combat all happened before the end, got " + str(first) + " " + str(kinds))
 	runner.check(deposits[1] > 0 and deposits[2] > 0 and boxes_ok and negatives == 0, "S1 both owners deposited, supply conserved, nothing negative: " + str(deposits))
+	return true
+
+const CHINA_TICK_CAP: int = 45000
+const CHINA_TERMINAL_TICK: int = 16258
+const CHINA_WINNER: int = 2
+
+func test_china_skirmish_match(runner) -> bool:
+	var sim = Skirmish.create(true, "ai", {1: "china", 2: "usa"})
+	var seen := {"horde2": false, "ramp2": false, "delivery": false, "pair": false}
+	var cargo_before := {}
+	var known := {}
+	var terminal: int = -1
+	for tick in range(CHINA_TICK_CAP):
+		Skirmish.issue_opponents(sim, [1, 2])
+		sim.step()
+		var state: Dictionary = sim.snapshot()
+		var born: int = 0
+		var cargo_now := {}
+		for unit in state.entities:
+			if unit.owner == 1 and unit.kind == "china_rifle_infantry" and not known.has(unit.id): born += 1
+			known[unit.id] = true
+			if unit.combat != null:
+				if unit.combat.get("horde", 0) == 2: seen.horde2 = true
+				if unit.combat.get("ramp_level", 0) == 2: seen.ramp2 = true
+			if unit.owner == 1 and unit.collection != null:
+				cargo_now[unit.id] = unit.collection.cargo
+				if cargo_before.get(unit.id, 0) > 0 and unit.collection.cargo == 0: seen.delivery = true
+		if born >= 2: seen.pair = true
+		cargo_before = cargo_now
+		if state.match.status != "ongoing":
+			terminal = tick
+			break
+		if tick % 600 == 599: await runner.process_frame
+	var end: Dictionary = sim.snapshot()
+	runner.check(end.match.status == "won", "Cs1 china match ends won inside the cap, got " + str(end.match))
+	runner.check(terminal == CHINA_TERMINAL_TICK and end.match.winner == CHINA_WINNER, "Cs1 pinned outcome, got " + str(terminal) + " " + str(end.match))
+	runner.check(not seen.values().has(false), "Cs1 horde level 2, ramp level 2, truck delivery and a quantity pair all happened: " + str(seen))
 	return true

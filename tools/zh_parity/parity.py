@@ -220,6 +220,8 @@ def power_for(g, attacker, x, y):
     # A POWERED defence is dark without a plant; the spawn is complete (no construction needed).
     if attacker == "AmericaPatriotBattery":
         g.spawn("AmericaPowerPlant", x + 20, y + 120)
+    if attacker == "ChinaGattlingCannon":
+        g.spawn("ChinaPowerPlant", x + 20, y + 120)
 
 
 def fire(attacker, target, gap, frames, target_owner="enemy"):
@@ -250,6 +252,23 @@ def reach(attacker, target, gap):
         rows: list[tuple[Any, ...]] = []
         meta = {"order_frame": g.frame, "unit": aid, "target": tid, "gap": gap}
         g.record([aid, tid], 90, rows)
+        return rows, meta
+
+    return run
+
+
+def horde(template, count, target, gap, frames):
+    """count units spawned together fire at one structure; the horde bonus shows as a shorter last interval."""
+
+    def run(g):
+        x, y = g.clear_strip(gap + 120)
+        aids = [g.spawn(template, x + 20, y + 8 * i) for i in range(count)]
+        tid = g.spawn(target, x + 20 + gap, y, angle=math.pi, owner=g.enemy)
+        rows: list[tuple[Any, ...]] = []
+        g.record([*aids, tid], 5, rows)
+        g.command("attack_target", aids, targetId=tid)
+        meta = {"order_frame": g.frame, "unit": aids[0], "target": tid}
+        g.record([*aids, tid], frames, rows)
         return rows, meta
 
     return run
@@ -351,6 +370,27 @@ SCENARIOS = {
     "burst_battery": fire("AmericaPatriotBattery", "GLACommandCenter", 200, 600),
     "duel_ranger": fire("AmericaInfantryRanger", "AmericaInfantryRanger", 90, 1200),
     "duel_crusader": fire("AmericaTankCrusader", "AmericaTankCrusader", 140, 1200),
+    "move_redguard": move("ChinaInfantryRedguard", 300),
+    "move_tankhunter": move("ChinaInfantryTankHunter", 300),
+    "move_battlemaster": move("ChinaTankBattleMaster", 400),
+    "move_gattlingtank": move("ChinaTankGattling", 400),
+    "move_cndozer": move("ChinaVehicleDozer", 400),
+    "move_truck": move("ChinaVehicleSupplyTruck", 400),
+    "turn_redguard": turn("ChinaInfantryRedguard"),
+    "turn_tankhunter": turn("ChinaInfantryTankHunter"),
+    "turn_battlemaster": turn("ChinaTankBattleMaster"),
+    "turn_gattlingtank": turn("ChinaTankGattling"),
+    "turn_cndozer": turn("ChinaVehicleDozer"),
+    "turn_truck": turn("ChinaVehicleSupplyTruck"),
+    "range_redguard": fire("ChinaInfantryRedguard", "AmericaVehicleDozer", 250, 400),
+    "range_tankhunter": fire("ChinaInfantryTankHunter", "AmericaVehicleDozer", 300, 400),
+    "range_battlemaster": fire("ChinaTankBattleMaster", "AmericaVehicleDozer", 300, 300),
+    "range_gattlingtank": fire("ChinaTankGattling", "AmericaVehicleDozer", 300, 400),
+    "rof_redguard": fire("ChinaInfantryRedguard", "GLACommandCenter", 250, 600),
+    "rof_battlemaster": fire("ChinaTankBattleMaster", "GLACommandCenter", 300, 600),
+    "ramp_gattling_tank": fire("ChinaTankGattling", "GLACommandCenter", 250, 600),
+    "ramp_gattling_cannon": fire("ChinaGattlingCannon", "GLACommandCenter", 200, 600),
+    "horde_redguard": horde("ChinaInfantryRedguard", 5, "GLACommandCenter", 80, 600),
     "splash_crusader": splash(),
     "supply_chinook": supply(),
     "retaliate_ranger": retaliate(),
@@ -367,6 +407,11 @@ REACH = {
     "reach_rocket": ("AmericaInfantryMissileDefender", "AmericaVehicleDozer", 150, 260),
     "reach_scout": ("AmericaVehicleHumvee", "AmericaVehicleDozer", 100, 220),
     "reach_battery": ("AmericaPatriotBattery", "AmericaVehicleDozer", 150, 300),
+    "reach_redguard": ("ChinaInfantryRedguard", "AmericaVehicleDozer", 100, 160),
+    "reach_tankhunter": ("ChinaInfantryTankHunter", "AmericaVehicleDozer", 150, 260),
+    "reach_battlemaster": ("ChinaTankBattleMaster", "AmericaVehicleDozer", 150, 220),
+    "reach_gattlingtank": ("ChinaTankGattling", "AmericaVehicleDozer", 100, 260),
+    "reach_gattlingcannon": ("ChinaGattlingCannon", "AmericaVehicleDozer", 150, 320),
 }
 
 

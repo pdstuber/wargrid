@@ -46,6 +46,32 @@ EXPECT: dict[str, Any] = {
     "burst_battery": [("burst_pattern", "8,8,8,60", 1, "delay 8, clip 4, reload 60")],
     "duel_ranger": [("ttk_frames", 303, None, "36 hits of 5 HP at 3/3/21")],
     "duel_crusader": [("ttk_frames", 420, None, "8 hits of 60 HP every 60 ticks")],
+    "move_redguard": [("top_speed", 25, 3, "1.0 cells/s")],
+    "move_tankhunter": [("top_speed", 20, 2, "0.8 cells/s")],
+    "move_battlemaster": [("top_speed", 25, 3, "1.0 cells/s")],
+    "move_gattlingtank": [("top_speed", 40, 4, "1.6 cells/s")],
+    "move_cndozer": [("top_speed", 30, 3, "1.2 cells/s")],
+    "move_truck": [("top_speed", 40, 4, "1.6 cells/s")],
+    "turn_redguard": [("turn_rate", 500, None, "Wargrid 500 deg/s")],
+    "turn_tankhunter": [("turn_rate", 500, None, "Wargrid 500 deg/s")],
+    "turn_battlemaster": [("turn_rate", 180, None, "Wargrid 180 deg/s")],
+    "turn_gattlingtank": [("turn_rate", 180, None, "Wargrid 180 deg/s")],
+    "turn_cndozer": [("turn_rate", 90, None, "Wargrid 90 deg/s")],
+    "turn_truck": [("turn_rate", 90, None, "Wargrid 90 deg/s")],
+    "range_redguard": [("first_shot_distance", 100, 10, "4 cells")],
+    "range_tankhunter": [("first_shot_distance", 175, 10, "7 cells")],
+    "range_battlemaster": [("first_shot_distance", 150, 10, "6 cells")],
+    "range_gattlingtank": [("first_shot_distance", 150, 10, "6 cells")],
+    "reach_redguard": [("farthest_fire", 100, 10, "4 cells")],
+    "reach_tankhunter": [("farthest_fire", 175, 10, "7 cells")],
+    "reach_battlemaster": [("farthest_fire", 150, 10, "6 cells")],
+    "reach_gattlingtank": [("farthest_fire", 150, 10, "6 cells")],
+    "reach_gattlingcannon": [("farthest_fire", 225, 10, "9 cells")],
+    "rof_redguard": [("shot_interval", 30, 1, "delay 30")],
+    "rof_battlemaster": [("shot_interval", 60, 1, "delay 60")],
+    "ramp_gattling_tank": [("first_intervals", "12,12,6,6,6,6,4", 1, "delay 12, ramp x2 after 2, x3 after 6")],
+    "ramp_gattling_cannon": [("first_intervals", "8,4,4,4,4,2", 1, "delay 8, ramp after 1 and 5")],
+    "horde_redguard": [("last_interval", 20, 1, "five together, horde rate")],
     "splash_crusader": [("shots_to_kill", 30, None, "direct 6 HP hits, no splash or scatter")],
     "supply_chinook": [("deposit", 600, None, "8 boxes x 75"), ("cruise_speed", 150, None, "6 cells/s, provisional")],
 }
@@ -124,6 +150,8 @@ def shots(meta, rows):
     if intervals:
         out["shot_interval"] = statistics.median(intervals)
         out["burst_pattern"] = ",".join(map(str, intervals[:3]))
+        out["first_intervals"] = ",".join(map(str, intervals[:7]))
+        out["last_interval"] = intervals[-1]
     return out
 
 

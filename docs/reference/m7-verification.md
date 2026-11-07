@@ -5,15 +5,15 @@ Plan: [M7 plan](../superpowers/plans/2026-11-06-m7-factions.md). Design: [M7 des
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-07, G2.6 done, uncommitted)
-Branch / base commit / working-tree state: m7-factions, HEAD 7ca9c82 (G2.5 committed); G2.6 uncommitted
-Last green task / next incomplete task: G2.6 done (double-click selects the same kind) / commit it ("Double-click selects all own units of that kind"), then G2.7 (gate 2)
-Changed paths since last commit: game/scripts/main.gd, game/tests/test_scene.gd, m7-verification.md
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 382 cases / 134,571 / 0, exit 0, TESTS PASSED 134571 (baseline HEAD 7ca9c82: 377 / 134,563); presentation only, no simulation file touched, so traces not rerun; run_lint.sh, run_warnings.sh (89 files), test_faction_guard.py OK
-Known red case or blocker: none
-Approved decisions, pre-authorizations used, deferred gates: as before. G2.6 departures: tests live in test_scene.gd on main.gd (prototype scene, 2x zoom, camera set to (0,128), far unit at (14.5,14.5) because the map is 16x16); the "building" half of test_double_click_enemy_or_building_plain is covered by empty ground (the prototype scene has no buildings; pick_entity returns own units only). Shift double-click unions with the earlier selection. Ctrl/Alt read at press. test_double_click_ctrl_ignored and test_double_click_enemy_or_building_plain passed before the implementation (they assert the unchanged plain-click behaviour), so not seen red; the other three were red.
+Resume record (updated 2026-11-07, G2.7 gate evidence done, uncommitted)
+Branch / base commit / working-tree state: m7-factions, HEAD e2d48fc (G2.6 committed); G2.7 evidence uncommitted
+Last green task / next incomplete task: G2.7 gate evidence (tests, checks, parity, ledger) green / gate review dispatch (Opus high), then /ponytail-review on the gate diff, push (approval), playtest
+Changed paths since last commit: game/tests/test_skirmish_match.gd, game/tests/test_factions.gd, tools/zh_parity/parity.py, tools/zh_parity/analyze.py, docs/reference/performance.md, m7-verification.md
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 384 cases / 134,584 (traces on) / 0, exit 0, TESTS PASSED (134,577 traces off before pins, 134,571 baseline); lint, warnings (89 files), run_python_checks.sh, unittest discover (39) OK; four traces cmp-identical to e2d48fc; run_netplay.sh all 7 PASSED (match 8331); run_conformance.sh PASSED 33; run_benchmark.sh exit 0 (COMBAT BENCHMARK PASSED 9); run_team_match.sh exit 0
+Known red case or blocker: none. Pending: rendered benchmark (visible window, needs approval, batch with playtest)
+Approved decisions, pre-authorizations used, deferred gates: as before. G2.7 departures: test_choose_faction_online_china_same_hash and the quantity/horde/ramp/delivery asserts passed on first run (not seen red); the Cs1 pin was seen red with a placeholder, then set from the measured outcome.
 Usage so far: not recorded
-Next exact action: commit G2.6, then G2.7 (gate 2 checks)
+Next exact action: dispatch the gate 2 review (Opus high), fix critical and important findings test-first, then /ponytail-review on the gate diff; push and the playtest need the user
 ```
 
 ## Pins at base
@@ -440,3 +440,53 @@ Departures and decisions (G2.4):
 - Departure: the scene order is a method `_order_defence` in `skirmish_main.gd` that runs before the unit right-click branch; with a selected own armed completed building it submits `defence_attack`, an unreachable pick shows the simulation's "Target out of range". A right-click on ground with a selected defence still does nothing (set_rally does not apply to it).
 - Persistence after the target leaves reach is the existing keep-valid-target rule then the 8-tick scan; Zero Hour's behaviour was not verified (as the plan states).
 - Netplay `match` still ends at tick 8331 (scenario passed); no pin moved.
+
+## G2.7 gate-2 results (tree: m7-factions e2d48fc + uncommitted G2.7 tests, parity tooling and docs, Apple M6, 2026-11-07)
+
+- New tests: `test_china_skirmish_match` (Cs1): china seat 1 vs usa seat 2, both bots, status won at tick 16258, winner 2 (usa), inside the 45000 cap; horde level 2, ramp level 2, a truck delivery and a pair of `china_rifle_infantry` appearing on one tick all happened before the end. `test_choose_faction_online_china_same_hash` (F4): china/usa, bots from tick 4, 3000 ticks, digests equal every 30 ticks, 100+ rows.
+- Pin rows (provisional, cause "G2.7"): test_skirmish_match Cs1 `CHINA_TERMINAL_TICK` new 16258, `CHINA_WINNER` new 2. No existing pin moved.
+- Suite 384 / 134,584 / 0, exit 0 (traces on); this tree. Baseline at start 382 / 134,571 (traces off); worktree e2d48fc with traces on: 382 / 134,578 / 0. Lint, warnings (89 files), `run_python_checks.sh`, `python3 -m unittest discover -s tools` (39) pass.
+- Trace check: replay, economy, combat, team traces on this tree are `cmp`-identical to a clean worktree at e2d48fc (USA traces unchanged by G2.7; tests only).
+- Netplay (this tree): match terminal tick 8331 (unchanged), kill, stall, silent, spike, perturb, version all PASSED. `run_conformance.sh` CONFORMANCE PASSED 33.
+- `run_benchmark.sh` exit 0, `COMBAT BENCHMARK PASSED 9`; results in the performance ledger row of 2026-11-07. Exceeded and not loosened: combat stress open 2.764 / 3.656 and dense 3.099 / 4.67 against 1.82 / 3.64 (report-only, inside ceilings); team match p99 5.15 against 3.64 (p95 1.767 inside 1.82). New layouts: docks (stacked_ticks_window 0), hordes (level2_peak_window 75, 4662 checks), ramp (680 level 2 shots), all report-only. Rendered benchmark not run (pending approval).
+
+### Bot wave revisit record (report only, no constant changed)
+
+| match | gate 1 (Task 11) | now |
+|---|---|---|
+| china vs usa skirmish (2 bots) | n/a | won tick 16258, winner 2 |
+| usa mirror skirmish S1 | won tick 7731 winner 1 | won tick 9473 winner 1 (after bot wave update, unchanged since) |
+| team match 3v3 | won tick 23816 winner 2 | won tick 33205 winner 1 (unchanged since the bot wave update; all-usa lists) |
+
+The 3v3 team match still has no China seats; the China 1v1 result is the first one with the China lists. `WAVE_MIN` and the rest stay the user's call (M8 research).
+
+### Parity, China (measured (source build), fork branch wargrid-parity; traces `~/CnC/parity/g2`, game `-headless -noaudio`, gate 1 traces untouched)
+
+New scenarios in `tools/zh_parity/{parity,analyze}.py` (self-test OK, python checks pass). Unarmed `ChinaVehicleDozer` and `ChinaVehicleSupplyTruck` have move/turn only (no range/reach). `power_for` now also spawns a `ChinaPowerPlant` for the Gattling cannon.
+
+| scenario | metric | measured | Wargrid | verdict |
+|---|---|---|---|---|
+| move_redguard / tankhunter | top speed | 25.0 / 20.0 | 25 / 20 | PASS |
+| move_battlemaster / gattlingtank | top speed | 25.035 / 40.056 | 25 / 40 | PASS |
+| move_cndozer / truck | top speed | 30.0 / 40.056 | 30 / 40 | PASS |
+| turn_ (redguard, tankhunter) | turn rate | 500 / 500 deg/s | 500 | feel, matches |
+| turn_ (battlemaster, gattlingtank) | turn rate | 180 / 180 deg/s, start delay 24 frames | 180 | feel, matches |
+| turn_ (cndozer, truck) | turn rate | 90 / 90 deg/s, 61 / 63 turn frames, start delay 47 / 3 | 90 | feel, matches |
+| range_ / reach_redguard | first shot / farthest fire | 115 / 122 | 100 | +22 (as Ranger) |
+| range_ / reach_tankhunter | | 196.4 / 200 | 175 | +25 |
+| range_ / reach_battlemaster | | 179.5 / 181 | 150 | +31 (Crusader +33) |
+| range_ / reach_gattlingtank | | 179.9 / 183 | 150 | +33 |
+| reach_gattlingcannon | farthest fire (powered) | 251 | 225 | +26 (Patriot +27) |
+| rof_redguard / rof_battlemaster | shot interval | 30 / 60 | 30 / 60 | PASS |
+| ramp_gattling_tank | first intervals | 12,12,6,6,6,6,4 (then 4) | 12,12,6,6,6,6,4 | PASS |
+| ramp_gattling_cannon | first intervals | 8,4,4,4,4,2,2 | 8,4,4,4,4,2 | PASS (the analyze FAIL is the seventh interval, 2, beyond the expected six) |
+| horde_redguard | last interval, five spawned together | 20 (first 36, then 20) | 20 | PASS; the harness can spawn a group |
+
+The range/reach offsets are the same attacker/target geometry as Ranger +22, Crusader +33, Patriot +27; INI ranges equal Wargrid. Gattling tank and cannon ramp cadence and the horde interval equal the formulas exactly.
+
+Decision list (no value changed; user decides):
+1. No value departs: all speeds, turn rates, cadences, ramp and horde intervals match.
+2. Ranges: +22 to +33 centre-to-centre offsets are geometry, not range errors; no change (as in gate 1).
+3. Horde: first shot interval 36 before the bonus applies; Wargrid's first-check timing was not compared here. Feel only, candidate for the playtest.
+4. Battlemaster and Gattling tank show a one-frame speed spike (peak 48.8 / 66.7 u/s, accel 1464 / 2000) at the start; cruise equals Wargrid. Feel only.
+
