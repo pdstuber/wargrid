@@ -3,15 +3,15 @@
 Handoff: [performance-spike-prompt.txt](../performance-spike-prompt.txt). Ledger: [performance.md](performance.md). Dated evidence rows below the record are append-only.
 
 ```text
-Resume record (updated 2026-11-07 22:20)
+Resume record (updated 2026-11-07 22:30)
 Branch / base commit / working-tree state: main / e11b2fe (baseline measured on 20a4d06; e11b2fe adds docs only) / uncommitted: this file (Workstream 2 tasks, Task 1d fixes), docs/reference/performance.md (ledger row)
-Last green task / next incomplete task: Task 1d (gate-review fixes to the Workstream 1 finding, bucket measurement, ledger row; docs only) / user decision on Workstream 2 start (incl. the Task 2e BM6 retune question), then Task 2a
+Last green task / next incomplete task: Task 2a (report-only measurement, scratch copy; see '2a result') / Task 2b
 Changed paths since last commit: this file, docs/reference/performance.md
 Last command / cases / checks / failures / exit / marker: Task 1b baseline chain on a git archive of HEAD 20a4d06 (3x movement, combat, lockstep, team match, 1x profile), all exit 0; Task 1c only read logs (no benchmark run); Task 1d one scratch bucket run per layout (open, dense, hordes300), all exit 0
 Known red case or blocker: none. Report-only rows exceeded: combat open, dense, hordes300 (see Workstream 1 finding)
 Approved decisions, pre-authorizations used, deferred gates: user invoked the spike 2026-11-07; works on main; local commits after green checkpoints pre-authorized; no push/PR/merge/fly/Sprite/window without approval; host = this Mac only (user)
 Usage so far (python3 tools/session_usage.py <session files>): not recorded
-Next exact action: user decision on starting Workstream 2 (incl. whether Task 2e's BM6 retune is approved for a later round); commit this file and performance.md (user approval); that commit is the round base; then dispatch Task 2a (Sonnet, medium)
+Next exact action: dispatch Task 2b (per-owner target grid in `_nearest`; H1 confirmed, 2b design justified); Task 2d target is `Horde.step` (H3 confirmed). The 2a scratch copy under the scratchpad (ws2a) is not part of the repo
 ```
 
 ## Evidence
@@ -25,6 +25,7 @@ Next exact action: user decision on starting Workstream 2 (incl. whether Task 2e
 | 2026-11-07 | 3ffa26c + run_profile.gd/run_profile.sh edits (uncommitted) | Apple M6 | Task 1a: profile `-- new`; combat_dense units 300->97, combat_hordes300 400->292 (deaths inside window), team_match hit 45000-tick cap ongoing, peak 160; lint+warnings exit 0 | exit 0, PROFILE COMPLETE 3; load 1.27 |
 | 2026-11-07 | 20a4d06 (git archive) | Apple M6 | Task 1b/1c baseline: 3x movement, combat, lockstep, team match, 1x profile; run_calibration/run_profile edits not in the archive | all exit 0, no BUSY; load 1.16-1.30 for movement/combat/lockstep/team1; team2 end load 2.12 (only run over 2.0, team3 start 2.12, end 1.62); table below |
 | 2026-11-07 | e11b2fe (git archive) + scratch run_bucket.gd | Apple M6 | Task 1d bucket measurement: open, dense, hordes300 one at a time, no godot/ZH process before each | exit 0 x3; load 1.75 start / 1.76 end (22:16); table in the finding |
+| 2026-11-07 | e11b2fe-equivalent HEAD c683426 (git archive) + scratch sub-zones, `_nearest` counters, `run_2a.gd` | Apple M6 | Task 2a: open, dense, hordes300 one at a time, headless, profiler on, no godot/ZH process before each (pgrep empty), 22:25; the scratch copy was not linted or run through the suite (Task 2a keeps no code) | exit 0 x3, `TWO_A COMPLETE`; load 1.56 start / 1.40 end; result below |
 
 ## Workstream 1 finding (baseline, 2026-11-07, 20a4d06, Apple M6, 3 runs each)
 
@@ -140,3 +141,15 @@ Stop after 2d (three kept fixes): full re-baseline of every row on the round tre
 ### Task 2f: retarget scan scheduling (NOT a kept fix: re-pin)
 
 - Spreading the death-tick retarget burst over several ticks (`object_removed`, combat.gd:536-541, `repath_tick = tick`) or narrowing `scan_reach` changes which tick a unit acquires a target. Every trace and pin moves, so this needs a separate user-approved re-pin and a Zero Hour comparison (`AIUpdate` scan timing). Listed for the gate recommendation only; not to be started in this workstream.
+
+## 2a result (2026-11-07, HEAD c683426 via git archive, Apple M6, headless, profiler on, one run per layout, load 1.4-1.6)
+
+Scratch only: `advance.*` sub-zones in `step.advance`, per `_nearest` call counters (friendly = rejected by `hostile()`, hostile = the rest), a removal tick marker in `object_removed`, and `run_2a.gd` (300 warm-up ticks, 1800 sampled). Logs in the scratchpad (`ws2a/{open,dense,hordes300}.log`), not in the repo. Zone means match the Workstream 1 profile (open `step` 1.59, `nearest` 0.51; dense 1.49 / 0.61; hordes300 3.88 / 1.40), so the sub-zones did not distort it.
+
+H1 confirmed. Share of `_nearest` loop candidates that are non-hostile (all scan kinds): open 87.0 % (91.7 candidates per reach call, 89.8 % friendly; scan_reach 156 per call, 68.7 %), dense 85.5 % (reach 88.6 %, scan_reach 66.8 %), hordes300 97.3 % (211 candidates per call, reach 97.7 %, scan_reach 90.3 %, return 87.5 %). Skipping non-hostile owners removes 85-97 % of the loop iterations; `_combat_work` is unaffected because friendlies are never counted.
+
+H2 confirmed, strongly. Ticks following a removal (previous tick had at least one `object_removed`) are 7.8 % of ticks on open, 8.2 % on dense, 5.7 % on hordes300. Of the 91 `combat.nearest` p95 ticks: open 84 (92 %), dense 68 (75 %), hordes300 84 (92 %) follow a removal; the `step` p95 ticks: open 77 of 91, dense 69, hordes300 75. `nearest` mean after a removal against other ticks: open 1.42 vs 0.43 ms, dense 1.82 vs 0.50, hordes300 2.73 vs 1.32. Calls per tick after / other: open 33.5 / 16.3, dense 36.8 / 15.1, hordes300 50.1 / 37.4. Candidates per call on the post-removal scan_reach rescans are 131-143 (open, dense) against 91-115 for reach calls: retarget bursts are more calls and wider scans. So the p95 tail is the death-triggered rescan burst; the friendly share applies inside it too (open 74 %, dense 71.6 %, hordes300 92.8 % of candidates after removal).
+
+H3 confirmed. hordes300 `step.advance` 1.608 ms mean splits: `advance.horde` 0.981 (61 % of advance, 25.3 % of step; p95 1.53), `advance.move` 0.485 (30 %), `containers` 0.060, `moved` 0.046, `before` 0.033, `salvage` 0.0003. On open / dense `advance` is 0.39 / 0.34 ms, mostly `move` (0.29 / 0.25), `horde` only 0.02: Task 2d is a hordes300-only gain and can be skipped if only open / dense matter.
+
+Recommendation: Task 2b (skip non-hostile owners whole in `_nearest`) is justified: it targets 85-97 % of the loop and the retarget burst. Estimate caveat: open / dense `nearest` is 0.5-0.6 ms mean, so removing about 85 % of the iterations (the `hostile()` call cost, not the distance work) is bounded by that; the p95 gain is not yet measured. Task 2d target: `Horde.step`.
