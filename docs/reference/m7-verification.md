@@ -5,17 +5,16 @@ Plan: [M7 plan](../superpowers/plans/2026-11-06-m7-factions.md). Design: [M7 des
 ## Resume record
 
 ```text
-```text
-Resume record (updated 2026-11-07, gate 2 SIGNED OFF; lean cuts applied, uncommitted)
-Branch / base commit / working-tree state: m7-factions, HEAD = commit after cd8ba72 (review fixes committed), tree clean; origin/m7-factions at 8f835c0 (G2 work NOT pushed, CI not run on it)
-Last green task / next incomplete task: G2.0-G2.7 green, gate review (Opus) fixed, lean review done / user decisions below, then gate 3 is an outline (Opus high expansion session needed). Do not begin any G3 item.
-Changed paths since last commit: Esc menu (uncommitted): game/scripts/{main,base_main,skirmish_main,online_main}.gd, game/scripts/presentation/pause_menu.gd, game/tests/{test_pause_menu,run_tests}.gd, this file. Dock starvation fix is committed (72b2ec7).
-Last command / cases / checks / failures / exit / marker: see "Gate 2 review fixes": 388 cases / 134,583 / 0, exit 0, TESTS PASSED; lint, warnings, python checks, netplay (match 8331), conformance 33, run_benchmark.sh PASSED 10 (now 9 after the lean cuts), team match won 33205 winner 1; traces cmp-identical to eb3fbed
-Known red case or blocker: none. Exceeded, not loosened: hordes p95 2.102, hordes300 p95 5.626 / p99 7.074 (budget 1.82 / 3.64; user's call). Rendered benchmark: done 2026-11-07, see "Rendered China layout"
-Approved decisions, pre-authorizations used, deferred gates: full load ground only (user 2026-11-06, OPEN asymmetry item); setup gate kept; defence_attack added. Open minor item M6 (M5 and M9 closed 2026-11-07; ground dock starvation fixed, see "Dock starvation fix"; user 2026-11-07: no clearance filter, side choice in `_claim_dock` untouched). Gate 2 SIGNED OFF by the user 2026-11-07 (offline playtest, online native-vs-WASM China match, dock fixes, Esc menu push). Unverified: China vs USA online, Chrome/Firefox, two WASM clients, hidden tab. Open: Chinook full-load fairness (user will check later). Performance spike planned by the user after all three factions are in with basic units. All five lean review findings applied 2026-11-07 (user decision), see "Gate 2 lean cuts".
+Resume record (updated 2026-11-07, gate 2 SIGNED OFF by the user; lean cuts and Esc menu committed)
+Branch / base commit / working-tree state: m7-factions, HEAD 601f3c9 (Settle the order of the performance spike and unit avoidance), tree clean at wrap-up (docs edits after it uncommitted until approved). origin/m7-factions at 2228306; 601f3c9 not pushed. CI green on 2228306 (run 42360191478) and on 488188d (run 42358575716). Branch not merged to main.
+Last green task / next incomplete task: gates 1 and 2 done (G2.0-G2.7, gate review fixes, dock starvation fix, Esc menu, lean cuts). Next: gate 3 (FRC, exit gate) is an outline only; do not begin any G3 item (G3.1-G3.5) before the planning session below.
+Changed paths since last commit: docs only (this file, README.md, AGENTS.md, prompt.txt, the M7 plan, session notes); no game/, tools/, relay/ or protocol/ file.
+Last command / cases / checks / failures / exit / marker: see "Gate 2 lean cuts": suite 405 cases / 134,653 / 0 failures, exit 0; lint, warnings (93 files), python checks pass; run_benchmark.sh exit 0 (PASSED 2, COMBAT 9, LOCKSTEP 1); all nine netplay scenarios exit 0 (match terminal tick 8331); team match won 33205 winner 1; traces cmp-identical to the previous HEAD
+Known red case or blocker: none. Exceeded, not loosened, accepted by the user until the performance spike: combat stress open/dense, team match p99, hordes300 (p95 5.588, budget 1.82 / 3.64). Rendered benchmark done 2026-11-07 (see "Rendered China layout").
+Approved decisions, pre-authorizations used, deferred gates: gate 2 SIGNED OFF by the user 2026-11-07 (offline playtest, online native-vs-WASM China match, dock fixes, Esc menu push); full load ground only (user 2026-11-06); no clearance filter, `_claim_dock` side choice untouched (user 2026-11-07); all five lean review findings applied (user 2026-11-07); performance spike then unit avoidance after the M7 exit gate (blueprint, user 2026-11-07).
+Open items: Chinook full-load fairness (user will check later); M6 shared dock cells (latent, 0 stacked docked ticks measured); unverified online: China vs USA online, Chrome/Firefox, two WASM clients, hidden tab; Esc menu not yet played by the user (tests only).
 Usage so far: not recorded
-Esc menu (2026-11-07): done, see "Esc menu"; 405 cases / 134,654 / 0.
-Next exact action: user: push approval (CI Linux/Windows + compare_local_traces.sh), playtest offline and online (rendered benchmark batched), decide horde cost, lean findings, Chinook full-load fairness; then Opus (high) session expands gate 3.
+Next exact action: user starts an Opus (high) planning session that expands the gate 3 outline (G3.1-G3.5) into steps, folding in the gate 2 findings (dock fixes, Esc menu, bot wave constants, the performance spike and unit avoidance order in the blueprint). Push of 601f3c9 and later commits needs the user's approval.
 ```
 
 ## F3 overlay (2026-11-07, tree: m7-factions 557afa4 plus uncommitted, Apple M6)
