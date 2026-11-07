@@ -5,17 +5,28 @@ Plan: [M7 plan](../superpowers/plans/2026-11-06-m7-factions.md). Design: [M7 des
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-07, gate 2 SIGNED OFF by the user; lean cuts and Esc menu committed)
+Resume record (updated 2026-11-07, gate 3 expanded to step level by an Opus (high) planning session; gate 2 SIGNED OFF by the user)
 Branch / base commit / working-tree state: m7-factions rebased onto main 1348b06 (R1, repo public) on 2026-11-07 and force-pushed with approval: old tip 0445482, new tip 4a64ae8 = origin/m7-factions. Commit hashes in this file before that are the pre-rebase branch. CI before the rebase: green on 2228306 (run 42360191478) and on 488188d (run 42358575716); CI on 4a64ae8 not checked. Branch not merged to main.
-Last green task / next incomplete task: gates 1 and 2 done (G2.0-G2.7, gate review fixes, dock starvation fix, Esc menu, lean cuts). Next: gate 3 (FRC, exit gate) is an outline only; do not begin any G3 item (G3.1-G3.5) before the planning session below.
-Changed paths since last commit: none (the last commit changed docs only).
+Last green task / next incomplete task: gates 1 and 2 done (G2.0-G2.7, gate review fixes, dock starvation fix, Esc menu, lean cuts). Gate 3 (G3.1-G3.5) is at step level since 2026-11-07, not started; next incomplete task G3.1.
+Changed paths since last commit: none. Gate 3 planning (docs only: the plan, m7-factions.md "Gate 3 planning findings", this file, prompt.txt, status lines) is committed locally as "Expand M7 gate 3 to step level"; not pushed.
 Last command / cases / checks / failures / exit / marker: after the rebase (4a64ae8, Apple M6): suite 407 cases / 134,689 / 0 failures, exit 0 (main's logo suite added), lint, warnings (94 files), python checks pass; benchmarks and netplay not rerun (main changed no simulation, relay or protocol code). Before, see "Gate 2 lean cuts": suite 405 cases / 134,653 / 0 failures, exit 0; lint, warnings (93 files), python checks pass; run_benchmark.sh exit 0 (PASSED 2, COMBAT 9, LOCKSTEP 1); all nine netplay scenarios exit 0 (match terminal tick 8331); team match won 33205 winner 1; traces cmp-identical to the previous HEAD
 Known red case or blocker: none. Exceeded, not loosened, accepted by the user until the performance spike: combat stress open/dense, team match p99, hordes300 (p95 5.588, budget 1.82 / 3.64). Rendered benchmark done 2026-11-07 (see "Rendered China layout").
-Approved decisions, pre-authorizations used, deferred gates: gate 2 SIGNED OFF by the user 2026-11-07 (offline playtest, online native-vs-WASM China match, dock fixes, Esc menu push); full load ground only (user 2026-11-06); no clearance filter, `_claim_dock` side choice untouched (user 2026-11-07); all five lean review findings applied (user 2026-11-07); performance spike then unit avoidance after the M7 exit gate (blueprint, user 2026-11-07).
+Approved decisions, pre-authorizations used, deferred gates: gate 2 SIGNED OFF by the user 2026-11-07 (offline playtest, online native-vs-WASM China match, dock fixes, Esc menu push); full load ground only (user 2026-11-06); no clearance filter, `_claim_dock` side choice untouched (user 2026-11-07); all five lean review findings applied (user 2026-11-07); performance spike then unit avoidance after the M7 exit gate (blueprint, user 2026-11-07); gate 3 planning decisions (user 2026-11-07): one hole kind per footprint, FRC bot 1 builder + 6 gatherers as one constant, FRC bot builds one Tunnel Hub after its barracks and issues no `enter`, salvage level-up branch becomes money.
 Open items: Chinook full-load fairness (user will check later); M6 shared dock cells (latent, 0 stacked docked ticks measured); unverified online: China vs USA online, Chrome/Firefox, two WASM clients, hidden tab; Esc menu not yet played by the user (tests only).
 Usage so far: not recorded
-Next exact action: user starts an Opus (high) planning session that expands the gate 3 outline (G3.1-G3.5) into steps, folding in the gate 2 findings (dock fixes, Esc menu, bot wave constants, the performance spike and unit avoidance order in the blueprint). Push of 601f3c9 and later commits needs the user's approval.
+Next exact action: Sonnet (medium) run starts at G3.1 (plan "Gate 3"); the three gate-3 planning questions are answered (user, 2026-11-07, "Gate 3 planning" below), no OPEN item is left.
 ```
+
+## Gate 3 planning (2026-11-07, tree: m7-factions 11672f4, docs only)
+
+Opus (high) planning session; no code, test or benchmark run. Sources re-read for every lead of the planning brief: EA source `0a05454` and the pinned `INIZH.big` (findings with paths in [M7 factions, "Gate 3 planning findings"](m7-factions.md#gate-3-planning-findings-2026-11-07)). Corrections and additions to the brief: the hole regen is at `RebuildHoleBehavior.cpp:306-318` (not ~254-262); a new hole starts at full 500 HP (`setMaxHealth` clips); a cancelled rebuild foundation is killed with no refund in Zero Hour, so `Construction.cancel` routes through `remove_object`. No parity run (G3.5 measures the FRC rows).
+
+Planning questions for gate 3, with the planning default and the user's answer:
+1. G3.5 three-faction 3v3: convert `team_match.gd` (seats 1 usa, 2 china, 8 frc against 4 usa, 5 china, 6 frc; TB3/TB4 and the team trace re-pinned) or add a separate match. Default: convert. Answer (user, 2026-11-07): convert, as recommended.
+2. G3.4 enter/unload controls (none exist in the HUD): right-click to enter, `U` to unload, hint text. Default: add. Answer (user, 2026-11-07): add, with the hint and the scene / layout tests.
+3. G3.3 pickup cannon and rocket against infantry: per-weapon `infantry_blast` 1.853 and `infantry_scatter false`, or the global rule with two departures. Default: per-weapon fields. Answer (user, 2026-11-07): per-weapon `infantry_blast` 1.853 and `infantry_scatter false` on the pickup cannon and rocket only.
+
+Follow-up checks (same day, docs only; details in m7-factions.md "Gate 3 planning findings"): a Command Center laborer walks to the rally point and idles (plan G3.1 exit rule, `can_rally`); riders of a loaded transport stay inside it in a tunnel and are destroyed silently with it; the player may resume a rebuild site only while the hole's laborer is not building it ("Foundation is being rebuilt"); the launcher row fits with the FRC name (measured, 520 px); the frc benchmark layout is scripted by tick (no tuning); `Construction.cancel` has one caller, no trace can move; an unfinished FRC match at the 45000 cap is a pre-agreed stop with three options for the user.
 
 ## F3 overlay (2026-11-07, tree: m7-factions 557afa4 plus uncommitted, Apple M6)
 
