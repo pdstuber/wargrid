@@ -3,7 +3,6 @@ extends RefCounted
 const Combat = preload("res://scripts/simulation/combat.gd")
 const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
 const Construction = preload("res://scripts/simulation/construction.gd")
-const Production = preload("res://scripts/simulation/production.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 

@@ -41,7 +41,8 @@ static func collects(id: String) -> Dictionary:
 
 static func can_rally(id: String) -> bool:
 	var row: Dictionary = kind(id)
-	return row.get("produces", []).any(func(unit: String) -> bool: return collects(unit).is_empty()) or (not row.get("produces", []).is_empty() and not row.get("receives_supply", false))
+	var produces: Array = row.get("produces", [])
+	return produces.any(func(unit: String) -> bool: return collects(unit).is_empty()) or (not produces.is_empty() and not row.get("receives_supply", false))
 
 # Test-only kinds are cleared by clear_test_kinds.
 static func add_test_kind(id: String, row: Dictionary) -> void:

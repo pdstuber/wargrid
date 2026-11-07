@@ -40,14 +40,16 @@ static func unload_error(sim: Simulation, command: Dictionary) -> String:
 	var host: Dictionary = carrier(sim, command.target_id)
 	return "" if not host.is_empty() and not host.has("container_id") and host.owner == command.player and not rules(host).is_empty() and host.get("completed", true) else "Cannot unload this container"
 
+static func held(sim: Simulation, host: Dictionary) -> int:
+	return tunnel(sim, host.owner).size() if shared(host) else host.get("passengers", []).size()
+
 static func _free_slots(sim: Simulation, host: Dictionary, reissued: Array) -> int:
 	var promised: int = 0
 	var network: bool = shared(host)
 	for unit: Dictionary in sim._entities.values():
 		if not entering(unit) or reissued.has(unit.id): continue
 		if unit.order.target_id == host.id or (network and unit.owner == host.owner and shared(carrier(sim, unit.order.target_id))): promised += 1
-	var held: int = tunnel(sim, host.owner).size() if network else host.get("passengers", []).size()
-	return rules(host).slots - held - promised
+	return rules(host).slots - held(sim, host) - promised
 
 static func head_for(sim: Simulation, unit: Dictionary, host: Dictionary) -> void:
 	var goal: Variant = host.position.duplicate() if not host.has("origin") else Construction.approach(sim, unit.id, host.kind, Vector2i(host.origin[0], host.origin[1]), sim._navigation, true)
@@ -92,8 +94,7 @@ static func _walk(sim: Simulation, unit: Dictionary) -> void:
 	if host.is_empty():
 		_give_up(sim, unit)
 	elif Combat.edge_gap(unit, host) <= BOARD_GAP + Combat.EDGE_EPS:
-		var held: int = tunnel(sim, host.owner).size() if shared(host) else host.get("passengers", []).size()
-		if held < rules(host).slots: _board(sim, unit, host)
+		if held(sim, host) < rules(host).slots: _board(sim, unit, host)
 		else: _give_up(sim, unit)
 	elif unit.status == "arrived":
 		head_for(sim, unit, host)
