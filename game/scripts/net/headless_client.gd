@@ -8,6 +8,7 @@ const StateHash = preload("res://scripts/simulation/state_hash.gd")
 const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 const ScriptedHuman = preload("res://scripts/simulation/scripted_human.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
+const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const UNCAPPED_STEPS: int = 64
 const CAPPED_STEPS: int = 2
 const CLOSE_WAIT_MSEC: int = 1000
@@ -28,6 +29,11 @@ var _connect_msec: int = 0
 
 func _ready() -> void:
 	_args = _parse(OS.get_cmdline_user_args())
+	var faction_error: String = _faction_error()
+	if faction_error != "":
+		printerr(faction_error)
+		get_tree().quit(2)
+		return
 	if _args.has("replay-log"):
 		_replay_oracle()
 		return
@@ -224,6 +230,10 @@ func _int_arg(key: String) -> int:
 
 func _now_ms() -> int:
 	return int(Time.get_unix_time_from_system() * 1000.0)
+
+func _faction_error() -> String:
+	var faction: String = _args.get("faction", Skirmish.default_faction())
+	return "" if not Registry.faction(faction).is_empty() else "Unknown --faction '%s'; expected one of: %s" % [faction, ", ".join(Registry.Factions.FACTIONS.keys())]
 
 func _parse(raw: PackedStringArray) -> Dictionary:
 	var parsed: Dictionary = {}

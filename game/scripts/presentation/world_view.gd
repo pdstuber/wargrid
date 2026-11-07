@@ -151,7 +151,7 @@ func heading_marks() -> Array[Dictionary]:
 func pick_target(plane_point: Vector2, own: int) -> int:
 	for i in range(_state.get("entities", []).size() - 1, -1, -1):
 		var unit: Dictionary = _state.entities[i]
-		if unit.owner != own and not Registry.air_kinds.has(unit.get("kind")) and _vehicle_bounds(unit).has_point(plane_point): return unit.id
+		if unit.owner != own and not unit.has("container_id") and not Registry.air_kinds.has(unit.get("kind")) and _vehicle_bounds(unit).has_point(plane_point): return unit.id
 	var point: Vector2 = Iso.plane_to_world(plane_point)
 	for building: Dictionary in _state.get("buildings", []):
 		var definition: Dictionary = Definitions.building(building.kind)
@@ -373,7 +373,7 @@ func pick_entities(plane_rect: Rect2) -> Array[int]:
 	var ids: Array[int] = []
 	for unit: Dictionary in _state.get("entities", []):
 		var point: Vector2 = Iso.world_to_plane(Vector2(unit.position[0], unit.position[1]))
-		if unit.owner == local_player and not unit.has("hole_id") and point.x >= rect.position.x and point.y >= rect.position.y and point.x <= rect.end.x and point.y <= rect.end.y:
+		if unit.owner == local_player and not unit.has("hole_id") and not unit.has("container_id") and point.x >= rect.position.x and point.y >= rect.position.y and point.x <= rect.end.x and point.y <= rect.end.y:
 			ids.append(unit.id)
 	ids.sort()
 	return ids

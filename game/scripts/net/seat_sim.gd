@@ -21,3 +21,6 @@ func issue_command(command: Dictionary) -> Dictionary:
 
 func map_data() -> Dictionary:
 	return _sim.map_data()
+
+func simulation() -> Simulation:
+	return _sim

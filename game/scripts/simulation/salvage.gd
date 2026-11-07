@@ -7,9 +7,8 @@ const Shared = preload("res://scripts/simulation/definitions/shared.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 
 # Zero Hour CreateCrateDie.cpp:69-229: a vehicle killed by a hostile salvager leaves a crate.
-static func on_death(sim: Simulation, victim: Dictionary, killer_id: int) -> void:
+static func on_death(sim: Simulation, victim: Dictionary, killer: Dictionary) -> void:
 	if Registry.kind(victim.kind).get("class", "") != "vehicle": return
-	var killer: Dictionary = Combat.record(sim, killer_id)
 	if killer.is_empty() or not Combat.hostile(sim, killer.owner, victim.owner) or not Registry.kind(killer.kind).has("salvage"): return
 	var crate: Dictionary = Shared.SALVAGE_CRATE
 	var cell := Vector2i(floori(victim.position[0]), floori(victim.position[1]))

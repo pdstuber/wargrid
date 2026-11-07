@@ -7,7 +7,7 @@ const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const Combat = preload("res://scripts/simulation/combat.gd")
 
 func cases() -> Array[Callable]:
-	return [test_scout_car_holds_five, test_enter_and_unload, test_passengers_fire_while_moving, test_passengers_hold_fire_when_flag_off, test_passenger_damage_full_kills, test_passenger_damage_partial_survivors_exit, test_unload_same_tick_as_death, test_full_container_rejects, test_enter_rejections, test_passenger_commands_rejected, test_contained_not_target, test_container_same_tick_cases, test_unload_with_container_move, test_container_removed_while_approaching, test_passengers_stay_in_id_order, test_reissued_enter_accepted, test_pickup_passengers]
+	return [test_scout_car_holds_five, test_enter_and_unload, test_passengers_fire_while_moving, test_passengers_hold_fire_when_flag_off, test_passenger_damage_full_kills, test_passenger_damage_partial_survivors_exit, test_unload_same_tick_as_death, test_full_container_rejects, test_enter_rejections, test_passenger_commands_rejected, test_retaliation_targets_carrier, test_group_move_skips_passengers, test_group_move_skips_late_boarder, test_contained_not_target, test_container_same_tick_cases, test_unload_with_container_move, test_container_removed_while_approaching, test_passengers_stay_in_id_order, test_reissued_enter_accepted, test_pickup_passengers]
 
 func _world() -> RefCounted:
 	var sim = Fixture.world()
@@ -206,6 +206,56 @@ func test_passenger_commands_rejected(runner) -> bool:
 	for payload in [{"type": "move", "entity_ids": [rifle], "target": [9.5, 9.5]}, {"type": "stop", "entity_ids": [rifle]}, {"type": "attack", "entity_ids": [rifle], "target_id": foe}, {"type": "attack_move", "entity_ids": [rifle], "target": [9.5, 9.5]}, {"type": "enter", "entity_ids": [rifle], "target_id": car}]:
 		var result: Dictionary = Fixture.send(sim, payload)
 		runner.check(not result.ok and result.error == "Unit is inside a transport", "CT7 " + payload.type + " names a passenger: " + result.error)
+	return true
+
+func _moved_group(runner, delay: int) -> void:
+	var sim = _world()
+	var car: int = sim.spawn(1, Vector2(5.5, 5.5), "usa_light_vehicle")
+	var boarder: int = sim.spawn(1, Vector2(8.5, 5.5), "usa_rifle_infantry")
+	var walker: int = sim.spawn(1, Vector2(8.5, 9.5), "usa_rifle_infantry")
+	if delay == 0: _load(sim, car, [boarder])
+	else: Fixture.send(sim, {"type": "enter", "entity_ids": [boarder], "target_id": car})
+	var tick: int = sim.snapshot().tick + delay
+	var sent: Dictionary = Fixture.send(sim, {"type": "move", "entity_ids": [boarder, walker], "target": [20.5, 20.5], "tick": tick})
+	runner.check(sent.ok, "CT7b delay %d group move with a boarded member is accepted: %s" % [delay, sent])
+	var boarded_before_due: bool = delay == 0
+	while sim.snapshot().tick <= tick + 2:
+		sim.step()
+		if sim.snapshot().tick < tick and _inside(sim, boarder) == car: boarded_before_due = true
+	runner.check(boarded_before_due and _inside(sim, boarder) == car, "CT7b delay %d the member is inside before the command is due" % delay)
+	runner.check(Fixture.object(sim, walker).order != null, "CT7b delay %d the other member still moves" % delay)
+	runner.check(_results(sim).all(func(r: Dictionary) -> bool: return r.ok), "CT7b delay %d no rejection: %s" % [delay, _results(sim)])
+
+func test_group_move_skips_passengers(runner) -> bool:
+	_moved_group(runner, 0)
+	return true
+
+func test_group_move_skips_late_boarder(runner) -> bool:
+	_moved_group(runner, 150)
+	return true
+
+func test_retaliation_targets_carrier(runner) -> bool:
+	var sim = _world()
+	sim.add_player(3, 0)
+	var car: int = sim.spawn(2, Vector2(15.5, 10.5), "usa_light_vehicle")
+	var rider: int = sim.spawn(2, Vector2(15.5, 12.5), "usa_rifle_infantry")
+	Fixture.send(sim, {"type": "enter", "entity_ids": [rider], "target_id": car, "player": 2})
+	for tick in range(100): sim.step()
+	runner.check(_inside(sim, rider) == car, "CT10 the rider boards")
+	sim._entities[car].combat.next_fire_tick = 1000000
+	var guards: Array = [sim.spawn(1, Vector2(12.5, 12.5), "usa_rifle_infantry"), sim.spawn(1, Vector2(12.5, 13.5), "usa_rifle_infantry"), sim.spawn(1, Vector2(12.5, 11.5), "usa_rifle_infantry")]
+	for id: int in guards: sim._entities[id].combat.repath_tick = 100000 # they have not noticed the car; only retaliation can engage it
+	var rider_max: int = Fixture.object(sim, rider).hp
+	var fired: bool = false
+	var aimed_at_rider: bool = false
+	for tick in range(60):
+		sim.step()
+		if Fixture.object(sim, car).is_empty(): break
+		fired = fired or sim.snapshot().combat_events.any(func(e: Dictionary) -> bool: return e.type == "shot" and e.attacker_id == rider)
+		aimed_at_rider = aimed_at_rider or guards.any(func(id: int) -> bool: return Fixture.object(sim, id).get("combat", {}).get("target_id") == rider)
+	runner.check(fired, "CT10 the passenger shot at the guards")
+	runner.check(not aimed_at_rider and Fixture.object(sim, rider).hp == rider_max, "CT10 retaliation never targets the passenger (hp %d of %d)" % [Fixture.object(sim, rider).hp, rider_max])
+	runner.check(Fixture.object(sim, car).hp < Fixture.object(sim, car).max_hp, "CT10 the guards hit the carrier")
 	return true
 
 func test_contained_not_target(runner) -> bool:

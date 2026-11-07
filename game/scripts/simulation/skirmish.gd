@@ -145,7 +145,8 @@ static func _attack(ctx: Dictionary, state: Dictionary, skip: Dictionary = {}) -
 	_drive_waves(ctx, bot, mine, enemies, skip)
 	_gather(ctx, bot, mine, enemies, skip)
 
-static func _bot(sim: RefCounted, player: int) -> Dictionary:
+static func _bot(seat_or_sim: RefCounted, player: int) -> Dictionary:
+	var sim: RefCounted = seat_or_sim.simulation() if seat_or_sim.has_method("simulation") else seat_or_sim # a seat wrapper is rebuilt every decision
 	if not sim.has_meta(BOT_META): sim.set_meta(BOT_META, {})
 	return sim.get_meta(BOT_META).get_or_add(player, {"since": -1, "waves": []})
 

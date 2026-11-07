@@ -104,9 +104,10 @@ static func _seek(sim: Simulation, unit: Dictionary) -> void:
 		unit.status = "moving"
 	if unit.position == goal: _admit(sim,unit,target)
 
-# Air: lowest id first. Ground: waiters in the order they began waiting, then arrivals by id, so no truck starves.
+# Air: lowest id first, ahead of all ground. Ground: waiters in the order they began waiting, then arrivals by id, so no truck starves.
 static func _ahead(unit: Dictionary, other: Dictionary) -> bool:
-	if not _is_ground(unit): return other.id < unit.id
+	if not _is_ground(unit): return not _is_ground(other) and other.id < unit.id
+	if not _is_ground(other): return true
 	var other_waits: bool = other.collection.phase.begins_with("waiting_")
 	if not unit.collection.phase.begins_with("waiting_"): return other_waits or other.id < unit.id
 	if not other_waits: return false

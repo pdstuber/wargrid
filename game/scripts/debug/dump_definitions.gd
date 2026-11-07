@@ -15,7 +15,7 @@ func _initialize() -> void:
 			out[kind].weapon = profile.weapon
 		else:
 			out[kind].power = record.power
-	for name: String in ["rifle", "cannon"]: out.weapons[name] = Combat.weapon(name)
+	for name: String in ["rifle", "cannon", "scout_gun"]: out.weapons[name] = Combat.weapon(name)
 	for armor: String in ["human", "tank", "builder_vehicle", "light_vehicle", "structure", "helicopter"]:
 		out.armor[armor] = {"small_arms": Combat.armor_percent(armor, "small_arms"), "armor_piercing": Combat.armor_percent(armor, "armor_piercing")}
 	print("WARGRID_DEFINITIONS ", JSON.stringify(out))

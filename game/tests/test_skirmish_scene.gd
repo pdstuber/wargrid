@@ -115,6 +115,10 @@ func test_match_hud_and_restart(runner) -> bool:
 	main._refresh()
 	var text: String = main.get_node("HUD/Status").text
 	runner.check(text.contains("Credits") and text.contains("Battle Tank #" + str(ids.tank)) and text.contains("HP 480/480") and text.contains("guard"), "K4 credits, kind, HP and order in the HUD")
+	var setup: Dictionary = main.simulation.snapshot()
+	setup.match.status = "setup"
+	main._refresh_hud(setup)
+	runner.check(main.get_node("HUD/Result").text.is_empty() and not main.get_node("HUD/Restart").visible, "K4 the setup phase shows no result")
 	main.simulation.remove_object(3)
 	main.simulation.remove_object(4)
 	main._physics_process(0.0)

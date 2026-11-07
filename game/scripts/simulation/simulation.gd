@@ -217,8 +217,9 @@ func _validate(command: Dictionary, due: bool = false) -> String:
 		if found is String: return found
 		live = found
 		if live.is_empty(): return "No units left" if due else "Missing entity or wrong owner"
-		if live.any(func(id: int) -> bool: return _entities[id].has("hole_id")): return "Unit cannot be commanded"
-		if live.any(func(id: int) -> bool: return _entities[id].has("container_id")): return "Unit is inside a transport"
+		var usable: Array = _commandable(live)
+		if usable.is_empty(): return "Unit cannot be commanded" if live.any(func(id: int) -> bool: return _entities[id].has("hole_id")) else "Unit is inside a transport"
+		live = usable
 	if command.type == "move": return _validate_target(command,due)
 	if command.type in ["stop","choose_faction"]: return ""
 	if command.type == "enter": return Containers.enter_error(self,command,live)
@@ -298,6 +299,9 @@ func _live_ids(player: int, ids: Array) -> Variant:
 		live.append(id)
 	return live
 
+func _commandable(ids: Array) -> Array:
+	return ids.filter(func(id: int) -> bool: return not _entities[id].has("hole_id") and not _entities[id].has("container_id"))
+
 func _armed(ids: Array) -> Array:
 	return ids.filter(func(id: int) -> bool: return _entities[id].combat != null)
 
@@ -356,7 +360,7 @@ func _apply_orders() -> void:
 			_command_results.append({"tick":_tick,"player":command.player,"sequence":command.sequence,"ok":error.is_empty(),"error":error})
 		if not error.is_empty(): continue
 		if command.has("entity_ids"):
-			command.entity_ids = _live_ids(command.player,command.entity_ids)
+			command.entity_ids = _commandable(_live_ids(command.player,command.entity_ids))
 			if command.type == "attack": command.entity_ids = _armed(command.entity_ids)
 		if command.type in ["build","resume_build"]:
 			command.entity_ids = [command.builder_id]

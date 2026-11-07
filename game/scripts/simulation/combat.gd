@@ -320,7 +320,7 @@ static func fire(sim: Simulation, unit_ids: Array[int], moved_ids: Array[int]) -
 		var combat: Dictionary = unit.combat
 		if combat.target_id == null or sim._tick < combat.next_fire_tick: continue
 		var target: Dictionary = record(sim, combat.target_id)
-		if target.is_empty() or not hostile(sim, unit.owner, target.owner) or not _in_range(sim, unit, target): continue
+		if not valid_target(sim, unit.owner, combat.target_id) or not _in_range(sim, unit, target): continue
 		var weapon: Dictionary = weapon_of(unit)
 		_hit(shots, damage, sim, unit_id, target, weapon, false)
 		if weapon.primary_radius > 0.0: _splash(shots, damage, sim, unit, target, weapon)
@@ -329,6 +329,7 @@ static func fire(sim: Simulation, unit_ids: Array[int], moved_ids: Array[int]) -
 	sim._combat_events.append_array(shots)
 	var dead: Array = damage.keys().filter(func(id: int) -> bool: return record(sim, id).hp <= damage[id])
 	var killers: Dictionary = _killers(shots, _hp_of(sim, dead))
+	for id: Variant in killers: killers[id] = record(sim, killers[id]) # rows outlive their removal in this volley
 	for id: Variant in damage:
 		var hit: Dictionary = record(sim, id)
 		hit.hp = maxi(0, hit.hp - damage[id])
@@ -562,6 +563,7 @@ static func _retaliate_trigger(sim: Simulation, shots: Array[Dictionary]) -> voi
 	for shot in shots:
 		var victim: Dictionary = record(sim, shot.target_id)
 		var attacker: Dictionary = record(sim, shot.attacker_id)
+		if attacker.has("container_id"): attacker = record(sim, attacker.container_id) # a passenger cannot be targeted, its carrier can
 		if victim.is_empty() or attacker.is_empty() or is_ai(sim, victim.owner) or not hostile(sim, victim.owner, attacker.owner): continue
 		if distance_squared(_victim_centre(attacker), victim) > RETALIATION_DISTANCE * RETALIATION_DISTANCE: continue
 		if not built:

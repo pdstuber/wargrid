@@ -7,7 +7,7 @@ const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
 
 func cases() -> Array[Callable]:
-	return [test_weapon_tiers_share_range, test_crate_drop_rules, test_killer_is_first_lethal_shot, test_crate_expires, test_weapon_salvager_tiers, test_money_salvagers, test_salvage_same_tick_cases, test_pickup_splash_vs_infantry]
+	return [test_weapon_tiers_share_range, test_crate_drop_rules, test_killer_is_first_lethal_shot, test_crate_expires, test_weapon_salvager_tiers, test_money_salvagers, test_salvage_same_tick_cases, test_pickup_splash_vs_infantry, test_crate_drops_when_killer_dies_same_volley]
 
 func _world() -> RefCounted:
 	var sim = Fixture.world()
@@ -260,4 +260,18 @@ func test_pickup_splash_vs_infantry(runner) -> bool:
 	var shots: Array = _shots(rocket, launcher)
 	runner.check(shots.size() == 2 and shots.any(func(s: Dictionary) -> bool: return s.target_id == beside and s.splash) and not shots.any(func(s: Dictionary) -> bool: return s.target_id == apart), "Sv8 the rocket lands on the target's centre: the near neighbour is hit, the far one is not")
 	runner.check(rocket.snapshot().rng == seed_before, "Sv8 the rocket draws no random number against infantry")
+	return true
+
+func test_crate_drops_when_killer_dies_same_volley(runner) -> bool:
+	var sim = _world()
+	var pickup: int = sim.spawn(1, Vector2(10.5, 10.5), "frc_light_vehicle")
+	var foe: int = sim.spawn(2, Vector2(10.5, 13.5), "usa_light_vehicle")
+	for id: int in [pickup, foe]: sim._entities[id].hp = 1
+	_attack(sim, [pickup], foe)
+	_attack(sim, [foe], pickup)
+	for tick in range(40):
+		sim.step()
+		if not sim._entities.has(foe): break
+	runner.check(not sim._entities.has(pickup) and not sim._entities.has(foe), "Sv9 both vehicles died on one tick")
+	runner.check(_crates(sim).size() == 1, "Sv9 the lower-id killer died with its victim and the crate still drops: %s" % [_crates(sim)])
 	return true

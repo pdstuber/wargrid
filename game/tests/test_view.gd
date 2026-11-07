@@ -10,7 +10,7 @@ const CombatFixture = preload("res://tests/combat_fixture.gd")
 const MovementWorkload = preload("res://scripts/debug/movement_workload.gd")
 
 func cases() -> Array[Callable]:
-	return [test_pick, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_heading_mark_layout,test_depth_order_matches_comparator,test_battery_shot_line,test_battery_target_line,test_building_icons,test_building_label_has_no_kind_id,test_horde_marks,test_rebuild_laborer_unselectable, test_crate_marks_frc_only]
+	return [test_pick, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_heading_mark_layout,test_depth_order_matches_comparator,test_battery_shot_line,test_battery_target_line,test_building_icons,test_building_label_has_no_kind_id,test_horde_marks,test_rebuild_laborer_unselectable, test_crate_marks_frc_only, test_passengers_not_pickable]
 
 func test_pick(runner) -> bool:
 	var view = View.new()
@@ -312,4 +312,23 @@ func test_crate_marks_frc_only(runner) -> bool:
 			var world: Vector2 = Iso.plane_to_world(mark)
 			runner.check(Vector2i(world.floor()) in [Vector2i(4, 7), Vector2i(12, 3)] and absf(world.x - floorf(world.x) - 0.5) < 0.01 and absf(world.y - floorf(world.y) - 0.5) < 0.01, "V10 a mark lies at the centre of its cell")
 		view.free()
+	return true
+
+func test_passengers_not_pickable(runner) -> bool:
+	var view = View.new()
+	var sim = CombatFixture.world()
+	sim.add_player(1, 1000)
+	sim.add_player(2, 1000)
+	var car: int = sim.spawn(1, Vector2(10.5, 10.5), "usa_light_vehicle")
+	var rider: int = sim.spawn(1, Vector2(12.5, 10.5), "usa_rifle_infantry")
+	var foe_car: int = sim.spawn(2, Vector2(20.5, 20.5), "usa_light_vehicle")
+	var foe_rider: int = sim.spawn(2, Vector2(22.5, 20.5), "usa_rifle_infantry")
+	for pair: Array in [[rider, car], [foe_rider, foe_car]]:
+		sim._entities[pair[0]].container_id = pair[1]
+		sim._entities[pair[0]].position = sim._entities[pair[1]].position.duplicate()
+	view.set_state(sim.snapshot(), [])
+	var box := Rect2(Iso.world_to_plane(Vector2(10.5, 10.5)) - Vector2(60, 60), Vector2(120, 120))
+	runner.check(view.pick_entities(box) == [car], "V10 a drag box over a loaded transport selects the carrier only: %s" % [view.pick_entities(box)])
+	runner.check(view.pick_target(Iso.world_to_plane(Vector2(20.5, 20.5)) + Vector2(0, -8), 1) == foe_car, "V10 right-click on an enemy transport targets the carrier")
+	view.free()
 	return true

@@ -32,7 +32,8 @@ OBJECTS = {
     "usa_supply_center": "AmericaSupplyCenter",
     "usa_factory": "AmericaWarFactory",
 }
-WEAPONS = {"rifle": "RangerAdvancedCombatRifle", "cannon": "CrusaderTankGun"}
+WEAPONS = {"rifle": "RangerAdvancedCombatRifle", "cannon": "CrusaderTankGun", "scout_gun": "HumveeGun"}
+DAMAGE_TYPE_NAMES = {"comanche_vulcan": "rapid_fire"}
 ARMORS = {
     "HumanArmor": "human",
     "TankArmor": "tank",
@@ -42,9 +43,7 @@ ARMORS = {
     "ChinookArmor": "helicopter",
 }
 DAMAGE_TYPES = ["SMALL_ARMS", "ARMOR_PIERCING"]
-DEPARTURES = {
-    "usa_light_vehicle weapon": "legacy unit is unarmed; Humvee is not in the M4 roster",
-}
+DEPARTURES: dict[str, str] = {}
 NOT_MODELLED = {
     "Locomotor": ["SpeedDamaged", "Acceleration", "TurnRate"],
     "Weapon": ["PrimaryDamageRadius", "ScatterRadiusVsInfantry"],
@@ -165,7 +164,7 @@ def reference_rows(files: dict, wargrid: dict, kinds: list) -> tuple:
         ours, weapon = wargrid["weapons"][name], _find(files, "Weapon", WEAPONS[name])
         rows += [
             (name + " damage", round(float(field(weapon, "PrimaryDamage")) * 1000), ours["damage"]),
-            (name + " damage_type", field(weapon, "DamageType").lower(), ours["damage_type"]),
+            (name + " damage_type", _damage_type(weapon), ours["damage_type"]),
             (name + " range", float(field(weapon, "AttackRange")) / UNITS_PER_CELL, ours["range"]),
             (name + " delay_ticks", ms_to_ticks(float(field(weapon, "DelayBetweenShots"))), ours["delay_ticks"]),
             (name + " clip_size", int(field(weapon, "ClipSize")), ours["clip_size"]),
@@ -187,6 +186,11 @@ def reference_rows(files: dict, wargrid: dict, kinds: list) -> tuple:
                 )
             )
     return [(*row, DEPARTURES.get(row[0])) for row in rows], notes
+
+
+def _damage_type(weapon: str) -> str:
+    name = field(weapon, "DamageType").lower()
+    return DAMAGE_TYPE_NAMES.get(name, name)
 
 
 def wargrid_definitions() -> dict:

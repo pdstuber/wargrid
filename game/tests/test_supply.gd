@@ -5,7 +5,7 @@ const Fixture = preload("res://tests/economy_fixture.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 
 func cases() -> Array[Callable]:
-	return [test_source_and_gather_validation,test_dock_timing,test_partial_load_and_conservation,test_dock_competition_and_lookup,test_collection_interruptions,test_dock_loss_recovery,test_ground_dock_cell,test_ground_dock_queue,test_ground_admit_first_waiter_first,test_ground_dock_no_starvation,test_ground_dock_full_perimeter,test_truck_timing,test_dock_loss_recovery_ground,test_ground_truck_recovers_after_blocked_path,test_ground_dock_skips_unwalkable_and_unreachable,test_laborer_timing,test_laborer_docks_share_fairly]
+	return [test_source_and_gather_validation,test_dock_timing,test_partial_load_and_conservation,test_dock_competition_and_lookup,test_collection_interruptions,test_dock_loss_recovery,test_ground_dock_cell,test_ground_dock_queue,test_ground_admit_first_waiter_first,test_ground_dock_no_starvation,test_ground_dock_full_perimeter,test_truck_timing,test_dock_loss_recovery_ground,test_ground_truck_recovers_after_blocked_path,test_ground_dock_skips_unwalkable_and_unreachable,test_laborer_timing,test_laborer_docks_share_fairly,test_mixed_waiters_do_not_deadlock]
 
 func ready(runner, boxes: int = 8) -> Dictionary:
 	var sim = Fixture.make_world(50000)
@@ -541,4 +541,26 @@ func test_laborer_docks_share_fairly(runner) -> bool:
 	var counts: Array = loads.values()
 	runner.check(counts.min() > 0 and counts.max() - counts.min() <= 8,"Lb2 every laborer loads and loads stay level, got " + str(counts))
 	runner.check(stacked == 0,"Lb2 on no tick do two laborers dock on the same cell")
+	return true
+
+func test_mixed_waiters_do_not_deadlock(runner) -> bool:
+	var sim = Fixture.make_world()
+	var source: int = sim.add_supply_source(Vector2i(24,4),30)
+	var ground: int = truck(sim,Vector2(27.5,5.5))
+	var air: int = sim.spawn(1,Vector2(25.5,5.5),"usa_collector")
+	gather(sim,[ground,air],source)
+	sim.step()
+	var waiting: Dictionary = {ground: {"remaining_ticks": 40, "dock": [27,5]}, air: {"remaining_ticks": 0}}
+	for id: int in waiting:
+		var collection: Dictionary = sim._entities[id].collection
+		collection.phase = "waiting_source"
+		collection.target_id = source
+		for key: String in waiting[id]: collection[key] = waiting[id][key]
+	sim._entities[ground].position = [27.5,5.5]
+	sim._entities[air].position = [25.5,5.5]
+	for id: int in waiting: sim._stop_unit(sim._entities[id])
+	sim._sources[source].active_collector_id = null
+	for index in range(5): sim.step()
+	var loading: Array = [ground, air].filter(func(id: int) -> bool: return Fixture.object(sim,id).collection.phase == "loading")
+	runner.check(loading.size() == 1 and sim._sources[source].active_collector_id == loading[0],"Gd9 a ground and an air waiter on one pile: exactly one loads (%s)" % [loading])
 	return true

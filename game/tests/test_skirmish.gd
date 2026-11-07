@@ -7,9 +7,12 @@ const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
 const Fixture = preload("res://tests/combat_fixture.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
+const SeatSim = preload("res://scripts/net/seat_sim.gd")
+const Client = preload("res://scripts/net/headless_client.gd")
+const Lockstep = preload("res://scripts/net/lockstep.gd")
 
 func cases() -> Array[Callable]:
-	return [test_skirmish_initial_state, test_roster_production, test_bot_cycles_unit_list, test_bot_reads_seat_faction, test_bot_plays_china, test_bot_plays_frc, test_bot_builds_tunnel_hub_never_enters, test_bot_keeps_one_builder_six_gatherers, test_bot_leaves_rebuild_alone, test_opponent_pays_and_retries, test_opponent_attack_policy, test_opponent_defends_base, test_defence_skips_busy_units, test_bot_ignores_contained_units, test_match_lifecycle, test_restart_state]
+	return [test_skirmish_initial_state, test_roster_production, test_bot_cycles_unit_list, test_bot_reads_seat_faction, test_bot_plays_china, test_bot_plays_frc, test_bot_builds_tunnel_hub_never_enters, test_bot_keeps_one_builder_six_gatherers, test_bot_leaves_rebuild_alone, test_opponent_pays_and_retries, test_opponent_attack_policy, test_opponent_defends_base, test_defence_skips_busy_units, test_bot_ignores_contained_units, test_match_lifecycle, test_restart_state, test_bot_state_survives_seat_wrapper, test_headless_client_rejects_unknown_faction]
 
 func _owned(items: Array, player: int) -> Array:
 	return items.filter(func(item: Dictionary) -> bool: return item.owner == player)
@@ -455,4 +458,25 @@ func test_bot_builds_tunnel_hub_never_enters(runner) -> bool:
 			if building.owner == 2 and building.completed and building.kind != "frc_command_center" and not order.has(building.kind): order.append(building.kind)
 	runner.check(order.slice(0, 4) == ["frc_supply_center", "frc_barracks", "frc_factory", "frc_defence"], "Fb4 an FRC bot completes the cache, barracks, factory and tunnel hub in order, got " + str(order))
 	runner.check(not inside and not tunnel, "Fb4 the bot orders nothing into the hub: no container_id, no tunnel key")
+	return true
+
+func test_bot_state_survives_seat_wrapper(runner) -> bool:
+	var sim = Skirmish.create()
+	var lockstep = Lockstep.new(2, [1, 2] as Array[int], 2)
+	var first: Dictionary = Skirmish._bot(SeatSim.new(sim, lockstep), 2)
+	first.since = 77
+	runner.check(Skirmish._bot(SeatSim.new(sim, lockstep), 2).since == 77, "SK20 a fresh seat wrapper sees the bot state of the earlier one")
+	runner.check(Skirmish._bot(sim, 2).since == 77, "SK20 the real simulation holds the same bot state")
+	return true
+
+func test_headless_client_rejects_unknown_faction(runner) -> bool:
+	var client = Client.new()
+	client._args = {}
+	runner.check(client._faction_error() == "", "SK21 no --faction falls back to the default")
+	for faction: String in Registry.Factions.FACTIONS:
+		client._args = {"faction": faction}
+		runner.check(client._faction_error() == "", "SK21 --faction %s is accepted" % faction)
+	client._args = {"faction": "gla"}
+	runner.check(client._faction_error().contains("'gla'") and client._faction_error().contains("usa"), "SK21 an unknown --faction names the value and the valid ones: %s" % client._faction_error())
+	client.free()
 	return true

@@ -159,6 +159,58 @@ class ReferenceTests(unittest.TestCase):
             )
             self.assertIn("DIFFERS", out.getvalue())
 
+    def test_scout_car_weapon_is_compared(self):
+        files = {
+            "objects": """Object AmericaVehicleHumvee
+  Weapon = PRIMARY HumveeGun
+  Armor = HumveeArmor
+  BuildCost = 700
+  BuildTime = 10.0
+  MaxHealth = 240.0
+  Locomotor = SET_NORMAL HumveeLocomotor
+End
+""",
+            "weapons": """Weapon HumveeGun
+  PrimaryDamage = 10.0
+  DamageType = COMANCHE_VULCAN
+  AttackRange = 150.0
+  DelayBetweenShots = 200
+  ClipSize = 0
+  ClipReloadTime = 0
+End
+""",
+            "armor": "Armor HumveeArmor\n  Armor = SMALL_ARMS 50%\nEnd\n",
+            "locomotor": "Locomotor HumveeLocomotor\n  Speed = 60\nEnd\n",
+        }
+        gun = {
+            "damage": 10000,
+            "damage_type": "rapid_fire",
+            "range": 6.0,
+            "delay_ticks": 6,
+            "clip_size": 0,
+            "reload_ticks": 0,
+        }
+        values: dict[str, Any] = {
+            "usa_light_vehicle": {
+                "cost": 700,
+                "ticks": 300,
+                "max_hp": 240000,
+                "armor": "light_vehicle",
+                "speed": 2.4,
+                "weapon": "scout_gun",
+            },
+            "weapons": {"scout_gun": gun},
+            "armor": {"light_vehicle": {"small_arms": 50, "armor_piercing": 100}},
+        }
+        results = ref.compare(ref.reference_rows(files, values, ["usa_light_vehicle"])[0])
+        by_label = {row[0]: row[3] for row in results}
+        self.assertEqual(by_label["usa_light_vehicle weapon"], "match")
+        self.assertEqual(by_label["scout_gun damage_type"], "match")
+        self.assertNotIn("DIFFERS", by_label.values())
+        gun["damage"] = 5000
+        results = ref.compare(ref.reference_rows(files, values, ["usa_light_vehicle"])[0])
+        self.assertEqual({row[0]: row[3] for row in results}["scout_gun damage"], "DIFFERS")
+
     def test_hash_pin_rejects_other_data(self):
         with tempfile.TemporaryDirectory() as directory:
             archive = Path(directory) / "INIZH.big"
