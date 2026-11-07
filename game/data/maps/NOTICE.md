@@ -1,9 +1,12 @@
 # Map notice
 
-`ashfall.json` is converted by `tools/zh_map/convert.py` from an Electronic Arts map source and is a modified version, not the original map. Wargrid's name for it is Ashfall.
+`ashfall.json`, `dry_wells.json` and `broken_crown.json` are converted by `tools/zh_map/convert.py` from Electronic Arts map sources and are modified versions, not the original maps. Wargrid's names for them are Ashfall, Dry Wells and Broken Crown.
 
 - Copyright 2025 Electronic Arts Inc.
-- Source: `Zero Hour/Maps/official/Twilight Flame/Twilight Flame.map` in https://github.com/ElectronicArts/CnC_Modding_Support, revision `3aad8e4`.
+- Sources, all in https://github.com/ElectronicArts/CnC_Modding_Support at revision `3aad8e4`:
+  - Ashfall: `Zero Hour/Maps/official/Twilight Flame/Twilight Flame.map`
+  - Dry Wells: `Zero Hour/Maps/official/Tournament Desert/Tournament Desert.map`
+  - Broken Crown: `Zero Hour/Maps/official/Fallen Empire/Fallen Empire.map`
 - License: GNU GPL v3, with the additional terms below, as released by Electronic Arts in that repository's `LICENSE.md`.
 
 ## ADDITIONAL TERMS per GNU GPL Section 7

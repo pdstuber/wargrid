@@ -1,6 +1,6 @@
 """Convert an EA Zero Hour .map (GPL, CnC_Modding_Support) into a Wargrid map JSON.
 
-Format evidence: docs/reference/m6-map-and-feel.md. Usage: convert.py <map> <out.json>
+Format evidence: docs/reference/m6-map-and-feel.md. Usage: convert.py <map> <out.json> <name>
 """
 
 import collections
@@ -19,14 +19,13 @@ CELL = 25.0
 SAMPLE = 10.0
 HEIGHT_SCALE = 0.625
 CLIFF_STEP = 9.8
-NAME = "Ashfall"
 NOTICE = (
     "Converted from an Electronic Arts map source (Copyright 2025 Electronic Arts Inc., "
     "GPL-3.0 with EA's additional terms). Modified; not the original. "
     "Terms, source path and revision: game/data/maps/NOTICE.md."
 )
 # StartingBoxes in object/civilianbuilding.ini, Object SupplyDock (INIZH.big); no map override.
-BOXES = {"SupplyDock": 400}
+BOXES = {"SupplyDock": 400}  # SupplyPileSmall (50) waits for per-source footprints, see docs/reference/more-maps.md
 FOOTPRINTS = (
     ("power_plant", 2),
     ("supply_center", 3),
@@ -182,8 +181,8 @@ def _read_water(c, version):
         if version >= 3:
             c.take("i")
         pts = [(c.take("i"), c.take("i"), c.take("i")) for _ in range(c.take("i"))]
-        if water or river:
-            out.append([(x, y) for x, y, _ in pts])
+        if (water or river) and pts:
+            out.append((pts[0][2], [(x, y) for x, y, _ in pts]))  # every point of a polygon shares one height
     return out
 
 
@@ -195,8 +194,14 @@ def _inside(poly, x, y):
     return hit
 
 
+def _ground(raw, x, y):
+    i = min(int(x // SAMPLE) + raw["border"], raw["width"] - 1)
+    j = min(int(y // SAMPLE) + raw["border"], raw["height"] - 1)
+    return raw["heights"][j * raw["width"] + i] * HEIGHT_SCALE
+
+
 def _wet(raw, x, y):
-    return any(_inside(p, x, y) for p in raw["water_polygons"])
+    return any(_inside(p, x, y) and _ground(raw, x, y) < level for level, p in raw["water_polygons"])
 
 
 def _overlap(a0, a1, b0, b1):
@@ -471,7 +476,7 @@ def report(raw, out):
 def main(argv):
     raw = load(argv[1])
     try:
-        out = convert(raw, NAME, NOTICE)
+        out = convert(raw, argv[3], NOTICE)
     except ConvertError as e:
         print(f"convert failed: {e}", file=sys.stderr)
         return 1
