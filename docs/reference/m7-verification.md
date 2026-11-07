@@ -805,3 +805,7 @@ Plan: [parity-harness-improvements](parity-harness-improvements.md) steps 1-6; t
 2. A rendered benchmark rerun is still required by AGENTS because presentation changed (terrain cache, 4x5 piles, label order, pick_source). Batch it with the playtest; needs the user's go-ahead (opens a window).
 3. The edge margin could be 2 cells (closer to Zero Hour's 1.2; the user chose 1; both maps pass at 2).
 4. The usa/china load/unload split between pile and depot is a modelling choice: the 5 % parity rows constrain the cycle sum only.
+
+## Rendered rerun (2026-11-07, tree: main 3b6b9f1, Apple M6)
+
+Rendered `movement_benchmark.tscn` passed on HEAD and on two earlier trees (741bfda, b7c9ae3): `RENDERED BENCHMARK PASSED 3`, exit 0, frame p95 under 16.7 ms everywhere. The tick p95 on open and dense is about 10 ms on HEAD (and on b7c9ae3 dense) against about 3 ms before the terrain cache (741bfda); the medians are unchanged. Single runs, cause unexplained, the terrain cache is the suspect; no rendered tick gate; recorded in the ledger. User decision: record and push, the performance spike profiles it. This completes the rendered-rerun item of the exit gate; CI, `compare_local_traces.sh` and the user's playtest are still pending.
