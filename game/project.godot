@@ -3,6 +3,11 @@ config_version=5
 [application]
 config/name="Wargrid"
 config/version="0.6.0-rc.1"
+config/icon="res://icon.png"
+boot_splash/image="res://icon.png"
+boot_splash/use_filter=false
+boot_splash/stretch_mode=0
+boot_splash/bg_color=Color(0.3019608, 0.3019608, 0.3019608, 1)
 run/main_scene="res://scenes/launcher.tscn"
 run/main_loop_type.wargrid_tests="WargridTestRunner"
 run/main_loop_type.wargrid_bench="WargridBenchRunner"

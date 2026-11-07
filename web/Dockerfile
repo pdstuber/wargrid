@@ -2,6 +2,7 @@ FROM alpine:3.22 AS compress
 RUN apk add --no-cache brotli
 WORKDIR /site
 COPY site/ .
+COPY og.png .
 # Precompress once at build time: the 40 MB wasm would otherwise be recompressed on every request.
 RUN for f in index.wasm index.pck index.js index.html; do brotli -k -q 11 "$f" && gzip -k -9 "$f"; done
 

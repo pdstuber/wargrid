@@ -39,3 +39,18 @@ Next exact action: the user makes the repo public, creates the production Enviro
 - Licence wording: EA's `CnC_Modding_Support` `LICENSE.md` (read via `gh api`, revision `3aad8e4`) says "GPL V3" without "or later", so the map notice, `convert.py` and `ashfall.json` now say GPL-3.0; `refpack.py` keeps "or later", matching EA's `refdecode.cpp` header.
 - Wording and privacy: "clone" dropped from AGENTS.md and the verification plan; README opens with what Wargrid is, how to play, status and the AI-agent workflow, and its licence section no longer claims "no EA data"; home paths written as `~/`; a friend's town removed. History still holds the old text. README screenshot `docs/images/skirmish.png` (user request, 2026-11-07): `main` plus R1 in a 1280×720 window, bot against bot on the skirmish map at tick 6000, taken by a scratch script outside the repo.
 - History scan of all 282 commits: author email is the noreply address only, no co-author trailers, no secrets, no binary files ever, no EA files.
+
+## Task 5 rehearsal (2026-11-07, tag `v0.6.0-rc.1` on `b70925c`)
+
+- Steps 1-2: `production` Environment with the user as required reviewer (self-review allowed), tag rule `v*`, Environment secrets `FLY_API_TOKEN_RELAY` and `FLY_API_TOKEN_WEB` (names checked, values never seen); version `0.6.0` picked by the user, suite 277 / 112765 / 0 on `0.6.0-rc.1`.
+- Step 3: branch CI run 42359699690 green (7 jobs); release run 42360626663: `version`, all `tests` jobs including `actions-lint`, and `build` green, so the macOS export from the Linux runner works; `publish` waited for approval.
+- Step 4: approved by the user; fly installs and both deploys skipped (prerelease); prerelease https://github.com/pdstuber/wargrid/releases/tag/v0.6.0-rc.1 with Linux 28,970,230, macOS 61,011,510 and Windows 38,699,279 bytes.
+- Step 5: each zip lists `LICENSE`, `NOTICE.md`, `GODOT_LICENSES.txt`, `README.txt`; README links `tree/v0.6.0-rc.1`; the macOS app is ad-hoc signed (`io.github.pdstuber.wargrid`) and `--headless --quit-after 120` exits 0 with no `ERROR` lines.
+- Open: step 6 (real release). The builds still carry Godot's icon; the logo design (`docs/superpowers/specs/2026-11-07-logo-design.md`) lands first.
+
+## Logo (2026-11-07, uncommitted on `b70925c`, plan `docs/superpowers/plans/2026-11-07-logo.md`)
+
+- Suite 279 / 112777 / 0 (`TESTS PASSED 112777`, adds LG1 icon = master ×16 nearest and LG2 settings); lint, actionlint and warnings (75 files, `test_logo.gd` included once staged) pass.
+- Fresh review (Opus): 1 important fixed (the boot splash stretched to the full window and browser; now `stretch_mode=0`, Web shows `fullsize--false`), 5 minors deferred.
+- Local exports with `0.6.0-rc.1`: Web `index.html` has the `og:image` tag, and `index.icon.png` (512) and `index.apple-touch-icon.png` (180) are navy `26364a` at master pixel (8, 8); macOS `icon.icns` 1024 px has the exact outline/rim edge at x 159/160 (nearest-neighbour); Windows exe gains a 16-512 px icon set (512 px navy at (136, 136)).
+- Windows warns `Invalid version number "0.6.0-rc.1"` with `modify_resources=true`: the icon still embeds; only version-info strings are skipped for prerelease versions (Windows wants numeric versions). `0.6.0` is valid.

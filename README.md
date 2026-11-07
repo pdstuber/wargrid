@@ -1,5 +1,7 @@
 # Wargrid
 
+<p align="center"><img src="game/icon.png" width="128" alt="Wargrid emblem: a navy shield with an isometric desert grid tile and blue and red chevrons"></p>
+
 Wargrid is an isometric real-time strategy game written in Godot 4 and typed GDScript. Its design follows Command & Conquer: Generals – Zero Hour (factions, base building, supply economy, combat feel and pacing); the code is Wargrid's own and leaves out the original's known bugs and slow paths. Graphics are placeholder shapes drawn in code for now; pixel art is the plan. Not affiliated with or endorsed by Electronic Arts, see [License](#license).
 
 ![Two bots fight on the skirmish map: blue and red bases at opposite corners, supply piles beside them, and both armies clashing in the middle](docs/images/skirmish.png)
@@ -177,6 +179,6 @@ These sibling projects and backups are research inputs, not future build/test de
 
 ## License
 
-Code: GPL-3.0-or-later, see [LICENSE](LICENSE). The Ashfall map (`game/data/maps/ashfall.json`) is converted from Electronic Arts' GPL-3.0 map source and keeps EA's copyright line and additional terms, see the [map notice](game/data/maps/NOTICE.md). Unit and weapon numbers were researched from EA's GPL source and the retail game's configuration; no EA files, art, audio or text are copied. Wargrid is not affiliated with or endorsed by Electronic Arts; Command & Conquer is a trademark of Electronic Arts Inc. and is named only to describe the inspiration.
+Code and the Wargrid logo (`game/art/logo-32.png` and the sizes derived from it): GPL-3.0-or-later, see [LICENSE](LICENSE). The Ashfall map (`game/data/maps/ashfall.json`) is converted from Electronic Arts' GPL-3.0 map source and keeps EA's copyright line and additional terms, see the [map notice](game/data/maps/NOTICE.md). Unit and weapon numbers were researched from EA's GPL source and the retail game's configuration; no EA files, art, audio or text are copied. Wargrid is not affiliated with or endorsed by Electronic Arts; Command & Conquer is a trademark of Electronic Arts Inc. and is named only to describe the inspiration.
 
-Released zips and the web build carry `LICENSE`, the map notice and Godot's license notices (`GODOT_LICENSES.txt`); the launcher shows the license and the source link. Licence for original art and audio: undecided.
+Released zips and the web build carry `LICENSE`, the map notice and Godot's license notices (`GODOT_LICENSES.txt`); the launcher shows the license and the source link. Licence for other original art and audio: undecided.

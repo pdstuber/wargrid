@@ -115,6 +115,7 @@ jobs:
         run: |
           flyctl deploy "$PWD/web" -c "$PWD/web/fly.toml" -a wargrid-web --dockerfile "$PWD/web/Dockerfile" --ha=false
           curl -fsS --retry 10 --retry-delay 6 --retry-all-errors https://wargrid.pdstuber.dev/health
+          curl -fsSI https://wargrid.pdstuber.dev/og.png > /dev/null
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
