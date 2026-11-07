@@ -17,11 +17,39 @@ from typing import Any
 FPS = 30
 TRACES = Path.home() / "CnC/parity/traces"
 
+# name, top speed, tolerance, turn rate (deg/s)
+CHINA_MOVERS = [
+    ("redguard", 25, 3, 500),
+    ("tankhunter", 20, 2, 500),
+    ("battlemaster", 25, 3, 180),
+    ("gattlingtank", 40, 4, 180),
+    ("cndozer", 30, 3, 90),
+    ("truck", 40, 4, 90),
+]
+
+FRC_MOVERS = [
+    ("worker", 25, 3, 500),
+    ("rebel", 20, 2, 500),
+    ("tunneldefender", 20, 2, 500),
+    ("technical", 90, 9, 180),
+    ("scorpion", 40, 4, 180),
+]
+
 # scenario -> [(metric, Wargrid value, tolerance or None, note)]
 EXPECT: dict[str, Any] = {
     "move_ranger": [("top_speed", 20, 2, "0.8 cells/s"), ("accel", 100, None, "Wargrid instant; INI 100")],
     "move_crusader": [("top_speed", 30, 3, "1.2 cells/s"), ("accel", 1000, None, "Wargrid instant; INI 1000")],
     "move_dozer": [("top_speed", 30, 3, "1.2 cells/s"), ("accel", 30, None, "Wargrid instant; INI 30")],
+    "move_rocket": [("top_speed", 20, 2, "0.8 cells/s"), ("accel", 100, None, "Wargrid instant; INI value unchecked")],
+    "move_scout": [("top_speed", 75, 7, "3.0 cells/s"), ("accel", 1000, None, "Wargrid instant")],
+    "turn_rocket": [("turn_rate", 500, None, "Wargrid instant; 16.7 deg/tick")],
+    "turn_scout": [("turn_rate", 180, None, "Wargrid instant; 6 deg/tick")],
+    "range_rocket": [("first_shot_distance", 175, 10, "7 cells centre to centre")],
+    "range_scout": [("first_shot_distance", 150, 10, "6 cells centre to centre")],
+    "range_battery": [("first_shot_distance", 225, 10, "9 cells centre to centre")],
+    "reach_rocket": [("farthest_fire", 175, 10, "7 cells centre to centre")],
+    "reach_scout": [("farthest_fire", 150, 10, "6 cells centre to centre")],
+    "reach_battery": [("farthest_fire", 225, 10, "9 cells centre to centre")],
     "turn_ranger": [("turn_rate", 500, None, "Wargrid instant; INI 500")],
     "turn_crusader": [("turn_rate", 180, None, "Wargrid instant; INI 180")],
     "turn_dozer": [("turn_rate", 90, None, "Wargrid instant; INI 90")],
@@ -31,8 +59,44 @@ EXPECT: dict[str, Any] = {
     "reach_crusader": [("farthest_fire", 150, 10, "6 cells centre to centre; ZH stationary maximum")],
     "rof_crusader": [("shot_interval", 60, 1, "DelayBetweenShots 2000 ms")],
     "burst_ranger": [("burst_pattern", "3,3,21", 1, "delay 3, clip 3, reload 21")],
+    "rof_rocket": [("shot_interval", 30, 1, "DelayBetweenShots 1000 ms")],
+    "rof_scout": [("shot_interval", 6, 1, "DelayBetweenShots 200 ms")],
+    "burst_battery": [("burst_pattern", "8,8,8,60", 1, "delay 8, clip 4, reload 60")],
     "duel_ranger": [("ttk_frames", 303, None, "36 hits of 5 HP at 3/3/21")],
     "duel_crusader": [("ttk_frames", 420, None, "8 hits of 60 HP every 60 ticks")],
+    **{
+        f"move_{name}": [("top_speed", speed, tol, f"{speed / 25:.1f} cells/s")] for name, speed, tol, _ in CHINA_MOVERS
+    },
+    **{f"turn_{name}": [("turn_rate", rate, None, f"Wargrid {rate} deg/s")] for name, _, _, rate in CHINA_MOVERS},
+    **{f"move_{name}": [("top_speed", speed, tol, f"{speed / 25:.1f} cells/s")] for name, speed, tol, _ in FRC_MOVERS},
+    **{f"turn_{name}": [("turn_rate", rate, None, f"Wargrid {rate} deg/s")] for name, _, _, rate in FRC_MOVERS},
+    "range_rebel": [("first_shot_distance", 100, 10, "4 cells")],
+    "range_tunneldefender": [("first_shot_distance", 175, 10, "7 cells")],
+    "range_technical": [("first_shot_distance", 150, 10, "6 cells")],
+    "range_scorpion": [("first_shot_distance", 150, 10, "6 cells")],
+    "reach_rebel": [("farthest_fire", 100, 10, "4 cells")],
+    "reach_tunneldefender": [("farthest_fire", 175, 10, "7 cells")],
+    "reach_technical": [("farthest_fire", 150, 10, "6 cells")],
+    "reach_scorpion": [("farthest_fire", 150, 10, "6 cells")],
+    "reach_tunnel": [("farthest_fire", 175, 10, "7 cells, no power needed")],
+    "burst_rebel": [("burst_pattern", "3,3,21", 1, "as the Ranger")],
+    "rof_technical": [("shot_interval", 6, 1, "delay 6")],
+    "rof_scorpion": [("shot_interval", 30, 1, "delay 30")],
+    "rof_tunnel": [("shot_interval", 8, 1, "delay 8")],
+    "range_redguard": [("first_shot_distance", 100, 10, "4 cells")],
+    "range_tankhunter": [("first_shot_distance", 175, 10, "7 cells")],
+    "range_battlemaster": [("first_shot_distance", 150, 10, "6 cells")],
+    "range_gattlingtank": [("first_shot_distance", 150, 10, "6 cells")],
+    "reach_redguard": [("farthest_fire", 100, 10, "4 cells")],
+    "reach_tankhunter": [("farthest_fire", 175, 10, "7 cells")],
+    "reach_battlemaster": [("farthest_fire", 150, 10, "6 cells")],
+    "reach_gattlingtank": [("farthest_fire", 150, 10, "6 cells")],
+    "reach_gattlingcannon": [("farthest_fire", 225, 10, "9 cells")],
+    "rof_redguard": [("shot_interval", 30, 1, "delay 30")],
+    "rof_battlemaster": [("shot_interval", 60, 1, "delay 60")],
+    "ramp_gattling_tank": [("first_intervals", "12,12,6,6,6,6,4", 1, "delay 12, ramp x2 after 2, x3 after 6")],
+    "ramp_gattling_cannon": [("first_intervals", "8,4,4,4,4,2,2", 1, "delay 8, ramp after 1 and 5")],
+    "horde_redguard": [("last_interval", 20, 1, "five together, horde rate")],
     "splash_crusader": [("shots_to_kill", 30, None, "direct 6 HP hits, no splash or scatter")],
     "supply_chinook": [("deposit", 600, None, "8 boxes x 75"), ("cruise_speed", 150, None, "6 cells/s, provisional")],
 }
@@ -111,6 +175,8 @@ def shots(meta, rows):
     if intervals:
         out["shot_interval"] = statistics.median(intervals)
         out["burst_pattern"] = ",".join(map(str, intervals[:3]))
+        out["first_intervals"] = ",".join(map(str, intervals[:7]))
+        out["last_interval"] = intervals[-1]
     return out
 
 

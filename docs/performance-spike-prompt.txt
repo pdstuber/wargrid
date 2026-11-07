@@ -1,0 +1,30 @@
+Wargrid simulation performance spike. Execution handoff: reading or preparing this file does not authorize starting. Start only when the user explicitly invokes it, after M7 is done (all three factions in with basic units; the user's timing, 2026-11-07). Follow docs/milestone-prompt.md for the coordinator + fresh subagent per task pattern, the resume record and gate review. Models: Sonnet (medium) for tasks, Opus (high) for the plan expansion and each gate review.
+
+Scope: SIMULATION cost (per-tick time). Rendered frame cost and drawing are out of scope (report-only rows stay as they are). Fog's per-tick visibility work counts if it exists by then.
+
+Why: the user accepted the exceeded performance rows until this spike (2026-11-07). Budgets are not to be loosened to make rows pass: improve the code, or propose a new value backed by measurement and a written reason. Never silently relax or disable a gate; AGENTS.md "Verification" and the ledger rules apply.
+
+Read first (in this order, once):
+- AGENTS.md; docs/reference/performance.md (budgets, the F = 5.5 target-factor model, every row, "Target factor measurement 2026-11-06" with the Steam Deck native and Firefox/WASM numbers);
+- docs/reference/m7-verification.md "Task 1 (performance time box)" (profile: combat_plan 2.0 ms and combat.nearest 1.29 ms of a 2.78 ms combat_open step; no candidate in the top zone was trace-preserving) and "Gate 2 review fixes" / dock and horde rows;
+- the existing spike work: branches spike-performance and spike-wasm, the peer session `spike-gdscript-static-types` and docs/superpowers/plans/2026-11-05-gdscript-static-checks.md. Do not redo what they already answered; cite them.
+
+Failing rows at the start (re-measure, do not trust this list): combat stress `open` and `dense` (p95 about 2.8 / 3.1 ms against budget 1.82 / 3.64), the 6-seat team match p99 (5.15 against 3.64), and the report-only `hordes` (2.1 p95) and `hordes300` (5.6 / 7.1). `skirmish3v3`, `contact` and the movement benchmarks pass: do not chase them.
+
+Hard rules:
+- Determinism and traces. Every optimisation keeps all four replay traces, S1, TB3/TB4 pins and the netplay `match` tick identical, unless the user approves a re-pin for that specific change. Any trace move is a stop. Lockstep clients (native, WASM) must agree bit for bit.
+- Measure first, optimise second. Repeat runs (at least 3), report p50/p95/p99/max and noise; benchmarks run alone; record machine load (Codex, Battle.net, WoW).
+- At most three kept fixes per round, each with before/after on every affected row and no regression elsewhere. Prefer deletion and algorithmic fixes over new systems.
+- No wholesale rewrites, no benchmark-specific tricks, nothing that changes gameplay.
+
+Workstreams, in this order. Each ends with a written finding and a decision for the user before the next costly step:
+1. Baseline report: all benchmark rows, thresholds, margins, noise, and the primary profile (run_profile.sh) per failing row. Distinguish average, worst case and variability. Where feasible, find when each row regressed (git bisect on the ledger).
+2. Algorithmic fixes first (expected biggest win): spatial queries (combat.nearest and the target scans, a cell grid shared by combat, horde, containers and docks), repeated per-tick work, allocations and dictionary churn in hot loops, scan scheduling. Trace-preserving only; if a fix needs different tie-breaking or iteration order, it is a separate, user-approved re-pin.
+3. GDScript typing: start from the existing spike findings; measure hot paths only (typed vs untyped in the real workloads); convert selectively with evidence. No bulk migration without a measured gain.
+4. Threads (open question, in scope, answer with measurements): the deployed web build is single-threaded WASM with no cross-origin isolation headers because that was the simpler deploy, not a hard constraint. (a) Can a threaded Godot 4.7 web export be built, served from the fly static server with COOP/COEP headers (the Steam Deck target-factor run already used a cross-origin-isolated no-threads export), and does it load in Safari, Chrome and Firefox, with the wss relay still working? (b) Which parts of the tick can run in parallel with a deterministic, order-independent merge (target scans over units, pathfinding batches, spatial grid builds)? (c) Proof of concept on one such part, native and threaded web, with identical results as the pass criterion and the measured speedup including sync overhead. If nothing is safely parallel, say so with numbers. Single-threaded web must keep working regardless.
+5. C++ via GDExtension, last, only if 2 to 4 cannot close the gap: web export of GDExtension needs special templates and every CI platform needs native binaries (CI must work without extra setup). Small proof of concept of one hot function at most, with the call overhead measured. Expect to recommend against unless the numbers are overwhelming.
+6. Gate recommendations: for each row keep or adjust, with the measurement and reason; the F = 5.5 slowdown assumption re-checked against the Deck/WASM numbers on the final tree.
+
+Deliverables: baseline report, bottleneck analysis, technology findings (typing, threads incl. the web question, GDExtension), prioritized recommendations (benefit, effort, complexity, risk), implemented improvements with before/after, gate recommendations, remaining work. Write them into docs/reference/performance.md (new section) and a new docs/reference/perf-spike-verification.md with the resume record.
+
+Stop conditions: a trace or pin moves; a budget would have to be loosened; a fix needs a gameplay change; threads or native code would make lockstep non-deterministic or break a supported platform; the next step is a deploy to fly (needs explicit approval), a visible window (ask), or a push. Local commits after green checkpoints are pre-authorized as in the milestone prompt; subagents never commit or push.

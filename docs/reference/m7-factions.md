@@ -36,6 +36,51 @@ Sources: EA source `CnC_Generals_Zero_Hour` at `0a05454` (`GeneralsMD/Code/GameE
 
 After M7: 32 ground units (USA 9, China 9, GLA 14) and 6 aircraft (USA Raptor, Comanche, Aurora, Stealth Fighter; China MiG, Helix; GLA none). Stealth (`StealthUpdate`) on 10 of the 32 plus the Rebel camouflage upgrade; detectors include Dozers and the Worker. Artillery minimum / maximum range: Tomahawk 100 / 350, Inferno 50 / 300, Nuke Cannon 150 / 350, Scud 200 / 350, all travelling projectiles.
 
+### Batch classification (config, 2026-11-07)
+
+Status: **SOURCE/CONFIG, NOT MEASURED.** Root `INIZH.big` (pinned hash), `data\ini\commandset.ini` production sets, `object\*.ini` modules and `Prerequisites`. Batch per the blueprint (§7 ground batch A, user decisions 2026-11-07). Per-unit stats are extracted at planning.
+
+| Object | $ / s | Prerequisites | Modules that decide the batch | Batch |
+|---|---|---|---|---|
+| AmericaInfantryBiohazardTech | 200 / 5 | Barracks | `CleanupHazardUpdate` | A |
+| AmericaVehicleTomahawk | 1200 / 20 | War Factory, Strategy Center | artillery | A |
+| AmericaVehicleMedic | 600 / 10 | War Factory | `TransportContain`, `AutoHealBehavior`, `CleanupHazardUpdate` | A |
+| AmericaTankPaladin | 1100 / 12 | War Factory, `SCIENCE_PaladinTank` (rank 1) | `PointDefenseLaserUpdate` | A |
+| AmericaTankAvenger | 2000 / 10 | War Factory | `OverlordContain`, `PointDefenseLaserUpdate`, target designator | A |
+| AmericaTankMicrowave | 800 / 10 | War Factory, Strategy Center | building disabler, garrison clearer | A |
+| AmericaInfantryColonelBurton | 1500 / 20 | Barracks, Strategy Center | `StealthUpdate`, `SpecialAbility` | B |
+| AmericaInfantryPathfinder | 600 / 10 | Barracks, `SCIENCE_Pathfinder` (rank 3) | `StealthUpdate`, `StealthDetectorUpdate` | B |
+| AmericaVehicleSentryDrone | 800 / 10 | War Factory | `StealthUpdate` (forbidden while moving or firing), detector | B |
+| ChinaTankOverlord | 2000 / 20 | War Factory, Propaganda Center | `OverlordContain` add-ons (bunker, gattling, propaganda tower) | A |
+| ChinaVehicleTroopCrawler | 1400 / 15 | War Factory | `TransportContain`, `AssaultTransportAIUpdate` | A |
+| ChinaTankDragon | 800 / 10 | War Factory | flame weapon, fire wall | A |
+| ChinaVehicleInfernoCannon | 900 / 15 | War Factory, Propaganda Center | artillery | A |
+| ChinaVehicleNukeLauncher | 1600 / 20 | War Factory, Propaganda Center, `SCIENCE_NukeLauncher` (rank 1) | artillery, `DeployStyleAIUpdate` | A |
+| ChinaTankECM | 800 / 10 | War Factory, Propaganda Center | missile jammer, vehicle disabler | A |
+| ChinaInfantryHacker | 625 / 20 | Barracks, Propaganda Center | `HackInternetAIUpdate` | B |
+| ChinaInfantryBlackLotus | 1500 / 20 | Barracks, Propaganda Center | `StealthUpdate`, `SpecialAbility` | B |
+| ChinaVehicleListeningOutpost | 800 / 15 | War Factory | `StealthUpdate`, detector, `TransportContain` | B |
+| GLAInfantryTerrorist | 200 / 5 | Barracks | suicide weapon; car bomb (`ConvertToCarBombCrateCollide`) goes to B | A |
+| GLAInfantryAngryMobNexus | 800 / 15 | Barracks, Palace | `SpawnBehavior` 10 members, replace delay 30 s, `ImmortalBody` nexus | A |
+| GLAVehicleQuadCannon | 700 / 6 | Arms Dealer | weapon salvager (3 tiers) | A |
+| GLAVehicleToxinTruck | 600 / 5 | Arms Dealer | poison gun and sprayer, salvage tiers | A |
+| GLAVehicleRocketBuggy | 900 / 10 | Arms Dealer, Palace | rockets: min range 50, range 300, speed 600, clip 6 (`weapon.ini:2088`) | A |
+| GLATankMarauder | 800 / 10 | Arms Dealer, `SCIENCE_MarauderTank` (rank 1) | weapon salvager (3 tiers) | A |
+| GLAVehicleScudLauncher | 1200 / 15 | Arms Dealer, Palace, `SCIENCE_ScudLauncher` (rank 1) | artillery, explosive / anthrax / toxin warheads | A |
+| GLAVehicleCombatBike | 500 / 4 | Arms Dealer | `RiderChangeContain` (weapon set follows the rider) | A |
+| GLAVehicleBattleBus | 1000 / 15 | Arms Dealer, Palace | `TransportContain`, `UndeadBody` 400 HP, second life 650 HP | A |
+| GLAInfantryHijacker | 400 / 10 | Barracks, Palace, `SCIENCE_Hijacker` (rank 3) | `HijackerUpdate`, `StealthUpdate` | B |
+| GLAInfantryJarmenKell | 1500 / 20 | Barracks, Palace | `StealthUpdate`, pilot sniper | B |
+| GLAInfantrySaboteur | 800 / 15 | Arms Dealer | `StealthUpdate`, sabotage collides | B |
+| GLAVehicleRadarVan | 500 / 10 | Arms Dealer | radar, scan power, detector | B |
+| GLAVehicleBombTruck | 1200 / 15 | Arms Dealer, Palace | `StealthUpdate` disguise | B |
+
+- **Tech buildings** (`factionbuilding.ini`): AmericaStrategyCenter (:5848) $2500, 60 s, −2 power, 1500 HP, needs War Factory; ChinaPropagandaCenter (:29799) $2000, 45 s, −2, 1000 HP, needs War Factory; GLAPalace (:16261) $2500, 45 s, 3000 HP, needs Arms Dealer, `GarrisonContain` 5 (:16997); GLABlackMarket (:9421) $2500, 30 s, 1000 HP, needs Palace; ChinaNuclearMissileLauncher (:12297) $5000, 60 s, −10, 4000 HP, needs Propaganda Center.
+- **Upgrade sites** (`commandset.ini`): Strategy Center: battle plans (Bombardment, Hold the Line, Search and Destroy), CIA Intelligence, Chemical Suits, MOAB, Composite Armor, Advanced Training, Drone Armor, Supply Lines. Propaganda Center: Nationalism, Subliminal Messaging, Mines. Palace: Fortified Structure, Arm the Mob, Camouflage, Toxin Shells, Anthrax Beta. Black Market: AP Bullets, AP Rockets, Junk Repair, Buggy Ammo, Radar Van Scan, Worker Shoes. Nuclear silo: Uranium Shells, Nuclear Tanks, Neutron Shells. Barracks / factories: Flash-Bang, capture building, TOW Missile, Sentry Drone Gun, Chain Guns, Black Napalm, Scorpion Rocket, Booby Trap. USA vehicles (Crusader, Humvee, Paladin, Microwave): Battle, Scout and Hellfire drones.
+- **Veterancy** (`gamedata.ini` weapon bonuses; per object `ExperienceValue` / `ExperienceRequired`): Veteran ROF 120 % damage 110 % health 120 %; Elite 140 / 120 / 130 %; Heroic 160 / 130 / 150 %. Example China vehicles: value 100/100/200/400 with required 0/200/300/600, and 200/200/400/600 with 0/400/600/1200. The kill grant rule and heroic extras are read from source at planning.
+- **Poison** (`PoisonedBehavior`, Ranger as example): damage retaken every 100 ms for 3000 ms after the last poison hit.
+- **Rank** (`rank.ini`, `science.ini`): skill points 0 / 800 / 1500 / 2500 / 5000 per rank; the six rank-gated units above cost 1 science point. Wargrid departure: building prerequisites only (user, 2026-11-07).
+
 ## Per-unit values extracted at planning (config, 2026-11-06)
 
 Status: **SOURCE/CONFIG, NOT MEASURED.** Read from the root `INIZH.big` (hash pinned in [installation](installation.md)) and the EA source at `0a05454` (`GeneralsMD/Code/GameEngine/`). INI paths below are inside `data\ini\`. The defeat rule, ROF, heal and rub-off readings are interpretations of the source; the [parity harness](zero-hour-parity-harness.md) has not measured them.
@@ -152,8 +197,64 @@ Damage type names match case-insensitively (`Source/Common/INI/INI.cpp:1633`).
 - **Gattling ramp-up** (`FiringTracker.cpp:110-160`). The fast steps start when consecutive shots are greater than ContinuousFireOne or Two. A target switch within the coast time keeps the count. Cool-down starts at the next possible shot plus the coast.
 - **Command Centers** have no WeaponSet and do not fire. They train Dozers ($1000, 5 s) and Workers ($200, 3 s). Starts: `playertemplate.ini:46-129`.
 
+### Gate 2 planning findings (2026-11-06)
+
+Status: **SOURCE/CONFIG, NOT MEASURED.** EA source `0a05454` (paths under `GeneralsMD/Code/GameEngine/Source`); INI decoded from the pinned root `INIZH.big` with `tools/check_reference.py` `load_archive` (scratch dump, not tracked).
+
+- **Horde cadence** (`GameLogic/Object/Update/HordeUpdate.cpp:170-171,277,344`): the first update wakes `GameLogicRandomValue(1, UpdateRate)` frames after creation. Infantry re-check every `UpdateRate` (30 frames); vehicles run every frame but re-check only when `frame > last + UpdateRate`, so every 31 frames.
+- **Horde filter** (`HordeUpdate.cpp:86-112`): the other object needs its own HordeUpdate, the KindOf mask, the exact template when `ExactMatch`, `ALLIES` relationship, and the same on/off-map state. Range is `Radius` from the bounding sphere (edge to edge).
+- **Rub-off** (`HordeUpdate.cpp:290-315`): a unit with fewer than `Count − 1` qualifying neighbours is still in the horde if one of the neighbours found inside `Radius` is a true member and its centre lies within `RubOffRadius`. INI: Red Guard and Tank Hunter `RubOffRadius 60`, `Radius 30`; Battlemaster `150` and `75`. Each `Radius` plus both bounding radii stays below the `RubOffRadius` (Red Guard 44, Tank Hunter 50, Battlemaster about 107), so the rule comes down to "a true member among the counted neighbours".
+- **Rate-of-fire bonus** (`GameLogic/Object/Weapon.cpp:499-522`): both the shot delay and the clip reload are `floor(frames / bonus)`. `gamedata.ini:319` `HORDE RATE_OF_FIRE 150%`. When a bonus condition changes, `Object::setWeaponBonusCondition` (`Object.cpp:4674-4684`) calls `onWeaponBonusChange` (`Weapon.cpp:1955-1985`). If the weapon is between shots or reloading, that call restarts the wait from the current frame with the new delay.
+- **Gattling ramp** (`GameLogic/Object/FiringTracker.cpp:84-160,256-346`): `shotFired` runs after the shot's delay is set.
+  - It adds 1 to the shot count on the same target, or on a new target before the cool-down frame; otherwise the count resets to 1.
+  - It sets the cool-down frame to the possible next shot frame (old rate) plus the coast.
+  - It then changes level: none to MEAN when count > One; MEAN to FAST when count > Two; MEAN back to none when count < One; FAST back to none when count < Two. Every drop goes straight to none and resets the count and the target.
+  - The level change restarts the current delay (see the bonus item above), so the shot that crosses a threshold already waits the faster delay.
+  - Once the frame passes the cool-down frame, `update` cools down.
+  - INI `weapon.ini`: `GattlingTankGun` `CONTINUOUS_FIRE_MEAN RATE_OF_FIRE 200%`, `CONTINUOUS_FIRE_FAST 300%`, not cumulative (the INI comment says so); `GattlingBuildingGun` the same. This closes the FiringTracker gap below.
+- **Full load** (`GameLogic/AI/AIDock.cpp:574-636`, `GameLogic/Object/Update/DockUpdate/SupplyWarehouseDockUpdate.cpp:93-136`): the collector waits its delay before every `action()`, and the action fails once the collector is full or the pile is empty, so a load takes (boxes taken + 1) × delay. This confirms the earlier reading. M3 departs from it on purpose for the Chinook ([M3 evidence](m3-economy.md), "M3 intentionally departs at capacity").
+- **Boneless dock positions** (`GameLogic/Object/Update/DockUpdate/DockUpdate.cpp:446-487`): the spot is the dock centre plus the unit vector toward the collector times half the major radius, then `findPositionAround` up to 100 units, reachable for that collector. `ChinaSupplyCenter`, `SupplyDock` and `SupplyPileSmall` are boneless (`NumberApproachPositions = -1`); `SupplyWarehouse` has 9 bones, `SupplyPile` 5.
+- **China INI rows** (`object/factionbuilding.ini`, `object/chinavehicle.ini`, `object/chinainfantry.ini`, `locomotor.ini`, `weapon.ini`):
+  - Barracks `EnergyProduction 0`, no prerequisite. Gattling Cannon prerequisite ChinaPowerPlant, idle scan 250 / 250 ms.
+  - Locomotors (speed / turn / accel / brake / min turn): SupplyTruck 40 / 90 / 240 / 50 / 15; Redguard 25 / 500 / 100 / 150 / 0; GattlingTank 40 / 180 / 1000 / 1000 / 0; BattleMaster 25 / 180 / 1000 / 1000 / 0; ChinaVehicleDozer 30 / 90 / 30 / 50 / 0.
+  - Weapons: `GattlingTankGun` delay 400 ms, `GattlingBuildingGun` 250 ms. `ChinaInfantryTankHunterMissileLauncher` equals the Missile Defender weapon apart from `MinimumAttackRange 5` (out of scope). `BattleMasterTankGun` equals `CrusaderTankGun`.
+  - Armor: `TruckArmor` and `AntiAirVehicle` equal `HumveeArmor` in every listed column.
+
+### Gate 3 planning findings (2026-11-07)
+
+Status: **SOURCE/CONFIG, NOT MEASURED.** EA source `0a05454` (paths under `GeneralsMD/Code/GameEngine/Source`, headers under `Include`); INI decoded from the pinned root `INIZH.big` with `tools/check_reference.py` `load_archive` (scratch dump, not tracked). No parity run in this session; G3.5 measures the FRC rows. Each item re-checks the planning brief's leads.
+
+- **Worker** (`object/glainfantry.ini:3490-3868`): $200, `BuildTime 3.0`, `MaxHealth 100`, `HumanArmor`, `VisionRange 100`, CYL 10, `FastHumanLocomotor` (`locomotor.ini:58`: 25 / 500 / 100 / 100 / 0), `TransportSlotCount 1`, KindOf `INFANTRY SALVAGER DOZER HARVESTER`, `MaxBoxes 1`, both action delays 150 ms. The delays parse with `INI::parseDurationUnsignedInt` (`Include/GameLogic/Module/WorkerAIUpdate.h:104-105`), which rounds up (`Common/INI/INI.cpp:1717-1721`): 5 frames. With the dock rule (gate 2 "Full load") one box takes (1 + 1) × 5 = 10 frames to load and 5 to deposit. Built by `GLAWorkerCommandSet` (`commandset.ini:48`, includes Supply Stash, Barracks, Tunnel Network, Arms Dealer, Command Center); trained at the Command Center (`:1104`) and the Supply Stash (`:1192`). Confirms the brief.
+- **Rebel** (`glainfantry.ini:3-361`): $150, 5 s, 120 HP, `HumanArmor`, vision 150, CYL 10, `BasicHumanLocomotor` (20 / 500 / 100 / 100), `GLARebelMachineGun` (`weapon.ini:976`, equal to the Ranger rifle), SALVAGER. **RPG Trooper** `GLAInfantryTunnelDefender` (`:718-936`): $300, 5 s, 100 HP, vision 150, CYL 10, `MissileDefenderLocomotor` (= BasicHuman), `TunnelDefenderRocketWeapon` (`weapon.ini:2021`, equal to the Missile Defender weapon plus `MinimumAttackRange 5`), SALVAGER.
+- **Technical** (`glavehicle.ini:4407`, a `BuildVariations` parent holding cost $500 and `BuildTime 5.0`; chassis `GLAVehicleTechnicalChassisOne` `:4440`, two reskins): 180 HP, `TruckArmor`, vision 150, `TechnicalLocomotor` (`locomotor.ini:2082`: 90 / 180 / 100 / 50 / 20), BOX 18 × 9, `TransportSlotCount 3`, `TransportContain Slots 5`, `AllowInsideKindOf INFANTRY`, `DamagePercentToUnits 10%`, no `PassengersAllowedToFire`. Weapon sets: none → `TechnicalMachineGunWeapon`, `CRATEUPGRADE_ONE` → `TechnicalCannonWeapon`, `CRATEUPGRADE_TWO` → `TechnicalRPGWeapon`. KindOf `SALVAGER WEAPON_SALVAGER VEHICLE TRANSPORT`; `CreateCrateDie` with `SalvageCrateData`.
+- **Scorpion** (`glavehicle.ini:3-259`): $600, 7 s, 370 HP, `TankArmor`, vision 125, `ScorpionLocomotor` (`locomotor.ini:552`: 40 / 180 / 1000 / 1000 / 0), BOX 14 × 9, weapon sets: none → `ScorpionTankGun`, `CRATEUPGRADE_ONE` and `_TWO` → `ScorpionTankGunPlusOne` (the secondary missile needs `PLAYER_UPGRADE`, out of scope). SALVAGER, WEAPON_SALVAGER.
+- **Weapons** (`weapon.ini`), confirming the table above: `TechnicalMachineGunWeapon` `:2576` 10, `Gattling` (type names match case-insensitively), range 150, 200 ms. `TechnicalCannonWeapon` `:504` 45, `GATTLING`, `PrimaryDamageRadius 25.0` (the shipped value, not a dump error; the other splash weapons have 5), `ScatterRadiusVsInfantry 10`, 1000 ms. `TechnicalRPGWeapon` `:2595` 50, `EXPLOSION`, radius 5, `ScatterRadiusVsInfantry 0.0`, minimum range 5, 1000 ms. `ScorpionTankGun` `:102` 20 / `PlusOne` `:164` 25, `ARMOR_PIERCING`, radius 5, 1000 ms. `TunnelNetworkGun` `:551` 15, `SMALL_ARMS`, range 175, 250 ms (8 frames, as the measured Patriot at 250 ms). The brief's "MG is GATTLING, not rapid_fire" holds.
+- **FRC buildings** (`object/factionbuilding.ini`): all `EnergyProduction 0`; every one has `RebuildHoleExposeDie` with `HoleMaxHealth 500`. Command Center `:1336` ($2000, 45 s, 5000 HP, `StructureArmorTough`, counts, hole `:1963-1964`). Supply Stash `:19355` ($1500, 10 s, 2000 HP, no prerequisite, counts, `SpawnBehavior` one Worker `OneShot` `:19965-19968`). Barracks `:21987` ($500, 10 s, 1000 HP, counts). Arms Dealer `:25030` ($2500, 15 s, 2000 HP, prerequisite `GLASupplyStash` `:25790`, counts). Tunnel Network `:14663` ($800, 15 s, 1000 HP, `StructureArmor`, vision 200, prerequisite `GLABarracks` `:15029`, `TunnelNetworkGun`, no `MP_COUNT_FOR_VICTORY`, `TimeForFullHeal 5000` `:15093`, `SpawnBehavior` 2 `GLAInfantryTunnelDefender` `OneShot` `:15105-15108`, hole `GLAHoleTunnelNetwork` `:15113-15114`; its turret sets no idle scan interval, default 9999999 in `GameLogic/AI/TurretAI.cpp:198-199`, so Wargrid keeps its 8-tick defence scan).
+- **Hole object** (`factionbuilding.ini:12-161`): `StructureArmor`, `VisionRange 50`, `MaxHealth` and `InitialHealth` 9999999.9, KindOf `REBUILD_HOLE STRUCTURE MP_COUNT_FOR_VICTORY`; `GLAHoleTunnelNetwork` is a reskin (`:15164`), so a tunnel's hole counts although the tunnel does not. `RebuildHoleExposeDie.cpp:165` calls `setMaxHealth(500)` with the default `SAME_CURRENTHEALTH`, which clips the current health down to the new maximum (`GameLogic/Object/Body/ActiveBody.cpp:897-945`): a new hole starts full. `WorkerRespawnDelay 20000` parses with `parseDurationReal` (`RebuildHoleBehavior.cpp:71`): 600 frames. Regen per frame is `(0.5 % / 30) × maxHealth` (`RebuildHoleBehavior.cpp:313`), 83.33 for 500 HP × 1000; not an integer, so the plan fixes `regen_per_tick` 83. The brief's line reference (`~254-262`) was wrong; the regen is at 306-318.
+- **Hole lifecycle** (`GameLogic/Object/Die/RebuildHoleExposeDie.cpp:120-189`, `GameLogic/Object/Behavior/RebuildHoleBehavior.cpp:120-360`):
+  - a hole appears only if the owner is not neutral, is still active, and the building was not under construction (`:131-134`); it copies the building's geometry and joins the pathfind map (`:150`, `:161`); attackers are handed to it (`TransferAttackers` defaults true, `:61`, `:177-186`);
+  - after the delay a worker spawns at the hole position and constructs the building as a rebuild (`:254-263`), which takes no money (`WorkerAIUpdate.cpp:410-414`); a waiting half-built building is resumed instead (`:265`);
+  - the hole is masked while the worker exists (`maskObject(TRUE)` `:294`); `newWorkerRespawnProcess` destroys any worker, restarts the timer and unmasks (`:120-142`);
+  - worker gone → new timer, the half-built building stays (`:200-205`); reconstruction gone → worker destroyed and new timer (`:211-224`); reconstruction done → worker and hole `destroyObject`, no death (`:326-334`); hole dies → its worker destroyed (`:345-360`).
+  - One-shot spawns skip a reconstructed building (`SpawnBehavior.cpp:826-845`), so a rebuilt Supply Stash gives no free Worker and a rebuilt tunnel no defenders.
+  - Cancelling a reconstructing foundation refunds nothing and kills it (`GameLogic/System/GameLogicDispatch.cpp:1438-1468`), so the hole restarts.
+- **Salvage** (`GameLogic/Object/Die/CreateCrateDie.cpp:69-229`, `GameLogic/Object/Collide/CrateCollide/SalvageCrateCollide.cpp:61-200`, `CrateCollide.cpp:107-180`, `crate.ini:119-125,182-210`):
+  - drop: the killer must exist, must not be allied, must be a SALVAGER and its owner must have `SCIENCE_GLA` (`:79-104`); `CreationChance 1.0`; the crate lands within 5 units of the wreck, else 125 (`:205-230`); computer killers are told about the crate (`:112-124`);
+  - which victims: every roster vehicle carries `SalvageCrateData` (Humvee, Crusader, both Dozers, Battlemaster, Gattling Tank, Supply Truck, Scorpion, Technical); the Chinook and all infantry do not;
+  - the crate: box 12 × 12, `DeletionUpdate` 30000-35000 ms (900-1050 frames), drawn only for `SCIENCE_GLA`;
+  - pickup by a non-neutral, living, grounded SALVAGER whose player has `SCIENCE_GLA` (`CrateCollide.cpp:151-195`, `SalvageCrateCollide.cpp:61-71`); order: armor set (no roster kind is `ARMOR_SALVAGER`), then weapon set for a `WEAPON_SALVAGER` below `CRATEUPGRADE_TWO` (100 %, no roll), then a level (25 %, trainable and below Heroic), else money 25-75 (`:74-110`).
+- **Tunnel network** (`Common/RTS/TunnelTracker.cpp:104-297`, `GameLogic/Object/Contain/TunnelContain.cpp:150-483`, `Common/RTS/ActionManager.cpp:526-716`, `gamedata.ini:268`):
+  - `MaxTunnelCapacity 10` counts objects, not slots; any non-aircraft may enter (`TunnelTracker.cpp:156-175`); `ActionManager::canEnterObject` also needs `TransportSlotCount > 0`, which every roster ground unit has, and nothing forbids a loaded transport;
+  - a tunnel joins the network on build complete (`TunnelContain.cpp:416-433`);
+  - heal: `maxHealth / 150` per call, full once contained ≥ 150 frames (`TunnelTracker.cpp:256-296`); every tunnel's `update` calls the network heal (`TunnelContain.cpp:465-483`), so n tunnels heal n times as fast, still capped at 150 frames after entry;
+  - the last tunnel's death `destroyObject`s every occupant, no death (`TunnelTracker.cpp:211-247`); otherwise occupants are re-pointed to the first remaining tunnel; selling the last one ejects them instead (Wargrid has no selling).
+- **Worker exit** (checked 2026-11-07, follow-up): the Supply Stash uses `SupplyCenterProductionExitUpdate` (`factionbuilding.ini:19959-19962`), which forces the new Worker into gathering ("force wanting on SupplyTruck types", `GameLogic/Object/Update/ProductionExitUpdate/SupplyCenterProductionExitUpdate.cpp:127-135`). The Command Center uses `DefaultProductionExitUpdate` (`factionbuilding.ini:1958-1961`): the Worker walks to the rally point. The worker's supply sub-machine starts only when forced or ordered to dock (`WorkerAIUpdate.cpp:1236-1249`), and an idle dozer's bored timer only looks for repairs (`DozerAIUpdate.cpp:1100-1125`), so a Command Center Worker idles.
+- **Loaded transport in a tunnel** (follow-up): `TunnelContain::onContaining` only holds the entering object (`TunnelContain.cpp:195-210`), so riders stay in their transport; the network heal iterates the tunnel list only. On a cave-in `destroyObject` of the transport runs `OpenContain::onDelete`, which `destroyObject`s every rider (`OpenContain.cpp:843-852`): no death.
+- **Resuming a reconstruction** (follow-up): `ActionManager::canResumeConstructionOf` (`Common/RTS/ActionManager.cpp:453-520`) lets any allied dozer resume a building under construction unless a dozer is actively building it (`DOZER_TASK_BUILD` on that target). So the player's Worker may resume a rebuild site only while the hole's worker is gone; the next hole worker resumes it with `aiResumeConstruction` (`RebuildHoleBehavior.cpp:265`). A foundation starts at 1 HP in Zero Hour (`WorkerAIUpdate.cpp:443-445`); Wargrid foundations start full (existing departure).
+- **Launcher width** (Wargrid, measured 2026-11-07 with a scratch headless probe outside the repo): adding "Free Resistance Coalition" to both selectors keeps the faction row at 520 px (selectors 258 px, minimum 234 px) at 1280×720 and 1920×1080.
+
 ### Gaps
 
-- Whether FiringTracker runs before or after the next delay is computed (where the gattling rate takes effect) was not checked.
+- ~~Whether FiringTracker runs before or after the next delay is computed~~: closed above (gate 2 planning).
 - Not read: OpenContain enter and exit details, turret behaviour, the CommandSet lists (listed above in the audit), the low-power effect on POWERED defences beyond the flag.
 - `TechnicalRPGWeapon` has no `WeaponSpeed`; the Patriot's `WeaponSpeed 1` defers to its missile locomotor.

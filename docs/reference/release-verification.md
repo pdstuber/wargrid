@@ -6,7 +6,7 @@ Plan: [release workflow plan](../superpowers/plans/2026-11-06-release-workflow.m
 
 ```text
 Resume record (updated 2026-11-07, R1 done: Tasks 0-5 and the logo, v0.6.0 released)
-Branch / base commit / working-tree state: r1-release rebased onto main 025540d on 2026-11-07 (was cut from m7-factions ed48b2e, old tip 1c9ccaf); pre-publication fixes below uncommitted; nothing pushed
+Branch / base commit / working-tree state: r1-release rebased onto main 025540d on 2026-11-07 (was cut from m7-factions ed48b2e, old tip 1c9ccaf); merged to main, v0.6.0 released, main = origin/main at 1348b06
 Last green task / next incomplete task: Task 5 step 6 (real release) / none
 Changed paths since last commit: see "Pre-publication review" below
 Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh 277 / 112765 / 0 / exit 0 / TESTS PASSED 112765; python3 -m unittest discover -s tools 52 OK; run_python_checks, run_lint, run_warnings pass; actionlint 1.7.12 with shellcheck 0.11.0 on both workflows: 0 findings (after quoting the packaging step's extras as a bash array), and tests.yml now runs it as job actions-lint

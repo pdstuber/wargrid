@@ -18,16 +18,26 @@ Usage so far (python3 tools/session_usage.py <session files>):
 Next exact action:
 ```
 
-## Session start (every session, including restarts)
+## Session start (coordinator steps 1–2; every task subagent steps 1–4)
 
 1. Read `AGENTS.md`, then the resume record. Do not re-read finished tasks.
 2. Run `git status --short` and `git log --oneline -3`; compare with the record. A mismatch is a blocker to report, not to repair silently.
-3. Run the baseline once: `sh tools/run_tests.sh > <log> 2>&1`, then read only the summary lines.
+3. Run the baseline once: `sh tools/run_tests.sh > <log> 2>&1`, then read only the summary lines. Lint, warnings and `python3 -m unittest discover -s tools` may run at the same time; benchmarks always run alone.
 4. Read only the active task: `rg -n '^#' <plan>` for headings, then that task's range, the interfaces it consumes, and decisions recorded since. The full design and plan are read once, at kickoff, in non-overlapping ranges.
 
-## Restart rule
+## Unattended run
 
-End the session at every stop gate and after each checkpoint row, once the resume record is current. Tell the user: "Checkpoint written. Start a fresh session (`/clear`) and say: resume from prompt.txt." Never continue past a gate in the same session, and never after a long side topic. The record is the handoff; the conversation is not.
+Fresh context per task keeps the token saving of the old restart rule (retrospective item 1) without a manual `/clear` (user, 2026-11-06).
+
+- **Start.** The user runs `claude --remote-control --permission-mode auto --model sonnet` in the repo and says "run prompt.txt". One-time setup: `/config` "Push when actions required" on, so questions reach the phone.
+- **Coordinator** (the main session) reads only `AGENTS.md`, `prompt.txt` and the resume record. It never reads suite logs, diffs or plan task bodies.
+- **One fresh subagent per task** (model per the plan's routing). Its brief names paths, not content: the resume record and the plan task heading. It runs session start steps 1–4, does the task test-first, runs lint and warnings, updates the resume record and verification rows, and returns at most ten lines: `GREEN` with counts, exit, marker and changed paths, or `BLOCKED` with the question, the options and its recommendation. It never commits.
+- **After `GREEN`** the coordinator checks `git status --short` against the reported paths, makes the pre-authorized local commit and dispatches the next task.
+- **After `BLOCKED` or any stop condition** the coordinator sends a `PushNotification`, asks with `AskUserQuestion` (stays open until answered; reaches the phone over Remote Control), then continues the same subagent with `SendMessage` so its context is kept.
+- **Stop gate.** Dispatch the gate reviewer (below), record its findings, notify the user and end the session. Playtest, visible windows, push, PR, merge and outline expansion wait for the user.
+- **No per-task reviewer subagents.** One review per stop gate.
+- If the coordinator compacts, it writes the resume record and ends; the user starts it again. The record is the handoff; the conversation is not.
+- Push only as plain `git push`: the ask rule matches the command prefix, so `git -C … push` would bypass it.
 
 ## Pre-authorized actions
 
