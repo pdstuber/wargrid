@@ -5,7 +5,7 @@ const Fixture = preload("res://tests/economy_fixture.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 
 func cases() -> Array[Callable]:
-	return [test_source_and_gather_validation,test_dock_timing,test_partial_load_and_conservation,test_dock_competition_and_lookup,test_collection_interruptions,test_dock_loss_recovery,test_ground_dock_cell,test_ground_dock_queue,test_ground_dock_full_perimeter,test_truck_timing,test_dock_loss_recovery_ground,test_ground_truck_recovers_after_blocked_path,test_ground_dock_skips_unwalkable_and_unreachable]
+	return [test_source_and_gather_validation,test_dock_timing,test_partial_load_and_conservation,test_dock_competition_and_lookup,test_collection_interruptions,test_dock_loss_recovery,test_ground_dock_cell,test_ground_dock_queue,test_ground_admit_lowest_id_first,test_ground_dock_full_perimeter,test_truck_timing,test_dock_loss_recovery_ground,test_ground_truck_recovers_after_blocked_path,test_ground_dock_skips_unwalkable_and_unreachable]
 
 func ready(runner, boxes: int = 8) -> Dictionary:
 	var sim = Fixture.make_world(50000)
@@ -310,6 +310,24 @@ func test_ground_dock_queue(runner) -> bool:
 		sim.step()
 		if Fixture.object(sim,first).collection.phase != "loading": break
 	runner.check(Fixture.object(sim,first).collection.get("dock") == null and Fixture.object(sim,second).collection.phase == "loading","Gd2 waiter loads the tick the active truck releases")
+	return true
+
+func test_ground_admit_lowest_id_first(runner) -> bool:
+	var sim = Fixture.make_world()
+	var source: int = sim.add_supply_source(Vector2i(24,4),30)
+	var far: int = truck(sim,Vector2(31.5,5.5))
+	var near: int = truck(sim,Vector2(29.5,5.5))
+	var mid: int = truck(sim,Vector2(30.5,6.5))
+	gather(sim,[far,near,mid],source)
+	until_phase(sim,far,"waiting_source",2000)
+	until_phase(sim,mid,"waiting_source",2000)
+	runner.check(Fixture.object(sim,near).collection.phase == "loading","Gd4 the nearest truck loads first")
+	runner.check(Fixture.object(sim,far).collection.phase == "waiting_source" and Fixture.object(sim,mid).collection.phase == "waiting_source","Gd4 both others wait on their own docks")
+	for index in range(600):
+		sim.step()
+		if Fixture.object(sim,near).collection.phase != "loading": break
+	sim.step()
+	runner.check(Fixture.object(sim,far).collection.phase == "loading" and Fixture.object(sim,mid).collection.phase == "waiting_source","Gd4 the lowest id loads next, not the closer waiter")
 	return true
 
 func test_ground_dock_full_perimeter(runner) -> bool:

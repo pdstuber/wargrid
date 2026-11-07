@@ -92,7 +92,7 @@ static func _defences() -> Simulation:
 	assert(marched.ok, marched.error)
 	return sim
 
-# 12 supply trucks gather from 2 piles of 400 boxes around one supply center; six per pile, so docks fill and trucks queue.
+# 12 supply trucks gather from 2 piles of 400 boxes around one supply center; six per pile, so docks fill and trucks queue; 100 idle riflemen make the per-tick entity scans count.
 static func _docks() -> Simulation:
 	var sim: Simulation = Simulation.new([], Vector2i(64, 64))
 	sim.add_player(1, 0)
@@ -108,6 +108,9 @@ static func _docks() -> Simulation:
 			trucks.append(id)
 		var gathered: Dictionary = sim.issue_command({"tick": 0, "player": 1, "sequence": index, "type": "gather", "entity_ids": trucks, "source_id": piles[index]})
 		assert(gathered.ok, gathered.error)
+	for index in range(100):
+		var idle: int = sim.spawn(2, Vector2(2.5 + index % 10, 2.5 + floorf(index / 10.0)), "china_rifle_infantry")
+		assert(idle > 0)
 	return sim
 
 # 60 militia and 20 medium tanks attack-move onto 100 riflemen; packed ranks keep five neighbours in reach, so hordes form and re-check.
