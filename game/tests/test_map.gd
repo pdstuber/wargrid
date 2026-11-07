@@ -44,5 +44,5 @@ func test_exports_ship_map_notice(runner) -> bool:
 		if section.ends_with(".options"): continue
 		presets += 1
 		runner.check("data/maps/NOTICE.md" in str(config.get_value(section, "include_filter", "")), "MP5 %s ships EA's map notice" % config.get_value(section, "name", section))
-	runner.check(presets == 9, "MP5 nine presets checked")
+	runner.check(presets == 10, "MP5 ten presets checked")
 	return true
