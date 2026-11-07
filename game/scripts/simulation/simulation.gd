@@ -398,7 +398,7 @@ func _apply_orders() -> void:
 				if unit.combat != null: unit.combat.repath_tick = _tick + Combat.REPATH_TICKS - (_tick + unit.id) % Combat.REPATH_TICKS
 			continue
 		if command.type == "enter":
-			for unit in members: Containers.head_for(self,unit,_entities[command.target_id])
+			for unit in members: Containers.head_for(self,unit,Containers.carrier(self,command.target_id))
 			continue
 		if command.type == "attack":
 			if not Combat.valid_target(self,command.player,command.target_id): continue
@@ -735,6 +735,7 @@ func remove_object(id: int) -> Dictionary:
 		_chases.erase(id)
 		Combat.object_removed(self,id)
 	elif _buildings.has(id):
+		Containers.building_removed(self,_buildings[id])
 		RebuildHoles.building_removed(self,_buildings[id])
 		_remove_building(id)
 	elif _sources.has(id):

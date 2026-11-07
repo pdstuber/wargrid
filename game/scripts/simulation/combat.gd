@@ -141,7 +141,7 @@ static func plan(sim: Simulation, unit_ids: Array[int]) -> void:
 # A passenger only shoots what is already in reach of its container; it never approaches.
 static func _plan_passenger(sim: Simulation, unit: Dictionary, grid_box: Dictionary) -> void:
 	var combat: Dictionary = unit.combat
-	if not Containers.rules(sim._entities[unit.container_id]).passengers_fire:
+	if not Containers.rules(Containers.carrier(sim, unit.container_id)).passengers_fire:
 		combat.target_id = null
 		return
 	var kept: Dictionary = record(sim, combat.target_id) if combat.target_id != null else {}

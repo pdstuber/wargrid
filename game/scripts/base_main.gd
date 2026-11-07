@@ -43,7 +43,7 @@ func _hint_point(payload: Dictionary) -> Variant:
 	return Vector2(building.origin[0],building.origin[1]) + Vector2(Definitions.building(building.kind).footprint) / 2.0
 
 func _build_hint() -> String:
-	return "1-9: menu"
+	return "1-9: menu  U: unload"
 
 func _production_kind(building: Dictionary) -> String:
 	return Definitions.building(building.kind).produces
@@ -188,6 +188,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.physical_keycode == KEY_E:
 			if not is_selecting() and _placement_kind.is_empty(): _produce_selected()
 			return
+		if event.physical_keycode == KEY_U:
+			if not is_selecting() and _placement_kind.is_empty(): _unload_selected()
+			return
 	if not _placement_kind.is_empty():
 		if event.is_action_pressed("deselect"):
 			_clear_placement()
@@ -238,6 +241,9 @@ func _context_order(id: int) -> bool:
 			_refresh()
 		return true
 	var building: Dictionary = _building(state,id)
+	if selected_ids != [id] and _container(state,id,building):
+		_submit({"type":"enter","entity_ids":selected_ids.filter(func(unit_id: int) -> bool: return unit_id != id),"target_id":id})
+		return true
 	if not building.is_empty() and building.owner == local_player and not building.completed:
 		if _builder() != -1: _submit({"type":"resume_build","builder_id":_builder(),"building_id":id})
 		else:
@@ -245,6 +251,23 @@ func _context_order(id: int) -> bool:
 			_refresh()
 		return true
 	return false
+
+func _container(state: Dictionary, id: int, building: Dictionary) -> bool:
+	var host: Dictionary = building
+	if host.is_empty():
+		for unit: Dictionary in state.entities:
+			if unit.id == id: host = unit
+	return not host.is_empty() and host.owner == local_player and host.get("completed",true) and not Registry.kind(host.kind).get("contains",{}).is_empty()
+
+func _unload_selected() -> void:
+	var state: Dictionary = simulation.snapshot()
+	var id: int = selected_building_id if selected_building_id != -1 else (selected_ids[0] if selected_ids.size() == 1 else -1)
+	var building: Dictionary = _building(state,id)
+	if not _container(state,id,building):
+		_error = "Select a container"
+		_refresh()
+		return
+	_submit({"type":"unload","target_id":id})
 
 func _set_rally(plane: Vector2) -> bool:
 	var building: Dictionary = _building(simulation.snapshot(),selected_building_id)

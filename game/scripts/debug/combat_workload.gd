@@ -4,7 +4,7 @@ const Simulation = preload("res://scripts/simulation/simulation.gd")
 const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
 
 static func create(layout: String) -> Simulation:
-	assert(layout == "open" or layout == "dense" or layout == "contact" or layout == "skirmish3v3" or layout == "transports" or layout == "defences" or layout == "docks" or layout == "hordes300" or layout == "horde_render" or layout == "ramp")
+	assert(layout == "open" or layout == "dense" or layout == "contact" or layout == "skirmish3v3" or layout == "transports" or layout == "defences" or layout == "docks" or layout == "hordes300" or layout == "horde_render" or layout == "ramp" or layout == "frc")
 	if layout == "skirmish3v3": return _skirmish3v3()
 	if layout == "transports": return _transports()
 	if layout == "defences": return _defences()
@@ -12,6 +12,7 @@ static func create(layout: String) -> Simulation:
 	if layout == "hordes300": return _hordes300()
 	if layout == "horde_render": return _horde_render()
 	if layout == "ramp": return _ramp()
+	if layout == "frc": return _frc()
 	var solids: Array[Vector2i] = []
 	if layout == "dense":
 		for x: int in [26, 34, 42]:
@@ -163,6 +164,52 @@ static func _ramp() -> Simulation:
 	assert(army.all(func(id: int) -> bool: return id > 0))
 	_attack_move(sim, army, [48.5, 24.5])
 	return sim
+
+# Three scripted parts far from a 60 v 60 vehicle battle: ten riflemen board two tunnel hubs and heal, three barracks open holes whose hp regenerates, and a tank kills a builder and collects the crate.
+static func _frc() -> Simulation:
+	var sim: Simulation = Simulation.new([], Vector2i(64, 64))
+	sim.add_player(1, 0)
+	sim.add_player(2, 0)
+	var army: Array[int] = []
+	for column in range(6):
+		for row in range(10):
+			army.append(sim.spawn(1, Vector2(3.5 + column, 6.5 + row), "frc_light_vehicle" if column < 3 else "frc_tank"))
+			assert(sim.spawn(2, Vector2(28.5 + column, 6.5 + row), "usa_tank" if column < 4 else "usa_light_vehicle") > 0)
+	assert(army.all(func(id: int) -> bool: return id > 0))
+	_attack_move(sim, army, [60.5, 10.5])
+	_tunnel_part(sim)
+	for x: int in [20, 24, 28]:
+		_building(sim, "frc_barracks", Vector2i(x, 40))
+		sim.remove_object(sim._next_entity_id - 1)
+	for building: Dictionary in sim._buildings.values():
+		if building.has("rebuild"): building.hp = 1000
+	_salvage_part(sim)
+	return sim
+
+static func _tunnel_part(sim: Simulation) -> void:
+	_building(sim, "frc_defence", Vector2i(4, 40))
+	var hub_a: int = sim._next_entity_id - 1
+	_building(sim, "frc_defence", Vector2i(10, 40))
+	var hub_b: int = sim._next_entity_id - 1
+	var groups: Array = [[hub_a, [Vector2i(3, 39), Vector2i(4, 39), Vector2i(5, 39), Vector2i(3, 41), Vector2i(4, 41)]], [hub_b, [Vector2i(9, 39), Vector2i(10, 39), Vector2i(11, 39), Vector2i(9, 41), Vector2i(10, 41)]]]
+	for index in range(2):
+		var ids: Array[int] = []
+		for cell: Vector2i in groups[index][1]:
+			var id: int = sim.spawn(1, Vector2(cell) + Vector2(0.5, 0.5), "frc_rifle_infantry")
+			assert(id > 0)
+			sim._entities[id].hp = 1000
+			ids.append(id)
+		var entered: Dictionary = sim.issue_command({"tick": 400, "player": 1, "sequence": 1 + index, "type": "enter", "entity_ids": ids, "target_id": groups[index][0]})
+		assert(entered.ok, entered.error)
+
+static func _salvage_part(sim: Simulation) -> void:
+	var tank: int = sim.spawn(1, Vector2(10.5, 56.5), "frc_tank")
+	var victim: int = sim.spawn(2, Vector2(18.5, 56.5), "usa_builder")
+	assert(tank > 0 and victim > 0)
+	var attacked: Dictionary = sim.issue_command({"tick": 600, "player": 1, "sequence": 3, "type": "attack", "entity_ids": [tank], "target_id": victim})
+	assert(attacked.ok, attacked.error)
+	var collected: Dictionary = sim.issue_command({"tick": 1200, "player": 1, "sequence": 4, "type": "move", "entity_ids": [tank], "target": [18.5, 56.5]})
+	assert(collected.ok, collected.error)
 
 static func _attack_move(sim: Simulation, army: Array[int], target: Array) -> void:
 	var marched: Dictionary = sim.issue_command({"tick": 0, "player": 1, "sequence": 0, "type": "attack_move", "entity_ids": army, "target": target})

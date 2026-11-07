@@ -33,12 +33,13 @@ static func footprint_error(sim: Simulation, footprint: Array[Vector2i]) -> Stri
 		if unavailable.has(cell): return "Footprint covers ground unit or destination"
 	return ""
 
-static func approach(sim: Simulation, builder_id: int, kind: String, origin: Vector2i, navigation: RefCounted) -> Variant:
+static func approach(sim: Simulation, builder_id: int, kind: String, origin: Vector2i, navigation: RefCounted, crowded: bool = false) -> Variant:
 	var unit: Dictionary = sim._entities[builder_id]
 	var position := Vector2(unit.position[0],unit.position[1])
 	var component: int = navigation.component_at(position)
 	var members: Array[Dictionary] = [unit]
-	var unavailable: Array[Vector2i] = sim._unavailable_cells(members)
+	var unavailable: Array[Vector2i] = []
+	if not crowded: unavailable = sim._unavailable_cells(members)
 	var candidates: Array[Vector2i] = []
 	for cell in perimeter(kind,origin):
 		if navigation.component_at(Vector2(cell) + Vector2(.5,.5)) == component and component >= 0 and not unavailable.has(cell): candidates.append(cell)

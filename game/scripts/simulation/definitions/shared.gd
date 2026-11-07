@@ -23,6 +23,7 @@ const WEAPONS := {
 	"pickup_gun": {"damage": 10000, "damage_type": "gattling", "range": 6.0, "delay_ticks": 6, "clip_size": 0, "reload_ticks": 0, "secondary_radius": 0.0, "secondary_damage": 0, "primary_radius": 0.0, "affects": []},
 	"pickup_cannon": {"damage": 45000, "damage_type": "gattling", "range": 6.0, "delay_ticks": 30, "clip_size": 0, "reload_ticks": 0, "secondary_radius": 0.0, "secondary_damage": 0, "primary_radius": 1.0, "affects": ["allies", "enemies", "neutrals"], "infantry_blast": 1.8533333333333333},
 	"pickup_rocket": {"damage": 50000, "damage_type": "explosion", "range": 6.0, "delay_ticks": 30, "clip_size": 0, "reload_ticks": 0, "secondary_radius": 0.0, "secondary_damage": 0, "primary_radius": 0.2, "affects": ["allies", "enemies", "neutrals"], "infantry_scatter": false},
+	"tunnel_gun": {"damage": 15000, "damage_type": "small_arms", "range": 7.0, "delay_ticks": 8, "clip_size": 0, "reload_ticks": 0, "secondary_radius": 0.0, "secondary_damage": 0, "primary_radius": 0.0, "affects": []},
 	"light_tank_gun": {"damage": 20000, "damage_type": "armor_piercing", "range": 6.0, "delay_ticks": 30, "clip_size": 0, "reload_ticks": 0, "secondary_radius": 0.0, "secondary_damage": 0, "primary_radius": 0.2, "affects": ["allies", "enemies", "neutrals"]},
 	"light_tank_gun_plus": {"damage": 25000, "damage_type": "armor_piercing", "range": 6.0, "delay_ticks": 30, "clip_size": 0, "reload_ticks": 0, "secondary_radius": 0.0, "secondary_damage": 0, "primary_radius": 0.2, "affects": ["allies", "enemies", "neutrals"]},
 }

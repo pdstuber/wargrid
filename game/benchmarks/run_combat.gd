@@ -31,12 +31,14 @@ func _run() -> void:
 		breached.append("hordes300")
 	if not _measure("ramp"):
 		breached.append("ramp")
+	if not _measure("frc"):
+		breached.append("frc")
 	if not breached.is_empty():
 		for layout: String in breached:
 			push_error("Combat benchmark failed for " + layout)
 		quit(1)
 		return
-	print("COMBAT BENCHMARK PASSED 9")
+	print("COMBAT BENCHMARK PASSED 10")
 	quit(0)
 
 func _measure(layout: String) -> bool:
@@ -68,6 +70,7 @@ func _measure(layout: String) -> bool:
 	var horde_peak: int = 0
 	var ramp_shots: int = 0
 	var ramped: Dictionary = {}
+	var frc := {"tier_start": -1, "tier_end": -1, "occupant_gain": false, "hole_gain": false, "hp": {}}
 	for tick in range(WARMUP + SAMPLES):
 		var started: int = Time.get_ticks_usec()
 		sim.step()
@@ -99,6 +102,7 @@ func _measure(layout: String) -> bool:
 				docked[unit.position] = true
 			waiting_ticks += 1 if waiting else 0
 			stacked_ticks += 1 if stacked else 0
+		if layout == "frc" and tick >= WARMUP: _track_frc(state, frc)
 		if layout == "ramp":
 			ramped.clear()
 			for object: Dictionary in state.entities + state.buildings:
@@ -137,6 +141,12 @@ func _measure(layout: String) -> bool:
 			push_error("Combat benchmark: no level 2 ramp shot inside the timed window")
 			return false
 		return true
+	if layout == "frc":
+		print("COMBAT FRC tier_start=", frc.tier_start, " tier_end=", frc.tier_end, " occupant_hp_rose=", frc.occupant_gain, " hole_hp_rose=", frc.hole_gain, " report-only")
+		if frc.tier_start != 0 or frc.tier_end != 1 or not frc.occupant_gain or not frc.hole_gain:
+			push_error("Combat benchmark: the frc salvage, tunnel heal or hole regeneration did not run inside the timed window")
+			return false
+		return true
 	if layout == "hordes300":
 		print("COMBAT ", layout.to_upper(), " checks_window=", horde_checks, " level2_peak_window=", horde_peak, " report-only")
 		if horde_checks == 0 or horde_peak == 0:
@@ -173,3 +183,16 @@ func _measure(layout: String) -> bool:
 		push_error("Combat benchmark workload invalid for " + layout)
 		return false
 	return true
+
+func _track_frc(state: Dictionary, frc: Dictionary) -> void:
+	for unit: Dictionary in state.entities:
+		if unit.kind == "frc_tank" and unit.position[1] > 50.0:
+			if frc.tier_start == -1: frc.tier_start = unit.combat.tier
+			frc.tier_end = unit.combat.tier
+		elif unit.has("container_id") and unit.hp > frc.hp.get(unit.id, 1 << 60):
+			frc.occupant_gain = true
+	for building: Dictionary in state.buildings:
+		if building.has("rebuild") and building.hp > frc.hp.get(building.id, 1 << 60): frc.hole_gain = true
+	frc.hp.clear()
+	for object: Dictionary in state.entities + state.buildings:
+		frc.hp[object.id] = object.hp

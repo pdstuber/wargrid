@@ -10,7 +10,7 @@ const Fixture = preload("res://tests/economy_fixture.gd")
 const UiStyle = preload("res://scripts/presentation/ui_style.gd")
 
 func cases() -> Array[Callable]:
-	return [test_skirmish_ready_and_tick, test_combat_context_input, test_match_hud_and_restart, test_combat_view, test_hud_layout_and_focus, test_hud_build_line, test_enemy_selection_read_only, test_rally_input_and_marker, test_supply_pile_labels, test_attack_move_hint_and_rejection, test_selection_prunes_dead, test_order_marks_own_only, test_health_bar_clear_of_boxes, test_result_clear_of_status, test_silent_keys_explain, test_hud_strings_use_display_names, test_hud_font_size_is_shared, test_defence_attack_scene]
+	return [test_skirmish_ready_and_tick, test_combat_context_input, test_match_hud_and_restart, test_combat_view, test_hud_layout_and_focus, test_hud_build_line, test_enemy_selection_read_only, test_rally_input_and_marker, test_supply_pile_labels, test_attack_move_hint_and_rejection, test_selection_prunes_dead, test_order_marks_own_only, test_health_bar_clear_of_boxes, test_result_clear_of_status, test_silent_keys_explain, test_hud_strings_use_display_names, test_hud_font_size_is_shared, test_defence_attack_scene, test_enter_unload_scene]
 
 func _setup(runner):
 	var main = Scene.instantiate()
@@ -229,11 +229,11 @@ func _pile_world(main) -> Dictionary:
 func test_hud_build_line(runner) -> bool:
 	var main = await _setup(runner)
 	var text: String = main.get_node("HUD/Status").text
-	runner.check(text.contains("1-9: menu") and not text.contains("1/2/3"), "H1 skirmish build line, got " + text)
+	runner.check(text.contains("1-9: menu") and text.contains("U: unload") and not text.contains("1/2/3"), "H1 skirmish build line, got " + text)
 	var base_helper = BaseScene.new()
 	var base = await base_helper.setup(runner)
 	var base_text: String = base.get_node("HUD/Status").text
-	runner.check(base_text.contains("1-9: menu") and not base_text.contains("1/2/3"), "H1 base scene shares the menu hint")
+	runner.check(base_text.contains("1-9: menu") and base_text.contains("U: unload") and not base_text.contains("1/2/3"), "H1 base scene shares the menu hint")
 	base.free()
 	main.free()
 	return true
@@ -472,5 +472,39 @@ func test_defence_attack_scene(runner) -> bool:
 	runner.check(orders.size() == 1 and orders[0].building_id == defence and orders[0].target_id == enemy and main._error.is_empty(), "DA5 right-click on an enemy in reach submits defence_attack")
 	helper.pointer(main, Iso.world_to_plane(Vector2(30.5, 30.5)) + Vector2(0, -8), MOUSE_BUTTON_RIGHT, true)
 	runner.check(main._error == "Target out of range" and sim.snapshot().pending_commands.filter(func(command: Dictionary) -> bool: return command.type == "defence_attack").size() == 1, "DA5 out of reach shows Target out of range, got " + main._error + " " + str(distant))
+	main.free()
+	return true
+
+func test_enter_unload_scene(runner) -> bool:
+	var helper = BaseScene.new()
+	var main = await _setup(runner)
+	var sim = Skirmish.create(false)
+	var hub: int = Fixture.add_completed(sim, 1, "frc_defence", Vector2i(10, 10))
+	var enemy_hub: int = Fixture.add_completed(sim, 2, "frc_defence", Vector2i(20, 10))
+	var rifle: int = sim.spawn(1, Vector2(14.5, 10.5), "frc_rifle_infantry")
+	sim.start_match([1, 2] as Array[int])
+	main.simulation = sim
+	main.selected_ids.assign([rifle])
+	main._refresh()
+	var orders = func(type: String) -> Array: return sim.snapshot().pending_commands.filter(func(command: Dictionary) -> bool: return command.type == type)
+	helper.pointer(main, Iso.world_to_plane(Vector2(10.5, 10.5)) + Vector2(0, -8), MOUSE_BUTTON_RIGHT, true)
+	var enters: Array = orders.call("enter")
+	runner.check(enters.size() == 1 and enters[0].entity_ids == [rifle] and enters[0].target_id == hub and main._error.is_empty(), "TU1 right-click on an own hub submits enter")
+	helper.pointer(main, Iso.world_to_plane(Vector2(20.5, 10.5)) + Vector2(0, -8), MOUSE_BUTTON_RIGHT, true)
+	var attacks: Array = orders.call("attack")
+	runner.check(attacks.size() == 1 and attacks[0].target_id == enemy_hub and orders.call("enter").size() == 1, "TU1 right-click on an enemy hub still attacks")
+	main.selected_ids.clear()
+	main.selected_building_id = hub
+	main._refresh()
+	helper.key(main, KEY_U)
+	var unloads: Array = orders.call("unload")
+	runner.check(unloads.size() == 1 and unloads[0].target_id == hub, "TU1 U with the hub selected submits unload")
+	main.selected_building_id = -1
+	main.selected_ids.assign([rifle])
+	main._refresh()
+	helper.key(main, KEY_U)
+	runner.check(orders.call("unload").size() == 1 and main._error == "Select a container", "TU1 U without a container says why, got '%s'" % main._error)
+	var status: Label = main.get_node("HUD/Status")
+	runner.check(Rect2(status.global_position, status.get_minimum_size()).end.x <= main.get_viewport().get_visible_rect().size.x, "TU1 the hint line keeps the status inside the viewport")
 	main.free()
 	return true

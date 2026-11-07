@@ -9,7 +9,7 @@ const Fixture = preload("res://tests/combat_fixture.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 
 func cases() -> Array[Callable]:
-	return [test_skirmish_initial_state, test_roster_production, test_bot_cycles_unit_list, test_bot_reads_seat_faction, test_bot_plays_china, test_bot_plays_frc, test_bot_keeps_one_builder_six_gatherers, test_bot_leaves_rebuild_alone, test_opponent_pays_and_retries, test_opponent_attack_policy, test_opponent_defends_base, test_defence_skips_busy_units, test_bot_ignores_contained_units, test_match_lifecycle, test_restart_state]
+	return [test_skirmish_initial_state, test_roster_production, test_bot_cycles_unit_list, test_bot_reads_seat_faction, test_bot_plays_china, test_bot_plays_frc, test_bot_builds_tunnel_hub_never_enters, test_bot_keeps_one_builder_six_gatherers, test_bot_leaves_rebuild_alone, test_opponent_pays_and_retries, test_opponent_attack_policy, test_opponent_defends_base, test_defence_skips_busy_units, test_bot_ignores_contained_units, test_match_lifecycle, test_restart_state]
 
 func _owned(items: Array, player: int) -> Array:
 	return items.filter(func(item: Dictionary) -> bool: return item.owner == player)
@@ -424,4 +424,20 @@ func test_bot_plays_frc(runner) -> bool:
 	var owned: Array = _owned(state.entities, 2).map(func(u: Dictionary) -> String: return u.kind)
 	runner.check(owned.all(func(k: String) -> bool: return k.begins_with("frc_")), "Fb3 an FRC bot owns only frc_ units, got " + str(owned))
 	runner.check(owned.any(func(k: String) -> bool: return k != "frc_builder"), "Fb3 an FRC bot trains a combat unit within 6000 ticks, got " + str(owned))
+	return true
+
+func test_bot_builds_tunnel_hub_never_enters(runner) -> bool:
+	var sim = Skirmish.create(true, "ai", {1: "usa", 2: "frc"})
+	var inside: bool = false
+	var tunnel: bool = false
+	var order: Array = []
+	for tick in range(6000):
+		Skirmish.issue_opponents(sim, [2])
+		sim.step()
+		inside = inside or sim._entities.values().any(func(u: Dictionary) -> bool: return u.owner == 2 and u.has("container_id"))
+		tunnel = tunnel or sim._players[2].has("tunnel")
+		for building: Dictionary in sim._buildings.values():
+			if building.owner == 2 and building.completed and building.kind != "frc_command_center" and not order.has(building.kind): order.append(building.kind)
+	runner.check(order.slice(0, 4) == ["frc_supply_center", "frc_barracks", "frc_defence", "frc_factory"], "Fb4 an FRC bot completes the cache, barracks, tunnel hub and factory in order, got " + str(order))
+	runner.check(not inside and not tunnel, "Fb4 the bot orders nothing into the hub: no container_id, no tunnel key")
 	return true
