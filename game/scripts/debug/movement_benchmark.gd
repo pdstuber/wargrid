@@ -6,6 +6,7 @@ const Iso = preload("res://scripts/presentation/isometric.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
 const CombatWorkload = preload("res://scripts/debug/combat_workload.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
+const LAYOUTS: Array[String] = ["open", "dense", "horde"]
 # `-- --profile` adds profiling zones and a third, 196x196 combat leg (spike-performance only).
 var _profile: bool = OS.get_cmdline_user_args().has("--profile")
 var _large: bool = false
@@ -28,6 +29,9 @@ var _frame_times := PackedFloat64Array()
 var _command_times := PackedFloat64Array()
 var _draw_calls := PackedFloat64Array()
 var _sampling_done: bool = false
+var _horde_start: Dictionary = {}
+var _horde_peak: int = 0
+var _horde_marked_ticks: int = 0
 @onready var _view: Node2D = $WorldView
 @onready var _status: Label = $HUD/Status
 
@@ -42,7 +46,15 @@ func _ready() -> void:
 	_begin_layout()
 
 func _begin_layout() -> void:
-	_simulation = Workload.create(["open", "dense"][_layout_index])
+	_horde_start.clear()
+	_horde_peak = 0
+	_horde_marked_ticks = 0
+	if _layout_name() == "horde":
+		_simulation = CombatWorkload.create("horde_render")
+		for unit: Dictionary in _simulation.snapshot().entities:
+			if unit.owner == 1: _horde_start[unit.id] = unit.position
+	else:
+		_simulation = Workload.create(LAYOUTS[_layout_index])
 	_layout_started = Time.get_ticks_usec()
 	_sample_started = 0
 	_last_frame = 0
@@ -64,6 +76,9 @@ func _physics_process(_delta: float) -> void:
 	if _large:
 		_large_tick()
 		return
+	if _layout_name() == "horde":
+		_horde_tick()
+		return
 	var started: int = Time.get_ticks_usec()
 	var command_tick: bool = _leg == -1 or Workload.settled(_simulation)
 	if command_tick:
@@ -78,7 +93,7 @@ func _physics_process(_delta: float) -> void:
 	var state: Dictionary = _simulation.snapshot()
 	var no_selection: Array[int] = []
 	_view.set_state(state, no_selection)
-	_status.text = "%s | %s | tick %d | leg %d | Esc: quit" % [["open", "dense"][_layout_index],
+	_status.text = "%s | %s | tick %d | leg %d | Esc: quit" % [LAYOUTS[_layout_index],
 		"draining" if _sampling_done else ("sampling" if _sample_started > 0 else "warmup"), state.tick, _leg]
 	var elapsed: float = (Time.get_ticks_usec() - started) / 1000.0
 	if _sample_started > 0 and not _sampling_done:
@@ -144,17 +159,42 @@ func _finish_layout(state: Dictionary) -> void:
 	if goals.size() != 300 or _tick_times.is_empty() or _frame_times.is_empty():
 		_fail("Rendered workload incomplete samples/destinations")
 		return
-	print("RENDERED COMPLETE ", ["open", "dense"][_layout_index], " completed_legs=", _completed_legs + 1,
+	print("RENDERED COMPLETE ", LAYOUTS[_layout_index], " completed_legs=", _completed_legs + 1,
 		" queue_peak=", _queue_peak, " queue_drain_ticks=", _queue_drain, " arrived=300 unique_destinations=", goals.size())
 	_layout_index += 1
-	if _layout_index == 2:
-		print("RENDERED BENCHMARK PASSED 2")
-		if _profile:
-			_begin_large()
-			return
-		get_tree().quit(0)
-	else:
-		_begin_layout()
+	_begin_layout()
+
+func _horde_tick() -> void:
+	var started: int = Time.get_ticks_usec()
+	_simulation.step()
+	var state: Dictionary = _simulation.snapshot()
+	var no_selection: Array[int] = []
+	_view.set_state(state, no_selection)
+	_status.text = "horde | %s | tick %d | Esc: quit" % ["draining" if _sampling_done else ("sampling" if _sample_started > 0 else "warmup"), state.tick]
+	if _sample_started > 0 and not _sampling_done:
+		_sample_ticks += 1
+		_window_ticks += 1
+		_tick_times.append((Time.get_ticks_usec() - started) / 1000.0)
+		var marks: int = _view.horde_marks().size()
+		_horde_peak = maxi(_horde_peak, marks)
+		_horde_marked_ticks += 1 if marks > 0 else 0
+	Profiler.end_tick()
+	if _sampling_done:
+		_finish_horde(state)
+
+func _finish_horde(state: Dictionary) -> void:
+	var moved: int = 0
+	for unit: Dictionary in state.entities:
+		if _horde_start.has(unit.id) and unit.position != _horde_start[unit.id]: moved += 1
+	if _horde_peak == 0 or _horde_marked_ticks == 0 or moved == 0 or _tick_times.is_empty() or _frame_times.is_empty():
+		_fail("Rendered horde workload drew no horde marks or no unit moved")
+		return
+	print("RENDERED COMPLETE horde horde_mark_peak=", _horde_peak, " marked_ticks=", _horde_marked_ticks, " of ", _sample_ticks, " units_moved=", moved)
+	print("RENDERED BENCHMARK PASSED 3")
+	if _profile:
+		_begin_large()
+		return
+	get_tree().quit(0)
 
 func _fail(message: String) -> void:
 	push_error(message)
@@ -167,7 +207,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_tree().quit(1)
 
 func _layout_name() -> String:
-	return "large_196" if _large else ["open", "dense"][_layout_index]
+	return "large_196" if _large else LAYOUTS[_layout_index]
 
 func _begin_large() -> void:
 	_large = true

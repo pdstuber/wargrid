@@ -11,11 +11,15 @@ Branch / base commit / working-tree state: m7-factions, HEAD = commit after cd8b
 Last green task / next incomplete task: G2.0-G2.7 green, gate review (Opus) fixed, lean review done / user decisions below, then gate 3 is an outline (Opus high expansion session needed). Do not begin any G3 item.
 Changed paths since last commit: none
 Last command / cases / checks / failures / exit / marker: see "Gate 2 review fixes": 388 cases / 134,583 / 0, exit 0, TESTS PASSED; lint, warnings, python checks, netplay (match 8331), conformance 33, run_benchmark.sh PASSED 10, team match won 33205 winner 1; traces cmp-identical to eb3fbed
-Known red case or blocker: none. Exceeded, not loosened: hordes p95 2.102, hordes300 p95 5.626 / p99 7.074 (budget 1.82 / 3.64; user's call). Pending: rendered benchmark (visible window)
+Known red case or blocker: none. Exceeded, not loosened: hordes p95 2.102, hordes300 p95 5.626 / p99 7.074 (budget 1.82 / 3.64; user's call). Rendered benchmark: done 2026-11-07, see "Rendered China layout"
 Approved decisions, pre-authorizations used, deferred gates: full load ground only (user 2026-11-06, OPEN asymmetry item); setup gate kept; defence_attack added. Open minor items M5, M6, M9. Lean review findings not applied (user's call): drop the hordes layout (keep hordes300; plan pinned PASSED 8/9 counts), replace add_test_faction by the china faction in test_bot_reads_seat_faction, drop horde_pairs counter, merge duplicate release block in supply_collection loading, loop the parity tables
 Usage so far: not recorded
 Next exact action: user: push approval (CI Linux/Windows + compare_local_traces.sh), playtest offline and online (rendered benchmark batched), decide horde cost, lean findings, Chinook full-load fairness; then Opus (high) session expands gate 3.
 ```
+
+## User acceptance of exceeded performance rows (2026-11-07)
+
+The user accepts the exceeded rows for now (combat stress open/dense, team match p99, hordes, hordes300, rendered horde x6 estimate). A performance improvement spike follows after M7. The rows stay reported as exceeded; no budget is loosened.
 
 ## Pins at base
 
@@ -147,7 +151,7 @@ Gate-1 rows (cost, ticks, max_hp, armor, vision, radius, weapon, other) are the 
   - contact 1.191 / 1.665 PASS, skirmish3v3 1.406 / 1.588 PASS.
   - transports (new, report-only): p95 1.504 / p99 1.802, 180 passenger shots in window, within budget; defences (new, report-only): p95 2.87 / p99 3.251, 590 defence shots, p95 over 1.82. `Containers.step` has no separate counter (cost is inside these totals; `run_profile.sh` not run).
   - lockstep overhead p99 0.071 ms (limit 0.6) PASS.
-- Rendered benchmark: not run (visible window, needs user approval).
+- Rendered benchmark: run later, see "Rendered China layout".
 
 ### Provisional pins against window and cause
 
@@ -515,3 +519,7 @@ Review: Opus, diff 8f835c0..eb3fbed, no critical findings. Red-first run (fixes 
 Open minor items, not done (skipped by instruction): M5 ground `_admit` ordering untested (replacing `_arrival(other)` by `center(target)` in the waiting-before scan passes Gd2/Gd3); M6 a source and a nearby depot can share dock cells (`_claim_dock` only excludes the same target; 0 stacked docked ticks measured, latent); M9 per-tick cost of waiting trucks scanning all entities in `_admit` (the docks layout holds only trucks).
 
 Checks on this tree: suite 388 / 134,583 / 0 exit 0 (traces off), 134,590 (traces on); four traces `cmp`-identical to a clean eb3fbed worktree (replay, economy, combat 1200 rows each, team 100); lint, warnings (89 files), `run_python_checks.sh`, unittest discover, `test_faction_guard.py` pass; netplay match 8331, kill, stall, silent, spike, perturb, version PASSED; conformance PASSED 33; `run_benchmark.sh` exit 0, `COMBAT BENCHMARK PASSED 10` (ledger row 2026-11-07 gate-2 review fixes); `run_team_match.sh` won 33205 winner 1. Rendered benchmark not run.
+
+## Rendered China layout
+
+New `horde` leg in `movement_benchmark.gd` (workload `CombatWorkload.create("horde_render")`: 300 China rifle / rocket / light vehicle / tank units attack-move onto 100 USA riflemen). Test first: `test_horde_render_layout` (BM9, 300 units, marks drawn, units moved). Suite on this tree: 389 cases / 134,586 checks / 0 failures, exit 0; lint, warnings (89 files) pass; `run_benchmark.sh` exit 0 (`BENCHMARK PASSED 2`, `COMBAT BENCHMARK PASSED 10`, lockstep 1); no simulation file changed, so traces are unchanged by construction (not re-compared). Rendered run (user-approved, one window, closed on exit 0): `RENDERED BENCHMARK PASSED 3`; horde frame interval p95 4.374 ms (open 0.591, dense 2.584), peak 233 horde marks, marked on 1800 of 1800 ticks, 300 units moved, draw calls p50 222. Numbers and caveats in the performance ledger row of 2026-11-07 (rendered rerun with the `horde` layout). Not viewed by a person (no screenshot). Resume record next action unchanged.

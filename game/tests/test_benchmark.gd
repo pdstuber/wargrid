@@ -7,10 +7,11 @@ const CombatWorkload = preload("res://scripts/debug/combat_workload.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Navigation = preload("res://scripts/simulation/grid_navigation.gd")
 const Economy = preload("res://tests/economy_fixture.gd")
+const View = preload("res://scripts/presentation/world_view.gd")
 const Probe = preload("res://scenes/movement_benchmark.tscn")
 
 func cases() -> Array[Callable]:
-	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_transports_fixture, test_defences_fixture, test_skirmish3v3_fixture, test_combat_work_ceiling, test_volley_retaliation_work]
+	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_transports_fixture, test_defences_fixture, test_skirmish3v3_fixture, test_combat_work_ceiling, test_volley_retaliation_work, test_horde_render_layout]
 
 func test_statistics(runner) -> bool:
 	runner.check(Stats.summary(PackedFloat64Array()) == {"n": 0, "p50": 0.0, "p95": 0.0, "p99": 0.0, "max": 0.0}, "BM1 empty")
@@ -194,4 +195,33 @@ func test_volley_retaliation_work(runner) -> bool:
 		shots += sim.snapshot().combat_events.size()
 	runner.check(shots > 100, "BM6b volleys happen in the window, got " + str(shots))
 	runner.check(peak <= 1500, "BM6b joiner query work per tick after tick 0, got " + str(peak))
+	return true
+
+func test_horde_render_layout(runner) -> bool:
+	var sim: Simulation = CombatWorkload.create("horde_render")
+	var start: Dictionary = {}
+	var china: int = 0
+	for unit in sim.snapshot().entities:
+		if unit.owner == 1:
+			china += 1
+			start[unit.id] = unit.position
+	runner.check(china == 300, "BM9 300 China units")
+	var view = View.new()
+	var peak: int = 0
+	var marked_ticks: int = 0
+	for tick in range(900):
+		sim.step()
+		if tick >= 300:
+			view.set_state(sim.snapshot(), [])
+			var count: int = view.horde_marks().size()
+			peak = maxi(peak, count)
+			marked_ticks += 1 if count > 0 else 0
+	var moved: int = 0
+	for unit in sim.snapshot().entities:
+		if start.has(unit.id) and unit.position != start[unit.id]:
+			moved += 1
+	runner.check(moved > 100, "BM9 China units moved, got %d" % moved)
+	runner.check(peak > 0, "BM9 horde marks drawn in the window")
+	print("BM9 horde_render peak_marks=", peak, " marked_ticks=", marked_ticks, " moved=", moved)
+	view.free()
 	return true
