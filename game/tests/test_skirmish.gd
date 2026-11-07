@@ -438,6 +438,6 @@ func test_bot_builds_tunnel_hub_never_enters(runner) -> bool:
 		tunnel = tunnel or sim._players[2].has("tunnel")
 		for building: Dictionary in sim._buildings.values():
 			if building.owner == 2 and building.completed and building.kind != "frc_command_center" and not order.has(building.kind): order.append(building.kind)
-	runner.check(order.slice(0, 4) == ["frc_supply_center", "frc_barracks", "frc_defence", "frc_factory"], "Fb4 an FRC bot completes the cache, barracks, tunnel hub and factory in order, got " + str(order))
+	runner.check(order.slice(0, 4) == ["frc_supply_center", "frc_barracks", "frc_factory", "frc_defence"], "Fb4 an FRC bot completes the cache, barracks, factory and tunnel hub in order, got " + str(order))
 	runner.check(not inside and not tunnel, "Fb4 the bot orders nothing into the hub: no container_id, no tunnel key")
 	return true

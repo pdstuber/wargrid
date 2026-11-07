@@ -22,7 +22,7 @@ const FACTIONS := {
 		"display_name": "Free Resistance Coalition",
 		"start_building": "frc_command_center",
 		"start_unit": "frc_builder",
-		"build_order": ["frc_supply_center", "frc_barracks", "frc_defence", "frc_factory"],
+		"build_order": ["frc_supply_center", "frc_barracks", "frc_factory", "frc_defence"],
 		"units_for": {"frc_barracks": ["frc_rifle_infantry", "frc_rocket_infantry"], "frc_factory": ["frc_tank", "frc_light_vehicle"]},
 	},
 }

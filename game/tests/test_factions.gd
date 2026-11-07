@@ -12,7 +12,7 @@ const MapData = preload("res://scripts/simulation/map_data.gd")
 const LockstepTests = preload("res://tests/test_lockstep.gd")
 
 func cases() -> Array[Callable]:
-	return [test_foundation_keeps_seat_alive, test_cancel_last_foundation_defeats, test_choose_faction_online_same_hash, test_match_waits_for_all_factions, test_setup_rejects_commands_until_all_chose, test_choose_faction_same_tick_cases, test_capability_rules, test_start_has_command_center_and_builder, test_survival_counts_buildings_only, test_bot_trains_builder_without_one, test_bot_without_command_center, test_china_start, test_china_power_and_prerequisites, test_choose_faction_online_china_same_hash, test_frc_start, test_frc_needs_no_power]
+	return [test_foundation_keeps_seat_alive, test_cancel_last_foundation_defeats, test_choose_faction_online_same_hash, test_match_waits_for_all_factions, test_setup_rejects_commands_until_all_chose, test_choose_faction_same_tick_cases, test_capability_rules, test_start_has_command_center_and_builder, test_survival_counts_buildings_only, test_bot_trains_builder_without_one, test_bot_without_command_center, test_china_start, test_china_power_and_prerequisites, test_choose_faction_online_china_same_hash, test_choose_faction_online_frc_same_hash, test_frc_start, test_frc_needs_no_power]
 
 func test_capability_rules(runner) -> bool:
 	Registry.add_test_kind("x_maker", {"class": "vehicle", "cost": 1, "ticks": 1, "speed": 1.0, "locomotor": "wheels", "max_hp": 1000, "armor": "builder_vehicle", "weapon": "", "builds": ["usa_barracks"]})
@@ -104,6 +104,25 @@ func test_choose_faction_online_china_same_hash(runner) -> bool:
 	runner.check(a.ls.hash_rows() == b.ls.hash_rows() and a.ls.hash_rows().size() >= 100, "F4 digests equal every 30 ticks")
 	var kinds: Array = a.sim.snapshot().buildings.map(func(b2: Dictionary) -> String: return b2.kind)
 	runner.check(kinds.has("china_command_center") and kinds.has("usa_command_center"), "F4 each seat has its own faction home")
+	return true
+
+func test_choose_faction_online_frc_same_hash(runner) -> bool:
+	var net = _online_pair(runner)
+	for c in net.clients: c.target = 3000
+	for i in 2:
+		var seat: int = i + 1
+		net.clients[i].behavior = func(c) -> void:
+			if c.sim.tick() >= 4: Skirmish.issue_opponent(c.seat_sim, seat)
+	net.clients[0].ls.submit({"type": "choose_faction", "faction": "frc"})
+	net.clients[1].ls.submit({"type": "choose_faction", "faction": "usa"})
+	net.connect_all()
+	net.run()
+	var a = net.clients[0]
+	var b = net.clients[1]
+	runner.check(a.sim.tick() == 3000 and b.sim.tick() == 3000, "F6 both reach tick 3000")
+	runner.check(a.ls.hash_rows() == b.ls.hash_rows() and a.ls.hash_rows().size() >= 100, "F6 digests equal every 30 ticks")
+	var kinds: Array = a.sim.snapshot().buildings.map(func(b2: Dictionary) -> String: return b2.kind)
+	runner.check(kinds.has("frc_command_center") and kinds.has("usa_command_center"), "F6 each seat has its own faction home")
 	return true
 
 func test_match_waits_for_all_factions(runner) -> bool:

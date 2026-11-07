@@ -356,6 +356,14 @@ CHINA_MOVERS = [
     ("truck", "ChinaVehicleSupplyTruck", 400),
 ]
 
+FRC_MOVERS = [
+    ("worker", "GLAInfantryWorker", 300),
+    ("rebel", "GLAInfantryRebel", 300),
+    ("tunneldefender", "GLAInfantryTunnelDefender", 300),
+    ("technical", "GLAVehicleTechnical", 400),
+    ("scorpion", "GLATankScorpion", 400),
+]
+
 SCENARIOS = {
     "move_ranger": move("AmericaInfantryRanger", 300),
     "move_crusader": move("AmericaTankCrusader", 400),
@@ -390,6 +398,16 @@ SCENARIOS = {
     "ramp_gattling_tank": fire("ChinaTankGattling", "GLACommandCenter", 250, 600),
     "ramp_gattling_cannon": fire("ChinaGattlingCannon", "GLACommandCenter", 200, 600),
     "horde_redguard": horde("ChinaInfantryRedguard", 5, "GLACommandCenter", 80, 600),
+    **{f"move_{name}": move(template, distance) for name, template, distance in FRC_MOVERS},
+    **{f"turn_{name}": turn(template) for name, template, _ in FRC_MOVERS},
+    "range_rebel": fire("GLAInfantryRebel", "AmericaVehicleDozer", 250, 400),
+    "range_tunneldefender": fire("GLAInfantryTunnelDefender", "AmericaVehicleDozer", 300, 400),
+    "range_technical": fire("GLAVehicleTechnical", "AmericaVehicleDozer", 300, 400),
+    "range_scorpion": fire("GLATankScorpion", "AmericaVehicleDozer", 300, 400),
+    "burst_rebel": fire("GLAInfantryRebel", "GLACommandCenter", 250, 600),
+    "rof_technical": fire("GLAVehicleTechnical", "GLACommandCenter", 130, 600),
+    "rof_scorpion": fire("GLATankScorpion", "GLACommandCenter", 300, 600),
+    "rof_tunnel": fire("GLATunnelNetwork", "GLACommandCenter", 200, 600),
     "splash_crusader": splash(),
     "supply_chinook": supply(),
     "retaliate_ranger": retaliate(),
@@ -411,6 +429,11 @@ REACH = {
     "reach_battlemaster": ("ChinaTankBattleMaster", "AmericaVehicleDozer", 150, 220),
     "reach_gattlingtank": ("ChinaTankGattling", "AmericaVehicleDozer", 100, 260),
     "reach_gattlingcannon": ("ChinaGattlingCannon", "AmericaVehicleDozer", 150, 320),
+    "reach_rebel": ("GLAInfantryRebel", "AmericaVehicleDozer", 100, 160),
+    "reach_tunneldefender": ("GLAInfantryTunnelDefender", "AmericaVehicleDozer", 150, 260),
+    "reach_technical": ("GLAVehicleTechnical", "AmericaVehicleDozer", 100, 220),
+    "reach_scorpion": ("GLATankScorpion", "AmericaVehicleDozer", 100, 220),
+    "reach_tunnel": ("GLATunnelNetwork", "AmericaVehicleDozer", 150, 260),
 }
 
 

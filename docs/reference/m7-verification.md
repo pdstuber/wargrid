@@ -5,16 +5,16 @@ Plan: [M7 plan](../superpowers/plans/2026-11-06-m7-factions.md). Design: [M7 des
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-07, G3.4 green, uncommitted)
-Branch / base commit / working-tree state: m7-factions at fbbe61d (G3.1 to G3.3 committed locally, not pushed) plus uncommitted G3.4. Branch not merged to main; origin/m7-factions is older.
-Last green task / next incomplete task: gates 1 and 2 done; gate 3: G3.1 to G3.3 committed, G3.4 green and uncommitted (2026-11-07); next incomplete task G3.5 (gate 3 and the M7 exit gate, stop gate), after the G3.4 commit.
-Changed paths since last commit: game/scripts/simulation/{containers.gd, construction.gd, simulation.gd, combat.gd, definitions/{frc.gd, shared.gd}}, game/scripts/base_main.gd, game/scripts/debug/combat_workload.gd, game/benchmarks/run_combat.gd, tools/run_benchmark.sh, game/tests/{test_tunnels.gd (new, registered in run_tests.gd), test_skirmish.gd, test_skirmish_scene.gd}, the plan checkboxes and this file. New .uid files: game/tests/test_tunnels.gd.uid.
-Last command / cases / checks / failures / exit / marker: suite 454 cases / 134,948 checks / 0 failures, exit 0, TESTS PASSED; run_lint.sh, run_warnings.sh (100 files), python3 -m unittest discover -s tools (52) pass; replay, economy, combat and team traces cmp-identical to a fbbe61d run; all nine run_netplay.sh scenarios pass. run_benchmark.sh exit 1: movement PASSED 2, combat open / dense exceed their report-only ceilings on this loaded host (same on a fbbe61d copy), so the final `COMBAT BENCHMARK PASSED 10` line is not printed; the new frc layout passes its window check (see "G3.4 record").
-Known red case or blocker: none. Exceeded, not loosened, accepted by the user until the performance spike: combat stress open/dense, team match p99, hordes300.
-Approved decisions, pre-authorizations used, deferred gates: unchanged (gate 2 SIGNED OFF 2026-11-07; gate 3 planning decisions and the three planning answers, see "Gate 3 planning").
-Open items: Chinook full-load fairness (user will check later); M6 shared dock cells (latent); unverified online: China vs USA online, Chrome/Firefox, two WASM clients, hidden tab; Esc menu not yet played by the user (tests only); enter / unload controls and the tunnel are tested headless only, not played.
+Resume record (updated 2026-11-07, G3.5 part A green, uncommitted)
+Branch / base commit / working-tree state: m7-factions at 5736f56 (G3.1 to G3.4 committed locally, not pushed) plus uncommitted G3.5 part A. Branch not merged to main; origin/m7-factions is older.
+Last green task / next incomplete task: gates 1 and 2 done; gate 3: G3.1 to G3.4 committed, G3.5 part A (matches, check list, ledger, parity, bot record) green and uncommitted; next: commit it, then the G3.5 gate review (Opus high, then /ponytail-review), push for CI (approval), the user's playtest, M7 exit gate (stop).
+Changed paths since last commit: game/scripts/simulation/definitions/factions.gd (FRC build_order), game/scripts/debug/team_match.gd (seat factions), game/benchmarks/run_team_match.gd, tools/run_team_match.sh, tools/zh_parity/{parity,analyze}.py, game/tests/{test_skirmish_match, test_factions, test_skirmish, test_team_match}.gd, docs (this file, performance.md, the plan). No new files, no new .uid.
+Last command / cases / checks / failures / exit / marker: suite 456 cases / 134,961 checks / 0 failures, exit 0, TESTS PASSED (75 s); run_lint.sh, run_warnings.sh, run_python_checks.sh, unittest (52) pass; replay, economy, combat traces cmp-identical to a 5736f56 git archive run, team trace moved; all nine run_netplay.sh PASSED; run_conformance.sh CONFORMANCE PASSED 33; run_team_match.sh twice `TEAM MATCH cap tick=45000 winner=null units_peak=171`; run_benchmark.sh exit 1 (open / dense combat stress exceed their report-only ceilings on a loaded host, see the ledger row).
+Known red case or blocker: none. Exceeded, not loosened, accepted by the user until the performance spike: combat stress open / dense, team match p95 / p99, hordes300.
+Approved decisions, pre-authorizations used, deferred gates: unchanged, plus the user decisions of 2026-11-07 in the G3.5 record (FRC bot builds the factory before the hub; "won inside 45000" waived for the three-faction match).
+Open items: Chinook full-load fairness; M6 shared dock cells (latent); unverified online: China vs USA online, Chrome/Firefox, two WASM clients, hidden tab; Esc menu, enter / unload controls, tunnel and crate marks not played; rendered benchmark pending approval (presentation changed); quiet-host rerun of run_benchmark.sh for the `COMBAT BENCHMARK PASSED 10` line (the same two exceeded rows block it).
 Usage so far: not recorded
-Next exact action: commit G3.4 (`Add the tunnel network`, local, pre-authorized), then G3.5 (plan "Gate 3", stop gate after it).
+Next exact action: commit G3.5 part A (local, pre-authorized), dispatch the gate review.
 ```
 
 ## G3.1 record (2026-11-07, tree: m7-factions b354098 plus uncommitted G3.1, Apple M6)
@@ -44,6 +44,74 @@ Tests: `test_tunnels.gd` (10 cases) covering the plan list, `test_bot_builds_tun
 Checks on the same tree: suite 454 / 134,948 / 0, exit 0, TESTS PASSED (traces on; baseline same way 442 / 134,888); lint pass; warnings 100 files pass; unittest discover 52 OK (no faction id in guarded code); four traces (replay, economy, combat, team) `cmp`-identical to a fbbe61d `git archive` run, every pin unchanged; `run_netplay.sh` match, kill, stall, silent, spike, perturb, version, relay-down, relay-term all `NETPLAY PASSED`.
 Benchmark: the `frc` layout prints `COMBAT FRC tier_start=0 tier_end=1 occupant_hp_rose=true hole_hp_rose=true` and passes in the timed window; tick p50 / p95 / p99 / max 0.271 / 1.033 / 1.484 / 2.985 ms (inside the 1.82 / 3.64 budget; shots 1188, deaths 78). `sh tools/run_benchmark.sh` exits 1 on this host because combat stress `open` (p95 / p99 3.08-3.27 / 4.06-4.24) and `dense` (3.39-3.69 / 4.98-5.34) exceed their report-only ceilings (3.05 / 4.23, 3.31 / 5.01); a fbbe61d copy run back to back gives the same (open 3.095 / 4.016, dense 3.525 / 5.052; load average about 4), so it is host load, not this change. Nothing loosened; the script therefore never prints `COMBAT BENCHMARK PASSED 10` here (script and `run_benchmark.sh` now expect 10). Needs a quiet-host rerun and a ledger row before the M7 exit.
 Departures (none changes a plan assertion): (1) `Construction.approach` got a `crowded` flag (default false) that skips the occupied-cell filter; a 1x1 hub has four perimeter cells, so with the filter the fifth of ten walkers found no approach and gave up, which fails "6 at A and 4 at B fill it". Units may share an approach cell since they vanish on boarding. (2) The plan's boarding-tick and unload-plus-death cases are built with a hub at 1 HP and an idle enemy rifleman placed the tick before (an idle guard fires at tick 0), not with a due-tick attack order. (3) `Combat` needed no other change: `_plan_passenger` is the only entity-table read of `container_id`. (4) `U` with a selected container unit or building submits `unload`; with nothing selectable it sets "Select a container".
+
+## G3.5 record (2026-11-07, tree: m7-factions 5736f56 plus uncommitted G3.5, Apple M6)
+
+Matches. Fm1 `test_frc_skirmish_match` (frc seat 1 vs usa seat 2, both bots, cap 45000): won tick 10512, winner 2; a laborer delivery, a hole, two `frc_rocket_infantry` on the tick a hub completed and a crate all happened before the end. Pins `FRC_TERMINAL_TICK` 10512, `FRC_WINNER` 2 (provisional, cause G3.5). F6 `test_choose_faction_online_frc_same_hash` (frc / china, bots from tick 4, digests equal every 30 ticks to 3000) passes. Both written first and run red against placeholders.
+
+Finding 1 (first 3v3 run, TB3 red): seat 6 (frc) had 4 of 5 buildings at tick 3000 and no factory by tick 6000. Cause (probe): the bot's `build` for `frc_factory` was rejected every decision with "Footprint covers ground unit or destination" because the two `frc_rocket_infantry` the hub spawns stand idle at (120.5, 19.5) and (120.5, 18.5), inside the factory footprint; by the time they left, the credits had gone to units. Seat 8 had the same hub but its fighters stood clear of its slot. User decision (2026-11-07): FRC bot build order supply cache, barracks, factory, then the one Tunnel Hub (`factions.gd`). Fb4 changed first and seen red, green after. Only FRC bot behaviour changed; USA and China traces and pins did not move.
+
+Finding 2 (three-faction 3v3, usa + china + frc per team on Ashfall, cap 45000): ends `TEAM MATCH cap tick=45000 winner=null units_peak=171`, also with the cap at 90000 (stable stalemate: seat 8 buildings frozen from tick 44999 to 89999 at Headquarters 81%, hub 86%, vehicle yard 97%; seat 8 units 18 -> 36, team 2 units 29 / 13 / 15 -> 20 / 10 / 15). Per-seat record at 45000: seat 1 usa 0 buildings 1 unit; seat 2 china 0 / 0; seat 8 frc 5 buildings 18 units; seats 4 / 5 / 6 five buildings each, 29 / 13 / 15 units; no holes, no sites, 0 holes reopened (the hole rule is not involved). Diagnosis (read-only probes): seats 1 and 2 die by about tick 32000; from then every team 2 wave targets seat 8 (a live, hittable laborer next to the hub; no stale or masked target), but seat 8 sits 105-160 cells away, so waves of 3-6 units arrive piecemeal and die in the last 25 cells (lead unit ids change every 500-1000 ticks, nearest approach 5.5 cells) against a growing defender army and the hub gun. The same layout with seat 8 as usa or as china (60000 ticks) is also unfinished, so it is not FRC-specific: a generic bot limit (wave size and trickle, no concentration on a far last target). M8 owns wave concentration; no bot constant was changed.
+
+User waiver (2026-11-07): "won inside 45000" is waived for the three-faction match only; the cap stays 45000 and the result is pinned as a cap result. `tools/run_team_match.sh` now requires `^TEAM MATCH cap tick=45000 winner=null ` (a winner or another tick fails), `run_team_match.gd` returns success for the cap. Fm1 (FRC 1v1, won tick 10512) is the won-match evidence for FRC. TB3 per-seat building check (5 each at tick 3000, now passing unweakened) and "a tank was produced" unchanged. Two runs of `run_team_match.sh`: identical line.
+
+Pin rows (cause G3.5): test_skirmish_match Fm1 `FRC_TERMINAL_TICK` new 10512, `FRC_WINNER` new 2; test_team_match TB3 `FINAL_DIGEST` 6b81119ab5577115 -> f21dde02dd0e80a7, TB4 `TEAM_CORE_SERIES` 6113229322264627267 -> 3691462617852479071. S1, `PINNED`, Cs1, netplay `match` and every other pin unchanged.
+
+Checks (this tree): suite 456 cases / 134,961 checks / 0 failures, exit 0, TESTS PASSED, 75 s (baseline at start 454 / 134,948 on 5736f56); lint, warnings, `run_python_checks.sh`, unittest discover (52) pass; traces with the four env vars on this tree vs a `git archive` of 5736f56: replay, economy, combat cmp-identical, team moved on purpose; `run_netplay.sh` match, kill, stall, silent, spike, perturb, version, relay-down, relay-term all exit 0; `run_conformance.sh` CONFORMANCE PASSED 33; `run_team_match.sh` twice cap line identical, 45000 ticks about 110 s wall (CI timing: the 3v3 is not in the suite, only the 20000-tick prefix of TB3 / TB4 is, so the suite time is unchanged). `run_benchmark.sh` exit 1: movement PASSED 2; combat stress open 3.59 / 4.455 and dense 4.05 / 5.497 exceed their ceilings (host load average 2.7 to 3.5, not quiet; the same two rows exceeded on a 5736f56 copy in G3.4); not loosened, so `COMBAT BENCHMARK PASSED 10` and the lockstep line are not printed. frc layout inside budget (see the ledger). Ledger row added to [performance](performance.md). Rendered benchmark not run.
+
+Departures: (1) FRC bot build order change (user decision above), plan step G3.1 wording "hub after barracks" kept, factory now before the hub. (2) The three-faction match ends at the cap (user waiver). (3) `run_team_match.gd` returns true for the cap result; `tools/run_team_match.sh` expects the pinned cap line. (4) Parity scenarios for the Technical use `GLAVehicleTechnical` directly (spawned fine, no chassis fallback).
+
+### Parity, FRC (measured (source build), fork branch wargrid-parity; traces in scratch, `~/CnC/parity` untouched, game `-headless -noaudio`)
+
+New in `tools/zh_parity/{parity,analyze}.py` (`FRC_MOVERS`, self-test OK, python checks pass): `move_` / `turn_` for worker, rebel, tunneldefender, technical, scorpion; `range_` / `reach_` for the four armed units and `reach_tunnel`; `burst_rebel`, `rof_technical`, `rof_scorpion`, `rof_tunnel`. The laborer's supply cycle is not measured (`supply()` is Chinook-only).
+
+| scenario | metric | measured | Wargrid | verdict |
+|---|---|---|---|---|
+| move_worker / rebel / tunneldefender | top speed | 25.0 / 20.0 / 20.0 | 25 / 20 / 20 | PASS |
+| move_technical | cruise (peak) | 83.33 (90.0) | 90 | PASS within tolerance; cruise is 7% under the Wargrid speed, accel 100, 23 frames to top |
+| move_scorpion | cruise (peak) | 40.056 (66.7 one-frame spike) | 40 | PASS (as Battlemaster) |
+| turn_ worker / rebel / tunneldefender | turn rate | 500 deg/s, 11 frame start delay | 500 | feel, matches |
+| turn_technical / scorpion | turn rate | 180 deg/s (45 / 32 turn frames, start delay 3 / 24) | 180 | feel, matches |
+| range_ rebel / tunneldefender / technical / scorpion | first shot | 117.0 / 196.4 / 180.4 / 179.1 | 100 / 175 / 150 / 150 | +17 / +21 / +30 / +29 (geometry as Ranger +22, Crusader +33) |
+| reach_ rebel / tunneldefender / technical / scorpion | farthest fire | 125 / 200 / 185 / 182 | 100 / 175 / 150 / 150 | +25 / +25 / +35 / +32 (same geometry) |
+| reach_tunnel | farthest fire, no power | 215 | 175 | +40 (building footprint); fires without power: confirmed |
+| burst_rebel | burst pattern | 4,4,22 | 3,3,21 | +1 each (inside the plan's +-1; Ranger is 3,3,21) |
+| rof_technical / rof_scorpion / rof_tunnel | shot interval | 6 / 30 / 8 | 6 / 30 / 8 | PASS |
+
+### M7 decision list (no value changed; the user decides)
+
+One row per kind or mechanic, USA from Task 11, China from G2.7, FRC from G3.5.
+
+| faction | kind / mechanic | measured (source build) | Wargrid | verdict |
+|---|---|---|---|---|
+| usa | Ranger / Crusader / Dozer / Missile Defender speed, turn | 20 / 30 / 30 / 20 u/s, turns match | same | match |
+| usa | scout car speed | cruise 60.09 (peak 66.7) | 75 (3.0 cells/s), then 60 after parity | decided and changed to 2.4 in Task 8 parity (recorded) |
+| usa | ranges Ranger / Crusader / Missile / Scout / Battery | +22 / +33 / +22 / +33 / +27 offsets | 100 / 150 / 175 / 150 / 225 | geometry offsets, no change |
+| usa | Patriot cadence | 8,8,8,60 (powered) | 8 / clip 4 / 60 | match |
+| usa | Ranger burst, Crusader rof, Missile rof, Scout rof | 3,3,21 / 60 / 30 / 6 | same | match |
+| usa | Dozer mid-turn dip | speed falls to about 1 u/s | min turn speed 25 u/s | feel, playtest candidate |
+| china | Redguard / Tank Hunter / Battlemaster / Gattling tank / Dozer / Truck speed, turn | 25 / 20 / 25 / 40 / 30 / 40 u/s; turns match | same | match |
+| china | ranges Redguard / Tank Hunter / Battlemaster / Gattling tank / cannon | +22 / +25 / +31 / +33 / +26 | 100 / 175 / 150 / 150 / 225 | geometry offsets, no change |
+| china | rof Redguard / Battlemaster, Gattling ramps, horde interval | 30 / 60, 12,12,6,6,6,6,4, 8,4,4,4,4,2, 20 | same | match |
+| china | horde first interval 36, Battlemaster / Gattling start speed spike | as measured | not compared | feel, playtest candidate |
+| frc | Worker / Rebel / Tunnel Defender / Scorpion speed, turn | 25 / 20 / 20 / 40 u/s; 500 / 500 / 500 / 180 deg/s | same | match |
+| frc | Technical speed | cruise 83.3, peak 90 | 90 (3.6 cells/s) | within tolerance; cruise 7% under, user may want 83 (3.33 cells/s); no change |
+| frc | ranges rebel / tunnel defender / technical / scorpion | +17 / +21 / +30 / +29 offsets | 100 / 175 / 150 / 150 | geometry offsets, no change |
+| frc | Tunnel Network reach | 215, fires unpowered | 175 | +40 footprint offset; no power needed confirmed |
+| frc | Rebel burst | 4,4,22 | 3,3,21 | +1 per interval (candidate: set 4,4,22 if the user wants exact), no change |
+| frc | Technical / Scorpion / Tunnel rof | 6 / 30 / 8 | same | match |
+| frc | Laborer supply cycle | not measured (harness supply() is Chinook-only) | 1 box, 75, load 5 / unload 5 | unmeasured |
+
+### Bot record (report only, no constant changed)
+
+| match | gate 1 | gate 2 | now |
+|---|---|---|---|
+| usa mirror skirmish S1 | won 7731, winner 1 | won 9473, winner 1 | won 9473, winner 1 (unchanged) |
+| china vs usa skirmish (Cs1) | n/a | won 16258, winner 2 | won 16258, winner 2 (unchanged) |
+| frc vs usa skirmish (Fm1) | n/a | n/a | won 10512, winner 2 (usa) |
+| team match 3v3 | won 23816, winner 2 | won 33205, winner 1 (all usa) | cap 45000, no winner (usa + china + frc per team; seat 8 diagnosis above) |
+
+`WAVE_MIN` and the rest unchanged (M8).
 
 ## Gate 3 planning (2026-11-07, tree: m7-factions 11672f4, docs only)
 
@@ -119,6 +187,8 @@ User: "all of the points above worked perfect" (the offline China watch list giv
 | run_netplay.sh | `match` terminal tick | 8331 → 8285 | G2.1 full load; inside the S1 window | REVERTED: ground-only ruling, old value restored |
 | test_state_hash | H1 `PINNED` | unchanged | G2.1 full load; REVERTED (ground-only) |
 
+| test_skirmish_match | Fm1 `FRC_TERMINAL_TICK`; `FRC_WINNER` | new, 10512; new, 2 | G3.5 |
+| test_team_match | TB3 `FINAL_DIGEST`; TB4 `TEAM_CORE_SERIES` | 6b81119ab5577115 -> f21dde02dd0e80a7; 6113229322264627267 -> 3691462617852479071 | G3.5 (seats carry usa / china / frc; FRC build order factory before hub; the 3v3 ends at the cap, user waiver 2026-11-07) |
 
 ## Departures and deferrals
 

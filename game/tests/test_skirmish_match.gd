@@ -12,7 +12,7 @@ const WINNER: int = 1
 const S1_CORE_SERIES: int = 8505231937702596599
 
 func cases() -> Array[Callable]:
-	return [test_mirror_match_script, test_skirmish_core_series, test_china_skirmish_match]
+	return [test_mirror_match_script, test_skirmish_core_series, test_china_skirmish_match, test_frc_skirmish_match]
 
 func test_skirmish_core_series(runner) -> bool:
 	var sim = Skirmish.create()
@@ -137,4 +137,46 @@ func test_china_skirmish_match(runner) -> bool:
 	runner.check(end.match.status == "won", "Cs1 china match ends won inside the cap, got " + str(end.match))
 	runner.check(terminal == CHINA_TERMINAL_TICK and end.match.winner == CHINA_WINNER, "Cs1 pinned outcome, got " + str(terminal) + " " + str(end.match))
 	runner.check(not seen.values().has(false), "Cs1 horde level 2, ramp level 2, truck delivery and a quantity pair all happened: " + str(seen))
+	return true
+
+const FRC_TICK_CAP: int = 45000
+const FRC_TERMINAL_TICK: int = 10512
+const FRC_WINNER: int = 2
+
+func test_frc_skirmish_match(runner) -> bool:
+	var sim = Skirmish.create(true, "ai", {1: "frc", 2: "usa"})
+	var seen := {"delivery": false, "hole": false, "hub_pair": false, "crate": false}
+	var cargo_before := {}
+	var known := {}
+	var hubs := {}
+	var terminal: int = -1
+	for tick in range(FRC_TICK_CAP):
+		Skirmish.issue_opponents(sim, [1, 2])
+		sim.step()
+		var state: Dictionary = sim.snapshot()
+		var born: int = 0
+		var cargo_now := {}
+		for unit in state.entities:
+			if unit.owner == 1 and unit.kind == "frc_rocket_infantry" and not known.has(unit.id): born += 1
+			known[unit.id] = true
+			if unit.owner == 1 and unit.collection != null:
+				cargo_now[unit.id] = unit.collection.cargo
+				if cargo_before.get(unit.id, 0) > 0 and unit.collection.cargo == 0: seen.delivery = true
+		var hub_done: bool = false
+		for building in state.buildings:
+			if building.has("rebuild"): seen.hole = true
+			if building.kind == "frc_defence":
+				if building.completed and hubs.get(building.id, true) == false: hub_done = true
+				hubs[building.id] = building.completed
+		if hub_done and born >= 2: seen.hub_pair = true
+		if not state.get("crates", []).is_empty(): seen.crate = true
+		cargo_before = cargo_now
+		if state.match.status != "ongoing":
+			terminal = tick
+			break
+		if tick % 600 == 599: await runner.process_frame
+	var end: Dictionary = sim.snapshot()
+	runner.check(end.match.status == "won", "Fm1 frc match ends won inside the cap, got " + str(end.match))
+	runner.check(terminal == FRC_TERMINAL_TICK and end.match.winner == FRC_WINNER, "Fm1 pinned outcome, got " + str(terminal) + " " + str(end.match))
+	runner.check(not seen.values().has(false), "Fm1 laborer delivery, a hole, two rocket fighters on the hub tick and a crate all happened: " + str(seen))
 	return true

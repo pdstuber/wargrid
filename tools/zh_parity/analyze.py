@@ -27,6 +27,14 @@ CHINA_MOVERS = [
     ("truck", 40, 4, 90),
 ]
 
+FRC_MOVERS = [
+    ("worker", 25, 3, 500),
+    ("rebel", 20, 2, 500),
+    ("tunneldefender", 20, 2, 500),
+    ("technical", 90, 9, 180),
+    ("scorpion", 40, 4, 180),
+]
+
 # scenario -> [(metric, Wargrid value, tolerance or None, note)]
 EXPECT: dict[str, Any] = {
     "move_ranger": [("top_speed", 20, 2, "0.8 cells/s"), ("accel", 100, None, "Wargrid instant; INI 100")],
@@ -60,6 +68,21 @@ EXPECT: dict[str, Any] = {
         f"move_{name}": [("top_speed", speed, tol, f"{speed / 25:.1f} cells/s")] for name, speed, tol, _ in CHINA_MOVERS
     },
     **{f"turn_{name}": [("turn_rate", rate, None, f"Wargrid {rate} deg/s")] for name, _, _, rate in CHINA_MOVERS},
+    **{f"move_{name}": [("top_speed", speed, tol, f"{speed / 25:.1f} cells/s")] for name, speed, tol, _ in FRC_MOVERS},
+    **{f"turn_{name}": [("turn_rate", rate, None, f"Wargrid {rate} deg/s")] for name, _, _, rate in FRC_MOVERS},
+    "range_rebel": [("first_shot_distance", 100, 10, "4 cells")],
+    "range_tunneldefender": [("first_shot_distance", 175, 10, "7 cells")],
+    "range_technical": [("first_shot_distance", 150, 10, "6 cells")],
+    "range_scorpion": [("first_shot_distance", 150, 10, "6 cells")],
+    "reach_rebel": [("farthest_fire", 100, 10, "4 cells")],
+    "reach_tunneldefender": [("farthest_fire", 175, 10, "7 cells")],
+    "reach_technical": [("farthest_fire", 150, 10, "6 cells")],
+    "reach_scorpion": [("farthest_fire", 150, 10, "6 cells")],
+    "reach_tunnel": [("farthest_fire", 175, 10, "7 cells, no power needed")],
+    "burst_rebel": [("burst_pattern", "3,3,21", 1, "as the Ranger")],
+    "rof_technical": [("shot_interval", 6, 1, "delay 6")],
+    "rof_scorpion": [("shot_interval", 30, 1, "delay 30")],
+    "rof_tunnel": [("shot_interval", 8, 1, "delay 8")],
     "range_redguard": [("first_shot_distance", 100, 10, "4 cells")],
     "range_tankhunter": [("first_shot_distance", 175, 10, "7 cells")],
     "range_battlemaster": [("first_shot_distance", 150, 10, "6 cells")],

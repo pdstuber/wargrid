@@ -37,7 +37,7 @@ func _play() -> bool:
 	print("TEAM MATCH cap tick=", sim.tick(), " winner=null units_peak=", units_peak)
 	print("TEAM TIMING ", Stats.summary(samples))
 	_report("team_match")
-	return false
+	return true
 
 func _report(label: String) -> void:
 	for line in Profiler.report(label): print(line)
