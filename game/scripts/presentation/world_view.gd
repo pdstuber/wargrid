@@ -162,7 +162,7 @@ func pick_target(plane_point: Vector2, own: int) -> int:
 func pick_entity(plane_point: Vector2, any_owner: bool = false) -> int:
 	for i in range(_state.get("entities", []).size() - 1, -1, -1):
 		var unit: Dictionary = _state.entities[i]
-		if (any_owner or unit.owner == local_player) and not unit.has("hole_id") and _vehicle_bounds(unit).has_point(plane_point):
+		if (any_owner or unit.owner == local_player) and not unit.has("hole_id") and not unit.has("container_id") and _vehicle_bounds(unit).has_point(plane_point):
 			return unit.id
 	return -1
 

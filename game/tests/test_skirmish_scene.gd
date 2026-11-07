@@ -504,6 +504,11 @@ func test_enter_unload_scene(runner) -> bool:
 	main._refresh()
 	helper.key(main, KEY_U)
 	runner.check(orders.call("unload").size() == 1 and main._error == "Select a container", "TU1 U without a container says why, got '%s'" % main._error)
+	var hub_point: Vector2 = Iso.world_to_plane(Vector2(10.5, 10.5)) + Vector2(0, -8)
+	sim._entities[rifle].container_id = hub
+	sim._entities[rifle].position = [10.5, 10.5]
+	main._refresh()
+	runner.check(main._view.pick_object(hub_point) == hub, "TU1 clicking an occupied hub picks the hub, not an occupant")
 	var status: Label = main.get_node("HUD/Status")
 	runner.check(Rect2(status.global_position, status.get_minimum_size()).end.x <= main.get_viewport().get_visible_rect().size.x, "TU1 the hint line keeps the status inside the viewport")
 	main.free()

@@ -13,7 +13,7 @@ const FULL: String = "Container is full"
 const CANNOT: String = "Cannot enter this container"
 
 func cases() -> Array[Callable]:
-	return [test_enter_one_hub_exit_another, test_tunnel_capacity_shared, test_tunnel_rejects, test_tunnel_heal_once_per_network, test_hub_spawns_two_fighters_once, test_hub_fires_tunnel_gun, test_last_hub_buries_occupants, test_tunnel_occupants_ignored, test_last_hub_dies_on_boarding_tick, test_tunnel_same_tick_cases]
+	return [test_enter_one_hub_exit_another, test_tunnel_capacity_shared, test_tunnel_rejects, test_tunnel_heal_once_per_network, test_hub_spawns_two_fighters_once, test_hub_fires_tunnel_gun, test_last_hub_buries_occupants, test_tunnel_occupants_ignored, test_last_hub_dies_on_boarding_tick, test_tunnel_same_tick_cases, test_tunnel_contained_container_rejected, test_enter_after_hub_death_same_tick]
 
 func _world() -> RefCounted:
 	var sim = Fixture.world()
@@ -330,3 +330,29 @@ func _unload_cases(runner) -> void:
 	walk.remove_object(hub)
 	walk.step()
 	runner.check(rifles.all(func(id: int) -> bool: return _enters(walk._entities[id]) == 0 and walk._entities[id].combat.mode == "guard"), "TN10 enter and the hub's removal on one tick: walkers give up and guard")
+
+func test_tunnel_contained_container_rejected(runner) -> bool:
+	var sim = _world()
+	var a: int = _hub(sim, A)
+	var pickup: int = sim.spawn(1, Vector2(14.5, 14.5), "frc_light_vehicle")
+	var rider: int = _units(sim, 1, 14.5, 17.5)[0]
+	runner.check(_board(sim, [pickup], a), "TN11 the pickup is inside the hub")
+	var enter: Dictionary = _send(sim, {"type": "enter", "entity_ids": [rider], "target_id": pickup})
+	runner.check(not enter.ok and enter.error == CANNOT, "TN11 enter naming a contained pickup is rejected: " + enter.error)
+	var unload: Dictionary = _send(sim, {"type": "unload", "target_id": pickup})
+	runner.check(not unload.ok, "TN11 unload naming a contained pickup is rejected")
+	return true
+
+func test_enter_after_hub_death_same_tick(runner) -> bool:
+	var sim = _world()
+	var a: int = _hub(sim, A)
+	var b: int = _hub(sim, B)
+	var walker: int = _units(sim, 1, 16.5, 10.5)[0]
+	var rifle: int = _units(sim, 1, 24.5, 10.5)[0]
+	runner.check(_send(sim, {"type": "enter", "entity_ids": [walker], "target_id": a}).ok, "TN12 the walker heads for hub A")
+	sim.remove_object(a)
+	var next: Dictionary = _send(sim, {"type": "enter", "entity_ids": [rifle], "target_id": b})
+	var dead: Dictionary = _send(sim, {"type": "enter", "entity_ids": [rifle], "target_id": a})
+	sim.step()
+	runner.check(next.ok and not dead.ok and sim._entities.has(walker), "TN12 an enter between a hub's death and the next step is validated without error")
+	return true

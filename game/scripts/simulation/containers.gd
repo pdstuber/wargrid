@@ -30,7 +30,7 @@ static func entering(unit: Dictionary) -> bool:
 
 static func enter_error(sim: Simulation, command: Dictionary, live: Array) -> String:
 	var host: Dictionary = carrier(sim, command.target_id)
-	if host.is_empty() or host.owner != command.player or rules(host).is_empty() or not host.get("completed", true): return CANNOT_ENTER
+	if host.is_empty() or host.has("container_id") or host.owner != command.player or rules(host).is_empty() or not host.get("completed", true): return CANNOT_ENTER
 	for id: Variant in live:
 		var role: String = Registry.kind(sim._entities[id].kind)["class"]
 		if id == host.id or role == "air" or not rules(host).accepts.has(role): return CANNOT_ENTER
@@ -38,7 +38,7 @@ static func enter_error(sim: Simulation, command: Dictionary, live: Array) -> St
 
 static func unload_error(sim: Simulation, command: Dictionary) -> String:
 	var host: Dictionary = carrier(sim, command.target_id)
-	return "" if not host.is_empty() and host.owner == command.player and not rules(host).is_empty() and host.get("completed", true) else "Cannot unload this container"
+	return "" if not host.is_empty() and not host.has("container_id") and host.owner == command.player and not rules(host).is_empty() and host.get("completed", true) else "Cannot unload this container"
 
 static func _free_slots(sim: Simulation, host: Dictionary, reissued: Array) -> int:
 	var promised: int = 0

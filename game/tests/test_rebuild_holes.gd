@@ -10,7 +10,7 @@ const BARRACKS := Vector2i(10, 10)
 const RESPAWN: int = 600
 
 func cases() -> Array[Callable]:
-	return [test_hole_replaces_destroyed_building, test_no_hole_cases, test_hole_counts_for_victory, test_hole_regen_83_per_tick, test_rebuild_after_600_ticks, test_rebuilt_supply_cache_spawns_nothing, test_worker_death_restarts_timer, test_site_death_restarts_timer, test_hole_death_leaves_ordinary_foundation, test_rebuild_laborer_not_commandable, test_player_resumes_waiting_site, test_masked_hole_not_targeted, test_site_completes_before_worker_dies, test_hole_masks_on_spawn_tick, test_hole_same_tick_cases]
+	return [test_hole_replaces_destroyed_building, test_no_hole_cases, test_hole_counts_for_victory, test_hole_regen_83_per_tick, test_rebuild_after_600_ticks, test_rebuilt_supply_cache_spawns_nothing, test_worker_death_restarts_timer, test_site_death_restarts_timer, test_hole_death_leaves_ordinary_foundation, test_rebuild_laborer_not_commandable, test_player_resumes_waiting_site, test_masked_hole_not_targeted, test_site_completes_before_worker_dies, test_hole_masks_on_spawn_tick, test_hole_same_tick_cases, test_site_and_second_laborer_die_together]
 
 func _world() -> RefCounted:
 	var sim = Fixture.world()
@@ -344,4 +344,27 @@ func test_hole_same_tick_cases(runner) -> bool:
 		if queue.snapshot().buildings.any(func(b: Dictionary) -> bool: return b.id == cache): continue
 		break
 	runner.check(_hole(queue).get("rebuild", {}).get("kind") == "frc_supply_center" and queue.snapshot().players[0].credits == 10000, "RH15 produce at a building that dies: queue refunded, hole opened")
+	return true
+
+func test_site_and_second_laborer_die_together(runner) -> bool:
+	var sim = _masked()
+	sim.remove_object(_laborer(sim).id)
+	_step_to_respawn(sim)
+	sim.step()
+	var site: int = _site(sim).id
+	var worker: int = _laborer(sim).id
+	sim._buildings[site].hp = 1
+	sim._entities[worker].hp = 1
+	for target in [site, worker]:
+		var shooter: int = _rifleman(sim, Vector2(8.5, 10.5 + (0.0 if target == site else 2.0)))
+		Fixture.send(sim, {"type": "attack", "player": 2, "entity_ids": [shooter], "target_id": target})
+	var tick: int = sim.tick()
+	var deaths: Array = []
+	for i in range(40):
+		tick = sim.tick()
+		sim.step()
+		deaths.append_array(sim.snapshot().combat_events.filter(func(e: Dictionary) -> bool: return e.type == "death"))
+		if not deaths.is_empty(): break
+	runner.check(worker > site and deaths.size() == 1 and deaths[0].object_id == site, "RH16 one death event, the site, got " + str(deaths))
+	runner.check(_site(sim).is_empty() and _laborer(sim).is_empty() and not Combat.masked(_hole(sim)) and _hole(sim).rebuild.respawn_tick == tick + RESPAWN, "RH16 hole unmasked, respawn timer restarted")
 	return true

@@ -110,16 +110,23 @@ func test_bot_leaves_rebuild_alone(runner) -> bool:
 	sim.remove_object(barracks)
 	var rebuilt: bool = false
 	var killed: bool = false
+	var lost: bool = false
+	var recovered: bool = false
+	var first_laborer: int = -1
 	var spawned: int = -1
 	var interfered: String = ""
 	var most: int = 0
+	var last_free: int = 0
+	var factory_tick: int = -1
+	var removed_at: int = sim.tick()
 	for tick in range(1800):
 		Skirmish.issue_opponents(sim, [2])
 		sim.step()
 		var state: Dictionary = sim.snapshot()
 		var worker: Array = state.entities.filter(func(u: Dictionary) -> bool: return u.has("hole_id"))
 		if not worker.is_empty() and not killed and state.tick > spawned + 40:
-			sim.remove_object(worker[0].id)
+			first_laborer = worker[0].id
+			sim.remove_object(first_laborer)
 			killed = true
 		if not worker.is_empty() and spawned < 0: spawned = state.tick
 		var mine: Array = state.buildings.filter(func(b: Dictionary) -> bool: return b.owner == 2 and b.kind == "frc_barracks")
@@ -129,10 +136,18 @@ func test_bot_leaves_rebuild_alone(runner) -> bool:
 			if not builder.is_empty() and not builder[0].has("hole_id"): interfered = "bot builder on the site"
 		var free: int = state.entities.filter(func(u: Dictionary) -> bool: return u.owner == 2 and u.kind == "frc_builder" and not u.has("hole_id")).size()
 		most = maxi(most, free)
+		recovered = recovered or (lost and not worker.is_empty() and worker[0].id != first_laborer and free == Skirmish.LABORERS and last_free < free)
+		last_free = free
+		if killed and not worker.is_empty() and not lost and worker[0].id != first_laborer:
+			lost = true
+			sim.remove_object(state.entities.filter(func(u: Dictionary) -> bool: return u.owner == 2 and u.kind == "frc_builder" and not u.has("hole_id")).back().id)
+		if factory_tick < 0 and state.buildings.any(func(b: Dictionary) -> bool: return b.owner == 2 and b.kind == "frc_factory"): factory_tick = state.tick
 		rebuilt = rebuilt or mine.any(func(b: Dictionary) -> bool: return b.completed and not b.has("hole_id") and b.id != barracks)
 	runner.check(interfered.is_empty(), "Fb2 the bot leaves the rebuild alone, saw: " + interfered)
 	runner.check(rebuilt, "Fb2 the hole rebuilt the barracks")
 	runner.check(most == Skirmish.LABORERS, "Fb2 the bot keeps %d laborers without the rebuild laborer, most %d" % [Skirmish.LABORERS, most])
+	runner.check(recovered, "Fb2 a bot laborer lost while the rebuild laborer works is replaced up to %d, final %d" % [Skirmish.LABORERS, last_free])
+	runner.check(factory_tick >= 0 and factory_tick < removed_at + 300, "Fb2 the bot places the next build-order kind soon after the hole opens, tick %d" % factory_tick)
 	return true
 
 func test_opponent_pays_and_retries(runner) -> bool:

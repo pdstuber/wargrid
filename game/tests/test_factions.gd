@@ -114,7 +114,7 @@ func test_choose_faction_online_frc_same_hash(runner) -> bool:
 		net.clients[i].behavior = func(c) -> void:
 			if c.sim.tick() >= 4: Skirmish.issue_opponent(c.seat_sim, seat)
 	net.clients[0].ls.submit({"type": "choose_faction", "faction": "frc"})
-	net.clients[1].ls.submit({"type": "choose_faction", "faction": "usa"})
+	net.clients[1].ls.submit({"type": "choose_faction", "faction": "china"})
 	net.connect_all()
 	net.run()
 	var a = net.clients[0]
@@ -122,7 +122,7 @@ func test_choose_faction_online_frc_same_hash(runner) -> bool:
 	runner.check(a.sim.tick() == 3000 and b.sim.tick() == 3000, "F6 both reach tick 3000")
 	runner.check(a.ls.hash_rows() == b.ls.hash_rows() and a.ls.hash_rows().size() >= 100, "F6 digests equal every 30 ticks")
 	var kinds: Array = a.sim.snapshot().buildings.map(func(b2: Dictionary) -> String: return b2.kind)
-	runner.check(kinds.has("frc_command_center") and kinds.has("usa_command_center"), "F6 each seat has its own faction home")
+	runner.check(kinds.has("frc_command_center") and kinds.has("china_command_center"), "F6 each seat has its own faction home")
 	return true
 
 func test_match_waits_for_all_factions(runner) -> bool:

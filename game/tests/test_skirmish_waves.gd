@@ -3,13 +3,14 @@ extends RefCounted
 
 const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 const Economy = preload("res://tests/economy_fixture.gd")
+const Combat = preload("res://scripts/simulation/combat.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 
 const RALLY := Vector2(43.5, 14.5)
 const FULL: int = 8
 
 func cases() -> Array[Callable]:
-	return [test_lone_unit_waits_for_timeout, test_full_wave_releases_at_once, test_wave_shares_and_repicks_target, test_late_units_form_next_wave, test_target_score_battery_before_far_plant, test_target_score_distance_penalty, test_target_score_ties_lowest_id, test_target_score_classes, test_waves_deterministic]
+	return [test_lone_unit_waits_for_timeout, test_full_wave_releases_at_once, test_wave_shares_and_repicks_target, test_late_units_form_next_wave, test_target_score_battery_before_far_plant, test_target_score_distance_penalty, test_target_score_ties_lowest_id, test_target_score_classes, test_waves_deterministic, test_wave_leaves_masked_hole]
 
 func _world() -> RefCounted:
 	var sim = Simulation.new([], Vector2i(48, 32))
@@ -152,4 +153,22 @@ func test_waves_deterministic(runner) -> bool:
 		_rally_units(sim, 5)
 		_run(sim, Skirmish.ATTACK_TICK + Skirmish.WAVE_TIMEOUT + 600)
 	runner.check(a.snapshot() == b.snapshot(), "W5 two runs over the same ticks end in equal state")
+	return true
+
+func test_wave_leaves_masked_hole(runner) -> bool:
+	var sim = _world()
+	var plant: int = Economy.add_completed(sim, 1, "usa_power_plant", Vector2i(10, 20))
+	sim.remove_object(Economy.add_completed(sim, 1, "frc_barracks", Vector2i(10, 24)))
+	sim.remove_object(plant)
+	var hole: Dictionary = sim.snapshot().buildings.filter(func(b: Dictionary) -> bool: return b.has("rebuild"))[0]
+	sim._buildings[hole.id].rebuild.respawn_tick = Skirmish.ATTACK_TICK + Skirmish.DECISION_TICKS
+	var ids: Array = _rally_units(sim, FULL)
+	_run(sim, Skirmish.ATTACK_TICK)
+	_decide(sim)
+	runner.check(_all(_targets(sim, ids), hole.id), "W10 the wave targets the unmasked hole, got " + str(_targets(sim, ids)))
+	_run(sim, Skirmish.ATTACK_TICK + 3 * Skirmish.DECISION_TICKS)
+	_decide(sim)
+	var targets: Array = _targets(sim, ids)
+	runner.check(Combat.masked(sim._buildings[hole.id]), "W10 the laborer has masked the hole")
+	runner.check(targets.all(func(target) -> bool: return target != null and target != hole.id), "W10 the wave re-picks away from the masked hole instead of idling, got " + str(targets))
 	return true
