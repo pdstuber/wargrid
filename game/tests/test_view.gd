@@ -229,7 +229,7 @@ func test_battery_target_line(runner) -> bool:
 func test_building_icons(runner) -> bool:
 	var expected := {"usa_command_center": "command", "usa_power_plant": "power", "usa_supply_center": "supply", "usa_barracks": "barracks", "usa_factory": "factory", "usa_defence": "battery"}
 	for kind: String in expected: runner.check(View.icon_name(kind) == expected[kind], "I1 %s icon, got %s" % [kind, View.icon_name(kind)])
-	for kind: String in Registry.buildings().filter(func(id: String) -> bool: return id != "china_defence"): runner.check(not Registry.icon(kind).is_empty(), "I1 %s defines an icon" % kind)
+	for kind: String in Registry.buildings().filter(func(id: String) -> bool: return id not in ["china_defence", "frc_defence"]): runner.check(not Registry.icon(kind).is_empty(), "I1 %s defines an icon" % kind)
 	Registry.add_test_kind("test_depot", {"display_name": "Zeta Depot", "footprint": Vector2i(1, 1)})
 	runner.check(View.icon_name("test_depot").is_empty() and View.fallback_letter("test_depot") == "Z", "I2 no icon falls back to the display-name initial")
 	Registry.add_test_kind("test_other", {"display_name": "Other", "icon": "factory", "footprint": Vector2i(1, 1)})

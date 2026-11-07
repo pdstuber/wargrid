@@ -12,7 +12,7 @@ const MapData = preload("res://scripts/simulation/map_data.gd")
 const LockstepTests = preload("res://tests/test_lockstep.gd")
 
 func cases() -> Array[Callable]:
-	return [test_foundation_keeps_seat_alive, test_cancel_last_foundation_defeats, test_choose_faction_online_same_hash, test_match_waits_for_all_factions, test_setup_rejects_commands_until_all_chose, test_choose_faction_same_tick_cases, test_capability_rules, test_start_has_command_center_and_builder, test_survival_counts_buildings_only, test_bot_trains_builder_without_one, test_bot_without_command_center, test_china_start, test_china_power_and_prerequisites, test_choose_faction_online_china_same_hash]
+	return [test_foundation_keeps_seat_alive, test_cancel_last_foundation_defeats, test_choose_faction_online_same_hash, test_match_waits_for_all_factions, test_setup_rejects_commands_until_all_chose, test_choose_faction_same_tick_cases, test_capability_rules, test_start_has_command_center_and_builder, test_survival_counts_buildings_only, test_bot_trains_builder_without_one, test_bot_without_command_center, test_china_start, test_china_power_and_prerequisites, test_choose_faction_online_china_same_hash, test_frc_start, test_frc_needs_no_power]
 
 func test_capability_rules(runner) -> bool:
 	Registry.add_test_kind("x_maker", {"class": "vehicle", "cost": 1, "ticks": 1, "speed": 1.0, "locomotor": "wheels", "max_hp": 1000, "armor": "builder_vehicle", "weapon": "", "builds": ["usa_barracks"]})
@@ -258,4 +258,28 @@ func test_china_power_and_prerequisites(runner) -> bool:
 	runner.check(not sim.preview_build(1, 1, "china_factory", Vector2i(16, 4)).ok, "Ch2 factory needs a supply center")
 	var center: int = EconomyFixture.build(runner, sim, "china_supply_center", Vector2i(10, 4))
 	runner.check(center != -1 and sim.preview_build(1, 1, "china_factory", Vector2i(16, 4)).ok, "Ch2 supply center unlocks the factory")
+	return true
+
+func test_frc_start(runner) -> bool:
+	var state: Dictionary = Skirmish.create(true, "ai", {1: "frc", 2: "usa"}).snapshot()
+	var homes: Array = state.buildings.filter(func(b: Dictionary) -> bool: return b.owner == 1)
+	var slot: Vector2i = MapData.slot(Skirmish._default_map(), 1, "frc_command_center")
+	runner.check(homes.size() == 1 and homes[0].kind == "frc_command_center" and homes[0].completed, "Fr1 seat 1 starts with a completed frc_command_center")
+	runner.check(homes.size() == 1 and homes[0].origin == [slot.x, slot.y], "Fr1 the headquarters sits on the command_center slot")
+	var laborers: Array = state.entities.filter(func(u: Dictionary) -> bool: return u.owner == 1)
+	var start: Vector2i = MapData.start_cell(Skirmish._default_map(), 1)
+	runner.check(laborers.size() == 1 and laborers[0].kind == "frc_builder" and laborers[0].position == [start.x + 0.5, start.y + 0.5], "Fr1 seat 1 starts with one frc_builder at the start cell")
+	runner.check(laborers.size() == 1 and laborers[0].collection != null and not laborers[0].collection.enabled, "Fr1 the start laborer does not collect")
+	return true
+
+func test_frc_needs_no_power(runner) -> bool:
+	var sim = Simulation.new([], Vector2i(32, 32))
+	sim.add_player(1, 20000)
+	var laborer: int = sim.spawn(1, Vector2(4.5, 4.5), "frc_builder")
+	runner.check(laborer == 1 and sim.snapshot().players[0].work_rate == 1000, "Fr2 a seat with no power buildings works at full rate")
+	runner.check(not sim.preview_build(1, laborer, "frc_factory", Vector2i(16, 4)).ok, "Fr2 the factory is rejected without a completed supply center")
+	var barracks: int = EconomyFixture.build(runner, sim, "frc_barracks", Vector2i(10, 4))
+	runner.check(barracks != -1 and sim.snapshot().players[0].power_supply == 0 and sim.snapshot().players[0].power_demand == 0, "Fr2 FRC buildings add no power supply or demand")
+	var center: int = EconomyFixture.build(runner, sim, "frc_supply_center", Vector2i(16, 4))
+	runner.check(center != -1 and sim.preview_build(1, laborer, "frc_factory", Vector2i(20, 10)).ok, "Fr2 a completed supply center unlocks the factory")
 	return true

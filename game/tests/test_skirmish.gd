@@ -9,7 +9,7 @@ const Fixture = preload("res://tests/combat_fixture.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 
 func cases() -> Array[Callable]:
-	return [test_skirmish_initial_state, test_roster_production, test_bot_cycles_unit_list, test_bot_reads_seat_faction, test_bot_plays_china, test_opponent_pays_and_retries, test_opponent_attack_policy, test_opponent_defends_base, test_defence_skips_busy_units, test_bot_ignores_contained_units, test_match_lifecycle, test_restart_state]
+	return [test_skirmish_initial_state, test_roster_production, test_bot_cycles_unit_list, test_bot_reads_seat_faction, test_bot_plays_china, test_bot_keeps_one_builder_six_gatherers, test_opponent_pays_and_retries, test_opponent_attack_policy, test_opponent_defends_base, test_defence_skips_busy_units, test_bot_ignores_contained_units, test_match_lifecycle, test_restart_state]
 
 func _owned(items: Array, player: int) -> Array:
 	return items.filter(func(item: Dictionary) -> bool: return item.owner == player)
@@ -356,4 +356,20 @@ func test_bot_plays_china(runner) -> bool:
 	var owned: Array = state.entities.filter(func(u: Dictionary) -> bool: return u.owner == 2).map(func(u: Dictionary) -> String: return u.kind)
 	runner.check(owned.all(func(k: String) -> bool: return k.begins_with("china_")), "B5 a China bot owns only china_ units, got " + str(owned))
 	runner.check(owned.any(func(k: String) -> bool: return k == "china_rifle_infantry" or k == "china_rocket_infantry" or k == "china_tank" or k == "china_light_vehicle"), "B5 a China bot trains combat units, got " + str(owned))
+	return true
+
+func test_bot_keeps_one_builder_six_gatherers(runner) -> bool:
+	var sim = Skirmish.create(true, "ai", {1: "usa", 2: "frc"})
+	var queued: bool = false
+	for tick in range(3000):
+		Skirmish.issue_opponents(sim, [2])
+		sim.step()
+		for building: Dictionary in sim.snapshot().buildings:
+			if building.owner == 2 and building.kind == "frc_command_center" and not building.queue.is_empty(): queued = true
+	var laborers: Array = sim.snapshot().entities.filter(func(u: Dictionary) -> bool: return u.owner == 2 and u.kind == "frc_builder")
+	laborers.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.id < b.id)
+	runner.check(laborers.size() == Skirmish.LABORERS, "Fb1 the FRC bot owns exactly LABORERS laborers, got %d" % laborers.size())
+	runner.check(not laborers.is_empty() and not laborers[0].collection.enabled, "Fb1 the lowest id stays the builder")
+	runner.check(laborers.size() > 1 and laborers.slice(1).all(func(u: Dictionary) -> bool: return u.collection.enabled), "Fb1 the others collect")
+	runner.check(not queued, "Fb1 the headquarters queue never held an entry")
 	return true

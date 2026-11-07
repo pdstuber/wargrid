@@ -82,7 +82,7 @@ static func spawn_unit(sim: Simulation, building: Dictionary, kind: String, occu
 
 # Rally moves come after every unit is placed, so a rally cell cannot block a later exit of the same order.
 static func _send_out(sim: Simulation, building: Dictionary, unit: Dictionary, occupied: Dictionary) -> void:
-	if not Registry.collects(unit.kind).is_empty():
+	if not Registry.collects(unit.kind).is_empty() and Registry.kind(building.kind).receives_supply:
 		unit.collection.enabled = true
 		unit.collection.phase = "seeking"
 		return

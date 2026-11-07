@@ -15,6 +15,8 @@ const WAVE_MIN: int = 6
 const WAVE_TIMEOUT: int = 1800
 const RALLY_RADIUS: float = 6.0
 const DISTANCE_STEP: float = 4.0
+# FRC bot: one builder plus six gatherers (user 2026-11-07); only for a faction whose start unit also collects.
+const LABORERS: int = 7
 const BOT_META := &"skirmish_bot"
 const MAP_PATH := "res://data/maps/skirmish.json"
 
@@ -111,12 +113,16 @@ static func _build(ctx: Dictionary, state: Dictionary, buildings: Array, faction
 		return
 
 static func _produce(ctx: Dictionary, state: Dictionary, buildings: Array, faction: String) -> void:
-	var replace_builder: bool = not state.entities.any(func(unit: Dictionary) -> bool: return unit.owner == ctx.player and Registry.is_builder(unit.kind))
+	var mine: Array = state.entities.filter(func(unit: Dictionary) -> bool: return unit.owner == ctx.player and not unit.has("hole_id"))
+	var replace_builder: bool = not mine.any(func(unit: Dictionary) -> bool: return Registry.is_builder(unit.kind))
 	var start_unit: String = Registry.faction(faction).start_unit
-	var owned: Array = state.entities.filter(func(unit: Dictionary) -> bool: return unit.owner == ctx.player).map(func(unit: Dictionary) -> String: return unit.kind)
+	var gatherers: bool = not Registry.collects(start_unit).is_empty()
+	var owned: Array = mine.map(func(unit: Dictionary) -> String: return unit.kind)
 	for building: Variant in buildings:
 		if not building.completed or not building.queue.is_empty(): continue
-		var kind: String = start_unit if replace_builder and Registry.kind(building.kind).produces.has(start_unit) else unit_for(faction, building.kind, owned)
+		var row: Dictionary = Registry.kind(building.kind)
+		var kind: String = unit_for(faction, building.kind, owned)
+		if row.produces.has(start_unit) and (replace_builder or (gatherers and row.receives_supply and owned.count(start_unit) < LABORERS)): kind = start_unit
 		if kind.is_empty(): continue
 		var cost: int = Definitions.unit(kind).cost
 		if ctx.credits >= cost and _send(ctx, {"type": "produce", "building_id": building.id, "unit_kind": kind}):

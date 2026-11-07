@@ -229,7 +229,7 @@ func test_launcher_faction_selectors_fit(runner) -> bool:
 		for path in ["Offline", "RelayUrl", "Create", "JoinRow", "Status"]:
 			runner.check(not launcher.get_node("Center/Box/FactionRow").get_global_rect().intersects(launcher.get_node("Center/Box/" + path).get_global_rect()), "F5 row clear of %s at %s" % [path, size])
 		runner.check(launcher.get_node("Center/Box/FactionRow").get_global_rect().size.x <= 520.0, "F5 faction row stays compact at %s" % size)
-		runner.check(own.item_count == 2 and own.get_item_text(0) == "China" and own.get_item_text(own.selected) == "United States", "F5 selector lists faction display names and defaults to the United States")
+		runner.check(own.item_count == 3 and own.get_item_text(0) == "China" and own.get_item_text(1) == "Free Resistance Coalition" and own.get_item_text(own.selected) == "United States", "F5 selector lists faction display names and defaults to the United States")
 		launcher.free()
 	runner.root.size = original
 	return true

@@ -5,7 +5,7 @@ const Fixture = preload("res://tests/economy_fixture.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 
 func cases() -> Array[Callable]:
-	return [test_source_and_gather_validation,test_dock_timing,test_partial_load_and_conservation,test_dock_competition_and_lookup,test_collection_interruptions,test_dock_loss_recovery,test_ground_dock_cell,test_ground_dock_queue,test_ground_admit_first_waiter_first,test_ground_dock_no_starvation,test_ground_dock_full_perimeter,test_truck_timing,test_dock_loss_recovery_ground,test_ground_truck_recovers_after_blocked_path,test_ground_dock_skips_unwalkable_and_unreachable]
+	return [test_source_and_gather_validation,test_dock_timing,test_partial_load_and_conservation,test_dock_competition_and_lookup,test_collection_interruptions,test_dock_loss_recovery,test_ground_dock_cell,test_ground_dock_queue,test_ground_admit_first_waiter_first,test_ground_dock_no_starvation,test_ground_dock_full_perimeter,test_truck_timing,test_dock_loss_recovery_ground,test_ground_truck_recovers_after_blocked_path,test_ground_dock_skips_unwalkable_and_unreachable,test_laborer_timing,test_laborer_docks_share_fairly]
 
 func ready(runner, boxes: int = 8) -> Dictionary:
 	var sim = Fixture.make_world(50000)
@@ -484,4 +484,61 @@ func test_ground_dock_skips_unwalkable_and_unreachable(runner) -> bool:
 	shut.step()
 	var idle: Dictionary = Fixture.object(shut,outside).collection
 	runner.check(idle.phase == "idle" and idle.retry_tick == shut.snapshot().tick + 29 and not idle.has("dock"),"Gd4 no walkable reachable ring cell: idle with a retry 30 ticks out")
+	return true
+
+func laborer(sim, position: Vector2) -> int:
+	var id: int = sim.spawn(1,position,"frc_builder")
+	assert(id > 0)
+	return id
+
+func test_laborer_timing(runner) -> bool:
+	var sim = Fixture.make_world()
+	var source: int = sim.add_supply_source(Vector2i(24,4),40)
+	var depot: int = Fixture.add_completed(sim,1,"frc_supply_center",Vector2i(10,4))
+	var unit: int = laborer(sim,Vector2(27.5,5.5))
+	gather(sim,[unit],source)
+	runner.check(until_phase(sim,unit,"loading"),"Lb1 loads")
+	runner.check(Fixture.object(sim,unit).collection.remaining_ticks == 5,"Lb1 loads its box 5 ticks after admission")
+	var ticks: int = 0
+	while Fixture.object(sim,unit).collection.phase == "loading":
+		sim.step()
+		ticks += 1
+	runner.check(ticks == 10 and Fixture.object(sim,unit).collection.cargo == 1,"Lb1 leaves 10 ticks after admission with one box, got %d" % ticks)
+	runner.check(until_phase(sim,unit,"unloading"),"Lb1 reaches the supply center")
+	var credits: int = sim.snapshot().players[0].credits
+	runner.check(Fixture.object(sim,unit).collection.remaining_ticks == 5 and Fixture.object(sim,unit).collection.target_id == depot,"Lb1 unloads in 5 ticks")
+	Fixture.steps(sim,4)
+	runner.check(sim.snapshot().players[0].credits == credits,"Lb1 wait4")
+	sim.step()
+	runner.check(sim.snapshot().players[0].credits == credits + 75,"Lb1 a trip pays 75")
+	return true
+
+func test_laborer_docks_share_fairly(runner) -> bool:
+	var sim = Fixture.make_world(50000)
+	Fixture.add_completed(sim,1,"frc_supply_center",Vector2i(10,10))
+	var source: int = sim.add_supply_source(Vector2i(14,10),400)
+	stop_collectors(sim)
+	var ids: Array = []
+	for index in range(3): ids.append(laborer(sim,Vector2(13.5 + index,14.5)))
+	gather(sim,ids,source)
+	var loads: Dictionary = {}
+	var cargo: Dictionary = {}
+	for id in ids:
+		loads[id] = 0
+		cargo[id] = 0
+	var stacked: int = 0
+	for index in range(1500):
+		sim.step()
+		var docked: Array = []
+		for id in ids:
+			var unit: Dictionary = Fixture.object(sim,id)
+			var collection: Dictionary = unit.collection
+			if collection.phase in ["loading","unloading"]:
+				if docked.has(unit.position): stacked += 1
+				docked.append(unit.position)
+			if collection.cargo > cargo[id]: loads[id] = loads[id] + 1
+			cargo[id] = collection.cargo
+	var counts: Array = loads.values()
+	runner.check(counts.min() > 0 and counts.max() - counts.min() <= 8,"Lb2 every laborer loads and loads stay level, got " + str(counts))
+	runner.check(stacked == 0,"Lb2 on no tick do two laborers dock on the same cell")
 	return true

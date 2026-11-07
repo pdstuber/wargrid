@@ -9,7 +9,7 @@ const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 
 func cases() -> Array[Callable]:
-	return [test_producer_and_free_collector,test_fifo_payment_and_cancel,test_blocked_exit,test_production_power_and_removal,test_default_rally_mirrored,test_production_never_stalls,test_set_rally_applies_to_next_spawn,test_rally_blocked_cell_falls_back,test_set_rally_same_tick_cases,test_supply_center_spawns_ground_truck,test_quantity_trains_two,test_quantity_rally_on_free_exit]
+	return [test_producer_and_free_collector,test_fifo_payment_and_cancel,test_blocked_exit,test_production_power_and_removal,test_default_rally_mirrored,test_production_never_stalls,test_set_rally_applies_to_next_spawn,test_rally_blocked_cell_falls_back,test_set_rally_same_tick_cases,test_supply_center_spawns_ground_truck,test_quantity_trains_two,test_quantity_rally_on_free_exit,test_supply_cache_spawns_laborer]
 
 func ready(runner) -> Dictionary:
 	var sim = Fixture.make_world(50000)
@@ -361,3 +361,33 @@ func test_quantity_rally_on_free_exit(runner) -> bool:
 	var queued: int = Fixture.object(sim,world.barracks).queue.size()
 	runner.check((militia(sim).size() == 2 and queued == 0) or (militia(sim).is_empty() and queued == 1),"Q1 rally on a free exit: both militia or none with the entry kept, got " + str(militia(sim).size()) + " paid " + str(spent))
 	return true
+
+func test_supply_cache_spawns_laborer(runner) -> bool:
+	var sim = Simulation.new([],Vector2i(32,32))
+	sim.add_player(1,50000)
+	sim.spawn(1,Vector2(4.5,4.5),"frc_builder")
+	var center: int = Fixture.build(runner,sim,"frc_supply_center",Vector2i(10,4))
+	var laborers: Array = sim.snapshot().entities.filter(func(unit: Dictionary) -> bool: return unit.kind == "frc_builder" and unit.id != 1)
+	runner.check(laborers.size() == 1,"Pg2 completion spawns one laborer")
+	if laborers.size() == 1: laborer_ok(runner,laborers[0],"completion")
+	runner.check(produce(sim,center,"frc_builder").ok,"Pg2 laborer order accepted")
+	Fixture.steps(sim,90)
+	laborers = sim.snapshot().entities.filter(func(unit: Dictionary) -> bool: return unit.kind == "frc_builder" and unit.id != 1)
+	runner.check(laborers.size() == 2,"Pg2 queued laborer spawns")
+	if laborers.size() == 2: laborer_ok(runner,laborers[1],"queued")
+	var home: int = Fixture.add_completed(sim,1,"frc_command_center",Vector2i(20,20))
+	sim.step()
+	runner.check(Fixture.send(sim,{"type":"set_rally","building_id":center,"target":[25.5,10.5]}).ok == false,"Pg2 a supply center has no rally")
+	runner.check(Fixture.send(sim,{"type":"set_rally","building_id":home,"target":[16.5,16.5]}).ok,"Pg2 set_rally on the headquarters is accepted")
+	runner.check(produce(sim,home,"frc_builder").ok,"Pg2 headquarters laborer order accepted")
+	Fixture.steps(sim,90)
+	var walker: Dictionary = {}
+	for unit: Dictionary in sim.snapshot().entities:
+		if unit.kind == "frc_builder" and unit.id > home: walker = unit
+	runner.check(not walker.is_empty() and not walker.collection.enabled and walker.order != null,"Pg2 a headquarters laborer takes the rally move and does not collect")
+	return true
+
+func laborer_ok(runner, unit: Dictionary, label: String) -> void:
+	var cell := Vector2i(floori(unit.position[0]),floori(unit.position[1]))
+	var near: bool = cell.x >= 9 and cell.x <= 13 and cell.y >= 3 and cell.y <= 7 and not (cell.x >= 10 and cell.x <= 12 and cell.y >= 4 and cell.y <= 6)
+	runner.check(near and unit.collection.enabled and unit.collection.phase == "seeking" and unit.order == null,"Pg2 " + label + " laborer on a perimeter cell, seeking, no rally move")

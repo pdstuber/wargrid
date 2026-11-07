@@ -2,6 +2,7 @@ extends RefCounted
 
 const Usa = preload("res://scripts/simulation/definitions/usa.gd")
 const China = preload("res://scripts/simulation/definitions/china.gd")
+const Frc = preload("res://scripts/simulation/definitions/frc.gd")
 const Factions = preload("res://scripts/simulation/definitions/factions.gd")
 
 const DEFAULT_SPAWN := "usa_light_vehicle"
@@ -17,7 +18,8 @@ static var air_kinds: Dictionary = _air_kinds()
 
 static func kind(id: String) -> Dictionary:
 	if _extra.has(id): return _extra[id]
-	return Usa.KINDS[id] if Usa.KINDS.has(id) else China.KINDS.get(id, {})
+	if Usa.KINDS.has(id): return Usa.KINDS[id]
+	return China.KINDS[id] if China.KINDS.has(id) else Frc.KINDS.get(id, {})
 
 static func faction(id: String) -> Dictionary:
 	return Factions.FACTIONS.get(id, {})
@@ -38,7 +40,8 @@ static func collects(id: String) -> Dictionary:
 	return kind(id).get("collects", {})
 
 static func can_rally(id: String) -> bool:
-	return kind(id).get("produces", []).any(func(unit: String) -> bool: return collects(unit).is_empty())
+	var row: Dictionary = kind(id)
+	return row.get("produces", []).any(func(unit: String) -> bool: return collects(unit).is_empty()) or (not row.get("produces", []).is_empty() and not row.get("receives_supply", false))
 
 # Test-only kinds are cleared by clear_test_kinds.
 static func add_test_kind(id: String, row: Dictionary) -> void:
@@ -92,7 +95,7 @@ static func _producer_of(unit_id: String) -> String:
 
 static func _ids(want_units: bool) -> Array[String]:
 	var found: Array[String] = []
-	for source: Dictionary in [Usa.KINDS, China.KINDS, _extra]:
+	for source: Dictionary in [Usa.KINDS, China.KINDS, Frc.KINDS, _extra]:
 		for id: String in source:
 			if source[id].has("class") == want_units: found.append(id)
 	found.sort()
