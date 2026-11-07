@@ -583,6 +583,11 @@ Make the converted map playable in the launcher: map choice, camera limits for 1
 
 **Exit gate:** the three stop gates passed; a deterministic headless 3v3 bots-only match on Ashfall with all three factions, simulation ledger rows inside the budgets or reported as exceeded (design §1); parity results as a decision list.
 
+### Performance spike, then unit avoidance (user, 2026-11-07; scope not designed, placement among the M7.x entries not decided)
+
+- **Performance spike** after M7: the exceeded rows in the [performance ledger](docs/reference/performance.md) are accepted until then (combat stress, team match p99, the horde layouts). Reported as exceeded, never loosened.
+- **Unit avoidance milestone** after the spike: units go around each other instead of through each other (a firm requirement from the M7 gate 2 playtest; today the M2 design permits overlap in transit). It changes pathing for every unit, so it re-pins every trace and needs its own benchmarks and playtest. The spike runs first so avoidance starts from a measured per-tick baseline.
+
 ### Ground batch A (after M7; user, 2026-11-06, scope not designed)
 
 The ground units that need only M7's systems plus veterancy, upgrades and the tech tree, poison, transports, and travelling shots with minimum range (artillery). Replaces the earlier proposed "M7.1 roster fill".
