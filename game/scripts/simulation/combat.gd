@@ -280,6 +280,18 @@ static func _reach_ring(rings: Dictionary, kind: String, target: Dictionary, rea
 
 const GRID_CELL: int = 8
 
+# Record per target: [id, cx, cy, radius, is_building, position, x0, y0, x1, y1]; built per bucket on its first scan of the tick.
+static func _record(target: Dictionary) -> Array:
+	if not target.has("origin"):
+		return [target.id, target.position[0], target.position[1], CombatDefinitions.radius(target.kind), false, Vector2(target.position[0], target.position[1]), 0.0, 0.0, 0.0, 0.0]
+	var size: Vector2i = Definitions.building(target.kind).footprint
+	return [target.id, target.origin[0] + size.x * 0.5, target.origin[1] + size.y * 0.5, CombatDefinitions.radius(target.kind), true, Vector2.ZERO, target.origin[0], target.origin[1], target.origin[0] + size.x, target.origin[1] + size.y]
+
+static func _records(targets: Array) -> Array:
+	var records: Array = []
+	for target: Dictionary in targets: records.append(_record(target))
+	return records
+
 static func _build_grid(sim: Simulation) -> Dictionary:
 	var grid: Dictionary = {}
 	for entity: Dictionary in sim._entities.values():
@@ -297,15 +309,19 @@ static func _bucket(grid: Dictionary, owner: int, x: int, y: int, target: Dictio
 	if not grid.has(owner): grid[owner] = {}
 	var cells: Dictionary = grid[owner]
 	var key := Vector2i(x, y)
-	if not cells.has(key): cells[key] = []
-	cells[key].append(target)
+	if not cells.has(key): cells[key] = [[], null]
+	cells[key][0].append(target)
 
 # edge: radius is a weapon reach tested edge to edge; otherwise a centre scan radius.
 static func _nearest(sim: Simulation, unit: Dictionary, grid: Dictionary, radius: float, units_only: bool = false, edge: bool = false) -> Variant:
 	var best: Variant = null
 	var best_distance: float = INF
-	var position := Vector2(unit.position[0], unit.position[1])
-	var window: float = radius + CombatDefinitions.radius(unit.kind) + MAX_TARGET_RADIUS if edge else radius
+	var ux: float = unit.position[0]
+	var uy: float = unit.position[1]
+	var position := Vector2(ux, uy)
+	var unit_radius: float = CombatDefinitions.radius(unit.kind) if edge else 0.0
+	var window: float = radius + unit_radius + MAX_TARGET_RADIUS if edge else radius
+	var limit: float = radius + EDGE_EPS if edge else radius * radius
 	for owner: int in grid:
 		if not hostile(sim, unit.owner, owner): continue
 		var cells: Dictionary = grid[owner]
@@ -313,13 +329,23 @@ static func _nearest(sim: Simulation, unit: Dictionary, grid: Dictionary, radius
 			for x in range(int(floorf((position.x - window) / GRID_CELL)), int(floorf((position.x + window) / GRID_CELL)) + 1):
 				var key := Vector2i(x, y)
 				if not cells.has(key): continue
-				for target: Dictionary in cells[key]:
-					if units_only and target.has("origin"): continue
+				var bucket: Array = cells[key]
+				if bucket[1] == null: bucket[1] = _records(bucket[0])
+				for rec: Array in bucket[1]:
+					if units_only and rec[4]: continue
 					sim._combat_work += 1
-					var distance: float = edge_gap(unit, target) if edge else distance_squared(position, target)
-					if distance > (radius + EDGE_EPS if edge else radius * radius): continue
-					if distance < best_distance or (distance == best_distance and target.id < best):
-						best = target.id
+					var distance: float
+					if edge:
+						var dx: float = ux - rec[1]
+						var dy: float = uy - rec[2]
+						distance = maxf(0.0, sqrt(dx * dx + dy * dy) - unit_radius - rec[3])
+					elif rec[4]:
+						distance = position.distance_squared_to(Vector2(clampf(position.x, rec[6], rec[8]), clampf(position.y, rec[7], rec[9])))
+					else:
+						distance = position.distance_squared_to(rec[5])
+					if distance > limit: continue
+					if distance < best_distance or (distance == best_distance and rec[0] < best):
+						best = rec[0]
 						best_distance = distance
 	return best
 
