@@ -9,7 +9,7 @@ Resume record (updated 2026-11-07, Tasks 0-4 done and reviewed, pre-publication 
 Branch / base commit / working-tree state: r1-release rebased onto main 025540d on 2026-11-07 (was cut from m7-factions ed48b2e, old tip 1c9ccaf); pre-publication fixes below uncommitted; nothing pushed
 Last green task / next incomplete task: Task 4 + final review fixes + pre-publication fixes / Task 0 step 4 and Task 5 (user: repo public, production Environment, fly tokens, version pick, pushes and approval)
 Changed paths since last commit: see "Pre-publication review" below
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh 277 / 112765 / 0 / exit 0 / TESTS PASSED 112765; python3 -m unittest discover -s tools 52 OK; run_python_checks, run_lint, run_warnings pass; actionlint not installed, so Actions semantics are unchecked until the first CI run
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh 277 / 112765 / 0 / exit 0 / TESTS PASSED 112765; python3 -m unittest discover -s tools 52 OK; run_python_checks, run_lint, run_warnings pass; actionlint 1.7.12 with shellcheck 0.11.0 on both workflows: 0 findings (after quoting the packaging step's extras as a bash array), and tests.yml now runs it as job actions-lint
 Known red case or blocker: unverified until the rehearsal: Godot's built-in ad-hoc signer exporting macOS from a Linux host (fallback: a macos-latest job for that export)
 Approved decisions, pre-authorizations used, deferred gates: plan Decisions (user, 2026-11-06); final review (Opus, fresh context) found 0 critical, 2 important (both fixed) and 9 minor (1 raised to important and fixed, 8 deferred below)
 Usage so far: not recorded

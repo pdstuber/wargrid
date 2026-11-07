@@ -72,6 +72,7 @@ sh tools/run_lint.sh   # needs: uv tool install gdtoolkit==4.5.0
 sh tools/run_warnings.sh   # typing, shadowing, unused-parameter and integer-division warnings as errors
 python3 -m unittest discover -s tools -p 'test_*.py'
 sh tools/run_python_checks.sh   # ruff format + lint, mypy; needs: xargs -n1 uv tool install < tools/requirements-dev.txt
+actionlint   # GitHub workflows, with shellcheck on run: blocks; needs: brew install actionlint shellcheck
 sh tools/run_benchmark.sh
 ```
 
