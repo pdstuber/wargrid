@@ -1,4 +1,4 @@
-Implement Wargrid M6 (teams, full-scale map, combat and movement feel) only, in /Users/pdstuber/projects/wargrid, following docs/milestone-prompt.md. Models per the plan's "Model routing": Opus (high) for Task 1 and every gate review; Sonnet (medium) for Tasks 2-12; Sonnet (low) is acceptable for Tasks 0 and 13. This is an execution handoff: reading or preparing this file does not authorize implementation. Start only when the user explicitly invokes it. M0-M5.1 exist; do not restart them or begin M7.
+Implement Wargrid M6 (teams, full-scale map, combat and movement feel) only, in ~/projects/wargrid, following docs/milestone-prompt.md. Models per the plan's "Model routing": Opus (high) for Task 1 and every gate review; Sonnet (medium) for Tasks 2-12; Sonnet (low) is acceptable for Tasks 0 and 13. This is an execution handoff: reading or preparing this file does not authorize implementation. Start only when the user explicitly invokes it. M0-M5.1 exist; do not restart them or begin M7.
 
 Milestone files:
 - Design (approved by user 2026-11-05; do not ask again): docs/superpowers/specs/2026-11-05-m6-teams-full-map-design.md

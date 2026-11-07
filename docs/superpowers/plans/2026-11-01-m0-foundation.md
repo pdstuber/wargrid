@@ -12,7 +12,7 @@
 
 ## Global constraints
 
-- Work in `/Users/pdstuber/projects/wargrid`. Read `AGENTS.md` and `README.md`; preserve existing files and user changes.
+- Work in `~/projects/wargrid`. Read `AGENTS.md` and `README.md`; preserve existing files and user changes.
 - Use `game/project.godot`; `res://` means `game/`. Compatibility rendering, 30 simulation ticks/second.
 - M0 only: move commands record orders without moving entities. No pathfinding, selection, sprites, combat, economy, RNG, event bus, hashing, save/load, fixture parser or multiplayer.
 - Checks stay headless. No visible windows, engine installation/upgrades, commits, pushes or PRs without required authorization.

@@ -22,7 +22,7 @@ CLIFF_STEP = 9.8
 NAME = "Ashfall"
 NOTICE = (
     "Converted from an Electronic Arts map source (Copyright 2025 Electronic Arts Inc., "
-    "GPL-3.0-or-later with EA's additional terms). Modified; not the original. "
+    "GPL-3.0 with EA's additional terms). Modified; not the original. "
     "Terms, source path and revision: game/data/maps/NOTICE.md."
 )
 # StartingBoxes in object/civilianbuilding.ini, Object SupplyDock (INIZH.big); no map override.

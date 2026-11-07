@@ -1,6 +1,6 @@
 {
   "name": "Ashfall",
-  "notice": "Converted from an Electronic Arts map source (Copyright 2025 Electronic Arts Inc., GPL-3.0-or-later with EA's additional terms). Modified; not the original. Terms, source path and revision: game/data/maps/NOTICE.md.",
+  "notice": "Converted from an Electronic Arts map source (Copyright 2025 Electronic Arts Inc., GPL-3.0 with EA's additional terms). Modified; not the original. Terms, source path and revision: game/data/maps/NOTICE.md.",
   "size": [194, 187],
   "cells": [
     "..........................................####...............................................#########................................................##..........................................",

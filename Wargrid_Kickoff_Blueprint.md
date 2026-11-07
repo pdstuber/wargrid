@@ -103,7 +103,7 @@ Godot remains the preferred engine for this independent implementation. A fork o
 
 ### Reuse baseline: Hell's Verdict
 
-Use `/Users/pdstuber/projects/hells-verdict` as the local tooling reference (inspected HEAD `3fffcb8`, with existing working-tree changes). Read the relevant files before adapting them; do not modify that project or copy its gameplay code. Its current CI configuration is evidence of a setup, not proof that the remote job or download still works.
+Use `~/projects/hells-verdict` as the local tooling reference (inspected HEAD `3fffcb8`, with existing working-tree changes). Read the relevant files before adapting them; do not modify that project or copy its gameplay code. Its current CI configuration is evidence of a setup, not proof that the remote job or download still works.
 
 | Reference file | Adapt for Wargrid |
 |---|---|
@@ -182,12 +182,12 @@ Record the **source revision/commit hash** used for each research finding. Do no
 
 ### Verified local reference baseline (2026-11-01)
 
-- Wargrid: `/Users/pdstuber/projects/wargrid`; README, agent instructions, blueprint and reference notes, no game implementation.
-- EA checkout: `/Users/pdstuber/projects/CnC_Generals_Zero_Hour`.
+- Wargrid: `~/projects/wargrid`; README, agent instructions, blueprint and reference notes, no game implementation.
+- EA checkout: `~/projects/CnC_Generals_Zero_Hour`.
 - Inspected revision: `0a05454d8574207440a5fb15241b98ad0b435590`. Use this revision in source links and research notes.
 - Research **`GeneralsMD/`** for Zero Hour. `Generals/` is the base game; do not mix their behavior without saying so.
 - Installed engine reports `4.7.2.stable.official.ed1daf0bf` via `godot --version`. This is an observed local version, not a claim about the latest upstream release. M0 must verify an official matching CI download before adopting this pin.
-- The source checkout omits gameplay INIs. User-supplied installation backups under `/Users/pdstuber/CnC` contain readable `INI.big` (Generals) and `INIZH.big` (Zero Hour), including gameplay definitions. See [local data inventory and hashes](docs/reference/installation.md). Use the root Zero Hour archive, not its obsolete nested duplicate; resolve overrides before claiming effective stats.
+- The source checkout omits gameplay INIs. User-supplied installation backups under `~/CnC` contain readable `INI.big` (Generals) and `INIZH.big` (Zero Hour), including gameplay definitions. See [local data inventory and hashes](docs/reference/installation.md). Use the root Zero Hour archive, not its obsolete nested duplicate; resolve overrides before claiming effective stats.
 - Current data baseline: hash-pinned Steam Deck installation backups, inspected 2026-11-01. Exact executable/patch version, mod status and runtime behavior remain **unverified**; do not assume 1.04. Before a measured comparison, record executable/version, mods, effective configuration and scenario. Configuration research is unblocked; measured fidelity still requires runtime observations.
 
 Source entry points below are relative to `GeneralsMD/Code/GameEngine/`. They locate research, not instructions to port the implementation.

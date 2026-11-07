@@ -5,11 +5,11 @@ Plan: [release workflow plan](../superpowers/plans/2026-11-06-release-workflow.m
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-06, Tasks 0-4 done and reviewed)
-Branch / base commit / working-tree state: r1-release cut from m7-factions ed48b2e; tree clean after the review-fix commit; nothing pushed
-Last green task / next incomplete task: Task 4 + final review fixes / Task 0 step 4 and Task 5 (user: repo public, production Environment, fly tokens, version pick, pushes and approval)
-Changed paths since last commit: none
-Last command / cases / checks / failures / exit / marker: python3 -m unittest discover -s tools OK; sh tools/run_python_checks.sh passes; sh tools/run_lint.sh passes; both workflows parse as YAML (actionlint was denied by the permission classifier, so Actions semantics are unchecked until the first CI run)
+Resume record (updated 2026-11-07, Tasks 0-4 done and reviewed, pre-publication fixes uncommitted)
+Branch / base commit / working-tree state: r1-release rebased onto main 025540d on 2026-11-07 (was cut from m7-factions ed48b2e, old tip 1c9ccaf); pre-publication fixes below uncommitted; nothing pushed
+Last green task / next incomplete task: Task 4 + final review fixes + pre-publication fixes / Task 0 step 4 and Task 5 (user: repo public, production Environment, fly tokens, version pick, pushes and approval)
+Changed paths since last commit: see "Pre-publication review" below
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh 277 / 112765 / 0 / exit 0 / TESTS PASSED 112765; python3 -m unittest discover -s tools 52 OK; run_python_checks, run_lint, run_warnings pass; actionlint not installed, so Actions semantics are unchecked until the first CI run
 Known red case or blocker: unverified until the rehearsal: Godot's built-in ad-hoc signer exporting macOS from a Linux host (fallback: a macos-latest job for that export)
 Approved decisions, pre-authorizations used, deferred gates: plan Decisions (user, 2026-11-06); final review (Opus, fresh context) found 0 critical, 2 important (both fixed) and 9 minor (1 raised to important and fixed, 8 deferred below)
 Usage so far: not recorded
@@ -29,3 +29,13 @@ Next exact action: the user makes the repo public, creates the production Enviro
 
 - Fixed: a rerun after a failed first upload left the release as a hidden draft (`gh release edit --draft=false` on the rerun path); the zips did not say where the corresponding source is (GPL-3 §6(d): `README.txt` now links `<repo>/tree/<tag>`, test `test_readme_names_the_source`); macOS 15 removed right-click Open (README now says System Settings > Privacy & Security > Open Anyway, tests in `test_macos_appends_and_keeps_modes`).
 - Deferred minors: the relay deploy omits `--dockerfile` (autodetect, unproven); Godot and template pins are duplicated in `tests.yml` and `release.yml` with no guard; a third tag pushed while one run waits for approval cancels the second; the `production` Environment must allow tag `v*` if restricted; the release-version CLI output has no test (a `True` instead of `true` would publish a full release instead of a prerelease); no early check that the web export has `index.wasm` / `index.pck` before the approval; the live web build carries no source link or Godot notices (predates R1, same GPL obligation).
+
+## Pre-publication review (2026-11-07, Opus, fresh context, all refs)
+
+- Rebased: R1 had been cut from `m7-factions`, so it carried 34 M7 commits. Its 8 commits (2 plan commits plus Tasks 0-4) now sit on `main`; a test merge of `m7-factions` afterwards conflicts only in the AGENTS.md and blueprint status lines.
+- `main` was red since the Web preset (`MP5 nine presets checked`, CI failing on `main` since 2026-11-06); took the same one-line fix as M7's `7251464` (`presets == 10`).
+- Web build: the site now carries `LICENSE`, the map notice and `GODOT_LICENSES.txt` (`release.yml` and `tools/deploy_web.sh`), and the launcher shows a copyright, GPL and no-warranty line with the source link (test N5). Closes the deferred "live web build carries no source link or Godot notices".
+- Pins: `test_release_builds_with_the_tested_engine` fails when `release.yml`'s Godot or template pins drift from `tests.yml` (mutation checked). Closes that deferred minor.
+- Licence wording: EA's `CnC_Modding_Support` `LICENSE.md` (read via `gh api`, revision `3aad8e4`) says "GPL V3" without "or later", so the map notice, `convert.py` and `ashfall.json` now say GPL-3.0; `refpack.py` keeps "or later", matching EA's `refdecode.cpp` header.
+- Wording and privacy: "clone" dropped from AGENTS.md and the verification plan; README opens with what Wargrid is, how to play, status and the AI-agent workflow, and its licence section no longer claims "no EA data"; home paths written as `~/`; a friend's town removed. History still holds the old text. README screenshot `docs/images/skirmish.png` (user request, 2026-11-07): `main` plus R1 in a 1280×720 window, bot against bot on the skirmish map at tick 6000, taken by a scratch script outside the repo.
+- History scan of all 282 commits: author email is the noreply address only, no co-author trailers, no secrets, no binary files ever, no EA files.

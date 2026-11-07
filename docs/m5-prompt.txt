@@ -1,4 +1,4 @@
-Implement Wargrid M5 (online spike) only, in /Users/pdstuber/projects/wargrid, following docs/milestone-prompt.md. Model: Sonnet 5.5, medium effort, for implementation (user, 2026-11-04); Opus for Task 1, for the "Opus preflight" steps at the start of Tasks 1, 3, 5 and 9, and for gate reviews. This is an execution handoff: reading or preparing this file does not authorize implementation. Start only when the user explicitly invokes it. M0–M4.1 exist; do not restart them or begin M6.
+Implement Wargrid M5 (online spike) only, in ~/projects/wargrid, following docs/milestone-prompt.md. Model: Sonnet 5.5, medium effort, for implementation (user, 2026-11-04); Opus for Task 1, for the "Opus preflight" steps at the start of Tasks 1, 3, 5 and 9, and for gate reviews. This is an execution handoff: reading or preparing this file does not authorize implementation. Start only when the user explicitly invokes it. M0–M4.1 exist; do not restart them or begin M6.
 
 Milestone files:
 - Design (approved by user 2026-11-04; do not ask again): docs/superpowers/specs/2026-11-04-m5-online-spike-design.md

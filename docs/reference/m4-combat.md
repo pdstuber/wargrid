@@ -4,7 +4,7 @@ Status: **SOURCE/CONFIG SUPPORTED; RETAIL UNVERIFIED**. Planning research only. 
 
 ## Provenance
 
-Read local official checkout `/Users/pdstuber/projects/CnC_Generals_Zero_Hour`, revision `0a05454d8574207440a5fb15241b98ad0b435590`. Read root member `Command & Conquer Generals - Zero Hour/INIZH.big` from `/Users/pdstuber/CnC/Command & Conquer Generals - Zero Hour.tar.gz` in memory; verified SHA-256 `1a6d41a7a2cb31e67ad2f868aca9264ad069c275e0074f8a0d970a336071e9a0`, checked entry bounds. Decoded selected payloads only in `/tmp/wargrid-m4-plan/`, outside repository. Archives unchanged. Effective retail overrides/mod/version remain unresolved: [installation evidence](installation.md).
+Read local official checkout `~/projects/CnC_Generals_Zero_Hour`, revision `0a05454d8574207440a5fb15241b98ad0b435590`. Read root member `Command & Conquer Generals - Zero Hour/INIZH.big` from `~/CnC/Command & Conquer Generals - Zero Hour.tar.gz` in memory; verified SHA-256 `1a6d41a7a2cb31e67ad2f868aca9264ad069c275e0074f8a0d970a336071e9a0`, checked entry bounds. Decoded selected payloads only in `/tmp/wargrid-m4-plan/`, outside repository. Archives unchanged. Effective retail overrides/mod/version remain unresolved: [installation evidence](installation.md).
 
 ## Selected data
 

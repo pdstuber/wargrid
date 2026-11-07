@@ -1,4 +1,4 @@
-Implement Wargrid M4.1 (playtest polish) only, in /Users/pdstuber/projects/wargrid, following docs/milestone-prompt.md. Model: mid tier (Sonnet 5.5, medium effort) for implementation; gate reviews on the strongest available model. This is an execution handoff: reading or preparing this file does not authorize implementation. Start only when the user explicitly invokes it. M0–M4 exist; do not restart them or begin M5.
+Implement Wargrid M4.1 (playtest polish) only, in ~/projects/wargrid, following docs/milestone-prompt.md. Model: mid tier (Sonnet 5.5, medium effort) for implementation; gate reviews on the strongest available model. This is an execution handoff: reading or preparing this file does not authorize implementation. Start only when the user explicitly invokes it. M0–M4 exist; do not restart them or begin M5.
 
 Milestone files:
 - Design (approved by user 2026-11-03; do not ask again): docs/superpowers/specs/2026-11-03-m4.1-playtest-polish-design.md

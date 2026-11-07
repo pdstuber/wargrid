@@ -14,7 +14,7 @@ Status: spike between milestones. **Adopted (user, 2026-11-05, "go with your rec
 
 ## What was built
 
-Fork checkout `/Users/pdstuber/projects/GeneralsGameCode-macOS`, local branch `wargrid-parity` on base `8fedb1649`: `b3874dc95` (patch) and `eb595cfc9` (fixes after a Codex `gpt-6-astra` review), **never pushed**, 4 files:
+Fork checkout `~/projects/GeneralsGameCode-macOS`, local branch `wargrid-parity` on base `8fedb1649`: `b3874dc95` (patch) and `eb595cfc9` (fixes after a Codex `gpt-6-astra` review), **never pushed**, 4 files:
 
 - `Dependencies/Utility/osdep_compat/win32_api.h`: `GetCommandLineA` returned `""` on macOS, so every command-line flag was dropped (the first probe ran windowed with loud sound); now built from `_NSGetArgv`.
 - `GeneralsMD/.../Common/CommandLine.cpp`: `-noaudio` also in release builds.

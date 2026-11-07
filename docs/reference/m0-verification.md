@@ -32,7 +32,7 @@ C1–C11 were written against syntactically valid stubs before kernel implementa
 | Command or condition | Exit | Result |
 |---|---:|---|
 | `sh tools/run_tests.sh` from repo | 0 | 11 cases / 199 checks |
-| `sh /Users/pdstuber/projects/wargrid/tools/run_tests.sh` from `/private/tmp` | 0 | Same counts |
+| `sh ~/projects/wargrid/tools/run_tests.sh` from `/private/tmp` | 0 | Same counts |
 | Wrapper with `GODOT_BIN=/opt/homebrew/bin/godot` | 0 | Same counts |
 | Wrapper with temporary executable symlink path containing spaces | 0 | Same counts |
 | Fresh scratch project without `.godot` cache | 0 | Import then same counts |

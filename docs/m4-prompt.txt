@@ -1,4 +1,4 @@
-Implement Wargrid M4 only in /Users/pdstuber/projects/wargrid, using Sol at Medium reasoning. This is an execution handoff: creating or reading this file during preparation does not authorize implementation. Start only when user explicitly invokes it as a task. M0–M3 already exist; do not restart them or begin M5.
+Implement Wargrid M4 only in ~/projects/wargrid, using Sol at Medium reasoning. This is an execution handoff: creating or reading this file during preparation does not authorize implementation. Start only when user explicitly invokes it as a task. M0–M3 already exist; do not restart them or begin M5.
 
 Read in order:
 1. AGENTS.md, README.md and current docs/session-notes.md handoff.

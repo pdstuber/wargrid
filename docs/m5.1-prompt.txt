@@ -1,4 +1,4 @@
-Implement Wargrid M5.1 (friend-match playtest findings) only, in /Users/pdstuber/projects/wargrid, following docs/milestone-prompt.md. Model: Sonnet for implementation; Opus for Task 1, for the "Opus preflight" at the start of Tasks 1, 3 and 5, and for gate reviews. This is an execution handoff: reading or preparing this file does not authorize implementation. Start only when the user explicitly invokes it. M0–M5 exist; do not restart them or begin M6.
+Implement Wargrid M5.1 (friend-match playtest findings) only, in ~/projects/wargrid, following docs/milestone-prompt.md. Model: Sonnet for implementation; Opus for Task 1, for the "Opus preflight" at the start of Tasks 1, 3 and 5, and for gate reviews. This is an execution handoff: reading or preparing this file does not authorize implementation. Start only when the user explicitly invokes it. M0–M5 exist; do not restart them or begin M6.
 
 Milestone files:
 - Design (approved by user 2026-11-05; do not ask again): docs/superpowers/specs/2026-11-05-m5.1-playtest-findings-design.md

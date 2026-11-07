@@ -31,7 +31,7 @@ Branch diff against `main`: 90 files, +4,600 / -99. Design: approach A, relay fo
 
 | Match | Command p50 / p95 | RTT p95 |
 |---|---|---|
-| Mac vs Windows, near Kulmbach, pre-fix 2x speed (not the gate match) | 75 / 96 ms and 77 / 85 ms | 36 and 34 ms |
+| Mac vs Windows, friend at home, pre-fix 2x speed (not the gate match) | 75 / 96 ms and 77 / 85 ms | 36 and 34 ms |
 | Mac mini vs MacBook Air M1, after fix, 6001 ticks | 174 / 191 ms and 181 / 205 ms (n=13) | 42 and 34 ms |
 
 After the fix the 4-tick delay dominates (about 133 ms); margin to budget is 45–59 ms, so a farther link would exceed it (M9: dynamic delay). Warm probe from the Mac to fra: 78 ms p50. Bytes: about 52 B per frame, about 1.55 KB/s per client uplink.

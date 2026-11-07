@@ -4,9 +4,9 @@ Status: **SOURCE_SUPPORTED / CONFIG_SUPPORTED; RETAIL_UNVERIFIED**. User request
 
 ## Provenance
 
-Read local official-source checkout `/Users/pdstuber/projects/CnC_Generals_Zero_Hour`, revision `0a05454d8574207440a5fb15241b98ad0b435590`. Source paths below relative to `GeneralsMD/Code/GameEngine/`. Links pin that revision.
+Read local official-source checkout `~/projects/CnC_Generals_Zero_Hour`, revision `0a05454d8574207440a5fb15241b98ad0b435590`. Source paths below relative to `GeneralsMD/Code/GameEngine/`. Links pin that revision.
 
-Read root member `Command & Conquer Generals - Zero Hour/INIZH.big` from user archive `/Users/pdstuber/CnC/Command & Conquer Generals - Zero Hour.tar.gz` in memory. Recomputed embedded BIG SHA-256 `1a6d41a7a2cb31e67ad2f868aca9264ad069c275e0074f8a0d970a336071e9a0`; 135 indexed entries, header/bounds checked. Excluded nested Data/INI/INIZH.big. Selected decoded text used only in temporary scratch. [Installation evidence](installation.md) owns earlier patch-index findings and unresolved executable/mod/override status. This pass did not establish effective retail configuration or inspect every override. Line numbers are within decoded payloads.
+Read root member `Command & Conquer Generals - Zero Hour/INIZH.big` from user archive `~/CnC/Command & Conquer Generals - Zero Hour.tar.gz` in memory. Recomputed embedded BIG SHA-256 `1a6d41a7a2cb31e67ad2f868aca9264ad069c275e0074f8a0d970a336071e9a0`; 135 indexed entries, header/bounds checked. Excluded nested Data/INI/INIZH.big. Selected decoded text used only in temporary scratch. [Installation evidence](installation.md) owns earlier patch-index findings and unresolved executable/mod/override status. This pass did not establish effective retail configuration or inspect every override. Line numbers are within decoded payloads.
 
 ## Selected base-USA configuration
 

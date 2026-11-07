@@ -4,7 +4,7 @@
 
 - Copyright 2025 Electronic Arts Inc.
 - Source: `Zero Hour/Maps/official/Twilight Flame/Twilight Flame.map` in https://github.com/ElectronicArts/CnC_Modding_Support, revision `3aad8e4`.
-- License: GNU GPL v3 or later, with the additional terms below, as released by Electronic Arts in that repository's `LICENSE.md`.
+- License: GNU GPL v3, with the additional terms below, as released by Electronic Arts in that repository's `LICENSE.md`.
 
 ## ADDITIONAL TERMS per GNU GPL Section 7
 

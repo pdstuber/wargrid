@@ -1,6 +1,6 @@
 Historical M3 implementation prompt. M3 is implemented; read docs/session-notes.md and README.md for current branch, verification and next action. Do not restart completed tasks.
 
-Implement Wargrid M3 only in /Users/pdstuber/projects/wargrid, using Sol at Medium reasoning. This prompt authorizes implementation only when user invokes it as a new task; file creation/copy during M2 handoff is not kickoff. M0/M1/M2 must already be implemented; do not rebuild them or begin M4.
+Implement Wargrid M3 only in ~/projects/wargrid, using Sol at Medium reasoning. This prompt authorizes implementation only when user invokes it as a new task; file creation/copy during M2 handoff is not kickoff. M0/M1/M2 must already be implemented; do not rebuild them or begin M4.
 
 Read in order:
 1. AGENTS.md, README.md and current docs/session-notes.md handoff.

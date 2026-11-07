@@ -114,7 +114,7 @@ Branch `spike-parity` (docs, `tools/zh_parity/`, one CI line; no game code). Ups
 
 ## 2026-11-04 — M5 human matches
 
-- Friend match (macOS editor run vs friend's Windows 11 export, Kulmbach): no desync, command p95 96.0 / 84.6 ms, but ticks ran at about 57/s: `online_main.gd` catch-up ran 2 ticks per frame permanently. Fixed with a bounded per-frame credit (`f82114f`, test first) plus the false "Connection to relay lost" after match end.
+- Friend match (macOS editor run vs friend's Windows 11 export): no desync, command p95 96.0 / 84.6 ms, but ticks ran at about 57/s: `online_main.gd` catch-up ran 2 ticks per frame permanently. Fixed with a bounded per-frame credit (`f82114f`, test first) plus the false "Connection to relay lost" after match end.
 - Mac mini vs MacBook Air M1 at 30 Hz: 6,001 ticks, about 1.55 KB/s per client, command p95 191.4 / 205.0 ms (n=30 / 13), RTT p95 41.9 / 33.7 ms. End-screen text not confirmed by the user.
 - User decisions: step 2 used two Macs; repeat friend match deferred ("confident they work"); play feedback filed as informal M4.1 playtest notes in [M4.1 verification](reference/m4.1-verification.md) (formal playtest still pending). Unreproduced: attack-move leaves units in the base standing when part of the army is engaged.
 - Fly: idle autosuspend observed 71 s to about 7 min after last activity; resume 193-463 ms; no relay errors in the logs. AppCDS mapping unverified.

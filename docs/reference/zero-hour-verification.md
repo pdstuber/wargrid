@@ -44,7 +44,7 @@ Result on the pinned data: **74 rows, 0 differ**; two deliberate departures (leg
 
 ## Goal calibration (user, 2026-11-03)
 
-Goal is a pixel-art clone that **feels very close**, not mathematical parity. Consequences: level 2 and 3 are out unless level 1 shows a feel problem numbers cannot explain. Ratios drive feel (speed vs range, tank vs infantry pace, time-to-kill, build/economy pacing), so level 1 tolerances widen to about ±20% and V6–V9 become side-by-side feel checks (record impressions plus frame counts) rather than pass/fail. Not covered by numbers: acceleration/turning, unit size relative to a cell, sound and UI responsiveness; only side-by-side play shows those.
+Goal is Wargrid's own pixel-art game that **feels very close** to Zero Hour, not mathematical parity. Consequences: level 2 and 3 are out unless level 1 shows a feel problem numbers cannot explain. Ratios drive feel (speed vs range, tank vs infantry pace, time-to-kill, build/economy pacing), so level 1 tolerances widen to about ±20% and V6–V9 become side-by-side feel checks (record impressions plus frame counts) rather than pass/fail. Not covered by numbers: acceleration/turning, unit size relative to a cell, sound and UI responsiveness; only side-by-side play shows those.
 
 ## Level 1 protocol (reduced by user decision, 2026-11-03)
 

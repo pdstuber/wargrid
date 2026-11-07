@@ -26,7 +26,7 @@ All run headlessly through test subagents, using unchanged wrappers and pinned e
 | Command / location | Result |
 |---|---|
 | `sh tools/run_tests.sh` from repo | 32 cases / 1089 checks / 0 failures, exit 0, `TESTS PASSED 1089` |
-| `sh /Users/pdstuber/projects/wargrid/tools/run_tests.sh` from `/tmp` | Same counts/marker, exit 0 |
+| `sh ~/projects/wargrid/tools/run_tests.sh` from `/tmp` | Same counts/marker, exit 0 |
 | `sh tools/run_tests.sh` in fresh scratch `game/` + `tools/` copy excluding `.godot` | Same counts/marker, exit 0 |
 | `godot --headless --path game --quit-after 30` | Exit 0, no diagnostics |
 | `godot --version` | `4.7.2.stable.official.ed1daf0bf` |
