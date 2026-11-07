@@ -5,7 +5,7 @@ Handoff: [performance-spike-prompt.txt](../performance-spike-prompt.txt). Ledger
 ```text
 Resume record (updated 2026-11-08 00:00)
 Branch / base commit / working-tree state: main / bce4b79 (Task 2b committed) / uncommitted: game/scripts/simulation/combat.gd, combat_definitions.gd, definitions/definitions.gd, game/tests/test_combat.gd (Task 2c), this file, docs/reference/performance.md (ledger rows 2b and 2c)
-Last green task / next incomplete task: Task 2c (cached radius per kind, see '2c result'; awaits coordinator commit) / Task 2d (`Horde.step`, H3 confirmed)
+Last green task / next incomplete task: Task 2c (cached radius per kind, see '2c result'; awaits coordinator commit); Task 2e BLOCKED and reverted, see '2e result' / Task 2d (`Horde.step`, H3 confirmed)
 Changed paths since last commit: game/scripts/simulation/combat.gd, combat_definitions.gd, definitions/definitions.gd, game/tests/test_combat.gd, this file, docs/reference/performance.md
 Last command / cases / checks / failures / exit / marker: accept.sh bce4b79 PASS (suite 484 cases / 136037 checks / 0 failures); A/B bench_ab.sh 3 rounds exit 0 ALLDONE
 Known red case or blocker: none. Report-only rows exceeded: combat open, dense, hordes300
@@ -191,3 +191,19 @@ A/B median of 3 runs (ms), spreads are max - min of the runs of that arm:
 | movement dense | 1.537 / 1.526 | 1.579 / 1.577 | 1.788 / 1.790 | 0.018 / 0.020 / 0.018 |
 
 Gain is real (beyond spread in all combat percentiles) but far below the 0.1-0.4 ms estimate: 0.02-0.09 ms p50, 0.06-0.15 ms p95. Movement differences are within spread. Rows still exceed the budget (report-only). Logs in the scratchpad (`ab2c/`), not in the repo. Lockstep and team-match timing were not rerun.
+
+## 2e result (2026-11-07, working tree on f62cf70 vs git archive of f62cf70, Apple M6, load 1.46 start / 1.31 end) - BLOCKED, not kept
+
+Tried: `_nearest` visits target-grid buckets in Chebyshev rings around the unit's bucket (hostile owners collected once, ring loop outside the owner loop) and stops when the lower bound of the next ring (distance to the outer edge of the ring square, minus unit and `MAX_TARGET_RADIUS` in edge mode, minus a 0.01 margin, squared in centre mode) is strictly above the best distance. Test first: N1 extended to 6527 scans (200 states, 1/6 of entities and 1/8 of buildings erased, 2213 scans with the radius set exactly to a target's distance, dead units), id equal to the mixed-grid oracle, plus N2 (never more targets examined than the full window). Mutation check: ring bound off by one cell (`(ux + ring + 1)`) turns N1 red (17 mismatches; S1 and Cs1 pins also fail); changing the margin to +0.5 stayed green (margin not covered by the test). Suite 484 / 136038 / 0 failures, four traces cmp-identical, 7 pins equal, lint, warnings, netplay match and team match all passed on the tree (accept.sh).
+
+Result: `combat_work` p95 falls only 12 % (open 1381 -> 1206, dense 1522 -> 1387, hordes300 unchanged 1279; tick-0 peak in BM6 'contact' 18168 -> 17676), because hostiles sit in the first rings and the friendly share was already removed by 2b. A/B median of 3 (ms), A = f62cf70, B = 2e:
+
+| Row | p50 A / B | p95 A / B | p99 A / B | A/A spread p50 / p95 / p99 |
+|-----|-----------|-----------|-----------|----------------------------|
+| combat open | 1.311 / 1.328 | 2.108 / 2.119 | 2.541 / 2.469 | 0.005 / 0.008 / 0.031 |
+| combat dense | 1.081 / 1.097 | 2.271 / 2.289 | 2.826 / 2.839 | 0.012 / 0.030 / 0.031 |
+| combat hordes300 | 2.599 / 2.638 | 3.899 / 3.930 | 4.525 / 4.599 | 0.002 / 0.026 / 0.043 |
+| movement open | 1.514 / 1.521 | 1.582 / 1.593 | 1.766 / 1.775 | 0.000 / 0.025 / 0.042 |
+| movement dense | 1.530 / 1.530 | 1.573 / 1.577 | 1.778 / 1.799 | 0.009 / 0.009 / 0.030 |
+
+No p95 gain beyond the spread; combat rows are slightly slower (ring bookkeeping outweighs the saved checks). The fix is NOT kept: code, tests and the BM6 retune were reverted (BM6 floor stays 16000, no retune needed; patch in the scratchpad `2e-blocked.patch`). Recommendation: drop 2e; the remaining tail is the retarget burst (2f, re-pin) not the candidate loop. Lockstep and team-match timing not run (no tree kept).
