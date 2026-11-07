@@ -16,6 +16,7 @@ Hard rules:
 - Measure first, optimise second. Repeat runs (at least 3), report p50/p95/p99/max and noise; benchmarks run alone; record machine load (Codex, Battle.net, WoW).
 - At most three kept fixes per round, each with before/after on every affected row and no regression elsewhere. Prefer deletion and algorithmic fixes over new systems.
 - No wholesale rewrites, no benchmark-specific tricks, nothing that changes gameplay.
+- One machine per comparison. All spike measurements (baseline and every before/after) run on one machine, named in the report; rows from different machines are never compared, and the ledger's Apple M6 rows are history. A second machine (M1 MacBook Air, a cloud VM, a Fly Sprite) gets its own baseline first, plus a calibration run of a fixed CPU loop to show its variance before any p95/p99 is trusted.
 
 Workstreams, in this order. Each ends with a written finding and a decision for the user before the next costly step:
 1. Baseline report: all benchmark rows, thresholds, margins, noise, and the primary profile (run_profile.sh) per failing row. Distinguish average, worst case and variability. Where feasible, find when each row regressed (git bisect on the ledger).
