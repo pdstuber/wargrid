@@ -7,6 +7,7 @@ const Profiler = preload("res://scripts/debug/profiler.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Containers = preload("res://scripts/simulation/containers.gd")
 const Shared = preload("res://scripts/simulation/definitions/shared.gd")
+const Salvage = preload("res://scripts/simulation/salvage.gd")
 const REPATH_TICKS: int = 8
 # Zero Hour fires at range - 0.1 cells measured edge to edge; EDGE_EPS absorbs float noise at the boundary.
 const RANGE_SLACK: float = 0.1
@@ -320,13 +321,14 @@ static func fire(sim: Simulation, unit_ids: Array[int], moved_ids: Array[int]) -
 		if combat.target_id == null or sim._tick < combat.next_fire_tick: continue
 		var target: Dictionary = record(sim, combat.target_id)
 		if target.is_empty() or not hostile(sim, unit.owner, target.owner) or not _in_range(sim, unit, target): continue
-		var weapon: Dictionary = CombatDefinitions.weapon(CombatDefinitions.profile(unit.kind).weapon)
+		var weapon: Dictionary = weapon_of(unit)
 		_hit(shots, damage, sim, unit_id, target, weapon, false)
 		if weapon.primary_radius > 0.0: _splash(shots, damage, sim, unit, target, weapon)
 		_reload(sim, combat, weapon)
 		_ramp_after_shot(sim, combat, weapon)
 	sim._combat_events.append_array(shots)
 	var dead: Array = damage.keys().filter(func(id: int) -> bool: return record(sim, id).hp <= damage[id])
+	var killers: Dictionary = _killers(shots, _hp_of(sim, dead))
 	for id: Variant in damage:
 		var hit: Dictionary = record(sim, id)
 		hit.hp = maxi(0, hit.hp - damage[id])
@@ -335,6 +337,7 @@ static func fire(sim: Simulation, unit_ids: Array[int], moved_ids: Array[int]) -
 	Profiler.end(&"combat.retaliate", zone)
 	dead.sort()
 	for id: Variant in dead:
+		Salvage.on_death(sim, record(sim, id), killers[id])
 		sim._combat_events.append({"type": "death", "tick": sim._tick, "object_id": id})
 		sim.remove_object(id)
 
@@ -420,6 +423,26 @@ static func _defence_pick(sim: Simulation, building: Dictionary, weapon: Diction
 				best_gap = gap
 	return best
 
+static func weapon_of(object: Dictionary) -> Dictionary:
+	var tiers: Array = Registry.kind(object.kind).get("weapon_tiers", [])
+	return CombatDefinitions.weapon(tiers[object.combat.tier] if not tiers.is_empty() else CombatDefinitions.profile(object.kind).weapon)
+
+static func _hp_of(sim: Simulation, ids: Array) -> Dictionary:
+	var hp: Dictionary = {}
+	for id: int in ids: hp[id] = record(sim, id).hp
+	return hp
+
+# The killer of a victim is the attacker of the first shot after which the damage it took this tick reaches the HP it had before.
+static func _killers(shots: Array[Dictionary], hp: Dictionary) -> Dictionary:
+	var killers: Dictionary = {}
+	var taken: Dictionary = {}
+	for shot in shots:
+		var id: int = shot.target_id
+		if killers.has(id) or not hp.has(id): continue
+		taken[id] = taken.get(id, 0) + shot.damage
+		if taken[id] >= hp[id]: killers[id] = shot.attacker_id
+	return killers
+
 static func _hit(shots: Array[Dictionary], damage: Dictionary, sim: Simulation, attacker_id: int, target: Dictionary, weapon: Dictionary, splash: bool) -> void:
 	var amount: int = weapon.damage * CombatDefinitions.armor_percent(CombatDefinitions.profile(target.kind).armor, weapon.damage_type) / 100
 	shots.append({"type": "shot", "tick": sim._tick, "attacker_id": attacker_id, "target_id": target.id, "damage": amount, "splash": splash})
@@ -430,8 +453,8 @@ static func _splash(shots: Array[Dictionary], damage: Dictionary, sim: Simulatio
 	var impact: Vector2 = _victim_centre(target)
 	var radius: float = weapon.primary_radius
 	if Registry.kind(target.kind).get("class", "") == "infantry":
-		impact += _scatter(sim) * CombatDefinitions.SCATTER_VS_INFANTRY * sim.next_random() / 4294967296.0
-		radius = CombatDefinitions.INFANTRY_BLAST
+		if weapon.get("infantry_scatter", true): impact += _scatter(sim) * CombatDefinitions.SCATTER_VS_INFANTRY * sim.next_random() / 4294967296.0
+		radius = weapon.get("infantry_blast", CombatDefinitions.INFANTRY_BLAST)
 	for victim in splash_victims(sim, impact, radius, weapon.affects, unit):
 		if victim.id != target.id: _hit(shots, damage, sim, unit.id, victim, weapon, true)
 

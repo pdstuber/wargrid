@@ -10,7 +10,7 @@ const Fixture = preload("res://tests/combat_fixture.gd")
 const EconomyFixture = preload("res://tests/economy_fixture.gd")
 
 func cases() -> Array[Callable]:
-	return [test_combat_definitions, test_definitions_shared, test_health_snapshot_isolation, test_weapon_range_boundary, test_ranger_fires_at_edge_max, test_crusader_fires_at_edge_max, test_rifle_cycle_30, test_firing_cell_uses_edge, test_building_edge_range, test_damage_armor_matrix, test_weapon_cooldown, test_guard_priority, test_attack_validation_atomic, test_combat_intent_order, test_orders_preserve_reload, test_acquisition_throttle, test_mutual_lethal_fire, test_target_removed_cleanup, test_destroyed_unit_no_actions, test_destroyed_producer_accounting, test_same_tick_attack_and_cancel, test_removed_target_rescans, test_controller_and_scan_radius, test_scan_acquires_beyond_weapon_range, test_scan_radius_by_controller, test_scan_radius_boundary, test_removed_chaser_clears_chase, test_scan_keeps_target_leaving_radius, test_attack_move_resumes_after_chase, test_scan_same_tick_orders, test_scan_includes_buildings, test_human_guard_in_range_only, test_human_guard_holds_against_kiting, test_ai_guard_unchanged, test_human_attack_move_marches_in_range, test_human_attack_move_post_kill_rescan, test_human_attack_move_follows_retreat, test_rescan_same_tick_orders, test_human_attack_move_drops_target_out_of_range, test_human_attack_move_first_approach_has_no_leash, test_retarget_only_for_attack_move, test_missing_id_skipped, test_due_tick_death_skips_member, test_foreign_id_rejects, test_attack_move_mixed_selection, test_retaliate_trigger_distance, test_retaliate_joiners, test_retaliate_leash_and_return, test_retaliate_return_scan_and_rehit, test_retaliate_same_tick_cases, test_retaliate_go_home_queues_once, test_rng_sequence, test_splash_victims_boundary, test_splash_cluster, test_splash_mask, test_splash_last_builder_same_tick, test_splash_event_flag, test_rocket_splash_and_scatter, test_damage_table_new_types, test_damage_table_gattling]
+	return [test_combat_definitions, test_definitions_shared, test_health_snapshot_isolation, test_weapon_range_boundary, test_ranger_fires_at_edge_max, test_crusader_fires_at_edge_max, test_rifle_cycle_30, test_firing_cell_uses_edge, test_building_edge_range, test_damage_armor_matrix, test_weapon_cooldown, test_guard_priority, test_attack_validation_atomic, test_combat_intent_order, test_orders_preserve_reload, test_acquisition_throttle, test_mutual_lethal_fire, test_target_removed_cleanup, test_destroyed_unit_no_actions, test_destroyed_producer_accounting, test_same_tick_attack_and_cancel, test_removed_target_rescans, test_controller_and_scan_radius, test_scan_acquires_beyond_weapon_range, test_scan_radius_by_controller, test_scan_radius_boundary, test_removed_chaser_clears_chase, test_scan_keeps_target_leaving_radius, test_attack_move_resumes_after_chase, test_scan_same_tick_orders, test_scan_includes_buildings, test_human_guard_in_range_only, test_human_guard_holds_against_kiting, test_ai_guard_unchanged, test_human_attack_move_marches_in_range, test_human_attack_move_post_kill_rescan, test_human_attack_move_follows_retreat, test_rescan_same_tick_orders, test_human_attack_move_drops_target_out_of_range, test_human_attack_move_first_approach_has_no_leash, test_retarget_only_for_attack_move, test_missing_id_skipped, test_due_tick_death_skips_member, test_foreign_id_rejects, test_attack_move_mixed_selection, test_retaliate_trigger_distance, test_retaliate_joiners, test_retaliate_leash_and_return, test_retaliate_return_scan_and_rehit, test_retaliate_same_tick_cases, test_retaliate_go_home_queues_once, test_rng_sequence, test_splash_victims_boundary, test_splash_cluster, test_splash_mask, test_splash_last_builder_same_tick, test_splash_event_flag, test_rocket_splash_and_scatter, test_damage_table_new_types, test_damage_table_gattling, test_damage_table_frc_weapons]
 
 func test_combat_definitions(runner) -> bool:
 	runner.check(Definitions.profile("usa_rifle_infantry") == {"max_hp": 180000, "armor": "human", "weapon": "rifle"}, "D1 infantry")
@@ -1356,4 +1356,38 @@ func test_damage_table_gattling(runner) -> bool:
 	runner.check(wrong == 0, "S9 gattling against every armor row equals the column")
 	var gun: Dictionary = Definitions.weapon("militia_gun")
 	runner.check(gun.damage == 15000 and gun.damage_type == "small_arms" and gun.range == 4.0 and gun.delay_ticks == 30 and gun.clip_size == 0 and gun.primary_radius == 0.0 and gun.affects == [], "S9 militia gun row")
+	return true
+
+func test_damage_table_frc_weapons(runner) -> bool:
+	var armors := ["human", "tank", "builder_vehicle", "light_vehicle", "structure", "structure_tough", "helicopter", "base_defense"]
+	var columns := {
+		"gattling": [100, 10, 10, 50, 10, 10, 50, 25],
+		"explosion": [100, 100, 100, 100, 100, 80, 50, 100],
+		"armor_piercing": [10, 100, 100, 100, 100, 100, 50, 100]}
+	var rows := {
+		"pickup_gun": [10000, "gattling", 6.0, 6, 0.0], "pickup_cannon": [45000, "gattling", 6.0, 30, 1.0], "pickup_rocket": [50000, "explosion", 6.0, 30, 0.2],
+		"light_tank_gun": [20000, "armor_piercing", 6.0, 30, 0.2], "light_tank_gun_plus": [25000, "armor_piercing", 6.0, 30, 0.2]}
+	var wrong: int = 0
+	for weapon_name: String in rows:
+		var weapon: Dictionary = Definitions.weapon(weapon_name)
+		var row: Array = rows[weapon_name]
+		runner.check(weapon.damage == row[0] and weapon.damage_type == row[1] and weapon.range == row[2] and weapon.delay_ticks == row[3] and weapon.clip_size == 0 and weapon.primary_radius == row[4], "S10 %s row" % weapon_name)
+		runner.check(weapon.affects == (["allies", "enemies", "neutrals"] if row[4] > 0.0 else []), "S10 %s affects" % weapon_name)
+		for index in armors.size():
+			wrong += 0 if weapon.damage * Definitions.armor_percent(armors[index], row[1]) / 100 == weapon.damage * columns[row[1]][index] / 100 else 1
+	runner.check(wrong == 0, "S10 every new weapon against every armor row equals the column x damage")
+	runner.check(Definitions.weapon("pickup_cannon").infantry_blast == 1.8533333333333333 and Definitions.weapon("pickup_rocket").infantry_scatter == false and not Definitions.weapon("rocket").has("infantry_blast") and not Definitions.weapon("cannon").has("infantry_scatter"), "S10 the infantry fields exist on the two pickup weapons only")
+	var sim = Fixture.world()
+	var pickup: int = sim.spawn(1, Vector2(10.5, 10.5), "frc_light_vehicle")
+	sim._entities[pickup].combat.tier = 1
+	var target: int = sim.spawn(2, Vector2(10.5, 15.5), "usa_tank")
+	var close: int = sim.spawn(2, Vector2(10.5, 15.5 + Definitions.radius("usa_tank") + 0.9), "usa_tank")
+	var outside: int = sim.spawn(2, Vector2(10.5, 15.5 - Definitions.radius("usa_tank") - 1.1), "usa_tank")
+	for id in [target, close, outside]: sim._entities[id].combat = null
+	Fixture.send(sim, {"type": "attack", "entity_ids": [pickup], "target_id": target})
+	sim.step()
+	var hit: Dictionary = {}
+	for shot in _shots(sim):
+		if shot.attacker_id == pickup: hit[shot.target_id] = shot.splash
+	runner.check(hit == {target: false, close: true}, "S10 the pickup cannon hits a vehicle whose edge is within 1.0 cell, not one at 1.1")
 	return true

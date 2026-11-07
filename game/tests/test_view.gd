@@ -10,7 +10,7 @@ const CombatFixture = preload("res://tests/combat_fixture.gd")
 const MovementWorkload = preload("res://scripts/debug/movement_workload.gd")
 
 func cases() -> Array[Callable]:
-	return [test_pick, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_heading_mark_layout,test_depth_order_matches_comparator,test_battery_shot_line,test_battery_target_line,test_building_icons,test_building_label_has_no_kind_id,test_horde_marks,test_rebuild_laborer_unselectable]
+	return [test_pick, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_heading_mark_layout,test_depth_order_matches_comparator,test_battery_shot_line,test_battery_target_line,test_building_icons,test_building_label_has_no_kind_id,test_horde_marks,test_rebuild_laborer_unselectable, test_crate_marks_frc_only]
 
 func test_pick(runner) -> bool:
 	var view = View.new()
@@ -293,4 +293,23 @@ func test_rebuild_laborer_unselectable(runner) -> bool:
 	var inside: Vector2 = Iso.world_to_plane(Vector2(11, 11))
 	runner.check(view.pick_target(inside, 2) == site.id, "V9 pick_target over a masked hole returns the site")
 	view.free()
+	return true
+
+func test_crate_marks_frc_only(runner) -> bool:
+	var sim = Simulation.new([], Vector2i(32, 32))
+	sim.add_player(1, 0)
+	sim.add_player(2, 0)
+	sim._crates.append({"cell": [4, 7], "until": 900})
+	sim._crates.append({"cell": [12, 3], "until": 950})
+	for seat in [[1, "frc", 2], [2, "usa", 0]]:
+		sim._players[1].faction = seat[1]
+		var view = View.new()
+		view.local_player = 1
+		view.set_state(sim.snapshot(), [])
+		var marks: Array[Vector2] = view.crate_marks()
+		runner.check(marks.size() == seat[2], "V10 a %s seat sees %d crate marks, got %d" % [seat[1], seat[2], marks.size()])
+		for mark in marks:
+			var world: Vector2 = Iso.plane_to_world(mark)
+			runner.check(Vector2i(world.floor()) in [Vector2i(4, 7), Vector2i(12, 3)] and absf(world.x - floorf(world.x) - 0.5) < 0.01 and absf(world.y - floorf(world.y) - 0.5) < 0.01, "V10 a mark lies at the centre of its cell")
+		view.free()
 	return true

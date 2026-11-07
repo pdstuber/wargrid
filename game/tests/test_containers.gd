@@ -7,7 +7,7 @@ const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const Combat = preload("res://scripts/simulation/combat.gd")
 
 func cases() -> Array[Callable]:
-	return [test_scout_car_holds_five, test_enter_and_unload, test_passengers_fire_while_moving, test_passengers_hold_fire_when_flag_off, test_passenger_damage_full_kills, test_passenger_damage_partial_survivors_exit, test_unload_same_tick_as_death, test_full_container_rejects, test_enter_rejections, test_passenger_commands_rejected, test_contained_not_target, test_container_same_tick_cases, test_unload_with_container_move, test_container_removed_while_approaching, test_passengers_stay_in_id_order, test_reissued_enter_accepted]
+	return [test_scout_car_holds_five, test_enter_and_unload, test_passengers_fire_while_moving, test_passengers_hold_fire_when_flag_off, test_passenger_damage_full_kills, test_passenger_damage_partial_survivors_exit, test_unload_same_tick_as_death, test_full_container_rejects, test_enter_rejections, test_passenger_commands_rejected, test_contained_not_target, test_container_same_tick_cases, test_unload_with_container_move, test_container_removed_while_approaching, test_passengers_stay_in_id_order, test_reissued_enter_accepted, test_pickup_passengers]
 
 func _world() -> RefCounted:
 	var sim = Fixture.world()
@@ -352,4 +352,19 @@ func test_reissued_enter_accepted(runner) -> bool:
 	sim.step()
 	var again: Dictionary = Fixture.send(sim, {"type": "enter", "entity_ids": ids, "target_id": car})
 	runner.check(again.ok, "CT11 re-issuing enter for units already walking is accepted: " + str(again.get("error", "")))
+	return true
+
+func test_pickup_passengers(runner) -> bool:
+	runner.check(_fire_run("frc_light_vehicle")[0] == 0, "CT7 pickup passengers hold fire")
+	var sim = _world()
+	var car: int = sim.spawn(1, Vector2(5.5, 5.5), "frc_light_vehicle")
+	var riders: Array = []
+	for index in range(5): riders.append(sim.spawn(1, Vector2(8.5, 3.5 + index), "usa_rifle_infantry"))
+	runner.check(_load(sim, car, riders), "CT7 the pickup takes five riders")
+	sim.remove_object(car)
+	var exited: int = 0
+	for id in riders:
+		var unit: Dictionary = Fixture.object(sim, id)
+		if unit.hp == 162000 and not unit.has("container_id"): exited += 1
+	runner.check(exited == 5, "CT7 on the pickup's death each rider takes 10 percent of its max HP and exits")
 	return true

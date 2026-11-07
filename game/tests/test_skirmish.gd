@@ -9,7 +9,7 @@ const Fixture = preload("res://tests/combat_fixture.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 
 func cases() -> Array[Callable]:
-	return [test_skirmish_initial_state, test_roster_production, test_bot_cycles_unit_list, test_bot_reads_seat_faction, test_bot_plays_china, test_bot_keeps_one_builder_six_gatherers, test_bot_leaves_rebuild_alone, test_opponent_pays_and_retries, test_opponent_attack_policy, test_opponent_defends_base, test_defence_skips_busy_units, test_bot_ignores_contained_units, test_match_lifecycle, test_restart_state]
+	return [test_skirmish_initial_state, test_roster_production, test_bot_cycles_unit_list, test_bot_reads_seat_faction, test_bot_plays_china, test_bot_plays_frc, test_bot_keeps_one_builder_six_gatherers, test_bot_leaves_rebuild_alone, test_opponent_pays_and_retries, test_opponent_attack_policy, test_opponent_defends_base, test_defence_skips_busy_units, test_bot_ignores_contained_units, test_match_lifecycle, test_restart_state]
 
 func _owned(items: Array, player: int) -> Array:
 	return items.filter(func(item: Dictionary) -> bool: return item.owner == player)
@@ -411,4 +411,17 @@ func test_bot_keeps_one_builder_six_gatherers(runner) -> bool:
 	runner.check(not laborers.is_empty() and not laborers[0].collection.enabled, "Fb1 the lowest id stays the builder")
 	runner.check(laborers.size() > 1 and laborers.slice(1).all(func(u: Dictionary) -> bool: return u.collection.enabled), "Fb1 the others collect")
 	runner.check(not queued, "Fb1 the headquarters queue never held an entry")
+	return true
+
+func test_bot_plays_frc(runner) -> bool:
+	var sim = Skirmish.create(true, "ai", {1: "usa", 2: "frc"})
+	for tick in range(6000):
+		Skirmish.issue_opponents(sim, [2])
+		sim.step()
+	var state: Dictionary = sim.snapshot()
+	var kinds: Array = _owned(state.buildings, 2).map(func(b: Dictionary) -> String: return b.kind).filter(func(k: String) -> bool: return k != "frc_command_center")
+	runner.check(kinds.size() > 0 and kinds[0] == "frc_supply_center", "Fb3 an FRC bot builds frc_supply_center first, got " + str(kinds))
+	var owned: Array = _owned(state.entities, 2).map(func(u: Dictionary) -> String: return u.kind)
+	runner.check(owned.all(func(k: String) -> bool: return k.begins_with("frc_")), "Fb3 an FRC bot owns only frc_ units, got " + str(owned))
+	runner.check(owned.any(func(k: String) -> bool: return k != "frc_builder"), "Fb3 an FRC bot trains a combat unit within 6000 ticks, got " + str(owned))
 	return true

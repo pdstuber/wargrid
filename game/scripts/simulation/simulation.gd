@@ -10,6 +10,7 @@ const Combat = preload("res://scripts/simulation/combat.gd")
 const Containers = preload("res://scripts/simulation/containers.gd")
 const RebuildHoles = preload("res://scripts/simulation/rebuild_holes.gd")
 const Horde = preload("res://scripts/simulation/horde.gd")
+const Salvage = preload("res://scripts/simulation/salvage.gd")
 const Locomotion = preload("res://scripts/simulation/locomotion.gd")
 const Allocation = preload("res://scripts/simulation/destination_allocation.gd")
 const Navigation = preload("res://scripts/simulation/grid_navigation.gd")
@@ -42,6 +43,7 @@ var _retaliations: int = 0
 var _allocation_calls: int = 0
 var _navigation_builds: int = 0
 var _units_removed: bool = false
+var _crates: Array[Dictionary] = []
 var _navigation_local: int = 0
 var _map: Dictionary = {}
 const RNG_SEED: int = 0x2545F491
@@ -539,6 +541,7 @@ func step() -> void:
 		elif unit.status != "path_pending": unit.speed = 0.0
 	Containers.step(self)
 	Horde.step(self,armed)
+	Salvage.step(self)
 	var moved: Array[int] = []
 	for id in armed:
 		if _entities[id].position != before[id] and not _entities[id].has("container_id"): moved.append(id)
@@ -624,8 +627,10 @@ func _snapshot() -> Dictionary:
 	players.sort()
 	for player: Variant in players:
 		sequences.append({"player": player, "sequence": _last_sequences[player]})
-	return {"tick": _tick, "next_entity_id": _next_entity_id, "entities": entities,
+	var result: Dictionary = {"tick": _tick, "next_entity_id": _next_entity_id, "entities": entities,
 		"pending_commands": pending, "last_sequences": sequences, "map": _navigation.snapshot(), "path_queue": _path_queue.duplicate(), "players":_player_snapshots(true),"buildings":_sorted_copies(_buildings),"sources":_sorted_copies(_sources),"terrain_cells":_terrain_snapshot(),"next_production_id":_next_production_id,"command_results":_command_results.duplicate(true),"combat_events":_combat_events.duplicate(true),"match":_match.duplicate(true) if _match != null else null,"rng":_rng}
+	if not _crates.is_empty(): result.crates = _crates.duplicate(true)
+	return result
 
 func replace_blocked_cells(cells: Array[Vector2i]) -> Dictionary:
 	var size: Array = _navigation.snapshot().size

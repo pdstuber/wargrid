@@ -130,6 +130,14 @@ func horde_marks() -> Array[Vector2]:
 			marks.append(Vector2(bounds.get_center().x, bounds.position.y + 4.0))
 	return marks
 
+# Zero Hour draws a salvage crate only for the faction that can pick it up.
+func crate_marks() -> Array[Vector2]:
+	var marks: Array[Vector2] = []
+	for player: Dictionary in _state.get("players", []):
+		if player.id != local_player or not Registry.kind(Registry.faction(player.get("faction", "")).get("start_unit", "")).has("salvage"): continue
+		for crate: Dictionary in _state.get("crates", []): marks.append(Iso.world_to_plane(Vector2(crate.cell[0] + 0.5, crate.cell[1] + 0.5)))
+	return marks
+
 func heading_marks() -> Array[Dictionary]:
 	var marks: Array[Dictionary] = []
 	for unit: Dictionary in _state.get("entities", []):
@@ -189,6 +197,7 @@ func _draw() -> void:
 		_draw_health(health_rect(bounds).position, unit, _selected_ids.has(unit.id))
 		if _selected_ids.has(unit.id):
 			draw_rect(bounds, Color("8cff87"), false, 2.0)
+	for mark in crate_marks(): draw_rect(Rect2(mark - Vector2(2, 2), Vector2(4, 4)), Color("e8c547"))
 	for point in order_marks():
 		draw_line(point - Vector2(6, 0), point + Vector2(6, 0), Color("8cff87"), 2.0)
 		draw_line(point - Vector2(0, 6), point + Vector2(0, 6), Color("8cff87"), 2.0)

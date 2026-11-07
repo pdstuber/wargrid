@@ -23,6 +23,6 @@ const FACTIONS := {
 		"start_building": "frc_command_center",
 		"start_unit": "frc_builder",
 		"build_order": ["frc_supply_center", "frc_barracks", "frc_defence", "frc_factory"],
-		"units_for": {},
+		"units_for": {"frc_barracks": ["frc_rifle_infantry", "frc_rocket_infantry"], "frc_factory": ["frc_tank", "frc_light_vehicle"]},
 	},
 }
