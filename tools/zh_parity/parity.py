@@ -4,18 +4,27 @@ Each scenario launches a fresh headless, silent game, spawns units on a flat cle
 issues one order and records every logic frame to <out>/<scenario>.tsv. Reach scenarios
 bisect the farthest stationary firing distance over several games instead.
 Setup and how to add a scenario: docs/reference/zero-hour-parity-harness.md.
-Usage: python3 -I tools/zh_parity/parity.py [--out DIR] [scenario ...]   (default: all)
+Usage: python3 -I tools/zh_parity/parity.py [--out DIR] [scenario-or-glob ...]   (default: all)
+Sweeps: --repeats R --lanes N [--timeout S --retries K]; --list; --kill DIR; --smoke.
 """
 
 import argparse
 import base64
+import concurrent.futures
+import difflib
+import fnmatch
 import json
 import math
 import os
+import queue
 import signal
+import socket
 import subprocess
+import sys
+import tempfile
 import time
 import urllib.request
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -30,12 +39,20 @@ DATA = Path(os.environ.get("ZH_PARITY_DATA", HOME / "CnC/run/Command & Conquer G
 OUT = HOME / "CnC/parity/traces"
 PORT = int(os.environ.get("ZH_PARITY_PORT", "3459"))
 API = f"http://127.0.0.1:{PORT}"
-MAP = r"maps\Killing Fields\Killing Fields.map"
+MAP = os.environ.get("ZH_PARITY_MAP", r"maps\Killing Fields\Killing Fields.map")
+FORK = HOME / "projects/GeneralsGameCode-macOS"
+SCHEMA = 1
+MAX_LANES = 6  # uncapped games spin one core each; more lanes only slow every run
 FIELDS = ("frame", "id", "template", "x", "y", "angle", "speed", "lastShotFrame", "health")
 
 
 class Game:
     def __init__(self, log_path):
+        for p in (PORT, PORT + 1):  # an orphan on the port would answer /healthz for the wrong game
+            if port_busy(p):
+                raise RuntimeError(f"port {p} is already bound; another game is running (ZH_PARITY_PORT)")
+        userdata = Path(log_path).resolve().parent / "userdata" / str(PORT)
+        userdata.mkdir(parents=True, exist_ok=True)
         env = dict(
             os.environ,
             GEN_AUTO_SKIRMISH="1",
@@ -44,6 +61,7 @@ class Game:
             GEN_API_LOG_OFF="1",
             GEN_FPS_CAP=os.environ.get("ZH_PARITY_FPS_CAP", "0"),
             GEN_API_PORT=str(PORT),
+            GEN_USER_DATA=str(userdata),
             GEN_AUTO_MAP=MAP,
         )
         self.log = open(log_path, "w")  # noqa: SIM115 - held open for the child process lifetime
@@ -56,6 +74,14 @@ class Game:
             stderr=subprocess.STDOUT,
             start_new_session=True,  # own process group, so close() never needs a broad pkill
         )
+        self.pidfile = write_pidfile(self.proc.pid)
+        try:
+            self.boot(log_path, env)
+        except BaseException:
+            self.close()  # never leave a half-booted game spinning a core
+            raise
+
+    def boot(self, log_path, env):
         deadline = time.time() + 180
         while True:
             if self.proc.poll() is not None:
@@ -76,6 +102,16 @@ class Game:
         self.civilian = next(p["index"] for p in players if p["side"] == "Civilian")
         self.neutral = next(p["index"] for p in players if p["controller"] == "computer" and not p["name"])
         self.frame = self.stable_frame()
+        session = self.call("/session")
+        side = next(p["side"] for p in players if p["index"] == self.me)
+        self.provenance = {
+            "schema": SCHEMA,
+            "seed": session.get("seed"),
+            "side": side,
+            "fps_cap": env["GEN_FPS_CAP"],
+            "fork": git_rev(FORK),
+            "wargrid": git_rev(Path(__file__).resolve().parents[2]),
+        }
 
     def stable_frame(self):
         # Pause lands on the logic thread later; a frame read before then leaves a step in flight.
@@ -118,14 +154,16 @@ class Game:
     def step(self, n=1):
         self.call("/control", {"action": "step", "value": n})
         target = self.frame + n
+        deadline = time.time() + 30 + n / 30
         while (f := self.call("/healthz")["frame"]) < target:
-            pass
+            if time.time() > deadline:
+                raise RuntimeError(f"no progress past frame {f} (wanted {target})")
         assert f == target, f"stepped past frame {target} to {f}"
         self.frame = f
 
-    def record(self, ids, frames, rows, stop=None, money=False, batch=1):
-        for _ in range(0, frames, batch):
-            self.step(batch)
+    def record(self, ids, frames, rows, stop=None, money=False):
+        for _ in range(frames):
+            self.step(1)
             units = {u["id"]: u for u in self.call("/units")}
             cash = self.call(f"/resources?player={self.me}")["money"] if money else None
             assert self.call("/healthz")["frame"] == self.frame, "frame advanced during sampling"
@@ -171,12 +209,44 @@ class Game:
         raise RuntimeError("no clear strip")
 
     def close(self):
-        os.killpg(self.proc.pid, signal.SIGTERM)
         try:
+            os.killpg(self.proc.pid, signal.SIGTERM)
             self.proc.wait(timeout=10)
         except subprocess.TimeoutExpired:
             os.killpg(self.proc.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
         self.log.close()
+        if self.pidfile:
+            self.pidfile.unlink(missing_ok=True)
+
+
+def port_busy(port: int) -> bool:
+    try:
+        socket.create_connection(("127.0.0.1", port), 0.2).close()
+    except OSError:
+        return False
+    return True
+
+
+def git_rev(repo: Path) -> str:
+    def git(*args: str) -> str:
+        r = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, check=False)
+        return r.stdout.strip() if r.returncode == 0 else ""
+
+    rev = git("rev-parse", "--short", "HEAD")
+    return "unknown" if not rev else rev + ("+dirty" if git("status", "--porcelain") else "")
+
+
+def write_pidfile(pid: int) -> Path | None:
+    """Sweep children set ZH_PARITY_PIDDIR so --kill can find this run's games."""
+    d = os.environ.get("ZH_PARITY_PIDDIR")
+    if not d:
+        return None
+    path = Path(d) / str(pid)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("game")
+    return path
 
 
 def settled(ids, idle_frames):
@@ -357,7 +427,7 @@ def place_depot(g, builder, depot, pile_x, y, dist):
     raise RuntimeError(f"no legal {depot} placement at {dist or 'any'} units from the pile")
 
 
-def collect(kind, dist, collectors=1, deposits=8, limit=22000, batch=1):
+def collect(kind, dist, collectors=1, deposits=8, limit=22000):
     """Build a depot dist units from one SupplyDock (dist None: the nearest legal spot) and record the first collector's trips."""
     builder_t, depot_t, power_t, collector_t = COLLECTORS[kind]
 
@@ -391,10 +461,10 @@ def collect(kind, dist, collectors=1, deposits=8, limit=22000, batch=1):
 
         extra: list[int] = []
         seen, last = 0, None
-        for _ in range(0, limit, batch):
+        for _ in range(limit):
             if len(extra) < collectors - 1:  # trained collectors appear later; record them as they do
                 extra += [u for u in g.own(collector_t) if u not in {*units, *extra, builder, *before}]
-            g.record([*units, *extra, builder, pile], batch, rows, money=True, batch=batch)
+            g.record([*units, *extra, builder, pile], 1, rows, money=True)
             cash = rows[-1][8]
             seen += last is not None and cash > last
             last = cash
@@ -503,7 +573,6 @@ SCENARIOS = {
     },
     **{f"collect_{kind}_u3125_x{n}": collect(kind, 312.5, n) for kind in ("chinook", "truck") for n in (2, 4)},
     **{f"collect_worker_u1625_x{n}": collect("worker", 162.5, n) for n in (2, 4)},
-    **{f"collect_truck_6_b{b}": collect("truck", 150, 1, 8, batch=b) for b in (1, 5, 10)},
     "retaliate_ranger": retaliate(),
     # An API Ranger attacker (range 100) 95 units away; the group stands behind the victim and walks out to kill it, then home.
     "retaliate_return": retaliate(
@@ -534,15 +603,18 @@ REACH = {
 def run_once(scenario, log):
     g = Game(log)
     try:
-        return scenario(g)
+        rows, meta = scenario(g)
+        return rows, {**meta, **g.provenance}
     finally:
         g.close()
 
 
 def write(out, name, rows, meta, fields=FIELDS):
-    with open(out / f"{name}.tsv", "w") as f:
-        f.write("# " + json.dumps(meta) + "\n" + "\t".join(fields) + "\n")
+    tmp = out / f"{name}.tsv.tmp"  # a partial trace must never look finished to the sweep resume
+    with open(tmp, "w") as f:
+        f.write("# " + json.dumps({"scenario": name, **meta}) + "\n" + "\t".join(fields) + "\n")
         f.writelines("\t".join(map(str, r)) + "\n" for r in rows)
+    os.replace(tmp, out / f"{name}.tsv")
 
 
 def fired_still(rows, meta):
@@ -577,6 +649,141 @@ def bisect(out, name, attacker, target, lo, hi):
     return lo
 
 
+def resolve(names: list[str]) -> list[str]:
+    """Expand globs over every scenario; unknown names exit 2 with suggestions before any game starts."""
+    known = [*SCENARIOS, *REACH]
+    if not names:
+        return known
+    out: list[str] = []
+    for n in names:
+        hits = [k for k in known if fnmatch.fnmatchcase(k, n)]
+        if not hits:
+            close = difflib.get_close_matches(n, known, 3)
+            print(f"unknown scenario {n!r}" + (f"; did you mean {', '.join(close)}?" if close else ""), file=sys.stderr)
+            raise SystemExit(2)
+        out += [h for h in hits if h not in out]
+    return out
+
+
+def run_scenario(out: Path, name: str) -> str:
+    if name in REACH:
+        return f"{name}: farthest firing gap {bisect(out, name, *REACH[name])}"
+    rows, meta = run_once(SCENARIOS[name], out / f"{name}.log")
+    write(out, name, rows, meta)
+    return f"{name}: {len(rows)} rows, order at frame {meta['order_frame']}"
+
+
+def pending(out: Path, names: list[str], repeats: int) -> list[tuple[int, str]]:
+    """Jobs without a finished trace; a trace counts as finished only after its atomic rename."""
+    return [(r, n) for r in range(1, repeats + 1) for n in names if not (out / f"rep{r}" / f"{n}.tsv").exists()]
+
+
+Launch = Callable[[tuple[int, str], int], tuple[str, int]]
+
+
+def sweep(out: Path, jobs: list[tuple[int, str]], lanes: int, retries: int, launch: Launch) -> int:
+    """Run jobs on lanes (own port each); one runs.jsonl line per attempt. Returns the number of failed jobs."""
+    free: queue.Queue[int] = queue.Queue()
+    for lane in range(lanes):
+        free.put(lane)
+    log = out / "runs.jsonl"
+
+    def work(job: tuple[int, str]) -> bool:
+        for attempt in range(1, retries + 2):
+            lane = free.get()
+            t0 = time.time()
+            try:
+                status, code = launch(job, PORT + 2 * lane)
+            finally:
+                free.put(lane)
+            line = {"scenario": job[1], "rep": job[0], "attempt": attempt, "lane": lane, "port": PORT + 2 * lane}
+            line |= {"status": status, "seconds": round(time.time() - t0, 1), "exit": code}
+            with open(log, "a") as f:
+                f.write(json.dumps(line) + "\n")
+            if status == "ok":
+                return True
+            if code == 2:  # config error; a retry cannot help
+                return False
+        return False
+
+    with concurrent.futures.ThreadPoolExecutor(lanes) as pool:
+        return sum(not ok for ok in pool.map(work, jobs))
+
+
+def child_launcher(out: Path, timeout: float) -> Launch:
+    script = str(Path(__file__).resolve())
+
+    def launch(job: tuple[int, str], port: int) -> tuple[str, int]:
+        rep, name = job
+        (out / f"rep{rep}").mkdir(parents=True, exist_ok=True)
+        env = dict(os.environ, ZH_PARITY_PORT=str(port), ZH_PARITY_PIDDIR=str(out / "pids"))
+        proc = subprocess.Popen(
+            [sys.executable, "-I", script, "--out", str(out / f"rep{rep}"), name],
+            env=env,
+            start_new_session=True,
+            preexec_fn=lambda: os.nice(5),  # noqa: PLW1509 - keep the Mac usable while lanes spin
+        )
+        pidfile = Path(env["ZH_PARITY_PIDDIR"]) / str(proc.pid)
+        pidfile.parent.mkdir(parents=True, exist_ok=True)
+        pidfile.write_text("sweep")
+        try:
+            code = proc.wait(timeout)
+            return ("ok" if code == 0 else "fail"), code
+        except subprocess.TimeoutExpired:
+            stop_group(proc.pid)
+            proc.wait()
+            return "timeout", -1
+        finally:
+            pidfile.unlink(missing_ok=True)
+
+    return launch
+
+
+def stop_group(pid: int) -> None:
+    for sig in (signal.SIGTERM, signal.SIGKILL):
+        try:
+            os.killpg(pid, sig)
+        except ProcessLookupError:
+            return
+        for _ in range(150 if sig == signal.SIGTERM else 0):  # SIGTERM lets the child close its game first
+            time.sleep(0.1)
+            try:
+                os.killpg(pid, 0)
+            except ProcessLookupError:
+                return
+
+
+def kill_run(out: Path) -> None:
+    """Kill only the process groups recorded under <out>/pids (sweep children and their games)."""
+    kinds = {}
+    for f in (out / "pids").glob("*"):
+        try:
+            kinds[int(f.name)] = f.read_text()
+            f.unlink()
+        except FileNotFoundError:  # the job finished while we looked
+            pass
+    for pid, kind in sorted(kinds.items(), key=lambda kv: kv[1] != "sweep-parent"):
+        cmd = subprocess.run(["ps", "-p", str(pid), "-o", "command="], capture_output=True, text=True, check=False)
+        if kind == "sweep-parent":  # shares the caller's process group: kill the pid only, so no new jobs start
+            if "parity.py" in cmd.stdout:
+                os.kill(pid, signal.SIGKILL)
+        elif "parity.py" in cmd.stdout or "generalszh_api" in cmd.stdout:
+            stop_group(pid)
+
+
+def smoke() -> None:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))  # -I drops the script dir from sys.path
+    from analyze import load, metrics
+
+    t0 = time.time()
+    with tempfile.TemporaryDirectory() as d:
+        out = Path(d)
+        run_scenario(out, "move_crusader")
+        m = metrics("move_crusader", *load(out / "move_crusader.tsv"))
+    assert abs(m["top_speed"] - 30) <= 3 and m["start_delay_frames"] == 3, m
+    print(f"smoke OK {time.time() - t0:.1f} s", m["top_speed"], m["start_delay_frames"])
+
+
 def raise_exit():
     raise SystemExit(143)
 
@@ -585,16 +792,43 @@ def main():
     signal.signal(signal.SIGTERM, lambda *_: raise_exit())  # run the finally blocks so the game dies with its lane
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", type=Path, default=OUT)
+    ap.add_argument("--repeats", type=int, default=1)
+    ap.add_argument(
+        "--lanes",
+        type=int,
+        help="concurrent games, each spins a core (default 1; with --repeats > 1: cpus/2, at most 6)",
+    )
+    ap.add_argument("--timeout", type=float, default=900, help="seconds per sweep job")
+    ap.add_argument("--retries", type=int, default=1)
+    ap.add_argument("--list", action="store_true")
+    ap.add_argument("--kill", type=Path, metavar="DIR", help="stop the games and children recorded under DIR/pids")
+    ap.add_argument("--smoke", action="store_true")
     ap.add_argument("names", nargs="*")
     args = ap.parse_args()
+    if args.kill:
+        return kill_run(args.kill)
+    if args.smoke:
+        return smoke()
+    names = resolve(args.names)
+    if args.list:
+        return print("\n".join(names))
     args.out.mkdir(parents=True, exist_ok=True)
-    for name in args.names or [*SCENARIOS, *REACH]:
-        if name in REACH:
-            print(f"{name}: farthest firing gap {bisect(args.out, name, *REACH[name])}")
-            continue
-        rows, meta = run_once(SCENARIOS[name], args.out / f"{name}.log")
-        write(args.out, name, rows, meta)
-        print(f"{name}: {len(rows)} rows, order at frame {meta['order_frame']}")
+    if args.lanes is None:
+        args.lanes = 1 if args.repeats == 1 else max(1, min(MAX_LANES, (os.cpu_count() or 2) // 2))
+    if args.repeats == 1 and args.lanes == 1:
+        for name in names:
+            print(run_scenario(args.out, name))
+        return None
+    jobs = pending(args.out, names, args.repeats)
+    parent = Path(args.out / "pids" / str(os.getpid()))
+    parent.parent.mkdir(parents=True, exist_ok=True)
+    parent.write_text("sweep-parent")
+    lanes = max(1, min(args.lanes, MAX_LANES, len(jobs)))
+    print(f"{len(jobs)} jobs on {lanes} lanes")
+    failed = sweep(args.out, jobs, lanes, args.retries, child_launcher(args.out, args.timeout))
+    parent.unlink(missing_ok=True)
+    print(f"done, {failed} failed; see {args.out / 'runs.jsonl'}")
+    raise SystemExit(1 if failed else 0)
 
 
 if __name__ == "__main__":

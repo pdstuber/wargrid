@@ -1,0 +1,244 @@
+"""Tests for the Zero Hour parity harness: synthetic traces and fake launches, no engine."""
+
+import base64
+import json
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+from typing import Any
+
+sys.path.insert(0, str(Path(__file__).parent / "zh_parity"))
+
+import analyze
+import parity
+
+COLS = ("frame", "id", "template", "x", "y", "angle", "speed", "lastShotFrame", "health")
+
+
+def put_trace(d: Path, name: str, rows: list[tuple[Any, ...]], **meta: Any) -> None:
+    d.mkdir(parents=True, exist_ok=True)
+    body = "# " + json.dumps(meta) + "\n" + "\t".join(COLS) + "\n"
+    (d / f"{name}.tsv").write_text(body + "".join("\t".join(map(str, r)) + "\n" for r in rows))
+
+
+def move_rows(first_id: int, speed: float, start: int = 5, order: int = 100) -> list[tuple[Any, ...]]:
+    return [
+        (order + i, first_id, "u", i, 0, 0, speed if i >= start else 0, 0, 10) for i in range(0, 40)
+    ]  # speed per frame; analyze multiplies by 30
+
+
+def money_rows(period: int, credit: int, cycles: int = 6) -> list[tuple[Any, ...]]:
+    rows: list[tuple[Any, ...]] = []
+    cash = 0
+    for f in range(1, period * cycles + 1):
+        cash += credit if f % period == 0 else 0
+        rows.append((f, "money", "money", "", "", "", "", "", cash))
+        rows.append((f, 7, "u", 5, 0, 0, 1 if f % 2 else 0, 0, 10))
+    return rows
+
+
+class Pooling(unittest.TestCase):
+    def test_summary_spread(self) -> None:
+        s = analyze.summarize([10.0, 12.0, 11.0])
+        self.assertEqual((s["n"], s["median"], s["min"], s["max"]), (3, 11.0, 10.0, 12.0))
+        self.assertAlmostEqual(s["spread"], 2 / 11, places=3)
+
+    def test_find_traces_flat_and_reps(self) -> None:
+        with tempfile.TemporaryDirectory() as t:
+            root = Path(t)
+            put_trace(root / "rep1", "move_ranger", move_rows(7, 0.5), unit=7, order_frame=100)
+            put_trace(root / "rep2", "move_ranger", move_rows(9, 0.5), unit=9, order_frame=100)
+            put_trace(root, "turn_ranger", [], unit=1, order_frame=0)
+            found = sorted((s, r) for s, r, _ in analyze.find_traces([root]))
+            self.assertEqual(found, [("move_ranger", "rep1"), ("move_ranger", "rep2"), ("turn_ranger", "-")])
+
+    def test_json_lines_one_per_trace(self) -> None:
+        with tempfile.TemporaryDirectory() as t:
+            root = Path(t)
+            put_trace(root / "rep1", "move_ranger", move_rows(7, 0.5), unit=7, order_frame=100)
+            lines = [json.loads(x) for x in analyze.json_lines([root])]
+            self.assertEqual(len(lines), 1)
+            self.assertEqual(lines[0]["scenario"], "move_ranger")
+            self.assertEqual(lines[0]["rep"], "rep1")
+            self.assertEqual(lines[0]["metrics"]["top_speed"], 15.0)
+
+    def test_pool_across_reps_gives_spread(self) -> None:
+        with tempfile.TemporaryDirectory() as t:
+            root = Path(t)
+            for rep, speed in (("rep1", 0.6), ("rep2", 0.66), ("rep3", 0.63)):
+                put_trace(root / rep, "move_ranger", move_rows(7, speed), unit=7, order_frame=100)
+            pooled = analyze.pooled_metrics("move_ranger", analyze.runs_of("move_ranger", [root]))
+            self.assertEqual(pooled["top_speed"]["n"], 3)
+            self.assertAlmostEqual(pooled["top_speed"]["median"], 18.9, places=1)
+            self.assertAlmostEqual(pooled["top_speed"]["spread"], 0.06 * 30 / 18.9, places=2)
+
+    def test_collect_pool_uses_credit_rate(self) -> None:
+        meta = {"unit": 7, "collectors": 1, "dist": 10, "pile": [10, 0], "depot": [0, 0], "order_frame": 0}
+        with tempfile.TemporaryDirectory() as t:
+            root = Path(t)
+            for rep in ("rep1", "rep2"):
+                put_trace(root / rep, "collect_truck_6", money_rows(100, 75), **meta)
+            pooled = analyze.pooled_metrics("collect_truck_6", analyze.runs_of("collect_truck_6", [root]))
+            self.assertEqual(pooled["credits_per_min"]["median"], 75 * 18.0)
+            self.assertEqual(pooled["credits_per_min"]["n"], 2)
+
+
+class Report(unittest.TestCase):
+    def test_md_table_columns_and_verdict(self) -> None:
+        with tempfile.TemporaryDirectory() as t:
+            root = Path(t)
+            for rep in ("rep1", "rep2"):
+                put_trace(root / rep, "move_ranger", move_rows(7, 0.7), unit=7, order_frame=100)
+            md = analyze.md_report([root], expect={"move_ranger": [("top_speed", 20, 2, "0.8 cells/s")]})
+            lines = md.splitlines()
+            self.assertTrue(lines[0].startswith("| scenario | metric | measured"))
+            row = next(x for x in lines if x.startswith("| move_ranger | top_speed"))
+            self.assertIn("| 21 |", row)
+            self.assertIn("| 2 |", row)
+            self.assertIn("| 20 |", row)
+            self.assertIn("PASS", row)
+
+    def test_accepted_verdict(self) -> None:
+        self.assertEqual(analyze.verdict(115, 100, 10, accepted=120), "ACCEPTED")
+        self.assertEqual(analyze.verdict(115, 100, 10), "FAIL")
+        self.assertEqual(analyze.verdict(100, 100, 10, accepted=120), "PASS")
+
+    def test_wargrid_values_from_definitions(self) -> None:
+        speeds = analyze.definition_speeds()
+        self.assertEqual(speeds["move_scout"], 60)
+        self.assertEqual(speeds["move_crusader"], 30)
+        self.assertEqual(analyze.EXPECT["move_scout"][0][1], 60)
+
+
+class Same(unittest.TestCase):
+    def test_same_ignores_absolute_frames_and_ids(self) -> None:
+        with tempfile.TemporaryDirectory() as t:
+            root = Path(t)
+            put_trace(root, "a", move_rows(7, 0.5, order=100), unit=7, order_frame=100)
+            put_trace(root, "b", move_rows(41, 0.5, order=900), unit=41, order_frame=900)
+            self.assertIsNone(analyze.same(root / "a.tsv", root / "b.tsv"))
+
+    def test_different_names_first_row(self) -> None:
+        with tempfile.TemporaryDirectory() as t:
+            root = Path(t)
+            put_trace(root, "a", move_rows(7, 0.5), unit=7, order_frame=100)
+            put_trace(root, "b", move_rows(7, 0.6), unit=7, order_frame=100)
+            diff = analyze.same(root / "a.tsv", root / "b.tsv")
+            self.assertIsNotNone(diff)
+            self.assertIn("row 5", diff or "")
+
+
+class Names(unittest.TestCase):
+    def test_glob_and_unknown(self) -> None:
+        self.assertEqual(parity.resolve(["move_cru*"]), ["move_crusader"])
+        self.assertEqual(parity.resolve(["move_crusader", "move_cru*"]), ["move_crusader"])
+        with self.assertRaises(SystemExit) as cm:
+            parity.resolve(["move_crusadr"])
+        self.assertEqual(cm.exception.code, 2)
+
+    def test_batch_scenarios_are_gone(self) -> None:
+        self.assertNotIn("collect_truck_6_b5", parity.SCENARIOS)
+
+    def test_empty_means_all(self) -> None:
+        self.assertGreater(len(parity.resolve([])), 50)
+
+
+class Sweep(unittest.TestCase):
+    def test_pending_skips_finished(self) -> None:
+        with tempfile.TemporaryDirectory() as t:
+            out = Path(t)
+            put_trace(out / "rep1", "move_ranger", [])
+            jobs = parity.pending(out, ["move_ranger", "turn_ranger"], 2)
+            self.assertEqual(jobs, [(1, "turn_ranger"), (2, "move_ranger"), (2, "turn_ranger")])
+
+    def test_partial_tmp_is_not_finished(self) -> None:
+        with tempfile.TemporaryDirectory() as t:
+            out = Path(t)
+            (out / "rep1").mkdir()
+            (out / "rep1" / "move_ranger.tsv.tmp").write_text("x")
+            self.assertEqual(parity.pending(out, ["move_ranger"], 1), [(1, "move_ranger")])
+
+    def test_write_is_atomic_and_names_scenario(self) -> None:
+        with tempfile.TemporaryDirectory() as t:
+            out = Path(t)
+            parity.write(out, "s", [(1, 2, "x", "", "", "", "", "", 0)], {"order_frame": 1})
+            self.assertFalse(list(out.glob("*.tmp")))
+            self.assertEqual(analyze.load(out / "s.tsv")[0]["scenario"], "s")
+
+    def test_retry_log_and_distinct_lanes(self) -> None:
+        calls: list[tuple[tuple[int, str], int]] = []
+
+        def launch(job: tuple[int, str], port: int) -> tuple[str, int]:
+            calls.append((job, port))
+            return ("fail", 1) if job == (1, "a") and sum(c[0] == job for c in calls) == 1 else ("ok", 0)
+
+        with tempfile.TemporaryDirectory() as t:
+            out = Path(t)
+            failed = parity.sweep(out, [(1, "a"), (1, "b")], 2, 1, launch)
+            lines = [json.loads(x) for x in (out / "runs.jsonl").read_text().splitlines()]
+        self.assertEqual(failed, 0)
+        self.assertEqual(
+            sorted((x["scenario"], x["attempt"], x["status"]) for x in lines),
+            [("a", 1, "fail"), ("a", 2, "ok"), ("b", 1, "ok")],
+        )
+        self.assertTrue(all(x["port"] % 2 == 0 or parity.PORT % 2 for x in lines))
+
+    def test_config_error_not_retried(self) -> None:
+        with tempfile.TemporaryDirectory() as t:
+            out = Path(t)
+            failed = parity.sweep(out, [(1, "a")], 1, 3, lambda job, port: ("fail", 2))
+            self.assertEqual(failed, 1)
+            self.assertEqual(len((out / "runs.jsonl").read_text().splitlines()), 1)
+
+
+class FakeGame:
+    def __init__(self, refuse: int = 0, message: str = "illegal build location") -> None:
+        self.refuse, self.message = refuse, message
+        self.orders: list[float] = []
+
+    def command(self, verb: str, ids: Any = (), **params: Any) -> dict[str, Any]:
+        self.orders.append(params["pos"][0])
+        if len(self.orders) <= self.refuse:
+            raise RuntimeError(self.message)
+        return {}
+
+
+class Helpers(unittest.TestCase):
+    def test_place_depot_retries_illegal_spots(self) -> None:
+        g = FakeGame(refuse=2)
+        self.assertEqual(parity.place_depot(g, 1, "D", 1000, 0, None), 1000 - 15)
+
+    def test_place_depot_reraises_other_errors(self) -> None:
+        with self.assertRaises(RuntimeError):
+            parity.place_depot(FakeGame(refuse=1, message="boom"), 1, "D", 1000, 0, None)
+
+    def test_settled_and_dead_for(self) -> None:
+        rows = [(i, 1, "u", 0, 0, 0, 1 if i < 3 else 0, 0, 5) for i in range(10)]
+        self.assertTrue(parity.settled([1], 3)(rows))
+        self.assertFalse(parity.settled([1], 9)(rows))
+        dead = [(i, 1, "dead", "", "", "", "", "", 0) for i in range(4)]
+        self.assertTrue(parity.dead_for(1, 4)(dead))
+        self.assertFalse(parity.dead_for(1, 5)(dead))
+
+    def test_clear_strip(self) -> None:
+        class G(parity.Game):
+            def __init__(self, heights: bytes, types: bytes) -> None:
+                self.m = {
+                    "cellSize": 10, "width": 20, "height": 12,
+                    "type": base64.b64encode(types).decode(),
+                    "heightField": {"data": base64.b64encode(heights).decode()},
+                }  # fmt: skip
+
+            def call(self, path: str, body: Any = None) -> Any:
+                return self.m
+
+        flat = bytes(240)
+        x, y = G(flat, bytes(240)).clear_strip(100, width=40)
+        self.assertTrue(0 <= x < 200 and 0 <= y < 120)
+        with self.assertRaises(RuntimeError):
+            G(flat, bytes([1]) * 240).clear_strip(100, width=40)
+
+
+if __name__ == "__main__":
+    unittest.main()

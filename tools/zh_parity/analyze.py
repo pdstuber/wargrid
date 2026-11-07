@@ -1,6 +1,9 @@
 """Turn Zero Hour parity traces into metrics and compare them with Wargrid's values.
 
 Usage: python3 -I tools/zh_parity/analyze.py [--traces DIR]
+       python3 -I tools/zh_parity/analyze.py --json DIR...        one JSON line per trace (DIR/*.tsv, DIR/rep*/*.tsv)
+       python3 -I tools/zh_parity/analyze.py --report md DIR... [--wargrid FILE.json]   pooled decision-list table
+       python3 -I tools/zh_parity/analyze.py --same A.tsv B.tsv   equal after normalising frames and ids?
        python3 -I tools/zh_parity/analyze.py --self-test
 Units: world units (1 Wargrid cell = 25), logic frames at 30 Hz. Expected values are Wargrid's
 (they equal the INI per tools/check_reference.py unless noted); "feel" rows have no pass/fail.
@@ -10,6 +13,7 @@ import argparse
 import itertools
 import json
 import math
+import re
 import statistics
 from pathlib import Path
 from typing import Any
@@ -100,6 +104,37 @@ EXPECT: dict[str, Any] = {
     "splash_crusader": [("shots_to_kill", 30, None, "direct 6 HP hits, no splash or scatter")],
     "supply_chinook": [("deposit", 600, None, "8 boxes x 75"), ("cruise_speed", 150, None, "6 cells/s, provisional")],
 }
+
+
+DEFS = Path(__file__).resolve().parents[2] / "game/scripts/simulation/definitions"
+# move_<suffix> scenario -> Wargrid definition id; speeds are cells/s there, 25 world units per cell
+WG_KIND = {
+    "ranger": "usa_rifle_infantry", "crusader": "usa_tank", "dozer": "usa_builder",
+    "rocket": "usa_rocket_infantry", "scout": "usa_light_vehicle",
+    "redguard": "china_rifle_infantry", "tankhunter": "china_rocket_infantry",
+    "battlemaster": "china_light_vehicle", "gattlingtank": "china_tank",
+    "cndozer": "china_builder", "truck": "china_collector",
+    "worker": "frc_builder", "rebel": "frc_rifle_infantry", "tunneldefender": "frc_rocket_infantry",
+    "technical": "frc_light_vehicle", "scorpion": "frc_tank",
+}  # fmt: skip
+
+
+def definition_speeds() -> dict[str, float]:
+    """move_<unit> -> Wargrid top speed in world units per second, read from the definition files."""
+    speed = {}
+    for f in DEFS.glob("*.gd"):
+        for m in re.finditer(r'^\t"(\w+)": \{[^\n]*?"speed": ([0-9.]+)', f.read_text(), re.M):
+            speed[m[1]] = float(m[2]) * 25
+    return {f"move_{k}": round(speed[v], 3) for k, v in WG_KIND.items() if v in speed}
+
+
+def apply_definitions() -> None:
+    for name, v in definition_speeds().items():
+        _, _, tol, _ = EXPECT[name][0]
+        EXPECT[name][0] = ("top_speed", v, tol, f"{v / 25:.1f} cells/s (definitions)")
+
+
+apply_definitions()
 
 
 def load(path):
@@ -302,9 +337,11 @@ def metrics(name, meta, rows) -> dict[str, Any]:
     return KINDS.get(name.split("_")[0], shots)(meta, rows)
 
 
-def verdict(value, expected, tol):
+def verdict(value, expected, tol, accepted=None):
     if tol is None or value is None:
         return "feel"
+    if accepted is not None and verdict(value, expected, tol) == "FAIL" and verdict(value, accepted, tol) == "PASS":
+        return "ACCEPTED"  # a decided offset, e.g. a known geometry difference
     if isinstance(expected, str):
         got = [int(x) for x in str(value).split(",") if x]
         want = [int(x) for x in expected.split(",")]
@@ -325,38 +362,141 @@ def report(traces):
             print(f"{name}\t-\tMISSING")
             continue
         m = metrics(name, *load(path))
-        for key, exp, tol, note in checks:
+        for key, exp, tol, note, *acc in checks:
             other = {k: v for k, v in m.items() if k != key and k != "intervals"}
-            print(f"{name}\t{key}\t{m.get(key)}\t{exp}\t{verdict(m.get(key), exp, tol)}\t{note}\t{other}")
+            v = verdict(m.get(key), exp, tol, *acc)
+            print(f"{name}\t{key}\t{m.get(key)}\t{exp}\t{v}\t{note}\t{other}")
+
+
+def credit_totals(rows):
+    """(credits after the first deposit, frames first to last deposit), or None with fewer than 3 deposits."""
+    cash = [(int(r["frame"]), float(r["health"])) for r in rows if r["id"] == "money"]
+    deps = [(f2, b - a) for (_, a), (f2, b) in itertools.pairwise(cash) if b > a]
+    if len(deps) < 3:
+        return None
+    return sum(d for _, d in deps[1:]), deps[-1][0] - deps[0][0]
 
 
 def pool(runs):
     """Pooled credits/min over runs (all credits after each first deposit / all frames first to last) and run spread."""
-    credits = frames = 0.0
-    rates = []
-    for _meta, rows in runs:
-        cash = [(int(r["frame"]), float(r["health"])) for r in rows if r["id"] == "money"]
-        deps = [(f2, b - a) for (_, a), (f2, b) in itertools.pairwise(cash) if b > a]
-        if len(deps) < 3:
-            continue
-        c, f = sum(d for _, d in deps[1:]), deps[-1][0] - deps[0][0]
-        credits, frames = credits + c, frames + f
-        rates.append(c / f * FPS * 60)
-    if not rates:
+    totals = [t for _meta, rows in runs if (t := credit_totals(rows))]
+    if not totals:
         return None
-    pooled = credits / frames * FPS * 60
+    rates = [c / f * FPS * 60 for c, f in totals]
+    pooled = sum(c for c, _ in totals) / sum(f for _, f in totals) * FPS * 60
     return {"runs": len(rates), "pooled": round(pooled, 1), "spread": round((max(rates) - min(rates)) / pooled, 3)}
 
 
-def report_pool(dirs):
-    names = sorted({p.name for d in dirs for p in d.glob("collect_*.tsv")})
-    for name in names:
-        runs = [load(d / name) for d in dirs if (d / name).exists()]
-        phase = collecting(*runs[0]) if runs else {}
-        print(
-            name.removesuffix(".tsv"),
-            json.dumps({**(pool(runs) or {}), **{k: v for k, v in phase.items() if k.endswith("_frames")}}),
+def summarize(values):
+    med = statistics.median(values)
+    spread = (max(values) - min(values)) / abs(med) if med else 0.0
+    return {"n": len(values), "median": med, "min": min(values), "max": max(values), "spread": round(spread, 4)}
+
+
+def find_traces(dirs):
+    """(scenario, rep, path) for DIR/*.tsv (rep '-') and DIR/rep*/*.tsv."""
+    return [
+        (p.stem, p.parent.name if p.parent.name.startswith("rep") else "-", p)
+        for d in dirs
+        for p in sorted([*d.glob("*.tsv"), *d.glob("rep*/*.tsv")])
+    ]
+
+
+def runs_of(name, dirs):
+    return [load(p) for s, _, p in find_traces(dirs) if s == name]
+
+
+def pooled_metrics(name, runs):
+    """Per metric across runs: numbers get n/median/min/max/spread, strings the most common value and distinct count."""
+    per_run = [metrics(name, meta, rows) for meta, rows in runs]
+    out: dict[str, Any] = {}
+    for key in per_run[0] if per_run else []:
+        vals = [m[key] for m in per_run if m.get(key) is not None]
+        if vals and all(isinstance(v, int | float) and not isinstance(v, bool) for v in vals):
+            out[key] = summarize(vals)
+        elif vals and all(isinstance(v, str) for v in vals):
+            out[key] = {"n": len(vals), "value": statistics.mode(vals), "distinct": len(set(vals))}
+    if (po := pool(runs)) and name.startswith("collect"):
+        out["credits_per_min"] = {**out.get("credits_per_min", {}), "n": po["runs"], "pooled": po["pooled"]}
+        out["credits_per_min"]["median"] = po["pooled"]
+        out["credits_per_min"]["spread"] = po["spread"]
+    return out
+
+
+def json_lines(dirs):
+    for name, rep, path in find_traces(dirs):
+        meta, rows = load(path)
+        yield json.dumps(
+            {
+                "schema": 1,
+                "scenario": name,
+                "rep": rep,
+                "path": str(path),
+                "meta": meta,
+                "metrics": metrics(name, meta, rows),
+            }
         )
+
+
+def fmt(v):
+    return f"{v:g}" if isinstance(v, int | float) else str(v)
+
+
+def md_report(dirs, expect=None, wargrid=None):
+    """Markdown decision-list table: one row per EXPECT metric with a trace, plus every collect_* credits/min."""
+    expect = EXPECT if expect is None else expect
+    wargrid = wargrid or {}
+    names = sorted({s for s, _, _ in find_traces(dirs)})
+    head = ["scenario", "metric", "measured (source build)", "runs", "spread", "Wargrid", "delta", "verdict", "note"]
+    lines = ["| " + " | ".join(head) + " |", "|" + "---|" * len(head)]
+    for name in names:
+        pm = pooled_metrics(name, runs_of(name, dirs))
+        checks = list(expect.get(name, []))
+        if name.startswith("collect") and "credits_per_min" in pm:
+            checks.append(
+                ("credits_per_min", wargrid.get(name, {}).get("credits_per_min"), 0.05, "tolerance is relative")
+            )
+        for key, exp, tol, note, *acc in checks:
+            s = pm.get(key)
+            if s is None:
+                continue
+            got = s.get("median", s.get("value"))
+            numeric = isinstance(got, int | float) and isinstance(exp, int | float)
+            if key == "credits_per_min":
+                v = "-" if exp is None else ("PASS" if abs(got / exp - 1) <= tol else "FAIL")
+            else:
+                v = verdict(got, exp, tol, *acc)
+            delta = fmt(round(got - exp, 3)) if numeric else "-"
+            if key == "credits_per_min" and numeric:
+                delta = f"{(exp / got - 1) * 100:+.0f} %"
+            spread = f"{s['spread'] * 100:.1f}%" if "spread" in s else f"{s['distinct']} distinct"
+            lines.append(
+                f"| {name} | {key} | {fmt(got)} | {s['n']} | {spread} | {fmt(exp) if exp is not None else '-'} | {delta} | {v} | {note} |"
+            )
+    return "\n".join(lines)
+
+
+def normalised(path):
+    meta, rows = load(path)
+    base = int(meta.get("order_frame", 0))
+    ids: dict[str, int] = {}
+    out = []
+    for r in rows:
+        uid = r["id"] if r["id"] == "money" else ids.setdefault(r["id"], len(ids))
+        shot = int(r["lastShotFrame"]) - base if r.get("lastShotFrame") not in ("", "0", None) else 0
+        out.append(
+            (int(r["frame"]) - base, uid, *[r[k] for k in ("template", "x", "y", "angle", "speed")], shot, r["health"])
+        )
+    return out
+
+
+def same(a, b):
+    """None when the traces are equal relative to their order frame (ids by first appearance), else the first difference."""
+    ra, rb = normalised(a), normalised(b)
+    for i, (x, y) in enumerate(itertools.zip_longest(ra, rb)):
+        if x != y:
+            return f"row {i}: {x} != {y}"
+    return None
 
 
 def report_collect(traces):
@@ -484,11 +624,21 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--traces", type=Path, default=TRACES)
     ap.add_argument("--self-test", action="store_true")
+    ap.add_argument("--json", nargs="+", type=Path, metavar="DIR")
+    ap.add_argument("--report", choices=["md"], help="pooled markdown table over the DIRs given as arguments")
     ap.add_argument(
-        "--pool", nargs="+", type=Path, help="run directories of repeats: pooled rate and spread per collect_*"
+        "--wargrid", type=Path, help="JSON {scenario: {metric: value}} for Wargrid column of collect_* rows"
     )
+    ap.add_argument("--same", nargs=2, type=Path, metavar="TSV")
+    ap.add_argument("dirs", nargs="*", type=Path)
     a = ap.parse_args()
-    if a.pool:
-        report_pool(a.pool)
+    if a.json:
+        print("\n".join(json_lines(a.json)))
+    elif a.report:
+        print(md_report(a.dirs, wargrid=json.loads(a.wargrid.read_text()) if a.wargrid else None))
+    elif a.same:
+        diff = same(*a.same)
+        print("same" if diff is None else diff)
+        raise SystemExit(0 if diff is None else 1)
     else:
         self_test() if a.self_test else report(a.traces)

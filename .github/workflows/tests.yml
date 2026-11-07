@@ -232,6 +232,7 @@ jobs:
           python3 tools/test_deploy_web.py
           python3 tools/zh_map/test_zh_map.py
           python3 tools/zh_parity/analyze.py --self-test
+          python3 tools/test_zh_parity.py
       - name: Compare all platform ticks
         run: |
           python3 tools/compare_replays.py traces/replay-linux.tsv traces/replay-windows.tsv
