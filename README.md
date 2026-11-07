@@ -90,7 +90,7 @@ Local reference check (needs the retail backup, never runs in CI): `python3 tool
 
 Test wrapper imports headlessly before tests, checks exit codes and engine diagnostics, then requires positive completion marker. `GODOT_BIN` accepts one executable path, including spaces. Both wrappers resolve project path from script location.
 
-For separately authorized play: `sh tools/run_game.sh` opens the M4 match (blue is you; controls below); `sh tools/run_game.sh res://scenes/base.tscn` opens M3 base; `sh tools/run_game.sh res://scenes/main.tscn` opens the M2 movement demo (still the project's `run/main_scene`). Both open windows. User subsequently playtested M3 and reported it looked good; detailed coverage is recorded as unspecified. Routine checks stay headless.
+For separately authorized play: `sh tools/run_game.sh` opens the launcher (pick factions, then start a skirmish or online match); `sh tools/run_game.sh res://scenes/skirmish.tscn` opens the M4 match directly (blue is you; controls below); `sh tools/run_game.sh res://scenes/base.tscn` opens M3 base; `sh tools/run_game.sh res://scenes/main.tscn` opens the M2 movement demo (still the project's `run/main_scene`). Both open windows. User subsequently playtested M3 and reported it looked good; detailed coverage is recorded as unspecified. Routine checks stay headless.
 
 Current ordinary suite on `main` plus R1 (2026-11-07) passes **277 cases / 112,765 checks**, `TESTS PASSED 112765` (160 / 104,024 at M4.1; 138 / 103,910 before M4.1; 135 / 103,894 at the M4 gate; M3 baseline before M4: 97 / 101,355).
 
