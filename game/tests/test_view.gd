@@ -10,7 +10,7 @@ const CombatFixture = preload("res://tests/combat_fixture.gd")
 const MovementWorkload = preload("res://scripts/debug/movement_workload.gd")
 
 func cases() -> Array[Callable]:
-	return [test_pick, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_heading_mark_layout,test_depth_order_matches_comparator,test_battery_shot_line,test_battery_target_line,test_building_icons,test_building_label_has_no_kind_id,test_horde_marks,test_rebuild_laborer_unselectable, test_crate_marks_frc_only, test_passengers_not_pickable]
+	return [test_pick, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_heading_mark_layout,test_depth_order_matches_comparator,test_battery_shot_line,test_battery_target_line,test_building_icons,test_building_label_has_no_kind_id,test_horde_marks,test_rebuild_laborer_unselectable, test_crate_marks_frc_only, test_passengers_not_pickable, test_terrain_redraws_only_when_map_changes]
 
 func test_pick(runner) -> bool:
 	var view = View.new()
@@ -330,5 +330,34 @@ func test_passengers_not_pickable(runner) -> bool:
 	var box := Rect2(Iso.world_to_plane(Vector2(10.5, 10.5)) - Vector2(60, 60), Vector2(120, 120))
 	runner.check(view.pick_entities(box) == [car], "V10 a drag box over a loaded transport selects the carrier only: %s" % [view.pick_entities(box)])
 	runner.check(view.pick_target(Iso.world_to_plane(Vector2(20.5, 20.5)) + Vector2(0, -8), 1) == foe_car, "V10 right-click on an enemy transport targets the carrier")
+	view.free()
+	return true
+
+func test_terrain_redraws_only_when_map_changes(runner) -> bool:
+	var sim = Fixture.make_world()
+	var view = View.new()
+	runner.root.add_child(view)
+	var terrain = view.get_node("Terrain")
+	runner.check(terrain.show_behind_parent,"V9 terrain draws behind the parent's objects")
+	view.set_state({},[])
+	await runner.process_frame
+	runner.check(terrain.draws == 0,"V9 no map draws no terrain")
+	view.set_state(sim.snapshot(),[])
+	await runner.process_frame
+	var first: int = terrain.draws
+	runner.check(first == 1,"V9 first state draws the terrain once")
+	for i in 10:
+		sim.step()
+		view.set_state(sim.snapshot(),[])
+		view.queue_redraw()
+	await runner.process_frame
+	runner.check(terrain.draws == first,"V9 ten ticks on one map keep the cached terrain")
+	Fixture.build(runner,sim,"reactor",Vector2i(8,4))
+	view.set_state(sim.snapshot(),[])
+	await runner.process_frame
+	runner.check(terrain.draws == first + 1,"V9 a new building footprint redraws the terrain")
+	view.set_state(Fixture.make_world().snapshot(),[])
+	await runner.process_frame
+	runner.check(terrain.draws == first + 2,"V9 a new simulation redraws the terrain")
 	view.free()
 	return true

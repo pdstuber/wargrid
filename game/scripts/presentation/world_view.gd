@@ -9,6 +9,7 @@ const Profiler = preload("res://scripts/debug/profiler.gd")
 const UiStyle = preload("res://scripts/presentation/ui_style.gd")
 const ICONS: Array[String] = ["command", "power", "supply", "barracks", "factory", "battery"]
 const LABEL_WIDTH: float = 160.0
+const Terrain = preload("res://scripts/presentation/terrain_view.gd")
 const DEPTH_SCALE := 1024.0
 const INDEX_BITS := 20
 const INDEX_MASK := (1 << 20) - 1
@@ -22,11 +23,17 @@ var local_player: int = 1
 var _hints: Array[Dictionary] = []
 var _hovered_id: int = -1
 var _building_shots: Dictionary = {}
+var _terrain: Node2D = Terrain.new()
 const HINT_TICKS: int = 40
 const SHOT_TICKS: int = 6
 const MUZZLE_LIFT: float = 20.0
 const HEALTH_BAR := Vector2(24, 3)
 const OWNER_COLORS := {1: Color("376eac"), 2: Color("b04a3a")}
+
+func _init() -> void:
+	_terrain.name = "Terrain"
+	_terrain.show_behind_parent = true
+	add_child(_terrain)
 
 static func owner_color(owner_id: int) -> Color:
 	return OWNER_COLORS.get(owner_id, Color("808080"))
@@ -39,6 +46,7 @@ func set_state(state: Dictionary, selected_ids: Array[int]) -> void:
 	_state = state.duplicate()
 	Profiler.end(&"view.copy", zone)
 	_selected_ids = selected_ids.duplicate()
+	_terrain.set_map(_state.get("map", {}))
 	_prune_hints()
 	zone = Profiler.begin()
 	if _state.has("entities"): _state.entities = _depth_sorted(state.entities)
@@ -171,9 +179,6 @@ func _draw() -> void:
 		return
 	var total: int = Profiler.begin()
 	var zone: int = Profiler.begin()
-	_draw_terrain()
-	Profiler.end(&"draw.terrain", zone)
-	zone = Profiler.begin()
 	for source: Dictionary in _state.get("sources",[]):
 		_draw_footprint(source.origin,Vector2i(3,3),Color("9f8045"),_selected_ids.has(source.id))
 		var lines: PackedStringArray = pile_lines(source)
@@ -334,20 +339,6 @@ func _remember_points() -> void:
 	for event: Dictionary in _state.get("combat_events", []):
 		if event.type == "death" and _last_points.has(event.object_id): points[event.object_id] = _last_points[event.object_id]
 	_last_points = points
-
-func _draw_terrain() -> void:
-	var size := Vector2(_state.map.size[0], _state.map.size[1])
-	draw_colored_polygon(_cell_polygon(Vector2.ZERO, size), Color("c4a568"))
-	for cell: Variant in _state.map.blocked_cells:
-		draw_colored_polygon(_cell_polygon(Vector2(cell[0], cell[1]), Vector2.ONE), Color("665744"))
-	var lines := PackedVector2Array()
-	for x in range(int(size.x) + 1):
-		lines.append(Iso.world_to_plane(Vector2(x, 0)))
-		lines.append(Iso.world_to_plane(Vector2(x, size.y)))
-	for y in range(int(size.y) + 1):
-		lines.append(Iso.world_to_plane(Vector2(0, y)))
-		lines.append(Iso.world_to_plane(Vector2(size.x, y)))
-	draw_multiline(lines, Color("a88b55"), 1.0)
 
 func _cell_polygon(origin: Vector2, size: Vector2) -> PackedVector2Array:
 	return PackedVector2Array([Iso.world_to_plane(origin), Iso.world_to_plane(origin + Vector2(size.x, 0)),
