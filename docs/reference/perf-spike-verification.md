@@ -5,13 +5,13 @@ Handoff: [performance-spike-prompt.txt](../performance-spike-prompt.txt). Ledger
 ```text
 Resume record (updated 2026-11-07 23:30)
 Branch / base commit / working-tree state: main / 7c9d615 (2b bce4b79, 2c f62cf70, 2e dropped 7c9d615 all committed) / uncommitted: game/tests/test_combat.gd (RAD rename), docs/reference/performance.md (2e row moved), this file (2f design, Task 2g)
-Last green task / next incomplete task: Task 2g (round-1 gate fixes, see "2g result") / Task 2f.0 (report-only), then Task 2d (`Horde.step`)
+Last green task / next incomplete task: Task 2f.0 (report-only, see "2f.0 result") / Task 2f-A1 (kept fix, trace-identical), then Task 2d (`Horde.step`); 2f-B as designed is NOT recommended (slower)
 Changed paths since last commit: game/tests/test_combat.gd, docs/reference/performance.md, this file
 Last command / cases / checks / failures / exit / marker: accept.sh bce4b79 PASS (suite 484 cases / 136037 checks / 0 failures); A/B bench_ab.sh 3 rounds exit 0 ALLDONE
 Known red case or blocker: none. Report-only rows exceeded: combat open, dense, hordes300
 Approved decisions, pre-authorizations used, deferred gates: user invoked the spike 2026-11-07; works on main; local commits after green checkpoints pre-authorized; no push/PR/merge/fly/Sprite/window without approval; host = this Mac only (user). Decisions of 2026-11-07 evening: BM6 retune approved together with 2e; 2f approved with a version bump and a ZH AIUpdate comparison; second round for 2d and per-cell enemy counts; hordes300 "improved, still exceeded" is acceptable; C++/GDExtension NOT investigated (user decision); threads PoC local first, fly web deploy allowed for the threaded-web test only, Safari failure is not a blocker, a Chromium-based browser (e.g. Vivaldi, not installed yet) is acceptable for the Chrome check; Steam Deck check tomorrow; user asleep, run all approved work, pausing only on a stop condition
 Usage so far (python3 tools/session_usage.py <session files>): not recorded
-Next exact action: Task 2f.0 (report-only scratch measurement, see '2f design'); it decides between 2f-A (kept fix round 2) and 2f-B (re-pin). Task 2d (`Horde.step`) is still pending
+Next exact action: implement A1 as a kept fix (test first; prototype in scratchpad `ws2f0/a1.py`), then decide on B (see '2f.0 result'). Task 2d (`Horde.step`) is still pending
 ```
 
 ## Evidence
@@ -266,3 +266,30 @@ Tasks (test first; Sonnet medium; acceptance as Workstream 2 except that the lis
 ### C. Recommendation
 
 Run 2f.0 first (cheap, decisive, no code kept). Then A1 before B if 2f.0 shows the per-candidate cost is most of the burst `combat.nearest` (kept fix, no re-pin, no feel risk). Then B with the Zero Hour comparison. Honest expectation: A1 alone does not reach 1.82 on open or dense; B alone probably brings open near the line (about 1.75-1.9) and leaves dense slightly over (about 1.85-2.0); A1 + B together have a fair chance on both; hordes300 stays exceeded on p95 and p99 (p50 2.61) until 2d and more. p99 3.64 already passes on open and dense.
+
+## 2f.0 result (2026-11-07, HEAD 96ef6ca via git archive, scratch copies in scratchpad `ws2f0`, Apple M6, load 2.0 start / 1.25 end; nothing kept in the repo)
+
+Zone split (report-only, profiler on, 300 warm-up + 1800 sampled ticks, mean ms per tick; "after" = previous tick had a removal, 5.7-8.2 % of ticks; per-call fit `t = a + b * candidates` with the timer inside `_nearest`, so timer-inclusive):
+
+| Layout / class | step | plan | nearest | build_grid | firing_cell | service_paths | fire | advance | object_removed |
+|----------------|------|------|---------|------------|-------------|---------------|------|---------|----------------|
+| open other | 1.18 | 0.62 | 0.17 | 0.09 | 0.01 | 0.00 | 0.12 | 0.39 | 0.00 |
+| open after | 1.96 | 1.29 | 0.54 | 0.10 | 0.17 | 0.01 | 0.20 | 0.39 | 0.00 |
+| dense other | 0.99 | 0.53 | 0.19 | 0.07 | 0.00 | 0.00 | 0.09 | 0.33 | 0.00 |
+| dense after | 2.11 | 1.46 | 0.74 | 0.09 | 0.15 | 0.01 | 0.21 | 0.37 | 0.01 |
+| hordes300 other | 2.53 | 0.82 | 0.22 | 0.16 | 0.02 | 0.00 | 0.10 | 1.52 | 0.00 |
+| hordes300 after | 3.89 | 1.83 | 0.64 | 0.16 | 0.37 | 0.03 | 0.23 | 1.70 | 0.04 |
+
+Per call: 71-91 % of `_nearest` time is per-candidate cost (b about 0.93-0.95 us per candidate on the removal-free scans; the post-removal mix has b 0.34-0.43 us but 20-41 candidates per call against 4-11), the fixed per-call part a is 1.1-3.4 us. `build_grid` is constant (0.07-0.16 ms, same after and other, so not part of the tail). The post-removal excess over other ticks is about +0.8 (open), +1.1 (dense), +1.4 (hordes300) ms: nearest +0.37 / +0.55 / +0.42, firing_cell +0.15 / +0.15 / +0.35, the rest plan bookkeeping and fire.
+
+A1 (flat per-target records built in `_build_grid`, same float expressions inline in `_nearest`; the scout in `_plan_return` has no `kind`, so the unit radius is read only in edge mode - a first draft read it always and turned RS1, Fm1, Cs1 red): suite 484 cases / 136037 checks / 0 failures; all four traces cmp-identical to HEAD; `combat_work` identical. A/B median of 3 (A = HEAD, B = A1, A/A spread in ms):
+
+| Row | p50 A / B | p95 A / B | p99 A / B |
+|-----|-----------|-----------|-----------|
+| open | 1.306 / 1.322 (noise) | 2.099 / 1.958 (-0.14) | 2.533 / 2.280 (-0.25) |
+| dense | 1.081 / 1.082 | 2.270 / 1.921 (-0.35) | 2.817 / 2.180 (-0.64) |
+| hordes300 | 2.598 / 2.764 (+0.17 slower) | 3.908 / 3.740 (-0.17) | 4.594 / 4.234 (-0.36) |
+
+B (design rule: phase-deferred retarget after a target loss, hold attack-move units; four lines) fails 26 checks: M1 (3), B1 (8), A3 (3), A7, A8 (2), R1, S1 (2), Fm1, Cs1, TB3, TB4. Traces: `WARGRID_REPLAY_TRACE` MOVES (first difference at tick 320; the design expected it to stay identical, so it needs an explanation), combat and team traces move, economy stays. Pinned winners unchanged (Fm1 1, S1 1, Cs1 2) but ticks move (Fm1 16621, S1 12330, Cs1 24879, TB3 f95ee411007d11be, TB4 5487475243737389530, S1 series 1507712663628559348). `combat_work` p95 falls (open 1381 -> 1056, dense 1522 -> 1288) but p50 rises (193 -> 351, 116 -> 262, 73 -> 376): the deferral concentrates rescans on phase ticks. A/B, B alone: open p95 2.112 -> 2.372, p99 2.555 -> 3.545, max 3.2 -> 5.9; dense p95 2.284 -> 2.465, p99 2.818 -> 4.170, max 3.6 -> 7.4; hordes300 p95 3.904 -> 4.775, p99 4.549 -> 8.182. A1+B: open p95 2.110 -> 2.345, p99 2.543 -> 3.573; dense p95 2.275 -> 2.169, p99 2.827 -> 3.951; hordes300 p95 3.895 -> 4.715, p99 4.558 -> 8.121. B is slower on every row beyond the A/A spread (spread 0.01-0.07), the tail moves from removal ticks to phase ticks and is worse. Not tested: the clamped fallback (`min(phase tick, max(tick + 1, next_fire_tick))`) and a per-id spread of the deferred tick; the cause of the p99 rise (mass rescans plus approaches on one phase tick, unprofiled) is a hypothesis.
+
+Budget 1.82 / 3.64: A1 alone p95 open 1.958, dense 1.921, hordes300 3.740 (all still over 1.82, p99 open and dense pass). Nothing reaches 1.82 on p95. Recommendation: implement A1 (kept fix, trace-identical, -0.14 to -0.35 ms p95); do not build B as designed; if the tail is pursued further, profile the remaining post-removal ticks (plan bookkeeping and `firing_cell`, +0.3 to +0.5 ms) instead. Logs: scratchpad `ws2f0/{meas.*.log,ab_a1,ab_b,ab_ab,suite*.log}`.
