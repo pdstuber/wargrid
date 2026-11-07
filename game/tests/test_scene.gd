@@ -5,7 +5,7 @@ const Main = preload("res://scenes/main.tscn")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 
 func cases() -> Array[Callable]:
-	return [test_ready, test_clicks, test_rejection, test_camera, test_driver, test_boxes, test_drag_rules, test_obstacle_toggle, test_double_click_same_kind_on_screen, test_double_click_alt_whole_map, test_double_click_shift_keeps, test_double_click_ctrl_ignored, test_double_click_enemy_or_building_plain]
+	return [test_ready, test_clicks, test_rejection, test_camera, test_driver, test_boxes, test_drag_rules, test_obstacle_toggle, test_double_click_same_kind_on_screen, test_double_click_alt_whole_map, test_double_click_shift_keeps, test_double_click_ctrl_ignored, test_double_click_enemy_or_ground_plain]
 
 func setup(runner):
 	var main = Main.instantiate()
@@ -355,7 +355,7 @@ func test_double_click_ctrl_ignored(runner) -> bool:
 	main.free()
 	return true
 
-func test_double_click_enemy_or_building_plain(runner) -> bool:
+func test_double_click_enemy_or_ground_plain(runner) -> bool:
 	var fixture: Dictionary = await _double_fixture(runner)
 	var main = fixture.main
 	await _double_click(runner, main, Iso.world_to_plane(Vector2(2.5, 6.5)) + Vector2(0, -8))

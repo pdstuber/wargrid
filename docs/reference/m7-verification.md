@@ -5,15 +5,15 @@ Plan: [M7 plan](../superpowers/plans/2026-11-06-m7-factions.md). Design: [M7 des
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-07, G2.7 gate evidence done, uncommitted)
-Branch / base commit / working-tree state: m7-factions, HEAD e2d48fc (G2.6 committed); G2.7 evidence uncommitted
-Last green task / next incomplete task: G2.7 gate evidence (tests, checks, parity, ledger) green / gate review dispatch (Opus high), then /ponytail-review on the gate diff, push (approval), playtest
-Changed paths since last commit: game/tests/test_skirmish_match.gd, game/tests/test_factions.gd, tools/zh_parity/parity.py, tools/zh_parity/analyze.py, docs/reference/performance.md, m7-verification.md
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 384 cases / 134,584 (traces on) / 0, exit 0, TESTS PASSED (134,577 traces off before pins, 134,571 baseline); lint, warnings (89 files), run_python_checks.sh, unittest discover (39) OK; four traces cmp-identical to e2d48fc; run_netplay.sh all 7 PASSED (match 8331); run_conformance.sh PASSED 33; run_benchmark.sh exit 0 (COMBAT BENCHMARK PASSED 9); run_team_match.sh exit 0
-Known red case or blocker: none. Pending: rendered benchmark (visible window, needs approval, batch with playtest)
-Approved decisions, pre-authorizations used, deferred gates: as before. G2.7 departures: test_choose_faction_online_china_same_hash and the quantity/horde/ramp/delivery asserts passed on first run (not seen red); the Cs1 pin was seen red with a placeholder, then set from the measured outcome.
+Resume record (updated 2026-11-07, gate 2 review fixes done, uncommitted)
+Branch / base commit / working-tree state: m7-factions, HEAD eb3fbed; gate 2 review fixes (I1-I4, M1-M4, M7, M8, M10, M11) uncommitted
+Last green task / next incomplete task: gate 2 review fixes green / /ponytail-review on the gate diff, commit (pre-authorized), push (approval), playtest
+Changed paths since last commit: game/scripts/simulation/{horde,production,simulation,supply_collection}.gd, game/scripts/debug/combat_workload.gd, game/benchmarks/run_combat.gd, game/tests/{test_defences,test_horde,test_production,test_scene,test_supply}.gd, tools/run_benchmark.sh, tools/zh_parity/analyze.py, docs/reference/{performance,m7-verification}.md
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, 388 cases / 134,583 (traces off), 134,590 (traces on) / 0, exit 0, TESTS PASSED; lint, warnings (89 files), run_python_checks.sh, unittest discover, test_faction_guard.py OK; four traces cmp-identical to a clean eb3fbed worktree; run_netplay.sh all 7 PASSED (match 8331); run_conformance.sh PASSED 33; run_benchmark.sh exit 0 (COMBAT BENCHMARK PASSED 10); run_team_match.sh exit 0 (won 33205 winner 1)
+Known red case or blocker: none. Pending: rendered benchmark (visible window, needs approval, batch with playtest). Exceeded, not loosened: hordes p95 2.102, hordes300 p95 5.626 / p99 7.074 (budget 1.82 / 3.64; user's call)
+Approved decisions, pre-authorizations used, deferred gates: as before. Open minor items M5, M6, M9 (below)
 Usage so far: not recorded
-Next exact action: dispatch the gate 2 review (Opus high), fix critical and important findings test-first, then /ponytail-review on the gate diff; push and the playtest need the user
+Next exact action: /ponytail-review on the gate diff, local commit, then the user: push, playtest, decision on the horde cost
 ```
 
 ## Pins at base
@@ -403,6 +403,7 @@ Red first (stubs for `bonus_delay` and `horde_marks` so the suite compiled; befo
 | test | assertion | old → new | cause |
 |---|---|---|---|
 | run_benchmark.sh, run_combat.gd | `COMBAT BENCHMARK PASSED` | 7 → 8 | G2.3 `hordes` layout |
+| run_benchmark.sh, run_combat.gd | `COMBAT BENCHMARK PASSED` | 9 → 10 | gate 2 review fixes, `hordes300` layout |
 
 Benchmark `hordes` (60 militia, 20 medium tanks vs 100 riflemen, Apple M6): p50 1.20 / p95 2.08 / p99 2.83 ms; window `horde_checks` 4662, level-2 peak 75. Report-only (over the 1.82 / 3.64 budget at p95 and under p99; no ceiling pinned, no budget loosened). The `docks` and `hordes` rows are not in the ledger yet.
 
@@ -490,3 +491,26 @@ Decision list (no value changed; user decides):
 3. Horde: first shot interval 36 before the bonus applies; Wargrid's first-check timing was not compared here. Feel only, candidate for the playtest.
 4. Battlemaster and Gattling tank show a one-frame speed spike (peak 48.8 / 66.7 u/s, accel 1464 / 2000) at the start; cruise equals Wargrid. Feel only.
 
+
+## Gate 2 review fixes (tree: m7-factions eb3fbed plus uncommitted fixes, Apple M6, 2026-11-07)
+
+Review: Opus, diff 8f835c0..eb3fbed, no critical findings. Red-first run (fixes I1 and I2 absent, I3 counter present, scan still quadratic): 388 cases, 4 failures (Gb1 x2, Q1 rally, H8 pairs 122,816 for 404 checks). Pins, Cs1, F4 and all four traces unchanged.
+
+| finding | ruling |
+|---|---|
+| I1 stall after cut path | Fixed. `Supply.step`: a ground collector in `flying_*` with status `blocked` releases and retries in 30 ticks. Test `test_ground_truck_recovers_after_blocked_path` (Gb1), seen red. |
+| I2 quantity-2 charged for one unit | Fixed. `Production.spawn_unit` places all units first, then `_send_out` assigns rally moves. Test `test_quantity_rally_on_free_exit` (Q1), seen red (1 militia, paid 300, entry dropped). |
+| I3 horde scan quadratic | Fixed. `Horde.step` buckets members by cell (size = widest rule radius + 2 * largest unit radius) and `_level` scans the 3x3 block; `Simulation.horde_pairs()` counts candidates. Test `test_horde_pairs_bounded` (H8, 300 spread militia, pairs <= 12 per check), seen red (122,816 / 404). New report-only `hordes300` layout. Results identical (traces, pins). The hordes p95 did not move (2.102 vs 2.083): the scan was not its main cost, so it still **exceeds 1.82**; hordes300 p95 / p99 5.626 / 7.074 exceeds 1.82 / 3.64. Nothing loosened; the cost is the user's call. |
+| I4 unwalkable / unreachable ring cells | Test only (`Gd4`): blocked cells and a sealed pocket are skipped, all-blocked ring idles with retry +30. Not red (code was right); mutation check removing the walkable and component filters failed both Gd4 checks, then restored. |
+| M1 Gd2 contention | Fixed: trucks at 30.5 and 31.5 both want cell 27,5; checks the second takes 27,4. Not red (extra check on correct code). |
+| M2 H3 negative half | Fixed: test-only `test_horde_vehicle` (copy of the medium tank row) via `add_test_kind`; four medium tanks plus one stay 0. Not red. |
+| M3 DA3 companions | Fixed: cancel_production, gather, enter, unload now valid (queue entry via `Production.enqueue`, a collector, a scout car and a rifleman); DA3 now also checks the companion result is ok. `choose_faction` dropped: any command other than `choose_faction` is rejected while a match is in setup, so it cannot share a started world with the others. |
+| M4 double-click building | Renamed the test to `test_double_click_enemy_or_ground_plain`; it never had a building case, and picking a building needs scene fixture work not worth it here. |
+| M7 dead tie-break | Deleted (the ring is already y, x ordered and the compare is strict). |
+| M8 `_spawn_on_complete` ignoring -1 | Documented with a `shortcut:` comment (smallest choice); a retry needs new state. Open if a playtest shows a lost truck. |
+| M10 analyze.py | `ramp_gattling_cannon` expects `8,4,4,4,4,2,2`. |
+| M11 resume record | Updated to the real tree. |
+
+Open minor items, not done (skipped by instruction): M5 ground `_admit` ordering untested (replacing `_arrival(other)` by `center(target)` in the waiting-before scan passes Gd2/Gd3); M6 a source and a nearby depot can share dock cells (`_claim_dock` only excludes the same target; 0 stacked docked ticks measured, latent); M9 per-tick cost of waiting trucks scanning all entities in `_admit` (the docks layout holds only trucks).
+
+Checks on this tree: suite 388 / 134,583 / 0 exit 0 (traces off), 134,590 (traces on); four traces `cmp`-identical to a clean eb3fbed worktree (replay, economy, combat 1200 rows each, team 100); lint, warnings (89 files), `run_python_checks.sh`, unittest discover, `test_faction_guard.py` pass; netplay match 8331, kill, stall, silent, spike, perturb, version PASSED; conformance PASSED 33; `run_benchmark.sh` exit 0, `COMBAT BENCHMARK PASSED 10` (ledger row 2026-11-07 gate-2 review fixes); `run_team_match.sh` won 33205 winner 1. Rendered benchmark not run.

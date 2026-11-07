@@ -1,6 +1,7 @@
 @warning_ignore_start("untyped_declaration")
 extends RefCounted
 
+const Production = preload("res://scripts/simulation/production.gd")
 const Fixture = preload("res://tests/combat_fixture.gd")
 const EconomyFixture = preload("res://tests/economy_fixture.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
@@ -248,6 +249,12 @@ func _same_tick_world() -> Dictionary:
 	ids.barracks = EconomyFixture.add_completed(sim, 1, "usa_barracks", Vector2i(20, 4))
 	ids.foundation = EconomyFixture.add_completed(sim, 1, "usa_power_plant", Vector2i(25, 4))
 	sim._buildings[ids.foundation].completed = false
+	ids.car = sim.spawn(1, Vector2(8.5, 18.5), "usa_light_vehicle")
+	ids.rifle = sim.spawn(1, Vector2(9.5, 18.5), "usa_rifle_infantry")
+	ids.collector = sim.spawn(1, Vector2(6.5, 18.5), "usa_collector")
+	ids.source = sim.add_supply_source(Vector2i(2, 24), 8)
+	Production.enqueue(sim, ids.barracks, "usa_rifle_infantry")
+	ids.production = sim._buildings[ids.barracks].queue[0].id
 	return ids
 
 func _other_commands(ids: Dictionary) -> Array:
@@ -258,14 +265,13 @@ func _other_commands(ids: Dictionary) -> Array:
 		{"type": "resume_build", "builder_id": ids.builder, "building_id": ids.foundation},
 		{"type": "cancel_build", "building_id": ids.foundation},
 		{"type": "produce", "building_id": ids.barracks, "unit_kind": "usa_rifle_infantry"},
-		{"type": "cancel_production", "building_id": ids.barracks, "production_id": 1},
+		{"type": "cancel_production", "building_id": ids.barracks, "production_id": ids.production},
 		{"type": "set_rally", "building_id": ids.barracks, "target": [22.5, 8.5]},
-		{"type": "gather", "entity_ids": [ids.builder], "source_id": 9999},
+		{"type": "gather", "entity_ids": [ids.collector], "source_id": ids.source},
 		{"type": "attack", "entity_ids": [ids.tank], "target_id": ids.near},
 		{"type": "attack_move", "entity_ids": [ids.tank], "target": [8.5, 14.5]},
-		{"type": "enter", "entity_ids": [ids.tank], "target_id": ids.builder},
-		{"type": "unload", "target_id": ids.builder},
-		{"type": "choose_faction", "faction": "usa"},
+		{"type": "enter", "entity_ids": [ids.rifle], "target_id": ids.car},
+		{"type": "unload", "target_id": ids.car},
 		{"type": "defence_attack", "building_id": ids.defence, "target_id": ids.near}]
 
 func test_defence_attack_same_tick_cases(runner) -> bool:
@@ -276,10 +282,11 @@ func test_defence_attack_same_tick_cases(runner) -> bool:
 			var sim = ids.sim
 			var other: Dictionary = _other_commands(ids)[index]
 			var label: String = "%s %s" % [other.type, "after" if defence_first else "before"]
-			if not defence_first: Fixture.send(sim, other)
+			var companion: Dictionary = {}
+			if not defence_first: companion = Fixture.send(sim, other)
 			var order: Dictionary = _order(sim, ids.defence, ids.far)
-			if defence_first: Fixture.send(sim, other)
-			runner.check(order.ok, "DA3 order accepted with " + label)
+			if defence_first: companion = Fixture.send(sim, other)
+			runner.check(order.ok and companion.ok, "DA3 order and companion accepted with %s: %s" % [label, companion])
 			var pending: Array = sim.snapshot().pending_commands.filter(func(c: Dictionary) -> bool: return c.type == "defence_attack")
 			sim.step()
 			var sequences: Array = pending.map(func(c: Dictionary) -> int: return c.sequence)

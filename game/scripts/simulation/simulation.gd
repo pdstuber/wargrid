@@ -35,6 +35,7 @@ var _combat_events: Array[Dictionary] = []
 var _match: Variant = null
 var _combat_work: int = 0
 var _horde_checks: int = 0
+var _horde_pairs: int = 0
 var _chases: Dictionary = {}
 var _scan_chases: int = 0
 var _retaliations: int = 0
@@ -462,6 +463,9 @@ func combat_work() -> int:
 func horde_checks() -> int:
 	return _horde_checks
 
+func horde_pairs() -> int:
+	return _horde_pairs
+
 func scan_chases() -> int:
 	return _scan_chases
 
@@ -487,6 +491,7 @@ func step() -> void:
 	_combat_events.clear()
 	_combat_work = 0
 	_horde_checks = 0
+	_horde_pairs = 0
 	_scan_chases = 0
 	_retaliations = 0
 	_allocation_calls = 0
@@ -783,6 +788,7 @@ func _remove_building(id: int) -> void:
 	Combat.object_removed(self,id)
 	Construction.rebuild_navigation(self)
 
+# shortcut: the free unit is lost when every exit cell is occupied; upgrade if a playtest shows it.
 func _spawn_on_complete(building: Dictionary) -> void:
 	for kind: String in Registry.kind(building.kind).spawns_on_complete: Production.spawn_unit(self,building,kind,null)
 

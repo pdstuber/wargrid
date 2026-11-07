@@ -70,26 +70,26 @@ static func spawn_unit(sim: Simulation, building: Dictionary, kind: String, occu
 	if occupied == null: occupied = sim.occupied_cells()
 	var quantity: int = Registry.kind(kind).get("quantity",1)
 	if quantity > 1 and free_exits(sim,building,occupied) < quantity: return -1
-	var collector: bool = not Registry.collects(kind).is_empty()
-	var first: int = -1
-	var spawned_count: int = 0
+	var spawned_ids: Array[int] = []
 	for cell in Construction.perimeter(building.kind,Vector2i(building.origin[0],building.origin[1])):
 		var spawned: int = sim.spawn(building.owner,Vector2(cell) + Vector2(.5,.5),kind,occupied)
 		if spawned == -1: continue
-		var unit: Dictionary = sim._entities[spawned]
-		if collector:
-			unit.collection.enabled = true
-			unit.collection.phase = "seeking"
-		else:
-			var members: Array[Dictionary] = [unit]
-			sim._assign_move(members,rally_target(sim,building,unit))
-			sim._set_intent(unit,"move")
-		occupied[sim._cell(unit.position)] = true
-		if unit.destination != null: occupied[sim._cell(unit.destination)] = true
-		if first == -1: first = spawned
-		spawned_count += 1
-		if spawned_count == quantity: break
-	return first
+		occupied[sim._cell(sim._entities[spawned].position)] = true
+		spawned_ids.append(spawned)
+		if spawned_ids.size() == quantity: break
+	for id in spawned_ids: _send_out(sim,building,sim._entities[id],occupied)
+	return -1 if spawned_ids.is_empty() else spawned_ids[0]
+
+# Rally moves come after every unit is placed, so a rally cell cannot block a later exit of the same order.
+static func _send_out(sim: Simulation, building: Dictionary, unit: Dictionary, occupied: Dictionary) -> void:
+	if not Registry.collects(unit.kind).is_empty():
+		unit.collection.enabled = true
+		unit.collection.phase = "seeking"
+		return
+	var members: Array[Dictionary] = [unit]
+	sim._assign_move(members,rally_target(sim,building,unit))
+	sim._set_intent(unit,"move")
+	if unit.destination != null: occupied[sim._cell(unit.destination)] = true
 
 static func step(sim: Simulation, rates: Dictionary) -> void:
 	var ids: Array = sim._buildings.keys()

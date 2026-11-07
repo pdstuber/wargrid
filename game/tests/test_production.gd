@@ -9,7 +9,7 @@ const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 
 func cases() -> Array[Callable]:
-	return [test_producer_and_free_collector,test_fifo_payment_and_cancel,test_blocked_exit,test_production_power_and_removal,test_default_rally_mirrored,test_production_never_stalls,test_set_rally_applies_to_next_spawn,test_rally_blocked_cell_falls_back,test_set_rally_same_tick_cases,test_supply_center_spawns_ground_truck,test_quantity_trains_two]
+	return [test_producer_and_free_collector,test_fifo_payment_and_cancel,test_blocked_exit,test_production_power_and_removal,test_default_rally_mirrored,test_production_never_stalls,test_set_rally_applies_to_next_spawn,test_rally_blocked_cell_falls_back,test_set_rally_same_tick_cases,test_supply_center_spawns_ground_truck,test_quantity_trains_two,test_quantity_rally_on_free_exit]
 
 func ready(runner) -> Dictionary:
 	var sim = Fixture.make_world(50000)
@@ -344,4 +344,20 @@ func test_quantity_trains_two(runner) -> bool:
 	produce(squeezed,tight.barracks,"china_rifle_infantry")
 	Fixture.steps(squeezed,400)
 	runner.check(militia(squeezed).is_empty() and Fixture.object(squeezed,tight.barracks).queue.size() == first + 1,"Q1 with one free cell none spawn and the entry stays")
+	return true
+
+func test_quantity_rally_on_free_exit(runner) -> bool:
+	var cells: Array = Construction.perimeter("china_barracks",Vector2i(12,12))
+	var world: Dictionary = quantity_world(runner,0)
+	var sim = world.sim
+	for index in range(cells.size() - 2): sim.spawn(1,Vector2(cells[index]) + Vector2(.5,.5))
+	var free: Vector2i = cells[cells.size() - 1]
+	Fixture.send(sim,{"type":"set_rally","building_id":world.barracks,"target":[free.x + 0.5,free.y + 0.5]})
+	sim.step()
+	var credits: int = sim.snapshot().players[0].credits
+	produce(sim,world.barracks,"china_rifle_infantry")
+	Fixture.steps(sim,700)
+	var spent: int = credits - sim.snapshot().players[0].credits
+	var queued: int = Fixture.object(sim,world.barracks).queue.size()
+	runner.check((militia(sim).size() == 2 and queued == 0) or (militia(sim).is_empty() and queued == 1),"Q1 rally on a free exit: both militia or none with the entry kept, got " + str(militia(sim).size()) + " paid " + str(spent))
 	return true

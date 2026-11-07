@@ -29,6 +29,8 @@ func _run() -> void:
 		breached.append("docks")
 	if not _measure("hordes"):
 		breached.append("hordes")
+	if not _measure("hordes300"):
+		breached.append("hordes300")
 	if not _measure("ramp"):
 		breached.append("ramp")
 	if not breached.is_empty():
@@ -36,7 +38,7 @@ func _run() -> void:
 			push_error("Combat benchmark failed for " + layout)
 		quit(1)
 		return
-	print("COMBAT BENCHMARK PASSED 9")
+	print("COMBAT BENCHMARK PASSED 10")
 	quit(0)
 
 func _measure(layout: String) -> bool:
@@ -137,8 +139,8 @@ func _measure(layout: String) -> bool:
 			push_error("Combat benchmark: no level 2 ramp shot inside the timed window")
 			return false
 		return true
-	if layout == "hordes":
-		print("COMBAT HORDES checks_window=", horde_checks, " level2_peak_window=", horde_peak, " report-only")
+	if layout == "hordes" or layout == "hordes300":
+		print("COMBAT ", layout.to_upper(), " checks_window=", horde_checks, " level2_peak_window=", horde_peak, " report-only")
 		if horde_checks == 0 or horde_peak == 0:
 			push_error("Combat benchmark: no horde checks or no horde of five inside the timed window")
 			return false

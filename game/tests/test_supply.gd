@@ -5,7 +5,7 @@ const Fixture = preload("res://tests/economy_fixture.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 
 func cases() -> Array[Callable]:
-	return [test_source_and_gather_validation,test_dock_timing,test_partial_load_and_conservation,test_dock_competition_and_lookup,test_collection_interruptions,test_dock_loss_recovery,test_ground_dock_cell,test_ground_dock_queue,test_ground_dock_full_perimeter,test_truck_timing,test_dock_loss_recovery_ground]
+	return [test_source_and_gather_validation,test_dock_timing,test_partial_load_and_conservation,test_dock_competition_and_lookup,test_collection_interruptions,test_dock_loss_recovery,test_ground_dock_cell,test_ground_dock_queue,test_ground_dock_full_perimeter,test_truck_timing,test_dock_loss_recovery_ground,test_ground_truck_recovers_after_blocked_path,test_ground_dock_skips_unwalkable_and_unreachable]
 
 func ready(runner, boxes: int = 8) -> Dictionary:
 	var sim = Fixture.make_world(50000)
@@ -297,12 +297,13 @@ func test_ground_dock_cell(runner) -> bool:
 func test_ground_dock_queue(runner) -> bool:
 	var sim = Fixture.make_world()
 	var source: int = sim.add_supply_source(Vector2i(24,4),8)
-	var first: int = truck(sim,Vector2(29.5,5.5))
-	var second: int = truck(sim,Vector2(29.5,6.5))
+	var first: int = truck(sim,Vector2(30.5,5.5))
+	var second: int = truck(sim,Vector2(31.5,5.5))
 	gather(sim,[first,second],source)
 	until_phase(sim,second,"waiting_source")
 	var a: Dictionary = Fixture.object(sim,first)
 	var b: Dictionary = Fixture.object(sim,second)
+	runner.check(a.collection.dock == [27,5] and b.collection.dock == [27,4],"Gd2 both trucks want cell 27,5; the second takes the next nearest")
 	runner.check(a.collection.phase == "loading" and b.collection.phase == "waiting_source" and a.collection.dock != b.collection.dock,"Gd2 second truck waits on its own cell")
 	runner.check(a.position != b.position,"Gd2 no overlap")
 	for index in range(600):
@@ -388,4 +389,51 @@ func test_dock_loss_recovery_ground(runner) -> bool:
 		var again: Dictionary = Fixture.object(sim,unit).collection
 		var wanted: Array = [depot,other_depot] if at_depot else [source,other_source]
 		runner.check(again.target_id != null and again.target_id != target and again.target_id in wanted and again.has("dock"),"Gl1 re-seeks with a new dock " + phase)
+	return true
+
+func wall(gap: bool) -> Array[Vector2i]:
+	var cells: Array[Vector2i] = []
+	for y in range(32):
+		if gap and y == 20: continue
+		cells.append(Vector2i(16,y))
+	return cells
+
+func test_ground_truck_recovers_after_blocked_path(runner) -> bool:
+	var sim = Simulation.new(wall(true),Vector2i(32,32))
+	sim.add_player(1,0)
+	var source: int = sim.add_supply_source(Vector2i(4,4),40)
+	Fixture.add_completed(sim,1,"china_supply_center",Vector2i(24,4))
+	var unit: int = truck(sim,Vector2(28.5,20.5))
+	gather(sim,[unit],source)
+	Fixture.steps(sim,5)
+	sim.replace_blocked_cells(wall(false))
+	Fixture.steps(sim,100)
+	runner.check(Fixture.object(sim,unit).collection.get("dock") == null,"Gb1 cut path releases the held dock cell")
+	sim.replace_blocked_cells(wall(true))
+	Fixture.steps(sim,2000)
+	runner.check(sim.snapshot().players[0].credits > 0,"Gb1 truck delivers after the path reopens")
+	return true
+
+func test_ground_dock_skips_unwalkable_and_unreachable(runner) -> bool:
+	var solids: Array[Vector2i] = []
+	for cell in [Vector2i(27,4),Vector2i(27,5),Vector2i(27,6),Vector2i(28,6),Vector2i(26,7),Vector2i(28,7),Vector2i(26,8),Vector2i(27,8),Vector2i(28,8)]: solids.append(cell)
+	var sim = Simulation.new(solids,Vector2i(32,32))
+	sim.add_player(1,0)
+	var source: int = sim.add_supply_source(Vector2i(24,4),8)
+	var unit: int = truck(sim,Vector2(30.5,5.5))
+	gather(sim,[unit],source)
+	sim.step()
+	runner.check(Fixture.object(sim,unit).collection.get("dock") == [27,3],"Gd4 skips blocked cells 27,4-6 and the sealed pocket 27,7 for the reachable 27,3")
+	var closed: Array[Vector2i] = []
+	for y in range(3,8):
+		for x in range(23,28):
+			if not (x in [24,25,26] and y in [4,5,6]): closed.append(Vector2i(x,y))
+	var shut = Simulation.new(closed,Vector2i(32,32))
+	shut.add_player(1,0)
+	var pile: int = shut.add_supply_source(Vector2i(24,4),8)
+	var outside: int = truck(shut,Vector2(30.5,5.5))
+	gather(shut,[outside],pile)
+	shut.step()
+	var idle: Dictionary = Fixture.object(shut,outside).collection
+	runner.check(idle.phase == "idle" and idle.retry_tick == shut.snapshot().tick + 29 and not idle.has("dock"),"Gd4 no walkable reachable ring cell: idle with a retry 30 ticks out")
 	return true

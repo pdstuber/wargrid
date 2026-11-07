@@ -4,12 +4,13 @@ const Simulation = preload("res://scripts/simulation/simulation.gd")
 const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
 
 static func create(layout: String) -> Simulation:
-	assert(layout == "open" or layout == "dense" or layout == "contact" or layout == "skirmish3v3" or layout == "transports" or layout == "defences" or layout == "docks" or layout == "hordes" or layout == "ramp")
+	assert(layout == "open" or layout == "dense" or layout == "contact" or layout == "skirmish3v3" or layout == "transports" or layout == "defences" or layout == "docks" or layout == "hordes" or layout == "hordes300" or layout == "ramp")
 	if layout == "skirmish3v3": return _skirmish3v3()
 	if layout == "transports": return _transports()
 	if layout == "defences": return _defences()
 	if layout == "docks": return _docks()
 	if layout == "hordes": return _hordes()
+	if layout == "hordes300": return _hordes300()
 	if layout == "ramp": return _ramp()
 	var solids: Array[Vector2i] = []
 	if layout == "dense":
@@ -123,6 +124,23 @@ static func _hordes() -> Simulation:
 		for row in range(10):
 			var target: int = sim.spawn(2, Vector2(48.5 + column, 19.5 + row), "usa_rifle_infantry")
 			assert(target > 0)
+	assert(army.all(func(id: int) -> bool: return id > 0))
+	var marched: Dictionary = sim.issue_command({"tick": 0, "player": 1, "sequence": 0, "type": "attack_move", "entity_ids": army, "target": [60.5, 24.5]})
+	assert(marched.ok, marched.error)
+	return sim
+
+# 300 packed militia (20 by 15) against the same 100 riflemen: the horde scan at three times the hordes layout's army.
+static func _hordes300() -> Simulation:
+	var sim: Simulation = Simulation.new([], Vector2i(64, 64))
+	sim.add_player(1, 0)
+	sim.add_player(2, 0)
+	var army: Array[int] = []
+	for column in range(20):
+		for row in range(15):
+			army.append(sim.spawn(1, Vector2(3.5 + column, 10.5 + row), "china_rifle_infantry"))
+	for column in range(10):
+		for row in range(10):
+			assert(sim.spawn(2, Vector2(48.5 + column, 19.5 + row), "usa_rifle_infantry") > 0)
 	assert(army.all(func(id: int) -> bool: return id > 0))
 	var marched: Dictionary = sim.issue_command({"tick": 0, "player": 1, "sequence": 0, "type": "attack_move", "entity_ids": army, "target": [60.5, 24.5]})
 	assert(marched.ok, marched.error)

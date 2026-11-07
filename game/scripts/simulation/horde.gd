@@ -12,29 +12,56 @@ static func rate(kind: String) -> int:
 static func first_check(sim: Simulation, kind: String) -> int:
 	return sim._tick + 1 + sim.next_random() % rate(kind)
 
-# shortcut: each due check scans all horde members (n^2/30 per tick); grid it if the hordes layout shows in the ledger.
 static func step(sim: Simulation, armed: Array[int]) -> void:
 	var members: Array[Dictionary] = []
 	for id in armed:
 		if sim._entities.has(id) and sim._entities[id].combat.has("horde"): members.append(sim._entities[id])
+	var grid: Dictionary = {}
+	var size: float = 0.0
 	for unit in members:
-		var combat: Dictionary = unit.combat
-		if combat.horde_tick > sim._tick or unit.has("container_id"): continue
+		if unit.combat.horde_tick > sim._tick or unit.has("container_id"): continue
+		if grid.is_empty():
+			size = _cell_size(members)
+			grid = _bucket(members, size)
 		sim._horde_checks += 1
-		combat.horde_tick = sim._tick + rate(unit.kind)
-		_set_level(sim, unit, _level(sim, unit, members))
+		unit.combat.horde_tick = sim._tick + rate(unit.kind)
+		_set_level(sim, unit, _level(sim, unit, grid, size))
 
-static func _level(sim: Simulation, unit: Dictionary, members: Array[Dictionary]) -> int:
+# A neighbour is within rule radius plus both unit radii, so one cell of that width reaches every candidate from the 3x3 block.
+static func _cell_size(members: Array[Dictionary]) -> float:
+	var widest: float = 0.0
+	var largest: float = 0.0
+	for unit in members:
+		widest = maxf(widest, Registry.kind(unit.kind).horde.radius)
+		largest = maxf(largest, CombatDefinitions.radius(unit.kind))
+	return widest + 2.0 * largest
+
+static func _cell(unit: Dictionary, size: float) -> Vector2i:
+	return Vector2i(floori(unit.position[0] / size), floori(unit.position[1] / size))
+
+static func _bucket(members: Array[Dictionary], size: float) -> Dictionary:
+	var grid: Dictionary = {}
+	for unit in members:
+		var cell: Vector2i = _cell(unit, size)
+		if not grid.has(cell): grid[cell] = [] as Array[Dictionary]
+		grid[cell].append(unit)
+	return grid
+
+static func _level(sim: Simulation, unit: Dictionary, grid: Dictionary, size: float) -> int:
 	var rule: Dictionary = Registry.kind(unit.kind).horde
 	var near: int = 0
 	var rubbed: bool = false
-	for other in members:
-		if other.id == unit.id or other.has("container_id") or Combat.hostile(sim, unit.owner, other.owner) or not _matches(rule, unit, other): continue
-		var dx: float = other.position[0] - unit.position[0]
-		var dy: float = other.position[1] - unit.position[1]
-		if Combat._gap_between(dx, dy, CombatDefinitions.radius(unit.kind), CombatDefinitions.radius(other.kind)) > rule.radius: continue
-		near += 1
-		rubbed = rubbed or other.combat.horde == 2
+	var home: Vector2i = _cell(unit, size)
+	for dy in range(-1, 2):
+		for dx in range(-1, 2):
+			for other: Dictionary in grid.get(home + Vector2i(dx, dy), []):
+				sim._horde_pairs += 1
+				if other.id == unit.id or other.has("container_id") or Combat.hostile(sim, unit.owner, other.owner) or not _matches(rule, unit, other): continue
+				var ox: float = other.position[0] - unit.position[0]
+				var oy: float = other.position[1] - unit.position[1]
+				if Combat._gap_between(ox, oy, CombatDefinitions.radius(unit.kind), CombatDefinitions.radius(other.kind)) > rule.radius: continue
+				near += 1
+				rubbed = rubbed or other.combat.horde == 2
 	if near >= rule.count - 1: return 2
 	return 1 if rubbed else 0
 

@@ -70,7 +70,7 @@ EXPECT: dict[str, Any] = {
     "rof_redguard": [("shot_interval", 30, 1, "delay 30")],
     "rof_battlemaster": [("shot_interval", 60, 1, "delay 60")],
     "ramp_gattling_tank": [("first_intervals", "12,12,6,6,6,6,4", 1, "delay 12, ramp x2 after 2, x3 after 6")],
-    "ramp_gattling_cannon": [("first_intervals", "8,4,4,4,4,2", 1, "delay 8, ramp after 1 and 5")],
+    "ramp_gattling_cannon": [("first_intervals", "8,4,4,4,4,2,2", 1, "delay 8, ramp after 1 and 5")],
     "horde_redguard": [("last_interval", 20, 1, "five together, horde rate")],
     "splash_crusader": [("shots_to_kill", 30, None, "direct 6 HP hits, no splash or scatter")],
     "supply_chinook": [("deposit", 600, None, "8 boxes x 75"), ("cruise_speed", 150, None, "6 cells/s, provisional")],

@@ -45,7 +45,7 @@ static func _claim_dock(sim: Simulation, unit: Dictionary, target: Dictionary) -
 		var centre := Vector2(cell) + Vector2(.5,.5)
 		if held.has(cell) or not sim._navigation.is_walkable(centre) or sim._navigation.component_at(centre) != component: continue
 		var distance: float = (cell.x + .5 - unit.position[0]) ** 2 + (cell.y + .5 - unit.position[1]) ** 2
-		if distance < best_distance or (distance == best_distance and (cell.y < best.y or (cell.y == best.y and cell.x < best.x))):
+		if distance < best_distance:
 			best = cell
 			best_distance = distance
 	if best_distance == INF: return false
@@ -140,6 +140,10 @@ static func step(sim: Simulation, unit_ids: Array[int]) -> void:
 			release(sim,id)
 			sim._stop_unit(unit)
 			collection.retry_tick = sim._tick + 1
+			continue
+		if collection.phase.begins_with("flying_") and _is_ground(unit) and unit.status == "blocked":
+			release(sim,id)
+			collection.retry_tick = sim._tick + 30
 			continue
 		if collection.phase.begins_with("flying_") or collection.phase.begins_with("waiting_"):
 			if unit.position == _arrival(unit,target): _admit(sim,unit,target)
