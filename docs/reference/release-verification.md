@@ -5,15 +5,15 @@ Plan: [release workflow plan](../superpowers/plans/2026-11-06-release-workflow.m
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-07, Tasks 0-4 done and reviewed, pre-publication fixes uncommitted)
+Resume record (updated 2026-11-07, R1 done: Tasks 0-5 and the logo, v0.6.0 released)
 Branch / base commit / working-tree state: r1-release rebased onto main 025540d on 2026-11-07 (was cut from m7-factions ed48b2e, old tip 1c9ccaf); pre-publication fixes below uncommitted; nothing pushed
-Last green task / next incomplete task: Task 4 + final review fixes + pre-publication fixes / Task 0 step 4 and Task 5 (user: repo public, production Environment, fly tokens, version pick, pushes and approval)
+Last green task / next incomplete task: Task 5 step 6 (real release) / none
 Changed paths since last commit: see "Pre-publication review" below
 Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh 277 / 112765 / 0 / exit 0 / TESTS PASSED 112765; python3 -m unittest discover -s tools 52 OK; run_python_checks, run_lint, run_warnings pass; actionlint 1.7.12 with shellcheck 0.11.0 on both workflows: 0 findings (after quoting the packaging step's extras as a bash array), and tests.yml now runs it as job actions-lint
-Known red case or blocker: unverified until the rehearsal: Godot's built-in ad-hoc signer exporting macOS from a Linux host (fallback: a macos-latest job for that export)
+Known red case or blocker: none; deferred minors listed below
 Approved decisions, pre-authorizations used, deferred gates: plan Decisions (user, 2026-11-06); final review (Opus, fresh context) found 0 critical, 2 important (both fixed) and 9 minor (1 raised to important and fixed, 8 deferred below)
 Usage so far: not recorded
-Next exact action: the user makes the repo public, creates the production Environment (allow tag v* if restricted to selected branches and tags), stores FLY_API_TOKEN_RELAY / FLY_API_TOKEN_WEB, picks the version; then Task 5 step 2 (rc version commit) and the pushes, each with approval.
+Next exact action: none for R1; later releases follow README > Release
 ```
 
 ## Task 0: pre-publication history scan (2026-11-06, all refs, tree ed48b2e)
@@ -54,3 +54,11 @@ Next exact action: the user makes the repo public, creates the production Enviro
 - Fresh review (Opus): 1 important fixed (the boot splash stretched to the full window and browser; now `stretch_mode=0`, Web shows `fullsize--false`), 5 minors deferred.
 - Local exports with `0.6.0-rc.1`: Web `index.html` has the `og:image` tag, and `index.icon.png` (512) and `index.apple-touch-icon.png` (180) are navy `26364a` at master pixel (8, 8); macOS `icon.icns` 1024 px has the exact outline/rim edge at x 159/160 (nearest-neighbour); Windows exe gains a 16-512 px icon set (512 px navy at (136, 136)).
 - Windows warns `Invalid version number "0.6.0-rc.1"` with `modify_resources=true`: the icon still embeds; only version-info strings are skipped for prerelease versions (Windows wants numeric versions). `0.6.0` is valid.
+
+## Task 5 step 6: real release (2026-11-07, tag `v0.6.0` on `9f3187a`)
+
+- Tests on `9f3187a` green (8 jobs incl. `actions-lint`); release run 42363471406 approved by the user: relay deployed, web deployed, `og.png` check passed, release published (not a prerelease): https://github.com/pdstuber/wargrid/releases/tag/v0.6.0 with Linux 28,975,119, macOS 60,976,747 and Windows 38,601,890 bytes.
+- Live: relay `/health` 200; site serves `og.png` (`image/png`), `LICENSE`, `NOTICE.md`, `GODOT_LICENSES.txt` and `index.icon.png` (200), and the page carries the `og:image` tag.
+- `WARGRID_RELAY_URL=wss://wargrid-relay-jvm.fly.dev/ws WARGRID_MATCH_WAIT=600 sh tools/run_netplay.sh match`: `NETPLAY PASSED match 30.4 s` (terminal tick 8242).
+- After the tag: `0f5b6d1` keeps large CI artifacts briefly (Windows exe and relay binaries 1 day, release artifacts 7 days); Tests on it green.
+- Unverified: the Windows exe icon from the Linux runner (local macOS export embeds it), a link preview in WhatsApp (cache), the boot splash on screen.
