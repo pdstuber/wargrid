@@ -104,6 +104,16 @@ static func _seek(sim: Simulation, unit: Dictionary) -> void:
 		unit.status = "moving"
 	if unit.position == goal: _admit(sim,unit,target)
 
+# Air: lowest id first. Ground: waiters in the order they began waiting, then arrivals by id, so no truck starves.
+static func _ahead(unit: Dictionary, other: Dictionary) -> bool:
+	if not _is_ground(unit): return other.id < unit.id
+	var other_waits: bool = other.collection.phase.begins_with("waiting_")
+	if not unit.collection.phase.begins_with("waiting_"): return other_waits or other.id < unit.id
+	if not other_waits: return false
+	var mine: int = unit.collection.remaining_ticks
+	var theirs: int = other.collection.remaining_ticks
+	return theirs < mine or theirs == mine and other.id < unit.id
+
 static func _admit(sim: Simulation, unit: Dictionary, target: Dictionary) -> void:
 	var collection: Dictionary = unit.collection
 	var depot: bool = collection.cargo > 0
@@ -114,8 +124,8 @@ static func _admit(sim: Simulation, unit: Dictionary, target: Dictionary) -> voi
 		return
 	var waiting_before: bool = false
 	for other: Dictionary in sim._entities.values():
-		if other.id >= unit.id or other.collection == null or not other.collection.enabled: continue
-		if other.collection.target_id == target.id and other.position == _arrival(other,target) and other.collection.phase in ["flying_source","waiting_source","flying_depot","waiting_depot"]:
+		if other.id == unit.id or other.collection == null or not other.collection.enabled: continue
+		if other.collection.target_id == target.id and other.position == _arrival(other,target) and other.collection.phase in ["flying_source","waiting_source","flying_depot","waiting_depot"] and _ahead(unit,other):
 			waiting_before = true
 			break
 	if target.active_collector_id == null and not waiting_before:
@@ -123,6 +133,8 @@ static func _admit(sim: Simulation, unit: Dictionary, target: Dictionary) -> voi
 		collection.phase = "unloading" if depot else "loading"
 		collection.remaining_ticks = Registry.collects(unit.kind).unload_ticks if depot else Registry.collects(unit.kind).load_ticks
 	else:
+		# remaining_ticks is idle while waiting; a ground truck stores the tick it began waiting there, for first-come order.
+		if _is_ground(unit) and not collection.phase.begins_with("waiting_"): collection.remaining_ticks = sim._tick
 		collection.phase = "waiting_depot" if depot else "waiting_source"
 	sim._stop_unit(unit)
 

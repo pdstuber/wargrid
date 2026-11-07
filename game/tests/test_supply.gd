@@ -5,7 +5,7 @@ const Fixture = preload("res://tests/economy_fixture.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 
 func cases() -> Array[Callable]:
-	return [test_source_and_gather_validation,test_dock_timing,test_partial_load_and_conservation,test_dock_competition_and_lookup,test_collection_interruptions,test_dock_loss_recovery,test_ground_dock_cell,test_ground_dock_queue,test_ground_admit_lowest_id_first,test_ground_dock_full_perimeter,test_truck_timing,test_dock_loss_recovery_ground,test_ground_truck_recovers_after_blocked_path,test_ground_dock_skips_unwalkable_and_unreachable]
+	return [test_source_and_gather_validation,test_dock_timing,test_partial_load_and_conservation,test_dock_competition_and_lookup,test_collection_interruptions,test_dock_loss_recovery,test_ground_dock_cell,test_ground_dock_queue,test_ground_admit_first_waiter_first,test_ground_dock_no_starvation,test_ground_dock_full_perimeter,test_truck_timing,test_dock_loss_recovery_ground,test_ground_truck_recovers_after_blocked_path,test_ground_dock_skips_unwalkable_and_unreachable]
 
 func ready(runner, boxes: int = 8) -> Dictionary:
 	var sim = Fixture.make_world(50000)
@@ -312,22 +312,52 @@ func test_ground_dock_queue(runner) -> bool:
 	runner.check(Fixture.object(sim,first).collection.get("dock") == null and Fixture.object(sim,second).collection.phase == "loading","Gd2 waiter loads the tick the active truck releases")
 	return true
 
-func test_ground_admit_lowest_id_first(runner) -> bool:
+func test_ground_admit_first_waiter_first(runner) -> bool:
 	var sim = Fixture.make_world()
 	var source: int = sim.add_supply_source(Vector2i(24,4),30)
 	var far: int = truck(sim,Vector2(31.5,5.5))
 	var near: int = truck(sim,Vector2(29.5,5.5))
 	var mid: int = truck(sim,Vector2(30.5,6.5))
 	gather(sim,[far,near,mid],source)
-	until_phase(sim,far,"waiting_source",2000)
-	until_phase(sim,mid,"waiting_source",2000)
+	var began: Dictionary = {}
+	for index in range(2000):
+		sim.step()
+		for id in [far,mid]:
+			if not began.has(id) and Fixture.object(sim,id).collection.phase == "waiting_source": began[id] = index
+		if began.size() == 2: break
 	runner.check(Fixture.object(sim,near).collection.phase == "loading","Gd4 the nearest truck loads first")
-	runner.check(Fixture.object(sim,far).collection.phase == "waiting_source" and Fixture.object(sim,mid).collection.phase == "waiting_source","Gd4 both others wait on their own docks")
+	runner.check(began[far] != began[mid],"Gd4 the two others begin waiting on different ticks")
+	var first: int = far if began[far] < began[mid] else mid
+	var second: int = mid if first == far else far
 	for index in range(600):
 		sim.step()
 		if Fixture.object(sim,near).collection.phase != "loading": break
 	sim.step()
-	runner.check(Fixture.object(sim,far).collection.phase == "loading" and Fixture.object(sim,mid).collection.phase == "waiting_source","Gd4 the lowest id loads next, not the closer waiter")
+	runner.check(Fixture.object(sim,first).collection.phase == "loading" and Fixture.object(sim,second).collection.phase == "waiting_source","Gd4 the truck that began waiting first loads next, not the lower id")
+	return true
+
+func test_ground_dock_no_starvation(runner) -> bool:
+	var sim = Fixture.make_world(50000)
+	Fixture.build(runner,sim,"usa_power_plant",Vector2i(5,5))
+	Fixture.build(runner,sim,"usa_supply_center",Vector2i(10,10))
+	var source: int = sim.add_supply_source(Vector2i(14,10),400)
+	stop_collectors(sim)
+	var ids: Array = []
+	for index in range(3): ids.append(truck(sim,Vector2(13.5 + index,14.5)))
+	gather(sim,ids,source)
+	var loads: Dictionary = {}
+	for id in ids: loads[id] = 0
+	var cargo: Dictionary = {}
+	for id in ids: cargo[id] = 0
+	for index in range(1500):
+		sim.step()
+		for id in ids:
+			var now: int = Fixture.object(sim,id).collection.cargo
+			if now > cargo[id]: loads[id] = loads[id] + 1
+			cargo[id] = now
+	var counts: Array = loads.values()
+	runner.check(counts.min() > 0,"Gd5 every truck loads at the shared dock, got " + str(counts))
+	runner.check(counts.max() - counts.min() <= 8,"Gd5 loads stay level across trucks, got " + str(counts))
 	return true
 
 func test_ground_dock_full_perimeter(runner) -> bool:
