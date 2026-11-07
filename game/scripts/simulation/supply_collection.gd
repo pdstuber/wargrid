@@ -3,6 +3,8 @@ extends RefCounted
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 
+const DOCK_SHIFT := 0.25
+
 static func release(sim: Simulation, unit_id: int) -> void:
 	var unit: Dictionary = sim._entities[unit_id]
 	var collection: Dictionary = unit.collection
@@ -14,19 +16,30 @@ static func release(sim: Simulation, unit_id: int) -> void:
 	collection.remaining_ticks = 0
 	collection.phase = "seeking" if collection.enabled else "idle"
 
+static func _size(target: Dictionary) -> Vector2i:
+	return Registry.SOURCE_FOOTPRINT if target.has("boxes") else Registry.building_view(target.kind).footprint
+
 static func center(target: Dictionary) -> Array:
-	return [target.origin[0] + 1.5,target.origin[1] + 1.5]
+	var size: Vector2i = _size(target)
+	return [target.origin[0] + size.x / 2.0,target.origin[1] + size.y / 2.0]
 
 static func _is_ground(unit: Dictionary) -> bool:
 	return not Registry.air_kinds.has(unit.kind)
 
 static func _arrival(unit: Dictionary, target: Dictionary) -> Array:
 	var dock: Variant = unit.collection.get("dock")
-	return center(target) if dock == null else [dock[0] + 0.5,dock[1] + 0.5]
+	if dock == null: return center(target)
+	var size: Vector2i = _size(target)
+	var offset := Vector2i(_toward(dock[0],target.origin[0],size.x),_toward(dock[1],target.origin[1],size.y))
+	# Distinct spots per target even when a pile and a depot share the dock cell (as the spots on a Zero Hour object differ).
+	return [dock[0] + 0.5 + offset.x * DOCK_SHIFT,dock[1] + 0.5 + offset.y * DOCK_SHIFT]
+
+static func _toward(cell: int, origin: int, length: int) -> int:
+	return signi(clampi(cell,origin,origin + length - 1) - cell)
 
 # Footprint plus its one-cell ring, corners included, as the dock cells of a pile or depot.
 static func _ring(target: Dictionary) -> Array[Vector2i]:
-	var size: Vector2i = Registry.SOURCE_FOOTPRINT if target.has("boxes") else Registry.building_view(target.kind).footprint
+	var size: Vector2i = _size(target)
 	var origin := Vector2i(target.origin[0],target.origin[1])
 	var cells: Array[Vector2i] = []
 	for y in range(origin.y - 1,origin.y + size.y + 1):
@@ -161,21 +174,15 @@ static func step(sim: Simulation, unit_ids: Array[int]) -> void:
 		if collection.phase.begins_with("flying_") or collection.phase.begins_with("waiting_"):
 			if unit.position == _arrival(unit,target): _admit(sim,unit,target)
 			continue
-		var ground: bool = _is_ground(unit)
-		if collection.phase == "loading" and not ground and target.boxes <= 0:
-			release(sim,id)
-			collection.retry_tick = sim._tick + 1
-			continue
 		collection.remaining_ticks -= 1
 		if collection.remaining_ticks > 0: continue
 		if collection.phase == "loading":
-			# Zero Hour waits one more delay after the last box; the air collector keeps M3's early departure (open item in m7-verification.md).
-			if not ground: _load_box(collection, target)
+			# Zero Hour waits one more delay after the last box, for every collector.
 			if collection.cargo == Registry.collects(unit.kind).boxes or target.boxes == 0:
 				release(sim,id)
 				collection.retry_tick = sim._tick + 1
 				continue
-			if ground: _load_box(collection, target)
+			_load_box(collection, target)
 			collection.remaining_ticks = Registry.collects(unit.kind).load_ticks
 		elif collection.phase == "unloading":
 			sim._players[unit.owner].credits += collection.cargo * Registry.collects(unit.kind).box_value

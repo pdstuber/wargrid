@@ -209,7 +209,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var plane: Vector2 = _view.make_canvas_position_local(event.position)
 		if event.button_index == MOUSE_BUTTON_RIGHT and event.pressed and not is_selecting():
-			if _context_order(_view.pick_object(plane)) or _set_rally(plane): return
+			var source: int = _view.pick_source(plane)
+			if _context_order(source if source != -1 else _view.pick_object(plane)) or _set_rally(plane): return
 		if event.button_index == MOUSE_BUTTON_LEFT and not event.pressed and is_selecting():
 			_update_drag(event.position)
 			var building: Dictionary = _building(simulation.snapshot(),_view.pick_object(plane))

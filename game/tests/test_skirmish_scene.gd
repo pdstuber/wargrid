@@ -7,10 +7,11 @@ const BaseScene = preload("res://tests/test_base_scene.gd")
 const View = preload("res://scripts/presentation/world_view.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 const Fixture = preload("res://tests/economy_fixture.gd")
+const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const UiStyle = preload("res://scripts/presentation/ui_style.gd")
 
 func cases() -> Array[Callable]:
-	return [test_skirmish_ready_and_tick, test_combat_context_input, test_match_hud_and_restart, test_combat_view, test_hud_layout_and_focus, test_hud_build_line, test_enemy_selection_read_only, test_rally_input_and_marker, test_supply_pile_labels, test_attack_move_hint_and_rejection, test_selection_prunes_dead, test_order_marks_own_only, test_health_bar_clear_of_boxes, test_result_clear_of_status, test_silent_keys_explain, test_hud_strings_use_display_names, test_hud_font_size_is_shared, test_defence_attack_scene, test_enter_unload_scene]
+	return [test_skirmish_ready_and_tick, test_combat_context_input, test_match_hud_and_restart, test_combat_view, test_hud_layout_and_focus, test_hud_build_line, test_enemy_selection_read_only, test_rally_input_and_marker, test_supply_pile_labels, test_attack_move_hint_and_rejection, test_selection_prunes_dead, test_order_marks_own_only, test_health_bar_clear_of_boxes, test_result_clear_of_status, test_silent_keys_explain, test_hud_strings_use_display_names, test_hud_font_size_is_shared, test_defence_attack_scene, test_enter_unload_scene, test_right_click_pile_gathers, test_right_click_pile_in_launcher_flow, test_frc_laborer_right_click_pile]
 
 func _setup(runner):
 	var main = Scene.instantiate()
@@ -220,8 +221,8 @@ func test_hud_layout_and_focus(runner) -> bool:
 func _pile_world(main) -> Dictionary:
 	var sim = Skirmish.create(false)
 	var source: int = sim.add_supply_source(Vector2i(8, 8), 10)
-	var first: int = sim.spawn(1, Vector2(9.5, 9.5), "usa_collector")
-	var second: int = sim.spawn(1, Vector2(9.5, 9.5), "usa_collector")
+	var first: int = sim.spawn(1, Vector2(10.0, 10.5), "usa_collector")
+	var second: int = sim.spawn(1, Vector2(10.0, 10.5), "usa_collector")
 	Fixture.send(sim, {"type": "gather", "entity_ids": [first, second], "source_id": source})
 	Fixture.steps(sim, 3)
 	sim.start_match([1, 2] as Array[int])
@@ -515,5 +516,76 @@ func test_enter_unload_scene(runner) -> bool:
 	runner.check(main._view.pick_object(hub_point) == hub, "TU1 clicking an occupied hub picks the hub, not an occupant")
 	var status: Label = main.get_node("HUD/Status")
 	runner.check(Rect2(status.global_position, status.get_minimum_size()).end.x <= main.get_viewport().get_visible_rect().size.x, "TU1 the hint line keeps the status inside the viewport")
+	main.free()
+	return true
+
+func test_right_click_pile_gathers(runner) -> bool:
+	var helper = BaseScene.new()
+	for kind in ["usa_collector", "china_collector", "frc_builder"]:
+		var main = await _setup(runner)
+		var sim = Skirmish.create(false)
+		var pile: int = sim.add_supply_source(Vector2i(20, 8), 10)
+		var unit: int = sim.spawn(1, Vector2(15.5, 9.5), kind)
+		sim.start_match([1, 2] as Array[int])
+		main.simulation = sim
+		main.selected_ids.assign([unit])
+		main._refresh()
+		helper.pointer(main, Iso.world_to_plane(Vector2(21.5, 9.5)), MOUSE_BUTTON_RIGHT, true)
+		var orders: Array = sim.snapshot().pending_commands
+		runner.check(orders.size() == 1 and orders[0].type == "gather" and orders[0].source_id == pile and orders[0].entity_ids == [unit], "K10 right-click on a pile sends %s to gather" % kind)
+		main.free()
+	return true
+
+func test_right_click_pile_in_launcher_flow(runner) -> bool:
+	var helper = BaseScene.new()
+	for faction in ["frc", "china", "usa"]:
+		var main = await _setup(runner)
+		var sim = Skirmish.create(true, "ai", {1: faction, 2: "usa"})
+		main.simulation = sim
+		var pile: Dictionary = sim.snapshot().sources[0]
+		var collector: int = sim.spawn(1, Vector2(pile.origin[0] + 6.5, pile.origin[1] + 8.5), faction + ("_builder" if faction == "frc" else "_collector"))
+		var centre := Vector2(pile.origin[0] + 2.0, pile.origin[1] + 2.5)
+		main.selected_ids.assign([collector])
+		main._refresh()
+		helper.pointer(main, Iso.world_to_plane(centre), MOUSE_BUTTON_RIGHT, true)
+		runner.check(_pending(main, "gather") == 1, "K11 %s collector right-click on the pile gathers, pending %s" % [faction, str(sim.snapshot().pending_commands)])
+		var bystander: int = sim.spawn(1, centre, "usa_collector")
+		var gathers: int = _pending(main, "gather")
+		main._refresh()
+		helper.pointer(main, Iso.world_to_plane(centre) + Vector2(0, -26), MOUSE_BUTTON_RIGHT, true)
+		runner.check(_pending(main, "gather") == gathers + 1 and bystander > 0, "K12 %s right-click on a pile with an own helicopter hovering over it still gathers, pending %s err %s" % [faction, str(sim.snapshot().pending_commands.map(func(c: Dictionary) -> String: return c.type)), main._error])
+		main.free()
+	return true
+
+func test_frc_laborer_right_click_pile(runner) -> bool:
+	var helper = BaseScene.new()
+	var main = await _setup(runner)
+	var sim = Skirmish.create(true, "ai", {1: "frc", 2: "usa"})
+	main.simulation = sim
+	var pile: Dictionary = sim.snapshot().sources[0]
+	var click: Vector2 = Iso.world_to_plane(Vector2(pile.origin[0] + 2.0, pile.origin[1] + 2.5))
+	var laborers: Array[int] = []
+	for unit: Dictionary in sim.snapshot().entities:
+		if unit.owner == 1: laborers.append(unit.id)
+	laborers.append(sim.spawn(1, Vector2(pile.origin[0] + 6.5, pile.origin[1] + 8.5), "frc_builder"))
+	var site: Dictionary = Fixture.send(sim, {"type": "build", "builder_id": laborers[1], "building_kind": "frc_barracks", "origin": [pile.origin[0] + 8, pile.origin[1] + 8]})
+	runner.check(site.ok, "K13 foundation for the laborer: " + site.error)
+	Fixture.steps(sim, 40)
+	main.selected_ids.assign(laborers)
+	main._refresh()
+	helper.pointer(main, click, MOUSE_BUTTON_RIGHT, true)
+	var orders: Array = sim.snapshot().pending_commands.filter(func(c: Dictionary) -> bool: return c.type == "gather")
+	runner.check(orders.size() == 1 and orders[0].entity_ids == laborers and orders[0].source_id == pile.id, "K13 several laborers, one of them building, right-click the pile gathers, got %s err %s" % [str(sim.snapshot().pending_commands), main._error])
+	Fixture.steps(sim, 3)
+	runner.check(sim.snapshot().entities.filter(func(u: Dictionary) -> bool: return u.id in laborers and u.collection.enabled).size() == laborers.size(), "K13 every laborer, including the builder, starts collecting")
+	main.selected_ids.assign([laborers[0]])
+	main._refresh()
+	helper.key(main, KEY_1)
+	var ghost: String = main._placement_kind
+	helper.pointer(main, click, MOUSE_BUTTON_RIGHT, true)
+	var gathers: int = _pending(main, "gather")
+	runner.check(not ghost.is_empty() and main._placement_kind.is_empty(), "K13 right-click with a build ghost cancels the ghost, ghost was " + ghost)
+	helper.pointer(main, click, MOUSE_BUTTON_RIGHT, true)
+	runner.check(_pending(main, "gather") == gathers + 1, "K13 the next right-click on the pile gathers")
 	main.free()
 	return true

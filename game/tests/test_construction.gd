@@ -119,7 +119,7 @@ func test_cancel_refund(runner) -> bool:
 	var foundation: int = preserved.snapshot().buildings[0].id
 	Fixture.send(preserved,{"type":"cancel_build","building_id":foundation})
 	preserved.step()
-	runner.check(preserved.snapshot().map.blocked_cells.size() == 10 and preserved.snapshot().map.blocked_cells.has([2,2]) and Fixture.object(preserved,source).boxes == 8,"Cn4 cancellation preserves terrain/source union")
+	runner.check(preserved.snapshot().map.blocked_cells.size() == 21 and preserved.snapshot().map.blocked_cells.has([2,2]) and Fixture.object(preserved,source).boxes == 8,"Cn4 cancellation preserves terrain/source union")
 	var complete: int = Fixture.build(runner,preserved,"usa_power_plant",Vector2i(8,4))
 	var before: Dictionary = preserved.snapshot()
 	runner.check(not Fixture.send(preserved,{"type":"cancel_build","building_id":complete}).ok and preserved.snapshot() == before,"Cn4 completed cancellation rejects")

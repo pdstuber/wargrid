@@ -391,17 +391,17 @@
     {"seat": 8, "cell": [18, 67], "slots": {"power_plant": [20, 65], "supply_center": [20, 68], "barracks": [16, 69], "factory": [14, 63], "command_center": [23, 62], "defence": [18, 65]}}
   ],
   "sources": [
-    {"origin": [185, 5], "boxes": 400},
-    {"origin": [5, 5], "boxes": 400},
-    {"origin": [4, 178], "boxes": 400},
-    {"origin": [188, 184], "boxes": 400},
-    {"origin": [55, 6], "boxes": 400},
-    {"origin": [189, 139], "boxes": 400},
-    {"origin": [111, 182], "boxes": 400},
-    {"origin": [52, 180], "boxes": 400},
-    {"origin": [5, 139], "boxes": 400},
-    {"origin": [187, 47], "boxes": 400},
-    {"origin": [138, 5], "boxes": 400},
-    {"origin": [2, 49], "boxes": 400}
+    {"origin": [184, 4], "boxes": 400},
+    {"origin": [4, 4], "boxes": 400},
+    {"origin": [3, 177], "boxes": 400},
+    {"origin": [187, 182], "boxes": 400},
+    {"origin": [54, 5], "boxes": 400},
+    {"origin": [188, 138], "boxes": 400},
+    {"origin": [110, 181], "boxes": 400},
+    {"origin": [51, 179], "boxes": 400},
+    {"origin": [4, 138], "boxes": 400},
+    {"origin": [186, 46], "boxes": 400},
+    {"origin": [137, 4], "boxes": 400},
+    {"origin": [1, 48], "boxes": 400}
   ]
 }

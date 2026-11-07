@@ -25,13 +25,25 @@ static func perimeter(kind: String, origin: Vector2i) -> Array[Vector2i]:
 			if (x >= origin.x and x < origin.x + size.x) != (y >= origin.y and y < origin.y + size.y): result.append(Vector2i(x,y))
 	return result
 
-static func footprint_error(sim: Simulation, footprint: Array[Vector2i]) -> String:
+static func footprint_error(sim: Simulation, footprint: Array[Vector2i], kind: String = "") -> String:
 	var members: Array[Dictionary] = []
 	var unavailable: Array[Vector2i] = sim._unavailable_cells(members)
 	for cell in footprint:
 		if not sim._navigation.is_walkable(Vector2(cell) + Vector2(.5,.5)): return "Footprint outside map or overlaps obstacle"
 		if unavailable.has(cell): return "Footprint covers ground unit or destination"
-	return ""
+	if kind.is_empty(): return ""
+	var size: Array = sim._navigation.snapshot().size
+	for cell in footprint:
+		if cell.x < Registry.BUILD_EDGE_MARGIN or cell.y < Registry.BUILD_EDGE_MARGIN or cell.x >= size[0] - Registry.BUILD_EDGE_MARGIN or cell.y >= size[1] - Registry.BUILD_EDGE_MARGIN: return "Too close to the map edge"
+	return "Too close to a supply source" if _near_source(sim,footprint,Registry.kind(kind).get("supply_clearance",0)) else ""
+
+static func _near_source(sim: Simulation, footprint: Array[Vector2i], clearance: int) -> bool:
+	if clearance == 0: return false
+	for source: Dictionary in sim._sources.values():
+		for cell in block(Registry.SOURCE_FOOTPRINT,Vector2i(source.origin[0],source.origin[1])):
+			for placed in footprint:
+				if maxi(absi(placed.x - cell.x),absi(placed.y - cell.y)) <= clearance: return true
+	return false
 
 static func approach(sim: Simulation, builder_id: int, kind: String, origin: Vector2i, navigation: RefCounted, crowded: bool = false) -> Variant:
 	var unit: Dictionary = sim._entities[builder_id]
@@ -64,7 +76,7 @@ static func preview(sim: Simulation, player: int, builder_id: int, kind: String,
 		result.error = "Insufficient credits"
 		return result
 	var footprint: Array[Vector2i] = cells(kind,origin)
-	result.error = footprint_error(sim,footprint)
+	result.error = footprint_error(sim,footprint,kind)
 	if not result.error.is_empty(): return result
 	var navigation: RefCounted = sim._navigation
 	if navigation.blocks_locally(footprint):

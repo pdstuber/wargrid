@@ -3,9 +3,12 @@ extends RefCounted
 
 const Fixture = preload("res://tests/economy_fixture.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
+const MapData = preload("res://scripts/simulation/map_data.gd")
+const Construction = preload("res://scripts/simulation/construction.gd")
+const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 
 func cases() -> Array[Callable]:
-	return [test_source_and_gather_validation,test_dock_timing,test_partial_load_and_conservation,test_dock_competition_and_lookup,test_collection_interruptions,test_dock_loss_recovery,test_ground_dock_cell,test_ground_dock_queue,test_ground_admit_first_waiter_first,test_ground_dock_no_starvation,test_ground_dock_full_perimeter,test_truck_timing,test_dock_loss_recovery_ground,test_ground_truck_recovers_after_blocked_path,test_ground_dock_skips_unwalkable_and_unreachable,test_laborer_timing,test_laborer_docks_share_fairly,test_mixed_waiters_do_not_deadlock]
+	return [test_source_and_gather_validation,test_dock_timing,test_partial_load_and_conservation,test_dock_competition_and_lookup,test_collection_interruptions,test_dock_loss_recovery,test_ground_dock_cell,test_ground_dock_queue,test_ground_admit_first_waiter_first,test_ground_dock_no_starvation,test_ground_dock_full_perimeter,test_truck_timing,test_dock_loss_recovery_ground,test_ground_truck_recovers_after_blocked_path,test_ground_dock_skips_unwalkable_and_unreachable,test_laborer_timing,test_laborer_docks_share_fairly,test_mixed_waiters_do_not_deadlock,test_depot_clearance_from_piles,test_build_edge_margin,test_start_slots_obey_placement_rules]
 
 func ready(runner, boxes: int = 8) -> Dictionary:
 	var sim = Fixture.make_world(50000)
@@ -29,8 +32,8 @@ func test_source_and_gather_validation(runner) -> bool:
 	for row in [[Vector2i(-1,0),8],[Vector2i(31,31),8],[Vector2i(4,4),8],[Vector2i(24,4),-1]]:
 		runner.check(sim.add_supply_source(row[0],row[1]) == -1 and sim.snapshot() == before,"Su1 invalid source unchanged")
 	var source: int = sim.add_supply_source(Vector2i(24,4),200)
-	runner.check(source == 2 and sim.snapshot().map.blocked_cells.size() == 9,"Su1 source footprint")
-	var empty: int = sim.add_supply_source(Vector2i(24,10),0)
+	runner.check(source == 2 and sim.snapshot().map.blocked_cells.size() == 20,"Su1 source footprint")
+	var empty: int = sim.add_supply_source(Vector2i(24,12),0)
 	var air: int = sim.spawn(1,Vector2(2.5,2.5),"usa_collector")
 	before = sim.snapshot()
 	runner.check(not Fixture.send(sim,{"type":"gather","entity_ids":[air],"source_id":empty}).ok and sim.snapshot() == before,"Su1 empty source invalid empty cargo")
@@ -44,20 +47,23 @@ func test_dock_timing(runner) -> bool:
 	if source == -1:
 		runner.check(false,"Su2 source created")
 		return true
-	var air: int = sim.spawn(1,Vector2(25.5,5.5),"usa_collector")
+	var air: int = sim.spawn(1,Vector2(26.0,6.5),"usa_collector")
 	runner.check(Fixture.send(sim,{"type":"gather","entity_ids":[air],"source_id":source}).ok,"Su2 gather stationary")
 	sim.step()
 	var unit: Dictionary = Fixture.object(sim,air)
-	runner.check(unit.collection.phase == "loading" and unit.collection.remaining_ticks == 36 and unit.collection.cargo == 0,"Su2 admit36 no decrement")
-	Fixture.steps(sim,35)
+	runner.check(unit.collection.phase == "loading" and unit.collection.remaining_ticks == 43 and unit.collection.cargo == 0,"Su2 admit43 no decrement")
+	Fixture.steps(sim,42)
 	unit = Fixture.object(sim,air)
-	runner.check(unit.collection.remaining_ticks == 1 and unit.collection.cargo == 0,"Su2 wait35")
+	runner.check(unit.collection.remaining_ticks == 1 and unit.collection.cargo == 0,"Su2 wait42")
 	sim.step()
 	unit = Fixture.object(sim,air)
-	runner.check(unit.collection.cargo == 1 and unit.collection.remaining_ticks == 36 and Fixture.object(sim,source).boxes == 7,"Su2 first box36")
-	Fixture.steps(sim,252)
+	runner.check(unit.collection.cargo == 1 and unit.collection.remaining_ticks == 43 and Fixture.object(sim,source).boxes == 7,"Su2 first box43")
+	Fixture.steps(sim,343)
 	unit = Fixture.object(sim,air)
-	runner.check(unit.collection.cargo == 8 and unit.collection.phase == "seeking" and Fixture.object(sim,source).boxes == 0,"Su2 capacity departs no extra delay")
+	runner.check(unit.collection.cargo == 8 and unit.collection.phase == "loading" and Fixture.object(sim,source).boxes == 0,"Su2 capacity holds the dock for one more delay")
+	sim.step()
+	unit = Fixture.object(sim,air)
+	runner.check(unit.collection.cargo == 8 and unit.collection.phase == "seeking","Su2 capacity departs after the extra delay")
 	runner.check(sim.snapshot().players[0].credits == 10000,"Su2 no dock no credits")
 	var world: Dictionary = ready(runner)
 	if world.collector == -1:
@@ -67,11 +73,11 @@ func test_dock_timing(runner) -> bool:
 	runner.check(until_phase(sim,world.collector,"unloading"),"Su2 reaches unloading")
 	unit = Fixture.object(sim,world.collector)
 	var credits: int = sim.snapshot().players[0].credits
-	runner.check(unit.collection.remaining_ticks == 87 and unit.collection.cargo == 8,"Su2 admit87")
-	Fixture.steps(sim,86)
-	runner.check(sim.snapshot().players[0].credits == credits and Fixture.object(sim,world.collector).collection.remaining_ticks == 1,"Su2 wait86")
+	runner.check(unit.collection.remaining_ticks == 213 and unit.collection.cargo == 8,"Su2 admit213")
+	Fixture.steps(sim,212)
+	runner.check(sim.snapshot().players[0].credits == credits and Fixture.object(sim,world.collector).collection.remaining_ticks == 1,"Su2 wait212")
 	sim.step()
-	runner.check(sim.snapshot().players[0].credits == credits + 600 and Fixture.object(sim,world.collector).collection.cargo == 0,"Su2 deposit87 exact")
+	runner.check(sim.snapshot().players[0].credits == credits + 600 and Fixture.object(sim,world.collector).collection.cargo == 0,"Su2 deposit213 exact")
 	return true
 
 func test_partial_load_and_conservation(runner) -> bool:
@@ -101,7 +107,7 @@ func test_dock_competition_and_lookup(runner) -> bool:
 	if world.source == -1:
 		runner.check(false,"Su4 source created")
 		return true
-	var second: int = sim.spawn(1,Vector2(25.5,5.5),"usa_collector")
+	var second: int = sim.spawn(1,Vector2(26.0,6.5),"usa_collector")
 	Fixture.send(sim,{"type":"gather","entity_ids":[world.collector,second],"source_id":world.source})
 	var credits: int = sim.snapshot().players[0].credits
 	for index in range(1500):
@@ -118,19 +124,19 @@ func test_dock_competition_and_lookup(runner) -> bool:
 	runner.check(lone.snapshot().path_queue.is_empty(),"Su4 no ground route for air")
 	var waiting = Fixture.make_world()
 	var dock: int = waiting.add_supply_source(Vector2i(8,8),10)
-	var low: int = waiting.spawn(1,Vector2(9.5,9.5),"usa_collector")
-	var active: int = waiting.spawn(1,Vector2(9.5,9.5),"usa_collector")
-	var high: int = waiting.spawn(1,Vector2(9.5,9.5),"usa_collector")
+	var low: int = waiting.spawn(1,Vector2(10.0,10.5),"usa_collector")
+	var active: int = waiting.spawn(1,Vector2(10.0,10.5),"usa_collector")
+	var high: int = waiting.spawn(1,Vector2(10.0,10.5),"usa_collector")
 	Fixture.send(waiting,{"type":"gather","entity_ids":[active],"source_id":dock})
 	waiting.step()
 	Fixture.send(waiting,{"type":"gather","entity_ids":[low,high],"source_id":dock})
 	waiting.step()
-	Fixture.steps(waiting,286)
+	Fixture.steps(waiting,342)
 	runner.check(Fixture.object(waiting,active).collection.cargo == 7 and Fixture.object(waiting,active).collection.remaining_ticks == 1,"Su4 middle-ID active at release boundary")
-	waiting.step()
+	Fixture.steps(waiting,44)
 	runner.check(Fixture.object(waiting,active).collection.cargo == 8 and Fixture.object(waiting,dock).active_collector_id != high,"Su4 higher waiter cannot bypass earlier lower waiter on release")
 	waiting.step()
-	runner.check(Fixture.object(waiting,dock).active_collector_id == low and Fixture.object(waiting,low).collection.remaining_ticks == 36,"Su4 lower waiting ID admits once next phase")
+	runner.check(Fixture.object(waiting,dock).active_collector_id == low and Fixture.object(waiting,low).collection.remaining_ticks == 43,"Su4 lower waiting ID admits once next phase")
 	var preferred = Fixture.make_world()
 	var near: int = preferred.add_supply_source(Vector2i(8,8),8)
 	var far: int = preferred.add_supply_source(Vector2i(24,4),8)
@@ -154,30 +160,30 @@ func test_dock_competition_and_lookup(runner) -> bool:
 	var choices = Fixture.make_world(50000)
 	var stock: int = choices.add_supply_source(Vector2i(24,4),1)
 	Fixture.build(runner,choices,"usa_power_plant",Vector2i(5,5))
-	var first_depot: int = Fixture.build(runner,choices,"usa_supply_center",Vector2i(18,4))
+	var first_depot: int = Fixture.build(runner,choices,"usa_supply_center",Vector2i(18,3))
 	stop_collectors(choices)
-	var second_depot: int = Fixture.build(runner,choices,"usa_supply_center",Vector2i(24,10))
+	var second_depot: int = Fixture.build(runner,choices,"usa_supply_center",Vector2i(18,7))
 	stop_collectors(choices)
 	choices.add_player(2,50000)
 	var enemy_builder: int = choices.spawn(2,Vector2(14.5,12.5),"usa_builder")
 	owned_build(runner,choices,2,enemy_builder,"usa_power_plant",Vector2i(10,16))
-	var enemy_depot: int = owned_build(runner,choices,2,enemy_builder,"usa_supply_center",Vector2i(21,4))
+	var enemy_depot: int = owned_build(runner,choices,2,enemy_builder,"usa_supply_center",Vector2i(20,10))
 	stop_collectors(choices)
-	Fixture.send(choices,{"type":"build","builder_id":1,"building_kind":"usa_supply_center","origin":[27,4]})
+	Fixture.send(choices,{"type":"build","builder_id":1,"building_kind":"usa_supply_center","origin":[24,10]})
 	choices.step()
 	var unfinished: int = choices.snapshot().buildings.back().id
-	var loaded: int = choices.spawn(1,Vector2(25.5,5.5),"usa_collector")
+	var loaded: int = choices.spawn(1,Vector2(26.0,6.5),"usa_collector")
 	Fixture.send(choices,{"type":"gather","entity_ids":[loaded],"source_id":stock})
-	Fixture.steps(choices,37)
+	Fixture.steps(choices,87)
 	choices.step()
 	runner.check(Fixture.object(choices,loaded).collection.cargo == 1 and Fixture.object(choices,loaded).collection.target_id == first_depot and first_depot < second_depot,"Su4 equal nearest depot chooses lower ID")
 	runner.check(not Fixture.object(choices,unfinished).completed and Fixture.object(choices,loaded).collection.target_id != unfinished and Fixture.object(choices,loaded).collection.target_id != enemy_depot,"Su4 closer unfinished and enemy depots excluded")
 	var tied = Simulation.new([],Vector2i(32,32))
 	tied.add_player(1,10000)
 	var preferred_source: int = tied.add_supply_source(Vector2i(4,4),8)
-	var first_source: int = tied.add_supply_source(Vector2i(8,4),8)
-	var second_source: int = tied.add_supply_source(Vector2i(4,8),8)
-	var tied_air: int = tied.spawn(1,Vector2(5.5,5.5),"usa_collector")
+	var first_source: int = tied.add_supply_source(Vector2i(9,4),8)
+	var second_source: int = tied.add_supply_source(Vector2i(4,9),8)
+	var tied_air: int = tied.spawn(1,Vector2(6.0,6.5),"usa_collector")
 	Fixture.send(tied,{"type":"gather","entity_ids":[tied_air],"source_id":preferred_source})
 	tied.step()
 	tied.remove_object(preferred_source)
@@ -190,7 +196,7 @@ func test_collection_interruptions(runner) -> bool:
 		var world: Dictionary = ready(runner,8)
 		var sim = world.sim
 		runner.check(until_phase(sim,world.collector,phase),"Su5 reaches " + phase)
-		if phase == "loading": Fixture.steps(sim,36)
+		if phase == "loading": Fixture.steps(sim,43)
 		var unit: Dictionary = Fixture.object(sim,world.collector)
 		var cargo: int = unit.collection.cargo
 		var before: Dictionary = sim.snapshot()
@@ -211,18 +217,18 @@ func test_dock_loss_recovery(runner) -> bool:
 		var world: Dictionary = ready(runner,9 if phase == "waiting_depot" else 16)
 		var sim = world.sim
 		if phase == "waiting_source":
-			var holder: int = sim.spawn(1,Vector2(25.5,5.5),"usa_collector")
+			var holder: int = sim.spawn(1,Vector2(26.0,6.5),"usa_collector")
 			Fixture.send(sim,{"type":"gather","entity_ids":[holder],"source_id":world.source})
 			sim.step()
 		if phase == "waiting_depot":
 			runner.check(until_phase(sim,world.collector,"flying_depot"),"Su6 first full collector returning")
-			world.collector = sim.spawn(1,Vector2(25.5,5.5),"usa_collector")
+			world.collector = sim.spawn(1,Vector2(26.0,6.5),"usa_collector")
 			Fixture.send(sim,{"type":"gather","entity_ids":[world.collector],"source_id":world.source})
 		var observed: String = "loading" if phase == "loading_final" else phase
 		runner.check(until_phase(sim,world.collector,observed),"Su6 reaches " + phase)
-		if phase == "loading": Fixture.steps(sim,36)
-		if phase == "loading_final": Fixture.steps(sim,35)
-		if phase == "unloading": Fixture.steps(sim,86)
+		if phase == "loading": Fixture.steps(sim,43)
+		if phase == "loading_final": Fixture.steps(sim,42)
+		if phase == "unloading": Fixture.steps(sim,212)
 		var cargo: int = Fixture.object(sim,world.collector).collection.cargo
 		var target: int = world.depot if phase in ["flying_depot","waiting_depot","unloading"] else world.source
 		var credits_before: int = sim.snapshot().players[0].credits
@@ -239,7 +245,7 @@ func test_dock_loss_recovery(runner) -> bool:
 				if other.kind == "usa_collector" and other.id != world.collector: Fixture.send(sim,{"type":"stop","entity_ids":[other.id]})
 			sim.step()
 			var before_deposit: int = sim.snapshot().players[0].credits
-			Fixture.steps(sim,86)
+			Fixture.steps(sim,212)
 			runner.check(Fixture.object(sim,world.collector).collection.cargo == 0 and sim.snapshot().players[0].credits == before_deposit + cargo * 75,"Su6 surviving cargo credited exactly")
 		else:
 			Fixture.steps(sim,500)
@@ -250,7 +256,7 @@ func test_dock_loss_recovery(runner) -> bool:
 	var active_world: Dictionary = ready(runner,16)
 	var active_sim = active_world.sim
 	runner.check(until_phase(active_sim,active_world.collector,"loading"),"Su6 active destruction setup")
-	Fixture.steps(active_sim,36)
+	Fixture.steps(active_sim,43)
 	var lost: int = Fixture.object(active_sim,active_world.collector).collection.cargo
 	var stock: int = Fixture.object(active_sim,active_world.source).boxes
 	var credits: int = active_sim.snapshot().players[0].credits
@@ -290,8 +296,8 @@ func test_ground_dock_cell(runner) -> bool:
 	gather(sim,[unit],source)
 	until_phase(sim,unit,"loading",400)
 	var loaded: Dictionary = Fixture.object(sim,unit)
-	runner.check(loaded.collection.get("dock") == [27,5],"Gd1 claims the nearest perimeter cell on its side")
-	runner.check(loaded.collection.phase == "loading" and loaded.position == [27.5,5.5],"Gd1 loads only on the cell centre")
+	runner.check(loaded.collection.get("dock") == [28,5],"Gd1 claims the nearest perimeter cell on its side")
+	runner.check(loaded.collection.phase == "loading" and loaded.position == [28.25,5.5],"Gd1 loads only on the dock arrival point, a quarter cell toward the pile")
 	return true
 
 func test_ground_dock_queue(runner) -> bool:
@@ -303,7 +309,7 @@ func test_ground_dock_queue(runner) -> bool:
 	until_phase(sim,second,"waiting_source")
 	var a: Dictionary = Fixture.object(sim,first)
 	var b: Dictionary = Fixture.object(sim,second)
-	runner.check(a.collection.dock == [27,5] and b.collection.dock == [27,4],"Gd2 both trucks want cell 27,5; the second takes the next nearest")
+	runner.check(a.collection.dock == [28,5] and b.collection.dock == [28,4],"Gd2 both trucks want cell 28,5; the second takes the next nearest")
 	runner.check(a.collection.phase == "loading" and b.collection.phase == "waiting_source" and a.collection.dock != b.collection.dock,"Gd2 second truck waits on its own cell")
 	runner.check(a.position != b.position,"Gd2 no overlap")
 	for index in range(600):
@@ -343,7 +349,7 @@ func test_ground_dock_no_starvation(runner) -> bool:
 	var source: int = sim.add_supply_source(Vector2i(14,10),400)
 	stop_collectors(sim)
 	var ids: Array = []
-	for index in range(3): ids.append(truck(sim,Vector2(13.5 + index,14.5)))
+	for index in range(3): ids.append(truck(sim,Vector2(13.5 + index,16.5)))
 	gather(sim,ids,source)
 	var loads: Dictionary = {}
 	for id in ids: loads[id] = 0
@@ -364,11 +370,11 @@ func test_ground_dock_full_perimeter(runner) -> bool:
 	var sim = Fixture.make_world()
 	var source: int = sim.add_supply_source(Vector2i(24,4),200)
 	var holders: Array = []
-	for y in range(3,8):
-		for x in range(23,28):
-			if x in [24,25,26] and y in [4,5,6]: continue
+	for y in range(3,10):
+		for x in range(23,29):
+			if x in [24,25,26,27] and y in [4,5,6,7,8]: continue
 			holders.append(truck(sim,Vector2(x + 0.5,y + 0.5)))
-	runner.check(holders.size() == 16,"Gd3 sixteen perimeter cells")
+	runner.check(holders.size() == 22,"Gd3 twenty-two perimeter cells")
 	var extra: int = truck(sim,Vector2(30.5,10.5))
 	gather(sim,holders + [extra],source)
 	sim.step()
@@ -385,31 +391,31 @@ func test_truck_timing(runner) -> bool:
 	var sim = Fixture.make_world()
 	var source: int = sim.add_supply_source(Vector2i(24,4),40)
 	var depot: int = Fixture.add_completed(sim,1,"china_supply_center",Vector2i(10,4))
-	var unit: int = truck(sim,Vector2(27.5,5.5))
+	var unit: int = truck(sim,Vector2(28.5,5.5))
 	gather(sim,[unit],source)
 	runner.check(until_phase(sim,unit,"loading"),"Gt1 loads")
 	var collection: Dictionary = Fixture.object(sim,unit).collection
-	runner.check(collection.remaining_ticks == 30,"Gt1 admit30")
+	runner.check(collection.remaining_ticks == 38,"Gt1 admit38")
 	var ticks: int = 0
 	while Fixture.object(sim,unit).collection.phase == "loading":
 		sim.step()
 		ticks += 1
-	runner.check(ticks == 150 and Fixture.object(sim,unit).collection.cargo == 4,"Gt1 four boxes at 30 ticks each, one more delay to leave")
+	runner.check(ticks == 190 and Fixture.object(sim,unit).collection.cargo == 4,"Gt1 four boxes at 30 ticks each, one more delay to leave")
 	runner.check(until_phase(sim,unit,"unloading"),"Gt1 reaches the depot")
 	var credits: int = sim.snapshot().players[0].credits
-	runner.check(Fixture.object(sim,unit).collection.remaining_ticks == 12 and Fixture.object(sim,unit).collection.target_id == depot,"Gt1 admit12")
-	Fixture.steps(sim,11)
-	runner.check(sim.snapshot().players[0].credits == credits,"Gt1 wait11")
+	runner.check(Fixture.object(sim,unit).collection.remaining_ticks == 37 and Fixture.object(sim,unit).collection.target_id == depot,"Gt1 admit37")
+	Fixture.steps(sim,36)
+	runner.check(sim.snapshot().players[0].credits == credits,"Gt1 wait36")
 	sim.step()
 	runner.check(sim.snapshot().players[0].credits == credits + 300,"Gt1 trip pays 300")
 	var small = Fixture.make_world()
 	var pile: int = small.add_supply_source(Vector2i(24,4),3)
-	var partial: int = truck(small,Vector2(27.5,5.5))
+	var partial: int = truck(small,Vector2(28.5,5.5))
 	gather(small,[partial],pile)
 	until_phase(small,partial,"loading")
-	Fixture.steps(small,90)
+	Fixture.steps(small,114)
 	runner.check(Fixture.object(small,partial).collection.cargo == 3 and Fixture.object(small,partial).collection.phase == "loading","Gt2 empty pile still holds the dock for one more delay")
-	Fixture.steps(small,30)
+	Fixture.steps(small,38)
 	runner.check(Fixture.object(small,partial).collection.phase != "loading" and Fixture.object(small,partial).collection.cargo == 3,"Gt2 leaves after the extra delay")
 	return true
 
@@ -464,18 +470,18 @@ func test_ground_truck_recovers_after_blocked_path(runner) -> bool:
 
 func test_ground_dock_skips_unwalkable_and_unreachable(runner) -> bool:
 	var solids: Array[Vector2i] = []
-	for cell in [Vector2i(27,4),Vector2i(27,5),Vector2i(27,6),Vector2i(28,6),Vector2i(26,7),Vector2i(28,7),Vector2i(26,8),Vector2i(27,8),Vector2i(28,8)]: solids.append(cell)
+	for cell in [Vector2i(28,4),Vector2i(28,5),Vector2i(28,6),Vector2i(29,6),Vector2i(29,7),Vector2i(29,8),Vector2i(28,8)]: solids.append(cell)
 	var sim = Simulation.new(solids,Vector2i(32,32))
 	sim.add_player(1,0)
 	var source: int = sim.add_supply_source(Vector2i(24,4),8)
 	var unit: int = truck(sim,Vector2(30.5,5.5))
 	gather(sim,[unit],source)
 	sim.step()
-	runner.check(Fixture.object(sim,unit).collection.get("dock") == [27,3],"Gd4 skips blocked cells 27,4-6 and the sealed pocket 27,7 for the reachable 27,3")
+	runner.check(Fixture.object(sim,unit).collection.get("dock") == [28,3],"Gd4 skips blocked cells 28,4-6 and the sealed pocket 28,7 for the reachable 28,3")
 	var closed: Array[Vector2i] = []
-	for y in range(3,8):
-		for x in range(23,28):
-			if not (x in [24,25,26] and y in [4,5,6]): closed.append(Vector2i(x,y))
+	for y in range(3,10):
+		for x in range(23,29):
+			if not (x in [24,25,26,27] and y in [4,5,6,7,8]): closed.append(Vector2i(x,y))
 	var shut = Simulation.new(closed,Vector2i(32,32))
 	shut.add_player(1,0)
 	var pile: int = shut.add_supply_source(Vector2i(24,4),8)
@@ -495,20 +501,20 @@ func test_laborer_timing(runner) -> bool:
 	var sim = Fixture.make_world()
 	var source: int = sim.add_supply_source(Vector2i(24,4),40)
 	var depot: int = Fixture.add_completed(sim,1,"frc_supply_center",Vector2i(10,4))
-	var unit: int = laborer(sim,Vector2(27.5,5.5))
+	var unit: int = laborer(sim,Vector2(28.5,5.5))
 	gather(sim,[unit],source)
 	runner.check(until_phase(sim,unit,"loading"),"Lb1 loads")
-	runner.check(Fixture.object(sim,unit).collection.remaining_ticks == 5,"Lb1 loads its box 5 ticks after admission")
+	runner.check(Fixture.object(sim,unit).collection.remaining_ticks == 42,"Lb1 loads its box 42 ticks after admission")
 	var ticks: int = 0
 	while Fixture.object(sim,unit).collection.phase == "loading":
 		sim.step()
 		ticks += 1
-	runner.check(ticks == 10 and Fixture.object(sim,unit).collection.cargo == 1,"Lb1 leaves 10 ticks after admission with one box, got %d" % ticks)
+	runner.check(ticks == 84 and Fixture.object(sim,unit).collection.cargo == 1,"Lb1 leaves 84 ticks after admission with one box, got %d" % ticks)
 	runner.check(until_phase(sim,unit,"unloading"),"Lb1 reaches the supply center")
 	var credits: int = sim.snapshot().players[0].credits
-	runner.check(Fixture.object(sim,unit).collection.remaining_ticks == 5 and Fixture.object(sim,unit).collection.target_id == depot,"Lb1 unloads in 5 ticks")
-	Fixture.steps(sim,4)
-	runner.check(sim.snapshot().players[0].credits == credits,"Lb1 wait4")
+	runner.check(Fixture.object(sim,unit).collection.remaining_ticks == 45 and Fixture.object(sim,unit).collection.target_id == depot,"Lb1 unloads in 45 ticks")
+	Fixture.steps(sim,44)
+	runner.check(sim.snapshot().players[0].credits == credits,"Lb1 wait44")
 	sim.step()
 	runner.check(sim.snapshot().players[0].credits == credits + 75,"Lb1 a trip pays 75")
 	return true
@@ -519,7 +525,7 @@ func test_laborer_docks_share_fairly(runner) -> bool:
 	var source: int = sim.add_supply_source(Vector2i(14,10),400)
 	stop_collectors(sim)
 	var ids: Array = []
-	for index in range(3): ids.append(laborer(sim,Vector2(13.5 + index,14.5)))
+	for index in range(3): ids.append(laborer(sim,Vector2(13.5 + index,16.5)))
 	gather(sim,ids,source)
 	var loads: Dictionary = {}
 	var cargo: Dictionary = {}
@@ -546,21 +552,62 @@ func test_laborer_docks_share_fairly(runner) -> bool:
 func test_mixed_waiters_do_not_deadlock(runner) -> bool:
 	var sim = Fixture.make_world()
 	var source: int = sim.add_supply_source(Vector2i(24,4),30)
-	var ground: int = truck(sim,Vector2(27.5,5.5))
-	var air: int = sim.spawn(1,Vector2(25.5,5.5),"usa_collector")
+	var ground: int = truck(sim,Vector2(28.5,5.5))
+	var air: int = sim.spawn(1,Vector2(26.0,6.5),"usa_collector")
 	gather(sim,[ground,air],source)
 	sim.step()
-	var waiting: Dictionary = {ground: {"remaining_ticks": 40, "dock": [27,5]}, air: {"remaining_ticks": 0}}
+	var waiting: Dictionary = {ground: {"remaining_ticks": 40, "dock": [28,5]}, air: {"remaining_ticks": 0}}
 	for id: int in waiting:
 		var collection: Dictionary = sim._entities[id].collection
 		collection.phase = "waiting_source"
 		collection.target_id = source
 		for key: String in waiting[id]: collection[key] = waiting[id][key]
-	sim._entities[ground].position = [27.5,5.5]
-	sim._entities[air].position = [25.5,5.5]
+	sim._entities[ground].position = [28.5,5.5]
+	sim._entities[air].position = [26.0,6.5]
 	for id: int in waiting: sim._stop_unit(sim._entities[id])
 	sim._sources[source].active_collector_id = null
 	for index in range(5): sim.step()
 	var loading: Array = [ground, air].filter(func(id: int) -> bool: return Fixture.object(sim,id).collection.phase == "loading")
 	runner.check(loading.size() == 1 and sim._sources[source].active_collector_id == loading[0],"Gd9 a ground and an air waiter on one pile: exactly one loads (%s)" % [loading])
+	return true
+
+func placement(kind: String, origin: Vector2i, pile: Variant = null) -> bool:
+	var faction: String = kind.split("_")[0]
+	var sim = Fixture.make_world(50000)
+	var builder: int = sim.spawn(1,Vector2(4.5,20.5),faction + "_builder")
+	if faction != "frc": Fixture.add_completed(sim,1,faction + "_power_plant",Vector2i(2,26))
+	if pile != null: sim.add_supply_source(pile,50)
+	return sim.preview_build(1,builder,kind,origin).ok
+
+func test_depot_clearance_from_piles(runner) -> bool:
+	for kind in ["usa_supply_center","china_supply_center","frc_supply_center"]:
+		var pile := Vector2i(10,10)
+		runner.check(not placement(kind,Vector2i(14,10),pile),"Pl1 %s touching a pile is refused" % kind)
+		runner.check(not placement(kind,Vector2i(10,15),pile),"Pl1 %s touching a pile below is refused" % kind)
+		runner.check(not placement(kind,Vector2i(7,8),pile),"Pl1 %s touching a pile diagonally is refused" % kind)
+		runner.check(placement(kind,Vector2i(15,10),pile),"Pl1 %s one free cell from a pile is accepted" % kind)
+		runner.check(placement(kind,Vector2i(14,10)),"Pl1 %s needs no clearance without a pile" % kind)
+	runner.check(placement("usa_power_plant",Vector2i(14,10),Vector2i(10,10)),"Pl1 other buildings may touch a pile")
+	return true
+
+func test_build_edge_margin(runner) -> bool:
+	for kind in ["usa_supply_center","china_supply_center","frc_supply_center"]:
+		runner.check(not placement(kind,Vector2i(0,10)) and not placement(kind,Vector2i(10,0)),"Pl2 %s on the first cell of the map is refused" % kind)
+		runner.check(placement(kind,Vector2i(1,10)) and placement(kind,Vector2i(10,1)),"Pl2 %s one cell in is accepted" % kind)
+		runner.check(not placement(kind,Vector2i(29,10)) and not placement(kind,Vector2i(10,29)),"Pl2 %s against the far edge is refused" % kind)
+		runner.check(placement(kind,Vector2i(28,10)) and placement(kind,Vector2i(10,28)),"Pl2 %s one cell from the far edge is accepted" % kind)
+	return true
+
+func test_start_slots_obey_placement_rules(runner) -> bool:
+	for path in ["res://data/maps/skirmish.json","res://data/maps/ashfall.json"]:
+		var map: Dictionary = MapData.load(path)
+		var seats: Array[Dictionary] = []
+		var sim = MapData.create(map,seats)
+		for start: Dictionary in map.starts:
+			for kind: String in Registry.buildings():
+				var definition: Dictionary = Registry.building_view(kind)
+				if not Registry.kind(kind).has("slot") or definition.is_empty(): continue
+				var origin: Vector2i = MapData.slot(map,int(start.seat),kind)
+				var error: String = Construction.footprint_error(sim,Construction.cells(kind,origin),kind)
+				runner.check(error.is_empty(),"Pl3 %s seat %d %s slot %s: %s" % [path.get_file(),int(start.seat),kind,str(origin),error])
 	return true

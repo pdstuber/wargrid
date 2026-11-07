@@ -10,7 +10,7 @@ const CombatFixture = preload("res://tests/combat_fixture.gd")
 const MovementWorkload = preload("res://scripts/debug/movement_workload.gd")
 
 func cases() -> Array[Callable]:
-	return [test_pick, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_heading_mark_layout,test_depth_order_matches_comparator,test_battery_shot_line,test_battery_target_line,test_building_icons,test_building_label_has_no_kind_id,test_horde_marks,test_rebuild_laborer_unselectable, test_crate_marks_frc_only, test_passengers_not_pickable, test_terrain_redraws_only_when_map_changes]
+	return [test_pick, test_pile_label_drawn_over_buildings, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_heading_mark_layout,test_depth_order_matches_comparator,test_battery_shot_line,test_battery_target_line,test_building_icons,test_building_label_has_no_kind_id,test_horde_marks,test_rebuild_laborer_unselectable, test_crate_marks_frc_only, test_passengers_not_pickable, test_terrain_redraws_only_when_map_changes]
 
 func test_pick(runner) -> bool:
 	var view = View.new()
@@ -359,5 +359,32 @@ func test_terrain_redraws_only_when_map_changes(runner) -> bool:
 	view.set_state(Fixture.make_world().snapshot(),[])
 	await runner.process_frame
 	runner.check(terrain.draws == first + 2,"V9 a new simulation redraws the terrain")
+	view.free()
+	return true
+
+class LoggingView extends View:
+	var order: Array[String] = []
+
+	func _draw_label(_point: Vector2, text: String) -> void:
+		if text.begins_with("Boxes"): order.append("label")
+
+	func _draw_footprint(_origin: Array, size: Vector2i, color: Color, _selected: bool) -> void:
+		if size == Vector2i(3, 3) and color != Color("9f8045"): order.append("building")
+
+func test_pile_label_drawn_over_buildings(runner) -> bool:
+	var sim = Fixture.make_world()
+	var source: int = sim.add_supply_source(Vector2i(10, 10), 5)
+	var hall: int = Fixture.add_completed(sim, 1, "usa_supply_center", Vector2i(7, 8))
+	var view = LoggingView.new()
+	runner.root.add_child(view)
+	view.set_state(sim.snapshot(), [])
+	var points: PackedVector2Array = view.pile_text_points(Fixture.object(sim, source))
+	var label := Rect2(points[0] + Vector2(-View.LABEL_WIDTH / 2.0, -view.text_height()), Vector2(View.LABEL_WIDTH, 2.0 * view.text_height()))
+	var origin: Array = Fixture.object(sim, hall).origin
+	var diamond: PackedVector2Array = view._cell_polygon(Vector2(origin[0], origin[1]), Vector2(3, 3))
+	runner.check(not Geometry2D.intersect_polygons(diamond, PackedVector2Array([label.position, Vector2(label.end.x, label.position.y), label.end, Vector2(label.position.x, label.end.y)])).is_empty(), "V11 fixture: the building diamond reaches the pile label")
+	await runner.process_frame
+	await runner.process_frame
+	runner.check(view.order == ["building", "label"], "V11 the pile label is drawn after every building, got " + str(view.order))
 	view.free()
 	return true

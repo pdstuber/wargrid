@@ -180,10 +180,7 @@ func _draw() -> void:
 	var total: int = Profiler.begin()
 	var zone: int = Profiler.begin()
 	for source: Dictionary in _state.get("sources",[]):
-		_draw_footprint(source.origin,Vector2i(3,3),Color("9f8045"),_selected_ids.has(source.id))
-		var lines: PackedStringArray = pile_lines(source)
-		var points: PackedVector2Array = pile_text_points(source)
-		for i in lines.size(): _draw_label(points[i],lines[i])
+		_draw_footprint(source.origin,Registry.SOURCE_FOOTPRINT,Color("9f8045"),_selected_ids.has(source.id))
 	for building: Dictionary in _state.get("buildings",[]):
 		var definition: Dictionary = Definitions.building(building.kind)
 		if definition.is_empty(): continue
@@ -191,6 +188,10 @@ func _draw() -> void:
 		_draw_footprint(building.origin,definition.footprint,tint.lerp(Color("687b8c"),0.4) if building.completed else tint.lerp(Color("887966"),0.6),_selected_ids.has(building.id))
 		_draw_building_mark(building,definition)
 		_draw_health(Iso.world_to_plane(Vector2(building.origin[0],building.origin[1]) + Vector2(definition.footprint) / 2.0) + Vector2(-16,-26),building,_selected_ids.has(building.id))
+	for source: Dictionary in _state.get("sources",[]):
+		var lines: PackedStringArray = pile_lines(source)
+		var points: PackedVector2Array = pile_text_points(source)
+		for i in lines.size(): _draw_label(points[i],lines[i])
 	Profiler.end(&"draw.structures", zone)
 	zone = Profiler.begin()
 	for cell in _preview_cells:
@@ -369,6 +370,13 @@ func pick_entities(plane_rect: Rect2) -> Array[int]:
 	ids.sort()
 	return ids
 
+func pick_source(plane_point: Vector2) -> int:
+	var point: Vector2 = Iso.plane_to_world(plane_point)
+	for source: Dictionary in _state.get("sources",[]):
+		var origin := Vector2(source.origin[0],source.origin[1])
+		if Rect2(origin,Vector2(Registry.SOURCE_FOOTPRINT)).has_point(point): return source.id
+	return -1
+
 func pick_object(plane_point: Vector2) -> int:
 	var mobile: int = pick_entity(plane_point)
 	if mobile != -1: return mobile
@@ -377,7 +385,7 @@ func pick_object(plane_point: Vector2) -> int:
 	objects.append_array(_state.get("sources",[]))
 	objects.sort_custom(func(a: Dictionary,b: Dictionary) -> bool: return a.id < b.id)
 	for object: Variant in objects:
-		var size := Vector2i(3,3)
+		var size: Vector2i = Registry.SOURCE_FOOTPRINT
 		if object.has("kind"):
 			var definition: Dictionary = Definitions.building(object.kind)
 			if definition.is_empty(): continue
