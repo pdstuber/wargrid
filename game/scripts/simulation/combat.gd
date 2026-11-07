@@ -277,19 +277,21 @@ static func _build_grid(sim: Simulation) -> Dictionary:
 	var grid: Dictionary = {}
 	for entity: Dictionary in sim._entities.values():
 		if Registry.air_kinds.has(entity.kind) or entity.has("container_id"): continue
-		_bucket(grid, int(floorf(entity.position[0] / GRID_CELL)), int(floorf(entity.position[1] / GRID_CELL)), entity)
+		_bucket(grid, entity.owner, int(floorf(entity.position[0] / GRID_CELL)), int(floorf(entity.position[1] / GRID_CELL)), entity)
 	for building: Dictionary in sim._buildings.values():
 		if masked(building): continue
 		var size: Vector2i = Definitions.building(building.kind).footprint
 		for y in range(int(floorf(building.origin[1] / GRID_CELL)), int(floorf((building.origin[1] + size.y) / GRID_CELL)) + 1):
 			for x in range(int(floorf(building.origin[0] / GRID_CELL)), int(floorf((building.origin[0] + size.x) / GRID_CELL)) + 1):
-				_bucket(grid, x, y, building)
+				_bucket(grid, building.owner, x, y, building)
 	return grid
 
-static func _bucket(grid: Dictionary, x: int, y: int, target: Dictionary) -> void:
+static func _bucket(grid: Dictionary, owner: int, x: int, y: int, target: Dictionary) -> void:
+	if not grid.has(owner): grid[owner] = {}
+	var cells: Dictionary = grid[owner]
 	var key := Vector2i(x, y)
-	if not grid.has(key): grid[key] = []
-	grid[key].append(target)
+	if not cells.has(key): cells[key] = []
+	cells[key].append(target)
 
 # edge: radius is a weapon reach tested edge to edge; otherwise a centre scan radius.
 static func _nearest(sim: Simulation, unit: Dictionary, grid: Dictionary, radius: float, units_only: bool = false, edge: bool = false) -> Variant:
@@ -297,16 +299,21 @@ static func _nearest(sim: Simulation, unit: Dictionary, grid: Dictionary, radius
 	var best_distance: float = INF
 	var position := Vector2(unit.position[0], unit.position[1])
 	var window: float = radius + CombatDefinitions.radius(unit.kind) + MAX_TARGET_RADIUS if edge else radius
-	for y in range(int(floorf((position.y - window) / GRID_CELL)), int(floorf((position.y + window) / GRID_CELL)) + 1):
-		for x in range(int(floorf((position.x - window) / GRID_CELL)), int(floorf((position.x + window) / GRID_CELL)) + 1):
-			for target: Variant in grid.get(Vector2i(x, y), []):
-				if not hostile(sim, unit.owner, target.owner) or (units_only and target.has("origin")): continue
-				sim._combat_work += 1
-				var distance: float = edge_gap(unit, target) if edge else distance_squared(position, target)
-				if distance > (radius + EDGE_EPS if edge else radius * radius): continue
-				if distance < best_distance or (distance == best_distance and target.id < best):
-					best = target.id
-					best_distance = distance
+	for owner: int in grid:
+		if not hostile(sim, unit.owner, owner): continue
+		var cells: Dictionary = grid[owner]
+		for y in range(int(floorf((position.y - window) / GRID_CELL)), int(floorf((position.y + window) / GRID_CELL)) + 1):
+			for x in range(int(floorf((position.x - window) / GRID_CELL)), int(floorf((position.x + window) / GRID_CELL)) + 1):
+				var key := Vector2i(x, y)
+				if not cells.has(key): continue
+				for target: Dictionary in cells[key]:
+					if units_only and target.has("origin"): continue
+					sim._combat_work += 1
+					var distance: float = edge_gap(unit, target) if edge else distance_squared(position, target)
+					if distance > (radius + EDGE_EPS if edge else radius * radius): continue
+					if distance < best_distance or (distance == best_distance and target.id < best):
+						best = target.id
+						best_distance = distance
 	return best
 
 static func fire(sim: Simulation, unit_ids: Array[int], moved_ids: Array[int]) -> void:

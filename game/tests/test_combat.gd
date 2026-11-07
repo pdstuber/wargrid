@@ -4,13 +4,15 @@ extends RefCounted
 const Definitions = preload("res://scripts/simulation/combat_definitions.gd")
 const Economy = preload("res://scripts/simulation/economy_definitions.gd")
 const Construction = preload("res://scripts/simulation/construction.gd")
+const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
+const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Combat = preload("res://scripts/simulation/combat.gd")
 const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 const Fixture = preload("res://tests/combat_fixture.gd")
 const EconomyFixture = preload("res://tests/economy_fixture.gd")
 
 func cases() -> Array[Callable]:
-	return [test_combat_definitions, test_definitions_shared, test_health_snapshot_isolation, test_weapon_range_boundary, test_ranger_fires_at_edge_max, test_crusader_fires_at_edge_max, test_rifle_cycle_30, test_firing_cell_uses_edge, test_building_edge_range, test_damage_armor_matrix, test_weapon_cooldown, test_guard_priority, test_attack_validation_atomic, test_combat_intent_order, test_orders_preserve_reload, test_acquisition_throttle, test_mutual_lethal_fire, test_target_removed_cleanup, test_destroyed_unit_no_actions, test_destroyed_producer_accounting, test_same_tick_attack_and_cancel, test_removed_target_rescans, test_controller_and_scan_radius, test_scan_acquires_beyond_weapon_range, test_scan_radius_by_controller, test_scan_radius_boundary, test_removed_chaser_clears_chase, test_scan_keeps_target_leaving_radius, test_attack_move_resumes_after_chase, test_scan_same_tick_orders, test_scan_includes_buildings, test_human_guard_in_range_only, test_human_guard_holds_against_kiting, test_ai_guard_unchanged, test_human_attack_move_marches_in_range, test_human_attack_move_post_kill_rescan, test_human_attack_move_follows_retreat, test_rescan_same_tick_orders, test_human_attack_move_drops_target_out_of_range, test_human_attack_move_first_approach_has_no_leash, test_retarget_only_for_attack_move, test_missing_id_skipped, test_due_tick_death_skips_member, test_foreign_id_rejects, test_attack_move_mixed_selection, test_retaliate_trigger_distance, test_retaliate_joiners, test_retaliate_leash_and_return, test_retaliate_return_scan_and_rehit, test_retaliate_same_tick_cases, test_retaliate_go_home_queues_once, test_rng_sequence, test_splash_victims_boundary, test_splash_cluster, test_splash_mask, test_splash_last_builder_same_tick, test_splash_event_flag, test_rocket_splash_and_scatter, test_damage_table_new_types, test_damage_table_gattling, test_damage_table_frc_weapons]
+	return [test_combat_definitions, test_definitions_shared, test_health_snapshot_isolation, test_weapon_range_boundary, test_ranger_fires_at_edge_max, test_crusader_fires_at_edge_max, test_rifle_cycle_30, test_firing_cell_uses_edge, test_building_edge_range, test_damage_armor_matrix, test_weapon_cooldown, test_guard_priority, test_attack_validation_atomic, test_combat_intent_order, test_orders_preserve_reload, test_acquisition_throttle, test_mutual_lethal_fire, test_target_removed_cleanup, test_destroyed_unit_no_actions, test_destroyed_producer_accounting, test_same_tick_attack_and_cancel, test_removed_target_rescans, test_controller_and_scan_radius, test_scan_acquires_beyond_weapon_range, test_scan_radius_by_controller, test_scan_radius_boundary, test_removed_chaser_clears_chase, test_scan_keeps_target_leaving_radius, test_attack_move_resumes_after_chase, test_scan_same_tick_orders, test_scan_includes_buildings, test_human_guard_in_range_only, test_human_guard_holds_against_kiting, test_ai_guard_unchanged, test_human_attack_move_marches_in_range, test_human_attack_move_post_kill_rescan, test_human_attack_move_follows_retreat, test_rescan_same_tick_orders, test_human_attack_move_drops_target_out_of_range, test_human_attack_move_first_approach_has_no_leash, test_retarget_only_for_attack_move, test_missing_id_skipped, test_due_tick_death_skips_member, test_foreign_id_rejects, test_attack_move_mixed_selection, test_retaliate_trigger_distance, test_retaliate_joiners, test_retaliate_leash_and_return, test_retaliate_return_scan_and_rehit, test_retaliate_same_tick_cases, test_retaliate_go_home_queues_once, test_rng_sequence, test_splash_victims_boundary, test_splash_cluster, test_splash_mask, test_splash_last_builder_same_tick, test_splash_event_flag, test_rocket_splash_and_scatter, test_damage_table_new_types, test_damage_table_gattling, test_damage_table_frc_weapons, test_nearest_matches_oracle]
 
 func test_combat_definitions(runner) -> bool:
 	runner.check(Definitions.profile("usa_rifle_infantry") == {"max_hp": 180000, "armor": "human", "weapon": "rifle"}, "D1 infantry")
@@ -1391,3 +1393,82 @@ func test_damage_table_frc_weapons(runner) -> bool:
 		if shot.attacker_id == pickup: hit[shot.target_id] = shot.splash
 	runner.check(hit == {target: false, close: true}, "S10 the pickup cannon hits a vehicle whose edge is within 1.0 cell, not one at 1.1")
 	return true
+
+func test_nearest_matches_oracle(runner) -> bool:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 20261107
+	var scans: int = 0
+	var mismatches: int = 0
+	for state in range(200):
+		var sim = _oracle_world(rng)
+		var grid: Dictionary = Combat._build_grid(sim)
+		var old_grid: Dictionary = _oracle_build_grid(sim)
+		for unit: Dictionary in sim._entities.values():
+			var edge: bool = rng.randi() % 2 == 0
+			var units_only: bool = rng.randi() % 3 == 0
+			var radius: float = rng.randf_range(3.0, 7.0) if edge else rng.randf_range(4.0, 16.0)
+			sim._combat_work = 0
+			var expected: Variant = _oracle_nearest(sim, unit, old_grid, radius, units_only, edge)
+			var expected_work: int = sim._combat_work
+			sim._combat_work = 0
+			var actual: Variant = Combat._nearest(sim, unit, grid, radius, units_only, edge)
+			scans += 1
+			if actual != expected or sim._combat_work != expected_work: mismatches += 1
+	runner.check(scans >= 200 and mismatches == 0, "N1 per-owner _nearest equals the mixed-grid oracle (%d scans, %d mismatches)" % [scans, mismatches])
+	return true
+
+func _oracle_world(rng: RandomNumberGenerator) -> RefCounted:
+	var sim = Fixture.world()
+	var owners: int = 3 + rng.randi() % 5
+	for player in range(1, owners):
+		sim.add_player(player, 0, "human", 1 + rng.randi() % 3 if rng.randi() % 3 != 0 else 0)
+	var kinds: Array[String] = ["usa_rifle_infantry", "usa_tank", "usa_collector"]
+	var units: Array[int] = []
+	for i in range(40):
+		var position := Vector2(2.5 + rng.randi() % 24, 2.5 + rng.randi() % 24)
+		var id: int = sim.spawn(1 + rng.randi() % owners, position, kinds[rng.randi() % 3])
+		if id > 0: units.append(id)
+	for id in units:
+		if rng.randi() % 8 == 0: sim._entities[id].container_id = 0
+	for i in range(6):
+		var kind: String = "usa_power_plant" if rng.randi() % 2 == 0 else "usa_supply_center"
+		var id: int = sim._next_entity_id
+		sim._next_entity_id += 1
+		sim._buildings[id] = {"id": id, "owner": 1 + rng.randi() % owners, "kind": kind, "hp": 1, "max_hp": 1, "origin": [rng.randi() % 26, rng.randi() % 26], "completed": true}
+		if i == 0: sim._buildings[id].rebuild = {"worker_id": 7}
+	return sim
+
+func _oracle_build_grid(sim: Simulation) -> Dictionary:
+	var grid: Dictionary = {}
+	for entity: Dictionary in sim._entities.values():
+		if Registry.air_kinds.has(entity.kind) or entity.has("container_id"): continue
+		_oracle_bucket(grid, int(floorf(entity.position[0] / Combat.GRID_CELL)), int(floorf(entity.position[1] / Combat.GRID_CELL)), entity)
+	for building: Dictionary in sim._buildings.values():
+		if Combat.masked(building): continue
+		var size: Vector2i = Economy.building(building.kind).footprint
+		for y in range(int(floorf(building.origin[1] / Combat.GRID_CELL)), int(floorf((building.origin[1] + size.y) / Combat.GRID_CELL)) + 1):
+			for x in range(int(floorf(building.origin[0] / Combat.GRID_CELL)), int(floorf((building.origin[0] + size.x) / Combat.GRID_CELL)) + 1):
+				_oracle_bucket(grid, x, y, building)
+	return grid
+
+func _oracle_bucket(grid: Dictionary, x: int, y: int, target: Dictionary) -> void:
+	var key := Vector2i(x, y)
+	if not grid.has(key): grid[key] = []
+	grid[key].append(target)
+
+func _oracle_nearest(sim: Simulation, unit: Dictionary, grid: Dictionary, radius: float, units_only: bool, edge: bool) -> Variant:
+	var best: Variant = null
+	var best_distance: float = INF
+	var position := Vector2(unit.position[0], unit.position[1])
+	var window: float = radius + Definitions.radius(unit.kind) + Combat.MAX_TARGET_RADIUS if edge else radius
+	for y in range(int(floorf((position.y - window) / Combat.GRID_CELL)), int(floorf((position.y + window) / Combat.GRID_CELL)) + 1):
+		for x in range(int(floorf((position.x - window) / Combat.GRID_CELL)), int(floorf((position.x + window) / Combat.GRID_CELL)) + 1):
+			for target: Variant in grid.get(Vector2i(x, y), []):
+				if not Combat.hostile(sim, unit.owner, target.owner) or (units_only and target.has("origin")): continue
+				sim._combat_work += 1
+				var distance: float = Combat.edge_gap(unit, target) if edge else Combat.distance_squared(position, target)
+				if distance > (radius + Combat.EDGE_EPS if edge else radius * radius): continue
+				if distance < best_distance or (distance == best_distance and target.id < best):
+					best = target.id
+					best_distance = distance
+	return best

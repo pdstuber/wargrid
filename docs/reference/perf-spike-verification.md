@@ -3,15 +3,15 @@
 Handoff: [performance-spike-prompt.txt](../performance-spike-prompt.txt). Ledger: [performance.md](performance.md). Dated evidence rows below the record are append-only.
 
 ```text
-Resume record (updated 2026-11-07 22:30)
-Branch / base commit / working-tree state: main / e11b2fe (baseline measured on 20a4d06; e11b2fe adds docs only) / uncommitted: this file (Workstream 2 tasks, Task 1d fixes), docs/reference/performance.md (ledger row)
-Last green task / next incomplete task: Task 2a (report-only measurement, scratch copy; see '2a result') / Task 2b
-Changed paths since last commit: this file, docs/reference/performance.md
+Resume record (updated 2026-11-07 22:50)
+Branch / base commit / working-tree state: main / e11b2fe (baseline measured on 20a4d06; e11b2fe adds docs only) / uncommitted: game/scripts/simulation/combat.gd, game/tests/test_combat.gd (Task 2b), this file, docs/reference/performance.md (ledger row)
+Last green task / next incomplete task: Task 2b (per-owner target grid, see '2b result'; awaits coordinator commit) / Task 2c
+Changed paths since last commit: game/scripts/simulation/combat.gd, game/tests/test_combat.gd, this file, docs/reference/performance.md
 Last command / cases / checks / failures / exit / marker: Task 1b baseline chain on a git archive of HEAD 20a4d06 (3x movement, combat, lockstep, team match, 1x profile), all exit 0; Task 1c only read logs (no benchmark run); Task 1d one scratch bucket run per layout (open, dense, hordes300), all exit 0
 Known red case or blocker: none. Report-only rows exceeded: combat open, dense, hordes300 (see Workstream 1 finding)
 Approved decisions, pre-authorizations used, deferred gates: user invoked the spike 2026-11-07; works on main; local commits after green checkpoints pre-authorized; no push/PR/merge/fly/Sprite/window without approval; host = this Mac only (user)
 Usage so far (python3 tools/session_usage.py <session files>): not recorded
-Next exact action: dispatch Task 2b (per-owner target grid in `_nearest`; H1 confirmed, 2b design justified); Task 2d target is `Horde.step` (H3 confirmed). The 2a scratch copy under the scratchpad (ws2a) is not part of the repo
+Next exact action: commit Task 2b, then dispatch Task 2c; Task 2d target is `Horde.step` (H3 confirmed). The 2a scratch copy under the scratchpad (ws2a) is not part of the repo
 ```
 
 ## Evidence
@@ -26,6 +26,7 @@ Next exact action: dispatch Task 2b (per-owner target grid in `_nearest`; H1 con
 | 2026-11-07 | 20a4d06 (git archive) | Apple M6 | Task 1b/1c baseline: 3x movement, combat, lockstep, team match, 1x profile; run_calibration/run_profile edits not in the archive | all exit 0, no BUSY; load 1.16-1.30 for movement/combat/lockstep/team1; team2 end load 2.12 (only run over 2.0, team3 start 2.12, end 1.62); table below |
 | 2026-11-07 | e11b2fe (git archive) + scratch run_bucket.gd | Apple M6 | Task 1d bucket measurement: open, dense, hordes300 one at a time, no godot/ZH process before each | exit 0 x3; load 1.75 start / 1.76 end (22:16); table in the finding |
 | 2026-11-07 | e11b2fe-equivalent HEAD c683426 (git archive) + scratch sub-zones, `_nearest` counters, `run_2a.gd` | Apple M6 | Task 2a: open, dense, hordes300 one at a time, headless, profiler on, no godot/ZH process before each (pgrep empty), 22:25; the scratch copy was not linted or run through the suite (Task 2a keeps no code) | exit 0 x3, `TWO_A COMPLETE`; load 1.56 start / 1.40 end; result below |
+| 2026-11-07 | HEAD c17e88d + Task 2b working tree (uncommitted) vs git archive of c17e88d | Apple M6 | Task 2b acceptance: suite, lint, warnings, 4 traces cmp, netplay, team match, A/B A B A B A B of run_movement.gd and run_combat.gd (headless), no godot/ZH process before | suite 483 cases / 136034 checks / 0 failures (base 482 / 136033 with traces); lint, warnings exit 0; traces identical (1200, 1200, 1200, 100 rows); netplay match PASSED tick 8400; team match exit 0 `cap tick=45000 winner=null units_peak=160`; load 1.82 start / 1.69 end; table in '2b result' |
 
 ## Workstream 1 finding (baseline, 2026-11-07, 20a4d06, Apple M6, 3 runs each)
 
@@ -153,3 +154,21 @@ H2 confirmed, strongly. Ticks following a removal (previous tick had at least on
 H3 confirmed. hordes300 `step.advance` 1.608 ms mean splits: `advance.horde` 0.981 (61 % of advance, 25.3 % of step; p95 1.53), `advance.move` 0.485 (30 %), `containers` 0.060, `moved` 0.046, `before` 0.033, `salvage` 0.0003. On open / dense `advance` is 0.39 / 0.34 ms, mostly `move` (0.29 / 0.25), `horde` only 0.02: Task 2d is a hordes300-only gain and can be skipped if only open / dense matter.
 
 Recommendation: Task 2b (skip non-hostile owners whole in `_nearest`) is justified: it targets 85-97 % of the loop and the retarget burst. Estimate caveat: open / dense `nearest` is 0.5-0.6 ms mean, so removing about 85 % of the iterations (the `hostile()` call cost, not the distance work) is bounded by that; the p95 gain is not yet measured. Task 2d target: `Horde.step`.
+
+## 2b result (2026-11-07, working tree on c17e88d vs git archive of c17e88d, Apple M6, load 1.82 start / 1.69 end)
+
+Kept fix 1: `_build_grid` buckets per owner (`{owner: {Vector2i: Array}}`), `_nearest` calls `hostile()` once per owner and skips non-hostile owners whole; same window, distance expressions and (distance, id) argmin; `combat_work` unchanged. New case `test_nearest_matches_oracle` (N1, game/tests/test_combat.gd): 200 seeded states (3-7 owners, shared teams, team-0 owners, ground and air units, passengers, 2x2 and 3x3 buildings, one masked site), every unit scanned in edge / centre / units_only modes (7896 scans), old `_build_grid` + `_nearest` copy as oracle, same id and same `_combat_work` delta. It passed on the old code (483 cases, 0 failures, before the change); with the tie-break flipped (`<` to `>`) it fails with 308 mismatches (6 failures overall), mutation reverted.
+
+Acceptance: suite 483 cases / 136034 checks / 0 failures (base 482 / 136033; pins S1, Cs1, Fm1, TB3, TB4, H1 are inside the suite and unchanged); lint and warnings exit 0; four traces cmp-identical to the base archive; netplay match PASSED at tick 8400; team match exit 0 with the expected line; `combat_work=` summary of `run_combat.gd` identical A vs B on every layout; BM6 passes in the suite.
+
+A/B median of 3 runs each (ms), A = base, B = Task 2b, A/A spread = max - min of the 3 A runs:
+
+| Row | p50 A / B | p95 A / B | p99 A / B | A/A spread p50 / p95 / p99 |
+|-----|-----------|-----------|-----------|----------------------------|
+| combat open | 1.565 / 1.343 | 2.776 / 2.203 | 3.669 / 2.598 | 0.007 / 0.024 / 0.046 |
+| combat dense | 1.199 / 1.119 | 3.087 / 2.390 | 4.642 / 2.945 | 0.003 / 0.005 / 0.096 |
+| combat hordes300 | 3.845 / 2.712 | 5.563 / 4.107 | 7.017 / 4.754 | 0.008 / 0.027 / 0.058 |
+| movement open | 1.526 / 1.526 | 1.613 / 1.609 | 1.775 / 1.777 | 0.010 / 0.009 / 0.025 |
+| movement dense | 1.541 / 1.537 | 1.589 / 1.596 | 1.800 / 1.788 | 0.010 / 0.016 / 0.017 |
+
+Movement rows: differences are below the spread, noise (the change does not touch movement). Other combat rows (A -> B p95): contact 1.203 -> 1.198, skirmish3v3 1.436 -> 1.370, transports 1.470 -> 1.287, defences 0.958 -> 0.883, docks 0.880 -> 0.723, ramp 0.760 -> 0.693, frc 0.948 -> 0.918; none worse beyond its spread. Open / dense / hordes300 still exceed the 1.82 / 3.64 budget (report-only, ceilings untouched). Logs in the scratchpad (`ab/`), not in the repo. Lockstep and team-match timing runs were not repeated; team match was run for its exit line only. performance.md ledger row not written (coordinator decides).
