@@ -52,8 +52,8 @@ func _reset_camera() -> void:
 	for corner: Variant in [Vector2(size[0], 0), Vector2(0, size[1]), Vector2(size[0], size[1])]:
 		_camera_bounds = _camera_bounds.expand(Iso.world_to_plane(corner))
 	var map: Dictionary = simulation.map_data()
-	var focus := Vector2(size[0], size[1]) / 2.0
-	if not map.is_empty() and MapData.start_cell(map, local_player).x >= 0: focus = Vector2(MapData.start_cell(map, local_player)) + Vector2(0.5, 0.5)
+	var start := MapData.start_cell(map, local_player) if not map.is_empty() else Vector2i(-1, -1)
+	var focus := Vector2(start) + Vector2(0.5, 0.5) if start.x >= 0 else Vector2(size[0], size[1]) / 2.0
 	_camera.position = Iso.world_to_plane(focus)
 
 func _step_simulation() -> void:
