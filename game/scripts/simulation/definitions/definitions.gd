@@ -7,7 +7,7 @@ const Factions = preload("res://scripts/simulation/definitions/factions.gd")
 
 const DEFAULT_SPAWN := "usa_light_vehicle"
 const SOURCE_FOOTPRINT := Vector2i(4, 5)
-# Zero Hour: MinDistFromEdgeOfMapForBuild 30 units, SupplyBuildBorder 20 units, rounded up to whole cells (m7-placement-rules.md).
+# Zero Hour MinDistFromEdgeOfMapForBuild is 1.2 cells, rounded DOWN to keep maps playable; depot supply_clearance 0.8 is rounded UP (docs/reference/m7-placement-rules.md).
 const BUILD_EDGE_MARGIN := 1
 const UNIT_KEYS: Array[String] = ["cost", "ticks", "speed", "accel", "brake", "locomotor", "min_turn_speed", "turn_cos", "turn_sin"]
 const BUILDING_KEYS: Array[String] = ["cost", "ticks", "power", "footprint", "prerequisite"]

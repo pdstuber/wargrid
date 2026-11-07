@@ -214,11 +214,12 @@ class Game:
             self.proc.wait(timeout=10)
         except subprocess.TimeoutExpired:
             os.killpg(self.proc.pid, signal.SIGKILL)
-        except ProcessLookupError:
+        except (ProcessLookupError, PermissionError):  # macOS: EPERM for a group that is only a zombie
             pass
-        self.log.close()
-        if self.pidfile:
-            self.pidfile.unlink(missing_ok=True)
+        finally:
+            self.log.close()
+            if self.pidfile:
+                self.pidfile.unlink(missing_ok=True)
 
 
 def port_busy(port: int) -> bool:
@@ -743,32 +744,43 @@ def stop_group(pid: int) -> None:
     for sig in (signal.SIGTERM, signal.SIGKILL):
         try:
             os.killpg(pid, sig)
-        except ProcessLookupError:
+        except (ProcessLookupError, PermissionError):  # macOS: EPERM for a group that is only a zombie
             return
         for _ in range(150 if sig == signal.SIGTERM else 0):  # SIGTERM lets the child close its game first
             time.sleep(0.1)
             try:
                 os.killpg(pid, 0)
-            except ProcessLookupError:
+            except (ProcessLookupError, PermissionError):
                 return
 
 
 def kill_run(out: Path) -> None:
     """Kill only the process groups recorded under <out>/pids (sweep children and their games)."""
+    kinds = read_pidfiles(out, "sweep-parent")  # first: no new job may start while we read the rest
+    for pid in kinds:
+        if "parity.py" in command_of(pid):  # shares the caller's process group: kill the pid only
+            os.kill(pid, signal.SIGKILL)
+    for pid in read_pidfiles(out):
+        cmd = command_of(pid)
+        if "parity.py" in cmd or "generalszh_api" in cmd:
+            stop_group(pid)
+
+
+def command_of(pid: int) -> str:
+    return subprocess.run(["ps", "-p", str(pid), "-o", "command="], capture_output=True, text=True, check=False).stdout
+
+
+def read_pidfiles(out: Path, only: str | None = None) -> dict[int, str]:
     kinds = {}
     for f in (out / "pids").glob("*"):
         try:
-            kinds[int(f.name)] = f.read_text()
-            f.unlink()
+            kind = f.read_text()
+            if only is None or kind == only:
+                kinds[int(f.name)] = kind
+                f.unlink()
         except FileNotFoundError:  # the job finished while we looked
             pass
-    for pid, kind in sorted(kinds.items(), key=lambda kv: kv[1] != "sweep-parent"):
-        cmd = subprocess.run(["ps", "-p", str(pid), "-o", "command="], capture_output=True, text=True, check=False)
-        if kind == "sweep-parent":  # shares the caller's process group: kill the pid only, so no new jobs start
-            if "parity.py" in cmd.stdout:
-                os.kill(pid, signal.SIGKILL)
-        elif "parity.py" in cmd.stdout or "generalszh_api" in cmd.stdout:
-            stop_group(pid)
+    return kinds
 
 
 def smoke() -> None:

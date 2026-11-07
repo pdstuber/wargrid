@@ -161,8 +161,8 @@ class PlaceTest(unittest.TestCase):
         first = out["starts"][0]
         self.assertEqual((first["seat"], first["cell"]), (1, [10, 15]))
         self.assertEqual(
-            first["slots"]["power_plant"], [12, 13]
-        )  # ring 2, y then x ascending, ring clear of the builder
+            first["slots"]["power_plant"], [8, 17]
+        )  # ring 2, y then x ascending, clear of the builder and the 4x5 pile (+1 ring)
         footprints = []
         for kind, size in (
             ("power_plant", 2),
@@ -177,12 +177,25 @@ class PlaceTest(unittest.TestCase):
         for n, a in enumerate(footprints):
             for b in footprints[n + 1 :]:
                 self.assertFalse(a & b)
-        self.assertEqual(out["sources"][0], {"origin": [15, 14], "boxes": 400})
+        self.assertEqual(out["sources"][0], {"origin": [14, 13], "boxes": 400})
 
     def test_edge_source_stays_inside_map(self):
         raw = raw_map(80, 30, starts=[(10, 15), (70, 15)], sources=[(16, 15), (79, 29)])
         out = convert.convert(raw, "T", "n")
-        self.assertEqual(out["sources"][1]["origin"], [77, 27])
+        self.assertEqual(out["sources"][1]["origin"], [76, 25])
+
+    def test_slots_keep_pile_clearance_and_edge_margin(self):
+        raw = raw_map(80, 30, starts=[(2, 3), (70, 15)], sources=[(8, 6), (64, 15)])
+        out = convert.convert(raw, "T", "n")
+        pile = {
+            (out["sources"][0]["origin"][0] + i, out["sources"][0]["origin"][1] + j) for i in range(4) for j in range(5)
+        }
+        sizes = dict(convert.FOOTPRINTS)
+        for kind, (x, y) in out["starts"][0]["slots"].items():
+            fp = {(x + i, y + j) for i in range(sizes[kind]) for j in range(sizes[kind])}
+            self.assertTrue(all(1 <= i < 79 and 1 <= j < 29 for i, j in fp), kind + " edge margin")
+            gap = min(max(abs(a - c), abs(b - d)) for a, b in fp for c, d in pile)
+            self.assertGreater(gap, 1, kind + " clearance from the 4x5 pile")
 
 
 class RouteTest(unittest.TestCase):

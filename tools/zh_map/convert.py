@@ -35,6 +35,10 @@ FOOTPRINTS = (
     ("command_center", 3),
     ("defence", 1),
 )
+# Mirror game/scripts/simulation/definitions/definitions.gd (SOURCE_FOOTPRINT, BUILD_EDGE_MARGIN) and the
+# supply_center supply_clearance in usa.gd; the game defines them, keep these in step.
+SOURCE_W, SOURCE_H = 4, 5
+EDGE_MARGIN = 1
 MAX_RING = 12
 SUPPLY_REACH = 20
 
@@ -244,6 +248,10 @@ def _box(x, y, size):
     return {(i, j) for i in range(x, x + size) for j in range(y, y + size)}
 
 
+def _rect(x, y, w, h):
+    return {(i, j) for i in range(x, x + w) for j in range(y, y + h)}
+
+
 def _seat_of(obj):
     name = str(obj["props"].get("waypointName", ""))
     if name.startswith("Player_") and name.endswith("_Start"):
@@ -260,9 +268,10 @@ def _find_slot(grid, size, taken):
                 if max(abs(x - bx), abs(y - by)) != d:
                     continue
                 inside = _box(x, y, size)
-                grown = _box(x - 1, y - 1, size + 2)
+                grown = _box(x - 1, y - 1, size + 2)  # the 1-cell ring is the pile clearance and keeps buildings apart
                 if (
-                    all(_open(grid, i, j) for i, j in inside)
+                    all(EDGE_MARGIN <= i < w - EDGE_MARGIN and EDGE_MARGIN <= j < h - EDGE_MARGIN for i, j in inside)
+                    and all(_open(grid, i, j) for i, j in inside)
                     and all(_open(grid, i, j) for i, j in grown if 0 <= i < w and 0 <= j < h)
                     and not grown & taken["cells"]
                 ):
@@ -276,9 +285,11 @@ def place(grid, raw):
         if o["template"] in BOXES:
             c = (int(o["x"] // CELL), int(o["y"] // CELL))
             w, h = grid["size"]
-            origin = [min(max(c[0] - 1, 0), w - 3), min(max(c[1] - 1, 0), h - 3)]
+            origin = [min(max(c[0] - SOURCE_W // 2, 0), w - SOURCE_W), min(max(c[1] - SOURCE_H // 2, 0), h - SOURCE_H)]
             sources.append(dict(origin=origin, boxes=BOXES[o["template"]]))
-    source_cells = set().union(*(_box(s["origin"][0], s["origin"][1], 3) for s in sources)) if sources else set()
+    source_cells = (
+        set().union(*(_rect(s["origin"][0], s["origin"][1], SOURCE_W, SOURCE_H) for s in sources)) if sources else set()
+    )
     seats = sorted((_seat_of(o), o) for o in raw["objects"] if _seat_of(o))
     starts = []
     for seat, o in seats:

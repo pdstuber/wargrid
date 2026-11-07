@@ -2,6 +2,8 @@
 
 import base64
 import json
+import signal
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -238,6 +240,43 @@ class Helpers(unittest.TestCase):
         self.assertTrue(0 <= x < 200 and 0 <= y < 120)
         with self.assertRaises(RuntimeError):
             G(flat, bytes([1]) * 240).clear_strip(100, width=40)
+
+
+class Processes(unittest.TestCase):
+    def test_stop_group_returns_for_a_child_that_dies_on_sigterm(self) -> None:
+        proc = subprocess.Popen(
+            ["sleep", "30"], start_new_session=True
+        )  # unreaped zombie: killpg(0) raises EPERM on macOS
+        parity.stop_group(proc.pid)
+        proc.wait(timeout=5)
+
+    def test_stop_group_returns_for_a_dead_group(self) -> None:
+        proc = subprocess.Popen(["true"], start_new_session=True)
+        proc.wait()
+        parity.stop_group(proc.pid)
+
+    def test_kill_run_kills_the_recorded_sweep_parent_and_clears_pidfiles(self) -> None:
+        with tempfile.TemporaryDirectory() as d:
+            pids = Path(d) / "pids"
+            pids.mkdir()
+            proc = subprocess.Popen(
+                ["python3", "-c", "import time; time.sleep(30)", "parity.py"]
+            )  # command line must name parity.py
+            (pids / str(proc.pid)).write_text("sweep-parent")
+            parity.kill_run(Path(d))
+            self.assertEqual(proc.wait(timeout=5), -signal.SIGKILL)
+            self.assertEqual(list(pids.glob("*")), [])
+
+    def test_kill_run_spares_a_foreign_pid(self) -> None:
+        with tempfile.TemporaryDirectory() as d:
+            pids = Path(d) / "pids"
+            pids.mkdir()
+            proc = subprocess.Popen(["sleep", "30"], start_new_session=True)
+            (pids / str(proc.pid)).write_text("game")
+            parity.kill_run(Path(d))
+            self.assertIsNone(proc.poll())
+            proc.kill()
+            proc.wait()
 
 
 if __name__ == "__main__":

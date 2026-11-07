@@ -8,7 +8,7 @@ const Construction = preload("res://scripts/simulation/construction.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 
 func cases() -> Array[Callable]:
-	return [test_source_and_gather_validation,test_dock_timing,test_partial_load_and_conservation,test_dock_competition_and_lookup,test_collection_interruptions,test_dock_loss_recovery,test_ground_dock_cell,test_ground_dock_queue,test_ground_admit_first_waiter_first,test_ground_dock_no_starvation,test_ground_dock_full_perimeter,test_truck_timing,test_dock_loss_recovery_ground,test_ground_truck_recovers_after_blocked_path,test_ground_dock_skips_unwalkable_and_unreachable,test_laborer_timing,test_laborer_docks_share_fairly,test_mixed_waiters_do_not_deadlock,test_depot_clearance_from_piles,test_build_edge_margin,test_start_slots_obey_placement_rules]
+	return [test_source_and_gather_validation,test_dock_timing,test_partial_load_and_conservation,test_dock_competition_and_lookup,test_collection_interruptions,test_dock_loss_recovery,test_ground_dock_cell,test_ground_dock_queue,test_ground_admit_first_waiter_first,test_ground_dock_no_starvation,test_ground_dock_full_perimeter,test_truck_timing,test_dock_loss_recovery_ground,test_ground_truck_recovers_after_blocked_path,test_ground_dock_skips_unwalkable_and_unreachable,test_laborer_timing,test_laborer_docks_share_fairly,test_mixed_waiters_do_not_deadlock,test_air_waiter_ahead_of_earlier_ground_waiter,test_helicopter_on_emptied_pile_waits_its_delay,test_depot_clearance_from_piles,test_build_edge_margin,test_start_slots_obey_placement_rules]
 
 func ready(runner, boxes: int = 8) -> Dictionary:
 	var sim = Fixture.make_world(50000)
@@ -571,6 +571,39 @@ func test_mixed_waiters_do_not_deadlock(runner) -> bool:
 	runner.check(loading.size() == 1 and sim._sources[source].active_collector_id == loading[0],"Gd9 a ground and an air waiter on one pile: exactly one loads (%s)" % [loading])
 	return true
 
+func test_air_waiter_ahead_of_earlier_ground_waiter(runner) -> bool:
+	var sim = Fixture.make_world()
+	var source: int = sim.add_supply_source(Vector2i(24,4),30)
+	var ground: int = truck(sim,Vector2(28.5,5.5))
+	var air: int = sim.spawn(1,Vector2(26.0,6.5),"usa_collector")
+	gather(sim,[ground,air],source)
+	sim.step()
+	var waiting: Dictionary = {ground: {"remaining_ticks": 40, "dock": [28,5]}, air: {"remaining_ticks": 1000}}
+	for id: int in waiting:
+		var collection: Dictionary = sim._entities[id].collection
+		collection.phase = "waiting_source"
+		collection.target_id = source
+		for key: String in waiting[id]: collection[key] = waiting[id][key]
+	sim._entities[ground].position = [28.25,5.5]
+	sim._entities[air].position = [26.0,6.5]
+	for id: int in waiting: sim._stop_unit(sim._entities[id])
+	sim._sources[source].active_collector_id = null
+	for index in range(5): sim.step()
+	runner.check(sim._sources[source].active_collector_id == air and Fixture.object(sim,air).collection.phase == "loading","Gd10 an air arrival is admitted ahead of an earlier ground waiter")
+	return true
+
+func test_helicopter_on_emptied_pile_waits_its_delay(runner) -> bool:
+	var world: Dictionary = ready(runner,3)
+	var sim = world.sim
+	var delay: int = Registry.collects("usa_collector").load_ticks
+	runner.check(until_phase(sim,world.collector,"loading",600),"Gd11 helicopter starts loading")
+	var ticks: int = 0
+	while Fixture.object(sim,world.collector).collection.phase == "loading" and ticks < 1000:
+		sim.step()
+		ticks += 1
+	runner.check(ticks == 4 * delay and Fixture.object(sim,world.collector).collection.cargo == 3,"Gd11 three boxes then one more delay before it leaves, got %d ticks" % ticks)
+	return true
+
 func placement(kind: String, origin: Vector2i, pile: Variant = null) -> bool:
 	var faction: String = kind.split("_")[0]
 	var sim = Fixture.make_world(50000)
@@ -585,6 +618,7 @@ func test_depot_clearance_from_piles(runner) -> bool:
 		runner.check(not placement(kind,Vector2i(14,10),pile),"Pl1 %s touching a pile is refused" % kind)
 		runner.check(not placement(kind,Vector2i(10,15),pile),"Pl1 %s touching a pile below is refused" % kind)
 		runner.check(not placement(kind,Vector2i(7,8),pile),"Pl1 %s touching a pile diagonally is refused" % kind)
+		runner.check(not placement(kind,Vector2i(7,7),pile) and placement(kind,Vector2i(7,7)),"Pl1 %s touching a pile only at a corner is refused" % kind)
 		runner.check(placement(kind,Vector2i(15,10),pile),"Pl1 %s one free cell from a pile is accepted" % kind)
 		runner.check(placement(kind,Vector2i(14,10)),"Pl1 %s needs no clearance without a pile" % kind)
 	runner.check(placement("usa_power_plant",Vector2i(14,10),Vector2i(10,10)),"Pl1 other buildings may touch a pile")
@@ -599,7 +633,12 @@ func test_build_edge_margin(runner) -> bool:
 	return true
 
 func test_start_slots_obey_placement_rules(runner) -> bool:
-	for path in ["res://data/maps/skirmish.json","res://data/maps/ashfall.json"]:
+	var dir := DirAccess.open("res://data/maps")
+	var paths: Array[String] = []
+	for file: String in dir.get_files():
+		if file.ends_with(".json"): paths.append("res://data/maps/" + file)
+	runner.check(paths.size() >= 2,"Pl3 found the map files")
+	for path in paths:
 		var map: Dictionary = MapData.load(path)
 		var seats: Array[Dictionary] = []
 		var sim = MapData.create(map,seats)

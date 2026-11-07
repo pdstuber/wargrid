@@ -20,11 +20,11 @@ const MULTI := [
 	["china_collector", 9, 2, 1668.0],
 	["china_collector", 9, 4, 2814.0],
 ]
-const FOUR_CHINOOKS_GAP_9 := 3116.0
+const FOUR_HELICOPTERS_GAP_9 := 3116.0
 const TOLERANCE := 0.05
 
 func cases() -> Array[Callable]:
-	return [test_collector_rates_match_zero_hour,test_multi_collector_rates,test_four_chinooks_reported,test_gap_one_arrival_points_apart]
+	return [test_collector_rates_match_zero_hour,test_multi_collector_rates,test_four_helicopters_reported,test_gap_one_arrival_points_apart]
 
 # Depot 3x3 at (2,10), pile 4x5 east of it, both centred on y 11.5.
 func layout(kind: String, gap: int, count: int = 1) -> Dictionary:
@@ -72,11 +72,11 @@ func test_multi_collector_rates(runner) -> bool:
 		runner.check(within(measured,row[3]),"Ep4/Ep6/Ep7 %d x %s gap %d within 5%% of %.0f/min, got %.1f" % [row[2],row[0],row[1],row[3],measured])
 	return true
 
-# Not gated: Zero Hour's 2.12x for four Chinooks contradicts its 1.89x for two (docs/reference/m7-economy-rework-plan.md, R2.1).
-func test_four_chinooks_reported(runner) -> bool:
+# Not gated: Zero Hour's 2.12x for four helicopter collectors contradicts its 1.89x for two (docs/reference/m7-economy-rework-plan.md, R2.1).
+func test_four_helicopters_reported(runner) -> bool:
 	var measured: float = rate(layout("usa_collector",9,4).sim,33)
-	print("Ep4b four Chinooks gap 9: %.1f/min (reported, not gated, ZH %.0f)" % [measured,FOUR_CHINOOKS_GAP_9])
-	runner.check(measured > 0.0,"Ep4b four Chinooks gap 9 deposit")
+	print("Ep4b four helicopter collectors gap 9: %.1f/min (reported, not gated, ZH %.0f)" % [measured,FOUR_HELICOPTERS_GAP_9])
+	runner.check(measured > 0.0,"Ep4b four helicopter collectors gap 9 deposit")
 	return true
 
 func test_gap_one_arrival_points_apart(runner) -> bool:
