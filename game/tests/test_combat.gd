@@ -1401,7 +1401,7 @@ func test_radius_cache(runner) -> bool:
 		var footprint: Vector2i = row.get("footprint", Vector2i.ZERO)
 		var expected: float = row.radius if row.has("radius") else 0.5 * sqrt(float(footprint.x * footprint.x + footprint.y * footprint.y))
 		if Definitions.radius(id) != expected or Definitions.radius(id) != expected: mismatches += 1
-	runner.check(mismatches == 0, "RC1 cached radius equals the formula for every kind (%d mismatches)" % mismatches)
+	runner.check(mismatches == 0, "RAD1 cached radius equals the formula for every kind (%d mismatches)" % mismatches)
 	var tank: Dictionary = Registry.kind("usa_tank").duplicate()
 	tank.radius = 0.25
 	Registry.add_test_kind("rc_test", tank)
@@ -1410,8 +1410,8 @@ func test_radius_cache(runner) -> bool:
 	Registry.add_test_kind("rc_test", tank)
 	var second: float = Definitions.radius("rc_test")
 	Registry.clear_test_kinds()
-	runner.check(first == 0.25 and second == 0.75, "RC2 test kind radius is not stale after add_test_kind")
-	runner.check(not Registry.radius_cache.has("rc_test"), "RC3 clear_test_kinds drops cached radius")
+	runner.check(first == 0.25 and second == 0.75, "RAD2 test kind radius is not stale after add_test_kind")
+	runner.check(not Registry.radius_cache.has("rc_test"), "RAD3 clear_test_kinds drops cached radius")
 	return true
 
 func test_nearest_matches_oracle(runner) -> bool:
