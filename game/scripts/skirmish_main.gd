@@ -13,6 +13,9 @@ func _ready() -> void:
 func _create_simulation() -> Simulation:
 	return Skirmish.create(true, "ai", factions)
 
+func _escape_pending() -> bool:
+	return not simulation.match_over() and (_attack_move_mode or inspected_id != -1 or super())
+
 func _step_simulation() -> void:
 	Skirmish.issue_opponent(simulation)
 	simulation.step()

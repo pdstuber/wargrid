@@ -4,6 +4,8 @@ const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
 const PerfOverlay = preload("res://scripts/presentation/perf_overlay.gd")
+const PauseMenu = preload("res://scripts/presentation/pause_menu.gd")
+const LAUNCHER_SCENE: String = "res://scenes/launcher.tscn"
 const ZOOMS: Array[float] = [0.5, 1.0, 2.0]
 var simulation: Simulation = Simulation.new()
 var selected_ids: Array[int] = []
@@ -24,12 +26,20 @@ var _camera_bounds: Rect2
 @onready var _view: Node2D = $WorldView
 @onready var _camera: Camera2D = $Camera2D
 var _perf: Label
+var _pause: Control
+var change_scene: Callable = _change_scene
 @onready var _status: Label = $HUD/Status
 @onready var _selection_box: ReferenceRect = $HUD/SelectionBox
 
 func _ready() -> void:
 	_perf = PerfOverlay.new()
 	$HUD.add_child(_perf)
+	_pause = PauseMenu.new()
+	_pause.confirm_leave = _confirm_leave()
+	_pause.resume_requested.connect(_pause.close)
+	_pause.leave_requested.connect(_leave)
+	_pause.quit_requested.connect(func() -> void: get_tree().quit())
+	$HUD.add_child(_pause)
 	_view.local_player = local_player
 	simulation = _create_simulation()
 	_reset_camera()
@@ -45,7 +55,36 @@ func _reset_camera() -> void:
 func _step_simulation() -> void:
 	simulation.step()
 
+func menu_open() -> bool:
+	return _pause.visible
+
+func _confirm_leave() -> bool:
+	return false
+
+func _pauses_sim() -> bool:
+	return true
+
+func _escape_pending() -> bool:
+	return _selecting or not selected_ids.is_empty()
+
+func _leave() -> void:
+	change_scene.call(LAUNCHER_SCENE)
+
+func _change_scene(path: String) -> void:
+	get_tree().change_scene_to_file(path)
+
+func _input(event: InputEvent) -> void:
+	if not (event is InputEventKey and event.pressed and not event.echo): return
+	if event.physical_keycode == KEY_F3: return
+	if event.is_action_pressed("deselect"):
+		if _pause.visible: _pause.back()
+		elif not _escape_pending(): _pause.open()
+		else: return
+	elif not _pause.visible: return
+	get_viewport().set_input_as_handled()
+
 func _physics_process(_delta: float) -> void:
+	if _pause.visible and _pauses_sim(): return
 	var started: int = Time.get_ticks_usec()
 	_step_simulation()
 	_perf.record_step((Time.get_ticks_usec() - started) / 1000.0)

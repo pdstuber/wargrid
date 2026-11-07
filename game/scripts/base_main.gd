@@ -26,6 +26,9 @@ func _ready() -> void:
 	$HUD/Economy/Produce.pressed.connect(_produce_selected)
 	$HUD/Economy/CancelBuild.pressed.connect(_cancel_build)
 
+func _escape_pending() -> bool:
+	return super() or not _placement_kind.is_empty() or selected_building_id != -1 or not _pending_placement.is_empty()
+
 func _create_simulation() -> Simulation:
 	var sim: Simulation = Simulation.new([],Vector2i(32,32))
 	sim.add_player(1,10000)

@@ -32,6 +32,18 @@ func _exit_tree() -> void:
 func _create_simulation() -> Simulation:
 	return Skirmish.create(true, "human", {})
 
+func _confirm_leave() -> bool:
+	return true
+
+func _pauses_sim() -> bool:
+	return false
+
+func _leave() -> void:
+	_finished = true
+	_lockstep.set_relay_lost()
+	_transport.close()
+	super()
+
 func _step_simulation() -> void:
 	for text: Variant in _transport.poll(): _lockstep.receive(text)
 	if not _finished and (_transport.closed() or _transport.silent(Time.get_ticks_usec())): _lockstep.set_relay_lost()

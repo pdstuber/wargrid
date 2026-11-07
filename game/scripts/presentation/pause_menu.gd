@@ -1,0 +1,80 @@
+extends Control
+
+const UiStyle = preload("res://scripts/presentation/ui_style.gd")
+signal resume_requested
+signal leave_requested
+signal quit_requested
+var confirm_leave: bool = false
+var _confirming: bool = false
+var _main_box: VBoxContainer
+var _confirm_box: VBoxContainer
+
+func _init(web: bool = OS.has_feature("web")) -> void:
+	name = "PauseMenu"
+	visible = false
+	theme = UiStyle.hud_theme()
+	set_anchors_preset(Control.PRESET_FULL_RECT)
+	mouse_filter = Control.MOUSE_FILTER_STOP
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.6)
+	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(dim)
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(center)
+	_main_box = _box(center)
+	_button(_main_box, "Resume", resume_requested.emit)
+	_button(_main_box, "Back to main menu", _leave_pressed)
+	# The browser tab cannot be closed by the game.
+	if not web: _button(_main_box, "Quit", quit_requested.emit)
+	_confirm_box = _box(center)
+	_confirm_box.visible = false
+	var question := Label.new()
+	question.text = "Leave the match?"
+	question.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_confirm_box.add_child(question)
+	_button(_confirm_box, "Leave", leave_requested.emit)
+	_button(_confirm_box, "Cancel", _show_main)
+
+func is_confirming() -> bool:
+	return _confirming
+
+func open() -> void:
+	visible = true
+	_show_main()
+
+func close() -> void:
+	visible = false
+
+func back() -> void:
+	if _confirming: _show_main()
+	else: close()
+
+func _box(parent: Control) -> VBoxContainer:
+	var box := VBoxContainer.new()
+	box.custom_minimum_size.x = 220.0
+	parent.add_child(box)
+	return box
+
+func _button(parent: Control, text: String, action: Callable) -> void:
+	var button := Button.new()
+	button.text = text
+	button.pressed.connect(action)
+	parent.add_child(button)
+
+func _leave_pressed() -> void:
+	if not confirm_leave:
+		leave_requested.emit()
+		return
+	_confirming = true
+	_main_box.visible = false
+	_confirm_box.visible = true
+	_confirm_box.get_child(1).grab_focus()
+
+func _show_main() -> void:
+	_confirming = false
+	_confirm_box.visible = false
+	_main_box.visible = true
+	_main_box.get_child(0).grab_focus()
