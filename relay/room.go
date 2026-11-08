@@ -57,17 +57,16 @@ type leaveMsg struct{ s *seat }
 
 // room owns all its state in run(); connections talk to it only through channels.
 type room struct {
-	code      string
-	cfg       config
-	reg       *registry
-	build     string
-	joins     chan joinReq // unbuffered: a send succeeds only while run() is alive
-	events    chan any
-	done      chan struct{}
-	seats     map[int]*seat
-	started   bool
-	startedAt time.Time
-	stats     map[int]string
+	code    string
+	cfg     config
+	reg     *registry
+	build   string
+	joins   chan joinReq // unbuffered: a send succeeds only while run() is alive
+	events  chan any
+	done    chan struct{}
+	seats   map[int]*seat
+	started bool
+	stats   map[int]string
 }
 
 func (r *room) run() {
@@ -131,8 +130,6 @@ func (r *room) recoverCrash() {
 		return
 	}
 	slog.Error("room crashed", "code", r.code, "panic", p, "stack", string(debug.Stack()))
-	mRoomCrashes.Inc()
-	mSeats.Sub(float64(len(r.seats))) // their leaves can no longer reach this room
 	r.reg.remove(r.code, r)
 	r.closeAll()
 }
@@ -155,12 +152,10 @@ func (r *room) admit(c *conn) *seat {
 	}
 	s := &seat{n: n, c: c, r: r}
 	r.seats[n] = s
-	mSeats.Inc()
 	slog.Info("seat joined", "code", r.code, "seat", n)
 	c.send([]byte(fmt.Sprintf(`{"type":"welcome","seat":%d,"match":%q}`, n, r.code)), 0)
 	if len(r.seats) == r.cfg.seats {
-		r.started, r.startedAt = true, time.Now()
-		mMatchesStarted.Inc()
+		r.started = true
 		list := make([]string, r.cfg.seats)
 		for i := range list {
 			list[i] = fmt.Sprint(i + 1)
@@ -181,13 +176,10 @@ func (r *room) forward(t tickMsg) {
 	}
 	if !r.started || t.seat != s.n || t.tick != max(s.lastTick, inputDelay-1)+1 {
 		s.dead = true
-		mRejected.Inc()
 		s.c.reject("invalid message")
 		return
 	}
 	s.lastTick, s.frames, s.bytes = t.tick, s.frames+1, s.bytes+len(t.data)
-	mFrames.Inc()
-	mFrameBytes.Add(float64(len(t.data)))
 	for _, o := range r.seats {
 		if o != s {
 			if r.cfg.batch > 0 {
@@ -202,7 +194,6 @@ func (r *room) forward(t tickMsg) {
 // leave reports whether the room is now empty and has been removed.
 func (r *room) leave(s *seat) bool {
 	delete(r.seats, s.n)
-	mSeats.Dec()
 	left := []byte(fmt.Sprintf(`{"type":"left","seat":%d,"after_tick":%d}`, s.n, max(s.lastTick, inputDelay-1)))
 	for _, o := range r.seats {
 		o.c.send(left, 0)
@@ -212,10 +203,6 @@ func (r *room) leave(s *seat) bool {
 		return false
 	}
 	r.reg.remove(r.code, r)
-	if r.started {
-		mMatchesEnded.Inc()
-		mMatchDuration.Observe(time.Since(r.startedAt).Seconds())
-	}
 	args := []any{"code", r.code}
 	for _, n := range slices.Sorted(maps.Keys(r.stats)) {
 		args = append(args, fmt.Sprintf("seat%d", n), r.stats[n])
@@ -269,16 +256,6 @@ func (g *registry) remove(code string, r *room) {
 }
 
 func (g *registry) join(h *envelope, c *conn) joinResult {
-	res := g.joinRoom(h, c)
-	result := res.reason
-	if res.seat != nil {
-		result = "ok"
-	}
-	mJoins.WithLabelValues(result).Inc()
-	return res
-}
-
-func (g *registry) joinRoom(h *envelope, c *conn) joinResult {
 	if h.protocol != protocol {
 		return joinResult{reason: "protocol mismatch"}
 	}
@@ -318,7 +295,6 @@ func (g *registry) create(h *envelope, c *conn) joinResult {
 	}
 	g.rooms[code] = r
 	g.mu.Unlock()
-	mRoomsCreated.Inc()
 	slog.Info("room created", "code", code, "build", h.build)
 	s := r.admit(c) // before run() starts: nobody else knows the code yet
 	go r.run()

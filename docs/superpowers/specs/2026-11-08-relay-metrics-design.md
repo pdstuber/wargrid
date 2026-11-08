@@ -51,3 +51,13 @@ Fly's docs do not say whether the 15 s scrape wakes the suspended relay or count
 ## Left to the builder
 
 Metric names and buckets, file layout inside `relay/`, dashboard panels.
+
+## Result (2026-11-08)
+
+Deployed as `wargrid-relay` behind `relay.pdstuber.dev` (cert issued, probe `RELAY WELCOME 77`); metrics reached fly's Prometheus with label `app="wargrid-relay"`, and every dashboard metric existed there.
+
+The machine then stayed `started` with no players from 08:38 to 09:04 UTC, while the user's blog app suspended several times. First diagnosis, wrong: the metrics scrape keeps it awake. `[metrics]` was removed at 08:54 and the machine still stayed up. Evidence instead: fly's proxy metrics showed 126 HTTP 404 responses in 40 minutes (2 were our WebSocket probes as 101, 3 our health checks as 200), peaking 08:42–08:54 and fading after; the old `wargrid-relay-jvm` got 5 404s in 24 hours. A new hostname with a new certificate appears in Certificate Transparency logs and is scanned within minutes; every scanner request goes through Fly Proxy and resets the idle timer. Whether a `[metrics]` scrape alone would prevent suspend is **unverified**.
+
+User decision (2026-11-08): remove the metrics code, dependency and dashboard anyway (the relay is plain WebSocket forwarding; metrics come back from git history, commits `935e8e7`, `2ae2f1f`, if the game shows problems). Kept: the new log lines (connection opened/closed, room created, seat joined).
+
+For the planned lobby service: metrics are likely worth more there (state, matchmaking); test first whether a `[metrics]` scrape keeps a fly machine awake, on a quiet machine.

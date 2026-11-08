@@ -15,10 +15,6 @@ primary_region = "fra"
     timeout = "5s"
     path = "/health"
 
-[metrics]
-  port = 9091
-  path = "/metrics"
-
 [[vm]]
   size = "shared-cpu-1x"
   memory = "256mb"
