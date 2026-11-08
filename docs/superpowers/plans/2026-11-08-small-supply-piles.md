@@ -577,7 +577,7 @@ Expected: no `SCRIPT ERROR`; forced run: at least 1 pile removed and small-pile 
 
 Copy `$S/render_m7.gd` (it sets `SkirmishMain.map_path` to Dry Wells when its first user argument is `dry_wells`, disables vsync, records 240 frame intervals per zoom 1.0 and 0.5 after 30 warm-up frames and saves a screenshot per zoom) to `$S/render_piles.gd`. After the warm-up, move the camera to the centre of the eastern pile cluster (cells around (60, 50), via `Iso.world_to_plane`) so the 1 × 1 piles are on screen. Run it as `godot --path game --script res://render_piles.gd -- dry_wells` and `-- old_map` (copy into `game/` untracked, delete afterwards; `timeout: 600000`).
 Expected: `RENDER` lines for both maps and zooms, no `SCRIPT ERROR`; the coordinator reads the Dry Wells screenshots and checks that the piles draw as 1 × 1 footprints with labels (overlap expected, playtest item). Before this change (2026-11-08, `26541f4`, piles absent): Dry Wells p50 / p95 0.65 / 1.83 ms at zoom 1.0 and 0.61 / 1.62 ms at 0.5; old map 0.51 / 1.86 and 0.45 / 1.46 ms. Report the new numbers as they are; a clear regression (Dry Wells p95 more than twice the old map's at the same zoom) is reported to the user, never hidden.
-Add one row to the history table in `docs/reference/performance.md`, after the last 2026-11-08 row: tree (`git rev-parse --short HEAD`), machine (Apple M6, idle, `vsync=off`, 1280 × 720), both maps' p50 / p95 / max per zoom, and the link [more maps](more-maps.md).
+Add one row to the history table in `docs/reference/performance.md`, after the last 2026-11-08 row: tree (`git rev-parse --short HEAD`), machine (Apple M6, idle, `vsync=off`, 1280 × 720), both maps' p50 / p95 / max per zoom, and the link `[more maps](more-maps.md)`.
 
 - [ ] **Step 4: Update docs**
 
