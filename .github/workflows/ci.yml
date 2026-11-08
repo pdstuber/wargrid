@@ -68,6 +68,10 @@ jobs:
       WARGRID_TEAM_REPLAY_TRACE: ${{ github.workspace }}/team-${{ matrix.platform }}.tsv
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/${{ matrix.zip }}
+          key: godot-${{ matrix.sha256 }}
       - name: Install pinned Godot
         run: '"$PYTHON" tools/install_godot.py'
       - name: Test and produce replay traces
@@ -114,6 +118,10 @@ jobs:
         with:
           name: relay-bin
           path: relay-bin
+      - uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/${{ matrix.zip }}
+          key: godot-${{ matrix.sha256 }}
       - name: Install pinned Godot
         run: '"$PYTHON" tools/install_godot.py'
       - uses: actions/cache@v6
@@ -279,6 +287,7 @@ jobs:
           python3 tools/test_session_usage.py
           python3 tools/test_sim_math.py
           python3 tools/test_release_version.py
+          python3 tools/test_install_godot.py
           python3 tools/test_package_release.py
           python3 tools/test_deploy_web.py
           python3 tools/zh_map/test_zh_map.py

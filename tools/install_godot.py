@@ -1,5 +1,6 @@
 """Downloads the pinned Godot editor for CI, checks its SHA-256 and exports GODOT_BIN.
 
+Skips the download when the archive is already in RUNNER_TEMP (CI cache).
 Reads GODOT_VERSION, GODOT_ZIP, GODOT_SHA256, GODOT_EXECUTABLE, RUNNER_TEMP and GITHUB_ENV.
 """
 
@@ -13,7 +14,8 @@ from pathlib import Path
 def main() -> None:
     archive = Path(os.environ["RUNNER_TEMP"]) / os.environ["GODOT_ZIP"]
     url = f"https://github.com/godotengine/godot/releases/download/{os.environ['GODOT_VERSION']}/{archive.name}"
-    urllib.request.urlretrieve(url, archive)
+    if not archive.exists():  # restored by actions/cache; the checksum below still vets it
+        urllib.request.urlretrieve(url, archive)
     if hashlib.sha256(archive.read_bytes()).hexdigest() != os.environ["GODOT_SHA256"]:
         raise SystemExit("Godot checksum mismatch")
     directory = archive.parent / "godot"
