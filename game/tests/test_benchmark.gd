@@ -233,5 +233,5 @@ func test_workload_asserts_pure(runner) -> bool:
 		for line in FileAccess.get_file_as_string(path).split("\n"):
 			if line.strip_edges().begins_with("assert(") and "sim." in line:
 				impure.append(line.strip_edges())
-		runner.check(impure.is_empty(), "BM9 no sim call inside assert in " + path + " " + str(impure))
+		runner.check(impure.is_empty(), "BM10 no sim call inside assert in " + path + " " + str(impure))
 	return true
