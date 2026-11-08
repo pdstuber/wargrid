@@ -789,3 +789,23 @@ Acceptance, once, on the final tree (`accept.sh f1b4c6f`): suite CASES 490 / CHE
 | movement dense | 1.452 -> 0.649 | 1.512 (0.220) -> 0.685 (0.011) | 1.739 (0.280) -> 0.905 (0.088) | 5.01 -> 3.58 |
 
 The change is about -0.8 to -1.0 ms p95, larger than the 0.7 ms estimate; the A arm was noisier than Task 6 (p95 spread 0.22 against 0.05-0.09), the p50 delta (-0.80) is the reliable figure. Every delta is far outside the B spread. The movement rows now measure sim only, so their history before this row is not comparable. No budget, ceiling or guard value was changed. P3 probe not started.
+
+
+## 11 results (Mac web, 2026-11-08, f1b4c6f Web Bench export, single-threaded)
+
+Firefox 159 on this Mac (Apple M6), `cross_origin_isolated=1` in every result, fresh copy of one terms-accepted profile per run, same export, rows and `bench_runner` window as the Deck web runs in section 9 (hordes300 added to the runner list in the scratch copy only). Runs 1-3 via `ws11/run2.sh N` (server answers 200 with COOP/COEP before Firefox starts; Firefox re-activated every 5 s, `lsappinfo front` logged). Run 1: front app changed once in 21 samples (re-activated within 5 s); runs 2 and 3: Firefox front in all 21. Load 2.0-2.6 at the samples (borderline against the 2.5 rule; the p95s agree within 1-2 % except two outliers below).
+
+Mac web p95 ms (runs 1 / 2 / 3, median) and final web F = Deck Firefox median p95 / Mac median p95:
+
+| Row | Mac web p95 | Median | Deck web p95 | F |
+|---|---|---|---|---|
+| movement open | 2.48 / 2.44 / 2.42 | 2.44 | 9.96 | 4.08 |
+| movement dense | 2.38 / 2.34 / 2.34 | 2.34 | 9.30 | 3.97 |
+| combat open | 2.68 / 2.68 / 3.34 | 2.68 | 9.70 | 3.62 |
+| combat dense | 2.60 / 2.56 / 2.56 | 2.56 | 9.26 | 3.62 |
+| contact | 2.54 / 1.64 / 1.64 | 1.64 | 5.78 | 3.52 |
+| skirmish3v3 | 1.88 / 1.86 / 1.86 | 1.86 | 6.64 | 3.57 |
+| hordes300 | 4.12 / 4.02 / 4.06 | 4.06 | 14.54 | 3.58 |
+| team match | 1.92 / 1.86 / 1.86 | 1.86 | 6.80 | 3.66 |
+
+Every web F is below 5.5 (3.5-4.1). Outliers kept in the medians: combat open run 3 (3.34) and contact run 1 (2.54), one run each, medians unaffected. Discarded before these runs: the terms dialog over the bench tab (one user click on Continue, warm-up), a launch where Firefox was not the front app, two false starts with wrong server paths (404 / server not started). Mac web numbers are Firefox, editor-independent web build; the Mac editor/native F in section 7 is a separate measurement. Raw logs: scratchpad `ws11/r1..r3`.
