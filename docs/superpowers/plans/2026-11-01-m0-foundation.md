@@ -8,7 +8,7 @@
 
 **Tech stack:** typed GDScript, Godot Compatibility renderer, POSIX shell wrappers, GitHub Actions. No new libraries.
 
-**Spec:** [Kickoff blueprint](../../../Wargrid_Kickoff_Blueprint.md), especially §§3, 5 and 7.1. This plan specifies M0 details left open there and owns M0 API names, data shapes and concrete acceptance cases.
+**Spec:** [Kickoff blueprint](../../blueprint.md), especially §§3, 5 and 7.1. This plan specifies M0 details left open there and owns M0 API names, data shapes and concrete acceptance cases.
 
 ## Global constraints
 

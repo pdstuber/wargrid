@@ -1,6 +1,6 @@
 # M4 — combat and USA mini-match design
 
-Status: **DESIGN APPROVED; IMPLEMENTATION IN PROGRESS** (Tasks 0–4 done, 2026-11-03; see plan status). User requested a plan executable by Sol at Medium reasoning, selected source-informed stats with provisional geometry, and explicitly approved this design on2026-11-03. No game code changed. [Blueprint](../../../Wargrid_Kickoff_Blueprint.md) §7/§10 owns scope; [research](../../reference/m4-combat.md) owns evidence; [plan](../plans/2026-11-03-m4-combat.md) owns implementation contracts.
+Status: **DESIGN APPROVED; IMPLEMENTATION IN PROGRESS** (Tasks 0–4 done, 2026-11-03; see plan status). User requested a plan executable by Sol at Medium reasoning, selected source-informed stats with provisional geometry, and explicitly approved this design on2026-11-03. No game code changed. [Blueprint](../../blueprint.md) §7/§10 owns scope; [research](../../reference/m4-combat.md) owns evidence; [plan](../plans/2026-11-03-m4-combat.md) owns implementation contracts.
 
 ## Intent and approaches
 

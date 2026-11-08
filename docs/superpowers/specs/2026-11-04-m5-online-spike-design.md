@@ -1,6 +1,6 @@
 # M5 — online spike design
 
-Status: **DESIGN APPROVED** by user 2026-11-04; implementation starts only on explicit kickoff. [Blueprint](../../../Wargrid_Kickoff_Blueprint.md) §7 M5 owns scope and exit gate, §11 "Multiplayer" owns the direction; this document refines both. Planning or branch preparation does not start implementation.
+Status: **DESIGN APPROVED** by user 2026-11-04; implementation starts only on explicit kickoff. [Blueprint](../../blueprint.md) §7 M5 owns scope and exit gate, §11 "Multiplayer" owns the direction; this document refines both. Planning or branch preparation does not start implementation.
 
 ## Intent
 
