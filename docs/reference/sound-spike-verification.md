@@ -11,7 +11,7 @@ Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh,
 Known red case or blocker: none
 Approved decisions, pre-authorizations used, deferred gates: design approved 2026-11-08; local commits after green checkpoints pre-authorized; no push, merge, window, install or fly without approval; Gate S, A, B and exit pending. Task 1 deviations: no class_name (project uses preload consts; class_name needs a global class cache), SoundDirector.update does not drain pending steps yet (SD1 reads them after the frame's refresh); Task 4 must drain in update and bound memory
 Usage so far (python3 tools/session_usage.py <session files>): not recorded
-Next exact action: Task 2 (generator, voice lines, music tool; ends at Gate S); Task 1 checkpoint restart
+Next exact action: Gate S. User listens (open -a Firefox $SOUND_WORK/gate-s/listen.html, not yet opened), rules; a change goes back to Step 4 or 6; then commit 'Add the effect, voice and music tools'. Task 2 green: test_synth 9 OK, test_process 3 OK, run_python_checks exit 0, actionlint 0, faithful-port cmp 18/18 identical, music -30.0 to -30.1 LUFS, no dynamic loudnorm, all peaks below -1 dBFS
 ```
 
 ## Baseline and trace checks

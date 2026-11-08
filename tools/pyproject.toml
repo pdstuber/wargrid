@@ -8,7 +8,7 @@ ignore = ["E501", "UP031"]
 
 [tool.mypy]
 python_version = "3.12"
-mypy_path = ".:zh_map:zh_parity"
+mypy_path = ".:zh_map:zh_parity:audio"
 explicit_package_bases = true
 check_untyped_defs = true
 warn_unused_ignores = true

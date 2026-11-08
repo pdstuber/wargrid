@@ -102,7 +102,30 @@ Worst-case error from 7 to 28 cells (0.1-cell steps): a = 0.5 4.9 dB (at 21.3 ce
 
 ## Assets and levels
 
-Filled in Tasks 2-3.
+Task 2, 2026-11-08 (numpy 2.5.4, scipy 1.18.1, scipy-stubs 1.18.1.1, Python 3.12; synth.py `$SOUND_WORK/sourcing` to `$SOUND_WORK/gate-s`). Faithful-port check: all 10 prototype effects and 8 c1n lines byte-identical (`cmp`). Effects measured looped to 3 s.
+
+```text
+sfx/rifle_burst lufs -29.6 peak -17.4 dBFS
+sfx/carbine lufs -29.6 peak -14.3 dBFS
+sfx/cannon lufs -25.8 peak -14.0 dBFS
+sfx/explosion lufs -30.8 peak -17.8 dBFS
+sfx/vehicle_death lufs -23.8 peak -8.5 dBFS
+sfx/building_small lufs -23.8 peak -8.2 dBFS
+sfx/building_large lufs -23.8 peak -7.0 dBFS
+sfx/infantry_death lufs -32.0 peak -20.1 dBFS
+sfx/click lufs -34.3 peak -22.6 dBFS
+sfx/error lufs -34.3 peak -24.6 dBFS
+voice/base_under_attack lufs -24.0 peak -7.0 dBFS
+voice/building_lost lufs -24.0 peak -10.2 dBFS
+voice/unit_ready lufs -24.0 peak -8.6 dBFS
+voice/construction_complete lufs -24.0 peak -7.2 dBFS
+voice/insufficient_funds lufs -24.0 peak -8.1 dBFS
+voice/low_power lufs -24.0 peak -8.8 dBFS
+voice/victory lufs -24.0 peak -4.3 dBFS
+voice/defeat lufs -24.0 peak -9.5 dBFS
+music LUFS/true-peak dBFS: stay_the_course -30.0/-18.2, conflict -30.1/-15.7, enemy_spotted -30.1/-16.8, mammoth -30.0/-18.0, hitman -30.0/-15.2
+music size bytes: stay_the_course 2458259, conflict 2508577, enemy_spotted 1978908, mammoth 1625202, hitman 2327193
+```
 
 ## Gate rulings
 
