@@ -152,6 +152,7 @@ func (r *room) admit(c *conn) *seat {
 	}
 	s := &seat{n: n, c: c, r: r}
 	r.seats[n] = s
+	slog.Info("seat joined", "code", r.code, "seat", n)
 	c.send([]byte(fmt.Sprintf(`{"type":"welcome","seat":%d,"match":%q}`, n, r.code)), 0)
 	if len(r.seats) == r.cfg.seats {
 		r.started = true
@@ -294,6 +295,7 @@ func (g *registry) create(h *envelope, c *conn) joinResult {
 	}
 	g.rooms[code] = r
 	g.mu.Unlock()
+	slog.Info("room created", "code", code, "build", h.build)
 	s := r.admit(c) // before run() starts: nobody else knows the code yet
 	go r.run()
 	return joinResult{seat: s}

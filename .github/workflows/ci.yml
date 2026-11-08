@@ -1,17 +1,39 @@
-name: Tests
+name: CI
 on:
   push:
-    branches: ['**']
+    branches: ['**', '!dependabot/**'] # Dependabot branches run once, as pull requests
+    paths: &code
+      - '**'
+      - '!docs/**'
+      - '!**.md'
+      - 'game/**' # exports ship game/data/maps/NOTICE.md
   pull_request:
+    paths: *code
   workflow_dispatch:
   workflow_call:
+permissions:
+  contents: read
+env:
+  GODOT_VERSION: 4.7.2-stable
+  TEMPLATES_SHA256: f298490b8d44d934be425a5a65a51bf15f422428b229a06a6e11d9ffea248011
 jobs:
-  godot:
-    needs: relay
+  godot-lint:
+    name: Godot / Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install -r tools/requirements-dev.txt
+      - run: sh tools/run_lint.sh
+  godot-tests:
+    name: Godot / Tests (${{ matrix.platform }})
     strategy:
       fail-fast: false
       matrix:
-        include:
+        include: &platforms
           - platform: linux
             runner: ubuntu-latest
             python: python3
@@ -36,31 +58,73 @@ jobs:
       run:
         shell: bash
     env:
-      GODOT_VERSION: 4.7.2-stable
       GODOT_ZIP: ${{ matrix.zip }}
       GODOT_SHA256: ${{ matrix.sha256 }}
       GODOT_EXECUTABLE: ${{ matrix.executable }}
-      TEMPLATES_SHA256: f298490b8d44d934be425a5a65a51bf15f422428b229a06a6e11d9ffea248011
       PYTHON: ${{ matrix.python }}
       WARGRID_REPLAY_TRACE: ${{ github.workspace }}/replay-${{ matrix.platform }}.tsv
       WARGRID_ECONOMY_REPLAY_TRACE: ${{ github.workspace }}/economy-${{ matrix.platform }}.tsv
       WARGRID_COMBAT_REPLAY_TRACE: ${{ github.workspace }}/combat-${{ matrix.platform }}.tsv
       WARGRID_TEAM_REPLAY_TRACE: ${{ github.workspace }}/team-${{ matrix.platform }}.tsv
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/cache@v6
         with:
-          name: relay-bin
-          path: relay-bin
+          path: ${{ runner.temp }}/${{ matrix.zip }}
+          key: godot-${{ matrix.sha256 }}
       - name: Install pinned Godot
         run: '"$PYTHON" tools/install_godot.py'
-      - name: Test and produce replay trace
+      - name: Test and produce replay traces
         run: |
           set -o pipefail
           sh tools/run_tests.sh 2>&1 | tee test-results.log
       - name: GDScript warnings as errors
+        if: matrix.platform == 'linux' # static check, same result on every platform
         run: sh tools/run_warnings.sh
-      - uses: actions/cache@v4
+      - uses: actions/upload-artifact@v7
+        with:
+          name: replay-${{ matrix.platform }}
+          path: |
+            ${{ env.WARGRID_REPLAY_TRACE }}
+            ${{ env.WARGRID_ECONOMY_REPLAY_TRACE }}
+            ${{ env.WARGRID_COMBAT_REPLAY_TRACE }}
+            ${{ env.WARGRID_TEAM_REPLAY_TRACE }}
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: test-results-${{ matrix.platform }}
+          path: test-results.log
+  godot-export:
+    name: Godot / Exported build (${{ matrix.platform }})
+    needs: relay-test
+    strategy:
+      fail-fast: false
+      matrix:
+        include: *platforms
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 25
+    defaults:
+      run:
+        shell: bash
+    env:
+      GODOT_ZIP: ${{ matrix.zip }}
+      GODOT_SHA256: ${{ matrix.sha256 }}
+      GODOT_EXECUTABLE: ${{ matrix.executable }}
+      PYTHON: ${{ matrix.python }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: relay-bin
+          path: relay-bin
+      - uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/${{ matrix.zip }}
+          key: godot-${{ matrix.sha256 }}
+      - name: Install pinned Godot
+        run: '"$PYTHON" tools/install_godot.py'
+      - uses: actions/cache@v6
         with:
           path: ${{ matrix.templates }}
           key: export-templates-desktop-web-${{ runner.os }}-${{ env.TEMPLATES_SHA256 }}
@@ -68,10 +132,12 @@ jobs:
         run: '"$PYTHON" tools/install_export_templates.py "$TEMPLATES_SHA256" "$GODOT_VERSION"'
       - name: Export test build and game
         run: |
+          "$GODOT_BIN" --headless --path game --import
           sh tools/export_build.sh "${{ matrix.test_preset }}" "build/test/${{ matrix.platform }}/WargridTests${{ matrix.platform == 'windows' && '.exe' || '' }}"
           sh tools/export_build.sh "${{ matrix.preset }}" "build/game/${{ matrix.platform }}/Wargrid${{ matrix.platform == 'windows' && '.exe' || '.x86_64' }}"
       - name: Exported suite and replay traces
         env:
+          WARGRID_TEST_EXE: build/test/${{ matrix.platform }}/WargridTests${{ matrix.platform == 'windows' && '.console.exe' || '' }}
           WARGRID_VECTORS: ${{ github.workspace }}/protocol/vectors
           WARGRID_REPLAY_TRACE: ${{ github.workspace }}/export-replay-${{ matrix.platform }}.tsv
           WARGRID_ECONOMY_REPLAY_TRACE: ${{ github.workspace }}/export-economy-${{ matrix.platform }}.tsv
@@ -79,9 +145,7 @@ jobs:
           WARGRID_TEAM_REPLAY_TRACE: ${{ github.workspace }}/export-team-${{ matrix.platform }}.tsv
         run: |
           set -o pipefail
-          exe="build/test/${{ matrix.platform }}/WargridTests${{ matrix.platform == 'windows' && '.console.exe' || '' }}"
-          "$exe" --headless 2>&1 | tee exported-results.log
-          grep -Eq '^TESTS PASSED [1-9][0-9]*$' exported-results.log
+          sh tools/run_tests.sh 2>&1 | tee exported-results.log
       - name: Exported netplay scenarios
         run: |
           set -o pipefail
@@ -94,25 +158,21 @@ jobs:
             NETPLAY_OUT="$root/netplay/$scenario" sh tools/run_netplay.sh $scenario 2>&1 | tee -a netplay.log
           done
           cp netplay/match/s1.tsv netplay-${{ matrix.platform }}.tsv
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
-          name: replay-${{ matrix.platform }}
+          name: replay-export-${{ matrix.platform }}
           path: |
-            ${{ env.WARGRID_REPLAY_TRACE }}
-            ${{ env.WARGRID_ECONOMY_REPLAY_TRACE }}
-            ${{ env.WARGRID_COMBAT_REPLAY_TRACE }}
-            ${{ env.WARGRID_TEAM_REPLAY_TRACE }}
             ${{ github.workspace }}/export-replay-${{ matrix.platform }}.tsv
             ${{ github.workspace }}/export-economy-${{ matrix.platform }}.tsv
             ${{ github.workspace }}/export-combat-${{ matrix.platform }}.tsv
             ${{ github.workspace }}/export-team-${{ matrix.platform }}.tsv
           if-no-files-found: error
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: netplay-${{ matrix.platform }}
           path: netplay-${{ matrix.platform }}.tsv
           if-no-files-found: error
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: matrix.platform == 'windows'
         with:
           name: wargrid-windows
@@ -121,25 +181,46 @@ jobs:
             build/game/windows/Wargrid.exe
             build/game/windows/Wargrid.console.exe
           if-no-files-found: error
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
-          name: logs-netplay-${{ matrix.platform }}
-          path: netplay/
-      - uses: actions/upload-artifact@v4
-        if: failure()
+          name: logs-export-${{ matrix.platform }}
+          path: |
+            exported-results.log
+            netplay/
+  godot-replays:
+    name: Godot / Compare replays
+    needs: [godot-tests, godot-export]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
-          name: test-results-${{ matrix.platform }}
-          path: test-results.log
-  relay:
+          pattern: "{replay,netplay}-*"
+          merge-multiple: true
+          path: traces
+      - name: Compare all platform ticks
+        run: |
+          python3 tools/compare_replays.py traces/replay-linux.tsv traces/replay-windows.tsv
+          python3 tools/compare_replays.py traces/economy-linux.tsv traces/economy-windows.tsv
+          python3 tools/compare_replays.py traces/combat-linux.tsv traces/combat-windows.tsv
+          python3 tools/compare_replays.py --interval 200 --rows 100 traces/team-linux.tsv traces/team-windows.tsv
+          python3 tools/compare_replays.py traces/replay-linux.tsv traces/replay-windows.tsv traces/export-replay-linux.tsv traces/export-replay-windows.tsv
+          python3 tools/compare_replays.py traces/economy-linux.tsv traces/economy-windows.tsv traces/export-economy-linux.tsv traces/export-economy-windows.tsv
+          python3 tools/compare_replays.py traces/combat-linux.tsv traces/combat-windows.tsv traces/export-combat-linux.tsv traces/export-combat-windows.tsv
+          python3 tools/compare_replays.py --interval 200 --rows 100 traces/team-linux.tsv traces/team-windows.tsv traces/export-team-linux.tsv traces/export-team-windows.tsv
+          python3 tools/compare_replays.py --interval 30 --rows 0 traces/netplay-linux.tsv traces/netplay-windows.tsv
+  relay-test:
+    name: Relay / Test and conformance
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
       run:
         working-directory: relay
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: relay/go.mod
           cache-dependency-path: |
@@ -148,25 +229,38 @@ jobs:
       - run: go vet ./... && go test -race ./...
       - run: go vet ./...
         working-directory: protocol/conformance
-      - name: Build relay for the Godot jobs
+      - name: Build relay for the Godot export jobs
         run: |
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -o ../relay-bin/relay-linux .
           CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -o ../relay-bin/relay-windows.exe .
       - name: Conformance
         working-directory: .
         run: WARGRID_RELAY_BIN=$PWD/relay-bin/relay-linux sh tools/run_conformance.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: relay-bin
           path: relay-bin/
           retention-days: 1
           if-no-files-found: error
-  relay-lint:
+  docker:
+    name: Docker / Build images
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - run: docker build relay
+      - name: Build the web image around a placeholder export
+        run: |
+          mkdir -p web/site
+          for f in index.wasm index.pck index.js index.html; do echo placeholder > "web/site/$f"; done
+          docker build web
+  relay-lint:
+    name: Relay / Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: relay/go.mod
           cache-dependency-path: relay/go.sum
@@ -174,53 +268,18 @@ jobs:
         with:
           version: v2.15
           working-directory: relay
-  gdscript-lint:
+  tools:
+    name: Tools / Python lint and tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - run: pip install gdtoolkit==4.5.0
-      - run: sh tools/run_lint.sh
-  python-lint:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - run: pip install -r tools/requirements-dev.txt
       - run: sh tools/run_python_checks.sh
-  actions-lint:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    env:
-      ACTIONLINT_VERSION: 1.7.12
-      ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install pinned actionlint and lint the workflows (shellcheck is preinstalled)
-        run: |
-          archive="$RUNNER_TEMP/actionlint.tar.gz"
-          curl -fsSL -o "$archive" "https://github.com/rhysd/actionlint/releases/download/v$ACTIONLINT_VERSION/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
-          echo "$ACTIONLINT_SHA256  $archive" | sha256sum -c -
-          tar -xzf "$archive" -C "$RUNNER_TEMP" actionlint
-          "$RUNNER_TEMP/actionlint" -color
-  compare-replays:
-    needs: godot
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: "{replay,netplay}-*"
-          merge-multiple: true
-          path: traces
-      - name: Test trace validation
+      - name: Tool tests
         run: |
           python3 tools/test_compare_replays.py
           python3 tools/test_desync_diff.py
@@ -234,14 +293,19 @@ jobs:
           python3 tools/zh_map/test_zh_map.py
           python3 tools/zh_parity/analyze.py --self-test
           python3 tools/test_zh_parity.py
-      - name: Compare all platform ticks
+  workflows-lint:
+    name: Workflows / Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      ACTIONLINT_VERSION: 1.7.12
+      ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install pinned actionlint and lint the workflows (shellcheck is preinstalled)
         run: |
-          python3 tools/compare_replays.py traces/replay-linux.tsv traces/replay-windows.tsv
-          python3 tools/compare_replays.py traces/economy-linux.tsv traces/economy-windows.tsv
-          python3 tools/compare_replays.py traces/combat-linux.tsv traces/combat-windows.tsv
-          python3 tools/compare_replays.py --interval 200 --rows 100 traces/team-linux.tsv traces/team-windows.tsv
-          python3 tools/compare_replays.py traces/replay-linux.tsv traces/replay-windows.tsv traces/export-replay-linux.tsv traces/export-replay-windows.tsv
-          python3 tools/compare_replays.py traces/economy-linux.tsv traces/economy-windows.tsv traces/export-economy-linux.tsv traces/export-economy-windows.tsv
-          python3 tools/compare_replays.py traces/combat-linux.tsv traces/combat-windows.tsv traces/export-combat-linux.tsv traces/export-combat-windows.tsv
-          python3 tools/compare_replays.py --interval 200 --rows 100 traces/team-linux.tsv traces/team-windows.tsv traces/export-team-linux.tsv traces/export-team-windows.tsv
-          python3 tools/compare_replays.py --interval 30 --rows 0 traces/netplay-linux.tsv traces/netplay-windows.tsv
+          archive="$RUNNER_TEMP/actionlint.tar.gz"
+          curl -fsSL -o "$archive" "https://github.com/rhysd/actionlint/releases/download/v$ACTIONLINT_VERSION/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          echo "$ACTIONLINT_SHA256  $archive" | sha256sum -c -
+          tar -xzf "$archive" -C "$RUNNER_TEMP" actionlint
+          "$RUNNER_TEMP/actionlint" -color

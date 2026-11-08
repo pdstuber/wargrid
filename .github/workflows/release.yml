@@ -23,12 +23,12 @@ jobs:
       version: ${{ steps.check.outputs.version }}
       prerelease: ${{ steps.check.outputs.prerelease }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - id: check
         run: python3 tools/release_version.py "$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
   tests:
     needs: version
-    uses: ./.github/workflows/tests.yml
+    uses: ./.github/workflows/ci.yml
   build:
     needs: [version, tests]
     runs-on: ubuntu-latest
@@ -36,10 +36,10 @@ jobs:
     env:
       VERSION: ${{ needs.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install pinned Godot
         run: python3 tools/install_godot.py
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ~/.local/share/godot/export_templates/4.7.2.stable
           key: export-templates-desktop-web-${{ runner.os }}-${{ env.TEMPLATES_SHA256 }}
@@ -62,13 +62,13 @@ jobs:
           python3 tools/package_release.py windows build/release/windows "release/Wargrid-$VERSION-windows.zip" "$source" "${extras[@]}"
           python3 tools/package_release.py macos build/release/macos/Wargrid.zip "release/Wargrid-$VERSION-macos.zip" "$source" "${extras[@]}"
           cp "${extras[@]}" web/site/
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: release-zips
           path: release/*.zip
           retention-days: 7
           if-no-files-found: error
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: web-site
           path: web/site/
@@ -85,12 +85,12 @@ jobs:
       VERSION: ${{ needs.version.outputs.version }}
       PRERELEASE: ${{ needs.version.outputs.prerelease }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           name: release-zips
           path: release
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: web-site
           path: web/site
@@ -108,8 +108,8 @@ jobs:
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN_RELAY }}
         run: |
-          flyctl deploy "$PWD/relay" -c "$PWD/relay/fly.toml" -a wargrid-relay-jvm --ha=false
-          curl -fsS --retry 10 --retry-delay 6 --retry-all-errors https://wargrid-relay-jvm.fly.dev/health
+          flyctl deploy "$PWD/relay" -c "$PWD/relay/fly.toml" -a wargrid-relay --ha=false
+          curl -fsS --retry 10 --retry-delay 6 --retry-all-errors https://relay.pdstuber.dev/health
       - name: Deploy web
         if: env.PRERELEASE == 'false'
         env:

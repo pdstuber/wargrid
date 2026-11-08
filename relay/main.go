@@ -74,9 +74,11 @@ func (h *relay) OnOpen(s *gws.Conn) {
 		shut:  func() { h.writeLater(s, func() error { return s.WriteClose(1000, nil) }) },
 	}})
 	_ = s.SetReadDeadline(time.Now().Add(h.silence))
+	slog.Info("connection opened")
 }
 
-func (h *relay) OnClose(s *gws.Conn, _ error) {
+func (h *relay) OnClose(s *gws.Conn, err error) {
+	slog.Info("connection closed", "err", err)
 	if c := getConn(s); c.seat != nil {
 		c.room.post(leaveMsg{c.seat})
 	}

@@ -3,18 +3,25 @@ repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd) || exit 1
 log_dir=$(mktemp -d) || exit 1
 trap 'rm -rf "$log_dir"' EXIT HUP INT TERM
 engine=${GODOT_BIN:-godot}
-"$engine" --headless --path "$repo_root/game" --import >"$log_dir/import.log" 2>&1
-code=$?
-cat "$log_dir/import.log"
-[ "$code" -eq 0 ] || exit 1
-if grep -E 'ERROR:|SCRIPT ERROR:' "$log_dir/import.log"; then exit 1; fi
+exe=${WARGRID_TEST_EXE:-} # an exported tests build runs the suite itself and needs no import
+if [ -z "$exe" ]; then
+	"$engine" --headless --path "$repo_root/game" --import >"$log_dir/import.log" 2>&1
+	code=$?
+	cat "$log_dir/import.log"
+	[ "$code" -eq 0 ] || exit 1
+	if grep -E 'ERROR:|SCRIPT ERROR:' "$log_dir/import.log"; then exit 1; fi
+fi
 shards=${WARGRID_TEST_SHARDS:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1)}
 [ "$shards" -ge 1 ] 2>/dev/null || { echo "FAIL: WARGRID_TEST_SHARDS must be a number >= 1"; exit 1; }
 [ "$shards" -gt 4 ] && shards=4 # measured: 8 shards are no faster than 4, the slowest case bounds the run
 pids=""
 i=0
 while [ "$i" -lt "$shards" ]; do
-	"$engine" --headless --path "$repo_root/game" --script res://tests/run_tests.gd -- --shard="$i/$shards" >"$log_dir/tests.$i.log" 2>&1 &
+	if [ -n "$exe" ]; then
+		"$exe" --headless -- --shard="$i/$shards" >"$log_dir/tests.$i.log" 2>&1 &
+	else
+		"$engine" --headless --path "$repo_root/game" --script res://tests/run_tests.gd -- --shard="$i/$shards" >"$log_dir/tests.$i.log" 2>&1 &
+	fi
 	pids="$pids $!"
 	i=$((i + 1))
 done

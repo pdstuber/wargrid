@@ -68,11 +68,12 @@ Shell keys (all scenes, M7 gate 2): F3 toggles the performance overlay (FPS, fra
 ## Setup and commands
 
 Use Godot **4.7.2 stable**. Verified local build: `4.7.2.stable.official.ed1daf0bf`.
-CI pins matching Linux archive and SHA-256 from [official release metadata](https://api.github.com/repos/godotengine/godot/releases/tags/4.7.2-stable), fetched 2026-11-01. No extra dependencies.
+CI pins matching Linux archive and SHA-256 from [official release metadata](https://api.github.com/repos/godotengine/godot/releases/tags/4.7.2-stable), fetched 2026-11-01; `tools/install_godot.py` falls back to downloads.godotengine.org when GitHub fails. No extra dependencies.
 
 ```sh
 godot --version
 sh tools/run_tests.sh
+WARGRID_TEST_EXE=build/WargridTests.app/Contents/MacOS/Wargrid sh tools/run_tests.sh   # same suite, 4 shards, in an exported "macOS Tests" build (the binary, not the .app)
 sh tools/run_lint.sh   # needs: uv tool install gdtoolkit==4.5.0
 sh tools/run_warnings.sh   # typing, shadowing, unused-parameter and integer-division warnings as errors
 python3 -m unittest discover -s tools -p 'test_*.py'
@@ -88,7 +89,7 @@ Profiling (report-only, never gates): `sh tools/run_profile.sh` prints per-zone 
 
 Milestone runs follow the reusable [milestone prompt](docs/milestone-prompt.md) (resume record, restart at gates, pre-authorized local commits, gate reviews). Token usage per session for the resume record: `python3 tools/session_usage.py <Claude session or Codex rollout files>`.
 
-CI runs Linux and Windows and compares their replay traces. macOS was dropped from CI on 2026-11-03 because hosted macOS runners repeatedly failed to start within the job timeout; at each milestone gate compare this Mac against a CI run instead: `sh tools/compare_local_traces.sh RUN_ID` (runs the suite with all three trace paths, downloads that run's Linux and Windows traces with `gh`, prints `REPLAYS MATCHED 1200` per scenario).
+CI runs Linux and Windows and compares their replay traces. Workflow `CI` (`.github/workflows/ci.yml`) skips pushes that change only docs or Markdown; Dependabot (`.github/dependabot.yml`) proposes weekly updates for actions, Go modules, pip and Docker images, and `godot-release.yml` opens an issue when a newer Godot stable is out (Godot pins are bumped by hand). macOS was dropped from CI on 2026-11-03 because hosted macOS runners repeatedly failed to start within the job timeout; at each milestone gate compare this Mac against a CI run instead: `sh tools/compare_local_traces.sh RUN_ID` (runs the suite with all three trace paths, downloads that run's Linux and Windows traces with `gh`, prints `REPLAYS MATCHED 1200` per scenario).
 
 Local reference check (needs the retail backup, never runs in CI): `python3 tools/check_reference.py "/path/Command & Conquer Generals - Zero Hour.tar.gz"` compares Wargrid's unit, building, weapon and armor values with the pinned Zero Hour INI data; see [Zero Hour verification](docs/reference/zero-hour-verification.md).
 
@@ -120,9 +121,11 @@ Spike knobs, all off by default: `WARGRID_SEATS` (seats per room), `WARGRID_BATC
 
 Shutdown: on SIGINT (fly's default `kill_signal`) or SIGTERM the relay stops accepting connections, closes lobbies that have not started, lets started matches run for `WARGRID_DRAIN_MS` (default 3500; plus 1 s close grace stays under fly's default 5 s `kill_timeout`), then closes the rest; every room logs `MATCH END`. A second signal exits immediately. Hour-long matches do not survive a deploy; that drain is M9 ([relay scaling](docs/reference/relay-scaling.md)).
 
+Logs (`fly logs -a wargrid-relay`): one line per connection open/close, room created, seat joined, match start and end; no client IPs. No metrics endpoint: Prometheus metrics were built and removed again on 2026-11-08 (the relay is plain WebSocket forwarding; they come back from git history if the game shows problems); fly's built-in machine and proxy metrics remain on [fly-metrics.net](https://fly-metrics.net). Suspend: the proxy suspends the machine when it sees no requests; internet scanners that found the new domain through Certificate Transparency (126 404s in its first 40 min) resume it, in about 0.2–0.3 s. A metrics scrape did not keep it awake. Details in the [relay metrics design](docs/superpowers/specs/2026-11-08-relay-metrics-design.md#result-2026-11-08).
+
 ### Hosting
 
-fly.io, region `fra`, one shared-cpu-1x 256 MB machine that suspends when idle. Rooms live in memory, so deploy exactly one machine (`--ha=false`; `fly machine list` must show one). The app name stays `wargrid-relay-jvm` (fly apps cannot be renamed) although it now runs the Go relay.
+fly.io, region `fra`, one shared-cpu-1x 256 MB machine that suspends when idle. Rooms live in memory, so deploy exactly one machine (`--ha=false`; `fly machine list` must show one). App `wargrid-relay` behind `wss://relay.pdstuber.dev/ws` since 2026-11-08 (CNAME at Namecheap, Let's Encrypt cert issued by fly). The old app `wargrid-relay-jvm` (named before the Go port; fly apps cannot be renamed) still serves v0.6.0 clients and is removed after the next release.
 
 Status: Go relay deployed at `wss://wargrid-relay-jvm.fly.dev/ws` (2026-11-05):
 - Deploy took 54 s; image 3.6 MB.
@@ -130,6 +133,7 @@ Status: Go relay deployed at `wss://wargrid-relay-jvm.fly.dev/ws` (2026-11-05):
 - Cold start after a stop 1.3–1.8 s; resume after a suspend 0.33–0.51 s.
 - Remote `run_netplay.sh match` PASSED.
 - Redeployed 2026-11-05 with shutdown drain and crash isolation (`58d13f2`); log shows `relay started … drain=3.5s`, probe `RELAY WELCOME` 1837 ms (cold start). A live drain on fly is not yet observed.
+- 2026-11-08: deployed with metrics as `wargrid-relay`; `https://relay.pdstuber.dev/health` ok, probe `RELAY WELCOME 77`.
 
 Capacity: a shared vCPU's 6.25 % baseline holds about one 3v3 room ([relay scaling](docs/reference/relay-scaling.md#flyio-vs-railway-measured-2026-11-0405)).
 
@@ -140,9 +144,9 @@ Without the allowances, list prices ([pricing](https://fly.io/pricing.md)) are $
 The bill itself was not read.
 
 ```sh
-fly deploy relay -c $PWD/relay/fly.toml -a wargrid-relay-jvm --dockerfile $PWD/relay/Dockerfile --ha=false
-godot --headless --path game -- --probe-relay wss://wargrid-relay-jvm.fly.dev/ws   # prints RELAY WELCOME <ms>
-WARGRID_RELAY_URL=wss://wargrid-relay-jvm.fly.dev/ws WARGRID_MATCH_WAIT=600 sh tools/run_netplay.sh match
+fly deploy relay -c $PWD/relay/fly.toml -a wargrid-relay --dockerfile $PWD/relay/Dockerfile --ha=false
+godot --headless --path game -- --probe-relay wss://relay.pdstuber.dev/ws   # prints RELAY WELCOME <ms>
+WARGRID_RELAY_URL=wss://relay.pdstuber.dev/ws WARGRID_MATCH_WAIT=600 sh tools/run_netplay.sh match
 ```
 
 ## Browser build
@@ -163,8 +167,8 @@ Verified by the user 2026-11-06: Safari loads the live site and plays a skirmish
 A pushed tag `v<version>` runs [`release.yml`](.github/workflows/release.yml) (plan: [release workflow](docs/superpowers/plans/2026-11-06-release-workflow.md), evidence: [release verification](docs/reference/release-verification.md)):
 
 1. Set `config/version` in `game/project.godot` to `<version>`, commit, push. The tag must equal `v` plus that value: the relay only lets clients with equal versions share a room.
-2. Push the tag. The full Tests workflow runs on that commit, then Linux, Windows, macOS and Web are exported and packaged.
-3. Approve the `production` Environment. The job deploys the relay (`wargrid-relay-jvm`), checks `/health`, deploys the web build (`wargrid-web`), checks `/health`, then publishes the three desktop zips as a GitHub Release.
+2. Push the tag. The full CI workflow runs on that commit, then Linux, Windows, macOS and Web are exported and packaged.
+3. Approve the `production` Environment. The job deploys the relay (`wargrid-relay`), checks `/health`, deploys the web build (`wargrid-web`), checks `/health`, then publishes the three desktop zips as a GitHub Release.
 4. Bump `config/version` on `main` to the next `-dev` version (`0.8.0-dev`), so local and test builds stay out of production rooms.
 
 A prerelease tag (`v0.7.0-rc.1`) skips both fly deploys and publishes a GitHub prerelease only. A relay deploy ends matches in progress, so release when nobody is playing. Builds are unsigned: on macOS 15 and later open System Settings > Privacy & Security > Open Anyway after the first blocked start (or run `xattr -dr com.apple.quarantine Wargrid.app` once); Windows SmartScreen needs More info, Run anyway. Each zip's `README.txt` says so and links the source for its tag. Re-running a failed release redeploys both fly apps, which ends live matches again.

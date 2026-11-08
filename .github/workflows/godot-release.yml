@@ -1,0 +1,36 @@
+name: Godot release check
+on:
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+jobs:
+  check:
+    name: Check for a newer Godot
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: Open an issue when the pinned Godot is behind
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          latest=$(gh api repos/godotengine/godot/releases/latest --jq .tag_name)
+          pinned=$(sed -n 's/^  GODOT_VERSION: //p' .github/workflows/ci.yml)
+          if [ -z "$latest" ] || [ -z "$pinned" ]; then
+            echo "could not read versions: latest=$latest pinned=$pinned"
+            exit 1
+          fi
+          echo "pinned $pinned, latest $latest"
+          newest=$(printf '%s\n%s\n' "$pinned" "$latest" | sort -V | tail -n 1)
+          if [ "$newest" = "$pinned" ]; then exit 0; fi # same version, or the pin is ahead (rc, dev)
+          title="Godot $latest is available"
+          # Closed counts too: closing the issue without bumping means "not this version".
+          seen=$(gh issue list --state all --search "\"$title\" in:title" --json title --jq "map(select(.title == \"$title\")) | length")
+          [ "$seen" -eq 0 ] || exit 0
+          gh issue list --state open --search "is available in:title" --json number,title \
+            --jq '.[] | select(.title | test("^Godot .* is available$")) | .number' |
+            while read -r old; do gh issue close "$old" --comment "Superseded by Godot $latest."; done
+          gh issue create --title "$title" --body "Pinned: $pinned. A bump updates the version, archive checksums and export template checksum in \`.github/workflows/ci.yml\` and \`.github/workflows/release.yml\`, then needs a green CI replay comparison."
