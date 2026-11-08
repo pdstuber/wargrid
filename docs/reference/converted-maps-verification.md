@@ -5,15 +5,16 @@ Plan: [converted maps playable plan](../superpowers/plans/2026-11-08-converted-m
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-09 01:00)
-Branch / base commit / working-tree state: converted-maps / b3e4824 / Task 3b re-pin diff uncommitted
-Last green task / next incomplete task: Task 3b committed, 7 pins re-pinned (see "Task 3b re-pin") / Task 3c
-Changed paths since last commit: game/tests/test_skirmish_match.gd, game/tests/test_team_match.gd, tools/run_netplay.sh, tools/run_team_match.sh, docs/reference/converted-maps-verification.md
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 573 / 136886 / 2 (Fm1 pair) / 1 / no marker
-Known red case or blocker: Fm1 (FRC_TERMINAL_TICK) only: "ends won inside the cap" and "pinned outcome"; needs a decision (larger cap or accept), see "Task 3b review fix"
-Approved decisions, pre-authorizations used, deferred gates: collector re-pin pre-approved 2026-11-08, used for the 7 non-Fm1 pins
+```text
+Resume record (updated 2026-11-09)
+Branch / base commit / working-tree state: converted-maps / 1c26efe / Task 3c diff uncommitted (convert.py, test_zh_map.py, 3 regenerated maps, more-maps.md, this file)
+Last green task / next incomplete task: Task 3b re-pin committed / Task 3c committed by coordinator, then a re-pin task for the moved pins below
+Changed paths since last commit: tools/zh_map/convert.py, tools/zh_map/test_zh_map.py, game/data/maps/{dry_wells,broken_crown,ashfall}.json, docs/reference/more-maps.md, docs/reference/converted-maps-verification.md
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 573 / 136886 / 4 (Fm1 pair + TB3 + TB4) / 1 / no marker
+Known red case or blocker: Fm1 pair (morning decision); TB3, TB4 and run_team_match.sh moved by the slot change (not re-pinned, see "Task 3c")
+Approved decisions, pre-authorizations used, deferred gates: re-pin of slot-moved pins pre-approved 2026-11-08, not used by this task
 Usage so far: not run
-Next exact action: coordinator commits re-pin, then Task 3c
+Next exact action: coordinator commits 3c, then re-pin task
 ```
 
 ## Baseline
@@ -158,3 +159,21 @@ Fm1 untouched, still red. Rows: `run_tests.sh` `CASES 573 CHECKS 136886 FAILURES
 
 ### Coordinator note on S1_CORE_SERIES
 The moved-pins table value 8642905752227994667 was measured with TERMINAL_TICK 8501 (series loop runs `TERMINAL_TICK + 1` ticks). With TERMINAL_TICK 8452 the correct pin is 1809165491953682337 (cause check: clean `git archive` of b3e4824 reproduces 8642905752227994667 under the old tick constant). Fm1 pair remains the only known red case.
+
+## Task 3c
+
+RED (convert.py change stashed, new tests present): `AssertionError: Lists differ: [12, 16] != [16, 14]` (test_supply_center_slot_nearest_supply) and `AssertionError: 19.525624189766635 not less than 19.5 : dry_wells seat 2`.
+
+GREEN: converter tests `Ran 21 tests ... OK`; `run_python_checks.sh` exit 0. Maps regenerated from `CnC_Modding_Support` at `3aad8e4`; `git diff --stat` shows only the three maps (slot lines only) and `skirmish.json` unchanged. Ashfall seat 1 `supply_center` [23,128] -> [9,139]. After distances in `more-maps.md`.
+
+Moved pins (not re-pinned; no other pin moved: S1, Cs1, test_map, test_supply Pl3 pass):
+
+| Pin | Old | New |
+|---|---|---|
+| `FINAL_DIGEST` (TB3) | 1c2a5905802d4d9b | b1c0606ee2bb58fc |
+| `TEAM_CORE_SERIES` (TB4) | 205812011678164261 | 7949105010122908522 |
+| `run_team_match.sh` | won tick=38510 winner=2 units_peak=207 | cap tick=45000 winner=null units_peak=246 (exit 1: the script expects a win) |
+
+Ashfall movement layout: scratch `MovementWorkload.create("ashfall")` spawned all 300 move-only units, exit 0, no assertion.
+
+Rows: tree `1c26efe` + 3c diff. `run_tests.sh` `CASES 573 CHECKS 136886 FAILURES 4`, exit 1, no marker; `run_lint.sh` exit 0; `run_warnings.sh` `WARNINGS CHECKED 116 FILES` exit 0; `run_team_match.sh` as above; `run_netplay.sh match` not run (skirmish.json unchanged). Logs: `wargrid-overnight-work/logs/t3c-*.log`.

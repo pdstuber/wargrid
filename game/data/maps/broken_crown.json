@@ -207,10 +207,10 @@
     [606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,611,654,712,814,885,983,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,998,926,806,677,646,622,612,608,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606,606]
   ],
   "starts": [
-    {"seat": 1, "cell": [18, 17], "slots": {"power_plant": [20, 15], "supply_center": [20, 18], "barracks": [16, 19], "factory": [14, 13], "command_center": [23, 12], "defence": [18, 15]}},
-    {"seat": 2, "cell": [92, 17], "slots": {"power_plant": [94, 15], "supply_center": [94, 18], "barracks": [90, 19], "factory": [88, 13], "command_center": [97, 12], "defence": [92, 15]}},
-    {"seat": 3, "cell": [92, 81], "slots": {"power_plant": [94, 79], "supply_center": [94, 82], "barracks": [90, 83], "factory": [88, 77], "command_center": [97, 76], "defence": [92, 79]}},
-    {"seat": 4, "cell": [18, 81], "slots": {"power_plant": [20, 79], "supply_center": [20, 82], "barracks": [16, 83], "factory": [14, 77], "command_center": [23, 76], "defence": [18, 79]}}
+    {"seat": 1, "cell": [18, 17], "slots": {"power_plant": [20, 15], "supply_center": [7, 5], "barracks": [20, 18], "factory": [16, 19], "command_center": [14, 13], "defence": [18, 15]}},
+    {"seat": 2, "cell": [92, 17], "slots": {"power_plant": [94, 15], "supply_center": [101, 5], "barracks": [94, 18], "factory": [90, 19], "command_center": [88, 13], "defence": [92, 15]}},
+    {"seat": 3, "cell": [92, 81], "slots": {"power_plant": [94, 79], "supply_center": [101, 93], "barracks": [94, 82], "factory": [90, 83], "command_center": [88, 77], "defence": [92, 79]}},
+    {"seat": 4, "cell": [18, 81], "slots": {"power_plant": [20, 79], "supply_center": [8, 93], "barracks": [20, 82], "factory": [16, 83], "command_center": [14, 77], "defence": [18, 79]}}
   ],
   "sources": [
     {"origin": [2, 3], "boxes": 400},

@@ -265,7 +265,7 @@ def _seat_of(obj):
     return 0
 
 
-def _find_slot(grid, size, taken):
+def _slots(grid, size, taken):
     w, h = grid["size"]
     bx, by = taken["builder"]
     for d in range(2, MAX_RING + 1):
@@ -281,8 +281,24 @@ def _find_slot(grid, size, taken):
                     and all(_open(grid, i, j) for i, j in grown if 0 <= i < w and 0 <= j < h)
                     and not grown & taken["cells"]
                 ):
-                    return [x, y], inside
-    return None, None
+                    yield [x, y], inside
+
+
+def _find_slot(grid, size, taken):
+    return next(_slots(grid, size, taken), (None, None))
+
+
+def _supply_site(grid, size, taken, start, sources):
+    docks = [s for s in sources if not s.get("delete_when_empty")]
+    if not docks:
+        return _find_slot(grid, size, taken)
+    sw, sh = docks[0].get("footprint", [SOURCE_W, SOURCE_H])
+    centres = [(s["origin"][0] + sw / 2, s["origin"][1] + sh / 2) for s in docks]
+    target = min(centres, key=lambda c: math.dist(c, start))
+    sites = list(_slots(grid, size, taken))
+    if not sites:
+        return None, None
+    return min(sites, key=lambda o: math.dist((o[0][0] + size / 2, o[0][1] + size / 2), target))
 
 
 def place(grid, raw):
@@ -313,7 +329,10 @@ def place(grid, raw):
         taken = dict(builder=cell, cells={cell} | source_cells)
         slots = {}
         for kind, size in FOOTPRINTS:
-            origin, footprint = _find_slot(grid, size, taken)
+            if kind == "supply_center":
+                origin, footprint = _supply_site(grid, size, taken, cell, sources)
+            else:
+                origin, footprint = _find_slot(grid, size, taken)
             if origin is None:
                 raise ConvertError(f"no slots: seat {seat}")
             slots[kind] = origin

@@ -206,6 +206,32 @@ class PlaceTest(unittest.TestCase):
                 self.assertFalse(a & b)
         self.assertEqual(out["sources"][0], {"origin": [14, 13], "boxes": 400})
 
+    def test_supply_center_slot_nearest_supply(self):
+        raw = raw_map(80, 30, starts=[(10, 15), (70, 15)], sources=[(22, 15), (58, 15)])
+        first = convert.convert(raw, "T", "n")["starts"][0]
+        self.assertEqual(first["slots"]["supply_center"], [16, 14])
+        self.assertEqual(first["slots"]["power_plant"], [12, 13])
+
+    def test_shipped_supply_centers_moved_closer(self):
+        before = {
+            "dry_wells": [28.3, 19.5],
+            "broken_crown": [22.4, 18.1, 15.9, 19.8],
+            "ashfall": [21.5, 22.4, 25.1, 18.0, 20.4, 21.1, 23.7, 26.5],
+        }
+        maps = os.path.join(os.path.dirname(__file__), "..", "..", "game", "data", "maps")
+        for name, limits in before.items():
+            with open(os.path.join(maps, name + ".json")) as f:
+                data = json.load(f)
+            centres = [
+                (s["origin"][0] + s.get("footprint", [4, 5])[0] / 2, s["origin"][1] + s.get("footprint", [4, 5])[1] / 2)
+                for s in data["sources"]
+                if s["boxes"] == 400
+            ]
+            for start, limit in zip(data["starts"], limits, strict=True):
+                x, y = start["slots"]["supply_center"]
+                nearest = min(math.dist((x + 1.5, y + 1.5), c) for c in centres)
+                self.assertLess(nearest, limit, f"{name} seat {start['seat']}")
+
     def test_small_piles_are_separate_sources(self):
         raw = raw_map(80, 30, starts=[(10, 15), (70, 15)], sources=[(16, 15), (64, 15)], piles=[(40, 5), (41, 6)])
         out = convert.convert(raw, "T", "n")
