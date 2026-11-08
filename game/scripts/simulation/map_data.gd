@@ -47,7 +47,7 @@ static func create(map: Dictionary, seats: Array[Dictionary]) -> Simulation:
 		if seat.get("defer", false): continue
 		var cell := start_cell(map, seat.seat)
 		sim.spawn(seat.seat, Vector2(cell) + Vector2(0.5, 0.5), Registry.faction(Registry.Factions.DEFAULT_FACTION).start_unit)
-	for source: Dictionary in map.sources: sim.add_supply_source(_cell(source.origin), int(source.boxes))
+	for source: Dictionary in map.sources: sim.add_supply_source(_cell(source.origin), int(source.boxes), Registry.source_footprint(source), source.get("delete_when_empty", false))
 	return sim
 
 static func _cell(pair: Array) -> Vector2i:
@@ -64,7 +64,19 @@ static func _valid(map: Dictionary) -> bool:
 	for start: Variant in map.starts:
 		if not _start_valid(map, start, size): return false
 	for source: Variant in map.sources:
-		if not _open(map, size, _cell(source.origin), Registry.SOURCE_FOOTPRINT): return false
+		if not _source_valid(map, size, source): return false
+	return true
+
+static func _source_valid(map: Dictionary, size: Vector2i, source: Variant) -> bool:
+	if source is not Dictionary or source.get("origin") is not Array or source.origin.size() != 2: return false
+	if source.has("delete_when_empty") and source.delete_when_empty is not bool: return false
+	if source.has("footprint") and not _footprint_valid(source.footprint): return false
+	return _open(map, size, _cell(source.origin), Registry.source_footprint(source))
+
+static func _footprint_valid(footprint: Variant) -> bool:
+	if footprint is not Array or footprint.size() != 2: return false
+	for side: Variant in footprint:
+		if (side is not float and side is not int) or side < 1 or side != floorf(side): return false
 	return true
 
 static func _start_valid(map: Dictionary, start: Dictionary, size: Vector2i) -> bool:

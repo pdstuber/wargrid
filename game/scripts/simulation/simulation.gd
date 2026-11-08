@@ -766,7 +766,7 @@ func _union_cells() -> Array[Vector2i]:
 	for building: Dictionary in _buildings.values():
 		cells.append_array(Construction.cells(building.kind,Vector2i(building.origin[0],building.origin[1])))
 	for source: Dictionary in _sources.values():
-		cells.append_array(Construction.block(Registry.SOURCE_FOOTPRINT,Vector2i(source.origin[0],source.origin[1])))
+		cells.append_array(Construction.block(Registry.source_footprint(source),Vector2i(source.origin[0],source.origin[1])))
 	return cells
 
 func _detach_task(unit: Dictionary) -> void:
@@ -815,11 +815,14 @@ func _remove_building(id: int) -> void:
 func _spawn_on_complete(building: Dictionary) -> void:
 	for kind: String in Registry.kind(building.kind).spawns_on_complete: Production.spawn_unit(self,building,kind,null)
 
-func add_supply_source(origin: Vector2i, boxes: int) -> int:
-	if boxes < 0: return -1
-	if not Construction.footprint_error(self,Construction.block(Registry.SOURCE_FOOTPRINT,origin)).is_empty(): return -1
+func add_supply_source(origin: Vector2i, boxes: int, footprint: Vector2i = Registry.SOURCE_FOOTPRINT, delete_when_empty: bool = false) -> int:
+	if boxes < 0 or footprint.x < 1 or footprint.y < 1: return -1
+	if not Construction.footprint_error(self,Construction.block(footprint,origin)).is_empty(): return -1
 	var id: int = _next_entity_id
 	_next_entity_id += 1
-	_sources[id] = {"id":id,"origin":[origin.x,origin.y],"boxes":boxes,"active_collector_id":null}
+	var source: Dictionary = {"id":id,"origin":[origin.x,origin.y],"boxes":boxes,"active_collector_id":null}
+	if footprint != Registry.SOURCE_FOOTPRINT: source.footprint = [footprint.x,footprint.y]
+	if delete_when_empty: source.delete_when_empty = true
+	_sources[id] = source
 	Construction.rebuild_navigation(self)
 	return id

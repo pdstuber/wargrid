@@ -571,7 +571,7 @@ Matches with up to eight players in teams with team victory; a map converted fro
 
 ### Ashfall playable (small task before M7; user, 2026-11-06)
 
-Make the converted map playable in the launcher: map choice, camera limits for 196 × 196, terrain drawn as one batch (the performance spike measured about 5 fps with per-cell drawing). No minimap yet (HUD milestone).
+Make the converted maps playable in the launcher (Ashfall, plus Dry Wells and Broken Crown converted 2026-11-07, see [more maps](docs/reference/more-maps.md); the online `start` message needs a map field first): map choice offline and online, camera limits for 196 × 196, terrain drawn as one batch (the performance spike measured about 5 fps with per-cell drawing). No minimap yet (HUD milestone).
 
 ### M7 — Three factions with their signature mechanics
 

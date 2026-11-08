@@ -17,7 +17,7 @@ static func release(sim: Simulation, unit_id: int) -> void:
 	collection.phase = "seeking" if collection.enabled else "idle"
 
 static func _size(target: Dictionary) -> Vector2i:
-	return Registry.SOURCE_FOOTPRINT if target.has("boxes") else Registry.building_view(target.kind).footprint
+	return Registry.source_footprint(target) if target.has("boxes") else Registry.building_view(target.kind).footprint
 
 static func center(target: Dictionary) -> Array:
 	var size: Vector2i = _size(target)
@@ -177,12 +177,15 @@ static func step(sim: Simulation, unit_ids: Array[int]) -> void:
 		collection.remaining_ticks -= 1
 		if collection.remaining_ticks > 0: continue
 		if collection.phase == "loading":
-			# Zero Hour waits one more delay after the last box, for every collector.
+			# Zero Hour waits one more delay after the last box at a permanent source.
 			if collection.cargo == Registry.collects(unit.kind).boxes or target.boxes == 0:
 				release(sim,id)
 				collection.retry_tick = sim._tick + 1
 				continue
 			_load_box(collection, target)
+			if target.boxes == 0 and target.get("delete_when_empty", false):
+				sim.remove_object(target.id)
+				continue
 			collection.remaining_ticks = Registry.collects(unit.kind).load_ticks
 		elif collection.phase == "unloading":
 			sim._players[unit.owner].credits += collection.cargo * Registry.collects(unit.kind).box_value

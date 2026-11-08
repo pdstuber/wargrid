@@ -5,13 +5,14 @@ const View = preload("res://scripts/presentation/world_view.gd")
 var _attack_move_mode: bool = false
 var inspected_id: int = -1
 static var factions: Dictionary = Registry.Factions.DEFAULT_SKIRMISH
+static var map_path: String = Skirmish.MAP_PATH
 
 func _ready() -> void:
 	super._ready()
 	$HUD/Restart.pressed.connect(_restart)
 
 func _create_simulation() -> Simulation:
-	return Skirmish.create(true, "ai", factions)
+	return Skirmish.create(true, "ai", factions, map_path)
 
 func _escape_pending() -> bool:
 	return not simulation.match_over() and (_attack_move_mode or inspected_id != -1 or super())

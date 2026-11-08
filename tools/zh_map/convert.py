@@ -1,6 +1,6 @@
 """Convert an EA Zero Hour .map (GPL, CnC_Modding_Support) into a Wargrid map JSON.
 
-Format evidence: docs/reference/m6-map-and-feel.md. Usage: convert.py <map> <out.json>
+Format evidence: docs/reference/m6-map-and-feel.md. Usage: convert.py <map> <out.json> <name>
 """
 
 import collections
@@ -18,15 +18,17 @@ import refpack
 CELL = 25.0
 SAMPLE = 10.0
 HEIGHT_SCALE = 0.625
+# Mirrors SOURCE_FOOTPRINT in game/scripts/simulation/definitions/definitions.gd; keep in step.
+SOURCE_W, SOURCE_H = 4, 5
 CLIFF_STEP = 9.8
-NAME = "Ashfall"
 NOTICE = (
     "Converted from an Electronic Arts map source (Copyright 2025 Electronic Arts Inc., "
     "GPL-3.0 with EA's additional terms). Modified; not the original. "
     "Terms, source path and revision: game/data/maps/NOTICE.md."
 )
-# StartingBoxes in object/civilianbuilding.ini, Object SupplyDock (INIZH.big); no map override.
-BOXES = {"SupplyDock": 400}
+# StartingBoxes and DeleteWhenEmpty in object/civilianbuilding.ini (INIZH.big); no map override.
+# The 1 x 1 pile footprint is Wargrid's choice so Dry Wells' piles do not overlap.
+SOURCES = {"SupplyDock": (400, (SOURCE_W, SOURCE_H), False), "SupplyPileSmall": (50, (1, 1), True)}
 FOOTPRINTS = (
     ("power_plant", 2),
     ("supply_center", 3),
@@ -35,9 +37,7 @@ FOOTPRINTS = (
     ("command_center", 3),
     ("defence", 1),
 )
-# Mirror game/scripts/simulation/definitions/definitions.gd (SOURCE_FOOTPRINT, BUILD_EDGE_MARGIN) and the
-# supply_center supply_clearance in usa.gd; the game defines them, keep these in step.
-SOURCE_W, SOURCE_H = 4, 5
+# Mirror BUILD_EDGE_MARGIN in definitions.gd and the supply_center supply_clearance in usa.gd; keep in step.
 EDGE_MARGIN = 1
 MAX_RING = 12
 SUPPLY_REACH = 20
@@ -182,8 +182,8 @@ def _read_water(c, version):
         if version >= 3:
             c.take("i")
         pts = [(c.take("i"), c.take("i"), c.take("i")) for _ in range(c.take("i"))]
-        if water or river:
-            out.append([(x, y) for x, y, _ in pts])
+        if (water or river) and pts:
+            out.append((pts[0][2], [(x, y) for x, y, _ in pts]))  # every point of a polygon shares one height
     return out
 
 
@@ -195,8 +195,14 @@ def _inside(poly, x, y):
     return hit
 
 
+def _ground(raw, x, y):
+    i = min(int(x // SAMPLE) + raw["border"], raw["width"] - 1)
+    j = min(int(y // SAMPLE) + raw["border"], raw["height"] - 1)
+    return raw["heights"][j * raw["width"] + i] * HEIGHT_SCALE
+
+
 def _wet(raw, x, y):
-    return any(_inside(p, x, y) for p in raw["water_polygons"])
+    return any(_inside(p, x, y) and _ground(raw, x, y) < level for level, p in raw["water_polygons"])
 
 
 def _overlap(a0, a1, b0, b1):
@@ -281,15 +287,23 @@ def _find_slot(grid, size, taken):
 
 def place(grid, raw):
     sources: list[dict[str, Any]] = []
+    source_cells: set[tuple[int, int]] = set()
     for o in raw["objects"]:
-        if o["template"] in BOXES:
+        if o["template"] in SOURCES:
+            boxes, (sw, sh), delete = SOURCES[o["template"]]
             c = (int(o["x"] // CELL), int(o["y"] // CELL))
             w, h = grid["size"]
-            origin = [min(max(c[0] - SOURCE_W // 2, 0), w - SOURCE_W), min(max(c[1] - SOURCE_H // 2, 0), h - SOURCE_H)]
-            sources.append(dict(origin=origin, boxes=BOXES[o["template"]]))
-    source_cells = (
-        set().union(*(_rect(s["origin"][0], s["origin"][1], SOURCE_W, SOURCE_H) for s in sources)) if sources else set()
-    )
+            origin = [min(max(c[0] - sw // 2, 0), w - sw), min(max(c[1] - sh // 2, 0), h - sh)]
+            cells = _rect(origin[0], origin[1], sw, sh)
+            if cells & source_cells:
+                raise ConvertError("sources overlap")
+            source_cells |= cells
+            source = dict(origin=origin, boxes=boxes)
+            if (sw, sh) != (SOURCE_W, SOURCE_H):
+                source["footprint"] = [sw, sh]
+            if delete:
+                source["delete_when_empty"] = True
+            sources.append(source)
     seats = sorted((_seat_of(o), o) for o in raw["objects"] if _seat_of(o))
     starts = []
     for seat, o in seats:
@@ -471,7 +485,7 @@ def report(raw, out):
 def main(argv):
     raw = load(argv[1])
     try:
-        out = convert(raw, NAME, NOTICE)
+        out = convert(raw, argv[3], NOTICE)
     except ConvertError as e:
         print(f"convert failed: {e}", file=sys.stderr)
         return 1

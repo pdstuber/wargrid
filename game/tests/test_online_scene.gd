@@ -4,9 +4,11 @@ extends RefCounted
 const OnlineScene = preload("res://scenes/online_skirmish.tscn")
 const Launcher = preload("res://scenes/launcher.tscn")
 const LauncherScript = preload("res://scripts/launcher.gd")
+const SkirmishMain = preload("res://scripts/skirmish_main.gd")
 const Lockstep = preload("res://scripts/net/lockstep.gd")
 const Wire = preload("res://scripts/net/wire.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
+const MapData = preload("res://scripts/simulation/map_data.gd")
 const PEER_TICKS: int = 60
 
 class FakeTransport extends RefCounted:
@@ -28,7 +30,7 @@ class FakeTransport extends RefCounted:
 	func rtt_samples() -> PackedInt64Array: return PackedInt64Array([40000])
 
 func cases() -> Array[Callable]:
-	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_rejection_line, test_overlay_net_line, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_launcher_layout, test_launcher_faction_selectors_fit]
+	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_rejection_line, test_overlay_net_line, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_launcher_layout, test_launcher_faction_selectors_fit, test_plays_dry_wells_from_each_seat]
 
 func _online(runner, seat: int) -> Dictionary:
 	var transport := FakeTransport.new()
@@ -232,4 +234,23 @@ func test_launcher_faction_selectors_fit(runner) -> bool:
 		runner.check(own.item_count == 3 and own.get_item_text(0) == "China" and own.get_item_text(1) == "Free Resistance Coalition" and own.get_item_text(own.selected) == "United States", "F5 selector lists faction display names and defaults to the United States")
 		launcher.free()
 	runner.root.size = original
+	return true
+
+func test_plays_dry_wells_from_each_seat(runner) -> bool:
+	var before: String = SkirmishMain.map_path
+	runner.check(before == "res://data/maps/skirmish.json", "N7 without the launcher the scenes keep the test map")
+	for seat in [1, 2]:
+		var launcher = Launcher.instantiate()
+		runner.root.add_child(launcher)
+		await runner.process_frame
+		launcher._transport = FakeTransport.new()
+		launcher._seat = seat
+		launcher._start({"type": "start", "seats": [1, 2], "delay": 4})
+		var main = runner.root.get_tree().current_scene
+		var map: Dictionary = main.simulation.map_data()
+		var start: Vector2i = MapData.start_cell(map, seat)
+		runner.check(map.name == "Dry Wells" and main.get_node("Camera2D").position == Iso.world_to_plane(Vector2(start) + Vector2(0.5, 0.5)), "N7 seat %d plays the launcher's map with the camera on its own base" % seat)
+		main.free()
+		await runner.process_frame
+	SkirmishMain.map_path = before
 	return true

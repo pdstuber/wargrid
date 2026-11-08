@@ -10,7 +10,7 @@ const CombatFixture = preload("res://tests/combat_fixture.gd")
 const MovementWorkload = preload("res://scripts/debug/movement_workload.gd")
 
 func cases() -> Array[Callable]:
-	return [test_pick, test_pile_label_drawn_over_buildings, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_heading_mark_layout,test_depth_order_matches_comparator,test_battery_shot_line,test_battery_target_line,test_building_icons,test_building_label_has_no_kind_id,test_horde_marks,test_rebuild_laborer_unselectable, test_crate_marks_frc_only, test_passengers_not_pickable, test_terrain_redraws_only_when_map_changes, test_structures_redraw_only_when_they_change]
+	return [test_pick, test_pile_label_drawn_over_buildings, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_heading_mark_layout,test_depth_order_matches_comparator,test_battery_shot_line,test_battery_target_line,test_building_icons,test_building_label_has_no_kind_id,test_horde_marks,test_rebuild_laborer_unselectable, test_crate_marks_frc_only, test_passengers_not_pickable, test_terrain_redraws_only_when_map_changes, test_structures_redraw_only_when_they_change, test_small_pile_view, test_structures_redraw_when_a_pile_vanishes]
 
 func test_pick(runner) -> bool:
 	var view = View.new()
@@ -415,5 +415,48 @@ func test_pile_label_drawn_over_buildings(runner) -> bool:
 	await runner.process_frame
 	await runner.process_frame
 	runner.check(view.order == ["building", "label"], "V11 the pile label is drawn after every building, got " + str(view.order))
+	view.free()
+	return true
+
+class SourceSizeView extends View:
+	var sizes: Array[Vector2i] = []
+
+	func _draw_footprint(_origin: Array, size: Vector2i, color: Color, _selected: bool) -> void:
+		if color == Color("9f8045"): sizes.append(size)
+
+func test_small_pile_view(runner) -> bool:
+	var sim = Fixture.make_world()
+	var pile: int = sim.add_supply_source(Vector2i(24,4),50,Vector2i.ONE,true)
+	var dock: int = sim.add_supply_source(Vector2i(10,20),8)
+	var view = SourceSizeView.new()
+	runner.root.add_child(view)
+	view.set_state(sim.snapshot(),[])
+	runner.check(view.pick_object(Iso.world_to_plane(Vector2(24.5,4.5))) == pile and view.pick_source(Iso.world_to_plane(Vector2(24.5,4.5))) == pile,"V13 the pile's own cell picks it")
+	runner.check(view.pick_object(Iso.world_to_plane(Vector2(25.5,5.5))) == -1 and view.pick_source(Iso.world_to_plane(Vector2(25.5,5.5))) == -1,"V13 a cell a 4x5 pile would cover does not")
+	runner.check(view.pick_source(Iso.world_to_plane(Vector2(12,22))) == dock,"V13 docks still pick over 4x5")
+	await runner.process_frame
+	runner.check(view.sizes == [Vector2i.ONE,Vector2i(4,5)],"V13 each source drawn at its own footprint, got " + str(view.sizes))
+	sim.remove_object(pile)
+	var selected: Array[int] = [pile]
+	view.set_state(sim.snapshot(),selected)
+	view.queue_redraw()
+	await runner.process_frame
+	runner.check(view.pick_source(Iso.world_to_plane(Vector2(24.5,4.5))) == -1,"V13 a selected pile that vanished is not picked")
+	view.free()
+	return true
+
+func test_structures_redraw_when_a_pile_vanishes(runner) -> bool:
+	var sim = Fixture.make_world()
+	var pile: int = sim.add_supply_source(Vector2i(10,10),1,Vector2i.ONE,true)
+	var view = View.new()
+	runner.root.add_child(view)
+	var layer = view.get_node("Structures")
+	view.set_state(sim.snapshot(),[])
+	await runner.process_frame
+	var first: int = layer.draws
+	sim.remove_object(pile)
+	view.set_state(sim.snapshot(),[])
+	await runner.process_frame
+	runner.check(layer.draws == first + 1,"V14 the structure layer redraws when a pile disappears")
 	view.free()
 	return true

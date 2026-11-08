@@ -1,8 +1,11 @@
+import json
 import math
 import os
 import struct
 import sys
+import tempfile
 import unittest
+from unittest import mock
 
 sys.path.insert(0, os.path.dirname(__file__))
 import convert
@@ -19,8 +22,8 @@ def chunk(ids, name, version, payload):
     return struct.pack("<IHi", ids[name], version, len(payload)) + payload
 
 
-def synthetic_file(objects):
-    names = ["HeightMapData", "ObjectsList", "Object", "waypointID", "waypointName"]
+def synthetic_file(objects, polygons=()):
+    names = ["HeightMapData", "ObjectsList", "Object", "waypointID", "waypointName", "PolygonTriggers"]
     ids = {n: i + 1 for i, n in enumerate(names)}
     toc = b"CkMp" + struct.pack("<i", len(names))
     for n in names:
@@ -35,10 +38,19 @@ def synthetic_file(objects):
             else:
                 d += struct.pack("<i", (ids[key] << 8) | TYPE_ASCII) + astr(value)
         body += chunk(ids, "Object", 3, struct.pack("<ffffi", x, y, 0.0, 0.5, 7) + astr(template) + d)
-    return toc + chunk(ids, "HeightMapData", 4, heights) + chunk(ids, "ObjectsList", 3, body)
+    triggers = struct.pack("<i", len(polygons))
+    for z, points in polygons:
+        triggers += astr("water") + astr("") + struct.pack("<iBBi", 1, 1, 0, 0) + struct.pack("<i", len(points))
+        triggers += b"".join(struct.pack("<iii", x, y, z) for x, y in points)
+    return (
+        toc
+        + chunk(ids, "HeightMapData", 4, heights)
+        + chunk(ids, "ObjectsList", 3, body)
+        + chunk(ids, "PolygonTriggers", 4, triggers)
+    )
 
 
-def raw_map(w_cells, h_cells, cliff_cells=(), cliff_samples=(), starts=(), sources=()):
+def raw_map(w_cells, h_cells, cliff_cells=(), cliff_samples=(), starts=(), sources=(), piles=()):
     w, h = int(w_cells * 2.5), int(h_cells * 2.5)
     cliff = [False] * (w * h)
     for cx, cy in cliff_cells:
@@ -61,10 +73,11 @@ def raw_map(w_cells, h_cells, cliff_cells=(), cliff_samples=(), starts=(), sourc
                 props=props,
             )
         )
-    for cx, cy in sources:
-        objects.append(
-            dict(template="SupplyDock", x=cx * 25 + 12.5, y=cy * 25 + 12.5, z=0.0, angle=0.0, flags=0, props={})
-        )
+    for template, cells in (("SupplyDock", sources), ("SupplyPileSmall", piles)):
+        for cx, cy in cells:
+            objects.append(
+                dict(template=template, x=cx * 25 + 12.5, y=cy * 25 + 12.5, z=0.0, angle=0.0, flags=0, props={})
+            )
     return dict(
         width=w,
         height=h,
@@ -113,6 +126,13 @@ class ReadMapTest(unittest.TestCase):
         self.assertEqual((first["x"], first["y"], first["flags"]), (100.0, 200.0, 7))
         self.assertEqual(first["props"], {"waypointID": 5, "waypointName": "Player_1_Start"})
 
+    def test_water_polygon_keeps_its_height(self):
+        raw = convert.read_map(synthetic_file([], polygons=[(7, [(0, 0), (50, 0), (50, 50)])]))
+        self.assertEqual(raw["water_polygons"], [(7, [(0, 0), (50, 0), (50, 50)])])
+
+    def test_water_polygon_without_points_is_skipped(self):
+        self.assertEqual(convert.read_map(synthetic_file([], polygons=[(7, [])]))["water_polygons"], [])
+
     def test_cliff_fallback_from_heights(self):
         self.assertTrue(convert.derive_cliffs(2, 2, [0, 0, 0, 16])[0])
         self.assertFalse(convert.derive_cliffs(2, 2, [0, 0, 0, 15])[0])
@@ -132,10 +152,17 @@ class ResampleTest(unittest.TestCase):
 
     def test_water_polygon_blocks(self):
         raw = raw_map(4, 4)
-        raw["water_polygons"] = [[(0, 0), (50, 0), (50, 50), (0, 50)]]
+        raw["water_polygons"] = [(5, [(0, 0), (50, 0), (50, 50), (0, 50)])]
         cells = convert.resample(raw)["cells"]
         self.assertEqual(cells[0][:2], "~~")
         self.assertEqual(cells[2][:2], "..")
+
+    def test_ground_above_the_water_level_is_dry(self):
+        raw = raw_map(4, 4)
+        raw["heights"] = [100] * (raw["width"] * raw["height"])  # 62.5 world units against water at 5
+        raw["water_polygons"] = [(5, [(0, 0), (50, 0), (50, 50), (0, 50)])]
+        self.assertEqual(convert.resample(raw)["cells"][0][:2], "..")
+        self.assertTrue(convert.passable_samples(raw)[0][0])
 
 
 class PlaceTest(unittest.TestCase):
@@ -179,6 +206,33 @@ class PlaceTest(unittest.TestCase):
                 self.assertFalse(a & b)
         self.assertEqual(out["sources"][0], {"origin": [14, 13], "boxes": 400})
 
+    def test_small_piles_are_separate_sources(self):
+        raw = raw_map(80, 30, starts=[(10, 15), (70, 15)], sources=[(16, 15), (64, 15)], piles=[(40, 5), (41, 6)])
+        out = convert.convert(raw, "T", "n")
+        pile = dict(boxes=50, footprint=[1, 1], delete_when_empty=True)
+        self.assertEqual(
+            out["sources"],
+            [
+                {"origin": [14, 13], "boxes": 400},
+                {"origin": [62, 13], "boxes": 400},
+                dict(origin=[40, 5], **pile),
+                dict(origin=[41, 6], **pile),
+            ],
+        )
+
+    def test_overlapping_sources_fail(self):
+        raw = raw_map(80, 30, starts=[(10, 15), (70, 15)], sources=[(16, 15), (64, 15)], piles=[(40, 5), (40, 5)])
+        with self.assertRaisesRegex(convert.ConvertError, "sources overlap"):
+            convert.convert(raw, "T", "n")
+
+    def test_slots_keep_clearance_from_small_piles(self):
+        raw = raw_map(80, 30, starts=[(10, 15), (70, 15)], sources=[(24, 15), (64, 15)], piles=[(13, 15)])
+        out = convert.convert(raw, "T", "n")
+        sizes = dict(convert.FOOTPRINTS)
+        for kind, (x, y) in out["starts"][0]["slots"].items():
+            gap = min(max(abs(x + i - 13), abs(y + j - 15)) for i in range(sizes[kind]) for j in range(sizes[kind]))
+            self.assertGreater(gap, 1, kind + " clearance from the 1x1 pile")
+
     def test_edge_source_stays_inside_map(self):
         raw = raw_map(80, 30, starts=[(10, 15), (70, 15)], sources=[(16, 15), (79, 29)])
         out = convert.convert(raw, "T", "n")
@@ -196,6 +250,16 @@ class PlaceTest(unittest.TestCase):
             self.assertTrue(all(1 <= i < 79 and 1 <= j < 29 for i, j in fp), kind + " edge margin")
             gap = min(max(abs(a - c), abs(b - d)) for a, b in fp for c, d in pile)
             self.assertGreater(gap, 1, kind + " clearance from the 4x5 pile")
+
+
+class MainTest(unittest.TestCase):
+    def test_map_name_comes_from_the_command_line(self):
+        raw = raw_map(80, 30, starts=[(10, 15), (70, 15)], sources=[(16, 15), (64, 15)])
+        with tempfile.TemporaryDirectory() as directory, mock.patch.object(convert, "load", return_value=raw):
+            out = os.path.join(directory, "m.json")
+            self.assertEqual(convert.main(["convert.py", "in.map", out, "Dry Wells"]), 0)
+            with open(out) as f:
+                self.assertEqual(json.load(f)["name"], "Dry Wells")
 
 
 class RouteTest(unittest.TestCase):

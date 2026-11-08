@@ -30,7 +30,7 @@ func _exit_tree() -> void:
 	if _lockstep != null: _lockstep.send = Callable()
 
 func _create_simulation() -> Simulation:
-	return Skirmish.create(true, "human", {})
+	return Skirmish.create(true, "human", {}, map_path)
 
 func _confirm_leave() -> bool:
 	return true

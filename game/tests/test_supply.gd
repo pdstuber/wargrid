@@ -6,9 +6,10 @@ const Simulation = preload("res://scripts/simulation/simulation.gd")
 const MapData = preload("res://scripts/simulation/map_data.gd")
 const Construction = preload("res://scripts/simulation/construction.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
+const Supply = preload("res://scripts/simulation/supply_collection.gd")
 
 func cases() -> Array[Callable]:
-	return [test_source_and_gather_validation,test_dock_timing,test_partial_load_and_conservation,test_dock_competition_and_lookup,test_collection_interruptions,test_dock_loss_recovery,test_ground_dock_cell,test_ground_dock_queue,test_ground_admit_first_waiter_first,test_ground_dock_no_starvation,test_ground_dock_full_perimeter,test_truck_timing,test_dock_loss_recovery_ground,test_ground_truck_recovers_after_blocked_path,test_ground_dock_skips_unwalkable_and_unreachable,test_laborer_timing,test_laborer_docks_share_fairly,test_mixed_waiters_do_not_deadlock,test_air_waiter_ahead_of_earlier_ground_waiter,test_helicopter_on_emptied_pile_waits_its_delay,test_depot_clearance_from_piles,test_build_edge_margin,test_start_slots_obey_placement_rules]
+	return [test_source_and_gather_validation,test_dock_timing,test_partial_load_and_conservation,test_dock_competition_and_lookup,test_collection_interruptions,test_dock_loss_recovery,test_ground_dock_cell,test_ground_dock_queue,test_ground_admit_first_waiter_first,test_ground_dock_no_starvation,test_ground_dock_full_perimeter,test_truck_timing,test_dock_loss_recovery_ground,test_ground_truck_recovers_after_blocked_path,test_ground_dock_skips_unwalkable_and_unreachable,test_laborer_timing,test_laborer_docks_share_fairly,test_mixed_waiters_do_not_deadlock,test_air_waiter_ahead_of_earlier_ground_waiter,test_helicopter_on_emptied_pile_waits_its_delay,test_depot_clearance_from_piles,test_build_edge_margin,test_start_slots_obey_placement_rules,test_source_footprint_records,test_ground_dock_on_small_pile,test_neighbouring_small_piles_load_at_once,test_depot_clearance_from_small_pile,test_small_pile_removed_with_last_box,test_waiters_reseek_when_small_pile_vanishes,test_gather_on_vanishing_small_pile,test_pile_clearance_frees_after_removal]
 
 func ready(runner, boxes: int = 8) -> Dictionary:
 	var sim = Fixture.make_world(50000)
@@ -604,12 +605,12 @@ func test_helicopter_on_emptied_pile_waits_its_delay(runner) -> bool:
 	runner.check(ticks == 4 * delay and Fixture.object(sim,world.collector).collection.cargo == 3,"Gd11 three boxes then one more delay before it leaves, got %d ticks" % ticks)
 	return true
 
-func placement(kind: String, origin: Vector2i, pile: Variant = null) -> bool:
+func placement(kind: String, origin: Vector2i, pile: Variant = null, size: Vector2i = Registry.SOURCE_FOOTPRINT) -> bool:
 	var faction: String = kind.split("_")[0]
 	var sim = Fixture.make_world(50000)
 	var builder: int = sim.spawn(1,Vector2(4.5,20.5),faction + "_builder")
 	if faction != "frc": Fixture.add_completed(sim,1,faction + "_power_plant",Vector2i(2,26))
-	if pile != null: sim.add_supply_source(pile,50)
+	if pile != null: sim.add_supply_source(pile,50,size)
 	return sim.preview_build(1,builder,kind,origin).ok
 
 func test_depot_clearance_from_piles(runner) -> bool:
@@ -649,4 +650,171 @@ func test_start_slots_obey_placement_rules(runner) -> bool:
 				var origin: Vector2i = MapData.slot(map,int(start.seat),kind)
 				var error: String = Construction.footprint_error(sim,Construction.cells(kind,origin),kind)
 				runner.check(error.is_empty(),"Pl3 %s seat %d %s slot %s: %s" % [path.get_file(),int(start.seat),kind,str(origin),error])
+	return true
+
+func test_source_footprint_records(runner) -> bool:
+	var sim = Fixture.make_world()
+	var plain: Array = ["active_collector_id","boxes","id","origin"]
+	var dock: int = sim.add_supply_source(Vector2i(24,4),200)
+	var same: int = sim.add_supply_source(Vector2i(24,12),200,Registry.SOURCE_FOOTPRINT,false)
+	var dock_keys: Array = Fixture.object(sim,dock).keys()
+	dock_keys.sort()
+	var same_keys: Array = Fixture.object(sim,same).keys()
+	same_keys.sort()
+	runner.check(dock_keys == plain and same_keys == plain,"Fp1 default sources keep today's record keys")
+	var pile: int = sim.add_supply_source(Vector2i(20,4),50,Vector2i.ONE,true)
+	var record: Dictionary = Fixture.object(sim,pile)
+	runner.check(record.footprint == [1,1] and record.delete_when_empty == true and record.boxes == 50,"Fp1 small pile record")
+	var blocked: Array = sim.snapshot().map.blocked_cells
+	runner.check(blocked.size() == 41 and blocked.has([20,4]) and not blocked.has([21,4]) and not blocked.has([20,5]),"Fp1 a 1x1 pile blocks one cell")
+	runner.check(Registry.source_footprint(record) == Vector2i.ONE and Registry.source_footprint(Fixture.object(sim,dock)) == Vector2i(4,5) and Registry.source_footprint({"footprint":[1.0,1.0]}) == Vector2i.ONE,"Fp1 one lookup for records and parsed JSON")
+	var before: Dictionary = sim.snapshot()
+	for row in [[Vector2i(10,20),Vector2i(0,1)],[Vector2i(10,20),Vector2i(1,-1)],[Vector2i(25,5),Vector2i.ONE]]:
+		runner.check(sim.add_supply_source(row[0],50,row[1],true) == -1 and sim.snapshot() == before,"Fp1 invalid or overlapping footprint refused " + str(row))
+	runner.check(sim.add_supply_source(Vector2i(21,5),50,Vector2i.ONE,true) > 0,"Fp1 diagonal neighbour piles are allowed, as on Dry Wells")
+	return true
+
+func test_ground_dock_on_small_pile(runner) -> bool:
+	var sim = Fixture.make_world()
+	var pile: int = sim.add_supply_source(Vector2i(24,4),8,Vector2i.ONE,true)
+	runner.check(Supply._ring(Fixture.object(sim,pile)).size() == 8 and Supply.center(Fixture.object(sim,pile)) == [24.5,4.5],"Fp2 1x1 ring and centre")
+	var unit: int = truck(sim,Vector2(30.5,4.5))
+	gather(sim,[unit],pile)
+	runner.check(until_phase(sim,unit,"loading",400),"Fp2 truck loads at a small pile")
+	var loaded: Dictionary = Fixture.object(sim,unit)
+	runner.check(loaded.collection.dock == [25,4] and loaded.position == [25.25,4.5],"Fp2 dock on the ring, a quarter cell toward the pile")
+	return true
+
+func test_neighbouring_small_piles_load_at_once(runner) -> bool:
+	var sim = Fixture.make_world()
+	var upper: int = sim.add_supply_source(Vector2i(24,4),8,Vector2i.ONE,true)
+	var lower: int = sim.add_supply_source(Vector2i(24,6),8,Vector2i.ONE,true)
+	var a: int = truck(sim,Vector2(30.5,4.5))
+	var b: int = truck(sim,Vector2(30.5,6.5))
+	gather(sim,[a],upper)
+	gather(sim,[b],lower)
+	var both: bool = false
+	for index in range(400):
+		sim.step()
+		if Fixture.object(sim,a).collection.phase == "loading" and Fixture.object(sim,b).collection.phase == "loading":
+			both = true
+			break
+	runner.check(both and Fixture.object(sim,upper).active_collector_id == a and Fixture.object(sim,lower).active_collector_id == b,"Fp3 two piles two cells apart serve one collector each at the same time")
+	return true
+
+func test_depot_clearance_from_small_pile(runner) -> bool:
+	var pile := Vector2i(10,10)
+	for kind in ["usa_supply_center","china_supply_center","frc_supply_center"]:
+		for origin in [Vector2i(11,10),Vector2i(7,10),Vector2i(10,11),Vector2i(10,7),Vector2i(7,7)]:
+			runner.check(not placement(kind,origin,pile,Vector2i.ONE),"Fp4 %s at %s within one cell of a 1x1 pile is refused" % [kind,origin])
+		for origin in [Vector2i(12,10),Vector2i(6,10),Vector2i(10,12),Vector2i(10,6),Vector2i(6,6)]:
+			runner.check(placement(kind,origin,pile,Vector2i.ONE),"Fp4 %s at %s one free cell from a 1x1 pile is accepted" % [kind,origin])
+	runner.check(placement("usa_power_plant",Vector2i(11,10),pile,Vector2i.ONE),"Fp4 other buildings may touch a small pile")
+	return true
+
+func test_small_pile_removed_with_last_box(runner) -> bool:
+	var sim = Fixture.make_world()
+	var depot: int = Fixture.add_completed(sim,1,"usa_supply_center",Vector2i(10,4))
+	var pile: int = sim.add_supply_source(Vector2i(24,4),2,Vector2i.ONE,true)
+	var air: int = sim.spawn(1,Vector2(24.5,4.5),"usa_collector")
+	var delay: int = Registry.collects("usa_collector").load_ticks
+	gather(sim,[air],pile)
+	runner.check(until_phase(sim,air,"loading"),"Sp1 air loads at the pile")
+	Fixture.steps(sim,2 * delay - 1)
+	runner.check(Fixture.object(sim,pile).boxes == 1 and Fixture.object(sim,air).collection.cargo == 1,"Sp1 one box left before the last action")
+	sim.step()
+	var unit: Dictionary = Fixture.object(sim,air)
+	runner.check(Fixture.object(sim,pile).is_empty() and sim.snapshot().sources.is_empty(),"Sp1 the pile is gone in the step that takes its last box")
+	runner.check(unit.collection.cargo == 2 and unit.collection.target_id == null and unit.collection.phase == "seeking","Sp1 the collector keeps the box and leaves without the extra delay")
+	runner.check(not sim.snapshot().map.blocked_cells.has([24,4]),"Sp1 the pile's cell is free")
+	runner.check(until_phase(sim,air,"unloading") and Fixture.object(sim,air).collection.target_id == depot,"Sp1 carries the boxes to its depot")
+	var credits: int = sim.snapshot().players[0].credits
+	Fixture.steps(sim,Registry.collects("usa_collector").unload_ticks)
+	runner.check(sim.snapshot().players[0].credits == credits + 150,"Sp1 both boxes paid")
+	var ground = Fixture.make_world()
+	Fixture.add_completed(ground,1,"china_supply_center",Vector2i(10,4))
+	var small: int = ground.add_supply_source(Vector2i(24,4),4,Vector2i.ONE,true)
+	var unit_id: int = truck(ground,Vector2(26.5,4.5))
+	gather(ground,[unit_id],small)
+	runner.check(until_phase(ground,unit_id,"loading"),"Sp1 truck loads at the pile")
+	Fixture.steps(ground,4 * Registry.collects("china_collector").load_ticks)
+	var full: Dictionary = Fixture.object(ground,unit_id)
+	runner.check(Fixture.object(ground,small).is_empty() and full.collection.cargo == 4 and full.collection.phase == "seeking" and not full.collection.has("dock"),"Sp1 a truck filled by the last box leaves with all four")
+	runner.check(until_phase(ground,unit_id,"unloading"),"Sp1 truck reaches its depot")
+	credits = ground.snapshot().players[0].credits
+	Fixture.steps(ground,Registry.collects("china_collector").unload_ticks)
+	runner.check(ground.snapshot().players[0].credits == credits + 300,"Sp1 truck pays 300")
+	return true
+
+func test_waiters_reseek_when_small_pile_vanishes(runner) -> bool:
+	var sim = Fixture.make_world()
+	var pile: int = sim.add_supply_source(Vector2i(24,4),2,Vector2i.ONE,true)
+	var other: int = sim.add_supply_source(Vector2i(24,20),40)
+	var loader: int = truck(sim,Vector2(26.5,4.5))
+	var waiter: int = truck(sim,Vector2(25.5,6.5))
+	var flyer: int = truck(sim,Vector2(2.5,28.5))
+	var mover: int = sim.spawn(1,Vector2(20.5,2.5),"usa_builder")
+	gather(sim,[loader],pile)
+	runner.check(until_phase(sim,loader,"loading"),"Sp2 first truck loads")
+	gather(sim,[waiter,flyer],pile)
+	Fixture.send(sim,{"type":"move","entity_ids":[mover],"target":[28.5,8.5]})
+	runner.check(until_phase(sim,waiter,"waiting_source",70),"Sp2 second truck waits before the pile empties")
+	runner.check(Fixture.object(sim,flyer).collection.phase == "flying_source","Sp2 third truck is still on its way")
+	for index in range(200):
+		if Fixture.object(sim,pile).is_empty(): break
+		sim.step()
+	runner.check(Fixture.object(sim,pile).is_empty() and Fixture.object(sim,loader).collection.cargo == 2,"Sp2 the loader took both boxes")
+	runner.check(Fixture.object(sim,mover).status == "moving","Sp2 the mover is still on its way when the pile vanishes")
+	for id in [waiter,flyer]:
+		var lost: Dictionary = Fixture.object(sim,id).collection
+		runner.check(lost.target_id == null and not lost.has("dock") and lost.cargo == 0,"Sp2 released at once %d" % id)
+	Fixture.steps(sim,2)
+	for id in [waiter,flyer]:
+		var again: Dictionary = Fixture.object(sim,id).collection
+		runner.check(again.target_id == other and again.has("dock"),"Sp2 re-seeks the remaining source %d" % id)
+	for index in range(2000):
+		if Fixture.object(sim,mover).position == [28.5,8.5]: break
+		sim.step()
+	runner.check(Fixture.object(sim,mover).position == [28.5,8.5],"Sp2 an unrelated mover still arrives after the navigation rebuild")
+	return true
+
+func test_gather_on_vanishing_small_pile(runner) -> bool:
+	var sim = Fixture.make_world()
+	var pile: int = sim.add_supply_source(Vector2i(24,4),1,Vector2i.ONE,true)
+	var other: int = sim.add_supply_source(Vector2i(24,20),40)
+	var loader: int = sim.spawn(1,Vector2(24.5,4.5),"usa_collector")
+	var same_tick: int = sim.spawn(1,Vector2(4.5,20.5),"usa_collector")
+	var queued: int = sim.spawn(1,Vector2(6.5,20.5),"usa_collector")
+	gather(sim,[loader],pile)
+	runner.check(until_phase(sim,loader,"loading"),"Sp3 loader loads")
+	Fixture.steps(sim,Registry.collects("usa_collector").load_ticks - 1)
+	var tick: int = sim.snapshot().tick
+	runner.check(Fixture.send(sim,{"type":"gather","entity_ids":[same_tick],"source_id":pile}).ok,"Sp3 gather due this tick accepted")
+	runner.check(Fixture.send(sim,{"type":"gather","entity_ids":[queued],"source_id":pile,"tick":tick + 1}).ok,"Sp3 gather queued for the next tick accepted at issue")
+	sim.step()
+	runner.check(Fixture.object(sim,pile).is_empty(),"Sp3 the last box removed the pile")
+	runner.check(sim.snapshot().command_results.any(func(r) -> bool: return r.ok and r.tick == tick),"Sp3 the same-tick gather applied before supply")
+	runner.check(Fixture.object(sim,same_tick).collection.target_id == other,"Sp3 its collector picks the remaining source in the same step")
+	sim.step()
+	runner.check(sim.snapshot().command_results.any(func(r) -> bool: return not r.ok and r.error == "Missing supply source" and r.tick == tick + 1),"Sp3 the queued gather fails at its due tick")
+	runner.check(Fixture.object(sim,queued).collection.enabled == false,"Sp3 the queued unit is unchanged")
+	var before: Dictionary = sim.snapshot()
+	var late: Dictionary = Fixture.send(sim,{"type":"gather","entity_ids":[queued],"source_id":pile})
+	runner.check(not late.ok and late.error == "Missing supply source" and sim.snapshot() == before,"Sp3 gather after removal refused")
+	return true
+
+func test_pile_clearance_frees_after_removal(runner) -> bool:
+	var sim = Fixture.make_world(50000)
+	Fixture.add_completed(sim,1,"usa_power_plant",Vector2i(2,26))
+	var pile: int = sim.add_supply_source(Vector2i(20,10),1,Vector2i.ONE,true)
+	var air: int = sim.spawn(1,Vector2(20.5,10.5),"usa_collector")
+	gather(sim,[air],pile)
+	runner.check(until_phase(sim,air,"loading"),"Sp4 loader loads")
+	Fixture.steps(sim,Registry.collects("usa_collector").load_ticks - 1)
+	var early: Dictionary = Fixture.send(sim,{"type":"build","builder_id":1,"building_kind":"usa_supply_center","origin":[21,10]})
+	runner.check(not early.ok and early.error == "Too close to a supply source","Sp4 a build issued in the emptying tick still sees the pile")
+	sim.step()
+	runner.check(Fixture.object(sim,pile).is_empty(),"Sp4 pile removed")
+	runner.check(sim.preview_build(1,1,"usa_supply_center",Vector2i(19,9)).ok,"Sp4 a depot may cover the freed cell")
+	runner.check(Fixture.send(sim,{"type":"build","builder_id":1,"building_kind":"usa_supply_center","origin":[21,10]}).ok,"Sp4 the same build is accepted after the step")
 	return true

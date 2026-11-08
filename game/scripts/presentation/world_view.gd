@@ -222,7 +222,7 @@ func draw_structures() -> void:
 	_canvas = _structures
 	var zone: int = Profiler.begin()
 	for source: Dictionary in _state.get("sources",[]):
-		_draw_footprint(source.origin,Registry.SOURCE_FOOTPRINT,Color("9f8045"),_selected_ids.has(source.id))
+		_draw_footprint(source.origin,Registry.source_footprint(source),Color("9f8045"),_selected_ids.has(source.id))
 	for building: Dictionary in _state.get("buildings",[]):
 		var definition: Dictionary = Definitions.building(building.kind)
 		if definition.is_empty(): continue
@@ -409,7 +409,7 @@ func pick_source(plane_point: Vector2) -> int:
 	var point: Vector2 = Iso.plane_to_world(plane_point)
 	for source: Dictionary in _state.get("sources",[]):
 		var origin := Vector2(source.origin[0],source.origin[1])
-		if Rect2(origin,Vector2(Registry.SOURCE_FOOTPRINT)).has_point(point): return source.id
+		if Rect2(origin,Vector2(Registry.source_footprint(source))).has_point(point): return source.id
 	return -1
 
 func pick_object(plane_point: Vector2) -> int:
@@ -420,7 +420,7 @@ func pick_object(plane_point: Vector2) -> int:
 	objects.append_array(_state.get("sources",[]))
 	objects.sort_custom(func(a: Dictionary,b: Dictionary) -> bool: return a.id < b.id)
 	for object: Variant in objects:
-		var size: Vector2i = Registry.SOURCE_FOOTPRINT
+		var size: Vector2i = Registry.source_footprint(object)
 		if object.has("kind"):
 			var definition: Dictionary = Definitions.building(object.kind)
 			if definition.is_empty(): continue
