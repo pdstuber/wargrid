@@ -29,6 +29,10 @@ func _ensure_sound() -> void:
 	_sound = SoundPlayer.new(local_player)
 	add_child(_sound)
 
+func _submit(payload: Dictionary) -> void:
+	super._submit(payload)
+	if not _error.is_empty(): _sound.rejected(_error)
+
 func _collect_sound() -> void:
 	_ensure_sound()
 	_sound.collect_step(simulation.tick(), simulation.combat_events(), simulation.command_results())

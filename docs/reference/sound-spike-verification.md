@@ -5,13 +5,13 @@ Handoff: [sound-spike-prompt.txt](../sound-spike-prompt.txt). Plan: [sound spike
 ```text
 Resume record (updated 2026-11-08)
 Branch / base commit / working-tree state: spike-sound / base main 893332f (HEAD 1520b90) / clean after the ruling commit
-Last green task / next incomplete task: Task 3 done, Gate A closed / Task 4 (fresh start; checkpoint restart)
-Changed paths since last commit: game/audio/** (23 files + .import + CREDITS.md), tools/test_audio_assets.py, .github/workflows/ci.yml, README.md, docs/reference/sound-spike.md, this file
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, CASES 508 CHECKS 136260 FAILURES 0, exit 0, TESTS PASSED; lint, warnings, python checks exit 0
-Known red case or blocker: none. Open for Task 4: `SoundDirector.update()` does not drain `_pending` yet, so SD1 passes only because nothing drains; Task 4 must rewrite SD1 to check the steps `update` actually consumed. MacLeod licence ruled (keep, FAQ). Addendum for Task 6: mute button + key toggling Master (plan Task 6 addendum)
+Last green task / next incomplete task: Task 4 done (checkpoint restart; uncommitted) / Task 5
+Changed paths since last commit: game/default_bus_layout.tres, game/scripts/presentation/sound_cues.gd, sound_director.gd, sound_player.gd, game/scripts/skirmish_main.gd, game/tests/test_sound.gd, this file
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, CASES 528 CHECKS 136420 FAILURES 0 (136427 with traces), exit 0, TESTS PASSED; lint, warnings exit 0; traces identical
+Known red case or blocker: none. Online `rejected()` not wired (lockstep rejections carry no player and the sim result already gives the local error; see Task 4 section). Addendum for Task 6: mute button + key toggling Master (plan Task 6 addendum)
 Approved decisions, pre-authorizations used, deferred gates: Gate S passed (user, 2026-11-08); local commits after green checkpoints pre-authorized; no push, merge, window, install or fly without approval; Gate A passed (Max Rate off; MacLeod kept); Gate B and exit pending. Commit message for Task 3: 'Add the sound spike audio and credits'
 Usage so far (python3 tools/session_usage.py <session files>): not recorded
-Next exact action: dispatch Task 4
+Next exact action: commit Task 4 ("Play battle and UI sounds from per-step events"), then dispatch Task 5
 ```
 
 ## Baseline and trace checks
@@ -41,3 +41,9 @@ Gate S, passed (user, 2026-11-08): final effects, voice lines and processed musi
 Gate A, Max Rate (user, 2026-11-08): accepted the recommendation, Max Rate off for `sfx/` and `voice/` (pck 12,938,240 vs 12,742,288 bytes on; saving under 2 %). Voice A/B at Gate B.
 
 Gate A, MacLeod licence (user, 2026-11-08): keep Hitman and Stay the Course on the incompetech FAQ site-wide CC BY statement; per-track exceptions unverified. Gate A review (Opus): no Critical; Important items fixed in 1520b90 except SD1/drain, left to Task 4.
+
+## Task 4
+
+2026-11-08, tree: working tree on `spike-sound`, uncommitted. Red: with the Task 1 director and player, the suite stopped on parse errors (`MAX_DISTANCE_PX`, `plan()` missing). Green: suite CASES 528 CHECKS 136420 FAILURES 0, TESTS PASSED, exit 0 (20 new cases: SD5 to SD23 and SD1b); lint exit 0; warnings exit 0 (107 files); Python unchanged. SD1 now checks `consumed_ticks()` (steps `update` processed, bounded to 64) and that nothing is left pending; `collect_step` caps pending at 120 steps. Trace check against `$SOUND_WORK/traces/base` (new run `traces/t4.MP1A`, suite 136427 checks with traces): replay, economy, combat MATCHED 1200; team MATCHED 100; netplay `match` PASSED terminal tick 8400, s1 MATCHED 281.
+
+Deviation: `online_main` does not call `rejected()` for lockstep rejections. They carry no player (a peer's failure would beep for the local player) and the local failure already arrives as a command result through `update`. ATTENUATION 0.5 and MAX_DISTANCE_PX 1145.0 live in `sound_player.gd` (Task 1 only measured them). SD22 checks the Sound child but not the log for `ERROR:` (the suite fails on script errors already).
