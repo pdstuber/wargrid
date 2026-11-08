@@ -1,6 +1,6 @@
 # Perf spike gap closure plan (2026-11-08)
 
-Status: **planned, not started.** Read against `perf-spike` at 70fa93d while the ws6 job (Jobs A-D, below) was running. Planning alone authorizes nothing. Start only on the user's word.
+Status: **planned, not started.** Read against `perf-spike` at bcaf65b while the ws6 job (Jobs A-D, below) was running. Planning alone authorizes nothing. Start only on the user's word.
 
 Goal: close every gap between the user's [original request](../../performance-spike-original-input.md) and what the spike delivered. The refined [handoff](../../performance-spike-prompt.txt) dropped half of goal 2: "if thresholds are unrealistic, propose revised values supported by measurements". That half is deliverable 6 and the main point of this plan. Part 1 therefore comes first and gets the most care.
 
@@ -23,14 +23,14 @@ Scratchpad `ws6/runs/{A,B,C,D}/notes.log`, chained by `ws6/chain.sh`:
 | A | team match on HEAD, `H` vs `Hm` (profiler on vs off), 3 runs each, interleaved | team-match gate value; whether `TEAM TIMING` includes profiler overhead |
 | B | `run_b.gd` on `Hb`, 3 plain runs + 1 profiled run | contact max (11.7-11.9 ms) attribution, team worst tick |
 | C | macOS Bench release export, base `BX` vs HEAD `HX`, 3 runs each, plus editor `bench_runner` on HX | release/editor ratio (18-20 % on 2026-11-06) |
-| D | `bench_ab.sh 20a4d06 HEAD` over movement and every `run_combat.gd` layout, 3 rounds, plus lockstep and team match A/B, 3 rounds | full re-baseline; 3 of the 13 ceiling samples |
+| D | `bench_ab.sh bba985c HEAD` over movement and every `run_combat.gd` layout, 3 rounds, plus lockstep and team match A/B, 3 rounds | full re-baseline; 3 of the 13 ceiling samples |
 | (coordinator) | `sh tools/run_benchmark.sh` on HEAD, quiet | close criterion of the handoff; sample 4 |
 
 ## Gap map: original deliverables against the delivered state
 
 | Original item | Delivered | Gap | Task |
 |---|---|---|---|
-| D1 baseline report, failure margins | WS1 table (20a4d06) | the final 20a4d06 → HEAD comparison is pieced together from different days; Job D replaces it | T1 |
+| D1 baseline report, failure margins | WS1 table (bba985c) | the final bba985c → HEAD comparison is pieced together from different days; Job D replaces it | T1 |
 | D2 bottleneck analysis | WS1, 2a, 2i | contact max and team worst tick are unexplained (Jobs B, A); no allocation or memory view (objective 1 says "CPU, memory") | T1, Q3 |
 | D3 technology evaluation | typing, threads; GDExtension skipped by the user | none in scope (GDExtension skipped by user decision) | none |
 | D4 recommendations | 5 items | rec 1 is still listed as the top item although its own design says "do not build"; rec 2 is unmeasured; rec 3 is an estimate | T0a, T0c, Q4, Q5 |
@@ -105,7 +105,7 @@ Order: CPU-light tasks first (now, alongside ws6), then **one quiet batch** run 
 - rec 1 is ranked first although the design says not to build it;
 - rec 3's "0.3-0.5 ms" is an unlabelled estimate;
 - "release 18-20 % faster" (Job C);
-- the cumulative 20a4d06 → WS4 numbers come from different days (Job D);
+- the cumulative bba985c → WS4 numbers come from different days (Job D);
 - `TEAM TIMING` includes the profiler (Job A).
 
 *Inputs:* `performance.md` lines 1-24, 113-131 and 207-272. *Host:* CPU-light. *Who:* Sonnet. *Acceptance:* a list in the verification file. Edits go only where existing evidence settles the claim, and each such edit names its evidence. *Stop:* a claim that would flip a pass or fail verdict. *Writes:* verification row "T0a claims audit", plus the `performance.md` text fixes.
@@ -116,7 +116,7 @@ Order: CPU-light tasks first (now, alongside ws6), then **one quiet batch** run 
 
 **T0d: CI guard design (proposal item 13).** *Goal:* half a page in `performance.md` "Not covered yet" that answers "CI does not run any benchmark". It says what CI already gates (BM6, BM6b, snapshot ceiling: all in the suite); which counters to add (path-queue peak, `_nearest` candidates per call); and that wall-clock rows on runners are trend-only and never fail. *Host:* CPU-light. *Who:* Sonnet. *Acceptance:* text only, no workflow edit. Adding to `.github/workflows` needs the user's OK. *Writes:* `performance.md` "Not covered yet".
 
-**T0e: rebaseline check after f371616.** *Fact:* `bench_runner.gd:29` runs only open, dense, contact and skirmish3v3, and the 5a web numbers came from a patched copy. So no committed release or web number for `hordes300`, `frc` or `horde_render` was measured without enemies. *Goal:* confirm that with `rg`, then close the "rebaseline" item in the write-up. Also add `hordes300` to the `bench_runner.gd` combat list, so that U1 yields an F for hordes300. This is a benchmark-tool edit: lint, and warnings in Q6. *Who:* Sonnet. *Stop:* any committed number that is affected. *Writes:* the `performance.md` remaining-work line, a verification row, `game/benchmarks/bench_runner.gd`.
+**T0e: rebaseline check after 45df3eb.** *Fact:* `bench_runner.gd:29` runs only open, dense, contact and skirmish3v3, and the 5a web numbers came from a patched copy. So no committed release or web number for `hordes300`, `frc` or `horde_render` was measured without enemies. *Goal:* confirm that with `rg`, then close the "rebaseline" item in the write-up. Also add `hordes300` to the `bench_runner.gd` combat list, so that U1 yields an F for hordes300. This is a benchmark-tool edit: lint, and warnings in Q6. *Who:* Sonnet. *Stop:* any committed number that is affected. *Writes:* the `performance.md` remaining-work line, a verification row, `game/benchmarks/bench_runner.gd`.
 
 **T0f: scratch scripts for the quiet batch.**
 - Q2 scaling workload: a copy of `combat_workload.gd` with an army multiplier and an owner split.
@@ -129,7 +129,7 @@ All files stay in the scratchpad, checked with `sh -n` only. *Who:* Sonnet. *Acc
 ### T1: read the ws6 results (CPU-light, after the chain ends)
 
 - **Goal.** Turn Jobs A-D and `run_benchmark.sh` into evidence:
-  - the 20a4d06 → HEAD table for every row (median, spread, p50 / p95 / p99 / max);
+  - the bba985c → HEAD table for every row (median, spread, p50 / p95 / p99 / max);
   - profiler off vs on for the team match;
   - the contact max tick, its zone and its cause;
   - the team worst tick by index;
@@ -137,8 +137,8 @@ All files stay in the scratchpad, checked with `sh -n` only. *Who:* Sonnet. *Acc
   - whether `run_benchmark.sh` exits 0 and prints the lockstep line (the handoff's close criterion).
 - **Inputs.** `ws6/runs/*/notes.log` and the logs; `scratchpad/tools/ab_summary.py`.
 - **Acceptance.** Every job's notes end with JOBDONE, or an ABORT is recorded. Numbers are copied, not retyped.
-- **Stop.** `combat_work` or digests differ between 20a4d06 and HEAD (they must be equal: all kept fixes preserve the trace). Or `run_benchmark.sh` exits 1 on HEAD.
-- **Writes.** Verification rows "ws6 re-baseline", "team profiler", "contact max", "release bench", and one ledger History row "perf spike re-baseline 20a4d06 vs HEAD".
+- **Stop.** `combat_work` or digests differ between bba985c and HEAD (they must be equal: all kept fixes preserve the trace). Or `run_benchmark.sh` exits 1 on HEAD.
+- **Writes.** Verification rows "ws6 re-baseline", "team profiler", "contact max", "release bench", and one ledger History row "perf spike re-baseline bba985c vs HEAD".
 
 ### T1b: AI and navigation zones in the team match (CPU-light, after Job A's logs exist, Sonnet; added 2026-11-08 by the user's approval)
 
@@ -158,14 +158,14 @@ The plumbing row (snapshot + view copy + sort) is 1.68 ms against a 0.91 ms budg
 | Q6 | warnings + lint on the T0e edit; `unsafe_*` count per warning type | about 2 min | user decision on rec 5 | required |
 | Q4 | per-cell counters | about 5 min | only if T0c says the bound is above the spread | conditional |
 | Q5 | `_hold_cells` Task 0 (design §6, G1 + G2) | about 30 min | the design expects a net gain of 0.03-0.05 ms, the size of the spread | **optional, user's go only** |
-| Q8 | series dump + paired per-tick analysis | about 25 min | only if T1/T2 leave an open verdict, where a delta between 20a4d06 and HEAD inside the spread decides a proposal. Absolute verdicts (open 1.865 vs 1.82) are settled by the 13 samples, not by pairing | conditional, expected unused |
+| Q8 | series dump + paired per-tick analysis | about 25 min | only if T1/T2 leave an open verdict, where a delta between bba985c and HEAD inside the spread decides a proposal. Absolute verdicts (open 1.865 vs 1.82) are settled by the 13 samples, not by pairing | conditional, expected unused |
 | Q7 | 60-min calibration (`run_calibration.gd`) | 60 min | drift check only; A/A spreads already bound the noise | **optional, last, only if the host is free** |
 
 **Q2: scaling sweep.**
 - *Goal:* step mean, p95 and µs per unit-tick against alive units, plus the largest army inside 1.82 / 3.64, in two series:
   - units: `open` and `hordes300` at 0.5x, 1x, 1.5x and 2x;
   - players: 300 units split across 2, 4 and 6 owners in 3v3-style teams. The per-owner grid makes owner count a real cost factor.
-- *Inputs:* the T0f workload copy, profiler off; HEAD; and 20a4d06 for `open` 1x and 2x only (did the fixes change the slope?).
+- *Inputs:* the T0f workload copy, profiler off; HEAD; and bba985c for `open` 1x and 2x only (did the fixes change the slope?).
 - *Host:* quiet. *Who:* Sonnet.
 - *Acceptance:* one table per series; spawn failures are recorded as the cap reached.
 - *Stop:* none beyond the global ones (scratch only).

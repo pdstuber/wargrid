@@ -1,6 +1,6 @@
 # Snapshot copy cost: design (2026-11-08)
 
-Status: **proposed, not approved, not started.** Task T10 of the [gap closure plan](../plans/2026-11-08-spike-gap-closure.md). Rules from the [spike handoff](../../performance-spike-prompt.txt): no gameplay change, traces and digests identical, at most three kept fixes per round, no budget loosened. Read-only design, against `perf-spike` at 43bf48e plus the uncommitted docs. No Godot process was run; every number below comes from existing logs (R2 runs `A1-A3.out`, `B1-B3.out` and Workstream 1 `ws1/profile.log` in the spike scratchpad, the M6 Task 11 records, and the ledger).
+Status: **proposed, not approved, not started.** Task T10 of the [gap closure plan](../plans/2026-11-08-spike-gap-closure.md). Rules from the [spike handoff](../../performance-spike-prompt.txt): no gameplay change, traces and digests identical, at most three kept fixes per round, no budget loosened. Read-only design, against `perf-spike` at d4f9c95 plus the uncommitted docs. No Godot process was run; every number below comes from existing logs (R2 runs `A1-A3.out`, `B1-B3.out` and Workstream 1 `ws1/profile.log` in the spike scratchpad, the M6 Task 11 records, and the ledger).
 
 ## Recommendation
 
