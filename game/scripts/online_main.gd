@@ -30,7 +30,7 @@ func _exit_tree() -> void:
 	if _lockstep != null: _lockstep.send = Callable()
 
 func _create_simulation() -> Simulation:
-	return Skirmish.create(true, "human", {}, map_path)
+	return Skirmish.create(true, "human", {}, map_path, starts)
 
 func _confirm_leave() -> bool:
 	return true
@@ -113,7 +113,7 @@ func _ms(microseconds: PackedInt64Array) -> PackedFloat64Array:
 func notice() -> String:
 	match _lockstep.status():
 		"waiting": return "Waiting for player %d" % _lockstep.waiting_for()[0]
-		"ended_left": return "Player %d disconnected" % _lockstep.left_seat()
+		"ended_left": return "Opponent left before the start (different map files or version)" if _lockstep.left_before_start() else "Player %d disconnected" % _lockstep.left_seat()
 		"ended_relay": return "Connection to relay lost" if _lockstep.end_reason() == "connection to relay lost" else "Relay: " + _lockstep.end_reason()
 		"ended_desync": return "Desync — report saved to %s" % _report_path
 		"ended_protocol": return "Protocol error: " + _lockstep.end_reason()

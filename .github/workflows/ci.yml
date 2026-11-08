@@ -154,7 +154,7 @@ jobs:
           chmod +x "$WARGRID_RELAY_BIN"
           exe="build/game/${{ matrix.platform }}/Wargrid${{ matrix.platform == 'windows' && '.console.exe' || '.x86_64' }}"
           export WARGRID_CLIENT="$root/$exe --headless"
-          for scenario in match perturb relay-down; do
+          for scenario in match perturb relay-down maps map-mismatch; do
             NETPLAY_OUT="$root/netplay/$scenario" sh tools/run_netplay.sh $scenario 2>&1 | tee -a netplay.log
           done
           cp netplay/match/s1.tsv netplay-${{ matrix.platform }}.tsv

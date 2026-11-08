@@ -1,5 +1,5 @@
 #!/bin/sh
-# usage: run_netplay.sh match|kill|stall|silent|spike|perturb|version|relay-down|relay-term
+# usage: run_netplay.sh match|kill|stall|silent|spike|perturb|version|maps|map-mismatch|relay-down|relay-term
 scenario=$1
 repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd) || exit 1
 out=${NETPLAY_OUT:-$(mktemp -d)}
@@ -135,6 +135,41 @@ PY
     kill -0 "$pid1" 2>/dev/null || fail "seat 1 should still be waiting"
     ! grep -q '^NETCLIENT END' "$out/s1.log" || fail "seat 1 ended"
     kill -9 "$pid1" ;;
+  maps)
+    start_relay; rm -f "$out/code"
+    start_client s1 --match new --code-file "$out/code" --seat-script opponent --map ashfall --stop-at-tick 900
+    pid1=$pid
+    i=0
+    until [ -s "$out/code" ]; do
+      i=$((i + 1)); [ $i -lt 100 ] || fail "no match code"
+      sleep 0.2
+    done
+    start_client s2 --match "$(cat "$out/code")" --seat-script opponent --stop-at-tick 900
+    pid2=$pid
+    wait_exit "$pid1" 120; wait_exit "$pid2" 120
+    expect_end s1 stopped; expect_end s2 stopped
+    line1=$(grep '^NETCLIENT MAP' "$out/s1.log"); line2=$(grep '^NETCLIENT MAP' "$out/s2.log")
+    [ -n "$line1" ] && [ "$line1" = "$line2" ] || fail "map lines differ: '$line1' / '$line2'"
+    spots=${line1##* }; first=${spots%,*}; second=${spots#*,}
+    [ $(((first - second + 8) % 8)) -eq 4 ] || fail "starts $spots are not diagonal"
+    same_hashes "$out/s1.tsv" "$out/s2.tsv"
+    echo "$line1" ;;
+  map-mismatch)
+    start_relay; rm -f "$out/code"
+    start_client s1 --match new --code-file "$out/code" --seat-script opponent --map ashfall
+    pid1=$pid
+    i=0
+    until [ -s "$out/code" ]; do
+      i=$((i + 1)); [ $i -lt 100 ] || fail "no match code"
+      sleep 0.2
+    done
+    start_client s2 --match "$(cat "$out/code")" --seat-script opponent --perturb-map-hash
+    pid2=$pid
+    wait_exit "$pid1" 60; wait_exit "$pid2" 60
+    expect_end s2 ended_settings
+    case "$(end_line s2)" in *"REASON Your copy of Ashfall differs from the host's") ;; *) fail "joiner reason: $(end_line s2)" ;; esac
+    expect_end s1 ended_left
+    case "$(end_line s1)" in "NETCLIENT END ended_left TICK 4 "*) ;; *) fail "host line: $(end_line s1)" ;; esac ;;
   relay-down|relay-term)
     drain_ms=500
     start_relay WARGRID_DRAIN_MS=$drain_ms; start_pair "" ""

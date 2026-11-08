@@ -139,6 +139,9 @@ func set_relay_lost() -> void:
 	if _ended(): return
 	_end("ended_relay", "connection to relay lost")
 
+func left_before_start() -> bool:
+	return _left_seat != 0 and _left_after < _delay
+
 func left_seat() -> int:
 	return _left_seat
 

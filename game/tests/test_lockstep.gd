@@ -80,7 +80,7 @@ func _pair(_runner, max_delay: int = 0) -> Net:
 	return net
 
 func cases() -> Array[Callable]:
-	return [test_delay_and_prefill, test_two_clients_equal_hashes, test_own_command_uses_wire_form, test_cross_seat_same_tick, test_many_commands_one_tick, test_desync_detected, test_left_after_tick, test_protocol_errors, test_latency_samples, test_left_with_missing_packets, test_rejections_reported, test_submit_before_start, test_relay_lost_keeps_earlier_end]
+	return [test_delay_and_prefill, test_two_clients_equal_hashes, test_own_command_uses_wire_form, test_cross_seat_same_tick, test_many_commands_one_tick, test_desync_detected, test_left_after_tick, test_protocol_errors, test_latency_samples, test_left_with_missing_packets, test_rejections_reported, test_submit_before_start, test_relay_lost_keeps_earlier_end, test_left_before_start]
 
 func _scripts(net: Net) -> void:
 	net.clients[0].behavior = func(c) -> void: ScriptedHuman.issue(c.seat_sim)
@@ -359,4 +359,14 @@ func test_relay_lost_keeps_earlier_end(runner) -> bool:
 	var other = Lockstep.new(1, seats)
 	other.set_relay_lost()
 	runner.check(other.status() == "ended_relay" and other.end_reason() == "connection to relay lost", "L13 close on a running match reports relay lost")
+	return true
+
+func test_left_before_start(runner) -> bool:
+	var early: Array = _fresh()
+	runner.check(not early[1].left_before_start(), "L14 no left, not before the start")
+	early[1].receive('{"type":"left","seat":2,"after_tick":3}')
+	runner.check(early[1].left_before_start(), "L14 after_tick 3 with delay 4 is before the start")
+	var edge: Array = _fresh()
+	edge[1].receive('{"type":"left","seat":2,"after_tick":4}')
+	runner.check(not edge[1].left_before_start(), "L14 after_tick 4 with delay 4 is not before the start")
 	return true

@@ -97,10 +97,13 @@ func _fail(reason: String) -> void:
 	set_process(false)
 
 func _process(_delta: float) -> void:
+	if _transport == null: return
 	var frames: PackedStringArray = _transport.poll()
 	if _transport.is_open() and not _hello_sent:
 		_hello_sent = true
-		_transport.send_text(Wire.encode({"type": "hello", "protocol": Wire.PROTOCOL, "build": str(ProjectSettings.get_setting("application/config/version")), "match": _match, "settings": {}}))
+		var hello: Dictionary = {"type": "hello", "protocol": Wire.PROTOCOL, "build": str(ProjectSettings.get_setting("application/config/version")), "match": _match}
+		if _match.is_empty(): hello["settings"] = MatchSettings.for_map(_map_id())
+		_transport.send_text(Wire.encode(hello))
 	for text in frames:
 		if _lockstep != null: _lockstep.receive(text)
 		elif not _handle(text): return
@@ -109,6 +112,7 @@ func _process(_delta: float) -> void:
 func _handle(text: String) -> bool:
 	var decoded: Dictionary = Wire.decode(text)
 	if not decoded.ok:
+		_transport.close()
 		_fail("Protocol error: " + decoded.error)
 		return false
 	var message: Dictionary = decoded.message
@@ -116,23 +120,32 @@ func _handle(text: String) -> bool:
 		"welcome":
 			_seat = message.seat
 			_status.text = "Match code: %s — waiting for player 2" % message.match if _seat == 1 else "Joined match %s" % message.match
-		"start": _start(message)
+		"start": return _start(message)
 		"error":
 			_transport.close()
 			_fail(message.reason)
 			return false
 		_:
+			_transport.close()
 			_fail("Protocol error: unexpected " + message.type)
 			return false
 	return true
 
-func _start(message: Dictionary) -> void:
+func _start(message: Dictionary) -> bool:
+	var reason: String = MatchSettings.refusal(message.settings)
+	if not reason.is_empty():
+		_transport.close()
+		_fail(reason)
+		return false
 	var seats: Array[int] = []
 	seats.assign(message.seats)
 	_lockstep = Lockstep.new(_seat, seats, message.delay)
-	SkirmishMain.map_path = MatchSettings.map_path("dry_wells")
+	var id: String = message.settings.map
+	SkirmishMain.map_path = MatchSettings.map_path(id)
+	SkirmishMain.starts = MatchSettings.starts(id, message.seed)
 	var game: Node = OnlineScene.instantiate()
 	game.setup(_transport, _lockstep, _seat, _faction($Center/Box/FactionRow/Own))
 	get_tree().root.add_child(game)
 	get_tree().current_scene = game
 	queue_free()
+	return true

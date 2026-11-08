@@ -5,6 +5,7 @@ const RelayTransport = preload("res://scripts/net/relay_transport.gd")
 const SeatSim = preload("res://scripts/net/seat_sim.gd")
 const Wire = preload("res://scripts/net/wire.gd")
 const StateHash = preload("res://scripts/simulation/state_hash.gd")
+const MatchSettings = preload("res://scripts/match_settings.gd")
 const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 const ScriptedHuman = preload("res://scripts/simulation/scripted_human.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
@@ -66,7 +67,9 @@ func _pre_start() -> void:
 	elif _transport.is_open() and not _hello_sent:
 		_hello_sent = true
 		var build: String = _args.get("build", str(ProjectSettings.get_setting("application/config/version")))
-		_transport.send_text(Wire.encode({"type": "hello", "protocol": Wire.PROTOCOL, "build": build, "match": "" if _args.get("match", "new") == "new" else _args["match"], "settings": {}}))
+		var hello: Dictionary = {"type": "hello", "protocol": Wire.PROTOCOL, "build": build, "match": "" if _args.get("match", "new") == "new" else _args["match"]}
+		if _args.get("match", "new") == "new": hello["settings"] = MatchSettings.for_map(_map_id())
+		_transport.send_text(Wire.encode(hello))
 
 func _receive(frames: PackedStringArray) -> void:
 	for text in frames:
@@ -99,10 +102,22 @@ func _welcome(message: Dictionary) -> void:
 		file.close()
 		DirAccess.rename_absolute(temp, _args["code-file"])
 
+func _map_id() -> String:
+	return _args.get("map", MatchSettings.TEST_MAP)
+
 func _start(message: Dictionary) -> void:
+	var settings: Dictionary = message.settings.duplicate()
+	if _args.has("perturb-map-hash") and _seat == 2: settings["map_hash"] = str(settings.get("map_hash", "")) + "x"
+	var reason: String = MatchSettings.refusal(settings)
+	if not reason.is_empty():
+		_finish("ended_settings", reason)
+		return
 	var seats: Array[int] = []
 	seats.assign(message.seats)
-	_sim = Skirmish.create(true, "human", {})
+	var id: String = message.settings.map
+	var chosen: Array[int] = MatchSettings.starts(id, message.seed)
+	print("NETCLIENT MAP ", id, " STARTS ", ",".join(chosen.map(str)) if not chosen.is_empty() else "-")
+	_sim = Skirmish.create(true, "human", {}, MatchSettings.map_path(id), chosen)
 	_lockstep = Lockstep.new(_seat, seats, message.delay)
 	_lockstep.send = _transport.send_text
 	_lockstep.submit({"type": "choose_faction", "faction": _args.get("faction", Skirmish.default_faction())})

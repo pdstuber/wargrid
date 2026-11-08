@@ -31,7 +31,7 @@ class FakeTransport extends RefCounted:
 	func rtt_samples() -> PackedInt64Array: return PackedInt64Array([40000])
 
 func cases() -> Array[Callable]:
-	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_rejection_line, test_funds_rejection_is_announced, test_overlay_net_line, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_launcher_layout, test_launcher_faction_selectors_fit, test_plays_dry_wells_from_each_seat, test_offline_uses_chosen_map, test_restart_keeps_map_and_starts]
+	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_rejection_line, test_funds_rejection_is_announced, test_overlay_net_line, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_launcher_layout, test_launcher_faction_selectors_fit, test_plays_dry_wells_from_each_seat, test_offline_uses_chosen_map, test_restart_keeps_map_and_starts, test_joiner_refuses_other_map, test_old_relay_mismatch_is_shown, test_start_without_settings_is_a_protocol_error, test_both_seats_share_map_and_starts, test_host_told_opponent_left_before_start]
 
 func _online(runner, seat: int) -> Dictionary:
 	var transport := FakeTransport.new()
@@ -250,8 +250,12 @@ func test_launcher_faction_selectors_fit(runner) -> bool:
 	runner.root.size = original
 	return true
 
+func _start_message(id: String, match_seed: int) -> Dictionary:
+	return {"type": "start", "seats": [1, 2], "delay": 4, "seed": match_seed, "settings": MatchSettings.for_map(id)}
+
 func test_plays_dry_wells_from_each_seat(runner) -> bool:
 	var before: String = SkirmishMain.map_path
+	var before_starts: Array[int] = SkirmishMain.starts
 	runner.check(before == "res://data/maps/skirmish.json", "N7 without the launcher the scenes keep the test map")
 	for seat in [1, 2]:
 		var launcher = Launcher.instantiate()
@@ -259,14 +263,15 @@ func test_plays_dry_wells_from_each_seat(runner) -> bool:
 		await runner.process_frame
 		launcher._transport = FakeTransport.new()
 		launcher._seat = seat
-		launcher._start({"type": "start", "seats": [1, 2], "delay": 4})
+		launcher._start(_start_message("dry_wells", 3))
 		var main = runner.root.get_tree().current_scene
 		var map: Dictionary = main.simulation.map_data()
 		var start: Vector2i = MapData.start_cell(map, seat)
-		runner.check(map.name == "Dry Wells" and main.get_node("Camera2D").position == Iso.world_to_plane(Vector2(start) + Vector2(0.5, 0.5)), "N7 seat %d plays the launcher's map with the camera on its own base" % seat)
+		runner.check(map.name == "Dry Wells" and main.get_node("Camera2D").position == Iso.world_to_plane(Vector2(start) + Vector2(0.5, 0.5)), "N7 seat %d plays the host's map with the camera on its own base" % seat)
 		main.free()
 		await runner.process_frame
 	SkirmishMain.map_path = before
+	SkirmishMain.starts = before_starts
 	return true
 
 func test_offline_uses_chosen_map(runner) -> bool:
@@ -311,4 +316,97 @@ func test_restart_keeps_map_and_starts(runner) -> bool:
 	main.free()
 	SkirmishMain.map_path = before_path
 	SkirmishMain.starts = before_starts
+	return true
+
+func test_joiner_refuses_other_map(runner) -> bool:
+	var before_path: String = SkirmishMain.map_path
+	var before_starts: Array[int] = SkirmishMain.starts
+	var launcher = Launcher.instantiate()
+	runner.root.add_child(launcher)
+	await runner.process_frame
+	var transport := FakeTransport.new()
+	launcher._transport = transport
+	launcher._seat = 2
+	var message: Dictionary = _start_message("ashfall", 5)
+	message.settings.map_hash = "0"
+	var scene_before = runner.root.get_tree().current_scene
+	launcher._set_busy(true)
+	runner.check(not launcher._handle(Wire.encode(message)), "N13 the joiner refuses a different map before the simulation exists")
+	runner.check(runner.root.get_tree().current_scene == scene_before and transport.close_calls == 1, "N13 no online scene, transport closed once")
+	runner.check(launcher.get_node("Center/Box/Status").text == "Your copy of Ashfall differs from the host's", "N13 the reason is shown")
+	runner.check(not launcher.get_node("Center/Box/Create").disabled, "N13 Create usable again")
+	launcher._process(0.0)
+	launcher.free()
+	SkirmishMain.map_path = before_path
+	SkirmishMain.starts = before_starts
+	return true
+
+func test_old_relay_mismatch_is_shown(runner) -> bool:
+	var launcher = Launcher.instantiate()
+	runner.root.add_child(launcher)
+	await runner.process_frame
+	launcher._transport = FakeTransport.new()
+	launcher._set_busy(true)
+	launcher._handle('{"type":"error","reason":"protocol mismatch"}')
+	runner.check(launcher.get_node("Center/Box/Status").text == "protocol mismatch" and not launcher.get_node("Center/Box/Create").disabled, "N14 a protocol mismatch from an old relay is shown")
+	launcher.free()
+	return true
+
+func test_start_without_settings_is_a_protocol_error(runner) -> bool:
+	var launcher = Launcher.instantiate()
+	runner.root.add_child(launcher)
+	await runner.process_frame
+	var transport := FakeTransport.new()
+	launcher._transport = transport
+	launcher._set_busy(true)
+	var message: Dictionary = _start_message("ashfall", 5)
+	message.erase("settings")
+	runner.check(not launcher._handle(JSON.stringify(message)), "N15 a start without settings is not accepted")
+	runner.check(launcher.get_node("Center/Box/Status").text.begins_with("Protocol error"), "N15 protocol error shown")
+	runner.check(transport.close_calls == 1 and not launcher.get_node("Center/Box/Create").disabled, "N15 transport closed once, Create usable")
+	var other := FakeTransport.new()
+	launcher._transport = other
+	runner.check(not launcher._handle('{"type":"tick","seat":1,"tick":0}') and other.close_calls == 1, "N15 an unexpected message type closes the transport")
+	launcher.free()
+	return true
+
+func test_both_seats_share_map_and_starts(runner) -> bool:
+	var before_path: String = SkirmishMain.map_path
+	var before_starts: Array[int] = SkirmishMain.starts
+	var chosen: Array[int] = MatchSettings.starts("ashfall", 11)
+	var raw: Dictionary = MapData.load(MatchSettings.map_path("ashfall"))
+	runner.check((chosen[0] - chosen[1] + 8) % 8 == 4, "N15 the seeded pair is diagonal, got %s" % str(chosen))
+	for seat in [1, 2]:
+		var launcher = Launcher.instantiate()
+		runner.root.add_child(launcher)
+		await runner.process_frame
+		launcher._transport = FakeTransport.new()
+		launcher._seat = seat
+		launcher._start(_start_message("ashfall", 11))
+		var main = runner.root.get_tree().current_scene
+		var map: Dictionary = main.simulation.map_data()
+		var cells: Array = [MapData.start_cell(map, 1), MapData.start_cell(map, 2)]
+		runner.check(cells == [MapData.start_cell(raw, chosen[0]), MapData.start_cell(raw, chosen[1])], "N15 seat %d sim starts on the seeded cells, got %s" % [seat, str(cells)])
+		runner.check(main.get_node("Camera2D").position == Iso.world_to_plane(Vector2(cells[seat - 1]) + Vector2(0.5, 0.5)), "N15 seat %d camera on its own base" % seat)
+		main.free()
+		await runner.process_frame
+	SkirmishMain.map_path = before_path
+	SkirmishMain.starts = before_starts
+	return true
+
+func test_host_told_opponent_left_before_start(runner) -> bool:
+	var notice: String = "Opponent left before the start (different map files or version)"
+	var early: Dictionary = await _online(runner, 1)
+	early.lockstep.receive('{"type":"left","seat":2,"after_tick":3}')
+	_run(early.main, 12)
+	runner.check(early.main.get_node("HUD/Status").text.contains(notice), "N16 left before the start is explained")
+	_layout_ok(runner, early.main, "left before start")
+	early.main.free()
+	var late: Dictionary = await _online(runner, 1)
+	_peer_packets(late.transport, 2, 4, 40)
+	late.lockstep.receive('{"type":"left","seat":2,"after_tick":40}')
+	_run(late.main, 80)
+	var text: String = late.main.get_node("HUD/Status").text
+	runner.check(text.contains("Player 2 disconnected") and not text.contains(notice), "N16 a later leave keeps the plain text, got " + text)
+	late.main.free()
 	return true

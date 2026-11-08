@@ -5,15 +5,15 @@ Plan: [converted maps playable plan](../superpowers/plans/2026-11-08-converted-m
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-08 23:45, Task 5 review fixes done)
-Branch / base commit / working-tree state: converted-maps / 2dc1a6c / Task 5 diff uncommitted (match_settings.gd + .uid, test_match_settings.gd + .uid, launcher.gd, launcher.tscn, skirmish_main.gd, run_tests.gd, test_online_scene.gd, this file)
-Last green task / next incomplete task: Task 4 committed, Task 5 green pending commit / Task 6
+Resume record (updated 2026-11-09, Task 6 green pending commit)
+Branch / base commit / working-tree state: converted-maps / fdb81c4 / Task 6 diff uncommitted (launcher.gd, online_main.gd, net/lockstep.gd, net/headless_client.gd, run_netplay.sh, ci.yml, test_online_scene.gd, test_lockstep.gd, this file)
+Last green task / next incomplete task: Task 5 committed, Task 6 green pending commit / Task 6b
 Changed paths since last commit: see working-tree state
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 580 / 136958 / 2 (Fm1 pair only) / 1 / no marker
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 585 / 136975 / 2 (Fm1 pair only) / 1 / no marker
 Known red case or blocker: Fm1 pair (morning decision)
-Approved decisions, pre-authorizations used, deferred gates: Map on its own row fit N5 and F5 at 1280x720 and 1920x1080, no fallback needed
+Approved decisions, pre-authorizations used, deferred gates: none new
 Usage so far: not run
-Next exact action: coordinator commits Task 5; then Task 6
+Next exact action: coordinator commits Task 6; then Task 6b
 ```
 
 ## Baseline
@@ -201,3 +201,16 @@ Rows: tree `ef9e698` + diff. `run_tests.sh` `CASES 573 CHECKS 136886 FAILURES 2`
 RED: n/a (measurement, no tracked source change). Tree measured: HEAD `bc43b77`, clean. Scratch source `wargrid-overnight-work/scratch/bot_match.gd` (copy and `.uid` deleted after the run).
 
 `BOT MATCH map=ashfall factions=usa,china seed=1 starts=[2, 6] end_tick=26371 winner=1 first_build=[390, 420] first_collect=[1350, 1290] first_enemy_damage=[23910, -1] tick_ms p50/p95/p99/max=0.741/1.057/1.961/5.367`, exit 0, 19 s wall, load 1.61 before / 1.44 after, Godot alone. Budgets (1.82 / 3.64, snapshot 0.91) pass; ledger row added in `performance.md`. Bots: both seats build and collect; seat 1 attacks (first enemy damage tick 23,910), seat 2 never damaged an enemy building before it lost. Task 8 owns any bot fix. Log: `wargrid-overnight-work/logs/t4-bot.log`.
+
+## Task 6
+
+RED (tests present, no production change): `FAIL: N13 the joiner refuses a different map before the simulation exists`, also `FAIL: N15 seat 1 sim starts on the seeded cells, got [(40, 23), (40, 84)]`, `FAIL: N16 left before the start is explained`, `SCRIPT ERROR: Invalid call. Nonexistent function 'left_before_start'` (L14); `CASES 585 CHECKS 136972 FAILURES 10`.
+
+Joiner hello now carries no `settings` (the create hello carries `MatchSettings.for_map`); the headless client does the same. N16's late case feeds peer packets 4..40 (0..3 are prefilled).
+
+Rows: tree `fdb81c4` + Task 6 diff. `run_tests.sh` `CASES 585 CHECKS 136975 FAILURES 2` (Fm1 pair), exit 1, no marker; `run_lint.sh` exit 0; `run_warnings.sh` `WARNINGS CHECKED 118 FILES` exit 0; `run_netplay.sh match` `terminal tick 8300` `NETPLAY PASSED match 14.3 s`; `maps` `NETCLIENT MAP ashfall STARTS 3,7` PASSED 2.4 s; `map-mismatch` PASSED 1.3 s; `kill` PASSED 2.1 s; `version` PASSED 1.3 s; `run_conformance.sh` `CONFORMANCE PASSED 39` exit 0. Logs: `wargrid-overnight-work/logs/t6-*.log`.
+
+## Task 6 fix
+- RED: N14 and N13 `Create usable` failed with `_set_busy(false)` removed from `_fail` (suite FAILURES 5); N15 `transport closed once, Create usable` failed with the decode-failure close removed (FAILURES 3).
+- Fixed: N13/N14 call `_set_busy(true)` first; new N15 (start without settings, plus unexpected type closes the transport); launcher closes transport on unexpected type; `--perturb-map-hash` applies to seat 2 only.
+- Row: uncommitted tree on fdb81c4; suite CASES 586 CHECKS 136979 FAILURES 2 (Fm1 pair only), lint and warnings exit 0, netplay map-mismatch and maps PASSED.
