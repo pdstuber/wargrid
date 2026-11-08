@@ -39,4 +39,4 @@ Real play uses Dry Wells: the launcher sets `SkirmishMain.map_path` (as it sets 
 - Rendered frame time on Dry Wells after the rebase: measured in the small-piles section above and the 2026-11-08 ledger row in [performance](performance.md).
 - The terrain cache this needed (`terrain_view.gd`, ledger row 2026-11-07) reached `main` through M7 (`a1dfb03`).
 - Online play uses a different map than the CI netplay client, which still plays `skirmish.json`. Old and new builds must not play each other online.
-- Still no map choice in the launcher and the online `start` message carries no map: that belongs to the "Ashfall playable" task (blueprint §7).
+- Still no map choice in the launcher and the online `start` message carries no map: that belongs to the "Converted maps playable" task (blueprint §7).
