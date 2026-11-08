@@ -112,8 +112,8 @@ func test_every_weapon_and_kind_has_a_cue(runner) -> bool:
 		runner.check(cue != "", "SD5 %s has a death cue" % kind)
 		if Registry.kind(kind).get("armor", "") == "human": runner.check(cue == "infantry_death", "SD5 %s is infantry_death" % kind)
 	for cue: String in Cues.CUES:
-		runner.check(FileAccess.file_exists(Cues.path(Cues.CUES[cue].sound)), "SD5 sound file of %s exists" % cue)
-	for kind in Registry.buildings(): runner.check(FileAccess.file_exists(Cues.path(Cues.building_sound(kind))), "SD5 building sound of %s exists" % kind)
+		runner.check(ResourceLoader.exists(Cues.path(Cues.CUES[cue].sound)), "SD5 sound file of %s exists" % cue)
+	for kind in Registry.buildings(): runner.check(ResourceLoader.exists(Cues.path(Cues.building_sound(kind))), "SD5 building sound of %s exists" % kind)
 	return true
 
 func test_cue_by_weapon_then_damage_type(runner) -> bool:
