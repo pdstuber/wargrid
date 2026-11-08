@@ -632,6 +632,8 @@ A pushed `v*` tag runs the full test suite on that commit, builds Linux, Windows
 
 **R1.1 — Room matching on a simulation fingerprint (user, 2026-11-06; not planned yet):** clients send a hash of the simulation scripts and game data as the relay's `build` string instead of the exact version, so UI-only releases share rooms and any simulation change never does. The version stays for display and release names.
 
+**R1.2 — Release notes (user, 2026-11-08; not planned yet):** each GitHub Release says in players' words what changed since the last tag. `release.yml` uses `--generate-notes`, which lists merged pull requests; branches here are merged locally, so `v0.7.0` listed only a Dependabot bump and a compare link.
+
 ### M7.5 — Art pass (placement decided by the user 2026-11-05; scope proposed, not approved)
 
 Give the game a deliberate look instead of placeholder rectangles and text labels. Placed after ground batch A so most units are styled once, and before M8 so the bot playtests are played on the real look.
