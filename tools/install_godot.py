@@ -6,16 +6,34 @@ Reads GODOT_VERSION, GODOT_ZIP, GODOT_SHA256, GODOT_EXECUTABLE, RUNNER_TEMP and 
 
 import hashlib
 import os
+import urllib.error
 import urllib.request
 import zipfile
 from pathlib import Path
 
 
+def download(version: str, archive: Path) -> None:
+    opener = urllib.request.build_opener()
+    opener.addheaders = [("User-Agent", "wargrid-ci")]  # the Godot mirror answers 403 to Python-urllib
+    urllib.request.install_opener(opener)
+    try:
+        urllib.request.urlretrieve(
+            f"https://github.com/godotengine/godot/releases/download/{version}/{archive.name}", archive
+        )
+    except urllib.error.URLError as error:
+        # Godot's own mirror serves the same files; GitHub returned 504 for them on 2026-11-08.
+        print(f"GitHub download failed ({error}), using downloads.godotengine.org")
+        number, flavor = version.split("-", 1)
+        slug = archive.name.removeprefix(f"Godot_v{version}_")
+        urllib.request.urlretrieve(
+            f"https://downloads.godotengine.org/?version={number}&flavor={flavor}&slug={slug}", archive
+        )
+
+
 def main() -> None:
     archive = Path(os.environ["RUNNER_TEMP"]) / os.environ["GODOT_ZIP"]
-    url = f"https://github.com/godotengine/godot/releases/download/{os.environ['GODOT_VERSION']}/{archive.name}"
     if not archive.exists():  # restored by actions/cache; the checksum below still vets it
-        urllib.request.urlretrieve(url, archive)
+        download(os.environ["GODOT_VERSION"], archive)
     if hashlib.sha256(archive.read_bytes()).hexdigest() != os.environ["GODOT_SHA256"]:
         raise SystemExit("Godot checksum mismatch")
     directory = archive.parent / "godot"
