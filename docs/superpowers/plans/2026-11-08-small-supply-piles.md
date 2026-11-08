@@ -42,7 +42,7 @@ Status: **planned, not started** (2026-11-08, branch `spike-more-maps` at `a55dc
 - Bots: `skirmish.gd` never names a source (`"gather"` is sent only by `base_main.gd` and `debug/combat_workload.gd`); bot collectors seek automatically through `Supply.choose_target`, so the bot case is the re-seek test plus the scratch bot run.
 - Labels: pile label positions use only the origin and stay as they are. Two label lines per pile on piles 1.3 cells apart will overlap; reported as a playtest item, not changed here.
 - Converter: `BOXES` becomes `SOURCES` (boxes, footprint, delete flag per template); overlapping sources raise `ConvertError("sources overlap")`. The `SUPPLY_REACH` check keeps its `origin + 1` centre estimate (docks satisfy it on every map).
-- No performance-ledger row and no rendered rerun: no benchmark workload contains a small pile; `sh tools/run_benchmark.sh` still has to pass. Rendered frame time on Dry Wells stays "not re-measured" (needs a window, ask first).
+- Rendered check (user, 2026-11-08): no benchmark workload contains a small pile, so Task 6 adds a scratch rendered run of Dry Wells (window approved by the user) and a performance-ledger row; `sh tools/run_benchmark.sh` still has to pass.
 
 ## Pins and traces that prove "unchanged"
 
@@ -555,8 +555,9 @@ git commit -m "Convert small supply piles as separate 50-box sources" -m "Dry We
 **Files:**
 - Modify: `docs/reference/more-maps.md` (intro, table row, the "Small piles: not converted yet" section)
 - Modify: `docs/reference/m7-economy-parity.md` (mismatch list items 1 and 2: mark resolved, link the design)
+- Modify: `docs/reference/performance.md` (one ledger row)
 - Unchanged, check only: `game/data/maps/NOTICE.md`
-- Scratch only: `$S/dw_piles.gd`
+- Scratch only: `$S/dw_piles.gd`, `$S/render_piles.gd`
 
 **Interfaces:**
 - Consumes: everything above; `Skirmish.create(with_match: bool, second_controller: String, factions: Dictionary, map_path: String)`, `Skirmish.issue_opponents(sim, seats: Array[int])`.
@@ -572,14 +573,20 @@ Copy `$S/dw_bots.gd` to `$S/dw_piles.gd` and add, per pair: the tick a small pil
 Run: `godot --headless --path game --script $S/dw_piles.gd > $S/dw_piles.txt 2>&1` in the background (if Godot refuses a script outside the project, copy it into `game/` untracked, run it as `res://dw_piles.gd`, delete it afterwards).
 Expected: no `SCRIPT ERROR`; forced run: at least 1 pile removed and small-pile boxes left < 600 and seat credits rose. Natural runs: report the numbers as they are (collectors may still be on their base docks at the cap; that is data, not a failure).
 
-- [ ] **Step 3: Update docs**
+- [ ] **Step 3: Rendered check on Dry Wells (opens a window; approved by the user 2026-11-08)**
 
-`more-maps.md`: intro "Sources are 4 × 5 cells" → docks 4 × 5, small piles 1 × 1; table row Dry Wells → "4 docks of 400 + 12 small piles of 50"; replace the "Small piles: not converted yet" section with "Small piles (2026-11-08)": link the design and this plan, the rule (1 × 1, 50 boxes, removed with the last box, collector keeps it), the converter change and overlap check, Ashfall and Broken Crown byte-identical, the Step 1 and Step 2 numbers with commit hash, "not measured: parity-harness timing (design non-goal), rendered frame time", the label overlap as a playtest item, and "builds before and after this change must not play Dry Wells online together". `m7-economy-parity.md`: mismatch items 1 and 2 → resolved (link). Check every link and path resolves; `NOTICE.md` shows no diff.
+Copy `$S/render_m7.gd` (it sets `SkirmishMain.map_path` to Dry Wells when its first user argument is `dry_wells`, disables vsync, records 240 frame intervals per zoom 1.0 and 0.5 after 30 warm-up frames and saves a screenshot per zoom) to `$S/render_piles.gd`. After the warm-up, move the camera to the centre of the eastern pile cluster (cells around (60, 50), via `Iso.world_to_plane`) so the 1 × 1 piles are on screen. Run it as `godot --path game --script res://render_piles.gd -- dry_wells` and `-- old_map` (copy into `game/` untracked, delete afterwards; `timeout: 600000`).
+Expected: `RENDER` lines for both maps and zooms, no `SCRIPT ERROR`; the coordinator reads the Dry Wells screenshots and checks that the piles draw as 1 × 1 footprints with labels (overlap expected, playtest item). Before this change (2026-11-08, `26541f4`, piles absent): Dry Wells p50 / p95 0.65 / 1.83 ms at zoom 1.0 and 0.61 / 1.62 ms at 0.5; old map 0.51 / 1.86 and 0.45 / 1.46 ms. Report the new numbers as they are; a clear regression (Dry Wells p95 more than twice the old map's at the same zoom) is reported to the user, never hidden.
+Add one row to the history table in `docs/reference/performance.md`, after the last 2026-11-08 row: tree (`git rev-parse --short HEAD`), machine (Apple M6, idle, `vsync=off`, 1280 × 720), both maps' p50 / p95 / max per zoom, and the link [more maps](more-maps.md).
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 4: Update docs**
+
+`more-maps.md`: intro "Sources are 4 × 5 cells" → docks 4 × 5, small piles 1 × 1; table row Dry Wells → "4 docks of 400 + 12 small piles of 50"; replace the "Small piles: not converted yet" section with "Small piles (2026-11-08)": link the design and this plan, the rule (1 × 1, 50 boxes, removed with the last box, collector keeps it), the converter change and overlap check, Ashfall and Broken Crown byte-identical, the Step 1 and Step 2 numbers with commit hash, "not measured: parity-harness timing (design non-goal)", the Step 3 rendered numbers, the label overlap as a playtest item, and "builds before and after this change must not play Dry Wells online together". `m7-economy-parity.md`: mismatch items 1 and 2 → resolved (link). Check every link and path resolves; `NOTICE.md` shows no diff.
+
+- [ ] **Step 5: Commit**
 
 ```bash
-git add docs/reference/more-maps.md docs/reference/m7-economy-parity.md
+git add docs/reference/more-maps.md docs/reference/m7-economy-parity.md docs/reference/performance.md
 git commit -m "Record small supply piles on Dry Wells"
 ```
 
