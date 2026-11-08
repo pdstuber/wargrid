@@ -7,9 +7,10 @@ import hashlib
 import os
 import sys
 import tempfile
-import urllib.request
 import zipfile
 from pathlib import Path
+
+import install_godot
 
 WANTED = (
     "version.txt",
@@ -32,10 +33,9 @@ def main() -> None:
     if all((target / name).exists() for name in WANTED):
         print("templates already installed:", target)
         return
-    url = f"https://github.com/godotengine/godot/releases/download/{version}/Godot_v{version}_export_templates.tpz"
     with tempfile.TemporaryDirectory() as scratch:
-        archive = Path(scratch) / "templates.tpz"
-        urllib.request.urlretrieve(url, archive)
+        archive = Path(scratch) / f"Godot_v{version}_export_templates.tpz"
+        install_godot.download(version, archive)
         digest = hashlib.sha256()
         with archive.open("rb") as handle:
             for chunk in iter(lambda: handle.read(1 << 20), b""):

@@ -266,7 +266,8 @@ jobs:
           cache-dependency-path: relay/go.sum
       - uses: golangci/golangci-lint-action@v9
         with:
-          version: v2.15
+          version: v2.15.0
+          install-mode: goinstall # builds via proxy.golang.org instead of a GitHub release download
           working-directory: relay
   tools:
     name: Tools / Python lint and tests
@@ -288,6 +289,7 @@ jobs:
           python3 tools/test_sim_math.py
           python3 tools/test_release_version.py
           python3 tools/test_install_godot.py
+          python3 tools/test_install_export_templates.py
           python3 tools/test_package_release.py
           python3 tools/test_deploy_web.py
           python3 tools/zh_map/test_zh_map.py
@@ -303,9 +305,11 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Install pinned actionlint and lint the workflows (shellcheck is preinstalled)
+        env:
+          GH_TOKEN: ${{ github.token }} # the authenticated API kept working while anonymous release downloads returned 504
         run: |
           archive="$RUNNER_TEMP/actionlint.tar.gz"
-          curl -fsSL -o "$archive" "https://github.com/rhysd/actionlint/releases/download/v$ACTIONLINT_VERSION/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          gh release download "v$ACTIONLINT_VERSION" -R rhysd/actionlint -p "actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" -O "$archive"
           echo "$ACTIONLINT_SHA256  $archive" | sha256sum -c -
           tar -xzf "$archive" -C "$RUNNER_TEMP" actionlint
           "$RUNNER_TEMP/actionlint" -color
