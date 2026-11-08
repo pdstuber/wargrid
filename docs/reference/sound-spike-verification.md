@@ -45,7 +45,7 @@ Gate A, Max Rate (user, 2026-11-08): accepted the recommendation, Max Rate off f
 
 Gate A, MacLeod licence (user, 2026-11-08): keep Hitman and Stay the Course on the incompetech FAQ site-wide CC BY statement; per-track exceptions unverified. Gate A review (Opus): no Critical; Important items fixed in 1520b90 except SD1/drain, left to Task 4.
 
-Gate B, mix (user, 2026-11-08, by ear): effects -6 dB via bus trim (`EFFECTS_TRIM_DB` in `audio_settings.gd`, slider at 100 % means -6 dB), cannon `gain_db` -3.8 kept, QOA = raw, falloff curve unchanged.
+Gate B, mix (user, 2026-11-08, by ear): effects -6 dB via bus trim (`EFFECTS_TRIM_DB` in `audio_settings.gd`, slider at 100 % means -6 dB), cannon `gain_db` -3.8 (later raised to -1.5, see below), QOA = raw, falloff curve unchanged.
 
 ## Task 4
 
@@ -114,3 +114,7 @@ Performance ledger not edited.
 - 2026-11-08 later (tree f23fddb, clean): quiet-host horde rerun, full rendered benchmark alone, load 1.51 start / 2.18 end (never under 1.5 for long; marked mildly loaded), RENDERED BENCHMARK PASSED 4: horde frame p95 3.859 ms, tick p95 4.621 ms (ledger row edited). CI run 42494796493 on f23fddb: FAILED. Green: Linux and Windows Tests, Lint, Relay, Workflows, Docker, Tools Python lint and tests. Failed: Exported build (linux) and (windows), both `CASES 559 CHECKS 136823 FAILURES 31`, all in SD5 (`test_sound.gd:115-116`): `FileAccess.file_exists(Cues.path(...))` is false for every sound file in the exported pack (imported `.wav` is remapped, original path absent); fix would be `ResourceLoader.exists`. Not fixed (report only). No Godot --import crash (exit 134 / propagate_notification) in any job; export step itself succeeded. Compare replays skipped, so `compare_local_traces.sh` not run.
 
 - 2026-11-08 SD5 export fix (tree f632214 plus uncommitted `game/tests/test_sound.gd` lines 115-116: `FileAccess.file_exists` -> `ResourceLoader.exists`). Local reproduction with the installed 4.7.2 templates: `macOS Tests` preset exported to the scratchpad, run as CI does (`WARGRID_TEST_EXE`): unfixed CASES 559 CHECKS 136816 FAILURES 31 (all SD5), fixed FAILURES 0, exit 0. Editor suite CASES 559 CHECKS 136833 FAILURES 0; lint and warnings exit 0. Audit of `game/scripts` and `game/tests`: no other `file_exists`/`DirAccess` on imported audio; runtime uses `load()` (remap-aware). Linux/Windows CI exports not rerun here (macOS pack only).
+
+- 2026-11-08 (user): Task 7 Step 4 web check done in Firefox on the local export (`sh tools/export_build.sh Web web/site/index.html`, served on 127.0.0.1:8060, tree 0579236). User verdict: "soundwise everything perfect". Console errors were not reported separately; not inspected by the coordinator. Step 5 playtest (offline and online) still open.
+
+- 2026-11-08 (user): after the web check the USA tank sounded too quiet. Labelled A/B in Firefox (cannon at 0 / -1.5 / -2.5 / -3.8 dB against an unchanged rifle burst); user picked B (0) or D (-1.5). Chose -1.5: `sound_cues.gd` cannon `gain_db` -1.5. Effects bus -6 dB unchanged.

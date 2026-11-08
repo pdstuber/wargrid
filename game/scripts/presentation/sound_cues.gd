@@ -6,7 +6,7 @@ const Shared = preload("res://scripts/simulation/definitions/shared.gd")
 const CUES := {
 	"rifle_burst": {"sound": "rifle_burst", "limit": 4, "pitch": 1.0, "jitter": 0.0, "gain_db": 0.0, "ui": false},
 	"carbine": {"sound": "carbine", "limit": 4, "pitch": 1.0, "jitter": 0.0, "gain_db": 0.0, "ui": false},
-	"cannon": {"sound": "cannon", "limit": 2, "pitch": 1.0, "jitter": 0.0, "gain_db": -3.8, "ui": false},
+	"cannon": {"sound": "cannon", "limit": 2, "pitch": 1.0, "jitter": 0.0, "gain_db": -1.5, "ui": false},
 	"launch": {"sound": "explosion", "limit": 4, "pitch": 1.5, "jitter": 0.0, "gain_db": -6.0, "ui": false},
 	"impact": {"sound": "explosion", "limit": 4, "pitch": 1.0, "jitter": 0.0, "gain_db": 0.0, "ui": false},
 	"infantry_death": {"sound": "infantry_death", "limit": 3, "pitch": 1.0, "jitter": 0.0, "gain_db": 0.0, "ui": false},
