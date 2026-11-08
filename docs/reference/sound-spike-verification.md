@@ -10,6 +10,7 @@ Changed paths since last commit: game/scripts/online_main.gd, game/scripts/prese
 Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh (with traces), CASES 558 CHECKS 136835 FAILURES 0, exit 0, TESTS PASSED; lint exit 0; warnings exit 0 (114 files); netplay match PASSED tick 8400; traces in $SOUND_WORK/traces/t6b MATCHED against base (replay, economy, combat 1200; team 100; s1 281)
 Known red case or blocker: none. Open: Gate B Step 5 (windowed) and Step 6 (closure). Unverified: panned-camera listener position and voice A/B by ear
 Approved decisions, pre-authorizations used, deferred gates: Gate S passed (user, 2026-11-08); local commits after green checkpoints pre-authorized; no push, merge, window, install or fly without approval; Gate A passed (Max Rate off; MacLeod kept); Gate B and exit pending
+CI on pushed 5fa614b (2026-11-08): run 42495724976 success, all 11 jobs green (Docker, Godot tests linux and windows, lint, exported builds linux and windows, Compare replays, Relay, Workflows, Python); compare_local_traces.sh 42495724976 exit 0: replay, economy, combat MATCHED 1200, team MATCHED 100, netplay MATCHED 281 (macOS local vs Linux and Windows CI)
 Usage so far (python3 tools/session_usage.py <session files>): not recorded
 Next exact action: user: web check (Step 4) and playtest (Step 5); then /ponytail-review, approval to commit and push, CI and compare_local_traces (Step 6). See "Task 7" below
 ```
