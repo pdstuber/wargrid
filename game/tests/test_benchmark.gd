@@ -11,7 +11,7 @@ const View = preload("res://scripts/presentation/world_view.gd")
 const Probe = preload("res://scenes/movement_benchmark.tscn")
 
 func cases() -> Array[Callable]:
-	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_transports_fixture, test_defences_fixture, test_skirmish3v3_fixture, test_combat_work_ceiling, test_volley_retaliation_work, test_horde_render_layout, test_workload_asserts_pure]
+	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_transports_fixture, test_defences_fixture, test_skirmish3v3_fixture, test_combat_work_ceiling, test_volley_retaliation_work, test_horde_render_layout, test_workload_asserts_pure, test_settled_matches_snapshot_predicate]
 
 func test_statistics(runner) -> bool:
 	runner.check(Stats.summary(PackedFloat64Array()) == {"n": 0, "p50": 0.0, "p95": 0.0, "p99": 0.0, "max": 0.0}, "BM1 empty")
@@ -234,4 +234,25 @@ func test_workload_asserts_pure(runner) -> bool:
 			if line.strip_edges().begins_with("assert(") and "sim." in line:
 				impure.append(line.strip_edges())
 		runner.check(impure.is_empty(), "BM10 no sim call inside assert in " + path + " " + str(impure))
+	return true
+
+func test_settled_matches_snapshot_predicate(runner) -> bool:
+	var mismatches: int = 0
+	var flips: int = 0
+	for layout in ["open", "dense"]:
+		var sim = Workload.create(layout)
+		var last: bool = false
+		var leg: int = 0
+		for tick in 1500:
+			var state: Dictionary = sim.snapshot()
+			var expected: bool = not state.entities.is_empty() and state.pending_commands.is_empty() and state.entities.all(func(unit: Dictionary) -> bool: return unit.status == "arrived")
+			var actual: bool = Workload.settled(sim)
+			mismatches += int(actual != expected)
+			flips += int(actual != last)
+			last = actual
+			if tick == 0 or actual:
+				Workload.issue_leg(sim, leg)
+				leg += 1
+			sim.step()
+	runner.check(mismatches == 0 and flips >= 1, "BM6 settled equals the snapshot predicate on 3000 ticks (%d mismatches, %d flips)" % [mismatches, flips])
 	return true

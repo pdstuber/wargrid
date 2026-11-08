@@ -51,10 +51,9 @@ static func issue_leg(sim: Simulation, leg: int, anchors: Array[Vector2] = ANCHO
 	assert(result.ok, result.error)
 
 static func settled(sim: Simulation) -> bool:
-	var state: Dictionary = sim.snapshot()
-	if state.entities.is_empty() or not state.pending_commands.is_empty():
+	if sim._entities.is_empty() or not sim._pending.is_empty():
 		return false
-	for unit: Dictionary in state.entities:
+	for unit: Dictionary in sim._entities.values():
 		if unit.status != "arrived":
 			return false
 	return true
