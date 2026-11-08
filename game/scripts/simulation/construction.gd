@@ -40,7 +40,7 @@ static func footprint_error(sim: Simulation, footprint: Array[Vector2i], kind: S
 static func _near_source(sim: Simulation, footprint: Array[Vector2i], clearance: int) -> bool:
 	if clearance == 0: return false
 	for source: Dictionary in sim._sources.values():
-		for cell in block(Registry.SOURCE_FOOTPRINT,Vector2i(source.origin[0],source.origin[1])):
+		for cell in block(Registry.source_footprint(source),Vector2i(source.origin[0],source.origin[1])):
 			for placed in footprint:
 				if maxi(absi(placed.x - cell.x),absi(placed.y - cell.y)) <= clearance: return true
 	return false

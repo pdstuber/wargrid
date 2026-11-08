@@ -19,6 +19,10 @@ static var _profile_cache: Dictionary = {}
 static var radius_cache: Dictionary = {}
 static var air_kinds: Dictionary = _air_kinds()
 
+static func source_footprint(source: Dictionary) -> Vector2i:
+	if not source.has("footprint"): return SOURCE_FOOTPRINT
+	return Vector2i(int(source.footprint[0]),int(source.footprint[1]))
+
 static func kind(id: String) -> Dictionary:
 	if _extra.has(id): return _extra[id]
 	if Usa.KINDS.has(id): return Usa.KINDS[id]

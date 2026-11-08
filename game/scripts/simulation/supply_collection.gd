@@ -17,7 +17,7 @@ static func release(sim: Simulation, unit_id: int) -> void:
 	collection.phase = "seeking" if collection.enabled else "idle"
 
 static func _size(target: Dictionary) -> Vector2i:
-	return Registry.SOURCE_FOOTPRINT if target.has("boxes") else Registry.building_view(target.kind).footprint
+	return Registry.source_footprint(target) if target.has("boxes") else Registry.building_view(target.kind).footprint
 
 static func center(target: Dictionary) -> Array:
 	var size: Vector2i = _size(target)
