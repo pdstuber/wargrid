@@ -20,7 +20,7 @@ Mix calculation of the draft (2026-11-07, file loudness x INI Volume x category 
 
 ## Licence sources
 
-Fetched 2026-11-07, re-verified in Task 3 (not yet). Source: `$HOME/projects/wargrid-sound-work/sourcing/MANIFEST.md` (outside the repo).
+Fetched 2026-11-07, re-verified in Task 3 on 2026-11-08 (below). Source: `$HOME/projects/wargrid-sound-work/sourcing/MANIFEST.md` (outside the repo).
 
 | file | page URL | quoted wording | fetched |
 |---|---|---|---|
@@ -30,6 +30,15 @@ Fetched 2026-11-07, re-verified in Task 3 (not yet). Source: `$HOME/projects/war
 | M08 Stay the Course, Kevin MacLeod | https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1900018 | incompetech FAQ: "Be sure to credit me."; credit format: "Title Kevin MacLeod (incompetech.com) / Licensed under Creative Commons: By Attribution 4.0 / https://creativecommons.org/licenses/by/4.0/" | 2026-11-07 |
 | M10 Hitman, Kevin MacLeod | https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1300013 | same FAQ wording and credit format as M08 | 2026-11-07 |
 | Announcer voice: Piper en_US-kristin-medium | https://huggingface.co/rhasspy/piper-voices (revision `e7229f7d33a10e145e109b886d661984201ac3c4`) | model card: "License: public domain", "Trained from scratch ... All recordings came from LibriVox.org."; LibriVox: "all our recordings are public domain ... This means anyone can use all our recordings however they wish (even to sell them)." No credit required; courtesy line `Voice: Piper en_US-kristin-medium (public-domain LibriVox recordings)`. Caveat: the licence is the trainers' own claim; LibriVox source recordings not audited. | 2026-11-07 |
+
+### Re-verification, 2026-11-08 (Task 3)
+
+No difference from the manifest.
+
+- OpenGameArt pages (curl, page text; WebFetch got 403): conflict "Author: Alexandr Zhelanov ... License(s): CC-BY 4.0 ... Copyright/Attribution Notice: https://www.youtube.com/c/AlexandrZhelanovsMusic"; enemy-spotted "License(s): CC-BY 3.0 ... Copyright/Attribution Notice: Alexandr Zhelanov https://soundcloud.com/alexandr-zhelanov"; mammoth "License(s): OGA-BY 4.0 CC-BY 4.0" (used under CC-BY 4.0).
+- incompetech FAQ (WebFetch): credit format "Title Kevin MacLeod (incompetech.com) / Licensed under Creative Commons: By Attribution 4.0 / https://creativecommons.org/licenses/by/4.0/"; "the Creative Commons license that I offer all of my music under".
+- The two MacLeod track pages (`?isrc=`) render by script ("Loading track... No Track selected"), so no licence text is on them. Title, isrc and file name come from `https://incompetech.com/music/royalty-free/pieces.json` (Stay the Course USUAN1900018, Hitman USUAN1300013); the licence rests on the FAQ alone.
+- Kristin MODEL_CARD at revision `e7229f7d`: "# Model card for kristin (medium)", "License: public domain" (dataset), "All recordings came from LibriVox.org."
 
 The five music files are the manifest rows M04, M05, M06, M08 and M10 (the "five picks" of `SOUND_WORK/music/`). Only the Piper voice output is shipped, never the engine.
 
@@ -126,6 +135,10 @@ voice/defeat lufs -24.0 peak -9.5 dBFS
 music LUFS/true-peak dBFS: stay_the_course -30.0/-18.2, conflict -30.1/-15.7, enemy_spotted -30.1/-16.8, mammoth -30.0/-18.0, hitman -30.0/-15.2
 music size bytes: stay_the_course 2458259, conflict 2508577, enemy_spotted 1978908, mammoth 1625202, hitman 2327193
 ```
+
+## Import and size (Task 3)
+
+See the verification file, Measurements.
 
 ## Gate rulings
 

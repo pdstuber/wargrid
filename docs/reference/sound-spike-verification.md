@@ -4,14 +4,14 @@ Handoff: [sound-spike-prompt.txt](../sound-spike-prompt.txt). Plan: [sound spike
 
 ```text
 Resume record (updated 2026-11-08)
-Branch / base commit / working-tree state: spike-sound / base main 893332f (design 6fbb421, plan 5a6abc9, Task 0 docs committed) / Task 1 changes uncommitted until the coordinator commits
-Last green task / next incomplete task: Task 1 (risk facts, event accessors, per-step collection) done / Task 2 (ends at Gate S)
-Changed paths since last commit: game/scripts/simulation/simulation.gd, game/scripts/skirmish_main.gd, game/scripts/online_main.gd, game/scripts/presentation/sound_director.gd, sound_player.gd (+ .uid), game/tests/test_sound.gd (+ .uid), game/tests/run_tests.gd, docs/reference/sound-spike.md, this file
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, CASES 508 CHECKS 136267 FAILURES 0, exit 0, TESTS PASSED; lint and warnings exit 0; traces identical
+Branch / base commit / working-tree state: spike-sound / base main 893332f (HEAD fe3e8e2) / Task 3 changes uncommitted until the coordinator commits
+Last green task / next incomplete task: Task 3 Steps 1-8 done / Step 9 Gate A (coordinator dispatches the Opus review; user picks Max Rate per folder, default off)
+Changed paths since last commit: game/audio/** (23 files + .import + CREDITS.md), tools/test_audio_assets.py, .github/workflows/ci.yml, README.md, docs/reference/sound-spike.md, this file
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, CASES 508 CHECKS 136260 FAILURES 0, exit 0, TESTS PASSED; lint, warnings, python checks exit 0
 Known red case or blocker: none
-Approved decisions, pre-authorizations used, deferred gates: design approved 2026-11-08; local commits after green checkpoints pre-authorized; no push, merge, window, install or fly without approval; Gate S, A, B and exit pending. Task 1 deviations: no class_name (project uses preload consts; class_name needs a global class cache), SoundDirector.update does not drain pending steps yet (SD1 reads them after the frame's refresh); Task 4 must drain in update and bound memory
+Approved decisions, pre-authorizations used, deferred gates: Gate S passed (user, 2026-11-08); local commits after green checkpoints pre-authorized; no push, merge, window, install or fly without approval; Gate A, B and exit pending. Commit message for Task 3: 'Add the sound spike audio and credits'
 Usage so far (python3 tools/session_usage.py <session files>): not recorded
-Next exact action: Gate S. User listens (open -a Firefox $SOUND_WORK/gate-s/listen.html, not yet opened), rules; a change goes back to Step 4 or 6; then commit 'Add the effect, voice and music tools'. Task 2 green: test_synth 9 OK, test_process 3 OK, run_python_checks exit 0, actionlint 0, faithful-port cmp 18/18 identical, music -30.0 to -30.1 LUFS, no dynamic loudnorm, all peaks below -1 dBFS
+Next exact action: commit, then Gate A (Step 9): Opus review of Tasks 1-3, user picks Max Rate per folder (web-1 vs web-2 sizes above)
 ```
 
 ## Baseline and trace checks
@@ -22,4 +22,18 @@ After Task 1 (tree: working tree on `spike-sound`, uncommitted, `$SOUND_WORK/tra
 
 ## Measurements
 
+Task 3, 2026-11-08, base `fe3e8e2` (tree: working tree on `spike-sound`, uncommitted). Web export `index.pck`, `$SOUND_WORK/web-N/`:
+
+| build | index.pck bytes |
+|---|---|
+| web-0 base, no audio | 1,138,288 |
+| web-1 audio, Max Rate off | 12,938,240 |
+| web-2 audio, Max Rate 22,050 Hz on sfx and voice | 12,742,288 |
+
+`.godot/imported/*.sample` sums (bytes): Max Rate off sfx 220,782, voice 178,296; on sfx 112,494, voice 90,760. Music (Ogg, passthrough) 11,391,419 imported. Raw files (10 sfx, 8 voice, 5 music) well under 20,000,000. Max Rate restored to off, re-imported. Mono on in every sfx and voice `.import`.
+
+Checks: `test_audio_assets.py` red first (CREDITS.md missing), then 6 tests OK; run_python_checks exit 0; suite CASES 508 CHECKS 136260 FAILURES 0, TESTS PASSED, exit 0 (equal to a clean `HEAD` run, so Task 3 changes no totals; the 136267 in the Task 1 record was not reproducible on `HEAD` and is superseded); lint exit 0; warnings exit 0. First `--import` after adding audio printed one `ERROR: /root: ... propagate_notification()` and exited 134; the immediate re-import was clean (0 errors, exit 0), later imports and exports clean.
+
 ## Gate rulings
+
+Gate S, passed (user, 2026-11-08): final effects, voice lines and processed music confirmed by ear. Files committed as heard (`$SOUND_WORK/gate-s`).

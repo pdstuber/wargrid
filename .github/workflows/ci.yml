@@ -297,6 +297,7 @@ jobs:
           python3 tools/test_zh_parity.py
           python3 tools/audio/test_synth.py
           python3 tools/audio/test_process.py
+          python3 tools/test_audio_assets.py
   workflows-lint:
     name: Workflows / Lint
     runs-on: ubuntu-latest
