@@ -11,6 +11,8 @@ on:
     paths: *code
   workflow_dispatch:
   workflow_call:
+permissions:
+  contents: read
 env:
   GODOT_VERSION: 4.7.2-stable
   TEMPLATES_SHA256: f298490b8d44d934be425a5a65a51bf15f422428b229a06a6e11d9ffea248011
