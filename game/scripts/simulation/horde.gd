@@ -14,17 +14,23 @@ static func first_check(sim: Simulation, kind: String) -> int:
 
 static func step(sim: Simulation, armed: Array[int]) -> void:
 	var members: Array[Dictionary] = []
-	for id in armed:
-		if sim._entities.has(id) and sim._entities[id].combat.has("horde"): members.append(sim._entities[id])
+	for id: int in armed:
+		if not sim._entities.has(id): continue
+		var entity: Dictionary = sim._entities[id]
+		var entity_combat: Dictionary = entity.combat
+		if entity_combat.has("horde"): members.append(entity)
 	var grid: Dictionary = {}
 	var size: float = 0.0
-	for unit in members:
-		if unit.combat.horde_tick > sim._tick or unit.has("container_id"): continue
+	var tick: int = sim._tick
+	for unit: Dictionary in members:
+		var unit_combat: Dictionary = unit.combat
+		var horde_tick: int = unit_combat.horde_tick
+		if horde_tick > tick or unit.has("container_id"): continue
 		if grid.is_empty():
 			size = _cell_size(members)
 			grid = _bucket(members, size)
 		sim._horde_checks += 1
-		unit.combat.horde_tick = sim._tick + rate(unit.kind)
+		unit_combat.horde_tick = tick + rate(unit.kind)
 		_set_level(sim, unit, _level(sim, unit, grid, size))
 
 # A neighbour is within rule radius plus both unit radii, so one cell of that width reaches every candidate from the 3x3 block.
@@ -40,32 +46,47 @@ static func _cell_size(members: Array[Dictionary]) -> float:
 	return widest + 2.0 * largest
 
 static func _cell(unit: Dictionary, size: float) -> Vector2i:
-	return Vector2i(floori(unit.position[0] / size), floori(unit.position[1] / size))
+	var position: Array = unit.position
+	var px: float = position[0]
+	var py: float = position[1]
+	return Vector2i(floori(px / size), floori(py / size))
 
 static func _bucket(members: Array[Dictionary], size: float) -> Dictionary:
 	var grid: Dictionary = {}
-	for unit in members:
+	for unit: Dictionary in members:
 		var cell: Vector2i = _cell(unit, size)
 		if not grid.has(cell): grid[cell] = [] as Array[Dictionary]
-		grid[cell].append(unit)
+		var bucket: Array[Dictionary] = grid[cell]
+		bucket.append(unit)
 	return grid
 
 static func _level(sim: Simulation, unit: Dictionary, grid: Dictionary, size: float) -> int:
-	var rule: Dictionary = Registry.kind(unit.kind).horde
+	var unit_kind: String = unit.kind
+	var rule: Dictionary = Registry.kind(unit_kind).horde
 	var need: int = rule.count - 1
 	if need <= 0: return 2
+	var rule_radius: float = rule.radius
 	var near: int = 0
 	var rubbed: bool = false
 	var home: Vector2i = _cell(unit, size)
-	for dy in range(-1, 2):
-		for dx in range(-1, 2):
-			for other: Dictionary in grid.get(home + Vector2i(dx, dy), []):
-				if other.id == unit.id or other.has("container_id") or Combat.hostile(sim, unit.owner, other.owner) or not _matches(rule, unit, other): continue
-				var ox: float = other.position[0] - unit.position[0]
-				var oy: float = other.position[1] - unit.position[1]
-				if Combat._gap_between(ox, oy, CombatDefinitions.radius(unit.kind), CombatDefinitions.radius(other.kind)) > rule.radius: continue
+	var unit_id: int = unit.id
+	var unit_owner: int = unit.owner
+	var unit_position: Array = unit.position
+	var ux: float = unit_position[0]
+	var uy: float = unit_position[1]
+	for dy: int in range(-1, 2):
+		for dx: int in range(-1, 2):
+			var bucket: Array = grid.get(home + Vector2i(dx, dy), [])
+			for other: Dictionary in bucket:
+				var other_owner: int = other.owner
+				if other.id == unit_id or other.has("container_id") or Combat.hostile(sim, unit_owner, other_owner) or not _matches(rule, unit, other): continue
+				var other_position: Array = other.position
+				var ox: float = float(other_position[0]) - ux
+				var oy: float = float(other_position[1]) - uy
+				if Combat._gap_between(ox, oy, CombatDefinitions.radius(unit_kind), CombatDefinitions.radius(other.kind)) > rule_radius: continue
 				near += 1
-				rubbed = rubbed or other.combat.horde == 2
+				var other_combat: Dictionary = other.combat
+				rubbed = rubbed or other_combat.horde == 2
 				if near >= need: return 2
 	return 1 if rubbed else 0
 

@@ -590,24 +590,29 @@ func _entity_copy(unit: Dictionary) -> Dictionary:
 
 func _advance(unit: Dictionary) -> void:
 	var remaining: float = Locomotion.step(unit, Definitions.unit(unit.kind), _tick)
-	var x: float = unit.position[0]
-	var y: float = unit.position[1]
-	while not unit.route.is_empty():
-		var waypoint: Array = unit.route[0]
-		var dx: float = waypoint[0] - x
-		var dy: float = waypoint[1] - y
+	var position: Array = unit.position
+	var x: float = position[0]
+	var y: float = position[1]
+	var route: Array = unit.route
+	while not route.is_empty():
+		var waypoint: Array = route[0]
+		var wx: float = waypoint[0]
+		var wy: float = waypoint[1]
+		var dx: float = wx - x
+		var dy: float = wy - y
 		var distance: float = sqrt(dx * dx + dy * dy)
 		if distance <= remaining + 1e-5:
-			x = waypoint[0]
-			y = waypoint[1]
+			x = wx
+			y = wy
 			remaining = maxf(0.0, remaining - distance)
-			unit.route = unit.route.slice(1)
+			route = route.slice(1)
+			unit.route = route
 		else:
 			x += dx / distance * remaining
 			y += dy / distance * remaining
 			break
 	unit.position = [x, y]
-	if unit.route.is_empty():
+	if route.is_empty():
 		if not Containers.entering(unit): unit.order = null
 		unit.speed = 0.0
 		unit.status = "arrived"

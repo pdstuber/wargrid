@@ -3,15 +3,15 @@
 Handoff: [performance-spike-prompt.txt](../performance-spike-prompt.txt). Ledger: [performance.md](performance.md). Dated evidence rows below the record are append-only.
 
 ```text
-Resume record (updated 2026-11-08 03:40)
-Branch / base commit / working-tree state: main / 297d43e (clean at start of R2) / uncommitted: game/scripts/debug/movement_benchmark.gd, game/scripts/debug/movement_workload.gd, game/scripts/presentation/world_view.gd, game/scripts/presentation/structure_layer.gd (new), game/tests/test_view.gd, this file, docs/reference/performance.md
-Last green task / next incomplete task: R2 (see 'R2 result') / Workstream 4 (typing), then Workstream 5 (threads); Task 2k B rerun was done earlier
+Resume record (updated 2026-11-08 04:20)
+Branch / base commit / working-tree state: main / 0aac476 (clean at start of Workstream 4) / uncommitted: game/scripts/simulation/horde.gd, game/scripts/simulation/locomotion.gd, game/scripts/simulation/simulation.gd, this file, docs/reference/performance.md
+Last green task / next incomplete task: Workstream 4 (see 'Workstream 4 result'; typing kept for Horde, Locomotion, _advance, uncommitted) / Workstream 5 (threads proof of concept); R2 was committed earlier
 Changed paths since last commit: the paths above
-Last command / cases / checks / failures / exit / marker: `sh tools/run_tests.sh` on the working tree 486 cases / 136044 checks / 0 failures / exit 0 (base 485 / 136039); lint and warnings exit 0; four traces cmp identical against a git archive of 297d43e; 6 rendered runs `RENDERED PROFILE COMPLETE`, exit 0
+Last command / cases / checks / failures / exit / marker: scratchpad `accept.sh HEAD` (MINCASES=486) on the working tree: suite 486 cases / 136044 checks / 0 failures (base identical counts), four traces cmp identical, 7 pins, lint, warnings (104 files), netplay match tick 8400, team match cap line: `ACCEPT: PASS`
 Known red case or blocker: none. R1 closed, not reproduced. 2i BLOCKED (no fix above the A/A spread). Round 2 gate review done. Report-only rows exceeded: combat open, dense, hordes300
 Approved decisions, pre-authorizations used, deferred gates: user invoked the spike 2026-11-07; works on main; local commits after green checkpoints pre-authorized; no push/PR/merge/fly/Sprite/window without approval; host = this Mac only (user). Decisions of 2026-11-07 evening: BM6 retune approved together with 2e; 2f approved with a version bump and a ZH AIUpdate comparison; second round for 2d and per-cell enemy counts; hordes300 "improved, still exceeded" is acceptable; C++/GDExtension NOT investigated (user decision); threads PoC local first, fly web deploy allowed for the threaded-web test only, Safari failure is not a blocker, a Chromium-based browser is acceptable for the Chrome check; Steam Deck check tomorrow; user asleep, run all approved work, pausing only on a stop condition
 Usage so far (python3 tools/session_usage.py <session files>): not recorded
-Next exact action: commit R2 (coordinator), then Workstream 4 typing, then Workstream 5 threads
+Next exact action: commit Workstream 4 (coordinator), then Workstream 5 threads proof of concept
 ```
 
 ## Evidence
@@ -438,3 +438,30 @@ Result: `draw` 1.57 -> 1.14 ms (-0.43 ms, `draw.structures` has 0 calls in the 6
 Assertion (new, not an existing budget; nothing existing was loosened): `ASHFALL_FRAME_P95_MS = 4.5` in `movement_benchmark.gd`, worst measured frame p95 3.02 ms (6 runs) plus about 50 % because large_196 frame p95 moved 0.45-2.96 ms between runs on this host. The line is a regression guard for the large map, not the 16.7 ms frame line; with the 6x low-end assumption it would not hold. The failing direction of the assertion was not exercised (no run with a lowered ceiling).
 
 Acceptance: suite 486 cases (485 + V12) / 136044 checks / 0 failures / exit 0; `sh tools/run_lint.sh`, `sh tools/run_warnings.sh` exit 0; `WARGRID_REPLAY_TRACE`, economy, combat and team traces `cmp` identical against a git archive of 297d43e (1200 / 1200 / 1200 / 100 lines); the scratchpad `accept.sh` of earlier tasks was not available in this session, so this was done by hand (suite on both trees with the four trace variables). Netplay and team match not run (presentation only, no sim file touched). Raw output in scratchpad `A1..A3.out`, `B1..B3.out`.
+
+## Workstream 4 result (2026-11-08, base 0aac476 via git archive, scratch copies in scratchpad `ws4`, Apple M6, headless, `bench_ab.sh` 3 rounds A B A B A B per group, no godot process before each run, load 1.1-1.5)
+
+Method: for each hot function the typing was read first. The simulation code is already typed on the numbers (`float`/`int` locals, typed params and returns). What stayed Variant: values read from entity Dictionaries (`unit.position[0]`, `unit.combat.x`, `unit.owner`), `Array` elements (`rec[1]`, `waypoint[0]`), `for ... in range()` loop variables, `best: Variant` sentinels and the `_navigation: RefCounted` handle (dynamic calls). Each group got explicit types (typed local per Dictionary/Array read, `for x: int`, `Array` locals before indexing, int/Vector2i sentinel plus `found` flag instead of `Variant` null) and no other change. Group trees: g1 `Combat._nearest/_build_grid/_bucket`, g2 `Combat.plan/_approach/_hold_cells/_firing_cell`, g3 `Horde.step/_cell/_bucket/_level`, g4a `Locomotion.step/_desired/_route_length_until`, g4b `Simulation._advance`, g5 `_navigation: Navigation` (typed handle, 2 lines). A/A (base vs base): p50 delta -0.005 to +0.011, p95 -0.019 to +0.002, spread per tree 0.001-0.042 ms (largest hordes300 p95).
+
+Median delta B - A (ms), p50 / p95, "<" = beats the spread (delta larger than the larger of the two spreads):
+
+| Group | combat open | combat dense | hordes300 | movement open | movement dense | Verdict |
+|---|---|---|---|---|---|---|
+| A/A | -0.005 / -0.004 | -0.007 / +0.001 | -0.004 / -0.019 | +0.011 / 0.000 | +0.009 / +0.002 | spread |
+| g1 nearest, build_grid | +0.002 / +0.001 | -0.009 / +0.003 | -0.001 / +0.003 | +0.005 / +0.004 | +0.001 / +0.008 | noise, not kept |
+| g2 plan, approach, firing_cell | -0.003 / -0.001 | -0.010 / +0.003 | +0.010 / -0.038 (spread 0.04) | -0.002 / 0.000 | +0.001 / +0.001 | noise, not kept |
+| g3 Horde | +0.004 / +0.013 | +0.002 / -0.008 | -0.047 / -0.059 < | -0.001 / -0.001 | -0.003 / 0.000 | kept (hordes300 only) |
+| g4a Locomotion | -0.021 / -0.027 < | -0.013 / -0.026 < | -0.046 / -0.037 < | -0.037 / -0.052 < | -0.038 / -0.041 < | kept |
+| g4b _advance | -0.019 / -0.019 < | -0.011 / -0.019 < | -0.029 / -0.037 < | -0.033 / -0.026 < | -0.036 / -0.038 < | kept |
+| g5 typed navigation handle | +0.002 / +0.003 | -0.001 / -0.003 | +0.005 / -0.005 | -0.010 / -0.011 | -0.011 / -0.012 | below the spread (movement delta 0.7 %, B spread 0.017), not kept |
+| g3+g4a+g4b combined | -0.042 / -0.048 < | -0.029 / -0.053 < | -0.138 / -0.156 < | -0.082 / -0.083 < | -0.082 / -0.087 < | kept |
+
+Why g1 and g2 did nothing: the cost sits in the Dictionary lookups, `Vector2i` keys and the `sim._combat_work` property write, which typing does not remove; the locals g1 added were already typed. g3 and g4 pay because their inner loops did arithmetic on Variants (`waypoint[0] - x`, `other.position[0] - unit.position[0]`) and read `kind_def.*` Dictionary values several times per call; typed locals turn those into float instructions.
+
+Team match (45000 ticks, profiler on, 3 runs A B A B A B, `run_team_match.gd`): p50 base 0.561 / 0.568 / 0.563, kept 0.550 / 0.550 / 0.549; p95 base 1.331 / 1.344 / 1.337, kept 1.303 / 1.307 / 1.303; not worse (about -2.3 %). `combat_work` identical in every A/B pair.
+
+Kept (uncommitted): `horde.gd` (`step`, `_cell`, `_bucket`, `_level`), `locomotion.gd` (`step`, `_desired`, `_route_length_until`), `simulation.gd` (`_advance`: a local `route` written back to `unit.route` after each `slice(1)`, so `before[id]` aliasing is unchanged). No behaviour change, so no new test (the existing suite and traces are the proof). Acceptance: scratchpad `accept.sh HEAD`: suite 486 / 136044 / 0 failures on both trees, four traces cmp identical, 7 pins equal, lint, warnings (104 files), netplay match tick 8400, team match `cap tick=45000 winner=null units_peak=160`: `ACCEPT: PASS`. Perf budgets unchanged; combat open / dense / hordes300 stay report-only exceeded (hordes300 p95 2.977 -> 2.821).
+
+Do the 1,044 `unsafe_*` findings relate to the hot paths? Partly in count, not in cost. With `unsafe_property_access`, `unsafe_method_access` and `unsafe_call_argument` as errors on the base tree: `combat.gd` 186 findings (80 inside lines 93-350, i.e. `plan` to `_nearest`), `horde.gd` 18, `locomotion.gd` 15, `simulation.gd` 147 (4 in `_advance`, 11 in `_assign_route`), `grid_navigation.gd` 7. So the hot functions hold about 125 findings (12 % of 1,044), mostly Variant Dictionary reads passed to typed parameters. The finding count does not predict gain: `_nearest` and `plan` hold the most and gained nothing when typed, while the 18 + 15 + 4 findings in Horde, Locomotion and `_advance` hold all the gain. Making the findings zero (Task 3) is therefore not a performance task; the profitable conversions are the ones where a Variant sits in float arithmetic inside a per-unit or per-neighbour loop. A* (`AStarGrid2D.get_id_path`) is native; `service_paths` has no typed-arithmetic loop, so nothing was tried there beyond g5.
+
+Not done: g5 (below spread), `plan` body hoists (g2), Variant sentinels elsewhere (`Supply`, `Construction`, not hot in the workloads). Raw output: scratchpad `ws4/res_*.txt`, `ws4/run_*`, `ws4/tm4.*.out`, `ws4/accept/table.txt`.

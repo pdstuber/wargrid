@@ -2,22 +2,33 @@ extends RefCounted
 
 static func step(unit: Dictionary, kind_def: Dictionary, tick: int) -> float:
 	var cap: float = kind_def.speed
-	if kind_def.locomotor == "air":
+	var locomotor: String = kind_def.locomotor
+	if locomotor == "air":
 		_snap_heading(unit)
 		return cap / 30.0
 	var desired := _desired(unit)
 	var factor: float = 1.0
-	if desired != Vector2.ZERO and (desired.x != unit.heading[0] or desired.y != unit.heading[1]):
-		var heading := Vector2(unit.heading[0], unit.heading[1])
-		factor = heading_factor(kind_def.locomotor, angle_between(heading, desired), kind_def)
-		var turned := turn(heading, desired, kind_def.turn_cos, kind_def.turn_sin)
-		if kind_def.locomotor == "wheels": turned = _wheel_turn(heading, desired, unit.speed, kind_def)
+	var unit_heading: Array = unit.heading
+	var heading_x: float = unit_heading[0]
+	var heading_y: float = unit_heading[1]
+	var speed: float = unit.speed
+	if desired != Vector2.ZERO and (desired.x != heading_x or desired.y != heading_y):
+		var heading := Vector2(heading_x, heading_y)
+		factor = heading_factor(locomotor, angle_between(heading, desired), kind_def)
+		var turn_cos: float = kind_def.turn_cos
+		var turn_sin: float = kind_def.turn_sin
+		var turned := turn(heading, desired, turn_cos, turn_sin)
+		if locomotor == "wheels": turned = _wheel_turn(heading, desired, speed, kind_def)
 		unit.heading = [turned.x, turned.y]
-	if tick < unit.move_after: return 0.0
-	var remaining: float = _route_length_until(unit, 2.0 * kind_def.brake, cap * cap, cap / 30.0)
-	var stoppable: float = sqrt(2.0 * kind_def.brake * remaining)
-	unit.speed = minf(minf(unit.speed + kind_def.accel / 30.0, cap * factor), stoppable)
-	return minf(unit.speed / 30.0, remaining)
+	var move_after: int = unit.move_after
+	if tick < move_after: return 0.0
+	var brake: float = kind_def.brake
+	var remaining: float = _route_length_until(unit, 2.0 * brake, cap * cap, cap / 30.0)
+	var stoppable: float = sqrt(2.0 * brake * remaining)
+	var accel: float = kind_def.accel
+	speed = minf(minf(speed + accel / 30.0, cap * factor), stoppable)
+	unit.speed = speed
+	return minf(speed / 30.0, remaining)
 
 # Wheels turn in proportion to speed up to turn speed (Locomotor.cpp moveTowardsPositionWheels, turnFactor); the step uses sin(k a) = k sin(a), exact enough at 3 degrees.
 static func _wheel_turn(heading: Vector2, desired: Vector2, speed: float, kind_def: Dictionary) -> Vector2:
@@ -52,9 +63,12 @@ static func heading_factor(locomotor: String, angle: float, kind_def: Dictionary
 	return maxf(0.0, 1.0 - angle / 45.0)
 
 static func _desired(unit: Dictionary) -> Vector2:
-	if unit.route.is_empty(): return Vector2.ZERO
-	var dx: float = unit.route[0][0] - unit.position[0]
-	var dy: float = unit.route[0][1] - unit.position[1]
+	var route: Array = unit.route
+	if route.is_empty(): return Vector2.ZERO
+	var waypoint: Array = route[0]
+	var position: Array = unit.position
+	var dx: float = float(waypoint[0]) - float(position[0])
+	var dy: float = float(waypoint[1]) - float(position[1])
 	var length: float = sqrt(dx * dx + dy * dy)
 	if length < 1e-9: return Vector2.ZERO
 	return Vector2(dx / length, dy / length)
@@ -68,14 +82,18 @@ static func braking_distance(speed: float, brake: float) -> float:
 
 # Stops once the braking cap can no longer bind, so the caller's min() is unchanged.
 static func _route_length_until(unit: Dictionary, two_brake: float, cap_squared: float, step_cap: float) -> float:
-	var x: float = unit.position[0]
-	var y: float = unit.position[1]
+	var position: Array = unit.position
+	var x: float = position[0]
+	var y: float = position[1]
 	var total: float = 0.0
-	for waypoint: Variant in unit.route:
-		var dx: float = waypoint[0] - x
-		var dy: float = waypoint[1] - y
+	var route: Array = unit.route
+	for waypoint: Array in route:
+		var wx: float = waypoint[0]
+		var wy: float = waypoint[1]
+		var dx: float = wx - x
+		var dy: float = wy - y
 		total += sqrt(dx * dx + dy * dy)
 		if two_brake * total >= cap_squared and total >= step_cap: return total
-		x = waypoint[0]
-		y = waypoint[1]
+		x = wx
+		y = wy
 	return total
