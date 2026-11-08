@@ -571,7 +571,7 @@ Matches with up to eight players in teams with team victory; a map converted fro
 
 ### Converted maps playable (small task; user, 2026-11-06; renamed from "Ashfall playable" and placed before unit avoidance 2026-11-08)
 
-**Handoff:** [converted maps prompt](docs/converted-maps-prompt.txt) (user, 2026-11-08): Dry Wells, Broken Crown and Ashfall selectable offline and online 1v1, both clients guaranteed the same map, the existing bots build, collect and attack on all three. Not the M9 lobby, and not bot tuning (M8).
+**Handoff:** [converted maps prompt](docs/converted-maps-prompt.txt) (user, 2026-11-08): Dry Wells, Broken Crown and Ashfall selectable offline and online 1v1, both clients guaranteed the same map, the existing bots build, collect and attack on all three. Not the M9 lobby, and not bot tuning (M8). **Decided (user, 2026-11-08):** the host's opaque `settings` (map and map hash) travel in `hello` and the relay echoes them in `start` with a relay-generated seed (protocol 2); the joiner refuses a map mismatch; 1v1 starts follow Zero Hour's start-spot rule. Details in the handoff's "Decided" section.
 
 Make the converted maps playable in the launcher (Ashfall, plus Dry Wells and Broken Crown converted 2026-11-07, see [more maps](docs/reference/more-maps.md); the online `start` message needs a map field first): map choice offline and online, terrain drawn as one batch (the performance spike measured about 5 fps with per-cell drawing). No minimap yet (HUD milestone).
 
