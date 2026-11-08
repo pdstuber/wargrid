@@ -11,7 +11,7 @@ Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh 
 Known red case or blocker: none. Open: Gate B Step 5 (windowed) and Step 6 (closure). Unverified: panned-camera listener position and voice A/B by ear
 Approved decisions, pre-authorizations used, deferred gates: Gate S passed (user, 2026-11-08); local commits after green checkpoints pre-authorized; no push, merge, window, install or fly without approval; Gate A passed (Max Rate off; MacLeod kept); Gate B and exit pending
 Usage so far (python3 tools/session_usage.py <session files>): not recorded
-Next exact action: ask the user for the Gate B windowed run, then Step 6
+Next exact action: Gate B windowed run executed, verdicts pending from user (see "Gate B windowed run"), then Step 6
 ```
 
 ## Baseline and trace checks
@@ -71,3 +71,24 @@ Deviations: `MusicPlayer` does not call `play()` under the headless display serv
 Changes: `online_main` calls `rejected()` for every new lockstep rejection (every entry is the local seat's, lockstep.gd `if s != _seat: continue`; issue-time failures return before command results, so no double). Victory and defeat clear the announcer queue. AN9 uses real kinds with non-empty queues; AN15 also checks the returned requests; AN16 asserts the voice line. AS4 now checks the redirect itself. AS8 pushes a real `InputEventKey` through `Viewport.push_input`; AS9 covers the launcher and a focused `LineEdit` (the field takes the letter, no mute). `SoundPlayer` does not call `_voice.play()` under the headless display server (a played headless line is reported as a leaked resource at exit once a scene test triggers one). `sound-spike.md`: no `AudioListener2D` exists; the Camera2D-following screen-centre fallback is source-read, zoom-only measured.
 
 Music encode (user, 2026-11-08): keep Ogg Vorbis quality 2 (`oggenc -b 96` maps to -q 2, about 85 kbps, 10.90 MB for 5 tracks). Smaller q1/q0 and larger q5 were measured (scratch listening page) and not adopted; CREDITS wording corrected from "96 kbps". LFS / uncompressed-in-repo / build-time encode rejected: sources are lossy, QOA already encodes at import.
+
+## Gate B windowed run
+
+2026-11-08, HEAD `3a2a216` plus the coordinator's uncommitted `sound_cues.gd` cannon `gain_db` -3.8 (user ruling at Gate B, tank shot equal to a rifle burst). Approval: the user approved the windowed run and was at the PC with sound on. Gate B windowed run executed, verdicts pending from user. Scratch scenes (not in the repo): `$SCRATCH/gate-b/fight.gd`, `ab.gd`, `fight2.gd` (session scratchpad), logs beside them.
+
+- `fight.gd` (real `skirmish.tscn`, 9 steps: centre, edge, 20/30/40 cells, zoom 0.5 and 2, mix with music): exit 0, no `ERROR` except the music-stream leak at exit. Logged distances: centre 0.9, edge 14.3 cells, 20.0, 30.0, 40.0; 1224 shots, 11 deaths.
+- `ab.gd` (8 voice lines and cannon, rifle_burst, explosion, IMPORTED QOA then RAW): exit 0, no `ERROR`. No Max Rate A/B (Max Rate off at Gate A).
+- `fight2.gd` (5 steps, 15 s, music on for steps 1-2): exit 0; steps and cannon -3.8 logged. Expected attenuation at ATTENUATION 0.5, MAX 1145 px (computed, not measured): 0.9 cells -0.1 dB, 10 cells -1.6 dB, 20 cells -4.3 dB, 30 cells -12.0 dB. Zoom does not enter the listener distance. Each run ended with "N resources still in use at exit" (Ogg/WAV streams of a scratch `SceneTree` script that quits directly), not a game error.
+- After the cannon change: suite CASES 558 CHECKS 136828 FAILURES 0, TESTS PASSED, exit 0; lint exit 0; warnings exit 0.
+- Verdicts (falloff, zoom, QOA vs raw, mix, tank loudness): pending from user.
+
+Rendered benchmark, 2026-11-08, `sh tools/run_game.sh res://scenes/movement_benchmark.tscn` (Apple M6, Compatibility, 1280x720, zoom 0.5, header `vsync=off`, load 2.0 to 2.1), RENDERED BENCHMARK PASSED 4:
+
+| mode | frame p50 / p95 / p99 / max (ms) | tick p95 (ms) | draw calls | budget |
+|---|---|---|---|---|
+| open | 0.573 / 1.818 / 3.348 / 9.113 | 1.905 | 5 | 16.7 pass |
+| dense | 0.584 / 1.974 / 3.397 / 12.575 | 1.921 | 6 | 16.7 pass |
+| ashfall | 0.827 / 2.594 / 5.382 / 13.274 | 2.24 | 45 | 3.04 budget, guard 3.3: pass |
+| horde | 0.989 / 11.11 / 19.231 / 26.278 | 9.395 | 239 | reported, not gated; ledger 3.40-3.86 earlier, this run is about 3x higher with cumulative lag 0.75 ticks (not explained; load 2.0 from other sessions; reported, not loosened) |
+
+Performance ledger not edited.
