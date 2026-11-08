@@ -11,7 +11,7 @@ Last command / cases / checks / failures / exit / marker: accept.sh bce4b79 PASS
 Known red case or blocker: none. Report-only rows exceeded: combat open, dense, hordes300
 Approved decisions, pre-authorizations used, deferred gates: user invoked the spike 2026-11-07; works on main; local commits after green checkpoints pre-authorized; no push/PR/merge/fly/Sprite/window without approval; host = this Mac only (user). Decisions of 2026-11-07 evening: BM6 retune approved together with 2e; 2f approved with a version bump and a ZH AIUpdate comparison; second round for 2d and per-cell enemy counts; hordes300 "improved, still exceeded" is acceptable; C++/GDExtension NOT investigated (user decision); threads PoC local first, fly web deploy allowed for the threaded-web test only, Safari failure is not a blocker, a Chromium-based browser (e.g. Vivaldi, not installed yet) is acceptable for the Chrome check; Steam Deck check tomorrow; user asleep, run all approved work, pausing only on a stop condition
 Usage so far (python3 tools/session_usage.py <session files>): not recorded
-Next exact action: commit 2d (horde.gd, test_horde.gd, docs); then profile post-removal plan / `firing_cell` bookkeeping (+0.3-0.5 ms per removal tick) and `advance.move` (0.49 ms on hordes300, 0.29 on open / dense)
+Next exact action: Workstream 2 round 2 gate review (2i BLOCKED: post-removal extras and `advance.move` profiled, no fix above the A/A spread; see '2i result')
 ```
 
 ## Evidence
@@ -123,6 +123,7 @@ suite 0 failures, case count >= 482 + new cases; `sh tools/run_lint.sh` and `sh 
 - Proof, test first: a case asserting that `CombatDefinitions.radius` equals the uncached formula for every Registry kind and for a test kind added and then cleared (red only if the cache misses `_reset`). Equivalence comes from cmp-identical traces and `combat_work` summaries.
 - Expected gain (estimate): 0.1-0.4 ms on open / dense p50 and p95 (about 3 edge_gap per engaged unit per tick x 300 units); small on hordes300.
 - Risk: low. The only failure mode is a stale cache with test kinds, which the case covers.
+| 2026-11-08 | ac1b7d4 via git archive, scratch `ws2i` (profiler zones, not linted) | Apple M6 | Task 2i profiling, open / dense / hordes300 one at a time, headless, no godot process before; no repo code changed | exit 0 x3 `TWO_F0 COMPLETE`; BLOCKED, see '2i result' |
 
 ### Task 2d: largest `advance.*` sub-zone on hordes300 (kept fix 3, design fixed after 2a)
 
@@ -320,3 +321,17 @@ Acceptance (accept.sh c3e1e91): suite 485 cases / 136039 checks / 0 failures (ba
 Open: dense combat p50 reads +0.005 to +0.010 (two 3-round runs), flagged 'slower'; Horde.step does 0 horde checks there (profile: `horde_checks 0` on open and dense), so the change cannot add work; treated as layout noise, not proven.
 
 `advance.move` (not fixed here): 0.49 ms on hordes300 and 0.29 on open / dense (2a); not re-profiled. Candidates remain `route.slice(1)` and the new position array per moving unit per tick in `_advance` (simulation.gd).
+
+## 2i result (2026-11-08, ac1b7d4 via git archive, scratch copy `ws2i`, Apple M6, headless, profiler on, 300 warm-up + 1800 ticks) - BLOCKED, not kept
+
+Mean ms per tick, "after" = previous tick had a removal (open 7.8 %, dense 8.2 %, hordes300 5.7 % of ticks); "other" in brackets:
+
+| Candidate | open | dense | hordes300 | Recoverable |
+|-----------|------|-------|-----------|-------------|
+| `_hold_cells` (inside `firing_cell`, once per tick that has an approach) | 0.072 [0.006] | 0.059 [0.000] | 0.159 [0.013] | only by removing the set; inlining the cell floor gives 0.013 / - / 0.027 |
+| `_firing_cell` ring loop (about 108 / 63 cells per call, 19 / 36 `component_at` calls) | 0.097 | 0.091 | 0.216 | about 0 (a ring centre without `Vector2(cell)` + add changed nothing measurable) |
+| plan bookkeeping excess after removal (plan - nearest - build_grid - engage - pre) | +0.06 | +0.07 | +0.1 | no single item; `pre` 0.17, `engage` rest 0.15 |
+| `_advance` rest (`route.slice(1)`, new position array), every tick | 0.063 | 0.055 | 0.105 (timer-inclusive, about 146 / 126 / 246 moving units per tick) | at most 0.03; the new position array cannot go because `before[id]` aliases it |
+| `Locomotion.step` (every tick) | 0.213 | 0.186 | 0.350 | heading factor and turn are float-exact into speed; no trace-preserving shortcut found |
+
+Best prototype recovers about 0.015 ms on post-removal ticks (6-8 % of ticks), so p95 moves at most that much against a gap of 0.09 ms (open 1.91 vs 1.82) and an A/A spread of 0.01-0.07; the hordes300 gap is 0.9 ms. No fix kept, no A/B run, no suite run (nothing changed in the repo). Not tried: replacing the per-tick `held.cells` set by an entity-grid occupancy lookup (the only way to remove `hold_cells`), and a persistent set maintained across ticks; both change more than one function and need an Opus design first. Logs: scratchpad `ws2i/prof*.log`.
