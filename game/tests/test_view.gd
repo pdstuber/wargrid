@@ -441,7 +441,7 @@ func test_small_pile_view(runner) -> bool:
 	view.set_state(sim.snapshot(),selected)
 	view.queue_redraw()
 	await runner.process_frame
-	runner.check(view.pick_source(Iso.world_to_plane(Vector2(24.5,4.5))) == -1,"V13 a selected pile that vanished is neither drawn nor picked")
+	runner.check(view.pick_source(Iso.world_to_plane(Vector2(24.5,4.5))) == -1,"V13 a selected pile that vanished is not picked")
 	view.free()
 	return true
 

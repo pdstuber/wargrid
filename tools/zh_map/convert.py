@@ -18,6 +18,7 @@ import refpack
 CELL = 25.0
 SAMPLE = 10.0
 HEIGHT_SCALE = 0.625
+# Mirrors SOURCE_FOOTPRINT in game/scripts/simulation/definitions/definitions.gd; keep in step.
 SOURCE_W, SOURCE_H = 4, 5
 CLIFF_STEP = 9.8
 NOTICE = (
@@ -36,8 +37,7 @@ FOOTPRINTS = (
     ("command_center", 3),
     ("defence", 1),
 )
-# Mirror game/scripts/simulation/definitions/definitions.gd (SOURCE_FOOTPRINT, BUILD_EDGE_MARGIN) and the
-# supply_center supply_clearance in usa.gd; the game defines them, keep these in step.
+# Mirror BUILD_EDGE_MARGIN in definitions.gd and the supply_center supply_clearance in usa.gd; keep in step.
 EDGE_MARGIN = 1
 MAX_RING = 12
 SUPPLY_REACH = 20
