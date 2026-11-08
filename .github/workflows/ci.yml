@@ -1,17 +1,47 @@
-name: Tests
+name: CI
 on:
   push:
     branches: ['**']
   pull_request:
   workflow_dispatch:
   workflow_call:
+env:
+  GODOT_VERSION: 4.7.2-stable
+  TEMPLATES_SHA256: f298490b8d44d934be425a5a65a51bf15f422428b229a06a6e11d9ffea248011
 jobs:
-  godot:
-    needs: relay
+  godot-lint:
+    name: Godot / Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install -r tools/requirements-dev.txt
+      - run: sh tools/run_lint.sh
+  godot-warnings:
+    name: Godot / Warnings
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GODOT_ZIP: Godot_v4.7.2-stable_linux.x86_64.zip
+      GODOT_SHA256: cadd3204e728a35d3f13adb7fd0d7902636b79f6b95c40c265eb73b6c35329e4
+      GODOT_EXECUTABLE: Godot_v4.7.2-stable_linux.x86_64
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install pinned Godot
+        run: python3 tools/install_godot.py
+      - name: Import
+        run: '"$GODOT_BIN" --headless --path game --import'
+      - name: GDScript warnings as errors
+        run: sh tools/run_warnings.sh
+  godot-tests:
+    name: Godot / Tests (${{ matrix.platform }})
     strategy:
       fail-fast: false
       matrix:
-        include:
+        include: &platforms
           - platform: linux
             runner: ubuntu-latest
             python: python3
@@ -36,16 +66,53 @@ jobs:
       run:
         shell: bash
     env:
-      GODOT_VERSION: 4.7.2-stable
       GODOT_ZIP: ${{ matrix.zip }}
       GODOT_SHA256: ${{ matrix.sha256 }}
       GODOT_EXECUTABLE: ${{ matrix.executable }}
-      TEMPLATES_SHA256: f298490b8d44d934be425a5a65a51bf15f422428b229a06a6e11d9ffea248011
       PYTHON: ${{ matrix.python }}
       WARGRID_REPLAY_TRACE: ${{ github.workspace }}/replay-${{ matrix.platform }}.tsv
       WARGRID_ECONOMY_REPLAY_TRACE: ${{ github.workspace }}/economy-${{ matrix.platform }}.tsv
       WARGRID_COMBAT_REPLAY_TRACE: ${{ github.workspace }}/combat-${{ matrix.platform }}.tsv
       WARGRID_TEAM_REPLAY_TRACE: ${{ github.workspace }}/team-${{ matrix.platform }}.tsv
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install pinned Godot
+        run: '"$PYTHON" tools/install_godot.py'
+      - name: Test and produce replay traces
+        run: |
+          set -o pipefail
+          sh tools/run_tests.sh 2>&1 | tee test-results.log
+      - uses: actions/upload-artifact@v7
+        with:
+          name: replay-${{ matrix.platform }}
+          path: |
+            ${{ env.WARGRID_REPLAY_TRACE }}
+            ${{ env.WARGRID_ECONOMY_REPLAY_TRACE }}
+            ${{ env.WARGRID_COMBAT_REPLAY_TRACE }}
+            ${{ env.WARGRID_TEAM_REPLAY_TRACE }}
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: test-results-${{ matrix.platform }}
+          path: test-results.log
+  godot-export:
+    name: Godot / Exported build (${{ matrix.platform }})
+    needs: relay-test
+    strategy:
+      fail-fast: false
+      matrix:
+        include: *platforms
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 25
+    defaults:
+      run:
+        shell: bash
+    env:
+      GODOT_ZIP: ${{ matrix.zip }}
+      GODOT_SHA256: ${{ matrix.sha256 }}
+      GODOT_EXECUTABLE: ${{ matrix.executable }}
+      PYTHON: ${{ matrix.python }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
@@ -54,12 +121,6 @@ jobs:
           path: relay-bin
       - name: Install pinned Godot
         run: '"$PYTHON" tools/install_godot.py'
-      - name: Test and produce replay trace
-        run: |
-          set -o pipefail
-          sh tools/run_tests.sh 2>&1 | tee test-results.log
-      - name: GDScript warnings as errors
-        run: sh tools/run_warnings.sh
       - uses: actions/cache@v6
         with:
           path: ${{ matrix.templates }}
@@ -68,10 +129,12 @@ jobs:
         run: '"$PYTHON" tools/install_export_templates.py "$TEMPLATES_SHA256" "$GODOT_VERSION"'
       - name: Export test build and game
         run: |
+          "$GODOT_BIN" --headless --path game --import
           sh tools/export_build.sh "${{ matrix.test_preset }}" "build/test/${{ matrix.platform }}/WargridTests${{ matrix.platform == 'windows' && '.exe' || '' }}"
           sh tools/export_build.sh "${{ matrix.preset }}" "build/game/${{ matrix.platform }}/Wargrid${{ matrix.platform == 'windows' && '.exe' || '.x86_64' }}"
       - name: Exported suite and replay traces
         env:
+          WARGRID_TEST_EXE: build/test/${{ matrix.platform }}/WargridTests${{ matrix.platform == 'windows' && '.console.exe' || '' }}
           WARGRID_VECTORS: ${{ github.workspace }}/protocol/vectors
           WARGRID_REPLAY_TRACE: ${{ github.workspace }}/export-replay-${{ matrix.platform }}.tsv
           WARGRID_ECONOMY_REPLAY_TRACE: ${{ github.workspace }}/export-economy-${{ matrix.platform }}.tsv
@@ -79,9 +142,7 @@ jobs:
           WARGRID_TEAM_REPLAY_TRACE: ${{ github.workspace }}/export-team-${{ matrix.platform }}.tsv
         run: |
           set -o pipefail
-          exe="build/test/${{ matrix.platform }}/WargridTests${{ matrix.platform == 'windows' && '.console.exe' || '' }}"
-          "$exe" --headless 2>&1 | tee exported-results.log
-          grep -Eq '^TESTS PASSED [1-9][0-9]*$' exported-results.log
+          sh tools/run_tests.sh 2>&1 | tee exported-results.log
       - name: Exported netplay scenarios
         run: |
           set -o pipefail
@@ -96,12 +157,8 @@ jobs:
           cp netplay/match/s1.tsv netplay-${{ matrix.platform }}.tsv
       - uses: actions/upload-artifact@v7
         with:
-          name: replay-${{ matrix.platform }}
+          name: replay-export-${{ matrix.platform }}
           path: |
-            ${{ env.WARGRID_REPLAY_TRACE }}
-            ${{ env.WARGRID_ECONOMY_REPLAY_TRACE }}
-            ${{ env.WARGRID_COMBAT_REPLAY_TRACE }}
-            ${{ env.WARGRID_TEAM_REPLAY_TRACE }}
             ${{ github.workspace }}/export-replay-${{ matrix.platform }}.tsv
             ${{ github.workspace }}/export-economy-${{ matrix.platform }}.tsv
             ${{ github.workspace }}/export-combat-${{ matrix.platform }}.tsv
@@ -124,14 +181,35 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
-          name: logs-netplay-${{ matrix.platform }}
-          path: netplay/
-      - uses: actions/upload-artifact@v7
-        if: failure()
+          name: logs-export-${{ matrix.platform }}
+          path: |
+            exported-results.log
+            netplay/
+  godot-replays:
+    name: Godot / Compare replays
+    needs: [godot-tests, godot-export]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
-          name: test-results-${{ matrix.platform }}
-          path: test-results.log
-  relay:
+          pattern: "{replay,netplay}-*"
+          merge-multiple: true
+          path: traces
+      - name: Compare all platform ticks
+        run: |
+          python3 tools/compare_replays.py traces/replay-linux.tsv traces/replay-windows.tsv
+          python3 tools/compare_replays.py traces/economy-linux.tsv traces/economy-windows.tsv
+          python3 tools/compare_replays.py traces/combat-linux.tsv traces/combat-windows.tsv
+          python3 tools/compare_replays.py --interval 200 --rows 100 traces/team-linux.tsv traces/team-windows.tsv
+          python3 tools/compare_replays.py traces/replay-linux.tsv traces/replay-windows.tsv traces/export-replay-linux.tsv traces/export-replay-windows.tsv
+          python3 tools/compare_replays.py traces/economy-linux.tsv traces/economy-windows.tsv traces/export-economy-linux.tsv traces/export-economy-windows.tsv
+          python3 tools/compare_replays.py traces/combat-linux.tsv traces/combat-windows.tsv traces/export-combat-linux.tsv traces/export-combat-windows.tsv
+          python3 tools/compare_replays.py --interval 200 --rows 100 traces/team-linux.tsv traces/team-windows.tsv traces/export-team-linux.tsv traces/export-team-windows.tsv
+          python3 tools/compare_replays.py --interval 30 --rows 0 traces/netplay-linux.tsv traces/netplay-windows.tsv
+  relay-test:
+    name: Relay / Test and conformance
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -148,7 +226,7 @@ jobs:
       - run: go vet ./... && go test -race ./...
       - run: go vet ./...
         working-directory: protocol/conformance
-      - name: Build relay for the Godot jobs
+      - name: Build relay for the Godot export jobs
         run: |
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -o ../relay-bin/relay-linux .
           CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -o ../relay-bin/relay-windows.exe .
@@ -162,6 +240,7 @@ jobs:
           retention-days: 1
           if-no-files-found: error
   relay-lint:
+    name: Relay / Lint
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -174,17 +253,8 @@ jobs:
         with:
           version: v2.15
           working-directory: relay
-  gdscript-lint:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
-        with:
-          python-version: "3.12"
-      - run: pip install -r tools/requirements-dev.txt
-      - run: sh tools/run_lint.sh
-  python-lint:
+  tools:
+    name: Tools / Python lint and tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -194,7 +264,21 @@ jobs:
           python-version: "3.12"
       - run: pip install -r tools/requirements-dev.txt
       - run: sh tools/run_python_checks.sh
-  actions-lint:
+      - name: Tool tests
+        run: |
+          python3 tools/test_compare_replays.py
+          python3 tools/test_desync_diff.py
+          python3 tools/test_check_reference.py
+          python3 tools/test_session_usage.py
+          python3 tools/test_sim_math.py
+          python3 tools/test_release_version.py
+          python3 tools/test_package_release.py
+          python3 tools/test_deploy_web.py
+          python3 tools/zh_map/test_zh_map.py
+          python3 tools/zh_parity/analyze.py --self-test
+          python3 tools/test_zh_parity.py
+  workflows-lint:
+    name: Workflows / Lint
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
@@ -209,38 +293,3 @@ jobs:
           echo "$ACTIONLINT_SHA256  $archive" | sha256sum -c -
           tar -xzf "$archive" -C "$RUNNER_TEMP" actionlint
           "$RUNNER_TEMP/actionlint" -color
-  compare-replays:
-    needs: godot
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v8
-        with:
-          pattern: "{replay,netplay}-*"
-          merge-multiple: true
-          path: traces
-      - name: Test trace validation
-        run: |
-          python3 tools/test_compare_replays.py
-          python3 tools/test_desync_diff.py
-          python3 tools/test_check_reference.py
-          python3 tools/test_session_usage.py
-          python3 tools/test_sim_math.py
-          python3 tools/test_release_version.py
-          python3 tools/test_package_release.py
-          python3 tools/test_deploy_web.py
-          python3 tools/zh_map/test_zh_map.py
-          python3 tools/zh_parity/analyze.py --self-test
-          python3 tools/test_zh_parity.py
-      - name: Compare all platform ticks
-        run: |
-          python3 tools/compare_replays.py traces/replay-linux.tsv traces/replay-windows.tsv
-          python3 tools/compare_replays.py traces/economy-linux.tsv traces/economy-windows.tsv
-          python3 tools/compare_replays.py traces/combat-linux.tsv traces/combat-windows.tsv
-          python3 tools/compare_replays.py --interval 200 --rows 100 traces/team-linux.tsv traces/team-windows.tsv
-          python3 tools/compare_replays.py traces/replay-linux.tsv traces/replay-windows.tsv traces/export-replay-linux.tsv traces/export-replay-windows.tsv
-          python3 tools/compare_replays.py traces/economy-linux.tsv traces/economy-windows.tsv traces/export-economy-linux.tsv traces/export-economy-windows.tsv
-          python3 tools/compare_replays.py traces/combat-linux.tsv traces/combat-windows.tsv traces/export-combat-linux.tsv traces/export-combat-windows.tsv
-          python3 tools/compare_replays.py --interval 200 --rows 100 traces/team-linux.tsv traces/team-windows.tsv traces/export-team-linux.tsv traces/export-team-windows.tsv
-          python3 tools/compare_replays.py --interval 30 --rows 0 traces/netplay-linux.tsv traces/netplay-windows.tsv

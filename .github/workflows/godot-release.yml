@@ -1,0 +1,28 @@
+name: Godot release check
+on:
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+jobs:
+  check:
+    name: Check for a newer Godot
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: Open an issue when the pinned Godot is behind
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          latest=$(gh api repos/godotengine/godot/releases/latest --jq .tag_name)
+          pinned=$(sed -n 's/^  GODOT_VERSION: //p' .github/workflows/ci.yml)
+          [ -n "$latest" ] && [ -n "$pinned" ] || { echo "could not read versions: latest=$latest pinned=$pinned"; exit 1; }
+          echo "pinned $pinned, latest $latest"
+          [ "$latest" = "$pinned" ] && exit 0
+          title="Godot $latest is available"
+          open=$(gh issue list --state open --search "\"$title\" in:title" --json title --jq "map(select(.title == \"$title\")) | length")
+          [ "$open" -eq 0 ] || exit 0
+          gh issue create --title "$title" --body "Pinned: $pinned. A bump updates the version, archive checksums and export template checksum in \`.github/workflows/ci.yml\` and \`.github/workflows/release.yml\`, then needs a green CI replay comparison."

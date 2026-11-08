@@ -28,7 +28,7 @@ jobs:
         run: python3 tools/release_version.py "$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
   tests:
     needs: version
-    uses: ./.github/workflows/tests.yml
+    uses: ./.github/workflows/ci.yml
   build:
     needs: [version, tests]
     runs-on: ubuntu-latest

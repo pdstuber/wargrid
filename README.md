@@ -163,7 +163,7 @@ Verified by the user 2026-11-06: Safari loads the live site and plays a skirmish
 A pushed tag `v<version>` runs [`release.yml`](.github/workflows/release.yml) (plan: [release workflow](docs/superpowers/plans/2026-11-06-release-workflow.md), evidence: [release verification](docs/reference/release-verification.md)):
 
 1. Set `config/version` in `game/project.godot` to `<version>`, commit, push. The tag must equal `v` plus that value: the relay only lets clients with equal versions share a room.
-2. Push the tag. The full Tests workflow runs on that commit, then Linux, Windows, macOS and Web are exported and packaged.
+2. Push the tag. The full CI workflow runs on that commit, then Linux, Windows, macOS and Web are exported and packaged.
 3. Approve the `production` Environment. The job deploys the relay (`wargrid-relay-jvm`), checks `/health`, deploys the web build (`wargrid-web`), checks `/health`, then publishes the three desktop zips as a GitHub Release.
 4. Bump `config/version` on `main` to the next `-dev` version (`0.8.0-dev`), so local and test builds stay out of production rooms.
 
