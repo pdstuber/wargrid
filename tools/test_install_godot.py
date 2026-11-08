@@ -65,5 +65,19 @@ class InstallGodot(unittest.TestCase):
         )
 
 
+class DownloadErrors(unittest.TestCase):
+    def test_connection_reset_falls_back_to_godot_mirror(self) -> None:
+        def fetch(url: str, path: Path) -> None:
+            if url.startswith("https://github.com/"):
+                raise ConnectionResetError("reset by peer")
+            Path(path).write_bytes(b"zip")
+
+        with tempfile.TemporaryDirectory() as temp:
+            archive = Path(temp) / ZIP
+            with mock.patch.object(install_godot.urllib.request, "urlretrieve", side_effect=fetch):
+                install_godot.download("4.7.2-stable", archive)
+            self.assertEqual(archive.read_bytes(), b"zip")
+
+
 if __name__ == "__main__":
     unittest.main()
