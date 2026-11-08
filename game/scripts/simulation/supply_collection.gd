@@ -183,6 +183,9 @@ static func step(sim: Simulation, unit_ids: Array[int]) -> void:
 				collection.retry_tick = sim._tick + 1
 				continue
 			_load_box(collection, target)
+			if target.boxes == 0 and target.get("delete_when_empty", false):
+				sim.remove_object(target.id)
+				continue
 			collection.remaining_ticks = Registry.collects(unit.kind).load_ticks
 		elif collection.phase == "unloading":
 			sim._players[unit.owner].credits += collection.cargo * Registry.collects(unit.kind).box_value
