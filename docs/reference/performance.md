@@ -329,7 +329,7 @@ F is row ÷ Mac **editor** build on the same game tree ([target factor measureme
 Needs the user:
 
 - U0: confirm the [T3 numbers](#gate-proposals-t3-2026-11-08) and decide the rows marked "needs the user's decision"; then T8 applies the approved values on a quiet host (`run_benchmark.sh` exit 0 on the new tree, a History row old → new).
-- U4: Safari and Chrome (only Firefox and Vivaldi were measured). U5: a mixed browser and desktop match through the relay (digests agree, no match run). U6: `unsafe_*` warnings (125 of 1,044 findings in hot functions).
+- U4: Safari and Chrome (only Firefox and Vivaldi were measured). U5: done 2026-11-08, a mixed match through the live relay (WASM on a MacBook Air, native macOS on a Mac mini, about 10 minutes with fighting, no desync; see [perf-spike-verification section 17](perf-spike-verification.md)). U6: `unsafe_*` warnings (125 of 1,044 findings in hot functions).
 - The ultra review of the branch, then the merge decision; nothing is pushed.
 
 Later work (each with its payoff bound):

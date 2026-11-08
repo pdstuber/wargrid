@@ -156,7 +156,7 @@ fly certs add wargrid.pdstuber.dev -a wargrid-web   # then CNAME wargrid -> warg
 container build -t wargrid-web web         # local image check, after exporting to web/site/
 ```
 
-Verified by the user 2026-11-06: Safari loads the live site and plays a skirmish against the bot. Unverified: a browser-to-browser match through the relay, a mixed browser and desktop match (floats in WASM versus native), Chrome and Firefox on the live site, and a hidden tab (browsers pause or throttle it, which stalls lockstep for everyone).
+Verified by the user 2026-11-06: Safari loads the live site and plays a skirmish against the bot. Verified by the user 2026-11-08 (perf-spike branch, `6ad4af1`): a mixed match through the live relay, WASM build in a browser on a MacBook Air against the native macOS build on a Mac mini, about 10 minutes with fighting on both sides, no desync (floats in WASM versus native: closed for macOS arm64). Unverified: a browser-to-browser match through the relay, Chrome and Firefox on the live site, and a hidden tab (browsers pause or throttle it, which stalls lockstep for everyone).
 
 ## Release
 
