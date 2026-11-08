@@ -9,6 +9,7 @@ var _attack_move_mode: bool = false
 var inspected_id: int = -1
 static var factions: Dictionary = Registry.Factions.DEFAULT_SKIRMISH
 static var map_path: String = Skirmish.MAP_PATH
+static var starts: Array[int] = []
 
 func _ready() -> void:
 	super._ready()
@@ -18,7 +19,7 @@ func _ready() -> void:
 	music.play_list(MusicPlayer.PLAYLIST, MusicPlayer.GAP_SECONDS)
 
 func _create_simulation() -> Simulation:
-	return Skirmish.create(true, "ai", factions, map_path)
+	return Skirmish.create(true, "ai", factions, map_path, starts)
 
 func _escape_pending() -> bool:
 	return not simulation.match_over() and (_attack_move_mode or inspected_id != -1 or super())

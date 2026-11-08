@@ -9,8 +9,8 @@ const SoundPlayer = preload("res://scripts/presentation/sound_player.gd")
 const MusicPlayer = preload("res://scripts/presentation/music_player.gd")
 const VolumeSliders = preload("res://scripts/presentation/volume_sliders.gd")
 const SkirmishMain = preload("res://scripts/skirmish_main.gd")
+const MatchSettings = preload("res://scripts/match_settings.gd")
 const OFFLINE_SCENE: String = "res://scenes/skirmish.tscn"
-const PLAY_MAP_PATH: String = "res://data/maps/dry_wells.json"
 const HEADLESS_FLAGS: Array[String] = ["--netclient", "--relay", "--replay-log", "--probe-relay"]
 var _transport: RefCounted
 var _match: String = ""
@@ -26,8 +26,11 @@ func _ready() -> void:
 			get_tree().change_scene_to_file.call_deferred("res://scenes/net_headless.tscn")
 			return
 	_fill_factions()
+	_fill_maps()
 	_add_audio()
-	$Center/Box/Offline.pressed.connect(_play_offline)
+	$Center/Box/Offline.pressed.connect(func() -> void:
+		_offline_setup()
+		get_tree().change_scene_to_file(OFFLINE_SCENE))
 	$Center/Box/Create.pressed.connect(_connect.bind(""))
 	$Center/Box/JoinRow/Join.pressed.connect(func() -> void: _connect($Center/Box/JoinRow/Code.text.strip_edges().to_upper()))
 	set_process(false)
@@ -53,10 +56,21 @@ func _fill_factions() -> void:
 func _faction(selector: OptionButton) -> String:
 	return selector.get_item_metadata(selector.selected)
 
-func _play_offline() -> void:
+func _fill_maps() -> void:
+	var selector: OptionButton = $Center/Box/Map
+	for id: String in MatchSettings.PLAY_MAPS:
+		selector.add_item(MatchSettings.PLAY_MAPS[id])
+		selector.set_item_metadata(selector.item_count - 1, id)
+
+func _map_id() -> String:
+	var selector: OptionButton = $Center/Box/Map
+	return selector.get_item_metadata(selector.selected)
+
+func _offline_setup() -> void:
+	var id: String = _map_id()
 	SkirmishMain.factions = {1: _faction($Center/Box/FactionRow/Own), 2: _faction($Center/Box/FactionRow/Opponent)}
-	SkirmishMain.map_path = PLAY_MAP_PATH
-	get_tree().change_scene_to_file(OFFLINE_SCENE)
+	SkirmishMain.map_path = MatchSettings.map_path(id)
+	SkirmishMain.starts = MatchSettings.starts(id, randi())
 
 func _connect(code: String) -> void:
 	_match = code
@@ -71,7 +85,7 @@ func _connect(code: String) -> void:
 	set_process(true)
 
 func _set_busy(busy: bool) -> void:
-	for path: String in ["Offline", "Create", "RelayUrl", "JoinRow/Code", "JoinRow/Join", "FactionRow/Own", "FactionRow/Opponent"]:
+	for path: String in ["Offline", "Create", "RelayUrl", "JoinRow/Code", "JoinRow/Join", "FactionRow/Own", "FactionRow/Opponent", "Map"]:
 		var control: Control = get_node("Center/Box/" + path)
 		if control is BaseButton: control.disabled = busy
 		else: control.editable = not busy
@@ -116,7 +130,7 @@ func _start(message: Dictionary) -> void:
 	var seats: Array[int] = []
 	seats.assign(message.seats)
 	_lockstep = Lockstep.new(_seat, seats, message.delay)
-	SkirmishMain.map_path = PLAY_MAP_PATH
+	SkirmishMain.map_path = MatchSettings.map_path("dry_wells")
 	var game: Node = OnlineScene.instantiate()
 	game.setup(_transport, _lockstep, _seat, _faction($Center/Box/FactionRow/Own))
 	get_tree().root.add_child(game)

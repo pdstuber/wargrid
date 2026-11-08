@@ -5,15 +5,15 @@ Plan: [converted maps playable plan](../superpowers/plans/2026-11-08-converted-m
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-09, Task 4 measured)
-Branch / base commit / working-tree state: converted-maps / ef9e698 / re-pin + converter cleanup uncommitted (test_team_match.gd, run_team_match.sh, tools/zh_map/{convert,test_zh_map}.py, more-maps.md, this file)
-Last green task / next incomplete task: Task 3c committed / coordinator commits the re-pin and cleanup as two commits
-Changed paths since last commit: game/tests/test_team_match.gd, tools/run_team_match.sh, tools/zh_map/convert.py, tools/zh_map/test_zh_map.py, docs/reference/more-maps.md, docs/reference/converted-maps-verification.md
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 573 / 136886 / 2 (Fm1 pair only) / 1 / no marker
+Resume record (updated 2026-11-08 23:45, Task 5 review fixes done)
+Branch / base commit / working-tree state: converted-maps / 2dc1a6c / Task 5 diff uncommitted (match_settings.gd + .uid, test_match_settings.gd + .uid, launcher.gd, launcher.tscn, skirmish_main.gd, run_tests.gd, test_online_scene.gd, this file)
+Last green task / next incomplete task: Task 4 committed, Task 5 green pending commit / Task 6
+Changed paths since last commit: see working-tree state
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 580 / 136958 / 2 (Fm1 pair only) / 1 / no marker
 Known red case or blocker: Fm1 pair (morning decision)
-Approved decisions, pre-authorizations used, deferred gates: re-pin of slot-moved pins pre-approved 2026-11-08, used here
+Approved decisions, pre-authorizations used, deferred gates: Map on its own row fit N5 and F5 at 1280x720 and 1920x1080, no fallback needed
 Usage so far: not run
-Next exact action: coordinator commits; next task per plan
+Next exact action: coordinator commits Task 5; then Task 6
 ```
 
 ## Baseline
@@ -64,6 +64,11 @@ Append-only. One row per command: tree, counts, exit, marker, load averages.
 | 2026-11-08 23:50 | 32e780d + Task 3b diff | `sh tools/run_lint.sh` / `run_warnings.sh` | 116 files | 0 / 0 | WARNINGS CHECKED 116 FILES | n/a | no |
 | 2026-11-09 00:15 | 32e780d + Task 3b diff + review fix | `sh tools/run_tests.sh` | CASES 573, CHECKS 136886, FAILURES 7 (same pins, same values) | 1 | none | n/a | no |
 | 2026-11-09 00:18 | same | lint / warnings / `run_netplay.sh match` / `run_team_match.sh` | 116 files; terminal 8300; `won tick=38510 winner=2 units_peak=207` | 0 / 0 / 1 / 1 | pin mismatches only, identical to 23:48-23:49 | n/a | no |
+| 2026-11-08 23:31 | 2dc1a6c + Task 5 diff (before review fixes) | `sh tools/run_tests.sh` | CASES 580, CHECKS 136950, FAILURES 2 (Fm1 pair only) | 1 | none | n/a | no |
+| 2026-11-08 23:33 | 2dc1a6c + Task 5 diff | `sh tools/run_lint.sh` / `run_warnings.sh` | 116 files | 0 / 0 | Success: no problems found; WARNINGS CHECKED 116 FILES | n/a | no |
+| 2026-11-08 23:38 | 2dc1a6c + Task 5 diff, regex check removed | `sh tools/run_tests.sh` | CASES 580, CHECKS 136958, FAILURES 5 (3 new MS3 + Fm1 pair) | 1 | none | n/a | no |
+| 2026-11-08 23:41 | 2dc1a6c + Task 5 diff + review fixes | `sh tools/run_tests.sh` | CASES 580, CHECKS 136958, FAILURES 2 (Fm1 pair only) | 1 | none | n/a | no |
+| 2026-11-08 23:44 | same | `sh tools/run_lint.sh` / `run_warnings.sh` | 116 files | 0 / 0 | WARNINGS CHECKED 116 FILES | n/a | no |
 
 ## Task 1 RED
 
@@ -72,6 +77,12 @@ Tree `aa9bea2` plus new vectors and tests, production code unchanged.
 - `sh tools/run_conformance.sh` against the protocol-1 relay: `FAIL settings_echoed_byte_exact: bad welcome "{\"type\":\"error\",\"reason\":\"protocol mismatch\"}"`; `CONFORM default: 36 cases, 34 failed`.
 - `go test ./...` in `relay/`: build failed, `envelope_test.go:57:137: e.settings undefined (type *envelope has no field or method settings)` (compile error instead of the first `TestParseRules` failure, because the new test reads `e.settings`).
 - Suite: `FAIL: W2 rejects start without seed` (and 7 more W2/W3 lines), `CASES 559 CHECKS 136858 FAILURES 8`.
+
+## Task 5 RED
+
+Tree `2dc1a6c` plus new tests, `match_settings.gd` absent, `SkirmishMain.starts` absent. Suite did not load: `SCRIPT ERROR: Parse Error: Preload file "res://scripts/match_settings.gd" does not exist.` and `Parse Error: Cannot find member "starts" in base "res://scripts/skirmish_main.gd".` (compile-level RED; MS3 cannot run before MatchSettings exists).
+
+Review fix RED: with the `_valid_id` check removed, `FAIL: MS3 an unknown map id is refused: { "map": "../maps/ashfall", ...}` (also `../../../protocol/vectors/hello` and `ASHFALL`). Restored, green. N12 `is_same` check and N11 dropdown checks added; N12 restart mutant not run. Row timestamps in this file are wall clock; rows above dated 2026-11-09 00:xx are ahead of it.
 
 ## Findings for the morning
 

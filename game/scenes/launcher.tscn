@@ -43,6 +43,10 @@ layout_mode = 2
 size_flags_horizontal = 3
 tooltip_text = "Opponent faction (offline only)"
 
+[node name="Map" type="OptionButton" parent="Center/Box"]
+layout_mode = 2
+tooltip_text = "Map for Play offline and Create match; Join plays the host's map"
+
 [node name="RelayUrl" type="LineEdit" parent="Center/Box"]
 layout_mode = 2
 text = "wss://relay.pdstuber.dev/ws"

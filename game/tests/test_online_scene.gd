@@ -4,6 +4,7 @@ extends RefCounted
 const OnlineScene = preload("res://scenes/online_skirmish.tscn")
 const Launcher = preload("res://scenes/launcher.tscn")
 const LauncherScript = preload("res://scripts/launcher.gd")
+const MatchSettings = preload("res://scripts/match_settings.gd")
 const SkirmishMain = preload("res://scripts/skirmish_main.gd")
 const Lockstep = preload("res://scripts/net/lockstep.gd")
 const Wire = preload("res://scripts/net/wire.gd")
@@ -30,7 +31,7 @@ class FakeTransport extends RefCounted:
 	func rtt_samples() -> PackedInt64Array: return PackedInt64Array([40000])
 
 func cases() -> Array[Callable]:
-	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_rejection_line, test_funds_rejection_is_announced, test_overlay_net_line, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_launcher_layout, test_launcher_faction_selectors_fit, test_plays_dry_wells_from_each_seat]
+	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_rejection_line, test_funds_rejection_is_announced, test_overlay_net_line, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_launcher_layout, test_launcher_faction_selectors_fit, test_plays_dry_wells_from_each_seat, test_offline_uses_chosen_map, test_restart_keeps_map_and_starts]
 
 func _online(runner, seat: int) -> Dictionary:
 	var transport := FakeTransport.new()
@@ -180,7 +181,7 @@ func test_launcher_layout(runner) -> bool:
 		await runner.process_frame
 		await runner.process_frame
 		var rects: Array[Rect2] = []
-		for path in ["Title", "Offline", "RelayUrl", "Create", "JoinRow/Code", "JoinRow/Join", "Volume/MusicLabel", "Volume/Music", "Volume/EffectsLabel", "Volume/Effects", "Volume/VoiceLabel", "Volume/Voice", "Volume/MuteLabel", "Volume/Mute", "Status", "Legal"]:
+		for path in ["Title", "Offline", "Map", "RelayUrl", "Create", "JoinRow/Code", "JoinRow/Join", "Volume/MusicLabel", "Volume/Music", "Volume/EffectsLabel", "Volume/Effects", "Volume/VoiceLabel", "Volume/Voice", "Volume/MuteLabel", "Volume/Mute", "Status", "Legal"]:
 			var control: Control = launcher.get_node("Center/Box/" + path)
 			rects.append(control.get_global_rect())
 			runner.check(Rect2(Vector2.ZERO, Vector2(size)).encloses(control.get_global_rect()), "N5 %s inside %s" % [path, size])
@@ -241,7 +242,7 @@ func test_launcher_faction_selectors_fit(runner) -> bool:
 		var opponent: OptionButton = launcher.get_node("Center/Box/FactionRow/Opponent")
 		runner.check(box.get_global_rect().encloses(own.get_global_rect()) and box.get_global_rect().encloses(opponent.get_global_rect()), "F5 selectors inside the box at %s" % size)
 		runner.check(not own.get_global_rect().intersects(opponent.get_global_rect()), "F5 selectors do not overlap at %s" % size)
-		for path in ["Offline", "RelayUrl", "Create", "JoinRow", "Status"]:
+		for path in ["Offline", "Map", "RelayUrl", "Create", "JoinRow", "Status"]:
 			runner.check(not launcher.get_node("Center/Box/FactionRow").get_global_rect().intersects(launcher.get_node("Center/Box/" + path).get_global_rect()), "F5 row clear of %s at %s" % [path, size])
 		runner.check(launcher.get_node("Center/Box/FactionRow").get_global_rect().size.x <= 520.0, "F5 faction row stays compact at %s" % size)
 		runner.check(own.item_count == 3 and own.get_item_text(0) == "China" and own.get_item_text(1) == "Free Resistance Coalition" and own.get_item_text(own.selected) == "United States", "F5 selector lists faction display names and defaults to the United States")
@@ -266,4 +267,48 @@ func test_plays_dry_wells_from_each_seat(runner) -> bool:
 		main.free()
 		await runner.process_frame
 	SkirmishMain.map_path = before
+	return true
+
+func test_offline_uses_chosen_map(runner) -> bool:
+	var before_path: String = SkirmishMain.map_path
+	var before_starts: Array[int] = SkirmishMain.starts
+	var launcher = Launcher.instantiate()
+	runner.root.add_child(launcher)
+	await runner.process_frame
+	var map_row: OptionButton = launcher.get_node("Center/Box/Map")
+	var labels: Array = MatchSettings.PLAY_MAPS.values()
+	runner.check(map_row.item_count == 3 and launcher._map_id() == "dry_wells", "N11 three maps, Dry Wells selected by default")
+	for i in map_row.item_count:
+		runner.check(map_row.get_item_text(i) == labels[i], "N11 dropdown item %d is %s" % [i, labels[i]])
+	for i in map_row.item_count:
+		map_row.select(i)
+		var id: String = launcher._map_id()
+		launcher._offline_setup()
+		runner.check(SkirmishMain.map_path == MatchSettings.map_path(id), "N11 %s: Play offline uses the chosen map" % id)
+		runner.check(SkirmishMain.starts.size() == 2, "N11 %s: two start spots chosen" % id)
+		if id == "ashfall":
+			runner.check((SkirmishMain.starts[0] - SkirmishMain.starts[1] + 8) % 8 == 4, "N11 Ashfall pair is diagonal, got %s" % str(SkirmishMain.starts))
+	launcher.free()
+	SkirmishMain.map_path = before_path
+	SkirmishMain.starts = before_starts
+	return true
+
+func test_restart_keeps_map_and_starts(runner) -> bool:
+	var before_path: String = SkirmishMain.map_path
+	var before_starts: Array[int] = SkirmishMain.starts
+	SkirmishMain.map_path = MatchSettings.map_path("broken_crown")
+	SkirmishMain.starts = [3, 1]
+	var main = load(LauncherScript.OFFLINE_SCENE).instantiate()
+	runner.root.add_child(main)
+	await runner.process_frame
+	var old_sim = main.simulation
+	main._restart()
+	runner.check(not is_same(old_sim, main.simulation), "N12 Restart builds a new simulation")
+	var start: Vector2i = MapData.start_cell(main.simulation.map_data(), 1)
+	var seat3: Vector2i = MapData.start_cell(MapData.load(SkirmishMain.map_path), 3)
+	runner.check(start == seat3, "N12 Restart keeps seat 1 on the chosen start, got %s want %s" % [start, seat3])
+	runner.check(main.get_node("Camera2D").position == Iso.world_to_plane(Vector2(start) + Vector2(0.5, 0.5)), "N12 camera on the chosen start after Restart")
+	main.free()
+	SkirmishMain.map_path = before_path
+	SkirmishMain.starts = before_starts
 	return true
