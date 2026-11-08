@@ -212,9 +212,19 @@ class PlaceTest(unittest.TestCase):
         self.assertEqual(first["slots"]["supply_center"], [16, 14])
         self.assertEqual(first["slots"]["power_plant"], [12, 13])
 
+    def test_supply_center_slot_ignores_small_piles(self):
+        raw = raw_map(80, 30, starts=[(10, 15), (70, 15)], sources=[(40, 15), (64, 15)], piles=[(14, 15)])
+        x, y = convert.convert(raw, "T", "n")["starts"][0]["slots"]["supply_center"]
+        self.assertEqual((x, y), (22, 14))
+
+    def test_supply_center_slot_tie_takes_first_in_ring_scan(self):
+        raw = raw_map(80, 40, starts=[(10, 5), (70, 5)], sources=[(10, 22), (70, 22)])
+        out = convert.convert(raw, "T", "n")["starts"][0]
+        self.assertEqual(out["slots"]["supply_center"], [8, 16])
+
     def test_shipped_supply_centers_moved_closer(self):
         before = {
-            "dry_wells": [28.3, 19.5],
+            "dry_wells": [27.2, 19.5],
             "broken_crown": [22.4, 18.1, 15.9, 19.8],
             "ashfall": [21.5, 22.4, 25.1, 18.0, 20.4, 21.1, 23.7, 26.5],
         }

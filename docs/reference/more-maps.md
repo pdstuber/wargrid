@@ -43,12 +43,12 @@ Real play uses Dry Wells: the launcher sets `SkirmishMain.map_path` (as it sets 
 
 ## Supply center slot near supplies (2026-11-08)
 
-Stopgap until M8 moves the choice into the bot. The converter now puts the `supply_center` slot on the legal 3x3 site (ring 2..12 of the start, same legality as before) whose centre is closest to the centre of the start's nearest full dock (400 boxes; small piles ignored). Other slots keep the ring-scan rule, so the byte-identical fact above no longer holds: all `supply_center` slots and the slots after them changed in `dry_wells.json`, `broken_crown.json`, `ashfall.json`; `skirmish.json` is not converter output and is unchanged. Regenerated from `CnC_Modding_Support` at `3aad8e4`.
+Stopgap until M8 moves the choice into the bot. The converter now puts the `supply_center` slot on the legal 3x3 site (ring 2..12 of the start, same legality as before) whose centre is closest to the centre of the start's nearest full dock (400 boxes; small piles ignored). Other slots keep the ring-scan rule, so the byte-identical fact above no longer holds: the `supply_center`, `barracks`, `factory` and `command_center` slots changed on every seat (so the start command centre slot moves too); `power_plant` and `defence` did not. Files: `dry_wells.json`, `broken_crown.json`, `ashfall.json`; `skirmish.json` is not converter output and is unchanged. Regenerated from `CnC_Modding_Support` at `3aad8e4`.
 
-Slot centre to nearest full dock centre, cells (before from the converter at `1c26efe`; seats in order):
+Slot centre to nearest full dock centre, cells (before from the converter at `1c26efe`, measured with this metric; seats in order). Dry Wells seat 1 was 27.2, not the 28.3 the plan quoted:
 
 | Map | Before | After |
 |---|---|---|
-| Dry Wells | 28.3, 19.5 | 8.3, 5.6 |
+| Dry Wells | 27.2, 19.5 | 8.3, 5.6 |
 | Broken Crown | 22.4, 18.1, 15.9, 19.8 | 4.6, 4.6, 4.5, 4.5 |
 | Ashfall | 21.5, 22.4, 25.1, 18.0, 20.4, 21.1, 23.7, 26.5 | 4.5, 5.5, 7.5, 4.9, 6.0, 5.6, 5.4, 7.5 |

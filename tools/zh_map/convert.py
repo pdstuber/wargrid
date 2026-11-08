@@ -291,9 +291,8 @@ def _find_slot(grid, size, taken):
 def _supply_site(grid, size, taken, start, sources):
     docks = [s for s in sources if not s.get("delete_when_empty")]
     if not docks:
-        return _find_slot(grid, size, taken)
-    sw, sh = docks[0].get("footprint", [SOURCE_W, SOURCE_H])
-    centres = [(s["origin"][0] + sw / 2, s["origin"][1] + sh / 2) for s in docks]
+        raise ConvertError("no supply dock")
+    centres = [(s["origin"][0] + SOURCE_W / 2, s["origin"][1] + SOURCE_H / 2) for s in docks]
     target = min(centres, key=lambda c: math.dist(c, start))
     sites = list(_slots(grid, size, taken))
     if not sites:
