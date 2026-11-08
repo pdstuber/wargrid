@@ -62,13 +62,13 @@ Scratchpad `ws6/runs/{A,B,C,D}/notes.log`, chained by `ws6/chain.sh`:
 | G6 | `transports`, `defences`, `docks`, `ramp`, `frc` | report-only | none | all inside 1.82 / 3.64 (WS1: worst p99 2.49 defences) | **new gate**: promote to `COMBAT BUDGET` each row whose worst of 13 + 5 % clears 1.82 / 3.64. Otherwise retain report-only | 13 samples |
 | G7 | team match sim p95 / p99 | `run_team_match.sh` prints `TEAM TIMING`, no gate; not in `run_benchmark.sh` | none (budget 1.82 / 3.64) | 1.303 / about 2.88, profiler on (WS4) | **new gate** at the budget with the profiler off, if Job A shows profiler overhead and worst of 13 + 5 % clears 3.64. Otherwise retain report-only. Max tick (about 10 ms) stays a watch item | Job A, 10 samples (T2) |
 | G8 | lockstep overhead p99 | `run_lockstep.gd:11` | 0.6 ms | 0.065-0.072 | **retain**. It is a budget (10 % of a tick ÷ F), not a ceiling; worst + 5 % (about 0.08) would flake on a µs-scale p99 | Job D |
-| G9 | rendered frame p95 (open, dense) | ledger says "rendered probe ≤ 16.7 ms"; **not found by `rg` in `game/`** | 16.7 ms claimed; budget 3.04 | open 1.40-2.16, dense 2.10-2.16 (R2, `--profile`) | **verify** that the gate exists (T0b). If it does not, the ledger is corrected; a **new gate** at 3.04 for open and dense is offered only after U3 gives 13 runs without `--profile` | T0b, U3 |
+| G9 | rendered frame p95 (open, dense) | **does not exist** (T0b 2026-11-08: `movement_benchmark.gd` asserts only the Ashfall guard, line 168; 16.7 ms is the render goal, not a gate; the ledger text is corrected) | 16.7 ms claimed; budget 3.04 | open 1.40-2.16, dense 2.10-2.16 (R2, `--profile`) | ledger corrected. A **new gate** at 3.04 for open and dense is offered only after U3 gives 13 runs without `--profile` | U3 |
 | G10 | Ashfall frame guard | `movement_benchmark.gd:10` | 3.3 ms (budget 3.04) | 2.89-3.02 (`--profile`, R2); 0.506 (no profile, one run) | **tighten** to the budget 3.04 or to worst of 13 + 5 % without `--profile`, whichever is lower; first explain the 0.5 vs 2.9 gap (is `--profile` the cause?). The failing direction must be exercised once (scratch copy, guard set below the measured value) | U3 |
 | G11 | horde rendered frame | no gate (3.51-4.08 > 3.04) | none | R2 | **retain** report-only (exceeded, reported) | none |
 | G12 | presentation plumbing per tick | budget table only | 0.91 ms | about 1.9 (2026-11-03 probe); R2 profile on Ashfall: `snapshot` 1.47 + `view.copy` 0.08 + `view.points` 0.08 + `view.sort` 0.05 ≈ 1.68 | **retain** 0.91, status exceeded. Update the "current" cell from R2 (labelled profile on, Ashfall, rendered). The fix (stop deep-copying state twice) is out of scope | none (existing evidence) |
 | G13 | BM6 contact tick-0 `combat_work` peak | `test_benchmark.gd:183` | (16000, 18500] | 18168 (2e row, base tree) | **retain**. Machine-independent, already in CI. Note headroom 1.8 % at the top | peak on HEAD from the T2 logs |
-| G14 | BM6b joiner work | `test_benchmark.gd:197` | ≤ 1500 | not recorded | **retain** | read in T0b |
-| G15 | snapshot size ceiling | `test_snapshot_size_ceiling` | 82,703 / 83,567 nodes | at ceiling by design | **retain** | none |
+| G14 | BM6b joiner work | `test_benchmark.gd:197` | ≤ 1500 | not recorded | **retain** (T0b: the check at `test_benchmark.gd:197` is ≤ 1500 per tick after tick 0, confirmed; the peak is not recorded anywhere) | peak from the T2 logs |
+| G15 | snapshot size ceiling | `test_snapshot_size_ceiling` | 84,119 / 84,983 nodes, busiest unit 336 (T0b: 82,703 / 83,567 was the M6 Task 8 value) | at ceiling by design | **retain** | none |
 | G16 | watch item: worst sim tick | budget table, no gate | 7.8 ms (2026-11-03) | team about 10 ms, contact 11.8 ms | **retain** as a watch item; update the numbers from Jobs A and B | Jobs A, B |
 | G17 | F itself | ledger | 5.5 (Deck Firefox, 63f5a9a, before every fix) | — | **retain until U1**. Afterwards propose the re-measured F per row (either direction). Any change to F is the user's decision | U1 |
 
@@ -139,6 +139,14 @@ All files stay in the scratchpad, checked with `sh -n` only. *Who:* Sonnet. *Acc
 - **Acceptance.** Every job's notes end with JOBDONE, or an ABORT is recorded. Numbers are copied, not retyped.
 - **Stop.** `combat_work` or digests differ between 20a4d06 and HEAD (they must be equal: all kept fixes preserve the trace). Or `run_benchmark.sh` exits 1 on HEAD.
 - **Writes.** Verification rows "ws6 re-baseline", "team profiler", "contact max", "release bench", and one ledger History row "perf spike re-baseline 20a4d06 vs HEAD".
+
+### T1b: AI and navigation zones in the team match (CPU-light, after Job A's logs exist, Sonnet; added 2026-11-08 by the user's approval)
+
+`run_team_match.gd` already prints `Profiler.report` and `PROFILE_SLOW`. From the Job A logs (profiler on), table mean / p99 / max of `opponent.decide`, `navigation.astar`, `step.service_paths`, `apply_orders`, `allocation.assign` and `snapshot`, and name the zone behind the team-match max tick. *Acceptance:* a table in the verification file. If a zone causes the max tick, write the two re-pin ideas (stagger AI seats, per-tick A* work budget) as questions for the user; both move traces and need a decision.
+
+### T10: snapshot double-copy design (Opus high, read-only, writes one design file; added 2026-11-08 by the user's approval)
+
+The plumbing row (snapshot + view copy + sort) is 1.68 ms against a 0.91 ms budget, and `snapshot` is 1.47 ms per rendered tick on Ashfall. Suspected cause: `_sorted_copies` `duplicate(true)` plus the view's `state.duplicate()`. Design how to stop the double copy with digests and traces identical; estimate the gain from the measured zones. *Output:* `docs/superpowers/specs/2026-11-08-snapshot-copy-design.md`. If built, one A/B in the U3 rendered batch plus lockstep.
 
 ### Quiet batch (one chained script, one Godot process at a time, after ws6)
 
@@ -212,7 +220,7 @@ Each item is listed with what the agent prepares. None starts without the user.
 
 ## T9: final deliverable check (Opus high, fresh context, read-only, last)
 
-Check the write-up against the **original input**, not the handoff. Every item gets *met / partly / not met* with a pointer, or a recorded user decision:
+Check the write-up against the **external brief** (written by another AI without knowledge of this codebase, supplied by the user as an outside perspective; advisory, not a spec: an item that does not fit Wargrid is marked *not applicable* with the reason, and a user decision such as dropping GDExtension counts as an answer), not only the handoff. Every item gets *met / partly / not met* with a pointer, or a recorded user decision:
 
 - deliverables D1-D7;
 - objectives 1-5, each bullet: baseline, regression, profiling, average vs worst vs variability, typing, GDExtension (user decision), threads, other optimizations, scaling;
@@ -222,6 +230,8 @@ Check the write-up against the **original input**, not the handoff. Every item g
 A "not met" item becomes a remaining-work line or a question for the user. It is never edited to look met. *Writes:* a verification row "T9 deliverable check", plus the resume record.
 
 ## Dropped or kept optional, with reasons
+
+- Regression bisect (the brief's 'when and why it regressed'): dropped by the user's decision 2026-11-08. About 1 h of quiet host, no decision it would change; causes are already named as features (M6 teams and map, M7 gate 1) from the ledger rows.
 
 - **Q5 `_hold_cells`**: the design expects the net gain to equal the A/A spread and other rows to get worse. Optional, the user decides.
 - **Q7 60-min calibration**: drift is already bounded by the A/A spreads; useful only for comparing an evening run with a morning run. Optional.

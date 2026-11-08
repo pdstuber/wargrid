@@ -1,3 +1,5 @@
+> Provenance (user, 2026-11-08): written by another AI without knowledge of this codebase, supplied as an outside perspective. Advisory, not a spec. The refined handoff is `docs/performance-spike-prompt.txt`.
+
 # Wargrid Performance Investigation & Benchmark Recovery
 
 ## Context

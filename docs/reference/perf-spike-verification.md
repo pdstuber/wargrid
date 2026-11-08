@@ -7,7 +7,7 @@ Resume record (updated 2026-11-08)
 Branch / base commit / working-tree state: perf-spike / HEAD 10c524e / clean before Task 5e; Task 5e edits docs and `game/tests/test_benchmark.gd` (BM10 label) only, uncommitted. Nothing pushed, not merged
 Last green task / next incomplete task: Workstreams 1-5 done (5a, 5b, 5d done; 5c skipped as a coordinator decision, see '5b result'); Task 5e write-up done (performance.md 'Post-M7 performance spike (2026-11)') / the user's ultra review, then the Steam Deck F = 5.5 re-check with the user (native and Firefox), then the user decides merge
 Changed paths since last commit: docs/reference/perf-spike-verification.md, docs/reference/performance.md, README.md, AGENTS.md, game/tests/test_benchmark.gd (label BM9 -> BM10)
-Last command / cases / checks / failures / exit / marker: Task 5e acceptance on HEAD 10c524e plus the label edit, see the 5e evidence row (suite, lint, warnings, netplay match, team match)
+Last command / cases / checks / failures / exit / marker: Task 5e acceptance on HEAD 10c524e plus the label edit, see the 5e evidence row (suite, lint, warnings, netplay match, team match); then Task 6 jobs A-E (HEAD 003e66c, scratch `ws6`, docs only changed): all exit 0, `accept.sh 20a4d06` PASS, `run_benchmark.sh` exit 0, see '6 results'
 Known red case or blocker: none. Report-only rows exceeded: combat open, dense, hordes300 (no budget or ceiling changed). 2i BLOCKED (no fix above the A/A spread). R1 not reproduced at load up to 2.8, cause unproven
 Approved decisions, pre-authorizations used, deferred gates: user invoked the spike 2026-11-07; local commits after green checkpoints pre-authorized; no push/PR/merge/fly/Sprite/window without approval; host = this Mac only (user). Decisions of 2026-11-07 evening: BM6 retune approved together with 2e; 2f approved with a version bump and a ZH AIUpdate comparison; second round for 2d and per-cell enemy counts; hordes300 "improved, still exceeded" is acceptable; C++/GDExtension NOT investigated (user decision); threads PoC local first, fly web deploy allowed for the threaded-web test only (done, rolled back), Safari failure is not a blocker, a Chromium-based browser is acceptable for the Chrome check; Steam Deck check pending with the user
 Usage so far (python3 tools/session_usage.py <session files>): not recorded
@@ -41,6 +41,7 @@ Next exact action: user runs the ultra review of branch perf-spike; then the Ste
 | 2026-11-08 | base f371616 (git archive, scratch `ws5b`), PoC patch not applied to the tree | Apple M6 headless | Task 5b: native parallel PoC (`advance.move`, speculative `_nearest`), P1-P4, suite, 4 traces, netplay, team match in both modes, A/B timing at 4 and 2 threads | suite 491 / 136065 / 0 failures serial and parallel (base 487 / 136046); traces equal; netplay tick 8400; team match cap line; step 1 gain 2-3 % at 4 threads, loss at 2, step 2 slower everywhere; load 3.2 at start, 1.5 at end; see '5b result' |
 | 2026-11-08 | db2178f via git archive, scratch `ws5d`, deployed to `wargrid-web-test` (approved) | Apple M6, Firefox 159, Vivaldi | Task 5d: threaded `Web` preset with COOP/COEP in `web/sws.toml`, `deploy_web.sh test`, headers on 18 responses, boot in both browsers, rollback | COOP and COEP on all 18 responses, `crossOriginIsolated=true`, Godot banner "multi-threaded" in both; rolled back (release v5), `/health` 200; relay not checked from the fly origin; see '5d result' |
 | 2026-11-08 | f371616 (enemy spawns out of asserts in `combat_workload.gd`, new case BM10) acceptance, run on HEAD 10c524e plus the BM9 -> BM10 label edit in `test_benchmark.gd` and docs | Apple M6 | Task 5e: `sh tools/run_tests.sh`, `run_lint.sh`, `run_warnings.sh`, `run_netplay.sh match`, `run_team_match.sh`, one Godot process at a time | suite CASES 487 / CHECKS 136039 / FAILURES 0 (same 487 cases as the 5b base; 136039 without the trace variables); lint `Success: no problems found`; warnings 104 files exit 0; netplay match terminal tick 8400 `NETPLAY PASSED`; team match exit 0 `TEAM MATCH cap tick=45000 winner=null units_peak=160`; load 1.65 start / 1.49 end |
+| 2026-11-08 | HEAD 003e66c (git archive) vs 20a4d06, scratch `ws6` | Apple M6, headless | Task 6 jobs A-E: team match profiler off/on, contact max series, macOS Bench release export, full re-baseline, `run_benchmark.sh`; one Godot process at a time, pgrep empty and load <= 2.5 before each run | all exit 0; `accept.sh 20a4d06` PASS (suite 487 / 136046 / 0 failures vs base 482 / 136033, 4 traces cmp-identical, 7 pins equal, netplay tick 8400, team cap line); `run_benchmark.sh` exit 0; load 1.2-2.2; see '6 results' |
 
 ## Workstream 1 finding (baseline, 2026-11-07, 20a4d06, Apple M6, 3 runs each)
 
@@ -604,3 +605,147 @@ A/A p95 spreads: 0.004-0.017 ms (p99 up to 0.048). At 2 threads step 1 is a loss
 - Firefox 159 and Vivaldi (Chromium), fresh profiles, one at a time, no interaction (driven over BiDi / CDP): `crossOriginIsolated=true`, `SharedArrayBuffer` defined, Godot 4.7.2 banner "Build configuration: Emscripten 4.0.20, multi-threaded", canvas created, title "Wargrid". Not driven: a browser-to-browser match on this origin (needs clicks). Relay: only `wss://wargrid-relay-jvm.fly.dev/ws` opens from node; the websocket-under-COEP check is the 5a `RELAY OK` result (same build, local COOP/COEP server), not repeated from the fly origin.
 - Safari not tested. To check: `crossOriginIsolated` in the web inspector, boot to the menu, no `SharedArrayBuffer` error, a match through the relay, audio worklet, cost against the single-threaded build.
 - Rollback: `sh tools/deploy_web.sh test` from a clean `git archive HEAD` (release v5): no COOP/COEP on `/` or `/index.wasm`, `/health` 200. Cost: two remote builds plus the idle-suspending shared-cpu-1x test machine, cents. Production `wargrid-web` and the relay not touched. Browsers and helper scripts stopped.
+
+## Gap closure CPU-light tasks T0a-T0f (2026-11-08, HEAD 43bf48e plus uncommitted docs, Apple M6, no Godot process run, reading only)
+
+Plan: [spike gap closure](../superpowers/plans/2026-11-08-spike-gap-closure.md). Edits: `performance.md` (narrow text fixes), the plan's gate table (G9, G14, G15). No file under `game/` or `tools/` changed (a benchmark job was running in the tree). No budget, ceiling or guard value changed, no verdict flipped.
+
+### T0a claims audit
+
+| Claim | Finding | Action |
+|---|---|---|
+| "Existing gates ... rendered probe: frame p95 ≤ 16.7 ms" | **False.** `rg` over `game/` finds no 16.7 gate; `movement_benchmark.gd` asserts only the Ashfall guard (line 168, `ASHFALL_FRAME_P95_MS` 3.3) plus workload checks. 16.7 ms is the render goal. History rows saying "frame p95 passes the 16.7 ms line" compared by hand and stay as history | text fixed |
+| movement "1.59 / 1.58, 13 % margin" | stale: WS4 gave 1.501 / 1.487 (ledger row Workstream 4) | cell updated, margin about 17 % |
+| counters table "combat target checks: not implemented" | stale: `combat_work()` is gated by BM6 and BM6b in `test_benchmark.gd` | row replaced |
+| counters table snapshot "79,481 / 80,345 / 322" | stale: ceilings are 84,119 / 84,983 / 336 (`test_benchmark.gd:88`, M6 Tasks 8-9) | row replaced; the plan's G15 value (82,703 / 83,567) was also stale, fixed |
+| plumbing 0.91 "current about 1.9" | 2026-11-03 scratch probe; R2 Ashfall profile gives 1.68, which counts the snapshot twice (harness `settled()`); one snapshot gives 0.87 (T10 design, P0) | both values, labelled |
+| R2 "passes 3.04 by 0.02" | holds only for `--profile` runs; one unprofiled run gave 0.506 | labelled; verdict open until U3 |
+| rec 1 ranked first | its design says do not build | marked in the text; re-rank is T6 |
+| rec 3 "0.3-0.5 ms" | unlabelled estimate | labelled "not measured" |
+| "release 18-20 % faster" | 2026-11-06, before the fixes and f371616 | dated; Job C re-measures |
+| cumulative 20a4d06 to WS4 numbers | different days and loads | left as is, Job D replaces them (T1) |
+| `TEAM TIMING` includes the profiler | confirmed in code: `run_team_match.gd` sets `Profiler.enabled = true` before the loop, so the printed p95 / p99 are profiler-on | Job A quantifies; not edited |
+| Gate-inventory G1-G8, G10, G13, G14 locations and values | all confirmed: `run_movement.gd:74` (8 / 16), `run_combat.gd:10-12` (ceilings 3.05 / 4.23 and 3.31 / 5.01, budget 1.82 / 3.64), `run_lockstep.gd:11` 0.6, `movement_benchmark.gd:10` 3.3, `test_benchmark.gd:183` (16000, 18500], `:197` ≤ 1500, `run_benchmark.sh` PASS counts 2 and 1. `transports`, `defences`, `ramp`, `frc`, `hordes300`, `docks` are report-only (early return before any budget check) | none |
+
+No claim found that would flip a pass or fail verdict.
+
+### T0b gate inventory
+
+Inventory table corrected in place: G9 (no such gate, ledger text fixed), G14 (confirmed), G15 (84,119 / 84,983, busiest 336). The rendered 16.7 ms gate does not exist.
+
+### T0c bound for per-cell, per-team counts (rec 2)
+
+Code (`combat.gd` `_nearest`): per call, per owner in the grid, `hostile()` is checked first; then each window cell costs one `cells.has(Vector2i)`. Per-team counts replace the per-owner `has` with one lookup per cell, so the saving is (hostile owners - 1) lookups per window cell per call, and 0 on a layout with one hostile owner: `open`, `dense`, `contact`, `hordes300` (2 owners), which are the failing rows. Only the team match (3v3) and `skirmish3v3` have 2-3 hostile owners, and both pass 1.82 / 3.64 already. Friendly-owner iteration (the 85-90 % non-hostile candidates of 2a) is a different cost and is not touched by per-cell counts. The per-lookup cost was not measured (estimate only), so the bound is stated as 0 on every failing row and unquantified on two passing rows. Result: not attempted, not on a failing row; Q4 not needed.
+
+### T0d CI guard design
+
+Written into `performance.md` "Not covered yet" (already gated: BM5, BM6, BM6b; add path-queue peak and a `_nearest` call counter; wall-clock rows trend-only). No workflow edited.
+
+### T0e rebaseline check after f371616
+
+Confirmed by `rg`: committed `bench_runner.gd:28-29` runs movement open and dense and combat open, dense, contact, skirmish3v3 only. No committed release or web number for `hordes300`, `frc` or `horde_render` predates f371616 (the F = 5.5 rows and the 5a rows: the 5a `hordes300` numbers came from a scratch patch that already spawned enemies outside `assert`, digests equal to the editor's). Nothing to rebaseline; the "rebaseline" remaining-work item is rewritten in `performance.md` to "no F for hordes300 yet".
+
+Deferred edit (not applied; U1 and Q6 need it; apply after the benchmark job ends, then run lint and warnings), `game/benchmarks/bench_runner.gd` line 29:
+
+```diff
+-	for layout: String in ["open", "dense", "contact", "skirmish3v3"]: await _combat(layout)
++	for layout: String in ["open", "dense", "contact", "skirmish3v3", "hordes300"]: await _combat(layout)
+```
+
+`_combat` (line 51) is generic over `CombatWorkload.create(layout)`, so no other change is needed.
+
+### T0f scratch scripts (parse-checked with `sh -n` only, never run)
+
+Directory `/private/tmp/claude-501/-Users-pdstuber-projects-wargrid/f3d3e9b0-7fed-4adb-93af-49de839b7d31/scratchpad/ws8/`: `scale_workload.gd` and `run_scale.gd` (Q2: total units and owner count via user args, 128x96 map, spawn failures recorded), `run_mem.gd` (Q3: `MEMORY_STATIC`, `OBJECT_COUNT`, node count every 300 ticks on `hordes300` or the team match), `batch.sh` (Q1 x10 combat + movement, 10 team runs, Q2 units 150-600 and owners 2-6, Q3; ws6 guard; one STOP line per failed job). Each Godot script calls `quit(0)` on its only path. Not included: Q2 on 20a4d06, Q4 (T0c says not needed), Q6, Q5, Q7, Q8. The batch copies the three scripts into a git-archive copy given as argument; GDScript files in `game/` root are scratch only.
+
+## 7 results (Deck native) (2026-11-08, HEAD 70fa93d via git archive, Steam Deck, headless, native editor build; web half not run)
+
+- Setup: `git archive HEAD` to `~/wargrid-f55/tree`, Godot 4.7.2 `ed1daf0bf` Linux zip checked against the CI SHA-256 `cadd3204...5329e4` (OK), run as a `systemd-run --user` unit, jobs strictly one after another with 20 s gaps. Method as in 'Target factor measurement (2026-11-06)': `bench_runner.gd` (movement open/dense, combat open/dense/contact/skirmish3v3, team match with profiler) plus `run_combat.gd` for `hordes300` and `run_lockstep.gd`, 300 warm-up + 1800 samples, 3 runs each (team match 45000 ticks, ended at the cap, not a terminal state).
+- Host: ACAD 1 at the start and end of every job; load average (1 min) 0.34-1.86 at job edges (1.86 right after the suite, 0.5-1.4 before benches); Steam client and its webhelpers were running (idle, not touched), no godot or firefox process before or after. Not a fully quiet device.
+- Reproduction: suite 487 cases / 136046 checks / 0 failures (Mac HEAD: same). The four traces, `cmp`-identical to the Mac's from the earlier quiet run (`scratchpad/tr/*-head.tsv`): replay `c06ae74939594bb8`, economy `eda7de05a7919065`, combat `111b69234c7215ef`, team `84a9ece1c60ba7b1` (first 16 hex of SHA-256).
+- Deck median of 3 (range of the 3 runs for p95 in brackets), ms:
+
+| Row | p50 | p95 | p99 | max | Mac WS4 p95 | F p95 (provisional) |
+|---|---|---|---|---|---|---|
+| movement open | 5.891 | 6.566 [6.351-6.652] | 7.209 | 17.326 | 1.501 | 4.37 |
+| movement dense | 6.087 | 6.544 [6.452-6.681] | 7.403 | 18.274 | 1.487 | 4.40 |
+| combat open | 4.424 | 6.869 [6.788-6.937] | 8.131 | 10.532 | 1.865 | 3.68 |
+| combat dense | 3.530 | 6.614 [6.412-6.625] | 7.649 | 11.066 | 1.796 | 3.68 |
+| combat contact | 0.867 | 4.030 [4.016-4.114] | 5.694 | 37.343 | n/a | n/a |
+| combat skirmish3v3 | 1.929 | 4.577 [4.470-4.578] | 5.108 | 5.728 | n/a | n/a |
+| hordes300 (run_combat) | 7.393 | 10.658 [10.593-10.681] | 12.496 | 26.763 | 2.821 | 3.78 |
+| team match | 2.084 | 4.780 [4.776-4.857] | 10.581 | 34.097 | 1.303 | 3.67 (see below) |
+| lockstep overhead | 0.033 | 0.076 | 0.229 | 0.787 | n/a | 2026-11-06 Mac 0.067 p99 gives 3.4 |
+
+- `run_combat.gd` open / dense p95 6.850 / 6.524 agree with `bench_runner` within 1.5 %.
+- F (provisional): p95 Deck / Mac Workstream 4 numbers is 3.7-4.4, below 5.5 (2026-11-06 native editor: 3.5-4.2; movement rows are higher now because the Mac sim got faster by about 5 % while the Deck did not drop as much). Caveat: the Mac team-match 1.303 comes from the Workstream 4 profile run, not the 2026-11-06 bench_runner window (Mac 2.411 p95 then), so the team F is not comparable until the Mac re-baseline job runs `bench_runner` the same way. Final F waits for that.
+- Against the target budgets (10 / 20 ms) on native editor build: every row passes except `hordes300` p95 10.66 (report-only row, 6.6 % over). Team match p99 10.6 (was 20.4 on 2026-11-06). Worst ticks: team match 34 ms (about one 33.3 ms tick), `contact` 37 ms (deterministic warm-up spike, cf. open item above).
+- Would run for the Firefox half (needs a window and the user's OK): `sh tools/export_build.sh "Web Bench" build/web-bench/index.html` (Mac), copy `build/web-bench` and `tools/serve_web_bench.py` to a folder under `~` on the Deck, `systemd-run --user python3 -I serve_web_bench.py build/web-bench build/web-results`, then `systemd-run --user flatpak run org.mozilla.firefox http://127.0.0.1:8060/` with the tab in front, 3 runs (fresh profile), `crossOriginIsolated` true; the page posts the log to `/result`. Note `bench_runner.gd` in the web build does not include `hordes300` unless added.
+- Cleanup: removed `~/wargrid-f55`, `~/.local/share/godot/app_userdata/Wargrid`, the empty `export_templates`, `~/.cache/godot`, `~/.config/godot` (all created by this run at 07:45); `HearthSpike` untouched. Raw logs: scratchpad `deck-out/` and `deck-tr/`.
+
+## 6 results (2026-11-08, HEAD 003e66c and 20a4d06 via git archive, scratch copies `ws6` in the scratchpad, Apple M6, headless; nothing changed in the repo; 3 runs per arm, A B A B A B; load 1.2-1.6 at every start, no godot process before each run)
+
+### A. Team match, profiler on vs off (item 4)
+
+Scratch archive of HEAD with only `run_team_match.gd` changed: `Profiler.enabled = false` for the whole run, `TEAM TIMING` samples from tick 300 on, worst tick logged (A = unmodified, B = scratch). All 6 runs end `TEAM MATCH cap tick=45000 winner=null units_peak=160`.
+
+| Arm (median of 3, spread) | p50 | p95 | p99 | max |
+|---|---|---|---|---|
+| A profiler on, ticks 0-44999 | 0.551 (0.006) | 1.301 (0.015) | 2.863 (0.039) | 10.199 (0.143) |
+| B profiler off, ticks 300-44999 | 0.550 (0.004) | 1.310 (0.007) | 2.860 (0.023) | 10.175 (0.116) |
+
+B with the warm-up kept (`TEAM TIMING_ALL`): p95 1.299 / 1.306 / 1.305, max 10.077 / 10.191 / 10.175. The profiler costs nothing measurable in this run (zones are one bool check when off, and the harness only enables it for the 300 warm-up ticks report). Worst tick: 5730 in all 3 runs (10.1-10.2 ms), deterministic.
+
+### B. Contact layout max (item 5)
+
+Scratch runner `run_b.gd` (per-tick `step_us` with tick index, `snapshot()` untimed after, 2100 ticks, 3 plain runs plus one profiled run). Top ticks are identical in all runs: tick 0 27 ms (before the timed window), then every 60 ticks: 120 = 25.1, 60 = 23.8, 180 = 15.8, 240 = 14.4, 420 = 11.3, 360 = 10.9, 300 = 10.8 ms, then 480 = 6.1, 540 = 5.2, 600 = 5.1; 11 ticks over 5 ms, all others 1.6 ms or less. The timed window starts at tick 300, so its max (11.2-11.4, the ledger's 11.8 with the other build state) is tick 420, and tick 300 and 360 follow it. Zone at tick 420 (profiled run): `step.combat_fire` 10.2 of 11.2 ms, `combat_plan` 0.74, `snapshot` 0.50. Same zone on every top tick (21.9, 23.2, 21.8, 14.1, 13.1 ms at ticks 0, 120, 60, 180, 240). Explained: the contact layout is two blocks that start in range, so every unit fires on the same 60-tick reload cadence; the volley ticks are `combat_fire` (damage, death handling) over all armed units, and the cost falls as units die (alive_end 24). It is a synchronised-volley spike by design of the layout, not a rescan or a stray outlier. Not fixed (report-only row, no code changed).
+
+### C. Release export (item 9)
+
+`GODOT_BIN=godot sh tools/export_build.sh "macOS Bench" ...` from git archives of 20a4d06 and HEAD; export templates 4.7.2.stable match the editor (4.7.2.stable.official), exit 0 for both. The binary is `WargridBench.app/Contents/MacOS/Wargrid`; the run prints `debug_build=false`; the editor `bench_runner.gd` run prints `debug_build=true`. Per round: release 20a4d06, release HEAD, editor HEAD (the three-way A B A B A B). Median of 3, ms (spread at most 0.03 on p95):
+
+| Row p95 (p99) | release 20a4d06 | release HEAD | editor HEAD | release / editor (HEAD) |
+|---|---|---|---|---|
+| movement open | 1.340 (1.490) | 1.266 (1.370) | 1.521 (1.660) | 0.83 (0.83) |
+| movement dense | 1.325 (1.506) | 1.256 (1.425) | 1.499 (1.695) | 0.84 (0.84) |
+| combat open | 2.231 (2.948) | 1.521 (1.813) | 1.866 (2.209) | 0.82 (0.82) |
+| combat dense | 2.504 (3.722) | 1.464 (1.710) | 1.802 (2.113) | 0.81 (0.81) |
+| combat contact | 0.985 (1.433) | 0.936 (1.322) | 1.152 (1.601) | 0.81 (0.83) |
+| combat skirmish3v3 | 1.180 (1.329) | 1.072 (1.198) | 1.298 (1.459) | 0.83 (0.82) |
+| team match (profiler on) | 1.167 (2.399) | 1.067 (2.365) | 1.305 (2.859) | 0.82 (0.83) |
+
+Max (ms): team match 9.55 / 9.52 / 10.25, contact 9.67 / 9.05 / 11.26. Release builds are 17-19 % faster than the editor build (matches the 2026-11-06 18-20 %), and the HEAD gains over 20a4d06 carry into the release build (combat open p95 -32 %, dense -42 %). The bench runner (30-tick chunks, `snapshot()` untimed) reproduces the benchmark scripts within about 2 %.
+
+### D. Re-baseline 20a4d06 (A) vs HEAD (B), `bench_ab.sh` 3 rounds A B A B A B, editor build
+
+median of 3 (A/A spread across the 3 runs in brackets), ms; verdict is the tool's (delta against the larger spread):
+
+| Row | p50 A -> B | p95 A -> B | p99 A -> B | max A -> B |
+|---|---|---|---|---|
+| movement open | 1.525 -> 1.443 | 1.617 (0.049) -> 1.519 (0.010) faster | 1.824 -> 1.659 | 4.86 -> 4.92 noise |
+| movement dense | 1.535 -> 1.447 | 1.597 (0.086) -> 1.507 (0.022) faster | 1.819 (1.700, one outlier) -> 1.696 noise | 5.04 -> 4.99 noise |
+| combat open | 1.551 -> 1.217 | 2.751 (0.035) -> 1.868 (0.021), -0.883 | 3.656 -> 2.204, -1.452 | 4.65 -> 3.00 |
+| combat dense | 1.194 -> 1.022 | 3.083 (0.042) -> 1.808 (0.013), -1.275 | 4.626 -> 2.107, -2.519 | 5.80 -> 3.23 |
+| combat hordes300 | 3.818 -> 1.942 | 5.552 (0.093) -> 2.838 (0.039), -2.714 | 7.048 -> 3.371 (B spread 0.657), -3.677 | 9.72 -> 7.56 |
+| lockstep overhead | 0.009 -> 0.009 | 0.016 -> 0.016 | 0.067 -> 0.066 | 0.162 -> 0.161 |
+| team match (profiler on) | 0.571 -> 0.550 | 1.409 (0.010) -> 1.308 (0.003) | 2.892 -> 2.855 | 10.39 -> 10.26 |
+
+`combat_work` IDENTICAL for open, dense and hordes300 in all runs. hordes300: `alive_start=400 alive_end=292` on both trees in the editor, i.e. enemies exist on both (the `f371616` workload fix matters only when asserts are stripped, in a release build, where the 20a4d06 workload spawned no enemies; the Task 6 release rows above do not include hordes300, so no release comparison exists for that row). Team match cap line on all 6 runs. Lockstep p99 0.066-0.070 against the 0.6 limit, `PASS` on all 6.
+
+Worst of the 3 HEAD runs and +5 % (the existing ceiling rule), p95 / p99:
+
+| Row | worst p95 | +5 % | worst p99 | +5 % | current ceiling p95 / p99 |
+|---|---|---|---|---|---|
+| combat open | 1.878 | 1.97 | 2.204 | 2.31 | 3.05 / 4.23 |
+| combat dense | 1.810 | 1.90 | 2.140 | 2.25 | 3.31 / 5.01 |
+| combat hordes300 | 2.871 | 3.01 | 3.982 (one outlier run; the other two 3.325, 3.371) | 4.18 (3.54 without the outlier) | none |
+
+Recommendation input only (no ceiling changed): the open and dense ceilings sit about 55-75 % above the HEAD worst-of-3, so they no longer guard against a regression of less than that; tightening needs the user's approval and more than 3 runs.
+
+### E. `sh tools/run_benchmark.sh` on HEAD in the repo tree (docs uncommitted, no code change)
+
+Exit 0 (not 1: open 1.887 / 2.212 and dense 1.809 / 2.137 are above the 1.82 / 3.64 budget on p95 only but below their report-only ceilings, so `COMBAT STRESS PASS`), `BENCHMARK PASSED 2`, `COMBAT BENCHMARK PASSED 10`, `LOCKSTEP BENCHMARK PASSED 1` and `LOCKSTEP BUDGET PASS p99 0.066 ms` printed (the lockstep line is reached). movement open / dense p95 1.506 / 1.482, hordes300 2.840 / 3.301. Load 1.5-1.8.
+
+### Check on both trees
+
+`accept.sh 20a4d06` (working tree copy vs archive): suite CASES 487 / CHECKS 136046 / FAILURES 0 (base 482 / 136033), four replay traces cmp-identical, 7 pin lines equal, lint `Success: no problems found`, warnings 104 files, netplay match tick 8400, team match cap line: `ACCEPT: PASS`. No trace or pin differs between the archives.
