@@ -5,6 +5,9 @@ const RelayTransport = preload("res://scripts/net/relay_transport.gd")
 const Wire = preload("res://scripts/net/wire.gd")
 const OnlineScene = preload("res://scenes/online_skirmish.tscn")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
+const SoundPlayer = preload("res://scripts/presentation/sound_player.gd")
+const MusicPlayer = preload("res://scripts/presentation/music_player.gd")
+const VolumeSliders = preload("res://scripts/presentation/volume_sliders.gd")
 const SkirmishMain = preload("res://scripts/skirmish_main.gd")
 const OFFLINE_SCENE: String = "res://scenes/skirmish.tscn"
 const PLAY_MAP_PATH: String = "res://data/maps/dry_wells.json"
@@ -23,10 +26,20 @@ func _ready() -> void:
 			get_tree().change_scene_to_file.call_deferred("res://scenes/net_headless.tscn")
 			return
 	_fill_factions()
+	_add_audio()
 	$Center/Box/Offline.pressed.connect(_play_offline)
 	$Center/Box/Create.pressed.connect(_connect.bind(""))
 	$Center/Box/JoinRow/Join.pressed.connect(func() -> void: _connect($Center/Box/JoinRow/Code.text.strip_edges().to_upper()))
 	set_process(false)
+
+func _add_audio() -> void:
+	add_child(SoundPlayer.new(0))
+	var music := MusicPlayer.new()
+	add_child(music)
+	music.play_list([MusicPlayer.MENU], 0.0)
+	var sliders := VolumeSliders.new()
+	$Center/Box.add_child(sliders)
+	$Center/Box.move_child(sliders, _status.get_index())
 
 func _fill_factions() -> void:
 	var ids: Array = Registry.Factions.FACTIONS.keys()

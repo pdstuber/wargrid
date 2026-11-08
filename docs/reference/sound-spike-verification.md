@@ -5,13 +5,13 @@ Handoff: [sound-spike-prompt.txt](../sound-spike-prompt.txt). Plan: [sound spike
 ```text
 Resume record (updated 2026-11-08)
 Branch / base commit / working-tree state: spike-sound / base main 893332f (HEAD 1520b90) / clean after the ruling commit
-Last green task / next incomplete task: Task 5 done (uncommitted; Task 4 committed as 3ace0ea) / Task 6
-Changed paths since last commit: game/scripts/presentation/announcer.gd (new), sound_director.gd, sound_player.gd, game/tests/test_announcer.gd (new), run_tests.gd, this file
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, CASES 544 CHECKS 136465 FAILURES 0 (136472 with traces), exit 0, TESTS PASSED; lint, warnings (108 files) exit 0; traces identical
-Known red case or blocker: none. Online `rejected()` not wired (lockstep rejections carry no player and the sim result already gives the local error; see Task 4 section). Addendum for Task 6: mute button + key toggling Master (plan Task 6 addendum)
+Last green task / next incomplete task: Task 6 Steps 1-4 done (uncommitted; Task 5 committed as f7a7b62) / Task 6 Step 5 (Gate B windowed run, needs approval)
+Changed paths since last commit: game/scripts/presentation/audio_settings.gd, volume_sliders.gd, music_player.gd (new), pause_menu.gd, sound_player.gd, game/scripts/launcher.gd, skirmish_main.gd, game/tests/test_audio_settings.gd (new), test_online_scene.gd, test_pause_menu.gd, run_tests.gd, the sound spike spec Goals line, this file
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, CASES 552 CHECKS 136802 FAILURES 0, exit 0, TESTS PASSED; lint, warnings (110 files, new files checked by hand) exit 0; trace check not rerun (no sim change)
+Known red case or blocker: none. Online `rejected()` not wired (lockstep rejections carry no player and the sim result already gives the local error; see Task 4 section). Gate B Step 5 (windowed) and Step 6 (review) open
 Approved decisions, pre-authorizations used, deferred gates: Gate S passed (user, 2026-11-08); local commits after green checkpoints pre-authorized; no push, merge, window, install or fly without approval; Gate A passed (Max Rate off; MacLeod kept); Gate B and exit pending. Commit message for Task 3: 'Add the sound spike audio and credits'
 Usage so far (python3 tools/session_usage.py <session files>): not recorded
-Next exact action: commit Task 5 ("Add the announcer"), then dispatch Task 6
+Next exact action: commit Task 6 ("Add music and volume sliders"), then Gate B Step 5 with user approval
 ```
 
 ## Baseline and trace checks
@@ -53,3 +53,11 @@ Deviation: `online_main` does not call `rejected()` for lockstep rejections. The
 2026-11-08, tree: working tree on `spike-sound`, uncommitted. Tests were written after the implementation, so the red run is a mutation: with the base_under_attack and building_lost cooldowns removed, AN1 and AN2 failed (and four fixture bugs showed up in the same run until `Dictionary.merge(..., true)` was used). Green: suite CASES 544 CHECKS 136465 FAILURES 0, TESTS PASSED, exit 0 (16 new cases AN1 to AN16); lint exit 0; warnings exit 0 (108 files); Python unchanged. Trace check against `$SOUND_WORK/traces/base` (new run `traces/t5`, suite 136472 checks with traces): replay, economy, combat MATCHED 1200; team MATCHED 100; netplay `match` PASSED terminal tick 8400, s1 MATCHED 281.
 
 Notes: `Announcer` is preloaded, no `class_name`. The funds line comes from a failed own result (event tick) or `rejected()` (state tick on the next update); online `rejected()` stays unwired. `insufficient_funds` no longer gives the error beep. Tests use `Definitions` = `economy_definitions.gd` for FRC power data (AN12 checks every `frc_` building draws no power).
+
+## Task 6
+
+2026-11-08, tree: working tree on `spike-sound`, uncommitted. Red: suite stopped on parse errors (`audio_settings.gd` missing); after the files existed AS3 failed three checks (slider `value_changed` does not fire on a node outside the tree, so the test adds it to the root). Green: suite CASES 552 CHECKS 136802 FAILURES 0, TESTS PASSED, exit 0 (8 new cases AS1 to AS8; N5 and E8 extended; N5 passes at 1280x720 and 1920x1080 with the Volume grid); lint exit 0; warnings exit 0 (the new untracked files checked with `--check-only`, no output). Trace check not rerun: presentation only, no simulation file touched. Windowed Gate B (Step 5) not run.
+
+Mute addendum: `M` was free (`rg` over `project.godot` and `game/scripts`: B, E, U, A, S, 1-9, F3 used). The `Mute` toggle button sits in `VolumeSliders` (row "Master"), so launcher and Esc menu get it; `VolumeSliders._unhandled_input` handles `M`, so the key works in every scene that holds the sliders (match: the hidden pause menu; launcher too) and no other script references `AudioSettings` (a second preloader of it made `run_warnings.sh` report 23 resources still in use at exit). Session-only; AS7 and AS8 cover the button, the key, the settings file and the slider values.
+
+Deviations: `MusicPlayer` does not call `play()` under the headless display server (the suite otherwise exits with Ogg playbacks reported as leaked resources, which `run_tests.sh` treats as an error). `run_tests.gd` sets `AudioSettings.path` to a scratch file so the `SoundPlayer` start-up `apply` never reads a developer's real volumes; the unparsable-file case is not tested because Godot logs an `ERROR:` for it, which the suite wrapper fails on (a failed load already gives defaults). Online scenes inherit the match playlist from `skirmish_main`.

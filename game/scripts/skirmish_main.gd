@@ -3,6 +3,7 @@ extends "res://scripts/base_main.gd"
 const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 const View = preload("res://scripts/presentation/world_view.gd")
 const SoundPlayer = preload("res://scripts/presentation/sound_player.gd")
+const MusicPlayer = preload("res://scripts/presentation/music_player.gd")
 var _sound: SoundPlayer = null
 var _attack_move_mode: bool = false
 var inspected_id: int = -1
@@ -12,6 +13,9 @@ static var map_path: String = Skirmish.MAP_PATH
 func _ready() -> void:
 	super._ready()
 	$HUD/Restart.pressed.connect(_restart)
+	var music := MusicPlayer.new()
+	add_child(music)
+	music.play_list(MusicPlayer.PLAYLIST, MusicPlayer.GAP_SECONDS)
 
 func _create_simulation() -> Simulation:
 	return Skirmish.create(true, "ai", factions, map_path)

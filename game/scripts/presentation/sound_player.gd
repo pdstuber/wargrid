@@ -3,6 +3,7 @@ extends Node2D
 const SoundDirector = preload("res://scripts/presentation/sound_director.gd")
 const Announcer = preload("res://scripts/presentation/announcer.gd")
 const Cues = preload("res://scripts/presentation/sound_cues.gd")
+const AudioSettings = preload("res://scripts/presentation/audio_settings.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 const WORLD_VOICES := 25
 const UI_VOICES := 2
@@ -24,6 +25,7 @@ func _init(local_player: int) -> void:
 	director = SoundDirector.new(local_player)
 
 func _ready() -> void:
+	AudioSettings.apply(AudioSettings.load_volumes())
 	_voice.bus = &"Voice"
 	add_child(_voice)
 	for i in WORLD_VOICES:

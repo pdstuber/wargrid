@@ -1,6 +1,7 @@
 extends Control
 
 const UiStyle = preload("res://scripts/presentation/ui_style.gd")
+const VolumeSliders = preload("res://scripts/presentation/volume_sliders.gd")
 signal resume_requested
 signal leave_requested
 signal quit_requested
@@ -29,6 +30,7 @@ func _init(web: bool = OS.has_feature("web")) -> void:
 	_button(_main_box, "Back to main menu", _leave_pressed)
 	# The browser tab cannot be closed by the game.
 	if not web: _button(_main_box, "Quit", quit_requested.emit)
+	_main_box.add_child(VolumeSliders.new())
 	_confirm_box = _box(center)
 	_confirm_box.visible = false
 	var question := Label.new()

@@ -180,6 +180,14 @@ func test_menu_layout(runner) -> bool:
 		for path in ["HUD/Status", "HUD/Economy"]:
 			var control: Control = main.get_node(path)
 			hud.append(Rect2(control.global_position, control.get_combined_minimum_size()))
+		var sliders: Array = menu.find_children("*", "Range", true, false).filter(func(slider: Range) -> bool: return slider.is_visible_in_tree())
+		var labels: Array = menu.find_child("Volume", true, false).find_children("*Label", "Label", true, false)
+		runner.check(sliders.size() == 3 and labels.size() == 4, "E8 menu has 3 sliders and their labels, got %d and %d" % [sliders.size(), labels.size()])
+		for control: Control in sliders + labels:
+			var rect: Rect2 = control.get_global_rect()
+			runner.check(Rect2(Vector2.ZERO, Vector2(size)).encloses(rect), "E8 %s inside %s" % [control.name, size])
+			for other in hud: runner.check(not rect.intersects(other), "E8 %s clear of HUD text at %s" % [control.name, size])
+			for button: Control in buttons: runner.check(not rect.intersects(button.get_global_rect()), "E8 %s clear of %s at %s" % [control.name, button.name, size])
 		for i in buttons.size():
 			var rect: Rect2 = buttons[i].get_global_rect()
 			runner.check(Rect2(Vector2.ZERO, Vector2(size)).encloses(rect), "E8 button %d inside %s" % [i, size])

@@ -180,10 +180,11 @@ func test_launcher_layout(runner) -> bool:
 		await runner.process_frame
 		await runner.process_frame
 		var rects: Array[Rect2] = []
-		for path in ["Title", "Offline", "RelayUrl", "Create", "JoinRow/Code", "JoinRow/Join", "Status", "Legal"]:
+		for path in ["Title", "Offline", "RelayUrl", "Create", "JoinRow/Code", "JoinRow/Join", "Volume/MusicLabel", "Volume/Music", "Volume/EffectsLabel", "Volume/Effects", "Volume/VoiceLabel", "Volume/Voice", "Volume/MuteLabel", "Volume/Mute", "Status", "Legal"]:
 			var control: Control = launcher.get_node("Center/Box/" + path)
 			rects.append(control.get_global_rect())
 			runner.check(Rect2(Vector2.ZERO, Vector2(size)).encloses(control.get_global_rect()), "N5 %s inside %s" % [path, size])
+		runner.check(launcher.get_node("Center/Box").get_global_rect().encloses(launcher.get_node("Center/Box/Volume").get_global_rect()), "N5 Volume inside the box at %s" % size)
 		for i in rects.size():
 			for j in range(i + 1, rects.size()):
 				runner.check(not rects[i].intersects(rects[j]), "N5 controls %d and %d do not overlap at %s" % [i, j, size])

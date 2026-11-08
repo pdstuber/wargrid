@@ -1,0 +1,147 @@
+@warning_ignore_start("untyped_declaration")
+extends RefCounted
+
+const AudioSettings = preload("res://scripts/presentation/audio_settings.gd")
+const VolumeSliders = preload("res://scripts/presentation/volume_sliders.gd")
+const MusicPlayer = preload("res://scripts/presentation/music_player.gd")
+const PauseMenu = preload("res://scripts/presentation/pause_menu.gd")
+const Launcher = preload("res://scenes/launcher.tscn")
+const Skirmish = preload("res://scenes/skirmish.tscn")
+const SCRATCH := "user://test-settings.cfg"
+const REAL := "user://settings.cfg"
+
+func cases() -> Array[Callable]:
+	return [test_settings_missing_and_corrupt, test_settings_round_trip, test_slider_sets_bus_and_saves, test_tests_use_scratch_settings, test_playlist_order_and_gap, test_menu_track_repeats, test_mute_toggle, test_mute_key_in_match]
+
+func _begin() -> String:
+	var saved: String = AudioSettings.path
+	AudioSettings.path = SCRATCH
+	DirAccess.remove_absolute(SCRATCH)
+	return saved
+
+func _end(saved: String) -> void:
+	DirAccess.remove_absolute(SCRATCH)
+	AudioSettings.path = saved
+	AudioSettings.apply(AudioSettings.DEFAULTS)
+	AudioServer.set_bus_mute(0, false)
+
+func _write(values: Dictionary) -> void:
+	var config := ConfigFile.new()
+	for key: String in values: config.set_value(AudioSettings.SECTION, key, values[key])
+	config.save(SCRATCH)
+
+func test_settings_missing_and_corrupt(runner) -> bool:
+	var saved := _begin()
+	var volumes: Dictionary = AudioSettings.load_volumes()
+	runner.check(volumes.music == 1.0 and volumes.effects == 1.0 and volumes.voice == 1.0, "AS1 music default 1.0, got %s" % [volumes])
+	_write({"music": "loud", "voice": 3.0, "effects": -1.0})
+	volumes = AudioSettings.load_volumes()
+	runner.check(volumes.music == 1.0, "AS1 non-number gives 1.0, got %s" % volumes.music)
+	runner.check(volumes.voice == 1.0, "AS1 3.0 clamps to 1.0, got %s" % volumes.voice)
+	runner.check(volumes.effects == 0.0, "AS1 -1.0 clamps to 0.0, got %s" % volumes.effects)
+	_end(saved)
+	return true
+
+func test_settings_round_trip(runner) -> bool:
+	var saved := _begin()
+	var config := ConfigFile.new()
+	config.set_value("audio", "other", 7)
+	config.set_value("video", "scale", 2)
+	config.save(SCRATCH)
+	AudioSettings.save_volumes({"music": 0.25, "effects": 0.5, "voice": 0.75})
+	var volumes: Dictionary = AudioSettings.load_volumes()
+	runner.check(volumes.music == 0.25 and volumes.effects == 0.5 and volumes.voice == 0.75, "AS2 volumes load back, got %s" % [volumes])
+	config = ConfigFile.new()
+	config.load(SCRATCH)
+	runner.check(config.get_value("audio", "other", 0) == 7 and config.get_value("video", "scale", 0) == 2, "AS2 unrelated keys and sections survive")
+	_end(saved)
+	return true
+
+func test_slider_sets_bus_and_saves(runner) -> bool:
+	var saved := _begin()
+	var sliders := VolumeSliders.new()
+	runner.root.add_child(sliders)
+	runner.check(not FileAccess.file_exists(SCRATCH), "AS3 constructing sliders writes nothing")
+	var index: int = AudioServer.get_bus_index("Music")
+	sliders.get_node("Music").value = 0.5
+	runner.check(absf(AudioServer.get_bus_volume_db(index) - linear_to_db(0.5)) < 0.01, "AS3 Music 0.5 sets the bus, got %s" % AudioServer.get_bus_volume_db(index))
+	runner.check(AudioSettings.load_volumes().music == 0.5, "AS3 slider change is saved")
+	sliders.get_node("Music").value = 0.0
+	runner.check(AudioServer.is_bus_mute(index), "AS3 0 mutes the bus")
+	sliders.free()
+	_end(saved)
+	return true
+
+func test_tests_use_scratch_settings(runner) -> bool:
+	var before: int = FileAccess.get_modified_time(REAL) if FileAccess.file_exists(REAL) else 0
+	var launcher = Launcher.instantiate()
+	runner.root.add_child(launcher)
+	var menu := PauseMenu.new()
+	runner.root.add_child(menu)
+	await runner.process_frame
+	var saved := _begin()
+	menu.find_child("Music", true, false).value = 0.4
+	_end(saved)
+	var after: int = FileAccess.get_modified_time(REAL) if FileAccess.file_exists(REAL) else 0
+	runner.check(before == after, "AS4 real settings file untouched (%d to %d)" % [before, after])
+	launcher.free()
+	menu.free()
+	return true
+
+func test_playlist_order_and_gap(runner) -> bool:
+	var player := MusicPlayer.new()
+	player.play_list(MusicPlayer.PLAYLIST, MusicPlayer.GAP_SECONDS)
+	runner.check(player.track_index() == 0 and not player.waiting(), "AS5 starts on track 0")
+	player.finished.emit()
+	runner.check(player.waiting(), "AS5 waits after finished")
+	player.advance(24.9)
+	runner.check(player.waiting() and player.track_index() == 0, "AS5 still waiting at 24.9 s")
+	player.advance(0.2)
+	runner.check(player.track_index() == 1 and not player.waiting(), "AS5 next track after 25 s, got %d" % player.track_index())
+	for i in 4:
+		player.finished.emit()
+		player.advance(25.0)
+	runner.check(player.track_index() == 0, "AS5 wraps after the fifth track, got %d" % player.track_index())
+	player.free()
+	return true
+
+func test_menu_track_repeats(runner) -> bool:
+	var player := MusicPlayer.new()
+	player.play_list([MusicPlayer.MENU], 0.0)
+	player.finished.emit()
+	player.advance(0.0)
+	runner.check(player.track_index() == 0 and not player.waiting(), "AS6 menu track repeats at once")
+	player.free()
+	return true
+
+func test_mute_toggle(runner) -> bool:
+	var saved := _begin()
+	var sliders := VolumeSliders.new()
+	var mute: Button = sliders.get_node("Mute")
+	mute.button_pressed = true
+	runner.check(AudioServer.is_bus_mute(0), "AS7 Mute button mutes Master")
+	mute.button_pressed = false
+	runner.check(not AudioServer.is_bus_mute(0), "AS7 second toggle restores Master")
+	runner.check(not FileAccess.file_exists(SCRATCH), "AS7 mute is not saved")
+	runner.check(AudioSettings.load_volumes().music == 1.0 and not AudioServer.is_bus_mute(AudioServer.get_bus_index("Music")), "AS7 slider values untouched")
+	sliders.free()
+	_end(saved)
+	return true
+
+func test_mute_key_in_match(runner) -> bool:
+	var main = Skirmish.instantiate()
+	runner.root.add_child(main)
+	main.set_process(false)
+	main.set_physics_process(false)
+	await runner.process_frame
+	var event := InputEventKey.new()
+	event.physical_keycode = KEY_M
+	event.keycode = KEY_M
+	event.pressed = true
+	main.find_child("Volume", true, false)._unhandled_input(event)
+	runner.check(AudioServer.is_bus_mute(0), "AS8 M mutes Master in a match")
+	main.find_child("Volume", true, false)._unhandled_input(event)
+	runner.check(not AudioServer.is_bus_mute(0), "AS8 M again restores Master")
+	AudioServer.set_bus_mute(0, false)
+	main.free()
+	return true
