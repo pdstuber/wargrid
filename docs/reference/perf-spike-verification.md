@@ -4,14 +4,14 @@ Handoff: [performance-spike-prompt.txt](../performance-spike-prompt.txt). Ledger
 
 ```text
 Resume record (updated 2026-11-08)
-Branch / base commit / working-tree state: perf-spike / HEAD 10c524e / clean before Task 5e; Task 5e edits docs and `game/tests/test_benchmark.gd` (BM10 label) only, uncommitted. Nothing pushed, not merged
-Last green task / next incomplete task: Workstreams 1-5 done (5a, 5b, 5d done; 5c skipped as a coordinator decision, see '5b result'); Task 5e write-up done (performance.md 'Post-M7 performance spike (2026-11)') / the user's ultra review, then the Steam Deck F = 5.5 re-check with the user (native and Firefox), then the user decides merge
-Changed paths since last commit: docs/reference/perf-spike-verification.md, docs/reference/performance.md, README.md, AGENTS.md, game/tests/test_benchmark.gd (label BM9 -> BM10)
-Last command / cases / checks / failures / exit / marker: Task 5e acceptance on HEAD 10c524e plus the label edit, see the 5e evidence row (suite, lint, warnings, netplay match, team match); then Task 6 jobs A-E (HEAD 003e66c, scratch `ws6`, docs only changed): all exit 0, `accept.sh 20a4d06` PASS, `run_benchmark.sh` exit 0, see '6 results'
-Known red case or blocker: none. Report-only rows exceeded: combat open, dense, hordes300 (no budget or ceiling changed). 2i BLOCKED (no fix above the A/A spread). R1 not reproduced at load up to 2.8, cause unproven
-Approved decisions, pre-authorizations used, deferred gates: user invoked the spike 2026-11-07; local commits after green checkpoints pre-authorized; no push/PR/merge/fly/Sprite/window without approval; host = this Mac only (user). Decisions of 2026-11-07 evening: BM6 retune approved together with 2e; 2f approved with a version bump and a ZH AIUpdate comparison; second round for 2d and per-cell enemy counts; hordes300 "improved, still exceeded" is acceptable; C++/GDExtension NOT investigated (user decision); threads PoC local first, fly web deploy allowed for the threaded-web test only (done, rolled back), Safari failure is not a blocker, a Chromium-based browser is acceptable for the Chrome check; Steam Deck check pending with the user
+Branch / base commit / working-tree state: perf-spike / HEAD 4082b29 (game/tools identical to f919d70) / wrap-up task C docs uncommitted (performance.md, this file, README, AGENTS). Nothing pushed, not merged
+Last green task / next incomplete task: Workstreams 1-5, Task 6 (Mac re-baseline), Deck native (7) and Deck web (9), Task 10 (pow, P1, P2), Mac web and final F (11), quiet batch n 13 + rendered (12), T1b, T3 proposal table and T6 write-up done / T7 gate review + T9 deliverable check (fresh agent, read-only), then the user confirms the T3 numbers and decides the open rows (U0), optional T8 applies the approved values, then the user's ultra review and merge decision
+Changed paths since last commit: docs/reference/perf-spike-verification.md, docs/reference/performance.md, README.md, AGENTS.md
+Last command / cases / checks / failures / exit / marker: quiet batch `ws12/t2.sh all` on 6cbc84a: `run_benchmark.sh` exit 0 with all PASS lines and the lockstep line, 24 sample runs exit 0, `COMBAT_WORK IDENTICAL`, rendered `RENDERED BENCHMARK PASSED 4` x4, guard-0.1 run exit 1 as required; Task 10 `accept.sh f1b4c6f` PASS (suite 490 / 136051 / 0 failures); see '12 results' and '10 results'
+Known red case or blocker: none. Report-only rows exceeded on the dev machine: combat open (median p95 1.889 of 13), hordes300 (2.852); dense at the line (median 1.811, one run 2.509). Five rows have p95 spread > 10 % in the n 13 batch (one or two runs each), shown in the T3 table, not stopped by coordinator decision. 2i BLOCKED. R1 not reproduced, cause unproven. F: browser 5.02-5.21 on the sim rows, 5.5 retained pending the user
+Approved decisions, pre-authorizations used, deferred gates: user invoked the spike 2026-11-07; local commits after green checkpoints pre-authorized; no push/PR/merge/fly/Sprite/window without approval; host = this Mac only (user). Decisions of 2026-11-07 evening: BM6 retune approved together with 2e; 2f approved with a version bump and a ZH AIUpdate comparison; second round for 2d and per-cell enemy counts; hordes300 "improved, still exceeded" is acceptable; C++/GDExtension NOT investigated (user decision); threads PoC local first, fly web deploy allowed for the threaded-web test only (done, rolled back), Safari failure is not a blocker, a Chromium-based browser is acceptable for the Chrome check; Steam Deck check done 2026-11-08 (native and Firefox). Wrap-up 2026-11-08 (relayed by the coordinator): the user approved the default T3 proposals as tightenings / promotions only (not yet applied; values looser than today are marked 'needs the user's decision'); scaling sweep, memory proxy and P3 probe cut to remaining work
 Usage so far (python3 tools/session_usage.py <session files>): not recorded
-Next exact action: user runs the ultra review of branch perf-spike; then the Steam Deck F = 5.5 re-check with the user (ledger how-to); merge and push only on the user's word
+Next exact action: T7 + T9 review (fresh, read-only); then the user confirms the T3 numbers and decides the rows marked 'needs the user's decision' (U0) in performance.md 'Gate proposals (T3)'; optional T8 applies them on a quiet host; then the user's ultra review; merge and push only on the user's word
 ```
 
 ## Evidence
@@ -43,6 +43,10 @@ Next exact action: user runs the ultra review of branch perf-spike; then the Ste
 | 2026-11-08 | f371616 (enemy spawns out of asserts in `combat_workload.gd`, new case BM10) acceptance, run on HEAD 10c524e plus the BM9 -> BM10 label edit in `test_benchmark.gd` and docs | Apple M6 | Task 5e: `sh tools/run_tests.sh`, `run_lint.sh`, `run_warnings.sh`, `run_netplay.sh match`, `run_team_match.sh`, one Godot process at a time | suite CASES 487 / CHECKS 136039 / FAILURES 0 (same 487 cases as the 5b base; 136039 without the trace variables); lint `Success: no problems found`; warnings 104 files exit 0; netplay match terminal tick 8400 `NETPLAY PASSED`; team match exit 0 `TEAM MATCH cap tick=45000 winner=null units_peak=160`; load 1.65 start / 1.49 end |
 | 2026-11-08 | HEAD 003e66c (git archive) vs 20a4d06, scratch `ws6` | Apple M6, headless | Task 6 jobs A-E: team match profiler off/on, contact max series, macOS Bench release export, full re-baseline, `run_benchmark.sh`; one Godot process at a time, pgrep empty and load <= 2.5 before each run | all exit 0; `accept.sh 20a4d06` PASS (suite 487 / 136046 / 0 failures vs base 482 / 136033, 4 traces cmp-identical, 7 pins equal, netplay tick 8400, team cap line); `run_benchmark.sh` exit 0; load 1.2-2.2; see '6 results' |
 | 2026-11-08 | 6cbc84a (docs-only child of f919d70; `git diff --stat f919d70 HEAD -- game tools` empty), git archive in scratch `ws12/tree` | Apple M6, headless then rendered | Wrap-up quiet batch `ws12/t2.sh all`: `run_benchmark.sh` once, 12 x (`run_combat.gd` + `run_movement.gd`) = n 13 per row, 2 plain + 2 `--profile` rendered Ashfall runs, 1 failing-direction run (guard 0.1 in the scratch copy), one Godot process at a time, pgrep empty and load <= 2.5 at every start (guard) | all 26 headless jobs (import, bench, 24 sample runs) exit 0; `run_benchmark.sh` exit 0, `BENCHMARK PASSED 2`, `COMBAT BENCHMARK PASSED 10`, `LOCKSTEP BENCHMARK PASSED 1`, `LOCKSTEP BUDGET PASS` p99 0.072; `COMBAT_WORK IDENTICAL`; render runs all `RENDERED BENCHMARK PASSED 4`; guard-0.1 run exit 1 as required; load 1.54-2.96 over START/END lines (2.96 and 2.64 are end-of-job readings after a job, next start waited for <= 2.5); see '12 results' |
+| 2026-11-08 | logs of 003e66c (Mac editor, Job C/D), 70fa93d (Deck native), f1b4c6f export (Deck and Mac Firefox); game code identical | Apple M6, CPU-light (no Godot) | Wrap-up (a): final F recomputed from the raw logs, all four ratios; F wording in sections 9 and 11 corrected (Deck FF ÷ Mac FF is diagnostic, not F) | browser F (Deck FF ÷ Mac editor) 5.02-5.21 sim rows, 6.20-6.55 old movement rows; native F 3.50-4.37; equal to the wrap-up plan's table to 0.01; F 5.5 retained (user decides); see '11 results' |
+| 2026-11-08 | Job A logs, 003e66c | Apple M6, CPU-light | T1b: team-match zones, median of 3; tick offset checked in `run_team_match.gd` (profile tick = loop tick - 300) | worst tick 5730 = profile 5430: `step` 7.30-7.42 ms, `step.service_paths` 6.18-6.30 (A* burst); two re-pin ideas recorded as questions; see 'T1b team-match zones' |
+| 2026-11-08 | ws12 logs, 6cbc84a | Apple M6, CPU-light | T2 ceiling inputs: median, p75 / p90 of the 13 p95s, worst and second-worst + 5 %, outlier runs with load | spread > 10 % on five rows, each from one or two runs (combat-3 sets dense and contact); not stopped by coordinator decision; see '12 results' |
+| 2026-11-08 | 4082b29 + uncommitted docs | Apple M6, CPU-light | T3 proposal table and T6 write-up refresh (`performance.md`, this file, README, AGENTS) | proposals only, no constant in `game/` or `tools/` changed; see `performance.md` 'Gate proposals (T3)' |
 
 ## Workstream 1 finding (baseline, 2026-11-07, 20a4d06, Apple M6, 3 runs each)
 
@@ -690,7 +694,7 @@ Directory `/private/tmp/claude-501/-Users-pdstuber-projects-wargrid/f3d3e9b0-7fe
 - Discarded runs: (1) first run, tainted: Firefox showed its first-run terms popup and the user clicked Accept during it. (2) First attempts of runs 2 and 3, contaminated: Firefox instances of the earlier runs survived `systemctl --user stop` and kept running (load 2.1 and 4.1, p95 about 8 % higher, e.g. movement open 10.62 / 10.84 vs 9.88-9.98); the script now kills its profile's Firefox. Runs 2 and 3 were redone clean after killing only my own pids. The kept runs 1-3 had no click and no leftover Firefox.
 - Deck Firefox median of 3 clean runs, ms (p95 range in brackets):
 
-| Row | p50 | p95 | p99 | max | Mac Firefox p95 (5a, provisional) | F p95 (provisional) |
+| Row | p50 | p95 | p99 | max | Mac Firefox p95 (5a, provisional) | Deck FF ÷ Mac FF 5a (diagnostic, not F) |
 |---|---|---|---|---|---|---|
 | movement open | 7.64 | 9.96 [9.88-9.98] | 11.26 | 25.22 | n/a | n/a |
 | movement dense | 7.74 | 9.30 [9.26-9.52] | 9.94 | 25.14 | n/a | n/a |
@@ -701,7 +705,7 @@ Directory `/private/tmp/claude-501/-Users-pdstuber-projects-wargrid/f3d3e9b0-7fe
 | hordes300 | 10.20 | 14.54 [14.52-14.92] | 17.04 | 38.58 | 4.02 | 3.62 |
 | team match (45000 ticks, cap) | 2.94 | 6.80 [6.80-6.92] | 15.02 | 40.64 | n/a | n/a |
 
-- F is provisional: the Mac numbers are the 5a Firefox no-threads arm (base 3ff3d07 plus scratch patch, before f371616 and later speed-ups), not a Mac run of this build; no Firefox was opened on the Mac. Rows marked n/a have no comparable Mac web number (5a reports combat open, dense and hordes300 in the table; other rows only as percentages). A final web F needs a Mac Firefox run of this export (needs the user's OK for one window). Provisional F 2.8-3.6, below 5.5 (2026-11-06 browser F was 5.0-5.4).
+- The last column is NOT F (corrected 2026-11-08 wrap-up). The ledger defines F as row ÷ Mac **editor** build ([target factor measurement](performance.md#target-factor-measurement-2026-11-06)); F = 5.5 is the browser F, Deck Firefox ÷ Mac editor. Deck Firefox ÷ Mac Firefox is a web-to-web ratio, diagnostic only, and must not be used to derive budgets. Its Mac numbers here are also the 5a Firefox no-threads arm (base 3ff3d07 plus scratch patch, before f371616 and later speed-ups), not a Mac run of this build. Rows marked n/a have no comparable 5a number. The browser F of this export, against the Task 6 Mac editor runs on the same game tree, is 5.02-5.21 on the sim rows and 6.20-6.55 on the old movement rows: see [11 results](#11-results-mac-web-2026-11-08-f1b4c6f-web-bench-export-single-threaded).
 - Against 2026-11-06 Deck Firefox p95: combat open 11.86 -> 9.70, dense 13.32 -> 9.26, contact 5.04 -> 5.78 (+15 %), skirmish3v3 6.02 -> 6.64 (+10 %), team 12.74 -> 6.80, movement 8.54 / 8.58 -> 9.96 / 9.30 (+17 % / +8 %). Against budgets (10 / 20 ms) every row passes on p95 except `hordes300` (14.5, report-only); team p99 15.0, worst ticks 40.6 (team), 58.5 (contact), 38.6 (hordes300), about one to two 33.3 ms ticks.
 - Cleanup: Deck `~/wargrid-f9` (build, profiles, results, units) removed, own Firefox pids killed, no wg9 units left; Mac: nothing to clean beyond scratchpad `ws9`. Raw logs were only in `~/wargrid-f9/res*`, deleted with the folder; the tables above are the record.
 
@@ -796,9 +800,9 @@ The change is about -0.8 to -1.0 ms p95, larger than the 0.7 ms estimate; the A 
 
 Firefox 159 on this Mac (Apple M6), `cross_origin_isolated=1` in every result, fresh copy of one terms-accepted profile per run, same export, rows and `bench_runner` window as the Deck web runs in section 9 (hordes300 added to the runner list in the scratch copy only). Runs 1-3 via `ws11/run2.sh N` (server answers 200 with COOP/COEP before Firefox starts; Firefox re-activated every 5 s, `lsappinfo front` logged). Run 1: front app changed once in 21 samples (re-activated within 5 s); runs 2 and 3: Firefox front in all 21. Load 2.0-2.6 at the samples (borderline against the 2.5 rule; the p95s agree within 1-2 % except two outliers below).
 
-Mac web p95 ms (runs 1 / 2 / 3, median) and final web F = Deck Firefox median p95 / Mac median p95:
+Mac web p95 ms (runs 1 / 2 / 3, median) and Deck Firefox median p95 ÷ Mac Firefox median p95 (a web-to-web ratio, diagnostic only, NOT the ledger's F; corrected 2026-11-08 wrap-up, F table below):
 
-| Row | Mac web p95 | Median | Deck web p95 | F |
+| Row | Mac web p95 | Median | Deck web p95 | Deck FF ÷ Mac FF |
 |---|---|---|---|---|
 | movement open | 2.48 / 2.44 / 2.42 | 2.44 | 9.96 | 4.08 |
 | movement dense | 2.38 / 2.34 / 2.34 | 2.34 | 9.30 | 3.97 |
@@ -809,7 +813,25 @@ Mac web p95 ms (runs 1 / 2 / 3, median) and final web F = Deck Firefox median p9
 | hordes300 | 4.12 / 4.02 / 4.06 | 4.06 | 14.54 | 3.58 |
 | team match | 1.92 / 1.86 / 1.86 | 1.86 | 6.80 | 3.66 |
 
-Every web F is below 5.5 (3.5-4.1). Outliers kept in the medians: combat open run 3 (3.34) and contact run 1 (2.54), one run each, medians unaffected. Discarded before these runs: the terms dialog over the bench tab (one user click on Continue, warm-up), a launch where Firefox was not the front app, two false starts with wrong server paths (404 / server not started). Mac web numbers are Firefox, editor-independent web build; the Mac editor/native F in section 7 is a separate measurement. Raw logs: scratchpad `ws11/r1..r3`.
+Deck FF ÷ Mac FF is 3.5-4.1. That is not F and is no basis for loosening a budget: dividing the 10 / 20 ms targets by it would loosen every budget by 35-50 % through a definition error. Outliers kept in the medians: combat open run 3 (3.34) and contact run 1 (2.54), one run each, medians unaffected. Discarded before these runs: the terms dialog over the bench tab (one user click on Continue, warm-up), a launch where Firefox was not the front app, two false starts with wrong server paths (404 / server not started). Mac web numbers are Firefox, editor-independent web build; the Mac editor/native F in section 7 is a separate measurement. Raw logs: scratchpad `ws11/r1..r3`.
+
+### Final F (2026-11-08 wrap-up, recomputed from the raw logs, CPU-light)
+
+F as the ledger defines it: row ÷ Mac **editor** build, same game tree. `git diff --stat` over `game` is empty for 003e66c = 70fa93d = f1b4c6f, so the Mac editor runs (Task 6 Job C `bench_runner.gd`, `ws6/runs/C/ed.HX.{1,2,3}.log`, median of 3; hordes300 from Job D `run_combat.gd`, median of 3), the Deck native runs (section 7), the Deck Firefox runs (section 9) and the Mac Firefox runs above all run the same simulation. Every value below was recomputed from those logs and equals the wrap-up plan's table to 0.01. p95 ms:
+
+| Row | Mac editor | Mac Firefox | Deck native | Deck Firefox | **browser F** = Deck FF ÷ Mac editor | native F = Deck native ÷ Mac editor | Deck FF ÷ Mac FF (diagnostic) | Mac FF ÷ Mac editor |
+|---|---|---|---|---|---|---|---|---|
+| movement open (pre-P1 harness, includes a snapshot per tick) | 1.521 | 2.44 | 6.566 | 9.96 | **6.55** | 4.32 | 4.08 | 1.60 |
+| movement dense (pre-P1 harness) | 1.499 | 2.34 | 6.544 | 9.30 | **6.20** | 4.37 | 3.97 | 1.56 |
+| combat open | 1.866 | 2.68 | 6.869 | 9.70 | **5.20** | 3.68 | 3.62 | 1.44 |
+| combat dense | 1.802 | 2.56 | 6.614 | 9.26 | **5.14** | 3.67 | 3.62 | 1.42 |
+| combat contact | 1.152 | 1.64 | 4.030 | 5.78 | **5.02** | 3.50 | 3.52 | 1.42 |
+| combat skirmish3v3 | 1.298 | 1.86 | 4.577 | 6.64 | **5.12** | 3.53 | 3.57 | 1.43 |
+| hordes300 | 2.838 | 4.06 | 10.658 | 14.54 | **5.12** | 3.76 | 3.58 | 1.43 |
+| team match (profiler on) | 1.305 | 1.86 | 4.780 | 6.80 | **5.21** | 3.66 | 3.66 | 1.43 |
+
+- Budgets use the browser F (user decision 2026-11-06: the browser is a target). It is 5.02-5.21 on the sim rows (2026-11-06: 4.98-5.28, inside that measurement's ±5 % caveat) and 6.20-6.55 on the old movement rows, where snapshot and allocation work scale worse in WASM (Mac FF ÷ editor 1.56-1.60 against 1.42-1.44). Native F 3.50-4.37. **F stays 5.5**: the browser sits near it on the sim rows and above it on the movement rows, so a lower F has no basis; any change is the user's.
+- Direct target verdict (Deck Firefox p95 against 10 ms): every row passes except hordes300 (14.54). Margins are thin: combat open 9.70 (3 %), movement open 9.96 (0.4 %, measured before P1 removed the harness snapshot from that row). The F of the post-P1 sim-only movement row is unmeasured: no Deck run of HEAD exists.
 
 
 ## 12 results (2026-11-08, HEAD 6cbc84a, Apple M6, quiet batch)
@@ -839,9 +861,34 @@ COMBAT_WORK IDENTICAL
 
 Rows with p95 spread above 10 % of the median p95 (task C's stop rule): movement open 35.0 %, movement dense 50.3 %, combat dense 40.7 %, contact 16.7 %, docks 57.5 %. Each comes from a few slow runs inside the 13 (worst p95 against the median). The movement rows measure sim only since P1; the 20a4d06 and Task 10 numbers are not comparable.
 
+### Ceiling inputs: distribution of the 13 p95s and the outlier runs (wrap-up T3 input, CPU-light)
+
+Recomputed from the 25 logs (`bench.log`, `combat-1..12.log`, `movement-1..12.log`; scratch script `c13/pct.py`, linear-interpolated percentiles; its medians and worst values equal the summary above). The stop rule "p95 spread > 10 %" trips on five rows; by the coordinator's decision the proposals go ahead with these numbers shown, and the user decides. "Trimmed" = second-worst run + 5 %. Runs whose p95 is more than 10 % above the median are named with the load (1-min average) at their START / END line in `notes.log`.
+
+| Row | median p95 | p75 / p90 of the 13 p95s | worst p95 (run) | 2nd worst | worst + 5 % | trimmed | median p99 | worst p99 (run) | worst p99 + 5 % | trimmed p99 | outlier runs (load start / end) |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| movement open | 0.708 | 0.736 / 0.853 | 0.932 (movement-1) | 0.882 (movement-8) | 0.979 | 0.926 | 0.856 | 1.858 (movement-1) | 1.951 | 0.968 | movement-1 0.932 (2.32 / 2.27, 60 s after combat-1 ended at 2.96), movement-8 0.882 (1.69 / 2.03) |
+| movement dense | 0.686 | 0.695 / 0.734 | 1.021 (movement-8) | 0.741 (movement-3) | 1.072 | 0.778 | 0.890 | 1.209 (movement-8) | 1.269 | 1.054 | movement-8 1.021 (1.69 / 2.03) |
+| combat open | 1.889 | 1.900 / 1.961 | 1.999 (combat-6) | 1.971 (combat-2) | 2.099 | 2.070 | 2.240 | 2.458 (combat-6) | 2.581 | 2.498 | none |
+| combat dense | 1.811 | 1.817 / 1.833 | 2.509 (combat-3) | 1.835 (combat-5) | 2.634 | 1.927 | 2.136 | 3.756 (combat-3) | 3.944 | 2.263 | combat-3 2.509 (2.18 / 2.52) |
+| combat contact | 1.153 | 1.159 / 1.163 | 1.332 (combat-3) | 1.163 (combat-8) | 1.399 | 1.221 | 1.616 | 2.222 (combat-3) | 2.333 | 1.721 | combat-3 1.332 (2.18 / 2.52) |
+| combat skirmish3v3 | 1.304 | 1.314 / 1.318 | 1.324 (combat-2) | 1.318 (combat-10) | 1.390 | 1.384 | 1.461 | 1.499 (combat-2) | 1.574 | 1.551 | none |
+| combat hordes300 | 2.852 | 2.868 / 2.904 | 2.918 (combat-4) | 2.912 (combat-2) | 3.064 | 3.058 | 3.365 | 3.857 (combat-4) | 4.050 | 3.696 | none on p95 |
+| combat transports | 1.075 | 1.082 / 1.093 | 1.113 (combat-5) | 1.094 (combat-2) | 1.169 | 1.149 | 1.176 | 1.373 (combat-5) | 1.442 | 1.295 | none |
+| combat defences | 0.796 | 0.801 / 0.807 | 0.817 (combat-5) | 0.808 (combat-8) | 0.858 | 0.848 | 2.076 | 2.247 (combat-5) | 2.359 | 2.248 | none |
+| combat docks | 0.558 | 0.563 / 0.576 | 0.873 (combat-10) | 0.576 (combat-2) | 0.917 | 0.605 | 0.580 | 1.424 (combat-10) | 1.495 | 0.704 | combat-10 0.873 (2.19 / 2.21) |
+| combat ramp | 0.653 | 0.659 / 0.675 | 0.703 (combat-2) | 0.678 (combat-6) | 0.738 | 0.712 | 1.207 | 1.264 (combat-2) | 1.327 | 1.277 | none |
+| combat frc | 0.826 | 0.830 / 0.836 | 0.890 (combat-4) | 0.836 (combat-8) | 0.935 | 0.878 | 1.149 | 1.393 (combat-4) | 1.463 | 1.234 | none |
+
+- Every high spread comes from one or two runs; p90 of the 13 p95s stays within 4 % of the median on every combat row and within 7 % (dense) / 21 % (open) on movement. One run, combat-3 (load 2.18 at start, 2.52 at end, the highest end-of-job reading of a combat run except combat-1), sets both the dense and the contact worst. Load does not explain every outlier: movement-8 started at 1.69, and combat-1 (end 2.96) is no outlier. The cause is host noise not visible in the 1-min load average; not established further.
+- combat-10 `docks`: `snapshot_ms` p95 also rose (0.512 against 0.313 in combat-3), so the whole layout run was slowed, not one zone.
+- `combat_work` is identical across the 13 runs, so the outliers are timing, not workload.
+
 ### Rendered Ashfall, post-P1 (2 plain + 2 `--profile`, interleaved plain 1, profile 1, plain 2, profile 2; ms, n 2 per mode)
 
-Ashfall frame p95: plain 2.833 / 2.250, profiled 2.338 / 2.663; the guard of 3.3 passes in both modes. The earlier unprofiled 0.506 against profiled 2.89-3.02 gap is not reproduced here: the plain and profiled ranges overlap, so no profiler cost is shown (cause of the old gap: not established). The numbers are post-P1 and not comparable with R2. n 2 per mode: no gate follows from them.
+Ashfall frame p95: plain 2.833 / 2.250, profiled 2.338 / 2.663; the guard of 3.3 passes in both modes. The earlier unprofiled 0.506 against profiled 2.89-3.02 gap is not reproduced here: the plain and profiled ranges overlap, so no profiler cost is shown (cause of the old gap: not established). The 0.506 of the single earlier run is not reproduced: Ashfall passes the 3.04 ms budget by 0.21-0.79 ms (plain) and 0.38-0.70 ms (profiled), the 3.3 guard holds in both modes, and its failing direction is exercised (guard 0.1: exit 1 at 2.683). The numbers are post-P1 and not comparable with R2. n 2 per mode: no gate follows from them.
+
+Plumbing (ledger definition `snapshot` + `view.copy` + `view.sort`, profiled runs, one `snapshot` call per tick since P1): Ashfall 0.860-0.871 ms, open 0.875-0.891, dense 0.882-0.896, horde 1.207-1.226, large_196 1.294-1.314. That confirms the T10 P0 figures (0.87 / 0.88 / 1.21 / 1.30) without the harness's second snapshot: the movement layouts pass 0.91 by 0.01-0.05 ms, the combat layouts exceed it.
 
 ```
 group | row | n | p50 | p95 | p99 | max | p95 min-max | spread % of p95 | worst p95 +5 % | worst p99 +5 %
@@ -867,3 +914,31 @@ ASHFALL render-plain frame_p95_ms [2.833, 2.25]
 ASHFALL render-profile frame_p95_ms [2.338, 2.663]
 COMBAT_WORK IDENTICAL
 ```
+
+## T1b team-match zones
+
+Source: Task 6 Job A, arm A (unmodified `run_team_match.gd`, profiler on), `ws6/runs/A/H.{1,2,3}.log`, HEAD 003e66c via git archive, Apple M6 headless, load 1.22-2.19 at the run edges; all three end `TEAM MATCH cap tick=45000 winner=null units_peak=160`. CPU-light: logs read only, nothing run.
+
+Tick offset, verified in code: `run_team_match.gd` calls `_report("team_match.warmup")` when `sim.tick() == 300`, which `Profiler.reset()`s the tick counter and re-enables the profiler, so profile tick k is loop tick 300 + k. The arm-B worst tick 5730 (loop index, profiler off, `ws6/runs/A/Hm.*.log`) is profile tick 5430. The profile window is 44,700 ticks; `TEAM TIMING` covers all 45,000 and times `TeamMatch.step` (AI decisions plus `sim.step`), while the `step` zone is `sim.step` only.
+
+Median of 3 runs (ms; `Profiler.report` prints mean, p50, p95, max per tick, no p99):
+
+| Zone | mean | p95 | max (range of 3) | calls per tick |
+|---|---|---|---|---|
+| `step` (sim only) | 0.615 | 1.074 | 7.400 (7.300-7.419) | 1.00 |
+| `snapshot` (mostly the harness's per-tick snapshot, outside `TEAM TIMING`; plus the AI's every 30 ticks) | 0.334 | 0.515 | 1.085 (1.072-1.147) | 1.03 |
+| `opponent.decide` (every 30 ticks, all 6 seats in one tick) | 0.059 | 0.000 | 3.492 (3.463-3.661) | 0.03 |
+| `step.service_paths` | 0.012 | 0.054 | 6.271 (6.179-6.298) | 1.00 |
+| `route` (one per serviced path request, nested in `service_paths`) | 0.011 | 0.053 | 6.271 (6.174-6.292) | 0.37 |
+| `navigation.astar` (nested in `route`) | 0.007 | 0.028 | 5.983 (5.860-6.005) | 0.36 |
+| `step.apply_orders` | 0.002 | 0.002 | 5.703 (5.701-5.778) | 1.00 |
+| `allocation.assign` | 0.0003 | 0.000 | 0.154 (0.152-0.161) | 0.01 |
+
+For scale: `step.combat_plan` 0.241 / 0.435 / 1.964 and `step.advance` 0.182 / 0.352 / 0.555 carry the mean; the zones above carry the tail.
+
+Zone behind the worst tick: profile tick 5430 is the slowest `step` in every run (`PROFILE_SLOW` 7.30 / 7.42 / 7.40 ms), and `step.service_paths` is 6.18-6.30 ms of it. No single `route` or `astar` call reached the 1 ms slow threshold (none is in the slow list, whose cut-off is about 4.9 ms), while the per-tick maxima of `route` (6.17-6.29) and `navigation.astar` (5.86-6.01) match `service_paths` at that tick: a burst of path requests serviced in one tick (at most `PATH_REQUESTS_PER_TICK` = 8, `simulation.gd:18`), each a sub-millisecond A* on the 194x187 Ashfall grid. That last step is an inference from per-tick maxima; the per-zone value at tick 5430 is not printed. The wall tick is about 2.8 ms longer than the `step` zone (10.1-10.2 against 7.3-7.4): 5730 is a multiple of 30, so it is also an AI decision tick, and `opponent.decide` (max 3.46-3.66 ms) most likely fills the difference; its value at that tick is not in the top-10 slow list, so not established. Other slow ticks: 90 and 480 (`step.apply_orders` 5.6-5.7 ms, command ticks), 5104-5107 (5.5-6.1 ms).
+
+Questions for the user (each **moves traces, needs a decision**; not proposed as fixes):
+
+1. Stagger the AI seats: decide for one or two seats per tick instead of all six on every 30th tick, so a decision burst and its path requests do not land on one tick.
+2. A per-tick A* work budget: an expanded-node budget instead of (or under) the current count cap of 8 requests per tick, so 8 long Ashfall paths cannot cost 6 ms in one tick.
