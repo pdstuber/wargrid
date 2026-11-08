@@ -4,14 +4,14 @@ Handoff: [sound-spike-prompt.txt](../sound-spike-prompt.txt). Plan: [sound spike
 
 ```text
 Resume record (updated 2026-11-08)
-Branch / base commit / working-tree state: spike-sound / base main 893332f (HEAD fe3e8e2) / Task 3 changes uncommitted until the coordinator commits
-Last green task / next incomplete task: Task 3 Steps 1-8 done / Step 9 Gate A (coordinator dispatches the Opus review; user picks Max Rate per folder, default off)
+Branch / base commit / working-tree state: spike-sound / base main 893332f (HEAD 1520b90) / clean after the ruling commit
+Last green task / next incomplete task: Task 3 done, Gate A closed / Task 4 (fresh start; checkpoint restart)
 Changed paths since last commit: game/audio/** (23 files + .import + CREDITS.md), tools/test_audio_assets.py, .github/workflows/ci.yml, README.md, docs/reference/sound-spike.md, this file
 Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, CASES 508 CHECKS 136260 FAILURES 0, exit 0, TESTS PASSED; lint, warnings, python checks exit 0
-Known red case or blocker: none. Open for Task 4: `SoundDirector.update()` does not drain `_pending` yet, so SD1 passes only because nothing drains; Task 4 must rewrite SD1 to check the steps `update` actually consumed. MacLeod per-track licence: plan stop, user rules (see sound-spike.md, Licence sources)
-Approved decisions, pre-authorizations used, deferred gates: Gate S passed (user, 2026-11-08); local commits after green checkpoints pre-authorized; no push, merge, window, install or fly without approval; Gate A, B and exit pending. Commit message for Task 3: 'Add the sound spike audio and credits'
+Known red case or blocker: none. Open for Task 4: `SoundDirector.update()` does not drain `_pending` yet, so SD1 passes only because nothing drains; Task 4 must rewrite SD1 to check the steps `update` actually consumed. MacLeod licence ruled (keep, FAQ). Addendum for Task 6: mute button + key toggling Master (plan Task 6 addendum)
+Approved decisions, pre-authorizations used, deferred gates: Gate S passed (user, 2026-11-08); local commits after green checkpoints pre-authorized; no push, merge, window, install or fly without approval; Gate A passed (Max Rate off; MacLeod kept); Gate B and exit pending. Commit message for Task 3: 'Add the sound spike audio and credits'
 Usage so far (python3 tools/session_usage.py <session files>): not recorded
-Next exact action: commit, then Gate A (Step 9): Opus review of Tasks 1-3, user picks Max Rate per folder (web-1 vs web-2 sizes above)
+Next exact action: dispatch Task 4
 ```
 
 ## Baseline and trace checks
@@ -39,3 +39,5 @@ Checks: `test_audio_assets.py` red first (CREDITS.md missing), then 6 tests OK; 
 Gate S, passed (user, 2026-11-08): final effects, voice lines and processed music confirmed by ear. Files committed as heard (`$SOUND_WORK/gate-s`).
 
 Gate A, Max Rate (user, 2026-11-08): accepted the recommendation, Max Rate off for `sfx/` and `voice/` (pck 12,938,240 vs 12,742,288 bytes on; saving under 2 %). Voice A/B at Gate B.
+
+Gate A, MacLeod licence (user, 2026-11-08): keep Hitman and Stay the Course on the incompetech FAQ site-wide CC BY statement; per-track exceptions unverified. Gate A review (Opus): no Critical; Important items fixed in 1520b90 except SD1/drain, left to Task 4.
