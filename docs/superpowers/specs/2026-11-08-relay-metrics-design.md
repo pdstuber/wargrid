@@ -2,7 +2,7 @@
 
 Status: **APPROVED by the user 2026-11-08**. Small change; not a milestone. Scheduled after the CI work ([CI design](2026-11-08-ci-speed-and-updates-design.md)).
 
-Relay domain (user, 2026-11-08): `relay.pdstuber.dev` (CNAME at Namecheap by the user, `fly certs add` on `wargrid-relay-jvm`); the launcher default, README and release health check move to it, and `wargrid-relay-jvm.fly.dev` keeps serving released builds.
+Relay domain and app (user, 2026-11-08): `relay.pdstuber.dev`, served by a new fly app `wargrid-relay` (fly apps cannot be renamed, per README; the old name's "jvm" predates the Go port). Order: create `wargrid-relay` (outward-facing, user runs or approves), CNAME at Namecheap by the user and `fly certs add` on the new app, launcher default `wss://relay.pdstuber.dev/ws`, release workflow and README to the new app and domain, new app-scoped deploy token swapped into `FLY_API_TOKEN_RELAY` by the user. `wargrid-relay-jvm` keeps serving v0.6.0 clients and is destroyed only after the next release, with approval.
 
 ## Why
 

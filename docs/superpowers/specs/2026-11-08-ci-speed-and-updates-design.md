@@ -34,3 +34,9 @@ Weekly scheduled workflow that opens (or leaves open) one issue when a newer God
 ## Left to the builder
 
 Job names and split details, whether `release.yml` reuses the new structure unchanged (it calls `tests.yml`), Dependabot schedule and grouping, handling of breaking changes in the action majors.
+
+## Result (run 42460873826, `5a06254`, 2026-11-08)
+
+Wall clock 3 min 30 s (was about 11 min). Jobs: Godot / Tests linux 115 s, windows 150 s; Godot / Exported build linux 146 s, windows 165 s (exported suite sharded 4 ways; locally on macOS 97 s → 46 s); Godot / Warnings 47 s; Relay / Test and conformance 31 s; Godot / Compare replays 8 s. Suite totals equal the baseline run 42413090409 (editor 482 cases / 136,033 checks, exported 482 / 136,016, both platforms); every replay comparison matched. Zero `Node.js 20` or `punycode` lines in the run log. Workflows / Lint failed on SC2015 in the new Godot check, which the runner's shellcheck reports and local shellcheck 0.11.0 does not; fixed in `b14ef3b`.
+
+Added by the user during the run: jobs renamed and grouped by component, `tests.yml` renamed `ci.yml` (workflow `CI`), and CI skipped for pushes and pull requests that change only `docs/**` or Markdown outside `game/`.
