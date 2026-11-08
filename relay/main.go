@@ -74,9 +74,13 @@ func (h *relay) OnOpen(s *gws.Conn) {
 		shut:  func() { h.writeLater(s, func() error { return s.WriteClose(1000, nil) }) },
 	}})
 	_ = s.SetReadDeadline(time.Now().Add(h.silence))
+	mConnOpened.Inc()
+	slog.Info("connection opened")
 }
 
-func (h *relay) OnClose(s *gws.Conn, _ error) {
+func (h *relay) OnClose(s *gws.Conn, err error) {
+	mConnClosed.Inc()
+	slog.Info("connection closed", "err", err)
 	if c := getConn(s); c.seat != nil {
 		c.room.post(leaveMsg{c.seat})
 	}
@@ -96,12 +100,14 @@ func (h *relay) OnMessage(s *gws.Conn, msg *gws.Message) {
 	}
 	_ = s.SetReadDeadline(time.Now().Add(h.silence))
 	if msg.Opcode != gws.OpcodeText {
+		mRejected.Inc()
 		c.rejected.Store(true)
 		c.close()
 		return
 	}
 	e := parseEnvelope(msg.Bytes())
 	if e == nil || (c.seat == nil) != (e.typ == "hello") {
+		mRejected.Inc()
 		c.reject("invalid message")
 		return
 	}
@@ -135,6 +141,8 @@ func main() {
 		addr = ":8080"
 	}
 	reg := newRegistry(cfg)
+	registerRooms(reg)
+	go serveMetrics(":9091")
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		slog.Error("listen failed", "err", err)
@@ -178,6 +186,7 @@ func newServer(h *relay) *http.Server {
 // http.Server.Shutdown does not wait for WebSockets (hijacked), so rooms are tracked by the registry.
 func shutdown(srv *http.Server, reg *registry, drain time.Duration) {
 	slog.Info("draining", "rooms", reg.count(), "timeout", drain)
+	mDraining.Set(1)
 	ctx, cancel := context.WithTimeout(context.Background(), drain)
 	defer cancel()
 	reg.startDrain()
