@@ -228,6 +228,7 @@ jobs:
           python3 tools/test_session_usage.py
           python3 tools/test_sim_math.py
           python3 tools/test_release_version.py
+          python3 tools/test_install_godot.py
           python3 tools/test_package_release.py
           python3 tools/test_deploy_web.py
           python3 tools/zh_map/test_zh_map.py
