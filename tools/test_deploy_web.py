@@ -20,6 +20,8 @@ class DeployWebTest(unittest.TestCase):
         (self.root / "game/data/maps").mkdir(parents=True)
         (self.root / "game/data/maps/NOTICE.md").write_text("")
         (self.root / "LICENSE").write_text("")
+        (self.root / "game/audio").mkdir(parents=True)
+        (self.root / "game/audio/CREDITS.md").write_text("")
         (self.root / "web/site").mkdir(parents=True)
         (self.root / "web/site/old").write_text("")
         bin_dir = self.root / "bin"
