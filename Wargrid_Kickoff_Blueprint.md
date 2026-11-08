@@ -595,6 +595,10 @@ Make the converted maps playable in the launcher (Ashfall, plus Dry Wells and Br
 - **Unit avoidance milestone** after the spike: units go around each other instead of through each other (a firm requirement from the M7 gate 2 playtest; today the M2 design permits overlap in transit). It changes pathing for every unit, so it re-pins every trace and needs its own benchmarks, a design spike on one map first, and a playtest. Risks to design for: deadlocks at docks and chokepoints, trucks, container boarding, horde clusters, lockstep determinism and WASM cost.
 - **Why this order:** the spike gives avoidance a measured per-tick baseline and probably its spatial grid; avoidance comes before new content so later rosters, the art pass and the M8 bots are tuned once against the final movement, and the trace re-pin happens once. Fog and art do not touch movement.
 
+### Sound spike (user, 2026-11-08; after M7, before Ground batch A)
+
+Futuristic generated effects for every weapon of USA, China and FRC, deaths and destroyed buildings, a vocoder announcer for the local player, launcher and match music and three volume sliders. Presentation only: no simulation, replay or netplay trace change. Design: [sound spike design](docs/superpowers/specs/2026-11-08-sound-spike-design.md); plan: [sound spike plan](docs/superpowers/plans/2026-11-08-sound-spike.md); handoff: [sound spike prompt](docs/sound-spike-prompt.txt). Exit: user playtest offline and online.
+
 ### Ground batch A (after unit avoidance; user, 2026-11-06; scope refined 2026-11-07, not designed)
 
 The ground units that need only M7's systems plus veterancy, upgrades and the tech tree, hazard fields (poison, fire, radiation), new transport kinds, and travelling shots with minimum range (artillery). Replaces the earlier proposed "M7.1 roster fill". Per-unit evidence and the 32-unit split: [batch classification](docs/reference/m7-factions.md#batch-classification-config-2026-11-07).
@@ -906,6 +910,7 @@ Authoritative-server simulation stays the fallback if lockstep fails the M5 gate
 - **Decided by user 2026-11-03:** Wargrid code is GPL-3.0-or-later (`LICENSE`), compatible with EA's and OpenRA's "version 3 or later" grants, so small cited ports are allowed under the rule in `AGENTS.md`; ported EA code carries EA's notice and additional terms. Asset licence for original art is undecided.
 - Replicating game mechanics based on observation is different from copying protected code, but a literal remake can still implicate other copyrighted expression and trademarks.
 - Do not ship EA sprites, music, audio, text, map files or logos without the necessary rights.
+- **Decided by user 2026-11-07:** Wargrid-made audio (generated effects, rendered announcer lines) is GPL-3.0-or-later; third-party audio keeps its CC0/CC-BY terms, listed in `game/audio/CREDITS.md`.
 - **Decided by user 2026-11-05:** maps in EA's `CnC_Modding_Support` repository are released under GPL v3 with EA's additional terms; Wargrid may ship map data converted from them, keeping EA's notice and terms, under its own map names (rule in `AGENTS.md`).
 - **Noncommercial** or **free** does not automatically equal authorized distribution.
 - An internal prototype using placeholder/original art is the lowest-friction starting point, but this is not a blanket legal exemption.
