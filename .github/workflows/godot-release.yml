@@ -19,7 +19,10 @@ jobs:
         run: |
           latest=$(gh api repos/godotengine/godot/releases/latest --jq .tag_name)
           pinned=$(sed -n 's/^  GODOT_VERSION: //p' .github/workflows/ci.yml)
-          [ -n "$latest" ] && [ -n "$pinned" ] || { echo "could not read versions: latest=$latest pinned=$pinned"; exit 1; }
+          if [ -z "$latest" ] || [ -z "$pinned" ]; then
+            echo "could not read versions: latest=$latest pinned=$pinned"
+            exit 1
+          fi
           echo "pinned $pinned, latest $latest"
           [ "$latest" = "$pinned" ] && exit 0
           title="Godot $latest is available"

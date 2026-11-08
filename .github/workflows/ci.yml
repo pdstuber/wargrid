@@ -2,7 +2,13 @@ name: CI
 on:
   push:
     branches: ['**']
+    paths: &code
+      - '**'
+      - '!docs/**'
+      - '!**.md'
+      - 'game/**' # exports ship game/data/maps/NOTICE.md
   pull_request:
+    paths: *code
   workflow_dispatch:
   workflow_call:
 env:
