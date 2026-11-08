@@ -26,22 +26,6 @@ jobs:
           python-version: "3.12"
       - run: pip install -r tools/requirements-dev.txt
       - run: sh tools/run_lint.sh
-  godot-warnings:
-    name: Godot / Warnings
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    env:
-      GODOT_ZIP: Godot_v4.7.2-stable_linux.x86_64.zip
-      GODOT_SHA256: cadd3204e728a35d3f13adb7fd0d7902636b79f6b95c40c265eb73b6c35329e4
-      GODOT_EXECUTABLE: Godot_v4.7.2-stable_linux.x86_64
-    steps:
-      - uses: actions/checkout@v7
-      - name: Install pinned Godot
-        run: python3 tools/install_godot.py
-      - name: Import
-        run: '"$GODOT_BIN" --headless --path game --import'
-      - name: GDScript warnings as errors
-        run: sh tools/run_warnings.sh
   godot-tests:
     name: Godot / Tests (${{ matrix.platform }})
     strategy:
@@ -88,6 +72,9 @@ jobs:
         run: |
           set -o pipefail
           sh tools/run_tests.sh 2>&1 | tee test-results.log
+      - name: GDScript warnings as errors
+        if: matrix.platform == 'linux' # static check, same result on every platform
+        run: sh tools/run_warnings.sh
       - uses: actions/upload-artifact@v7
         with:
           name: replay-${{ matrix.platform }}
