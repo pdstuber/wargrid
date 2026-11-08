@@ -26,6 +26,7 @@ Decided (user, 2026-11-08; the brainstorm builds on these, it does not reopen th
 Learnings from the Dry Wells session:
 - Tests keep skirmish.json; only real play uses the chosen map. Scene tests that hard-code entity ids or cells break the moment a scene's default map changes.
 - Godot runs: one at a time, every suite/lint/benchmark call with timeout 600000, output to a scratchpad file, read only summary lines. Scratch Godot scripts must live inside game/ (untracked, deleted afterwards) and quit() on every path; scratch scripts that hang stay as stray processes (one ran 23 hours).
+- Since the sound spike, windowed runs play music and effects: start rendered checks silent with `sh tools/run_game.sh --audio-driver Dummy <scene>` unless I want to listen.
 - Rendered checks open a window: ask me first and batch them. I often run my own benchmarks: before starting Godot, check `ps` for my processes and ask; killing processes is blocked by the permission classifier, so pause your agents instead of killing.
 - Subagents: give each one a brief file plus a shared instructions file instead of pasting context; require a RED run (one implementer skipped it). A derived constant in a new test may be corrected only with a derivation; behavioural expectations never.
 - main moves fast: before merging, check `git merge-tree --write-tree HEAD main` and whether main already carries part of your work (my terrain commit reached main through M7). Never commit, push or merge without asking; ask again for each new commit.

@@ -556,7 +556,7 @@ Make the converted maps playable in the launcher (Ashfall, plus Dry Wells and Br
 
 ### Sound spike (user, 2026-11-08; after M7, before Ground batch A)
 
-Futuristic generated effects for every weapon of USA, China and FRC, deaths and destroyed buildings, a vocoder announcer for the local player, launcher and match music and three volume sliders. Presentation only: no simulation, replay or netplay trace change. Design: [sound spike design](docs/superpowers/specs/2026-11-08-sound-spike-design.md); plan: [sound spike plan](docs/superpowers/plans/2026-11-08-sound-spike.md); handoff: [sound spike prompt](docs/sound-spike-prompt.txt). Exit: user playtest offline and online.
+Futuristic generated effects for every weapon of USA, China and FRC, deaths and destroyed buildings, a vocoder announcer for the local player, launcher and match music and three volume sliders. Presentation only: no simulation, replay or netplay trace change. Design: [sound spike design](superpowers/specs/2026-11-08-sound-spike-design.md); plan: [sound spike plan](superpowers/plans/2026-11-08-sound-spike.md); handoff: [sound spike prompt](sound-spike-prompt.txt). Exit: user playtest offline and online.
 
 ### Ground batch A (after unit avoidance; user, 2026-11-06; scope refined 2026-11-07, not designed)
 
