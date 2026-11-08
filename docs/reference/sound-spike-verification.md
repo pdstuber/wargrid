@@ -118,3 +118,4 @@ Performance ledger not edited.
 - 2026-11-08 (user): Task 7 Step 4 web check done in Firefox on the local export (`sh tools/export_build.sh Web web/site/index.html`, served on 127.0.0.1:8060, tree 0579236). User verdict: "soundwise everything perfect". Console errors were not reported separately; not inspected by the coordinator. Step 5 playtest (offline and online) still open.
 
 - 2026-11-08 (user): after the web check the USA tank sounded too quiet. Labelled A/B in Firefox (cannon at 0 / -1.5 / -2.5 / -3.8 dB against an unchanged rifle burst); user picked B (0) or D (-1.5). Chose -1.5: `sound_cues.gd` cannon `gain_db` -1.5. Effects bus -6 dB unchanged.
+- 2026-11-08 (user, playing): -1.5 dB tank still hard to hear while infantry fire is mixed; tried B (0 dB). `sound_cues.gd` cannon `gain_db` 0.0, pending user verdict.
