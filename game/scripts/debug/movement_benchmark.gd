@@ -7,7 +7,7 @@ const Profiler = preload("res://scripts/debug/profiler.gd")
 const CombatWorkload = preload("res://scripts/debug/combat_workload.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 # New with the ashfall layout (R2): worst of six rendered runs 3.02 ms plus about 50%. No ceiling exists for the other layouts.
-const ASHFALL_FRAME_P95_MS: float = 4.5
+const ASHFALL_FRAME_P95_MS: float = 3.3
 const LAYOUTS: Array[String] = ["open", "dense", "ashfall", "horde"]
 # `-- --profile` adds profiling zones and a third, 196x196 combat leg (spike-performance only).
 var _profile: bool = OS.get_cmdline_user_args().has("--profile")
