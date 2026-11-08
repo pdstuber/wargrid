@@ -42,6 +42,7 @@ Next exact action: user runs the ultra review of branch perf-spike; then the Ste
 | 2026-11-08 | db2178f via git archive, scratch `ws5d`, deployed to `wargrid-web-test` (approved) | Apple M6, Firefox 159, Vivaldi | Task 5d: threaded `Web` preset with COOP/COEP in `web/sws.toml`, `deploy_web.sh test`, headers on 18 responses, boot in both browsers, rollback | COOP and COEP on all 18 responses, `crossOriginIsolated=true`, Godot banner "multi-threaded" in both; rolled back (release v5), `/health` 200; relay not checked from the fly origin; see '5d result' |
 | 2026-11-08 | f371616 (enemy spawns out of asserts in `combat_workload.gd`, new case BM10) acceptance, run on HEAD 10c524e plus the BM9 -> BM10 label edit in `test_benchmark.gd` and docs | Apple M6 | Task 5e: `sh tools/run_tests.sh`, `run_lint.sh`, `run_warnings.sh`, `run_netplay.sh match`, `run_team_match.sh`, one Godot process at a time | suite CASES 487 / CHECKS 136039 / FAILURES 0 (same 487 cases as the 5b base; 136039 without the trace variables); lint `Success: no problems found`; warnings 104 files exit 0; netplay match terminal tick 8400 `NETPLAY PASSED`; team match exit 0 `TEAM MATCH cap tick=45000 winner=null units_peak=160`; load 1.65 start / 1.49 end |
 | 2026-11-08 | HEAD 003e66c (git archive) vs 20a4d06, scratch `ws6` | Apple M6, headless | Task 6 jobs A-E: team match profiler off/on, contact max series, macOS Bench release export, full re-baseline, `run_benchmark.sh`; one Godot process at a time, pgrep empty and load <= 2.5 before each run | all exit 0; `accept.sh 20a4d06` PASS (suite 487 / 136046 / 0 failures vs base 482 / 136033, 4 traces cmp-identical, 7 pins equal, netplay tick 8400, team cap line); `run_benchmark.sh` exit 0; load 1.2-2.2; see '6 results' |
+| 2026-11-08 | 6cbc84a (docs-only child of f919d70; `git diff --stat f919d70 HEAD -- game tools` empty), git archive in scratch `ws12/tree` | Apple M6, headless then rendered | Wrap-up quiet batch `ws12/t2.sh all`: `run_benchmark.sh` once, 12 x (`run_combat.gd` + `run_movement.gd`) = n 13 per row, 2 plain + 2 `--profile` rendered Ashfall runs, 1 failing-direction run (guard 0.1 in the scratch copy), one Godot process at a time, pgrep empty and load <= 2.5 at every start (guard) | all 26 headless jobs (import, bench, 24 sample runs) exit 0; `run_benchmark.sh` exit 0, `BENCHMARK PASSED 2`, `COMBAT BENCHMARK PASSED 10`, `LOCKSTEP BENCHMARK PASSED 1`, `LOCKSTEP BUDGET PASS` p99 0.072; `COMBAT_WORK IDENTICAL`; render runs all `RENDERED BENCHMARK PASSED 4`; guard-0.1 run exit 1 as required; load 1.54-2.96 over START/END lines (2.96 and 2.64 are end-of-job readings after a job, next start waited for <= 2.5); see '12 results' |
 
 ## Workstream 1 finding (baseline, 2026-11-07, 20a4d06, Apple M6, 3 runs each)
 
@@ -809,3 +810,60 @@ Mac web p95 ms (runs 1 / 2 / 3, median) and final web F = Deck Firefox median p9
 | team match | 1.92 / 1.86 / 1.86 | 1.86 | 6.80 | 3.66 |
 
 Every web F is below 5.5 (3.5-4.1). Outliers kept in the medians: combat open run 3 (3.34) and contact run 1 (2.54), one run each, medians unaffected. Discarded before these runs: the terms dialog over the bench tab (one user click on Continue, warm-up), a launch where Firefox was not the front app, two false starts with wrong server paths (404 / server not started). Mac web numbers are Firefox, editor-independent web build; the Mac editor/native F in section 7 is a separate measurement. Raw logs: scratchpad `ws11/r1..r3`.
+
+
+## 12 results (2026-11-08, HEAD 6cbc84a, Apple M6, quiet batch)
+
+Tree: git archive of 6cbc84a in scratch `ws12/tree` (docs-only child of f919d70; `git diff --stat f919d70 HEAD -- game tools` empty). Script `ws12/t2.sh all` (a Bash run in the background; one Godot process at a time; guard: no godot / browser / WargridBench process and load <= 2.5 before every job). Load over all START/END lines 1.54-2.96 (readings above 2.5 are end-of-job values; the next start waited). Nothing in the repo changed by the batch; no budget, ceiling or guard value changed. Raw logs: scratchpad `ws12/out/`. The summaries below come from `python3 -I ws12/t2_summary.py`; no script fix was needed.
+
+Checks: `run_benchmark.sh` exit 0 with `BENCHMARK PASSED 2`, `COMBAT BENCHMARK PASSED 10`, `LOCKSTEP BENCHMARK PASSED 1` and `LOCKSTEP BUDGET PASS p99 0.072 ms (limit 0.6)` once each; every `combat-N.log` has `COMBAT BENCHMARK PASSED 10`, every `movement-N.log` `BENCHMARK PASSED 2`, every render log `RENDERED BENCHMARK PASSED 4`; `COMBAT_WORK IDENTICAL`; the failing-direction run (guard 0.1 ms) exited 1 with `Rendered ashfall frame p95 2.683 ms exceeds 0.1 ms`, scratch guard back to `3.3` (1 matching line).
+
+### Headless samples (n 13 per row, ms)
+
+```
+group | row | n | p50 | p95 | p99 | max | p95 min-max | spread % of p95 | worst p95 +5 % | worst p99 +5 %
+headless | combat contact | 13 | 0.260 | 1.153 | 1.616 | 11.34 | 1.140-1.332 | 16.7 | 1.332 -> 1.399 | 2.222 -> 2.333
+headless | combat defences | 13 | 0.098 | 0.796 | 2.076 | 2.55 | 0.778-0.817 | 4.9 | 0.817 -> 0.858 | 2.247 -> 2.359
+headless | combat dense | 13 | 1.020 | 1.811 | 2.136 | 3.17 | 1.772-2.509 | 40.7 | 2.509 -> 2.634 | 3.756 -> 3.944
+headless | combat docks | 13 | 0.499 | 0.558 | 0.580 | 0.76 | 0.552-0.873 | 57.5 | 0.873 -> 0.917 | 1.424 -> 1.495
+headless | combat frc | 13 | 0.206 | 0.826 | 1.149 | 2.52 | 0.814-0.890 | 9.2 | 0.890 -> 0.935 | 1.393 -> 1.463
+headless | combat hordes300 | 13 | 1.953 | 2.852 | 3.365 | 7.61 | 2.818-2.918 | 3.5 | 2.918 -> 3.064 | 3.857 -> 4.050
+headless | combat open | 13 | 1.226 | 1.889 | 2.240 | 3.00 | 1.854-1.999 | 7.7 | 1.999 -> 2.099 | 2.458 -> 2.581
+headless | combat ramp | 13 | 0.128 | 0.653 | 1.207 | 1.64 | 0.641-0.703 | 9.5 | 0.703 -> 0.738 | 1.264 -> 1.327
+headless | combat skirmish3v3 | 13 | 0.578 | 1.304 | 1.461 | 1.67 | 1.287-1.324 | 2.8 | 1.324 -> 1.390 | 1.499 -> 1.574
+headless | combat transports | 13 | 0.619 | 1.075 | 1.176 | 1.75 | 1.070-1.113 | 4.0 | 1.113 -> 1.169 | 1.373 -> 1.442
+headless | movement dense | 13 | 0.649 | 0.686 | 0.890 | 3.57 | 0.676-1.021 | 50.3 | 1.021 -> 1.072 | 1.209 -> 1.269
+headless | movement open | 13 | 0.640 | 0.708 | 0.856 | 3.52 | 0.684-0.932 | 35.0 | 0.932 -> 0.979 | 1.858 -> 1.951
+COMBAT_WORK IDENTICAL
+```
+
+Rows with p95 spread above 10 % of the median p95 (task C's stop rule): movement open 35.0 %, movement dense 50.3 %, combat dense 40.7 %, contact 16.7 %, docks 57.5 %. Each comes from a few slow runs inside the 13 (worst p95 against the median). The movement rows measure sim only since P1; the 20a4d06 and Task 10 numbers are not comparable.
+
+### Rendered Ashfall, post-P1 (2 plain + 2 `--profile`, interleaved plain 1, profile 1, plain 2, profile 2; ms, n 2 per mode)
+
+Ashfall frame p95: plain 2.833 / 2.250, profiled 2.338 / 2.663; the guard of 3.3 passes in both modes. The earlier unprofiled 0.506 against profiled 2.89-3.02 gap is not reproduced here: the plain and profiled ranges overlap, so no profiler cost is shown (cause of the old gap: not established). The numbers are post-P1 and not comparable with R2. n 2 per mode: no gate follows from them.
+
+```
+group | row | n | p50 | p95 | p99 | max | p95 min-max | spread % of p95 | worst p95 +5 % | worst p99 +5 %
+render-plain | frame ashfall | 2 | 0.817 | 2.542 | 4.628 | 11.26 | 2.250-2.833 | 22.9 | 2.833 -> 2.975 | 5.470 -> 5.744
+render-plain | frame dense | 2 | 0.583 | 1.411 | 4.169 | 10.73 | 0.886-1.936 | 74.4 | 1.936 -> 2.033 | 4.912 -> 5.158
+render-plain | frame horde | 2 | 0.898 | 3.632 | 8.842 | 17.29 | 3.404-3.860 | 12.6 | 3.860 -> 4.053 | 9.901 -> 10.396
+render-plain | frame open | 2 | 0.588 | 1.917 | 3.421 | 9.89 | 1.836-1.999 | 8.5 | 1.999 -> 2.099 | 3.429 -> 3.600
+render-plain | tick ashfall | 2 | 1.605 | 2.018 | 2.184 | 5.16 | 1.863-2.174 | 15.4 | 2.174 -> 2.283 | 2.315 -> 2.431
+render-plain | tick dense | 2 | 1.657 | 1.925 | 2.101 | 5.42 | 1.882-1.969 | 4.5 | 1.969 -> 2.067 | 2.153 -> 2.261
+render-plain | tick horde | 2 | 3.166 | 4.543 | 4.905 | 5.41 | 4.501-4.586 | 1.9 | 4.586 -> 4.815 | 5.026 -> 5.277
+render-plain | tick open | 2 | 1.627 | 1.762 | 1.959 | 5.24 | 1.750-1.775 | 1.4 | 1.775 -> 1.864 | 1.959 -> 2.057
+render-profile | frame ashfall | 2 | 0.825 | 2.500 | 4.571 | 9.85 | 2.338-2.663 | 13.0 | 2.663 -> 2.796 | 5.403 -> 5.673
+render-profile | frame dense | 2 | 0.593 | 1.935 | 3.460 | 9.25 | 1.861-2.009 | 7.6 | 2.009 -> 2.109 | 3.467 -> 3.640
+render-profile | frame horde | 2 | 0.909 | 3.869 | 8.922 | 12.85 | 3.715-4.024 | 8.0 | 4.024 -> 4.225 | 10.074 -> 10.578
+render-profile | frame large_196 | 2 | 0.669 | 1.928 | 5.849 | 13.43 | 1.094-2.761 | 86.5 | 2.761 -> 2.899 | 6.538 -> 6.865
+render-profile | frame open | 2 | 0.587 | 1.908 | 3.428 | 9.61 | 1.832-1.983 | 7.9 | 1.983 -> 2.082 | 3.450 -> 3.623
+render-profile | tick ashfall | 2 | 1.574 | 1.819 | 1.994 | 5.24 | 1.818-1.819 | 0.1 | 1.819 -> 1.910 | 2.002 -> 2.102
+render-profile | tick dense | 2 | 1.649 | 1.875 | 2.114 | 5.38 | 1.863-1.888 | 1.3 | 1.888 -> 1.982 | 2.114 -> 2.220
+render-profile | tick horde | 2 | 3.216 | 4.665 | 5.059 | 5.59 | 4.619-4.712 | 2.0 | 4.712 -> 4.948 | 5.100 -> 5.355
+render-profile | tick large_196 | 2 | 3.045 | 3.434 | 3.774 | 4.49 | 3.377-3.492 | 3.3 | 3.492 -> 3.667 | 3.840 -> 4.032
+render-profile | tick open | 2 | 1.632 | 1.812 | 2.016 | 5.26 | 1.808-1.815 | 0.4 | 1.815 -> 1.906 | 2.023 -> 2.124
+ASHFALL render-plain frame_p95_ms [2.833, 2.25]
+ASHFALL render-profile frame_p95_ms [2.338, 2.663]
+COMBAT_WORK IDENTICAL
+```
