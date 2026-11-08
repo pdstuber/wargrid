@@ -11,7 +11,7 @@ const View = preload("res://scripts/presentation/world_view.gd")
 const Probe = preload("res://scenes/movement_benchmark.tscn")
 
 func cases() -> Array[Callable]:
-	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_transports_fixture, test_defences_fixture, test_skirmish3v3_fixture, test_combat_work_ceiling, test_volley_retaliation_work, test_horde_render_layout]
+	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_transports_fixture, test_defences_fixture, test_skirmish3v3_fixture, test_combat_work_ceiling, test_volley_retaliation_work, test_horde_render_layout, test_workload_asserts_pure]
 
 func test_statistics(runner) -> bool:
 	runner.check(Stats.summary(PackedFloat64Array()) == {"n": 0, "p50": 0.0, "p95": 0.0, "p99": 0.0, "max": 0.0}, "BM1 empty")
@@ -224,4 +224,14 @@ func test_horde_render_layout(runner) -> bool:
 	runner.check(peak > 0, "BM9 horde marks drawn in the window")
 	print("BM9 horde_render peak_marks=", peak, " marked_ticks=", marked_ticks, " moved=", moved)
 	view.free()
+	return true
+
+func test_workload_asserts_pure(runner) -> bool:
+	# Release builds strip assert(), so a sim call inside one would silently not run.
+	for path in ["res://scripts/debug/combat_workload.gd", "res://scripts/debug/movement_workload.gd"]:
+		var impure: Array[String] = []
+		for line in FileAccess.get_file_as_string(path).split("\n"):
+			if line.strip_edges().begins_with("assert(") and "sim." in line:
+				impure.append(line.strip_edges())
+		runner.check(impure.is_empty(), "BM9 no sim call inside assert in " + path + " " + str(impure))
 	return true

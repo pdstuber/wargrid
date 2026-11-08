@@ -124,7 +124,8 @@ static func _hordes300() -> Simulation:
 			army.append(sim.spawn(1, Vector2(3.5 + column, 10.5 + row), "china_rifle_infantry"))
 	for column in range(10):
 		for row in range(10):
-			assert(sim.spawn(2, Vector2(48.5 + column, 19.5 + row), "usa_rifle_infantry") > 0)
+			var enemy: int = sim.spawn(2, Vector2(48.5 + column, 19.5 + row), "usa_rifle_infantry")
+			assert(enemy > 0)
 	assert(army.all(func(id: int) -> bool: return id > 0))
 	_attack_move(sim, army, [60.5, 24.5])
 	return sim
@@ -141,7 +142,8 @@ static func _horde_render() -> Simulation:
 			army.append(sim.spawn(1, Vector2(3.5 + column, 10.5 + row), kinds[row % kinds.size()]))
 	for column in range(10):
 		for row in range(10):
-			assert(sim.spawn(2, Vector2(48.5 + column, 19.5 + row), "usa_rifle_infantry") > 0)
+			var enemy: int = sim.spawn(2, Vector2(48.5 + column, 19.5 + row), "usa_rifle_infantry")
+			assert(enemy > 0)
 	assert(army.all(func(id: int) -> bool: return id > 0))
 	_attack_move(sim, army, [60.5, 24.5])
 	return sim
@@ -174,7 +176,8 @@ static func _frc() -> Simulation:
 	for column in range(6):
 		for row in range(10):
 			army.append(sim.spawn(1, Vector2(3.5 + column, 6.5 + row), "frc_light_vehicle" if column < 3 else "frc_tank"))
-			assert(sim.spawn(2, Vector2(28.5 + column, 6.5 + row), "usa_tank" if column < 4 else "usa_light_vehicle") > 0)
+			var enemy: int = sim.spawn(2, Vector2(28.5 + column, 6.5 + row), "usa_tank" if column < 4 else "usa_light_vehicle")
+			assert(enemy > 0)
 	assert(army.all(func(id: int) -> bool: return id > 0))
 	_attack_move(sim, army, [60.5, 10.5])
 	_tunnel_part(sim)
