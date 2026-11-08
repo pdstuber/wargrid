@@ -68,11 +68,12 @@ Shell keys (all scenes, M7 gate 2): F3 toggles the performance overlay (FPS, fra
 ## Setup and commands
 
 Use Godot **4.7.2 stable**. Verified local build: `4.7.2.stable.official.ed1daf0bf`.
-CI pins matching Linux archive and SHA-256 from [official release metadata](https://api.github.com/repos/godotengine/godot/releases/tags/4.7.2-stable), fetched 2026-11-01. No extra dependencies.
+CI pins matching Linux archive and SHA-256 from [official release metadata](https://api.github.com/repos/godotengine/godot/releases/tags/4.7.2-stable), fetched 2026-11-01; `tools/install_godot.py` falls back to downloads.godotengine.org when GitHub fails. No extra dependencies.
 
 ```sh
 godot --version
 sh tools/run_tests.sh
+WARGRID_TEST_EXE=build/WargridTests.app/Contents/MacOS/Wargrid sh tools/run_tests.sh   # same suite, 4 shards, in an exported "macOS Tests" build (the binary, not the .app)
 sh tools/run_lint.sh   # needs: uv tool install gdtoolkit==4.5.0
 sh tools/run_warnings.sh   # typing, shadowing, unused-parameter and integer-division warnings as errors
 python3 -m unittest discover -s tools -p 'test_*.py'

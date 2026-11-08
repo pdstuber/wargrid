@@ -24,8 +24,13 @@ jobs:
             exit 1
           fi
           echo "pinned $pinned, latest $latest"
-          [ "$latest" = "$pinned" ] && exit 0
+          newest=$(printf '%s\n%s\n' "$pinned" "$latest" | sort -V | tail -n 1)
+          if [ "$newest" = "$pinned" ]; then exit 0; fi # same version, or the pin is ahead (rc, dev)
           title="Godot $latest is available"
-          open=$(gh issue list --state open --search "\"$title\" in:title" --json title --jq "map(select(.title == \"$title\")) | length")
-          [ "$open" -eq 0 ] || exit 0
+          # Closed counts too: closing the issue without bumping means "not this version".
+          seen=$(gh issue list --state all --search "\"$title\" in:title" --json title --jq "map(select(.title == \"$title\")) | length")
+          [ "$seen" -eq 0 ] || exit 0
+          gh issue list --state open --search "is available in:title" --json number,title \
+            --jq '.[] | select(.title | test("^Godot .* is available$")) | .number' |
+            while read -r old; do gh issue close "$old" --comment "Superseded by Godot $latest."; done
           gh issue create --title "$title" --body "Pinned: $pinned. A bump updates the version, archive checksums and export template checksum in \`.github/workflows/ci.yml\` and \`.github/workflows/release.yml\`, then needs a green CI replay comparison."
