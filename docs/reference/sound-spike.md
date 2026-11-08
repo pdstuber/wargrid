@@ -40,6 +40,16 @@ No difference from the manifest.
 - The two MacLeod track pages (`?isrc=`) render by script ("Loading track... No Track selected"), so no licence text is on them. Title, isrc and file name come from `https://incompetech.com/music/royalty-free/pieces.json` (Stay the Course USUAN1900018, Hitman USUAN1300013); the licence rests on the FAQ alone.
 - Kristin MODEL_CARD at revision `e7229f7d`: "# Model card for kristin (medium)", "License: public domain" (dataset), "All recordings came from LibriVox.org."
 
+### MacLeod per-track licence, fetched 2026-11-08 (Gate A finding, open: user rules)
+
+- `https://incompetech.com/music/royalty-free/pieces.json` (1443 entries, curl): keys are `bpm, collection, description, feel, filename, filmmusicURL, genre, instruments, isrc, itunes, length, sheetmusic, title, uploaded, video`. No licence field. Hitman entry: isrc USUAN1300013, uploaded 2013-02-03; Stay the Course: isrc USUAN1900018, uploaded 2019-07-16.
+- The mp3 ID3 tags carry only title and artist (ffprobe); no licence or copyright tag.
+- `faq.html` (curl, verbatim): "Be sure to credit me."; credit block "Title Kevin MacLeod (incompetech.com) / Licensed under Creative Commons: By Attribution 4.0 / https://creativecommons.org/licenses/by/4.0/" (three lines on the page), "It is important that you replace the word Title with the Actual Title of the piece that you are using!"; "the Creative Commons license that I offer all of my music under almost always gives you more rights than those contracts"; licence page "Attribution Code": "Licensed under Creative Commons: By Attribution 4.0 License http://creativecommons.org/licenses/by/4.0/". Also: "You MUST make it clear in the credits which parts are yours, and which parts are mine. There is no need to mention if you cut and splice." (our loudness normalisation and re-encode are listed in the `changes` column).
+- Per-track pages (`index.html?isrc=`) render by script; no licence text. `incompetech.filmmusic.io/song/5048-stay-the-course/` returned no licence wording to curl.
+- Result: no per-track primary source exists on the site; the site-wide FAQ statement ("all of my music") is the only primary wording. Not verified: per-track exceptions (the FAQ says "almost always" about contracts, not the licence).
+
+Options: (a) keep the two MacLeod tracks on the FAQ's site-wide CC BY 4.0 statement, record this limit (recommended: it is the author's own primary statement, the credit text is shipped as he asks, risk is a hypothetical per-track exception nobody documents); (b) email Kevin MacLeod for per-track confirmation (slow, needs the user); (c) swap Hitman and Stay the Course for OpenGameArt tracks with per-asset licence fields (M13/M14 style alternates; weakens the mood match).
+
 The five music files are the manifest rows M04, M05, M06, M08 and M10 (the "five picks" of `SOUND_WORK/music/`). Only the Piper voice output is shipped, never the engine.
 
 ## Mix calculation

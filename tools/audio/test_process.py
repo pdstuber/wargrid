@@ -2,6 +2,7 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import process
 
@@ -31,6 +32,12 @@ class ProcessTest(unittest.TestCase):
             "measured_I=-20.10:measured_TP=-3.20:measured_LRA=5.40:measured_thresh=-30.50:offset=0.12:linear=true",
             process.second_pass(STDERR),
         )
+
+    def test_dynamic_loudnorm_fallback_raises(self) -> None:
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(process, "ffmpeg", return_value=STDERR):
+            with self.assertRaisesRegex(RuntimeError, "dynamic"):
+                process.encode(Path(d) / "a.mp3", Path(d) / "o" / "a.ogg", "a")
+            self.assertFalse((Path(d) / "o").exists())
 
     def test_tracks_are_the_five_picks(self) -> None:
         self.assertEqual(set(process.TRACKS), {"stay_the_course", "conflict", "enemy_spotted", "mammoth", "hitman"})
