@@ -5,8 +5,9 @@ Reads GODOT_VERSION, GODOT_ZIP, GODOT_SHA256, GODOT_EXECUTABLE, RUNNER_TEMP and 
 """
 
 import hashlib
+import http.client
 import os
-import urllib.error
+import socket
 import urllib.request
 import zipfile
 from pathlib import Path
@@ -16,11 +17,12 @@ def download(version: str, archive: Path) -> None:
     opener = urllib.request.build_opener()
     opener.addheaders = [("User-Agent", "wargrid-ci")]  # the Godot mirror answers 403 to Python-urllib
     urllib.request.install_opener(opener)
+    socket.setdefaulttimeout(60)  # a stalled GitHub must fail fast enough to reach the mirror
     try:
         urllib.request.urlretrieve(
             f"https://github.com/godotengine/godot/releases/download/{version}/{archive.name}", archive
         )
-    except urllib.error.URLError as error:
+    except (OSError, http.client.HTTPException) as error:  # URLError is an OSError
         # Godot's own mirror serves the same files; GitHub returned 504 for them on 2026-11-08.
         print(f"GitHub download failed ({error}), using downloads.godotengine.org")
         number, flavor = version.split("-", 1)
