@@ -6,7 +6,7 @@ const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 const StateHash = preload("res://scripts/simulation/state_hash.gd")
 
 func cases() -> Array[Callable]:
-	return [test_maps_load, test_converted_maps_load, test_bad_map_rejected, test_skirmish_identical, test_exports_ship_map_notice]
+	return [test_maps_load, test_converted_maps_load, test_bad_map_rejected, test_skirmish_identical, test_exports_ship_map_notice, test_small_source_from_map]
 
 func test_maps_load(runner) -> bool:
 	var skirmish := MapData.load("res://data/maps/skirmish.json")
@@ -57,4 +57,28 @@ func test_exports_ship_map_notice(runner) -> bool:
 		presets += 1
 		runner.check("data/maps/NOTICE.md" in str(config.get_value(section, "include_filter", "")), "MP5 %s ships EA's map notice" % config.get_value(section, "name", section))
 	runner.check(presets == 10, "MP5 ten presets checked")
+	return true
+
+func test_small_source_from_map(runner) -> bool:
+	var text := FileAccess.get_file_as_string("res://data/maps/skirmish.json")
+	var map: Dictionary = JSON.parse_string(text)
+	map.sources.append({"origin": [24, 28], "boxes": 50, "footprint": [1, 1], "delete_when_empty": true})
+	map.cells[28] = ".".repeat(25) + "#" + ".".repeat(22)
+	var parsed := MapData.parse(JSON.stringify(map))
+	runner.check(not parsed.is_empty(), "MP7 a 1x1 pile beside a cliff cell is valid")
+	var seats: Array[Dictionary] = []
+	var sources: Array = MapData.create(parsed, seats).snapshot().sources
+	runner.check(sources.size() == 3 and sources[2].footprint == [1, 1] and sources[2].delete_when_empty == true and sources[2].boxes == 50, "MP7 the loader keeps footprint and delete flag")
+	var keys: Array = sources[0].keys()
+	keys.sort()
+	runner.check(keys == ["active_collector_id", "boxes", "id", "origin"], "MP7 default sources keep their keys")
+	for bad: Variant in [[0, 1], [1], "1x1", [1.5, 1]]:
+		map.sources[2].footprint = bad
+		runner.check(MapData.parse(JSON.stringify(map)).is_empty(), "MP7 footprint %s is rejected" % str(bad))
+	map.sources[2].footprint = [1, 1]
+	map.sources[2].delete_when_empty = "yes"
+	runner.check(MapData.parse(JSON.stringify(map)).is_empty(), "MP7 non-bool delete flag is rejected")
+	map.sources[2].delete_when_empty = true
+	map.sources[2].origin = [25, 28]
+	runner.check(MapData.parse(JSON.stringify(map)).is_empty(), "MP7 a 1x1 pile on the cliff cell is rejected")
 	return true
