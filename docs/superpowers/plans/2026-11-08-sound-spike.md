@@ -89,7 +89,7 @@
 
 ```text
 Task: record the spike, its evidence and the audio licence decision, write the handoff, delete the superseded drafts.
-Owns: Wargrid_Kickoff_Blueprint.md (§7 entry, §12 bullet), README.md, AGENTS.md, docs/session-notes.md, new docs/sound-spike-prompt.txt, docs/reference/sound-spike-verification.md, docs/reference/sound-spike.md; deletes the two untracked drafts.
+Owns: docs/blueprint.md (§7 entry, §12 bullet), README.md, AGENTS.md, docs/session-notes.md, new docs/sound-spike-prompt.txt, docs/reference/sound-spike-verification.md, docs/reference/sound-spike.md; deletes the two untracked drafts.
 Invariant: nothing under game/, tools/ or .github/ changes; root prompt.txt untouched.
 Boundary: evidence in the old draft design survives its deletion.
 Red: n/a (docs).
@@ -109,7 +109,7 @@ Stop: a status label needs wording the spec does not give.
 - [ ] **Step 4: Blueprint:** a §7 section "Sound spike (user, 2026-11-08; after M7, before Ground batch A)" inserted before "### Ground batch A", 4–6 lines: scope (spec Goals), links to spec, plan, handoff, "exit: user playtest offline and online". §12 bullet: "**Decided by user 2026-11-07:** Wargrid-made audio (generated effects, rendered announcer lines) is GPL-3.0-or-later; third-party audio keeps its CC0/CC-BY terms, listed in `game/audio/CREDITS.md`."
 - [ ] **Step 5: Status lines:** AGENTS.md intent paragraph gains "the sound spike has an approved design and an execution plan (2026-11-08), not started"; a read-before bullet names spec, evidence note, plan, handoff and resume record. README status gets the same sentence. `docs/session-notes.md`: "Choose a licence for original art and audio" becomes "… original art", plus a dated line for the spike.
 - [ ] **Step 6:** Delete `docs/superpowers/specs/2026-11-07-m6.5-sound-design.md` and `docs/superpowers/plans/2026-11-07-m7.2-sound.md` (untracked).
-- [ ] **Step 7:** `rg -n 'sound-spike' AGENTS.md README.md Wargrid_Kickoff_Blueprint.md docs` lists every new file; `rg -n 'm6.5-sound|m7.2-sound' AGENTS.md README.md Wargrid_Kickoff_Blueprint.md docs` finds nothing but the evidence note's provenance line. Commit `Plan the sound spike`.
+- [ ] **Step 7:** `rg -n 'sound-spike' AGENTS.md README.md docs/blueprint.md docs` lists every new file; `rg -n 'm6.5-sound|m7.2-sound' AGENTS.md README.md docs/blueprint.md docs` finds nothing but the evidence note's provenance line. Commit `Plan the sound spike`.
 
 ### Task 1: Risk facts, event accessors, per-step collection
 
