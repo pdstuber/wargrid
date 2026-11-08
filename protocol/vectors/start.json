@@ -1,11 +1,16 @@
 {
- "text": "{\"type\":\"start\",\"seats\":[1,2],\"delay\":4}",
+ "text": "{\"type\":\"start\",\"seats\":[1,2],\"delay\":4,\"seed\":1234567,\"settings\":{\"map\":\"dry_wells\",\"map_hash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}}",
  "message": {
   "type": "start",
   "seats": [
    1,
    2
   ],
-  "delay": 4
+  "delay": 4,
+  "seed": 1234567,
+  "settings": {
+   "map": "dry_wells",
+   "map_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  }
  }
 }

@@ -78,7 +78,14 @@ func codeOf(welcome string) string {
 }
 
 func hello(match, build string, protocol int) string {
+	if match == "" {
+		return helloSettings(match, build, protocol, "{}")
+	}
 	return fmt.Sprintf(`{"type":"hello","protocol":%d,"build":"%s","match":"%s"}`, protocol, build, match)
+}
+
+func helloSettings(match, build string, protocol int, settings string) string {
+	return fmt.Sprintf(`{"type":"hello","protocol":%d,"build":"%s","match":"%s","settings":%s}`, protocol, build, match, settings)
 }
 
 func tick(seat, t int, pad string) string {

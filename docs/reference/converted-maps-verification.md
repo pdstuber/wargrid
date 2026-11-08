@@ -5,15 +5,15 @@ Plan: [converted maps playable plan](../superpowers/plans/2026-11-08-converted-m
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-08 22:12)
-Branch / base commit / working-tree state: converted-maps / 07c3ab6 (= main HEAD) / clean before Task 0 file was written; only this file is new
-Last green task / next incomplete task: Task 0 baseline green (known red: none; hordes300 over budget, see Baseline) / Task 1
-Changed paths since last commit: docs/reference/converted-maps-verification.md (new, uncommitted)
-Last command / cases / checks / failures / exit / marker: sh tools/run_benchmark.sh / 2 + 10 + 1 benchmark groups / 0 failures reported / exit 0 / BENCHMARK PASSED 2, COMBAT BENCHMARK PASSED 10, LOCKSTEP BENCHMARK PASSED 1
-Known red case or blocker: none blocking. Known over budget on main HEAD: COMBAT hordes300 p95 2.84 / p99 3.33 ms vs 1.82/3.64 budget (benchmark script still passes via regression ceiling); recorded, not loosened
-Approved decisions, pre-authorizations used, deferred gates: branch created from main HEAD; no source changes; user pre-approved two pin re-pins (Tasks 3b, 3c) per plan Global Constraints; Windows allowed tonight
-Usage so far (python3 tools/session_usage.py <session files>): not run (no session files passed to this subagent)
-Next exact action: Task 1 (relay and wire protocol 2) RED run, after the coordinator's commit of Task 0
+Resume record (updated 2026-11-08 22:15)
+Branch / base commit / working-tree state: converted-maps / aa9bea2 / Task 1 diff uncommitted (relay, protocol, wire.gd, test_wire.gd, launcher.gd, headless_client.gd)
+Last green task / next incomplete task: Task 1 green, awaiting coordinator commit and review / Task 2
+Changed paths since last commit: relay/{envelope,room}.go and tests, protocol/vectors (2 changed, 4 new), protocol/conformance/{client,conform}.go, game/scripts/net/wire.gd, game/scripts/{launcher.gd,net/headless_client.gd}, game/tests/test_wire.gd
+Last command / cases / checks / failures / exit / marker: sh tools/run_netplay.sh match / n/a / n/a / 0 / match terminal tick 8400, NETPLAY PASSED match
+Known red case or blocker: none
+Approved decisions, pre-authorizations used, deferred gates: none used
+Usage so far: not run
+Next exact action: Task 2 (start spots) RED run, after the coordinator's commit of Task 1
 ```
 
 ## Baseline
@@ -47,6 +47,20 @@ Append-only. One row per command: tree, counts, exit, marker, load averages.
 | 2026-11-08 22:09 | 07c3ab6 | `go test -count=1 -race ./...` (relay/) | ok | 0 | ok wargrid/relay | 3.9 / 7.9 / 4.3 (22:09) | no |
 | 2026-11-08 22:09 | 07c3ab6 | `golangci-lint run` (relay/) | 0 issues | 0 | 0 issues. | 3.9 / 7.9 / 4.3 (22:09) | no |
 | 2026-11-08 22:09 | 07c3ab6 | `sh tools/run_benchmark.sh` (alone) | BENCHMARK 2, COMBAT 10, LOCKSTEP 1; hordes300 over budget | 0 | BENCHMARK PASSED 2; COMBAT BENCHMARK PASSED 10; LOCKSTEP BENCHMARK PASSED 1 | pre 3.9 / 7.9 / 4.3, post 2.9 / 7.2 / 4.1 | no |
+| 2026-11-08 22:12 | aa9bea2 + Task 1 diff | `go test -count=1 -race ./...` (relay/) | ok | 0 | ok wargrid/relay | 1.9 / 4.2 / 3.6 (22:14) | no |
+| 2026-11-08 22:12 | aa9bea2 + Task 1 diff | `golangci-lint run` (relay/) | 0 issues | 0 | 0 issues. | 1.9 / 4.2 / 3.6 (22:14) | no |
+| 2026-11-08 22:13 | aa9bea2 + Task 1 diff | `sh tools/run_conformance.sh` | n = 39 (33 + 6 new) | 0 | CONFORMANCE PASSED 39 | 1.9 / 4.2 / 3.6 (22:14) | no |
+| 2026-11-08 22:13 | aa9bea2 + Task 1 diff | `sh tools/run_tests.sh` | CASES 559, CHECKS 136859, FAILURES 0 | 0 | TESTS PASSED 136859 | 1.9 / 4.2 / 3.6 (22:14) | no |
+| 2026-11-08 22:14 | aa9bea2 + Task 1 diff | `sh tools/run_lint.sh` / `run_warnings.sh` | 114 files | 0 / 0 | WARNINGS CHECKED 114 FILES | 1.9 / 4.2 / 3.6 (22:14) | no |
+| 2026-11-08 22:14 | aa9bea2 + Task 1 diff | `sh tools/run_netplay.sh match` | n/a | 0 | match terminal tick 8400; NETPLAY PASSED match | 1.9 / 4.2 / 3.6 (22:14) | no |
+
+## Task 1 RED
+
+Tree `aa9bea2` plus new vectors and tests, production code unchanged.
+
+- `sh tools/run_conformance.sh` against the protocol-1 relay: `FAIL settings_echoed_byte_exact: bad welcome "{\"type\":\"error\",\"reason\":\"protocol mismatch\"}"`; `CONFORM default: 36 cases, 34 failed`.
+- `go test ./...` in `relay/`: build failed, `envelope_test.go:57:137: e.settings undefined (type *envelope has no field or method settings)` (compile error instead of the first `TestParseRules` failure, because the new test reads `e.settings`).
+- Suite: `FAIL: W2 rejects start without seed` (and 7 more W2/W3 lines), `CASES 559 CHECKS 136858 FAILURES 8`.
 
 ## Findings for the morning
 
@@ -61,3 +75,10 @@ Baseline facts for later tasks:
 
 5. `COMBAT hordes300` is over its budget on main HEAD: p95 2.84 ms, p99 3.33 ms, against 1.82 / 3.64 ms. `run_benchmark.sh` still reports `BENCHMARK PASSED` because the regression ceiling p95/p99 is [3.07, 4.05]. Recorded as exceeded, not loosened. Ledger context: [performance ledger](performance.md) (its Deck Firefox p95 verdict already lists hordes300 as the one row over 10 ms).
 6. The relay `go test` baseline was run uncached (`-count=1`); the first run reported `(cached)`.
+
+### Task 1 review minors (Opus, APPROVE)
+- Settings not-object/over-cap fail at parse level, so they get "invalid message" before the protocol check (protocol 3 + `"settings":"x"`). Plan asks for it; morning decision.
+- `"settings":null` untested in TestParseRules (mutant dropping `&& obj != nil` survives).
+- TestParseRules uses 4098 bytes, not 4097; conformance covers the boundary.
+- test_wire W3 `files.size() >= 15` but 16 vectors; should be `>= 16`.
+- conformance `expectStart` uses Atoi, accepts `"seed":+5`.

@@ -66,7 +66,7 @@ func _pre_start() -> void:
 	elif _transport.is_open() and not _hello_sent:
 		_hello_sent = true
 		var build: String = _args.get("build", str(ProjectSettings.get_setting("application/config/version")))
-		_transport.send_text(Wire.encode({"type": "hello", "protocol": Wire.PROTOCOL, "build": build, "match": "" if _args.get("match", "new") == "new" else _args["match"]}))
+		_transport.send_text(Wire.encode({"type": "hello", "protocol": Wire.PROTOCOL, "build": build, "match": "" if _args.get("match", "new") == "new" else _args["match"], "settings": {}}))
 
 func _receive(frames: PackedStringArray) -> void:
 	for text in frames:

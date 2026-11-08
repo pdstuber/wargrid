@@ -8,7 +8,10 @@ import (
 	"regexp"
 )
 
-const maxMessageBytes = 65536
+const (
+	maxMessageBytes  = 65536
+	maxSettingsBytes = 4096
+)
 
 var hashRe = regexp.MustCompile(`^[0-9a-f]{16}$`)
 
@@ -20,6 +23,7 @@ type envelope struct {
 	build    string
 	match    string
 	t        string // raw JSON number token, echoed byte-exact
+	settings []byte // raw JSON object of a hello, nil when absent
 }
 
 func asInt(v any) (int, bool) {
@@ -50,6 +54,20 @@ func validHash(o map[string]any) bool {
 	return tickOK && strOK && hashRe.MatchString(v)
 }
 
+// rawSettings returns the exact bytes of the top-level "settings" value (nil when absent) and whether it is a valid one.
+func rawSettings(text []byte) ([]byte, bool) {
+	var raw map[string]json.RawMessage
+	if json.Unmarshal(text, &raw) != nil {
+		return nil, false
+	}
+	v, present := raw["settings"]
+	if !present {
+		return nil, true
+	}
+	var obj map[string]json.RawMessage
+	return v, len(v) <= maxSettingsBytes && json.Unmarshal(v, &obj) == nil && obj != nil
+}
+
 // parseEnvelope returns nil for anything a client may not send.
 func parseEnvelope(text []byte) *envelope {
 	if len(text) > maxMessageBytes {
@@ -67,8 +85,9 @@ func parseEnvelope(text []byte) *envelope {
 		p, ok1 := asInt(o["protocol"])
 		b, ok2 := asString(o["build"])
 		m, ok3 := asString(o["match"])
-		if ok1 && ok2 && ok3 {
-			return &envelope{typ: typ, protocol: p, build: b, match: m}
+		settings, ok4 := rawSettings(text)
+		if ok1 && ok2 && ok3 && ok4 {
+			return &envelope{typ: typ, protocol: p, build: b, match: m, settings: settings}
 		}
 	case "tick":
 		s, ok1 := asInt(o["seat"])

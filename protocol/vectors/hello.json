@@ -1,9 +1,13 @@
 {
- "text": "{\"type\":\"hello\",\"protocol\":1,\"build\":\"abc\",\"match\":\"\"}",
+ "text": "{\"type\":\"hello\",\"protocol\":2,\"build\":\"abc\",\"match\":\"\",\"settings\":{\"map\":\"dry_wells\",\"map_hash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}}",
  "message": {
   "type": "hello",
-  "protocol": 1,
+  "protocol": 2,
   "build": "abc",
-  "match": ""
+  "match": "",
+  "settings": {
+   "map": "dry_wells",
+   "map_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  }
  }
 }

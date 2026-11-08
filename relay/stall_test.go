@@ -45,10 +45,10 @@ func TestStalledPeerStillProducesLeft(t *testing.T) {
 		t.Fatal(err)
 	}
 	go a.ReadLoop()
-	say(t, a, `{"type":"hello","protocol":1,"build":"x","match":""}`)
+	say(t, a, `{"type":"hello","protocol":2,"build":"x","match":"","settings":{}}`)
 	w := <-st.welcome
 	b, bc := dial(t, srv.URL)
-	say(t, b, `{"type":"hello","protocol":1,"build":"x","match":"`+w[strings.Index(w, `"match":"`)+9:len(w)-2]+`"}`)
+	say(t, b, `{"type":"hello","protocol":2,"build":"x","match":"`+w[strings.Index(w, `"match":"`)+9:len(w)-2]+`"}`)
 	hear(t, bc)
 	hear(t, bc)
 	pad := strings.Repeat("x", 60000)

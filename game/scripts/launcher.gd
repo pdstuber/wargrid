@@ -86,7 +86,7 @@ func _process(_delta: float) -> void:
 	var frames: PackedStringArray = _transport.poll()
 	if _transport.is_open() and not _hello_sent:
 		_hello_sent = true
-		_transport.send_text(Wire.encode({"type": "hello", "protocol": Wire.PROTOCOL, "build": str(ProjectSettings.get_setting("application/config/version")), "match": _match}))
+		_transport.send_text(Wire.encode({"type": "hello", "protocol": Wire.PROTOCOL, "build": str(ProjectSettings.get_setting("application/config/version")), "match": _match, "settings": {}}))
 	for text in frames:
 		if _lockstep != null: _lockstep.receive(text)
 		elif not _handle(text): return

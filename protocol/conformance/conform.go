@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -38,32 +39,49 @@ func expectClosed(cl *client) {
 	check(err == errClosed, "want close, got %q err %v", got, err)
 }
 
-func startMsg(seats int) string {
+func startPrefix(seats int) string {
 	ids := make([]string, seats)
 	for i := range ids {
 		ids[i] = fmt.Sprint(i + 1)
 	}
-	return fmt.Sprintf(`{"type":"start","seats":[%s],"delay":4}`, strings.Join(ids, ","))
+	return fmt.Sprintf(`{"type":"start","seats":[%s],"delay":4,"seed":`, strings.Join(ids, ","))
+}
+
+// expectStart checks the start bytes: fixed prefix, seed in range, the creator's settings text; returns the seed.
+func expectStart(cl *client, seats int, settings string) int {
+	got, err := cl.hear(wait)
+	check(err == nil, "want start, got error %v", err)
+	pre, suf := startPrefix(seats), `,"settings":`+settings+`}`
+	check(strings.HasPrefix(got, pre) && strings.HasSuffix(got, suf), "bad start %q", got)
+	seed, err := strconv.Atoi(got[len(pre) : len(got)-len(suf)])
+	check(err == nil && seed >= 0 && seed <= 2147483647, "bad seed in %q", got)
+	return seed
 }
 
 // room joins `seats` clients and checks welcome/start bytes; returns clients indexed by seat-1.
 func room(url string, seats int, build string) ([]*client, string) {
+	cls, code, _ := roomWith(url, seats, build, "{}")
+	return cls, code
+}
+
+func roomWith(url string, seats int, build, settings string) ([]*client, string, int) {
 	first := must(dial(url))
-	check(first.say(hello("", build, 1)) == nil, "send")
+	check(first.say(helloSettings("", build, 2, settings)) == nil, "send")
 	w := must(first.hear(wait))
 	code := codeOf(w)
 	check(code != "" && w == fmt.Sprintf(`{"type":"welcome","seat":1,"match":"%s"}`, code), "bad welcome %q", w)
 	cls := []*client{first}
 	for s := 2; s <= seats; s++ {
 		cl := must(dial(url))
-		check(cl.say(hello(code, build, 1)) == nil, "send")
+		check(cl.say(hello(code, build, 2)) == nil, "send")
 		expect(cl, fmt.Sprintf(`{"type":"welcome","seat":%d,"match":"%s"}`, s, code))
 		cls = append(cls, cl)
 	}
-	for _, cl := range cls {
-		expect(cl, startMsg(seats))
+	seed := expectStart(cls[0], seats, settings)
+	for _, cl := range cls[1:] {
+		check(expectStart(cl, seats, settings) == seed, "seats got different seeds")
 	}
-	return cls, code
+	return cls, code, seed
 }
 
 func closeAll(cls []*client) {
@@ -138,7 +156,7 @@ func defaultCases() []tcase {
 		{"not_json", func(url string) { rejectAfterJoin(url, `{"type":`, 3) }},
 		{"unknown_type", func(url string) { rejectAfterJoin(url, `{"type":"cheat"}`, 3) }},
 		{"server_type_from_client", func(url string) { rejectAfterJoin(url, left(1, 3), 3) }},
-		{"hello_after_join", func(url string) { rejectAfterJoin(url, hello("", "abc", 1), 3) }},
+		{"hello_after_join", func(url string) { rejectAfterJoin(url, hello("", "abc", 2), 3) }},
 		{"huge_int_tick", func(url string) { rejectAfterJoin(url, `{"type":"tick","seat":1,"tick":4294967300,"commands":[]}`, 3) }},
 		{"ping_before_hello", func(url string) {
 			cl := must(dial(url))
@@ -150,7 +168,7 @@ func defaultCases() []tcase {
 		{"tick_before_start", func(url string) {
 			cl := must(dial(url))
 			defer cl.close()
-			cl.say(hello("", "abc", 1))
+			cl.say(hello("", "abc", 2))
 			must(cl.hear(wait))
 			cl.say(tick(1, 4, ""))
 			expect(cl, errInvalid)
@@ -159,27 +177,32 @@ func defaultCases() []tcase {
 		{"protocol_and_build_mismatch", func(url string) {
 			p := must(dial(url))
 			defer p.close()
-			p.say(hello("", "abc", 2))
+			p.say(`{"type":"hello","protocol":1,"build":"abc","match":""}`)
 			expect(p, `{"type":"error","reason":"protocol mismatch"}`)
 			expectClosed(p)
+			p3 := must(dial(url))
+			defer p3.close()
+			p3.say(hello("", "abc", 3))
+			expect(p3, `{"type":"error","reason":"protocol mismatch"}`)
+			expectClosed(p3)
 			a := must(dial(url))
 			defer a.close()
-			a.say(hello("", "abc", 1))
+			a.say(hello("", "abc", 2))
 			code := codeOf(must(a.hear(wait)))
 			b := must(dial(url))
 			defer b.close()
-			b.say(hello(code, "other", 1))
+			b.say(hello(code, "other", 2))
 			expect(b, `{"type":"error","reason":"build mismatch"}`)
 			expectClosed(b)
 			c := must(dial(url))
 			defer c.close()
-			c.say(hello(code, "abc", 1))
+			c.say(hello(code, "abc", 2))
 			expect(c, fmt.Sprintf(`{"type":"welcome","seat":2,"match":"%s"}`, code))
 		}},
 		{"unknown_match", func(url string) {
 			cl := must(dial(url))
 			defer cl.close()
-			cl.say(hello("ZZZZZZ", "abc", 1))
+			cl.say(hello("ZZZZZZ", "abc", 2))
 			expect(cl, `{"type":"error","reason":"unknown match"}`)
 			expectClosed(cl)
 		}},
@@ -188,7 +211,7 @@ func defaultCases() []tcase {
 			defer closeAll(cls)
 			third := must(dial(url))
 			defer third.close()
-			third.say(hello(code, "abc", 1))
+			third.say(hello(code, "abc", 2))
 			expect(third, `{"type":"error","reason":"match full"}`)
 			expectClosed(third)
 			cls[0].say(tick(1, 4, ""))
@@ -233,7 +256,7 @@ func defaultCases() []tcase {
 		{"ping_pong", func(url string) {
 			cl := must(dial(url))
 			defer cl.close()
-			cl.say(hello("", "abc", 1))
+			cl.say(hello("", "abc", 2))
 			must(cl.hear(wait))
 			cl.say(`{"type":"ping","t":123}`)
 			expect(cl, `{"type":"pong","t":123}`)
@@ -248,7 +271,7 @@ func defaultCases() []tcase {
 			time.Sleep(300 * time.Millisecond)
 			cl := must(dial(url))
 			defer cl.close()
-			cl.say(hello(code, "abc", 1))
+			cl.say(hello(code, "abc", 2))
 			expect(cl, `{"type":"error","reason":"unknown match"}`)
 		}},
 		{"started_room_stays_full_after_leave", func(url string) {
@@ -258,8 +281,62 @@ func defaultCases() []tcase {
 			expect(cls[0], left(2, 3))
 			cl := must(dial(url))
 			defer cl.close()
-			cl.say(hello(code, "abc", 1))
+			cl.say(hello(code, "abc", 2))
 			expect(cl, `{"type":"error","reason":"match full"}`)
+		}},
+		{"settings_echoed_byte_exact", func(url string) {
+			text := `{ "map" : "ashfall", "n":1.50, "u":"ü€", "nested":{"a":[1, 2]} }`
+			cls, _, _ := roomWith(url, 2, "abc", text)
+			closeAll(cls)
+		}},
+		{"joiner_settings_ignored", func(url string) {
+			first := must(dial(url))
+			defer first.close()
+			first.say(helloSettings("", "abc", 2, `{"map":"host"}`))
+			code := codeOf(must(first.hear(wait)))
+			second := must(dial(url))
+			defer second.close()
+			second.say(fmt.Sprintf(`{"type":"hello","protocol":2,"build":"abc","match":"%s","settings":{"map":"other"}}`, code))
+			must(second.hear(wait))
+			expectStart(first, 2, `{"map":"host"}`)
+			expectStart(second, 2, `{"map":"host"}`)
+		}},
+		{"create_without_settings_refused", func(url string) {
+			cl := must(dial(url))
+			defer cl.close()
+			cl.say(`{"type":"hello","protocol":2,"build":"abc","match":""}`)
+			expect(cl, `{"type":"error","reason":"missing settings"}`)
+			expectClosed(cl)
+		}},
+		{"settings_not_object_refused", func(url string) {
+			for _, bad := range []string{`"x"`, `[1]`} {
+				cl := must(dial(url))
+				cl.say(helloSettings("", "abc", 2, bad))
+				expect(cl, errInvalid)
+				expectClosed(cl)
+				cl.close()
+			}
+		}},
+		{"settings_over_cap_refused", func(url string) {
+			pad := func(n int) string { return `{"k":"` + strings.Repeat("x", n-8) + `"}` }
+			ok := must(dial(url))
+			defer ok.close()
+			ok.say(helloSettings("", "abc", 2, pad(4096)))
+			check(codeOf(must(ok.hear(wait))) != "", "4096 bytes refused")
+			over := must(dial(url))
+			defer over.close()
+			over.say(helloSettings("", "abc", 2, pad(4097)))
+			expect(over, errInvalid)
+			expectClosed(over)
+		}},
+		{"seed_in_range_and_varies", func(url string) {
+			seeds := map[int]bool{}
+			for range 3 {
+				cls, _, seed := roomWith(url, 2, "abc", "{}")
+				closeAll(cls)
+				seeds[seed] = true
+			}
+			check(len(seeds) > 1, "three rooms, one seed")
 		}},
 	}
 }

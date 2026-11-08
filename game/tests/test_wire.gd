@@ -63,6 +63,11 @@ func test_decode_rejects(runner) -> bool:
 		"oversize": long_text,
 		"huge integer": '{"type":"ping","t":1e300}',
 		"non-string reason": '{"type":"error","reason":5}',
+		"start without seed": '{"type":"start","seats":[1,2],"delay":4,"settings":{}}',
+		"start without settings": '{"type":"start","seats":[1,2],"delay":4,"seed":1}',
+		"start settings not object": '{"type":"start","seats":[1,2],"delay":4,"seed":1,"settings":[1]}',
+		"fractional seed": '{"type":"start","seats":[1,2],"delay":4,"seed":1.5,"settings":{}}',
+		"hello settings not object": '{"type":"hello","protocol":2,"build":"a","match":"","settings":"x"}',
 	}
 	for name in bad:
 		var decoded: Dictionary = Wire.decode(bad[name])
@@ -73,7 +78,7 @@ func test_vectors(runner) -> bool:
 	# Exports have no ../protocol next to res://, so CI points the exported suite at the checkout.
 	var dir: String = OS.get_environment("WARGRID_VECTORS") if OS.has_environment("WARGRID_VECTORS") else ProjectSettings.globalize_path("res://").path_join("../protocol/vectors")
 	var files: PackedStringArray = DirAccess.get_files_at(dir)
-	runner.check(files.size() >= 12, "W3 vector files found")
+	runner.check(files.size() >= 15, "W3 vector files found")
 	for file in files:
 		var vector: Variant = JSON.parse_string(FileAccess.get_file_as_string(dir.path_join(file)))
 		runner.check(vector is Dictionary and vector.has("text"), "W3 vector parses " + file)

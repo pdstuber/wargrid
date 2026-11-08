@@ -22,7 +22,11 @@ func loopConn(write func([]byte)) (*conn, *atomic.Bool) {
 func seated(t *testing.T, g *registry, match string, write func([]byte)) (*conn, *atomic.Bool) {
 	t.Helper()
 	c, shut := loopConn(write)
-	res := g.join(&envelope{protocol: protocol, build: "b", match: match}, c)
+	e := &envelope{protocol: protocol, build: "b", match: match}
+	if match == "" {
+		e.settings = []byte("{}")
+	}
+	res := g.join(e, c)
 	if res.seat == nil {
 		t.Fatalf("join %q: %s", match, res.reason)
 	}

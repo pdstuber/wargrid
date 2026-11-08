@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/rand"
+	"encoding/binary"
 	"fmt"
 	"log/slog"
 	"maps"
@@ -15,7 +16,7 @@ import (
 
 const (
 	codeAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-	protocol     = 1
+	protocol     = 2
 	inputDelay   = 4
 )
 
@@ -57,16 +58,17 @@ type leaveMsg struct{ s *seat }
 
 // room owns all its state in run(); connections talk to it only through channels.
 type room struct {
-	code    string
-	cfg     config
-	reg     *registry
-	build   string
-	joins   chan joinReq // unbuffered: a send succeeds only while run() is alive
-	events  chan any
-	done    chan struct{}
-	seats   map[int]*seat
-	started bool
-	stats   map[int]string
+	code     string
+	cfg      config
+	reg      *registry
+	build    string
+	joins    chan joinReq // unbuffered: a send succeeds only while run() is alive
+	events   chan any
+	done     chan struct{}
+	seats    map[int]*seat
+	started  bool
+	settings []byte
+	stats    map[int]string
 }
 
 func (r *room) run() {
@@ -161,7 +163,7 @@ func (r *room) admit(c *conn) *seat {
 			list[i] = fmt.Sprint(i + 1)
 		}
 		slog.Info("match start", "code", r.code, "seats", r.cfg.seats)
-		start := []byte(fmt.Sprintf(`{"type":"start","seats":[%s],"delay":%d}`, strings.Join(list, ","), inputDelay))
+		start := []byte(fmt.Sprintf(`{"type":"start","seats":[%s],"delay":%d,"seed":%d,"settings":%s}`, strings.Join(list, ","), inputDelay, randomSeed(), r.settings))
 		for _, s := range r.seats {
 			s.c.send(start, 0)
 		}
@@ -260,6 +262,9 @@ func (g *registry) join(h *envelope, c *conn) joinResult {
 		return joinResult{reason: "protocol mismatch"}
 	}
 	if h.match == "" {
+		if h.settings == nil {
+			return joinResult{reason: "missing settings"}
+		}
 		return g.create(h, c)
 	}
 	g.mu.Lock()
@@ -289,7 +294,7 @@ func (g *registry) create(h *envelope, c *conn) joinResult {
 		code = randomCode()
 	}
 	r := &room{
-		code: code, cfg: g.cfg, reg: g, build: h.build,
+		code: code, cfg: g.cfg, reg: g, build: h.build, settings: h.settings,
 		joins: make(chan joinReq), events: make(chan any, 64), done: make(chan struct{}),
 		seats: map[int]*seat{}, stats: map[int]string{},
 	}
@@ -299,6 +304,12 @@ func (g *registry) create(h *envelope, c *conn) joinResult {
 	s := r.admit(c) // before run() starts: nobody else knows the code yet
 	go r.run()
 	return joinResult{seat: s}
+}
+
+func randomSeed() int {
+	var b [4]byte
+	rand.Read(b[:])
+	return int(binary.BigEndian.Uint32(b[:]) & 0x7fffffff)
 }
 
 func randomCode() string {

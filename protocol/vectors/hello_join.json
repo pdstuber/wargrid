@@ -1,0 +1,9 @@
+{
+ "text": "{\"type\":\"hello\",\"protocol\":2,\"build\":\"abc\",\"match\":\"ABC234\"}",
+ "message": {
+  "type": "hello",
+  "protocol": 2,
+  "build": "abc",
+  "match": "ABC234"
+ }
+}
