@@ -335,3 +335,24 @@ Mean ms per tick, "after" = previous tick had a removal (open 7.8 %, dense 8.2 %
 | `Locomotion.step` (every tick) | 0.213 | 0.186 | 0.350 | heading factor and turn are float-exact into speed; no trace-preserving shortcut found |
 
 Best prototype recovers about 0.015 ms on post-removal ticks (6-8 % of ticks), so p95 moves at most that much against a gap of 0.09 ms (open 1.91 vs 1.82) and an A/A spread of 0.01-0.07; the hordes300 gap is 0.9 ms. No fix kept, no A/B run, no suite run (nothing changed in the repo). Not tried: replacing the per-tick `held.cells` set by an entity-grid occupancy lookup (the only way to remove `hold_cells`), and a persistent set maintained across ticks; both change more than one function and need an Opus design first. Logs: scratchpad `ws2i/prof*.log`.
+
+## R1 result (2026-11-08, A = git archive of 9a340bf, B = 9a340bf with `git revert --no-commit f6ed04f a1dfb03` in a scratch clone, Apple M6, rendered, vsync=off, load 1.4-2.8)
+
+Revert: f6ed04f is a test-only change; a1dfb03 reverted with conflicts only in `docs/reference/performance.md` and `game/tests/test_view.gd` (took HEAD for both, irrelevant to the benchmark). B differs from A in `world_view.gd` (terrain drawn inline again) and lacks `terrain_view.gd`. Run `movement_benchmark.tscn -- --profile` 3x each, interleaved A B A B A B, one window at a time, no other godot/browser process before each run (the B1 pre-check shows only the waiting shell). Raw output in scratchpad `A1..A3.out`, `B1..B3.out`.
+
+Rendered tick_ms (ms), runs 1/2/3:
+
+| layout | tree | p50 | p95 | p99 | max |
+|---|---|---|---|---|---|
+| open | A | 2.50 / 2.54 / 2.55 | 2.73 / 2.65 / 2.68 | 3.04 / 2.84 / 2.90 | 6.8-6.9 |
+| open | B | 3.04 / 2.60 / 2.54 | 3.34 / 2.77 / 2.65 | 3.50 / 2.96 / 2.84 | 6.8-7.8 |
+| dense | A | 2.54 / 2.58 / 2.57 | 2.72 / 2.78 / 2.65 | 2.97 / 3.00 / 2.91 | 6.9-7.0 |
+| dense | B | 2.65 / 2.65 / 2.59 | 3.11 / 2.82 / 2.70 | 3.17 / 2.98 / 2.95 | 7.0 |
+| large_196 | A | 4.17 / 3.19 / 3.13 | 4.90 / 3.48 / 3.24 | 4.98 / 3.86 / 3.59 | 4.0-5.2 |
+| large_196 | B | 3.68 / 3.66 / 3.65 | 4.01 / 4.01 / 4.00 | 4.06 / 4.07 / 4.11 | 4.7-5.0 |
+
+Ticks over 8 ms: 0 of 1800 in every run (largest max 7.79 ms, B1 open; the 6.8-7.8 maxima are the two command ticks). Per-zone draw (A vs B, open/dense): draw 1.16 vs 1.20 / 1.16 vs 1.55 ms; draw.units 1.08 both; draw.terrain exists only in B (0.03 open, 0.40 dense). Draw calls per frame on large_196: A 6, B 4037 (frame interval p50 0.4-0.8 ms vs 95 ms).
+
+### R1 finding
+
+Not reproduced. On a quiet host the rendered open and dense tick p95 is 2.65-2.78 ms on A (current tree) in all three runs, not about 10 ms, and the terrain cache is not the cause: B (no cache) is equal or slightly worse (dense draw +0.4 ms, large_196 tick p50 3.7 vs 3.1-4.2, with 4037 draw calls and a 95 ms frame interval). The earlier 10 ms tail therefore came from the loaded host of that single run per tree, not from a1dfb03. No fix proposed; keep a1dfb03. The large_196 A numbers vary between runs (p50 3.13-4.17, frame p95 0.45-2.84), so host noise on that layout is about 1 ms. R1 closed as host noise (3 runs per tree, same conclusion each).
