@@ -3,15 +3,15 @@
 Handoff: [performance-spike-prompt.txt](../performance-spike-prompt.txt). Ledger: [performance.md](performance.md). Dated evidence rows below the record are append-only.
 
 ```text
-Resume record (updated 2026-11-08 02:40)
-Branch / base commit / working-tree state: main / 740dbe4 (2h c3e1e91, 2d ac1b7d4 and the 2i/R1 records committed) / uncommitted: game/scripts/simulation/combat.gd (2j: records in a per-owner side dictionary), this file, docs/reference/performance.md
-Last green task / next incomplete task: Task 2j (acceptance green, see '2j result') / Task 2k: scratch rerun of B (phase-deferred retarget) and R2 (rendered large-map layout, needs the batched window request)
-Changed paths since last commit: game/scripts/simulation/combat.gd, docs/reference/perf-spike-verification.md, docs/reference/performance.md
-Last command / cases / checks / failures / exit / marker: accept.sh 740dbe4 PASS (suite 485 cases / 136039 checks / 0 failures); 3-tree A/B (f7ce33f, HEAD, working tree) 3 rounds exit 0 ALLDONE
+Resume record (updated 2026-11-08 03:40)
+Branch / base commit / working-tree state: main / 297d43e (clean at start of R2) / uncommitted: game/scripts/debug/movement_benchmark.gd, game/scripts/debug/movement_workload.gd, game/scripts/presentation/world_view.gd, game/scripts/presentation/structure_layer.gd (new), game/tests/test_view.gd, this file, docs/reference/performance.md
+Last green task / next incomplete task: R2 (see 'R2 result') / Workstream 4 (typing), then Workstream 5 (threads); Task 2k B rerun was done earlier
+Changed paths since last commit: the paths above
+Last command / cases / checks / failures / exit / marker: `sh tools/run_tests.sh` on the working tree 486 cases / 136044 checks / 0 failures / exit 0 (base 485 / 136039); lint and warnings exit 0; four traces cmp identical against a git archive of 297d43e; 6 rendered runs `RENDERED PROFILE COMPLETE`, exit 0
 Known red case or blocker: none. R1 closed, not reproduced. 2i BLOCKED (no fix above the A/A spread). Round 2 gate review done. Report-only rows exceeded: combat open, dense, hordes300
 Approved decisions, pre-authorizations used, deferred gates: user invoked the spike 2026-11-07; works on main; local commits after green checkpoints pre-authorized; no push/PR/merge/fly/Sprite/window without approval; host = this Mac only (user). Decisions of 2026-11-07 evening: BM6 retune approved together with 2e; 2f approved with a version bump and a ZH AIUpdate comparison; second round for 2d and per-cell enemy counts; hordes300 "improved, still exceeded" is acceptable; C++/GDExtension NOT investigated (user decision); threads PoC local first, fly web deploy allowed for the threaded-web test only, Safari failure is not a blocker, a Chromium-based browser is acceptable for the Chrome check; Steam Deck check tomorrow; user asleep, run all approved work, pausing only on a stop condition
 Usage so far (python3 tools/session_usage.py <session files>): not recorded
-Next exact action: Task 2k (scratch rerun of B and R2), after the round 2 gate re-check of 2j
+Next exact action: commit R2 (coordinator), then Workstream 4 typing, then Workstream 5 threads
 ```
 
 ## Evidence
@@ -410,3 +410,31 @@ Ticks over 8 ms: 0 of 1800 in every run (largest max 7.79 ms, B1 open; the 6.8-7
 ### R1 finding
 
 Not reproduced. On a quiet host the rendered open and dense tick p95 is 2.65-2.78 ms on A (current tree) in all three runs, not about 10 ms, and the terrain cache is not the cause: B (no cache) is equal or slightly worse (dense draw +0.4 ms, large_196 tick p50 3.7 vs 3.1-4.2, with 4037 draw calls and a 95 ms frame interval). The earlier 10 ms tail therefore came from the loaded host of that single run per tree, not from a1dfb03. No fix proposed; keep a1dfb03. The large_196 A numbers vary between runs (p50 3.13-4.17, frame p95 0.45-2.84), so host noise on that layout is about 1 ms. R1 closed as host noise (3 runs per tree, same conclusion each).
+
+## R2 result (2026-11-08, base 297d43e, A = scratch copy of the tree with the new layout and no cache, B = working tree with the structure layer, Apple M6, rendered, vsync=off, 1280x720, zoom 0.5, `-- --profile`)
+
+Layout: `movement_benchmark.tscn` now runs open, dense, **ashfall**, horde (then large_196 with `--profile`). Ashfall = `game/data/maps/ashfall.json` (194x187, 3,669 blocked cells, 12 supply sources) with 300 move-only units (combat nulled like open/dense) starting at x 4-23, y 107-121 and moving between (41.5, 136.5) and (11.5, 111.5), plus seat 1's six base buildings (`usa_power_plant`, `supply_center`, `barracks`, `factory`, `command_center`, `defence` at the map slots). Camera on the base. Deterministic, no randomness; two legs settle at tick 891 and 2653 (headless check). Helpers: `movement_workload.gd` `_ashfall`, `issue_leg` takes an anchors array (default unchanged).
+
+Runs (interleaved A1 B1 A2 B2 A3 B3, one window at a time, no other godot process; load average at start / end A 1.4/2.3, 3.3/1.9, 2.4/1.7; B 1.7/3.3, 1.9/2.4, 1.7/2.2). Tick / frame interval in ms, p50 / p95 / p99:
+
+| layout | A (3 runs) | B (3 runs) |
+|---|---|---|
+| ashfall tick | 2.44 / 2.71-2.72 / 2.86-2.91 | 2.46-2.48 / 2.73-2.75 / 2.87-2.96 |
+| ashfall frame | 0.835-0.839 / 2.90-3.02 / 5.16-5.18 | 0.835-0.836 / 2.89-2.93 / 4.69-4.70 |
+| open frame | 0.55-0.59 / 1.62-2.15 / 4.26-4.38 | 0.50-0.60 / 1.40-2.16 / 4.23-4.41 |
+| dense frame | 0.60 / 2.10-2.16 / 4.38-4.41 | 0.60 / 2.13-2.15 / 4.41-4.43 |
+| large_196 frame | 0.80 / 2.57-2.96 / 5.24-7.22 | 0.80 / 2.96 / 5.25-5.27 |
+| horde frame | 0.86-0.96 / 3.51-4.03 / 7.84-9.55 | 0.87-0.96 / 3.57-4.08 / 7.85-8.04 |
+| tick p95 open / dense / large_196 / horde | 2.63-2.65 / 2.63-2.66 / 3.25-3.28 / 4.72-4.83 | 2.64-2.70 / 2.65-2.68 / 3.27-3.29 / 4.74-4.80 |
+
+Draw calls p50: ashfall 45, open 5, dense 6, horde 222-229, large_196 6. All six runs exit 0, `RENDERED BENCHMARK PASSED 4`, `RENDERED PROFILE COMPLETE`, no `ERROR`.
+
+Audit (tree A, per tick means, ms; `_draw` runs once per tick because `set_state` calls `queue_redraw`, frames in between replay the recorded commands): `draw` 1.57 = `draw.units` 1.05-1.06 (300 rects, health bars, then four more per-unit passes: crate, order, heading and horde marks, each recomputing `_vehicle_bounds`) + `draw.structures` 0.43-0.44 + `draw.overlays` 0.08. Around it `snapshot` 1.47, `view.copy` 0.08, `view.points` 0.08, `view.sort` 0.05. `draw.structures` is 28 % of `draw`, and 0.0005 ms on open/dense/large_196/horde (no buildings or piles), so it is an Ashfall effect. Cause: 12 piles x 2 `draw_string`, 6 glyphs, and `pile_lines` scanning all entities once per source (12 x 300). Not exercised by this layout (no selection, no combat, no hints): health bars of hurt units, hint rings, shot and target lines, focus boxes, order marks beyond idle ones; `draw.overlays` is 0.08 empty. They were not cached; they change with the tick and have no number here.
+
+Change: `draw_structures()` (sources, buildings, glyphs, health, pile labels) now draws into a child `Structures` layer (`structure_layer.gd`, `show_behind_parent`, after `Terrain`, so the order terrain < structures < units/previews is unchanged). `set_state` builds a flat key (source id/origin/boxes/collector/waiting count/selected, building id/owner/kind/origin/completed/work/builder/hp/max_hp/selected) and calls `queue_redraw()` on the layer only when it differs from the last key. Waiting counts come from one entity pass (`_waiting_counts`) instead of one per source; `pile_lines` keeps its signature. Shared draw helpers (`_draw_footprint`, `_draw_label`, `_draw_glyph`, `_draw_health`) draw on `_canvas` (self, or the layer during `draw_structures`). Key cost `view.structures_key` 0.036 ms. Test V12 (`test_view.gd`): layer draws once, stays cached across ten ticks, redraws on selection and on a new building.
+
+Result: `draw` 1.57 -> 1.14 ms (-0.43 ms, `draw.structures` has 0 calls in the 60 s window), but the frame interval and tick p95 do not improve beyond the A/A spread (frame p95 A 2.90-3.02, B 2.89-2.93; tick p95 +0.02-0.03 from the key cost). So the recording cost is not on the path that sets the frame interval here (the 45 retained draw calls still render every frame); the gain is CPU headroom per tick on a slower device, not a measured frame gain. Remaining Ashfall cost vs the small maps is rendering 45 draw calls (frame p50 0.84 vs 0.55-0.60) and `draw.units` 1.05 ms, which is the same on every layout. Candidate not done: one pass over entities in `_draw` instead of five (`_vehicle_bounds` is computed in `_draw`, `heading_marks`, `horde_marks`), about 0.3-0.5 ms by estimate (unmeasured).
+
+Assertion (new, not an existing budget; nothing existing was loosened): `ASHFALL_FRAME_P95_MS = 4.5` in `movement_benchmark.gd`, worst measured frame p95 3.02 ms (6 runs) plus about 50 % because large_196 frame p95 moved 0.45-2.96 ms between runs on this host. The line is a regression guard for the large map, not the 16.7 ms frame line; with the 6x low-end assumption it would not hold. The failing direction of the assertion was not exercised (no run with a lowered ceiling).
+
+Acceptance: suite 486 cases (485 + V12) / 136044 checks / 0 failures / exit 0; `sh tools/run_lint.sh`, `sh tools/run_warnings.sh` exit 0; `WARGRID_REPLAY_TRACE`, economy, combat and team traces `cmp` identical against a git archive of 297d43e (1200 / 1200 / 1200 / 100 lines); the scratchpad `accept.sh` of earlier tasks was not available in this session, so this was done by hand (suite on both trees with the four trace variables). Netplay and team match not run (presentation only, no sim file touched). Raw output in scratchpad `A1..A3.out`, `B1..B3.out`.

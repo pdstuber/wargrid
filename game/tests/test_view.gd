@@ -10,7 +10,7 @@ const CombatFixture = preload("res://tests/combat_fixture.gd")
 const MovementWorkload = preload("res://scripts/debug/movement_workload.gd")
 
 func cases() -> Array[Callable]:
-	return [test_pick, test_pile_label_drawn_over_buildings, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_heading_mark_layout,test_depth_order_matches_comparator,test_battery_shot_line,test_battery_target_line,test_building_icons,test_building_label_has_no_kind_id,test_horde_marks,test_rebuild_laborer_unselectable, test_crate_marks_frc_only, test_passengers_not_pickable, test_terrain_redraws_only_when_map_changes]
+	return [test_pick, test_pile_label_drawn_over_buildings, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_heading_mark_layout,test_depth_order_matches_comparator,test_battery_shot_line,test_battery_target_line,test_building_icons,test_building_label_has_no_kind_id,test_horde_marks,test_rebuild_laborer_unselectable, test_crate_marks_frc_only, test_passengers_not_pickable, test_terrain_redraws_only_when_map_changes, test_structures_redraw_only_when_they_change]
 
 func test_pick(runner) -> bool:
 	var view = View.new()
@@ -359,6 +359,35 @@ func test_terrain_redraws_only_when_map_changes(runner) -> bool:
 	view.set_state(Fixture.make_world().snapshot(),[])
 	await runner.process_frame
 	runner.check(terrain.draws == first + 2,"V9 a new simulation redraws the terrain")
+	view.free()
+	return true
+
+func test_structures_redraw_only_when_they_change(runner) -> bool:
+	var sim = Fixture.make_world()
+	var hall: int = Fixture.add_completed(sim, 1, "usa_supply_center", Vector2i(7, 8))
+	sim.add_supply_source(Vector2i(10, 10), 5)
+	var view = View.new()
+	runner.root.add_child(view)
+	var layer = view.get_node("Structures")
+	runner.check(layer.show_behind_parent, "V12 structures draw behind the parent's units")
+	view.set_state(sim.snapshot(), [])
+	await runner.process_frame
+	var first: int = layer.draws
+	runner.check(first == 1, "V12 first state draws the structures once")
+	for i in 10:
+		sim.step()
+		view.set_state(sim.snapshot(), [])
+		view.queue_redraw()
+	await runner.process_frame
+	runner.check(layer.draws == first, "V12 ten ticks with no structure change keep the cached layer")
+	var selected: Array[int] = [hall]
+	view.set_state(sim.snapshot(), selected)
+	await runner.process_frame
+	runner.check(layer.draws == first + 1, "V12 selecting a building redraws the layer")
+	Fixture.add_completed(sim, 1, "usa_power_plant", Vector2i(14, 8))
+	view.set_state(sim.snapshot(), selected)
+	await runner.process_frame
+	runner.check(layer.draws == first + 2, "V12 a new building redraws the layer")
 	view.free()
 	return true
 

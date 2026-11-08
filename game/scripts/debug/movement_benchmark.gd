@@ -6,7 +6,9 @@ const Iso = preload("res://scripts/presentation/isometric.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
 const CombatWorkload = preload("res://scripts/debug/combat_workload.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
-const LAYOUTS: Array[String] = ["open", "dense", "horde"]
+# New with the ashfall layout (R2): worst of six rendered runs 3.02 ms plus about 50%. No ceiling exists for the other layouts.
+const ASHFALL_FRAME_P95_MS: float = 4.5
+const LAYOUTS: Array[String] = ["open", "dense", "ashfall", "horde"]
 # `-- --profile` adds profiling zones and a third, 196x196 combat leg (spike-performance only).
 var _profile: bool = OS.get_cmdline_user_args().has("--profile")
 var _large: bool = false
@@ -42,10 +44,11 @@ func _ready() -> void:
 	$Camera2D.zoom = Vector2(0.5, 0.5)
 	print("M2 RENDERED engine=", Engine.get_version_info().string, " os=", OS.get_name(),
 		" cpu=", OS.get_processor_name(), " resolution=", get_viewport().get_visible_rect().size,
-		" zoom=0.5 map=64x64 units=300 seed=none vsync=off warmup_wall_seconds=10 sample_wall_seconds=60")
+		" zoom=0.5 map=64x64 (ashfall layout 194x187) units=300 seed=none vsync=off warmup_wall_seconds=10 sample_wall_seconds=60")
 	_begin_layout()
 
 func _begin_layout() -> void:
+	$Camera2D.position = Iso.world_to_plane(Vector2(32, 32)) if _layout_name() != "ashfall" else Iso.world_to_plane(Vector2(26, 118))
 	_horde_start.clear()
 	_horde_peak = 0
 	_horde_marked_ticks = 0
@@ -87,7 +90,7 @@ func _physics_process(_delta: float) -> void:
 		_leg += 1
 		_leg_ticks = 0
 		_queue_start = _simulation.snapshot().tick
-		Workload.issue_leg(_simulation, _leg)
+		Workload.issue_leg(_simulation, _leg, Workload.ASHFALL_ANCHORS if _layout_name() == "ashfall" else Workload.ANCHORS)
 	_simulation.step()
 	_leg_ticks += 1
 	var state: Dictionary = _simulation.snapshot()
@@ -159,6 +162,12 @@ func _finish_layout(state: Dictionary) -> void:
 	if goals.size() != 300 or _tick_times.is_empty() or _frame_times.is_empty():
 		_fail("Rendered workload incomplete samples/destinations")
 		return
+	if _layout_name() == "ashfall":
+		var frame_p95: float = Stats.summary(_frame_times).p95
+		print("ASHFALL map=194x187 units=300 buildings=6 frame_p95_ms=", frame_p95)
+		if frame_p95 > ASHFALL_FRAME_P95_MS:
+			_fail("Rendered ashfall frame p95 %.3f ms exceeds %.1f ms" % [frame_p95, ASHFALL_FRAME_P95_MS])
+			return
 	print("RENDERED COMPLETE ", LAYOUTS[_layout_index], " completed_legs=", _completed_legs + 1,
 		" queue_peak=", _queue_peak, " queue_drain_ticks=", _queue_drain, " arrived=300 unique_destinations=", goals.size())
 	_layout_index += 1
@@ -190,7 +199,7 @@ func _finish_horde(state: Dictionary) -> void:
 		_fail("Rendered horde workload drew no horde marks or no unit moved")
 		return
 	print("RENDERED COMPLETE horde horde_mark_peak=", _horde_peak, " marked_ticks=", _horde_marked_ticks, " of ", _sample_ticks, " units_moved=", moved)
-	print("RENDERED BENCHMARK PASSED 3")
+	print("RENDERED BENCHMARK PASSED 4")
 	if _profile:
 		_begin_large()
 		return

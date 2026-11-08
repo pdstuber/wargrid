@@ -10,6 +10,7 @@ const UiStyle = preload("res://scripts/presentation/ui_style.gd")
 const ICONS: Array[String] = ["command", "power", "supply", "barracks", "factory", "battery"]
 const LABEL_WIDTH: float = 160.0
 const Terrain = preload("res://scripts/presentation/terrain_view.gd")
+const StructureLayer = preload("res://scripts/presentation/structure_layer.gd")
 const DEPTH_SCALE := 1024.0
 const INDEX_BITS := 20
 const INDEX_MASK := (1 << 20) - 1
@@ -24,6 +25,10 @@ var _hints: Array[Dictionary] = []
 var _hovered_id: int = -1
 var _building_shots: Dictionary = {}
 var _terrain: Node2D = Terrain.new()
+var _structures: Node2D = StructureLayer.new()
+var _structure_key: Array = []
+var _waiting: Dictionary = {}
+var _canvas: CanvasItem
 const HINT_TICKS: int = 40
 const SHOT_TICKS: int = 6
 const MUZZLE_LIFT: float = 20.0
@@ -34,6 +39,10 @@ func _init() -> void:
 	_terrain.name = "Terrain"
 	_terrain.show_behind_parent = true
 	add_child(_terrain)
+	_structures.name = "Structures"
+	_structures.show_behind_parent = true
+	add_child(_structures)
+	_canvas = self
 
 static func owner_color(owner_id: int) -> Color:
 	return OWNER_COLORS.get(owner_id, Color("808080"))
@@ -55,6 +64,9 @@ func set_state(state: Dictionary, selected_ids: Array[int]) -> void:
 	_remember_points()
 	_remember_building_shots()
 	Profiler.end(&"view.points", zone)
+	zone = Profiler.begin()
+	_refresh_structures()
+	Profiler.end(&"view.structures_key", zone)
 	queue_redraw()
 
 func add_hint(point: Vector2, tick: int) -> void:
@@ -179,21 +191,6 @@ func _draw() -> void:
 		return
 	var total: int = Profiler.begin()
 	var zone: int = Profiler.begin()
-	for source: Dictionary in _state.get("sources",[]):
-		_draw_footprint(source.origin,Registry.SOURCE_FOOTPRINT,Color("9f8045"),_selected_ids.has(source.id))
-	for building: Dictionary in _state.get("buildings",[]):
-		var definition: Dictionary = Definitions.building(building.kind)
-		if definition.is_empty(): continue
-		var tint: Color = owner_color(building.owner)
-		_draw_footprint(building.origin,definition.footprint,tint.lerp(Color("687b8c"),0.4) if building.completed else tint.lerp(Color("887966"),0.6),_selected_ids.has(building.id))
-		_draw_building_mark(building,definition)
-		_draw_health(Iso.world_to_plane(Vector2(building.origin[0],building.origin[1]) + Vector2(definition.footprint) / 2.0) + Vector2(-16,-26),building,_selected_ids.has(building.id))
-	for source: Dictionary in _state.get("sources",[]):
-		var lines: PackedStringArray = pile_lines(source)
-		var points: PackedVector2Array = pile_text_points(source)
-		for i in lines.size(): _draw_label(points[i],lines[i])
-	Profiler.end(&"draw.structures", zone)
-	zone = Profiler.begin()
 	for cell in _preview_cells:
 		_draw_footprint([cell.x,cell.y],Vector2i.ONE,Color(0.2,0.9,0.3,0.55) if _preview_valid else Color(0.9,0.2,0.2,0.55),false)
 	for unit: Dictionary in _state.get("entities",[]):
@@ -220,10 +217,41 @@ func _draw() -> void:
 	Profiler.end(&"draw.overlays", zone)
 	Profiler.end(&"draw", total)
 
+# Drawn into the child layer, which redraws only when `_structure_key` changes.
+func draw_structures() -> void:
+	_canvas = _structures
+	var zone: int = Profiler.begin()
+	for source: Dictionary in _state.get("sources",[]):
+		_draw_footprint(source.origin,Registry.SOURCE_FOOTPRINT,Color("9f8045"),_selected_ids.has(source.id))
+	for building: Dictionary in _state.get("buildings",[]):
+		var definition: Dictionary = Definitions.building(building.kind)
+		if definition.is_empty(): continue
+		var tint: Color = owner_color(building.owner)
+		_draw_footprint(building.origin,definition.footprint,tint.lerp(Color("687b8c"),0.4) if building.completed else tint.lerp(Color("887966"),0.6),_selected_ids.has(building.id))
+		_draw_building_mark(building,definition)
+		_draw_health(Iso.world_to_plane(Vector2(building.origin[0],building.origin[1]) + Vector2(definition.footprint) / 2.0) + Vector2(-16,-26),building,_selected_ids.has(building.id))
+	for source: Dictionary in _state.get("sources",[]):
+		var lines: PackedStringArray = _pile_lines(source, _waiting.get(source.id, 0))
+		var points: PackedVector2Array = pile_text_points(source)
+		for i in lines.size(): _draw_label(points[i],lines[i])
+	Profiler.end(&"draw.structures", zone)
+	_canvas = self
+
+func _refresh_structures() -> void:
+	_waiting = _waiting_counts()
+	var key: Array = []
+	for source: Dictionary in _state.get("sources", []):
+		key.append_array([source.id, source.origin[0], source.origin[1], source.boxes, source.active_collector_id, _waiting.get(source.id, 0), _selected_ids.has(source.id)])
+	for building: Dictionary in _state.get("buildings", []):
+		key.append_array([building.id, building.owner, building.kind, building.origin[0], building.origin[1], building.completed, building.work, building.builder_id, building.get("hp"), building.get("max_hp"), _selected_ids.has(building.id)])
+	if key == _structure_key: return
+	_structure_key = key
+	_structures.queue_redraw()
+
 func _draw_health(top_left: Vector2, object: Dictionary, selected: bool) -> void:
 	if not object.has("hp") or (not selected and object.hp >= object.max_hp): return
-	draw_rect(Rect2(top_left, HEALTH_BAR), Color(0, 0, 0, 0.7))
-	draw_rect(Rect2(top_left, Vector2(HEALTH_BAR.x * hp_fraction(object.hp, object.max_hp), HEALTH_BAR.y)), Color("e0d060"))
+	_canvas.draw_rect(Rect2(top_left, HEALTH_BAR), Color(0, 0, 0, 0.7))
+	_canvas.draw_rect(Rect2(top_left, Vector2(HEALTH_BAR.x * hp_fraction(object.hp, object.max_hp), HEALTH_BAR.y)), Color("e0d060"))
 
 func focus_targets() -> Dictionary:
 	var targets := {}
@@ -287,10 +315,17 @@ func _draw_rally() -> void:
 	draw_colored_polygon(PackedVector2Array([point + Vector2(0, -22), point + Vector2(12, -18), point + Vector2(0, -14)]), Color("8cff87"))
 
 func pile_lines(source: Dictionary) -> PackedStringArray:
-	var waiting: int = 0
-	for unit: Dictionary in _state.get("entities", []):
-		if unit.get("collection") != null and unit.collection.target_id == source.id and unit.collection.phase == "waiting_source": waiting += 1
+	return _pile_lines(source, _waiting_counts().get(source.id, 0))
+
+func _pile_lines(source: Dictionary, waiting: int) -> PackedStringArray:
 	return PackedStringArray(["Boxes %d" % source.boxes, "docked %d · waiting %d" % [0 if source.active_collector_id == null else 1, waiting]])
+
+func _waiting_counts() -> Dictionary:
+	var counts := {}
+	for unit: Dictionary in _state.get("entities", []):
+		var collection: Variant = unit.get("collection")
+		if collection != null and collection.phase == "waiting_source": counts[collection.target_id] = counts.get(collection.target_id, 0) + 1
+	return counts
 
 static func line_position(entities: Array, unit: Dictionary) -> int:
 	var place: int = 1
@@ -402,13 +437,13 @@ func set_build_preview(cells: Array[Vector2i], valid: bool) -> void:
 func _draw_footprint(origin: Array, size: Vector2i, color: Color, selected: bool) -> void:
 	var point := Vector2(origin[0],origin[1])
 	var polygon := _cell_polygon(point, Vector2(size))
-	draw_colored_polygon(polygon,color)
+	_canvas.draw_colored_polygon(polygon,color)
 	if selected:
 		polygon.append(polygon[0])
-		draw_polyline(polygon,Color("8cff87"),2.0)
+		_canvas.draw_polyline(polygon,Color("8cff87"),2.0)
 
 func _draw_label(point: Vector2, text: String) -> void:
-	draw_string(ThemeDB.fallback_font,point + Vector2(-LABEL_WIDTH / 2.0,0),text,HORIZONTAL_ALIGNMENT_CENTER,LABEL_WIDTH,UiStyle.FONT_SIZE,Color.WHITE)
+	_canvas.draw_string(ThemeDB.fallback_font,point + Vector2(-LABEL_WIDTH / 2.0,0),text,HORIZONTAL_ALIGNMENT_CENTER,LABEL_WIDTH,UiStyle.FONT_SIZE,Color.WHITE)
 
 func _draw_building_mark(building: Dictionary, definition: Dictionary) -> void:
 	var center: Vector2 = Iso.world_to_plane(Vector2(building.origin[0],building.origin[1]) + Vector2(definition.footprint) / 2.0)
@@ -421,20 +456,20 @@ func _draw_building_mark(building: Dictionary, definition: Dictionary) -> void:
 
 func _draw_glyph(kind: String, c: Vector2, r: float, color: Color) -> void:
 	match icon_name(kind):
-		"command": draw_colored_polygon(_star(c,r),color)
-		"power": draw_colored_polygon(_bolt(c,r),color)
+		"command": _canvas.draw_colored_polygon(_star(c,r),color)
+		"power": _canvas.draw_colored_polygon(_bolt(c,r),color)
 		"supply":
-			draw_rect(Rect2(c - Vector2(r,r) * 0.8,Vector2(r,r) * 1.6),color,false,2.0)
-			draw_line(c - Vector2(r * 0.8,0),c + Vector2(r * 0.8,0),color,2.0)
-			draw_line(c - Vector2(0,r * 0.8),c + Vector2(0,r * 0.8),color,2.0)
+			_canvas.draw_rect(Rect2(c - Vector2(r,r) * 0.8,Vector2(r,r) * 1.6),color,false,2.0)
+			_canvas.draw_line(c - Vector2(r * 0.8,0),c + Vector2(r * 0.8,0),color,2.0)
+			_canvas.draw_line(c - Vector2(0,r * 0.8),c + Vector2(0,r * 0.8),color,2.0)
 		"barracks":
 			for dy: float in [-0.6,0.0,0.6]:
-				draw_polyline(PackedVector2Array([c + Vector2(-r * 0.8,r * (dy - 0.2)),c + Vector2(0,r * (dy + 0.2)),c + Vector2(r * 0.8,r * (dy - 0.2))]),color,2.0)
+				_canvas.draw_polyline(PackedVector2Array([c + Vector2(-r * 0.8,r * (dy - 0.2)),c + Vector2(0,r * (dy + 0.2)),c + Vector2(r * 0.8,r * (dy - 0.2))]),color,2.0)
 		"factory":
-			draw_circle(c,r * 0.55,color)
-			for i in 8: draw_line(c + Vector2.RIGHT.rotated(i * TAU / 8.0) * r * 0.5,c + Vector2.RIGHT.rotated(i * TAU / 8.0) * r,color,3.0)
-		"battery": draw_colored_polygon(_missile(c,r),color)
-		_: draw_string(ThemeDB.fallback_font,c + Vector2(-r,r * 0.6),fallback_letter(kind),HORIZONTAL_ALIGNMENT_CENTER,r * 2.0,int(r * 1.8),color)
+			_canvas.draw_circle(c,r * 0.55,color)
+			for i in 8: _canvas.draw_line(c + Vector2.RIGHT.rotated(i * TAU / 8.0) * r * 0.5,c + Vector2.RIGHT.rotated(i * TAU / 8.0) * r,color,3.0)
+		"battery": _canvas.draw_colored_polygon(_missile(c,r),color)
+		_: _canvas.draw_string(ThemeDB.fallback_font,c + Vector2(-r,r * 0.6),fallback_letter(kind),HORIZONTAL_ALIGNMENT_CENTER,r * 2.0,int(r * 1.8),color)
 
 static func _star(c: Vector2, r: float) -> PackedVector2Array:
 	var points := PackedVector2Array()
