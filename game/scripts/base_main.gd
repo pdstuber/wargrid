@@ -45,7 +45,7 @@ func _hint_point(payload: Dictionary) -> Variant:
 func _build_hint() -> String:
 	return "1-9: menu  U: unload"
 
-func _production_kind(building: Dictionary) -> String:
+func _production_kind(building: Dictionary, _state: Dictionary) -> String:
 	return Definitions.building(building.kind).produces
 
 func _view_selection() -> Array[int]:
@@ -83,7 +83,7 @@ func _refresh_hud(state: Dictionary) -> void:
 	var resume: String = "Right-click: resume\n" if _view.resume_candidate() != -1 else ""
 	var placing: String = Registry.kind(_placement_kind).get("display_name","")
 	_status.text = "Credits: %d | Power: %d/%d | Tick: %d\n%s | Place: %s\n%s | Right: context/move | E: produce | Esc: cancel\n%s%s" % [player.credits,player.power_supply,player.power_demand,state.tick,detail,placing,_build_hint(),resume,_error]
-	$HUD/Economy/Produce.visible = not building.is_empty() and building.completed and not _production_kind(building).is_empty()
+	$HUD/Economy/Produce.visible = not building.is_empty() and building.completed and not _production_kind(building, state).is_empty()
 	$HUD/Economy/CancelBuild.visible = not building.is_empty() and not building.completed
 	_refresh_menu(_menu_kinds(state,building))
 	_refresh_queue(building.get("queue",[]))
@@ -278,12 +278,13 @@ func _set_rally(plane: Vector2) -> bool:
 	return true
 
 func _produce_selected() -> void:
-	var building: Dictionary = _building(simulation.snapshot(),selected_building_id)
+	var state: Dictionary = simulation.snapshot()
+	var building: Dictionary = _building(state,selected_building_id)
 	if building.is_empty():
 		_error = "Select a production building"
 		_refresh()
 		return
-	_submit({"type":"produce","building_id":building.id,"unit_kind":_production_kind(building)})
+	_submit({"type":"produce","building_id":building.id,"unit_kind":_production_kind(building, state)})
 
 func _cancel_entry(id: int) -> void:
 	_submit({"type":"cancel_production","building_id":selected_building_id,"production_id":id})

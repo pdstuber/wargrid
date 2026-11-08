@@ -8,10 +8,11 @@ const View = preload("res://scripts/presentation/world_view.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 const Fixture = preload("res://tests/economy_fixture.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
+const Profiler = preload("res://scripts/debug/profiler.gd")
 const UiStyle = preload("res://scripts/presentation/ui_style.gd")
 
 func cases() -> Array[Callable]:
-	return [test_skirmish_ready_and_tick, test_combat_context_input, test_match_hud_and_restart, test_combat_view, test_hud_layout_and_focus, test_hud_build_line, test_enemy_selection_read_only, test_rally_input_and_marker, test_supply_pile_labels, test_attack_move_hint_and_rejection, test_selection_prunes_dead, test_order_marks_own_only, test_health_bar_clear_of_boxes, test_result_clear_of_status, test_silent_keys_explain, test_hud_strings_use_display_names, test_hud_font_size_is_shared, test_defence_attack_scene, test_enter_unload_scene, test_right_click_pile_gathers, test_right_click_pile_in_launcher_flow, test_frc_laborer_right_click_pile]
+	return [test_skirmish_ready_and_tick, test_combat_context_input, test_match_hud_and_restart, test_combat_view, test_hud_layout_and_focus, test_hud_build_line, test_enemy_selection_read_only, test_rally_input_and_marker, test_supply_pile_labels, test_attack_move_hint_and_rejection, test_selection_prunes_dead, test_order_marks_own_only, test_health_bar_clear_of_boxes, test_result_clear_of_status, test_silent_keys_explain, test_hud_strings_use_display_names, test_hud_font_size_is_shared, test_defence_attack_scene, test_enter_unload_scene, test_right_click_pile_gathers, test_right_click_pile_in_launcher_flow, test_frc_laborer_right_click_pile, test_one_snapshot_per_refresh]
 
 func _setup(runner):
 	var main = Scene.instantiate()
@@ -587,5 +588,21 @@ func test_frc_laborer_right_click_pile(runner) -> bool:
 	runner.check(not ghost.is_empty() and main._placement_kind.is_empty(), "K13 right-click with a build ghost cancels the ghost, ghost was " + ghost)
 	helper.pointer(main, click, MOUSE_BUTTON_RIGHT, true)
 	runner.check(_pending(main, "gather") == gathers + 1, "K13 the next right-click on the pile gathers")
+	main.free()
+	return true
+
+func test_one_snapshot_per_refresh(runner) -> bool:
+	var main = await _setup(runner)
+	var sim = Skirmish.create()
+	main.simulation = sim
+	main.selected_building_id = Fixture.build(runner, sim, "usa_barracks", Vector2i(12, 12))
+	Profiler.reset()
+	Profiler.enabled = true
+	main._refresh()
+	var calls: int = Profiler.calls(&"snapshot")
+	Profiler.enabled = false
+	Profiler.reset()
+	runner.check(calls == 1, "RF2 a skirmish refresh with a production building selected takes one snapshot, got %d" % calls)
+	runner.check(main.get_node("HUD/Economy/Produce").text == "Produce Rifleman (E)", "RF2 produce label unchanged")
 	main.free()
 	return true
