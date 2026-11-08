@@ -1,9 +1,9 @@
-# Wargrid — Project Kickoff Blueprint
+# Wargrid blueprint: design and milestones
 
 **Version:** 0.4
 
 **Date:** 2026-11-02
-**Status:** Design specification; M0–M2 implemented; M3 headless implementation and cross-OS CI verified; positive user playtest reported; detailed visible coverage and retail parity pending; rendered benchmark measured on the development machine only, low-end budgets tracked in the [performance ledger](docs/reference/performance.md). The [development notes](docs/development.md) own current verification status.
+**Status:** Design specification; M0–M2 implemented; M3 headless implementation and cross-OS CI verified; positive user playtest reported; detailed visible coverage and retail parity pending; rendered benchmark measured on the development machine only, low-end budgets tracked in the [performance ledger](reference/performance.md). The [development notes](development.md) own current verification status.
 
 **Working title:** Wargrid
 
@@ -187,7 +187,7 @@ Record the **source revision/commit hash** used for each research finding. Do no
 - Inspected revision: `0a05454d8574207440a5fb15241b98ad0b435590`. Use this revision in source links and research notes.
 - Research **`GeneralsMD/`** for Zero Hour. `Generals/` is the base game; do not mix their behavior without saying so.
 - Installed engine reports `4.7.2.stable.official.ed1daf0bf` via `godot --version`. This is an observed local version, not a claim about the latest upstream release. M0 must verify an official matching CI download before adopting this pin.
-- The source checkout omits gameplay INIs. User-supplied installation backups under `~/CnC` contain readable `INI.big` (Generals) and `INIZH.big` (Zero Hour), including gameplay definitions. See [local data inventory and hashes](docs/reference/installation.md). Use the root Zero Hour archive, not its obsolete nested duplicate; resolve overrides before claiming effective stats.
+- The source checkout omits gameplay INIs. User-supplied installation backups under `~/CnC` contain readable `INI.big` (Generals) and `INIZH.big` (Zero Hour), including gameplay definitions. See [local data inventory and hashes](reference/installation.md). Use the root Zero Hour archive, not its obsolete nested duplicate; resolve overrides before claiming effective stats.
 - Current data baseline: hash-pinned Steam Deck installation backups, inspected 2026-11-01. Exact executable/patch version, mod status and runtime behavior remain **unverified**; do not assume 1.04. Before a measured comparison, record executable/version, mods, effective configuration and scenario. Configuration research is unblocked; measured fidelity still requires runtime observations.
 
 Source entry points below are relative to `GeneralsMD/Code/GameEngine/`. They locate research, not instructions to port the implementation.
@@ -448,7 +448,7 @@ Each pull request / agent change must:
 5. Store test results, failing fixture IDs and useful command/event traces as artifacts.
 6. Track performance regression measurements separately rather than making flaky elapsed-time thresholds mandatory from the first week.
 
-Configure push, pull-request and manual triggers. Pin one engine version in the development notes and CI, verify its archive checksum before installing, and set a job timeout. M2 extends the Godot job to a Linux/Windows/macOS matrix with a dependent replay comparison job, per [M2 task 0](docs/superpowers/plans/2026-11-01-m2-groups.md). No engine comparisons or release/signing setup.
+Configure push, pull-request and manual triggers. Pin one engine version in the development notes and CI, verify its archive checksum before installing, and set a job timeout. M2 extends the Godot job to a Linux/Windows/macOS matrix with a dependent replay comparison job, per [M2 task 0](superpowers/plans/2026-11-01-m2-groups.md). No engine comparisons or release/signing setup.
 
 **AI acceptance rule:** A coding agent must not say “implemented” without reporting test command, test counts/results and any missing parity evidence. A rendered screenshot is supplemental evidence only.
 
@@ -501,7 +501,7 @@ Add a regression fixture **before** implementing the fix wherever possible.
 
 A desert test map; isometric projection; select vehicle; click-to-move; camera movement; simple pathfinding; UI feedback. Include movement/selection/projection tests.
 
-Adopted concrete scope and execution details: [M1 vehicle plan](docs/superpowers/plans/2026-11-01-m1-vehicle.md). It is based on implemented M0 and explicitly migrates stationary-order tests to moving/arrived state. Prototype map, speed and four-way routes are not Zero Hour parity claims.
+Adopted concrete scope and execution details: [M1 vehicle plan](superpowers/plans/2026-11-01-m1-vehicle.md). It is based on implemented M0 and explicitly migrates stationary-order tests to moving/arrived state. Prototype map, speed and four-way routes are not Zero Hour parity claims.
 
 **Exit gate:** same movement orders yield repeatable results in headless simulation; view projection and click mapping work.
 
@@ -509,7 +509,7 @@ Adopted concrete scope and execution details: [M1 vehicle plan](docs/superpowers
 
 Select 10–30 vehicles; group move; building as obstacle; destination allocation; no pile-up that makes play unusable; basic benchmarks.
 
-Adopted execution contracts: [M2 groups plan](docs/superpowers/plans/2026-11-01-m2-groups.md). Temporary travel overlap and distinct reserved destinations are deliberate prototype choices. Current implementation/verification status lives in [README](README.md); [verification evidence](docs/reference/m2-verification.md) records local correctness/simulation measurements and deferred visible/rendered/backlog gates and verified M2 remote matrix.
+Adopted execution contracts: [M2 groups plan](superpowers/plans/2026-11-01-m2-groups.md). Temporary travel overlap and distinct reserved destinations are deliberate prototype choices. Current implementation/verification status lives in [README](../README.md); [verification evidence](reference/m2-verification.md) records local correctness/simulation measurements and deferred visible/rendered/backlog gates and verified M2 remote matrix.
 
 **Exit gate:** automated scenarios for open ground, blocking, group destinations and repathing; measured performance gates in §11 before expanding scope.
 
@@ -517,7 +517,7 @@ Adopted execution contracts: [M2 groups plan](docs/superpowers/plans/2026-11-01-
 
 Construction vehicle, supply resource, Chinook-like collector, resource drop-off, basic power plant, production building, construction queue. USA economy requires limited collector flight now: ground obstacles do not block its cruise path; pickup, cargo, deposit and destroyed-destination behavior need explicit rules. Combat aircraft, passenger transport and advanced air interactions remain deferred.
 
-**Adopted contracts:** [approved M3 design](docs/superpowers/specs/2026-11-02-m3-base-supplies-design.md), [source/config evidence](docs/reference/m3-economy.md), and [execution plan](docs/superpowers/plans/2026-11-02-m3-base-supplies.md). Source-informed economy slice implemented after explicit2026-11-03 kickoff and accepted risk from deferred M2 visible/rendered/backlog gates. [M3 verification](docs/reference/m3-verification.md) records automated accounting, cross-OS CI and user playtest evidence separately from remaining visible/performance/parity gaps.
+**Adopted contracts:** [approved M3 design](superpowers/specs/2026-11-02-m3-base-supplies-design.md), [source/config evidence](reference/m3-economy.md), and [execution plan](superpowers/plans/2026-11-02-m3-base-supplies.md). Source-informed economy slice implemented after explicit2026-11-03 kickoff and accepted risk from deferred M2 visible/rendered/backlog gates. [M3 verification](reference/m3-verification.md) records automated accounting, cross-OS CI and user playtest evidence separately from remaining visible/performance/parity gaps.
 
 **Exit gate:** fully automated supply and construction sequence with resource accounting assertions; observed timing parity as evidence becomes available.
 
@@ -525,7 +525,7 @@ Construction vehicle, supply resource, Chinook-like collector, resource drop-off
 
 Infantry, one or two vehicles, targeting, health/damage, basic AI, victory/defeat, build/selection HUD; a **small single-player skirmish**.
 
-**Approved design (2026-11-03):** [combat and mini-match design](docs/superpowers/specs/2026-11-03-m4-combat-design.md), [execution plan for Sol/Medium](docs/superpowers/plans/2026-11-03-m4-combat.md), and [source/config evidence](docs/reference/m4-combat.md). Implemented, verified and merged 2026-11-03; evidence in [M4 verification](docs/reference/m4-verification.md).
+**Approved design (2026-11-03):** [combat and mini-match design](superpowers/specs/2026-11-03-m4-combat-design.md), [execution plan for Sol/Medium](superpowers/plans/2026-11-03-m4-combat.md), and [source/config evidence](reference/m4-combat.md). Implemented, verified and merged 2026-11-03; evidence in [M4 verification](reference/m4-verification.md).
 
 **Exit gate:** reproducible scenario test for a scripted 5–10 minute match plus combat reference fixtures and manual playability review. This is the first true vertical slice.
 
@@ -533,7 +533,7 @@ Infantry, one or two vehicles, targeting, health/damage, basic AI, victory/defea
 
 User playtest notes, 2026-11-03: a rally point per producer (also fixes production stalling once a producer's perimeter is full), opponent base defense and reaction to enemies just beyond weapon range, read-only info for selected enemy objects, visible collector dock/waiting state at supply piles, and one HUD line "1/2/3/4 build".
 
-**Approved design (2026-11-03):** [playtest polish design](docs/superpowers/specs/2026-11-03-m4.1-playtest-polish-design.md) and [execution plan](docs/superpowers/plans/2026-11-03-m4.1-playtest-polish.md): retail idle scan (vision × guard-outer modifier, both sides), opponent base defence, rally points with a default; AI moods deferred to M8. Implemented on `m4.1-polish` (2026-11-04): suite 160 cases / 104,024 checks, benchmarks and CI green; user playtest pending. Evidence: [M4.1 verification](docs/reference/m4.1-verification.md).
+**Approved design (2026-11-03):** [playtest polish design](superpowers/specs/2026-11-03-m4.1-playtest-polish-design.md) and [execution plan](superpowers/plans/2026-11-03-m4.1-playtest-polish.md): retail idle scan (vision × guard-outer modifier, both sides), opponent base defence, rally points with a default; AI moods deferred to M8. Implemented on `m4.1-polish` (2026-11-04): suite 160 cases / 104,024 checks, benchmarks and CI green; user playtest pending. Evidence: [M4.1 verification](reference/m4.1-verification.md).
 
 **Exit gate:** a behavior test per note, the six-minute scenario recalibrated and re-pinned, benchmarks unchanged within budget, a user playtest.
 
@@ -543,7 +543,7 @@ Today's 1v1 skirmish played between two machines: deterministic lockstep with a 
 
 **Exit gate:** a complete match between macOS and Windows without desync, both clients' replay hashes equal, measured command latency against a budget, relay hosting decided and documented.
 
-**M5 status (2026-11-04):** implemented and merged to `main` (`55beae4`); the macOS-Windows match ran on the pre-pacing-fix build and the repeat on the fixed build is a user-accepted deferral, to be played later. Findings: [M5 findings](docs/reference/m5-online.md).
+**M5 status (2026-11-04):** implemented and merged to `main` (`55beae4`); the macOS-Windows match ran on the pre-pacing-fix build and the repeat on the fixed build is a user-accepted deferral, to be played later. Findings: [M5 findings](reference/m5-online.md).
 
 ### M5.1 — Fixes from the friend-match playtest (implemented and merged, playtest done)
 
@@ -553,53 +553,53 @@ Fixes the four notes from the 2026-11-04 friend match:
 - Group orders skip dead and unarmed members.
 - A hint marks each ground click, and the resume order has feedback.
 
-**Exit gate:** the [milestone prompt](docs/milestone-prompt.md) exit gate, with both match pins recalibrated.
+**Exit gate:** the [milestone prompt](milestone-prompt.md) exit gate, with both match pins recalibrated.
 
-Approved design (2026-11-05): [findings design](docs/superpowers/specs/2026-11-05-m5.1-playtest-findings-design.md), [execution plan](docs/superpowers/plans/2026-11-05-m5.1-playtest-findings.md).
+Approved design (2026-11-05): [findings design](superpowers/specs/2026-11-05-m5.1-playtest-findings-design.md), [execution plan](superpowers/plans/2026-11-05-m5.1-playtest-findings.md).
 
 ### M6 — Teams and a full-scale map
 
-**Status (2026-11-05):** implemented and merged to `main`; CI green, user 1v1 playtest done; the four logged findings were fixed 2026-11-06 (not seen on screen); see [M6 verification](docs/reference/m6-verification.md).
+**Status (2026-11-05):** implemented and merged to `main`; CI green, user 1v1 playtest done; the four logged findings were fixed 2026-11-06 (not seen on screen); see [M6 verification](reference/m6-verification.md).
 
 Matches with up to eight players in teams with team victory; a map converted from EA's GPL-released Twilight Flame source (an official 8-player Zero Hour map, 4,900 × 4,900 world units, about 196 × 196 cells at 25 units per cell; user decision 2026-11-05, replacing "hand-authored, no EA map data"), under Wargrid's own name with EA's notice kept; navigation, allocation and snapshot costs scaled for that size (measure first; candidate fixes: incremental navigation updates, local destination search). Still USA only.
 
-**Planning inputs (decided 2026-11-05):** decide the [parity spike decision list](docs/reference/zero-hour-parity-spike.md#decision-list-proposal-for-the-next-combat-feel-work) (edge-to-edge range, Ranger cadence 4/4/22, tank splash, start delay and turning) and budget the pin re-calibration it forces (skirmish, netplay, BM6); fix the Chinook supply scenario to turn M3's provisional collector timing into measured values.
+**Planning inputs (decided 2026-11-05):** decide the [parity spike decision list](reference/zero-hour-parity-spike.md#decision-list-proposal-for-the-next-combat-feel-work) (edge-to-edge range, Ranger cadence 4/4/22, tank splash, start delay and turning) and budget the pin re-calibration it forces (skirmish, netplay, BM6); fix the Chinook supply scenario to turn M3's provisional collector timing into measured values.
 
-**Exit gate:** a deterministic headless 3v3 bots-vs-bots match on the full map within the [performance ledger](docs/reference/performance.md) budgets, with new ledger rows.
+**Exit gate:** a deterministic headless 3v3 bots-vs-bots match on the full map within the [performance ledger](reference/performance.md) budgets, with new ledger rows.
 
-**Planned 2026-11-05 (not started):** [approved design](docs/superpowers/specs/2026-11-05-m6-teams-full-map-design.md), [evidence](docs/reference/m6-map-and-feel.md), [execution plan](docs/superpowers/plans/2026-11-05-m6-teams-full-map.md). User decisions: one milestone (not split); headless only; edge-to-edge range, Ranger cadence 4/4/22, tank splash hurting allies too, start delay, acceleration and turn-in-place; elevation affects passability only; firing ignores heading (no turrets yet).
+**Planned 2026-11-05 (not started):** [approved design](superpowers/specs/2026-11-05-m6-teams-full-map-design.md), [evidence](reference/m6-map-and-feel.md), [execution plan](superpowers/plans/2026-11-05-m6-teams-full-map.md). User decisions: one milestone (not split); headless only; edge-to-edge range, Ranger cadence 4/4/22, tank splash hurting allies too, start delay, acceleration and turn-in-place; elevation affects passability only; firing ignores heading (no turrets yet).
 
 ### Converted maps playable (small task; user, 2026-11-06; renamed from "Ashfall playable" and placed before unit avoidance 2026-11-08)
 
-**Handoff:** [converted maps prompt](docs/converted-maps-prompt.txt) (user, 2026-11-08): Dry Wells, Broken Crown and Ashfall selectable offline and online 1v1, both clients guaranteed the same map, the existing bots build, collect and attack on all three. Not the M9 lobby, and not bot tuning (M8). **Decided (user, 2026-11-08):** the host's opaque `settings` (map and map hash) travel in `hello` and the relay echoes them in `start` with a relay-generated seed (protocol 2); the joiner refuses a map mismatch; 1v1 starts follow Zero Hour's start-spot rule. Details in the handoff's "Decided" section.
+**Handoff:** [converted maps prompt](converted-maps-prompt.txt) (user, 2026-11-08): Dry Wells, Broken Crown and Ashfall selectable offline and online 1v1, both clients guaranteed the same map, the existing bots build, collect and attack on all three. Not the M9 lobby, and not bot tuning (M8). **Decided (user, 2026-11-08):** the host's opaque `settings` (map and map hash) travel in `hello` and the relay echoes them in `start` with a relay-generated seed (protocol 2); the joiner refuses a map mismatch; 1v1 starts follow Zero Hour's start-spot rule. Details in the handoff's "Decided" section.
 
-Make the converted maps playable in the launcher (Ashfall, plus Dry Wells and Broken Crown converted 2026-11-07, see [more maps](docs/reference/more-maps.md); the online `start` message needs a map field first): map choice offline and online, terrain drawn as one batch (the performance spike measured about 5 fps with per-cell drawing). No minimap yet (HUD milestone).
+Make the converted maps playable in the launcher (Ashfall, plus Dry Wells and Broken Crown converted 2026-11-07, see [more maps](reference/more-maps.md); the online `start` message needs a map field first): map choice offline and online, terrain drawn as one batch (the performance spike measured about 5 fps with per-cell drawing). No minimap yet (HUD milestone).
 
-**Partly done (2026-11-08, [more maps](docs/reference/more-maps.md)):** the launcher plays Dry Wells offline and online (camera starts on the own base); terrain draws as one cached batch (`a1dfb03`) and structures in a cached layer; supply sources have their own footprint, so small piles exist ([design](docs/superpowers/specs/2026-11-08-small-supply-piles-design.md)). Still open: map choice offline and online (the online `start` message carries no map, so two clients on different maps desync at the first hash check; different builds are already refused), Broken Crown and Ashfall in the launcher. Camera limits need no work: `main.gd` clamps panning to the map's own size (checked 2026-11-08); pan speed and the empty corners on the big maps are noted in the rendered check.
+**Partly done (2026-11-08, [more maps](reference/more-maps.md)):** the launcher plays Dry Wells offline and online (camera starts on the own base); terrain draws as one cached batch (`a1dfb03`) and structures in a cached layer; supply sources have their own footprint, so small piles exist ([design](superpowers/specs/2026-11-08-small-supply-piles-design.md)). Still open: map choice offline and online (the online `start` message carries no map, so two clients on different maps desync at the first hash check; different builds are already refused), Broken Crown and Ashfall in the launcher. Camera limits need no work: `main.gd` clamps panning to the map's own size (checked 2026-11-08); pan speed and the empty corners on the big maps are noted in the rendered check.
 
 ### M7 — Three factions with their signature mechanics
 
-**Approved design (2026-11-06):** [M7 factions design](docs/superpowers/specs/2026-11-06-m7-factions-design.md), [evidence](docs/reference/m7-factions.md). USA, China and the FRC (Free Resistance Coalition, Wargrid's own name for Zero Hour's GLA) with the user's seven-row roster each, Command Centers, per-faction construction and gathering, GLA-style rebuild holes, horde, salvage, gattling ramp-up, transports and the tunnel network, buildings that fire; faction choice in the launcher offline and online; a plain data-driven build menu. Capability data, no faction branches in simulation code; Wargrid's own names in code and UI. Starts with a performance task on the three simulation rows over the F = 5.5 budget (trace-preserving fixes only). A seat survives while it owns a building flagged as counting for victory, as in Zero Hour (user, 2026-11-06). Three stop gates with a user playtest each (USA, China, FRC). [Execution plan](docs/superpowers/plans/2026-11-06-m7-factions.md) (2026-11-06): gates 1 and 2 implemented (gate 2 signed off by the user 2026-11-07), gate 3 expanded to step level in its own planning session (2026-11-07) and implemented, plus the Zero Hour economy parity rework (4x5 piles, supply clearance, edge margin, dock arrival points, collector cycle data, skirmish piles 400); merged to `main` 2026-11-07 at the exit gate, CI on the merged tree, the macOS trace comparison and the user's playtest pending ([resume record](docs/reference/m7-verification.md#resume-record)). The three-faction 3v3 ends at the 45000-tick cap without a winner ("won inside 45000" waived by the user for that match, 2026-11-07).
+**Approved design (2026-11-06):** [M7 factions design](superpowers/specs/2026-11-06-m7-factions-design.md), [evidence](reference/m7-factions.md). USA, China and the FRC (Free Resistance Coalition, Wargrid's own name for Zero Hour's GLA) with the user's seven-row roster each, Command Centers, per-faction construction and gathering, GLA-style rebuild holes, horde, salvage, gattling ramp-up, transports and the tunnel network, buildings that fire; faction choice in the launcher offline and online; a plain data-driven build menu. Capability data, no faction branches in simulation code; Wargrid's own names in code and UI. Starts with a performance task on the three simulation rows over the F = 5.5 budget (trace-preserving fixes only). A seat survives while it owns a building flagged as counting for victory, as in Zero Hour (user, 2026-11-06). Three stop gates with a user playtest each (USA, China, FRC). [Execution plan](superpowers/plans/2026-11-06-m7-factions.md) (2026-11-06): gates 1 and 2 implemented (gate 2 signed off by the user 2026-11-07), gate 3 expanded to step level in its own planning session (2026-11-07) and implemented, plus the Zero Hour economy parity rework (4x5 piles, supply clearance, edge margin, dock arrival points, collector cycle data, skirmish piles 400); merged to `main` 2026-11-07 at the exit gate, CI on the merged tree, the macOS trace comparison and the user's playtest pending ([resume record](reference/m7-verification.md#resume-record)). The three-faction 3v3 ends at the 45000-tick cap without a winner ("won inside 45000" waived by the user for that match, 2026-11-07).
 
-**Pre-M7 gate (proposed 2026-11-03):** run or explicitly defer the reduced level 1 spot checks (S1–S3) in [Zero Hour verification](docs/reference/zero-hour-verification.md) before kickoff. **Met 2026-11-05 (user decision)** by the [parity harness](docs/reference/zero-hour-parity-harness.md); its [decision list](docs/reference/zero-hour-parity-spike.md#decision-list-proposal-for-the-next-combat-feel-work) was decided in M6.
+**Pre-M7 gate (proposed 2026-11-03):** run or explicitly defer the reduced level 1 spot checks (S1–S3) in [Zero Hour verification](reference/zero-hour-verification.md) before kickoff. **Met 2026-11-05 (user decision)** by the [parity harness](reference/zero-hour-parity-harness.md); its [decision list](reference/zero-hour-parity-spike.md#decision-list-proposal-for-the-next-combat-feel-work) was decided in M6.
 
-**Turn, movement and attack check (user, 2026-11-05):** for every new China and GLA unit, and again for the USA units, run the [parity harness](docs/reference/zero-hour-parity-harness.md) `turn_`, `move_`, `range_` and `reach_` scenarios against the Wargrid simulation and compare whole traces (angle, speed and position per frame), not only the first-move frame. M6 compared the Dozer only at first move and at INI values; the full trace showed Wargrid turning twice as fast (fixed in M6: wheeled turn follows speed). The retail Dozer also slowed to 0.15 cells/s mid-turn at frames 70–80 (cause not identified); look for it in the other wheeled and tracked units.
+**Turn, movement and attack check (user, 2026-11-05):** for every new China and GLA unit, and again for the USA units, run the [parity harness](reference/zero-hour-parity-harness.md) `turn_`, `move_`, `range_` and `reach_` scenarios against the Wargrid simulation and compare whole traces (angle, speed and position per frame), not only the first-move frame. M6 compared the Dozer only at first move and at INI values; the full trace showed Wargrid turning twice as fast (fixed in M6: wheeled turn follows speed). The retail Dozer also slowed to 0.15 cells/s mid-turn at frames 70–80 (cause not identified); look for it in the other wheeled and tracked units.
 
 **Exit gate:** the three stop gates passed; a deterministic headless 3v3 bots-only match on Ashfall with all three factions, simulation ledger rows inside the budgets or reported as exceeded (design §1); parity results as a decision list.
 
 ### Performance spike, then unit avoidance (user, 2026-11-07; order recommended and accepted 2026-11-07, scope not designed)
 
-**Order:** M7 exit gate, performance spike, converted maps playable (user, 2026-11-08), unit avoidance milestone, then ground batch A, M7.5, M7.6, M7.9, ground batch B, M8, M8.1, M9. Handoff for the spike: [performance spike prompt](docs/performance-spike-prompt.txt).
+**Order:** M7 exit gate, performance spike, converted maps playable (user, 2026-11-08), unit avoidance milestone, then ground batch A, M7.5, M7.6, M7.9, ground batch B, M8, M8.1, M9. Handoff for the spike: [performance spike prompt](performance-spike-prompt.txt).
 
-**Status (2026-11-08):** the performance spike is done and merged to `main` (pushed 2026-11-08 with `4c98b9a`); results, remaining work and the tightened gates are in the [performance ledger](docs/reference/performance.md#post-m7-performance-spike-2026-11). The next step in this order is the converted maps playable task ([handoff](docs/converted-maps-prompt.txt)), then the unit avoidance milestone (not designed).
+**Status (2026-11-08):** the performance spike is done and merged to `main` (pushed 2026-11-08 with `4c98b9a`); results, remaining work and the tightened gates are in the [performance ledger](reference/performance.md#post-m7-performance-spike-2026-11). The next step in this order is the converted maps playable task ([handoff](converted-maps-prompt.txt)), then the unit avoidance milestone (not designed).
 
-- **Performance spike** right after M7, simulation cost first; rendered cost only for two items the user added on 2026-11-07 (large-map terrain and per-frame redraws, the unexplained rendered tick tail of about 10 ms since the terrain cache). The exceeded rows in the [performance ledger](docs/reference/performance.md) are accepted until then (combat stress, team match p99, the horde layout). Reported as exceeded, never loosened. It also answers whether a threaded web export is feasible.
+- **Performance spike** right after M7, simulation cost first; rendered cost only for two items the user added on 2026-11-07 (large-map terrain and per-frame redraws, the unexplained rendered tick tail of about 10 ms since the terrain cache). The exceeded rows in the [performance ledger](reference/performance.md) are accepted until then (combat stress, team match p99, the horde layout). Reported as exceeded, never loosened. It also answers whether a threaded web export is feasible.
 - **Unit avoidance milestone** after the spike: units go around each other instead of through each other (a firm requirement from the M7 gate 2 playtest; today the M2 design permits overlap in transit). It changes pathing for every unit, so it re-pins every trace and needs its own benchmarks, a design spike on one map first, and a playtest. Risks to design for: deadlocks at docks and chokepoints, trucks, container boarding, horde clusters, lockstep determinism and WASM cost.
 - **Why this order:** the spike gives avoidance a measured per-tick baseline and probably its spatial grid; avoidance comes before new content so later rosters, the art pass and the M8 bots are tuned once against the final movement, and the trace re-pin happens once. Fog and art do not touch movement. Converted maps playable goes first (user, 2026-11-08) so avoidance is designed against real docks and chokepoints, later playtests have map choice and M8 is tuned on three maps.
 
 ### Ground batch A (after unit avoidance; user, 2026-11-06; scope refined 2026-11-07, not designed)
 
-The ground units that need only M7's systems plus veterancy, upgrades and the tech tree, hazard fields (poison, fire, radiation), new transport kinds, and travelling shots with minimum range (artillery). Replaces the earlier proposed "M7.1 roster fill". Per-unit evidence and the 32-unit split: [batch classification](docs/reference/m7-factions.md#batch-classification-config-2026-11-07).
+The ground units that need only M7's systems plus veterancy, upgrades and the tech tree, hazard fields (poison, fire, radiation), new transport kinds, and travelling shots with minimum range (artillery). Replaces the earlier proposed "M7.1 roster fill". Per-unit evidence and the 32-unit split: [batch classification](reference/m7-factions.md#batch-classification-config-2026-11-07).
 
 **User decisions (2026-11-07):**
 - **Rank-gated units** (Paladin, Nuke Cannon, Marauder, Scud Launcher need a rank-1 promotion in Zero Hour) are gated by their building prerequisites only. No player rank; recorded departure until general's powers.
@@ -630,7 +630,7 @@ Batch B keeps the other 11: Burton, Pathfinder, Sentry Drone, Hacker, Black Lotu
 
 ### R1 — Releases (small separate task, not a milestone; user, 2026-11-06; done 2026-11-07, `v0.6.0` released)
 
-A pushed `v*` tag runs the full test suite on that commit, builds Linux, Windows, macOS and Web, and after one approval (GitHub Environment `production`) deploys the relay, then the web build, to fly and publishes unsigned desktop builds as a GitHub Release. The repository goes public first, after a history scan. Execution plan: [release workflow plan](docs/superpowers/plans/2026-11-06-release-workflow.md). Fits between M7 gates; it changes no game behaviour.
+A pushed `v*` tag runs the full test suite on that commit, builds Linux, Windows, macOS and Web, and after one approval (GitHub Environment `production`) deploys the relay, then the web build, to fly and publishes unsigned desktop builds as a GitHub Release. The repository goes public first, after a history scan. Execution plan: [release workflow plan](superpowers/plans/2026-11-06-release-workflow.md). Fits between M7 gates; it changes no game behaviour.
 
 **R1.1 — Room matching on a simulation fingerprint (user, 2026-11-06; not planned yet):** clients send a hash of the simulation scripts and game data as the relay's `build` string instead of the exact version, so UI-only releases share rooms and any simulation change never does. The version stays for display and release names.
 
@@ -644,7 +644,7 @@ Give the game a deliberate look instead of placeholder rectangles and text label
 
 **Proposed scope (not approved):** Task 1 is an art-direction spike on one scene with two candidates: (A) USA unit and building sprites (asset source decided first; no EA assets, see §1) and (B) the current geometry pushed further with per-faction shape language, outlines, shading and effects, kept varied at full-match unit counts. Each gets a rendered benchmark row. The user picks one (or a mix); the rest of M7.5 applies it to terrain, selection and health feedback, shot and death effects, and the other factions. Visuals only represent simulation state and never own rules (§2).
 
-**Proposed exit gate:** the user's chosen direction recorded (blueprint §2 updated if it changes), a rendered benchmark row in the [performance ledger](docs/reference/performance.md) with the chosen look and effects on, inside the same budgets and assumed slowdown; no simulation, replay or netplay trace change; user playtest of the look.
+**Proposed exit gate:** the user's chosen direction recorded (blueprint §2 updated if it changes), a rendered benchmark row in the [performance ledger](reference/performance.md) with the chosen look and effects on, inside the same budgets and assumed slowdown; no simulation, replay or netplay trace change; user playtest of the look.
 
 ### M7.6 — Generals-style HUD (user, 2026-11-06; scope not designed)
 
@@ -662,14 +662,14 @@ Fair bots only mean something when a human and a bot see the same limited pictur
 
 Stealth and detection, hacking, hijacking and capture: they need fog's visibility model first. Refine after the M7.9 design is approved.
 
-**Moved here by the ground batch A decisions (user, 2026-11-07; evidence in the [batch classification](docs/reference/m7-factions.md#batch-classification-config-2026-11-07)):**
+**Moved here by the ground batch A decisions (user, 2026-11-07; evidence in the [batch classification](reference/m7-factions.md#batch-classification-config-2026-11-07)):**
 - Units: Burton, Pathfinder, Sentry Drone, Hacker, Black Lotus, Listening Outpost, Hijacker, Jarmen Kell, Saboteur, Radar Van, Bomb Truck; the Scout Drone add-on.
 - The Terrorist's car bomb, with the Hijacker.
 - Upgrades: Camouflage, capture building, Mines, Booby Trap, Radar Van Scan, CIA Intelligence.
 
 ### M8 — Bots worth playing
 
-**Deliberate departure from Zero Hour (user, 2026-11-05):** fairness and challenge over parity. Zero Hour has three difficulties (`GameDifficulty`: easy, normal, hard); Wargrid bots follow the fair-play rules in the [fair bots research](docs/reference/fair-bots-research.md) (user-supplied input, partly unverified; read it with its status note). A bot plays by the same rules, sees only what its team could see, and is held to a human-plausible command budget. No reference bot is a fairness model: checked 2026-11-05, OpenRA's squad targeting ignores shroud and fog, and Zero-K CAI marks its own threat check `FIXME: … maphax` (details in the research note), so the invariance test below is the real gate.
+**Deliberate departure from Zero Hour (user, 2026-11-05):** fairness and challenge over parity. Zero Hour has three difficulties (`GameDifficulty`: easy, normal, hard); Wargrid bots follow the fair-play rules in the [fair bots research](reference/fair-bots-research.md) (user-supplied input, partly unverified; read it with its status note). A bot plays by the same rules, sees only what its team could see, and is held to a human-plausible command budget. No reference bot is a fairness model: checked 2026-11-05, OpenRA's squad targeting ignores shroud and fog, and Zero-K CAI marks its own threat check `FIXME: … maphax` (details in the research note), so the invariance test below is the real gate.
 
 **Proposed scope (not approved), one full-strength fair bot:**
 
@@ -678,8 +678,8 @@ Stealth and detection, hacking, hijacking and capture: they need fog's visibilit
 - Economy, per-faction production from the faction data (M7 and both ground batches) with counters chosen from observed evidence, base defence, scouting, squads with missions, a combat estimate before committing and retreat with hysteresis, team coordination between bot seats through team-shared vision only.
 - AI moods (Sleep, Alert 1.1, Aggressive 1.5), deferred from M4.1, and the parked chokepoint analysis from the M6 map-analyzer notes.
 - A headless decision trace (goal, evidence, alternatives rejected).
-- **First task, research (user, 2026-11-06):** re-read and decode all Zero Hour game data and sources for the bots (the decoded `SkirmishScripts.scb`, `AIData.ini`, AI C++), resolve the INI contradictions found so far (for example `AttackPriorityDistanceModifier`: one finding reads 100 from `AIData.ini`, another found the root file a stub) and write down what parity with Zero Hour's bots would look like. The result is a baseline and a source of ideas only: parity with the original bots is not a goal (the user judges them poor). The M7 gate 1 wave update (rally, release at 6 idle units or 60 s, one priority-minus-distance score, shared wave target) is a stopgap with guessed constants and is replaced by this milestone's bot. Starting evidence: [M7 verification](docs/reference/m7-verification.md) sections "ZH skirmish AI vs defensive structures" and "ZH skirmish scripts decoded".
-- Deterministic on every lockstep client: simulation RNG only, a per-tick CPU budget in the [performance ledger](docs/reference/performance.md).
+- **First task, research (user, 2026-11-06):** re-read and decode all Zero Hour game data and sources for the bots (the decoded `SkirmishScripts.scb`, `AIData.ini`, AI C++), resolve the INI contradictions found so far (for example `AttackPriorityDistanceModifier`: one finding reads 100 from `AIData.ini`, another found the root file a stub) and write down what parity with Zero Hour's bots would look like. The result is a baseline and a source of ideas only: parity with the original bots is not a goal (the user judges them poor). The M7 gate 1 wave update (rally, release at 6 idle units or 60 s, one priority-minus-distance score, shared wave target) is a stopgap with guessed constants and is replaced by this milestone's bot. Starting evidence: [M7 verification](reference/m7-verification.md) sections "ZH skirmish AI vs defensive structures" and "ZH skirmish scripts decoded".
+- Deterministic on every lockstep client: simulation RNG only, a per-tick CPU budget in the [performance ledger](reference/performance.md).
 
 **Proposed exit gate:** the fairness suite (research §9) with zero violations, including a hidden-state invariance test (changing hidden enemy state leaves the bot's commands identical); the bot beats the M4 skirmish policy and a passive player across seeded matches in both slots, and defends; a ledger row for three bots on Ashfall; a local user playtest (online 3v3 needs M9).
 
@@ -695,11 +695,11 @@ Stealth and detection, hacking, hijacking and capture: they need fog's visibilit
 
 Lobby with slots, faction, team, bot difficulty and play style; three humans plus three bots through the relay; handling a dropped player (pause, or the player becomes a bot); optional browser export over the same WebSocket transport.
 
-**Lobby look (user, 2026-11-08):** get close to [this mockup](docs/images/lobby-mockup.jpg) (ChatGPT-generated): dark panels with cyan accents; map choice with starting positions on the left; your team (you plus two friend slots) and the bot team with a faction each; bot difficulty 1–5 and play style for all bots; Create match (gives a code to share) and Join by code. Panels and settings are confirmed at M9 planning.
+**Lobby look (user, 2026-11-08):** get close to [this mockup](images/lobby-mockup.jpg) (ChatGPT-generated): dark panels with cyan accents; map choice with starting positions on the left; your team (you plus two friend slots) and the bot team with a faction each; bot difficulty 1–5 and play style for all bots; Create match (gives a code to share) and Join by code. Panels and settings are confirmed at M9 planning.
 
 **Backend stack (user, 2026-11-08):** the relay stays as it is (`net/http` plus `gws`). More complex supporting services, such as the lobby if it needs its own service, use Go with `github.com/go-chi/chi/v5`, unless detailed milestone planning finds a good reason against it.
 
-**Relay beyond one machine (user, 2026-11-04; design proposed):** rooms on several machines with the owner encoded in the match code, region-aware placement, deploys that drain live rooms, and reconnect by replaying the room's command log. Cloud-agnostic (user decision): no routing, discovery or placement feature that exists on one provider only. fly.io stays the host for now; Railway was evaluated in the 2026-11-05 [relay stack spike](docs/reference/relay-stack-spike.md) instead of M5 Task 11 (fly kept). Options and host evidence: [relay scaling](docs/reference/relay-scaling.md). **Scale versus availability (user, 2026-11-05):** one machine is acceptable for now and probably goes far; what it lacks is high availability (a crash or deploy loses live rooms), so M9 planning compares the availability options in [relay scaling](docs/reference/relay-scaling.md#high-availability-options-proposed-2026-11-05) (including a Redis-compatible store, which fly offers as the third-party Upstash extension) before building the several-machine design. **Machine type (user, 2026-11-05; not measured):** rethink it at M9 planning, before the 3v3 gate: `shared-cpu-1x` throttles to a 6.25 % baseline under sustained load, and fly's `performance-1x` (100 % quota, listed at $33/month for 30 days running, billed per second, so little when suspended between matches) is the candidate; measure one room against ten before choosing.
+**Relay beyond one machine (user, 2026-11-04; design proposed):** rooms on several machines with the owner encoded in the match code, region-aware placement, deploys that drain live rooms, and reconnect by replaying the room's command log. Cloud-agnostic (user decision): no routing, discovery or placement feature that exists on one provider only. fly.io stays the host for now; Railway was evaluated in the 2026-11-05 [relay stack spike](reference/relay-stack-spike.md) instead of M5 Task 11 (fly kept). Options and host evidence: [relay scaling](reference/relay-scaling.md). **Scale versus availability (user, 2026-11-05):** one machine is acceptable for now and probably goes far; what it lacks is high availability (a crash or deploy loses live rooms), so M9 planning compares the availability options in [relay scaling](reference/relay-scaling.md#high-availability-options-proposed-2026-11-05) (including a Redis-compatible store, which fly offers as the third-party Upstash extension) before building the several-machine design. **Machine type (user, 2026-11-05; not measured):** rethink it at M9 planning, before the 3v3 gate: `shared-cpu-1x` throttles to a 6.25 % baseline under sustained load, and fly's `performance-1x` (100 % quota, listed at $33/month for 30 days running, billed per second, so little when suspended between matches) is the candidate; measure one room against ten before choosing.
 
 **Exit gate:** a real 3v3 match with friends without desync.
 
@@ -709,9 +709,9 @@ Aircraft (USA 4, China 2) with air combat; superweapons; more maps; campaign too
 
 ### 7.1 M0 implementation plan — stop before movement
 
-**Execution status:** M0 including follow-up test additions passed local and remote checks. See [verification evidence](docs/reference/m0-verification.md) and [README](README.md) for current state.
+**Execution status:** M0 including follow-up test additions passed local and remote checks. See [verification evidence](reference/m0-verification.md) and [README](../README.md) for current state.
 
-**Execution detail:** follow [M0 foundation implementation plan](docs/superpowers/plans/2026-11-01-m0-foundation.md) for exact method signatures, data shapes, concrete acceptance cases and verification order. This section defines milestone scope; the linked plan resolves its implementation details without adding M1 work.
+**Execution detail:** follow [M0 foundation implementation plan](superpowers/plans/2026-11-01-m0-foundation.md) for exact method signatures, data shapes, concrete acceptance cases and verification order. This section defines milestone scope; the linked plan resolves its implementation details without adding M1 work.
 
 **Goal:** prove commands change inspectable state predictably through the same simulation entry point used by the game and tests.
 **Architecture:** one engine-light simulation class; one scene drives it at 30 Hz; one explicit test runner calls `step()` without wall-clock waiting.
@@ -794,10 +794,11 @@ Use Hell's Verdict's `game/` project boundary. Subdirectories below are a later-
 
 ```text
 wargrid/
-  Wargrid_Kickoff_Blueprint.md
   README.md
   AGENTS.md
   docs/
+    blueprint.md
+    development.md
     reference/
       installation.md
       movement.md
@@ -838,7 +839,7 @@ Keep `game/.godot/`, build output, local environment files, temporary generated 
 
 ### Agent operating rules
 
-[AGENTS.md](AGENTS.md) owns project-specific workflow instructions. The [development notes](docs/development.md) record current implementation status and verified commands; planned commands remain explicitly labeled until implemented and verified. Keep both aligned with this blueprint without duplicating its mechanic specifications.
+[AGENTS.md](../AGENTS.md) owns project-specific workflow instructions. The [development notes](development.md) record current implementation status and verified commands; planned commands remain explicitly labeled until implemented and verified. Keep both aligned with this blueprint without duplicating its mechanic specifications.
 
 ---
 
@@ -885,7 +886,7 @@ Start with representative benchmarks at 100, 300 and 500 units, varying:
 
 Track p50/p95/p99 tick time and test-machine metadata. At M2, establish a repeatable 300-unit movement workload (open ground and dense obstacles) with a 10-second warmup and 60-second sample. Proposed initial gate on the recorded development Mac: simulation p95 ≤ 8 ms, p99 ≤ 16 ms, and no growing tick backlog at 30 Hz. Measure rendered frame times separately; target p95 ≤ 16.7 ms at the recorded resolution/zoom for 60 FPS. These are engineering targets, not measured results or promises for unspecified hardware. Record engine/build, hardware, map, seed and unit count with each result.
 
-**Low-end target (2026-11-03):** the project targets a low-end device and possibly a browser (WebAssembly). Budgets derive from a measured 5.5× slowdown relative to the development machine (Steam Deck browser run, 2026-11-06; the browser is a target next to desktop), tracked per milestone in the [performance ledger](docs/reference/performance.md); the rendered benchmark runs with vsync off so it measures render cost. Existing development-machine gates above stay in force; the ledger adds stricter derived ones.
+**Low-end target (2026-11-03):** the project targets a low-end device and possibly a browser (WebAssembly). Budgets derive from a measured 5.5× slowdown relative to the development machine (Steam Deck browser run, 2026-11-06; the browser is a target next to desktop), tracked per milestone in the [performance ledger](reference/performance.md); the rendered benchmark runs with vsync off so it measures render cost. Existing development-machine gates above stay in force; the ledger adds stricter derived ones.
 
 Pathfinding work must be bounded per tick; blocked destinations cannot cause endless immediate retries. A long frame must not trigger unbounded catch-up work or silently drop simulation ticks. First measure the bottleneck, then choose the smallest fix; do not prebuild flow fields, threading or an ECS. Keep hardware-sensitive gates out of ordinary CI; run them before advancing the milestone. If a gate fails, fix it or explicitly revise scope/budget before expanding unit counts.
 
@@ -900,8 +901,8 @@ Use profiling before shifting code to C#, C++ or GDExtension. **Do not infer tha
 - **Transport: WebSocket through a small relay server** (user choice: relay rather than one player hosting). Godot's high-level multiplayer API works over a WebSocket peer on desktop and in web exports, while ENet is not available in browsers, so one transport keeps the later browser build open. The relay forwards per-tick command batches and hashes and holds no game logic. Hosting: the user's existing fly.io account (sample config in the sibling `sb-watcher` project: `fly.toml`, region `fra`, shared 256 MB VM). Unlike that always-on worker, the relay accepts inbound WebSocket connections, so it needs an `[http_service]` section; letting fly stop idle machines and start them on connection keeps cost near zero between matches. Details belong to the M5 design.
 - **Clients:** desktop builds first (user choice), browser later.
 - **Desync detection:** clients exchange the per-tick snapshot hash periodically; a mismatch stops the match with a report.
-- **More than one relay machine (proposed 2026-11-04, M9):** M5 runs one machine because rooms live in memory. Scaling keeps rooms in memory and routes by an owner encoded in the match code, without provider-specific features; see [relay scaling](docs/reference/relay-scaling.md). Since 2026-11-05 one machine is acceptable and availability, not scale, is the open question.
-- **Map scale drives cost:** the target map is about 196 × 196 cells; navigation rebuilds and destination allocation measured at 64 × 64 (see the [performance ledger](docs/reference/performance.md)) would grow roughly 9×, so M6 measures and scales them before content depends on the map.
+- **More than one relay machine (proposed 2026-11-04, M9):** M5 runs one machine because rooms live in memory. Scaling keeps rooms in memory and routes by an owner encoded in the match code, without provider-specific features; see [relay scaling](reference/relay-scaling.md). Since 2026-11-05 one machine is acceptable and availability, not scale, is the open question.
+- **Map scale drives cost:** the target map is about 196 × 196 cells; navigation rebuilds and destination allocation measured at 64 × 64 (see the [performance ledger](reference/performance.md)) would grow roughly 9×, so M6 measures and scales them before content depends on the map.
 
 Authoritative-server simulation stays the fallback if lockstep fails the M5 gate. Keep commands serializable, state inspectable and simulation repeatable; that serves single player, AI agents, debugging, savegames, replays and multiplayer alike.
 
@@ -926,7 +927,7 @@ Keep the working title **Wargrid** independently of EA branding; also check name
 
 ## 13. Kickoff prompt for Codex CLI / Claude Code
 
-Use the root `prompt.txt` (written when a milestone is kicked off; none is active now) in a new session in the Wargrid repository. It records the current milestone handoff and follows the [milestone prompt](docs/milestone-prompt.md); earlier handoffs live in `docs/m3-prompt.txt`, `docs/m4-prompt.txt`, `docs/m4.1-prompt.txt`, `docs/m5-prompt.txt`, `docs/m5.1-prompt.txt` and `docs/m6-prompt.txt`. The prompt limits work to one milestone, requires verification/review and preserves Git/window approval rules. Keep the current handoff prompt in that one file rather than maintaining a second copy here.
+Use the root `prompt.txt` (written when a milestone is kicked off; none is active now) in a new session in the Wargrid repository. It records the current milestone handoff and follows the [milestone prompt](milestone-prompt.md); earlier handoffs live in `docs/m3-prompt.txt`, `docs/m4-prompt.txt`, `docs/m4.1-prompt.txt`, `docs/m5-prompt.txt`, `docs/m5.1-prompt.txt` and `docs/m6-prompt.txt`. The prompt limits work to one milestone, requires verification/review and preserves Git/window approval rules. Keep the current handoff prompt in that one file rather than maintaining a second copy here.
 
 ### Follow-up prompt for a dedicated research agent
 
@@ -974,7 +975,7 @@ Do not edit the live gameplay implementation in this research task.
 | First slice | **Small USA skirmish** | End-to-end playable loop without giant initial scope. |
 | Multiplayer | **Planned: deterministic lockstep over a WebSocket relay (proposed; M5 spike decides)** | Long-term target is 3v3 with friends; simulation, command and hash design already fit lockstep. |
 | Online clients | **Desktop first, browser later** (user, 2026-11-03) | Same WebSocket transport serves both. |
-| Performance target | **Browser as an option next to desktop; F = 5.5** (user, 2026-11-06) | Measured on a Steam Deck: Firefox/WebAssembly 4.9–5.5× the Mac editor build, native 3.4–4.2× ([ledger](docs/reference/performance.md#target-factor-measurement-2026-11-06)). |
+| Performance target | **Browser as an option next to desktop; F = 5.5** (user, 2026-11-06) | Measured on a Steam Deck: Firefox/WebAssembly 4.9–5.5× the Mac editor build, native 3.4–4.2× ([ledger](reference/performance.md#target-factor-measurement-2026-11-06)). |
 | Online connection | **Small relay server on the user's fly.io account** (user, 2026-11-03) | Easiest for friends; relay holds no game logic; existing account and deployment pattern. |
 | Target map | **Full scale, Twilight-Flame-inspired, about 196 × 196 cells** (user, 2026-11-03) | Recognizable travel times; requires M6 scaling work. |
 | Map source | **Converted from EA's GPL Twilight Flame map, own name "Ashfall"** (user, 2026-11-05) | Exact scale, elevation, starts and routes; EA notice and terms kept. |

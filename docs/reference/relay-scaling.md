@@ -1,6 +1,6 @@
 # Relay scaling reference — 2026-11-04
 
-Status: **PROPOSED**. Design input for [M9](../../Wargrid_Kickoff_Blueprint.md#m9--3v3-online), placed there by the user 2026-11-04. **User decisions 2026-11-04:** fly.io stays the host for now; the design is cloud-agnostic, using no routing, discovery or placement feature that exists on only one provider. Provider features stay in deploy config (e.g. `fly.toml` autostop) and code must work without them. Nothing else here is approved or implemented. Host docs read 2026-11-04; providers say limits change.
+Status: **PROPOSED**. Design input for [M9](../blueprint.md#m9--3v3-online), placed there by the user 2026-11-04. **User decisions 2026-11-04:** fly.io stays the host for now; the design is cloud-agnostic, using no routing, discovery or placement feature that exists on only one provider. Provider features stay in deploy config (e.g. `fly.toml` autostop) and code must work without them. Nothing else here is approved or implemented. Host docs read 2026-11-04; providers say limits change.
 
 ## Provenance
 

@@ -12,7 +12,7 @@
 
 **Status:** plan approved by user 2026-11-04; implementation starts only on explicit kickoff (`prompt.txt`).
 
-**Spec:** [M5 design](../specs/2026-11-04-m5-online-spike-design.md) (approved 2026-11-04). Scope and gate: [blueprint](../../../Wargrid_Kickoff_Blueprint.md) §7 M5, §11. Run rules: [milestone prompt](../../milestone-prompt.md). Evidence file: `docs/reference/m5-verification.md` (Task 0 creates it). Reference reading (ideas only, own code): OpenRA `9636b63eae` `OpenRA.Game/Network/OrderManager.cs`, `SyncReport.cs`; GeneralsGameCode `afc2a103f` `Core/GameEngine/Source/GameNetwork/ConnectionManager.cpp`.
+**Spec:** [M5 design](../specs/2026-11-04-m5-online-spike-design.md) (approved 2026-11-04). Scope and gate: [blueprint](../../blueprint.md) §7 M5, §11. Run rules: [milestone prompt](../../milestone-prompt.md). Evidence file: `docs/reference/m5-verification.md` (Task 0 creates it). Reference reading (ideas only, own code): OpenRA `9636b63eae` `OpenRA.Game/Network/OrderManager.cs`, `SyncReport.cs`; GeneralsGameCode `afc2a103f` `Core/GameEngine/Source/GameNetwork/ConnectionManager.cpp`.
 
 ## Global Constraints
 

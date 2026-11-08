@@ -1,6 +1,6 @@
 # M3 — base and supplies design
 
-Status: **DESIGN APPROVED / IMPLEMENTED, ACCEPTANCE GATES PENDING**. User chose research first, selected source-informed playable slice, and approved this design for detailed planning on 2026-11-02. Engineering defaults below were proposed by assistant and approved for planning; user explicitly kicked off implementation on2026-11-03 while accepting risk from deferred M2 visible/rendered/backlog gates. Remaining evidence and limits live in [M3 verification](../../reference/m3-verification.md). [README](../../../README.md) owns current state; [blueprint M3](../../../Wargrid_Kickoff_Blueprint.md) owns milestone scope.
+Status: **DESIGN APPROVED / IMPLEMENTED, ACCEPTANCE GATES PENDING**. User chose research first, selected source-informed playable slice, and approved this design for detailed planning on 2026-11-02. Engineering defaults below were proposed by assistant and approved for planning; user explicitly kicked off implementation on2026-11-03 while accepting risk from deferred M2 visible/rendered/backlog gates. Remaining evidence and limits live in [M3 verification](../../reference/m3-verification.md). [README](../../../README.md) owns current state; [blueprint M3](../../blueprint.md) owns milestone scope.
 
 ## Intent and approaches
 

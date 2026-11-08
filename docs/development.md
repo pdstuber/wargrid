@@ -6,13 +6,13 @@ Development status, setup, commands and operations for Wargrid's agent-driven wo
 
 Status: early development. `main` has three factions (USA, China, FRC), teams, three converted maps (the launcher plays Dry Wells; Ashfall is the full-scale map, not yet in the launcher), skirmish against a bot and online play (milestones M0–M7; M7 merged 2026-11-07 at its exit gate, CI green and macOS traces matching, the user's playtest pending; latest release 0.8.0). Per-milestone plans and evidence: [Start here](#start-here).
 
-Developed with AI coding agents (Claude Code). [AGENTS.md](../AGENTS.md), the [blueprint](../Wargrid_Kickoff_Blueprint.md), `docs/superpowers/` and the [session notes](session-notes.md) are that workflow's plans, decisions and evidence.
+Developed with AI coding agents (Claude Code). [AGENTS.md](../AGENTS.md), the [blueprint](blueprint.md), `docs/superpowers/` and the [session notes](session-notes.md) are that workflow's plans, decisions and evidence.
 
 ## Start here
 
 - [Kickoff](kickoff.md) and [wrap-up](wrapup.md): `/kickoff` and `/wrapup` in Claude Code; portable instructions for any agent.
 - [Session notes](session-notes.md): current handoff, pending actions and next step.
-- [Kickoff blueprint](../Wargrid_Kickoff_Blueprint.md): scope, architecture and milestone gates; historical M0 tasks in §7.1.
+- [Kickoff blueprint](blueprint.md): scope, architecture and milestone gates; historical M0 tasks in §7.1.
 - [M0 execution plan](superpowers/plans/2026-11-01-m0-foundation.md): exact interfaces, concrete test cases and ordered verification steps.
 - [M1 execution plan](superpowers/plans/2026-11-01-m1-vehicle.md): adopted single-vehicle slice, exact movement/input contracts and acceptance cases.
 - [M2 execution plan](superpowers/plans/2026-11-01-m2-groups.md): group movement contracts, implemented benchmarks and remaining acceptance gates.

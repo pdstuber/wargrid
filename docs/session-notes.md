@@ -1,6 +1,6 @@
 # Session notes
 
-Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) and [wrap-up](wrapup.md). Setup lives in the [development notes](development.md); design in [blueprint](../Wargrid_Kickoff_Blueprint.md).
+Working handoff record, not authoritative design. Follow [kickoff](kickoff.md) and [wrap-up](wrapup.md). Setup lives in the [development notes](development.md); design in [blueprint](blueprint.md).
 
 ## Session
 
