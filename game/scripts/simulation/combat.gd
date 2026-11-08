@@ -280,7 +280,7 @@ static func _reach_ring(rings: Dictionary, kind: String, target: Dictionary, rea
 
 const GRID_CELL: int = 8
 
-# Record per target: [id, cx, cy, radius, is_building, position, x0, y0, x1, y1]; built per bucket on its first scan of the tick.
+# Record per target: [id, cx, cy, radius, is_building, position, x0, y0, x1, y1]; built per bucket on its first scan of the tick, in the owner's side dictionary.
 static func _record(target: Dictionary) -> Array:
 	if not target.has("origin"):
 		return [target.id, target.position[0], target.position[1], CombatDefinitions.radius(target.kind), false, Vector2(target.position[0], target.position[1]), 0.0, 0.0, 0.0, 0.0]
@@ -306,11 +306,11 @@ static func _build_grid(sim: Simulation) -> Dictionary:
 	return grid
 
 static func _bucket(grid: Dictionary, owner: int, x: int, y: int, target: Dictionary) -> void:
-	if not grid.has(owner): grid[owner] = {}
-	var cells: Dictionary = grid[owner]
+	if not grid.has(owner): grid[owner] = [{}, {}]
+	var cells: Dictionary = grid[owner][0]
 	var key := Vector2i(x, y)
-	if not cells.has(key): cells[key] = [[], null]
-	cells[key][0].append(target)
+	if not cells.has(key): cells[key] = []
+	cells[key].append(target)
 
 # edge: radius is a weapon reach tested edge to edge; otherwise a centre scan radius.
 static func _nearest(sim: Simulation, unit: Dictionary, grid: Dictionary, radius: float, units_only: bool = false, edge: bool = false) -> Variant:
@@ -324,14 +324,14 @@ static func _nearest(sim: Simulation, unit: Dictionary, grid: Dictionary, radius
 	var limit: float = radius + EDGE_EPS if edge else radius * radius
 	for owner: int in grid:
 		if not hostile(sim, unit.owner, owner): continue
-		var cells: Dictionary = grid[owner]
+		var cells: Dictionary = grid[owner][0]
+		var records: Dictionary = grid[owner][1]
 		for y in range(int(floorf((position.y - window) / GRID_CELL)), int(floorf((position.y + window) / GRID_CELL)) + 1):
 			for x in range(int(floorf((position.x - window) / GRID_CELL)), int(floorf((position.x + window) / GRID_CELL)) + 1):
 				var key := Vector2i(x, y)
 				if not cells.has(key): continue
-				var bucket: Array = cells[key]
-				if bucket[1] == null: bucket[1] = _records(bucket[0])
-				for rec: Array in bucket[1]:
+				if not records.has(key): records[key] = _records(cells[key])
+				for rec: Array in records[key]:
 					if units_only and rec[4]: continue
 					sim._combat_work += 1
 					var distance: float

@@ -3,15 +3,15 @@
 Handoff: [performance-spike-prompt.txt](../performance-spike-prompt.txt). Ledger: [performance.md](performance.md). Dated evidence rows below the record are append-only.
 
 ```text
-Resume record (updated 2026-11-07 23:30)
-Branch / base commit / working-tree state: main / 7c9d615 (2b bce4b79, 2c f62cf70, 2e dropped 7c9d615 all committed) / uncommitted: game/tests/test_combat.gd (RAD rename), docs/reference/performance.md (2e row moved), this file (2f design, Task 2g)
-Last green task / next incomplete task: Task 2d (Horde.step, uncommitted, acceptance green, see '2d result'); before it Task 2h (A1 lazy records, uncommitted in game/scripts/simulation/combat.gd, acceptance green, team match +0.5-1 % marginal, see "2h result") / then Task 2d scratch profiling of `advance.horde`, then post-removal plan / `firing_cell` profiling; 2f-B NOT recommended
-Changed paths since last commit: game/tests/test_combat.gd, docs/reference/performance.md, this file
-Last command / cases / checks / failures / exit / marker: accept.sh bce4b79 PASS (suite 484 cases / 136037 checks / 0 failures); A/B bench_ab.sh 3 rounds exit 0 ALLDONE
-Known red case or blocker: none. Report-only rows exceeded: combat open, dense, hordes300
-Approved decisions, pre-authorizations used, deferred gates: user invoked the spike 2026-11-07; works on main; local commits after green checkpoints pre-authorized; no push/PR/merge/fly/Sprite/window without approval; host = this Mac only (user). Decisions of 2026-11-07 evening: BM6 retune approved together with 2e; 2f approved with a version bump and a ZH AIUpdate comparison; second round for 2d and per-cell enemy counts; hordes300 "improved, still exceeded" is acceptable; C++/GDExtension NOT investigated (user decision); threads PoC local first, fly web deploy allowed for the threaded-web test only, Safari failure is not a blocker, a Chromium-based browser (e.g. Vivaldi, not installed yet) is acceptable for the Chrome check; Steam Deck check tomorrow; user asleep, run all approved work, pausing only on a stop condition
+Resume record (updated 2026-11-08 02:40)
+Branch / base commit / working-tree state: main / 740dbe4 (2h c3e1e91, 2d ac1b7d4 and the 2i/R1 records committed) / uncommitted: game/scripts/simulation/combat.gd (2j: records in a per-owner side dictionary), this file, docs/reference/performance.md
+Last green task / next incomplete task: Task 2j (acceptance green, see '2j result') / Task 2k: scratch rerun of B (phase-deferred retarget) and R2 (rendered large-map layout, needs the batched window request)
+Changed paths since last commit: game/scripts/simulation/combat.gd, docs/reference/perf-spike-verification.md, docs/reference/performance.md
+Last command / cases / checks / failures / exit / marker: accept.sh 740dbe4 PASS (suite 485 cases / 136039 checks / 0 failures); 3-tree A/B (f7ce33f, HEAD, working tree) 3 rounds exit 0 ALLDONE
+Known red case or blocker: none. R1 closed, not reproduced. 2i BLOCKED (no fix above the A/A spread). Round 2 gate review done. Report-only rows exceeded: combat open, dense, hordes300
+Approved decisions, pre-authorizations used, deferred gates: user invoked the spike 2026-11-07; works on main; local commits after green checkpoints pre-authorized; no push/PR/merge/fly/Sprite/window without approval; host = this Mac only (user). Decisions of 2026-11-07 evening: BM6 retune approved together with 2e; 2f approved with a version bump and a ZH AIUpdate comparison; second round for 2d and per-cell enemy counts; hordes300 "improved, still exceeded" is acceptable; C++/GDExtension NOT investigated (user decision); threads PoC local first, fly web deploy allowed for the threaded-web test only, Safari failure is not a blocker, a Chromium-based browser is acceptable for the Chrome check; Steam Deck check tomorrow; user asleep, run all approved work, pausing only on a stop condition
 Usage so far (python3 tools/session_usage.py <session files>): not recorded
-Next exact action: Workstream 2 round 2 gate review (2i BLOCKED: post-removal extras and `advance.move` profiled, no fix above the A/A spread; see '2i result')
+Next exact action: Task 2k (scratch rerun of B and R2), after the round 2 gate re-check of 2j
 ```
 
 ## Evidence
@@ -28,7 +28,11 @@ Next exact action: Workstream 2 round 2 gate review (2i BLOCKED: post-removal ex
 | 2026-11-07 | e11b2fe-equivalent HEAD c683426 (git archive) + scratch sub-zones, `_nearest` counters, `run_2a.gd` | Apple M6 | Task 2a: open, dense, hordes300 one at a time, headless, profiler on, no godot/ZH process before each (pgrep empty), 22:25; the scratch copy was not linted or run through the suite (Task 2a keeps no code) | exit 0 x3, `TWO_A COMPLETE`; load 1.56 start / 1.40 end; result below |
 | 2026-11-07 | HEAD c17e88d + Task 2b working tree (uncommitted) vs git archive of c17e88d | Apple M6 | Task 2b acceptance: suite, lint, warnings, 4 traces cmp, netplay, team match, A/B A B A B A B of run_movement.gd and run_combat.gd (headless), no godot/ZH process before | suite 483 cases / 136034 checks / 0 failures (base 482 / 136033 with traces); lint, warnings exit 0; traces identical (1200, 1200, 1200, 100 rows); netplay match PASSED tick 8400; team match exit 0 `cap tick=45000 winner=null units_peak=160`; load 1.82 start / 1.69 end; table in '2b result' |
 | 2026-11-07 | HEAD bce4b79 + Task 2c working tree (uncommitted) vs git archive of bce4b79 | Apple M6 | Task 2c acceptance via scratchpad accept.sh and bench_ab.sh: suite, lint, warnings, 4 traces cmp, pins, netplay, team match, A/B A B A B A B of run_movement.gd and run_combat.gd (headless), no godot/ZH process before | suite 484 cases / 136037 checks / 0 failures (base 483 / 136034); lint, warnings exit 0; traces identical; 7 pin lines equal; netplay match PASSED tick 8400; team match exit 0 `cap tick=45000 winner=null units_peak=160`; load 1.93 start / 1.25 end; table in '2c result' |
+| 2026-11-07 | HEAD 96ef6ca via git archive, scratch copies `ws2f0` (not linted, nothing kept) | Apple M6 | Task 2f.0: zone split of post-removal ticks (profiler on, 300 warm-up + 1800 ticks), prototypes A1 (flat records) and B (phase-deferred retarget), A/B 3 rounds | exit 0; B fails 26 checks and is slower on every row, A1 kept later as 2h; load 2.0 start / 1.25 end; table in '2f.0 result' |
+| 2026-11-08 | HEAD f7ce33f + Task 2h working tree (uncommitted) vs git archive of f7ce33f | Apple M6 | Task 2h acceptance via accept.sh and bench_ab.sh (3 rounds), team match and lockstep A B A B A B by hand; no godot process before | suite 484 cases / 136037 checks / 0 failures; lint, warnings exit 0; traces identical; 7 pin lines equal; netplay match PASSED tick 8400; team match exit 0 cap line; load 1.0-2.3; movement dense p99 +0.014 flagged 'slower' by the tool (within the spread of B's runs); table in '2h result' |
 | 2026-11-08 | HEAD c3e1e91 + Task 2d working tree (uncommitted) vs git archive of c3e1e91 | Apple M6 | Task 2d acceptance via accept.sh and bench_ab.sh (3 rounds, plus a second 3-round combat run), team match and lockstep A B A B A B by hand; no godot process before | suite 485 cases / 136039 checks / 0 failures (base 484 / 136037); lint, warnings exit 0; traces identical; 7 pin lines equal; netplay match PASSED tick 8400; team match exit 0 cap line; load 1.5; table in '2d result' |
+| 2026-11-08 | HEAD 740dbe4 + Task 2j working tree (uncommitted) vs git archive of 740dbe4, 3-tree A/B with f7ce33f | Apple M6 | Task 2j acceptance via accept.sh and a 3-round interleaved A/B (team match, combat, movement, lockstep); no godot process before | suite 485 cases / 136039 checks / 0 failures; lint, warnings exit 0; traces identical; 7 pin lines equal; netplay match PASSED tick 8400; team match exit 0 cap line; load 1.1-2.3; table in '2j result' |
+| 2026-11-08 | ac1b7d4 via git archive, scratch `ws2i` (profiler zones, not linted) | Apple M6 | Task 2i profiling, open / dense / hordes300 one at a time, headless, no godot process before; no repo code changed | exit 0 x3, scratch script printed `TWO_F0 COMPLETE removals=1800` (reused 2f.0 script name; no 2i marker exists); BLOCKED, see '2i result' |
 
 ## Workstream 1 finding (baseline, 2026-11-07, 20a4d06, Apple M6, 3 runs each)
 
@@ -123,7 +127,6 @@ suite 0 failures, case count >= 482 + new cases; `sh tools/run_lint.sh` and `sh 
 - Proof, test first: a case asserting that `CombatDefinitions.radius` equals the uncached formula for every Registry kind and for a test kind added and then cleared (red only if the cache misses `_reset`). Equivalence comes from cmp-identical traces and `combat_work` summaries.
 - Expected gain (estimate): 0.1-0.4 ms on open / dense p50 and p95 (about 3 edge_gap per engaged unit per tick x 300 units); small on hordes300.
 - Risk: low. The only failure mode is a stale cache with test kinds, which the case covers.
-| 2026-11-08 | ac1b7d4 via git archive, scratch `ws2i` (profiler zones, not linted) | Apple M6 | Task 2i profiling, open / dense / hordes300 one at a time, headless, no godot process before; no repo code changed | exit 0 x3 `TWO_F0 COMPLETE`; BLOCKED, see '2i result' |
 
 ### Task 2d: largest `advance.*` sub-zone on hordes300 (kept fix 3, design fixed after 2a)
 
@@ -307,6 +310,29 @@ Acceptance (accept.sh f7ce33f): suite 484 cases / 136037 checks / 0 failures (ba
 Eager variant (records for all targets in `_build_grid`) dropped: same open / dense gains but team match p50 0.564 -> 0.638, p95 1.344 -> 1.445 (build_grid 0.066 -> 0.132 ms with 2.15 scans per tick); a 5-element unit record did not help (0.124).
 
 Lazy variant on the team match (3 runs each, A/B): p50 0.564 / 0.564 / 0.565 -> 0.568 / 0.570 / 0.566, p95 1.337 / 1.336 / 1.341 -> 1.347 / 1.344 / 1.347, wall 47.81 / 47.81 / 47.86 s -> 48.00 / 48.07 / 47.93 s; build_grid 0.0659 -> 0.0691 ms. About +0.5 % to +1 %, marginally above the A/A spread (p50 0.001). Lockstep p99 0.065-0.066 -> 0.065-0.072 (noise). Logs: scratchpad `tools/runs/ab-2h`, `ab-2h-lazy`, `accept-2h`, `mut2h`.
+
+## 2j result (2026-11-08, working tree on 740dbe4, A/B against f7ce33f (before c3e1e91) and HEAD, Apple M6, headless, load 1.1-2.3)
+
+Round 2 gate finding: c3e1e91 cost the team match +0.7 % because `_build_grid` allocated a `[[], null]` wrapper per bucket (build_grid 0.0659 -> 0.0691 ms). Change (`game/scripts/simulation/combat.gd` only): buckets are plain target arrays again; `grid[owner]` is `[cells, records]` (one wrapper per owner), and `_nearest` fills `records[key]` on the bucket's first scan of the tick. Same float expressions, same `_combat_work`.
+
+Mutations (scratch copy, N1 red, 7896 scans): records skip the first target (skipfirst: 7837 mismatches, the suite also hung past 5 min and was killed); records built from one target only (6264); side dictionary keyed `Vector2i(x, 0)` so buckets collide (5749).
+
+3 rounds, P = f7ce33f, H = HEAD (740dbe4), W = working tree, interleaved P H W per script (median [min-max]), ms:
+
+| Row | P | H | W |
+|-----|---|---|---|
+| team p50 | 0.565 [0.564-0.566] | 0.566 [0.566-0.567] | 0.561 [0.561-0.564] |
+| team p95 | 1.339 | 1.339 | 1.331 [1.322-1.333] |
+| team p99 | 2.886 | 2.880 | 2.876 |
+| open p95 | 2.110 | 1.906 | 1.903 |
+| dense p95 | 2.290 | 1.841 | 1.840 |
+| hordes300 p95 | 3.902 | 2.954 | 2.962 |
+| movement open / dense p95 | 1.585 / 1.577 | 1.583 / 1.573 | 1.589 / 1.582 |
+| lockstep p99 | 0.067 | 0.068 | 0.066 |
+
+All other combat layouts (contact, defences, docks, frc, ramp, skirmish3v3, transports) equal or better than P on W within the spread. The team match is now not worse than before c3e1e91 (p50 -0.004, p95 -0.008) and the open / dense gains hold. Team-match wall time was not measured in this run (p50 / p95 / p99 from the benchmark's `TEAM TIMING`, profiler on). Logs: scratchpad `ab2j`, `mut2j`, `tools/runs/accept-2j`.
+
+Acceptance (accept.sh 740dbe4): suite 485 cases / 136039 checks / 0 failures, four traces cmp-identical, 7 pin lines equal, lint and warnings pass (103 files), netplay match PASSED tick 8400, team match exit 0 with the cap line.
 
 ## 2d result (2026-11-08, working tree on c3e1e91 vs git archive of c3e1e91, Apple M6, load 1.5)
 
