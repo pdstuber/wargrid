@@ -683,6 +683,27 @@ Directory `/private/tmp/claude-501/-Users-pdstuber-projects-wargrid/f3d3e9b0-7fe
 - Would run for the Firefox half (needs a window and the user's OK): `sh tools/export_build.sh "Web Bench" build/web-bench/index.html` (Mac), copy `build/web-bench` and `tools/serve_web_bench.py` to a folder under `~` on the Deck, `systemd-run --user python3 -I serve_web_bench.py build/web-bench build/web-results`, then `systemd-run --user flatpak run org.mozilla.firefox http://127.0.0.1:8060/` with the tab in front, 3 runs (fresh profile), `crossOriginIsolated` true; the page posts the log to `/result`. Note `bench_runner.gd` in the web build does not include `hordes300` unless added.
 - Cleanup: removed `~/wargrid-f55`, `~/.local/share/godot/app_userdata/Wargrid`, the empty `export_templates`, `~/.cache/godot`, `~/.config/godot` (all created by this run at 07:45); `HearthSpike` untouched. Raw logs: scratchpad `deck-out/` and `deck-tr/`.
 
+## 9 results (Deck web) (2026-11-08, HEAD f1b4c6f via git archive, Steam Deck, Firefox 159 flatpak, `Web Bench` single-threaded export)
+
+- Setup: Mac `git archive HEAD` to scratchpad `ws9`, `hordes300` added to the combat list of `bench_runner.gd` in that copy only (tracked tree untouched), `sh tools/export_build.sh "Web Bench"` (`thread_support=false`). Copied to `~/wargrid-f9` on the Deck, `serve_web_bench.py` and Firefox as `systemd-run --user` units, fresh profile per run seeded with a `user.js` (aboutwelcome off, mstone ignore, policy bypass, `termsofuse.acceptedVersion=4` taken from the profile the user had accepted in). `crossOriginIsolated` true in all runs. ACAD 1 at every start and end; load 0.5-1.5 for the kept runs.
+- Discarded runs: (1) first run, tainted: Firefox showed its first-run terms popup and the user clicked Accept during it. (2) First attempts of runs 2 and 3, contaminated: Firefox instances of the earlier runs survived `systemctl --user stop` and kept running (load 2.1 and 4.1, p95 about 8 % higher, e.g. movement open 10.62 / 10.84 vs 9.88-9.98); the script now kills its profile's Firefox. Runs 2 and 3 were redone clean after killing only my own pids. The kept runs 1-3 had no click and no leftover Firefox.
+- Deck Firefox median of 3 clean runs, ms (p95 range in brackets):
+
+| Row | p50 | p95 | p99 | max | Mac Firefox p95 (5a, provisional) | F p95 (provisional) |
+|---|---|---|---|---|---|---|
+| movement open | 7.64 | 9.96 [9.88-9.98] | 11.26 | 25.22 | n/a | n/a |
+| movement dense | 7.74 | 9.30 [9.26-9.52] | 9.94 | 25.14 | n/a | n/a |
+| combat open | 6.22 | 9.70 [9.62-9.76] | 11.40 | 15.58 | 3.50 | 2.77 |
+| combat dense | 5.12 | 9.26 [9.18-9.38] | 10.72 | 15.90 | 2.58 | 3.59 |
+| combat contact | 1.28 | 5.78 [5.72-5.90] | 8.04 | 58.5 | n/a | n/a |
+| combat skirmish3v3 | 2.86 | 6.64 [6.62-6.70] | 7.46 | 8.68 | n/a | n/a |
+| hordes300 | 10.20 | 14.54 [14.52-14.92] | 17.04 | 38.58 | 4.02 | 3.62 |
+| team match (45000 ticks, cap) | 2.94 | 6.80 [6.80-6.92] | 15.02 | 40.64 | n/a | n/a |
+
+- F is provisional: the Mac numbers are the 5a Firefox no-threads arm (base 3ff3d07 plus scratch patch, before f371616 and later speed-ups), not a Mac run of this build; no Firefox was opened on the Mac. Rows marked n/a have no comparable Mac web number (5a reports combat open, dense and hordes300 in the table; other rows only as percentages). A final web F needs a Mac Firefox run of this export (needs the user's OK for one window). Provisional F 2.8-3.6, below 5.5 (2026-11-06 browser F was 5.0-5.4).
+- Against 2026-11-06 Deck Firefox p95: combat open 11.86 -> 9.70, dense 13.32 -> 9.26, contact 5.04 -> 5.78 (+15 %), skirmish3v3 6.02 -> 6.64 (+10 %), team 12.74 -> 6.80, movement 8.54 / 8.58 -> 9.96 / 9.30 (+17 % / +8 %). Against budgets (10 / 20 ms) every row passes on p95 except `hordes300` (14.5, report-only); team p99 15.0, worst ticks 40.6 (team), 58.5 (contact), 38.6 (hordes300), about one to two 33.3 ms ticks.
+- Cleanup: Deck `~/wargrid-f9` (build, profiles, results, units) removed, own Firefox pids killed, no wg9 units left; Mac: nothing to clean beyond scratchpad `ws9`. Raw logs were only in `~/wargrid-f9/res*`, deleted with the folder; the tables above are the record.
+
 ## 6 results (2026-11-08, HEAD 003e66c and 20a4d06 via git archive, scratch copies `ws6` in the scratchpad, Apple M6, headless; nothing changed in the repo; 3 runs per arm, A B A B A B; load 1.2-1.6 at every start, no godot process before each run)
 
 ### A. Team match, profiler on vs off (item 4)
@@ -749,3 +770,22 @@ Exit 0 (not 1: open 1.887 / 2.212 and dense 1.809 / 2.137 are above the 1.82 / 3
 ### Check on both trees
 
 `accept.sh 20a4d06` (working tree copy vs archive): suite CASES 487 / CHECKS 136046 / FAILURES 0 (base 482 / 136033), four replay traces cmp-identical, 7 pin lines equal, lint `Success: no problems found`, warnings 104 files, netplay match tick 8400, team match cap line: `ACCEPT: PASS`. No trace or pin differs between the archives.
+
+## 10 results (2026-11-08, HEAD f1b4c6f plus the uncommitted Task 10 tree, Apple M6, headless; nothing committed)
+
+Three changes, each red first on a copy with the base scripts: P-pow (`test_leash_square_matches_pow`), RF2 (`test_one_snapshot_per_refresh` in `test_skirmish_scene.gd`, red 3 snapshots, green 1) and BM6 (`test_settled_matches_snapshot_predicate`, 3000 workload ticks over open and dense, 0 mismatches, at least one false/true flip so the check is not vacuous).
+
+- **pow.** `_plan_retaliate` squares `vision * LEASH_UNIT` and `vision * LEASH_ATTACKER` with `x * x` from a local float. No other `pow(` exists in `game/scripts/simulation`. In general `x * x` and `pow(x, 2)` are NOT bit-identical: on 32000 seeded probes (random vision 1-30 times either leash, the bound, bound times 1 +/- 1e-15, bound times 0.9-1.1) 59 differ by one ulp. That is not a trace risk here: the vision values come from a closed set (2, 4, 5, 6, 8, 14.4), and for every real kind's two bounds `bound * bound == pow(bound, 2)` exactly (0 differ), so the compared bound is bit-identical to before. The test asserts exactly that, not the general claim.
+- **P2.** `_production_kind(building, state)` in `base_main.gd` and `skirmish_main.gd`; `_produce_selected` keeps its snapshot in a local. One snapshot per refresh with a production building selected; the Produce label is unchanged.
+- **P1.** `MovementWorkload.settled()` reads `sim._entities` and `sim._pending`; no `snapshot()` in the timed window. Same commands, same sim.
+
+Acceptance, once, on the final tree (`accept.sh f1b4c6f`): suite CASES 490 / CHECKS 136051 / FAILURES 0 (base 487 / 136046), four replay traces cmp-identical to f1b4c6f, 7 pin lines equal, lint `Success: no problems found`, warnings 104 files, netplay match tick 8400 (`NETPLAY PASSED match`), `TEAM MATCH cap tick=45000 winner=null units_peak=160`: `ACCEPT: PASS`.
+
+`bench_ab.sh f1b4c6f WORKTREE "movement:open movement:dense" 3`, A B A B A B, medians of 3 (spread in parentheses; the A spread is the A/A noise of that run), ms:
+
+| Row | p50 A -> B | p95 A -> B | p99 A -> B | max A -> B |
+|---|---|---|---|---|
+| movement open | 1.441 -> 0.636 | 1.696 (0.223) -> 0.709 (0.021) | 2.061 (0.451) -> 0.858 (0.035) | 4.91 -> 3.44 |
+| movement dense | 1.452 -> 0.649 | 1.512 (0.220) -> 0.685 (0.011) | 1.739 (0.280) -> 0.905 (0.088) | 5.01 -> 3.58 |
+
+The change is about -0.8 to -1.0 ms p95, larger than the 0.7 ms estimate; the A arm was noisier than Task 6 (p95 spread 0.22 against 0.05-0.09), the p50 delta (-0.80) is the reliable figure. Every delta is far outside the B spread. The movement rows now measure sim only, so their history before this row is not comparable. No budget, ceiling or guard value was changed. P3 probe not started.
