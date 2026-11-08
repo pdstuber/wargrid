@@ -5,13 +5,13 @@ Handoff: [performance-spike-prompt.txt](../performance-spike-prompt.txt). Ledger
 ```text
 Resume record (updated 2026-11-08 05:30)
 Branch / base commit / working-tree state: main / 3ff3d07 (Workstream 4 committed) / uncommitted: this file only (5a ran from a scratch copy of game/, nothing tracked changed)
-Last green task / next incomplete task: Task 5a (see '5a result': digests equal, boot and relay OK in Firefox and Vivaldi) / coordinator decision on 5b-5c (Firefox cost between spread and 10 %), then 5b
+Last green task / next incomplete task: Task 5a (see '5a result': digests equal, boot and relay OK in Firefox and Vivaldi) / coordinator decision on 5b-5c (Firefox cost between spread and 10 %), then 5b // 5b done in scratch (see '5b result'): digests equal, gain 2-3 % at 4 threads, loss at 2; coordinator decides 5c
 Changed paths since last commit: this file
 Last command / cases / checks / failures / exit / marker: 5a driver, 12 timed web runs + 1 boot run, all `BENCH DONE` / `BENCH POSTED` / `RELAY OK`, every DIGEST equal to native; no suite run (no tracked code changed)
 Known red case or blocker: none. R1 closed, not reproduced. 2i BLOCKED (no fix above the A/A spread). Round 2 gate review done. Report-only rows exceeded: combat open, dense, hordes300
 Approved decisions, pre-authorizations used, deferred gates: user invoked the spike 2026-11-07; works on main; local commits after green checkpoints pre-authorized; no push/PR/merge/fly/Sprite/window without approval; host = this Mac only (user). Decisions of 2026-11-07 evening: BM6 retune approved together with 2e; 2f approved with a version bump and a ZH AIUpdate comparison; second round for 2d and per-cell enemy counts; hordes300 "improved, still exceeded" is acceptable; C++/GDExtension NOT investigated (user decision); threads PoC local first, fly web deploy allowed for the threaded-web test only, Safari failure is not a blocker, a Chromium-based browser is acceptable for the Chrome check; Steam Deck check tomorrow; user asleep, run all approved work, pausing only on a stop condition
 Usage so far (python3 tools/session_usage.py <session files>): not recorded
-Next exact action: coordinator reports the 5a numbers to the user (Firefox atomics cost +4.7 % combat open p50, +8.3 % dense, Vivaldi about 0; stop rule 3 not met) and decides 5b/5c; the 5a patch is scratchpad `w5a/5a.patch`, apply it for 5c
+Next exact action: coordinator reports the 5a numbers to the user (Firefox atomics cost +4.7 % combat open p50, +8.3 % dense, Vivaldi about 0; stop rule 3 not met) and decides 5b/5c; the 5a patch is scratchpad `w5a/5a.patch`, apply it for 5c // 5b: coordinator reads '5b result' and decides 5c (web) or stop; PoC patch is scratchpad `5b.patch`, not applied to the tree
 ```
 
 ## Evidence
@@ -566,3 +566,23 @@ Other rows (movement, contact, skirmish3v3, team): Firefox +2.6 % to +7.1 % p50,
 - Stop rules: (3) cost above about 10 % of p50 on combat open or dense in both browsers: not met (Firefox +4.7 / +8.3 %, Vivaldi about 0). Firefox is above the A/A spread but below 10 %, Vivaldi within the spread: the case the plan leaves to the coordinator and the user (strict rule "slower beyond the spread" would reject threads for Firefox). Boot/relay stop (2) not triggered, so 5d is not skipped.
 - Safari: not tested (user decision: not a blocker; ask the user if a look is wanted).
 - Native editor / release timings in `w5a/native-*.log` are not comparable (headless, different build).
+
+## 5b result (2026-11-08, base f371616, Apple M6 headless, scratch copy `ws5b` of a git archive; tracked tree untouched)
+
+PoC patch (scratchpad `5b.patch`, not committed, not applied): `WARGRID_PARALLEL=1|move|scan` (default off, identical serial code path); step 1 `Simulation._advance_parallel` (moving units in id order, `Definitions.unit` prewarm, group task, `MIN_PARALLEL` 32, `WARGRID_PARALLEL_MIN`); step 2 `Combat._speculate` (eager records, `radius` prewarm, slots `[unit, radius, edge, result, work]`, `_nearest_slot` without counter or Profiler, `_scan_or_slot` consumes a slot only if radius and edge match and adds its work in call order). Suite `test_parallel.gd` (P1-P4, 19 checks) plus the benchmarks `ab.gd` and `dispatch.gd`, all scratch.
+
+- Digests (no STOP): P1 `StateHash.digest(snapshot)` and `_combat_work` equal every tick for 2100 ticks on combat open, dense, hordes300 and a team-match prefix (`min_parallel` 4 to force dispatch); P2 176 895 consumed slots equal the inline `_nearest` result and work, 0 mismatches; P3 10 parallel hordes300 runs (1000 ticks) equal the serial digest; P4 no shared route, position, heading or first-three waypoint arrays (`is_same`, sampled). Mutations red: group task one element short (9 failures), slot consumed with a halved radius and the argument check removed (8 failures, P2 32 070 mismatches).
+- Suite: base 487 cases / 136 046 checks, scratch serial and `WARGRID_PARALLEL=1` 491 / 136 065 (+4 cases, +19 checks = P1-P4), 0 failures, exit 0. The four replay traces (replay, economy, combat, team) `cmp`-identical across base, scratch serial and scratch parallel. The 7 pins are suite cases, green in both modes. `WARGRID_PARALLEL=1 run_netplay.sh match`: terminal tick 8400, passed. `WARGRID_PARALLEL=1 run_team_match.sh`: `TEAM MATCH cap tick=45000 winner=null units_peak=160`. `run_lint.sh` and `run_warnings.sh` (104 files) clean on the PoC.
+- Timing: `ab.gd` (sim.step only, 300 warmup + 1800 samples; team 3000 ticks of the match start; movement dense with legs), `override.cfg` `max_threads` 4 and 2, 3 rounds, arms serial / move / scan / both interleaved per layout, median, A/A spread = max-min of the 3 serial runs. Host: no other godot/browser (`pgrep`), but load average 3.2 at start (just after the suite), 1.5 at end: not an idle host; spreads are small anyway. Delta vs serial median, ms (%):
+
+| Row (4 threads) | p50 A / spread | step 1 move p50 / p95 / p99 | step 2 scan p50 / p95 / p99 | both p95 |
+|---|---|---|---|---|
+| combat open | 1.215 / 0.007 | -0.040 (-3.3) / -0.036 (-1.9) / -0.042 (-1.9) | +0.097 (+8.0) / +0.152 (+8.2) / +0.134 | +0.097 (+5.2) |
+| combat dense | 1.010 / 0.017 | -0.009 (-0.9) / -0.043 (-2.4) / -0.019 | +0.077 (+7.6) / +0.146 (+8.1) / +0.052 | +0.097 (+5.4) |
+| hordes300 | 1.947 / 0.011 | -0.069 (-3.5) / -0.070 (-2.5) / -0.068 | +0.347 (+17.8) / +0.186 (+6.6) / +0.190 | +0.091 (+3.2) |
+| team match start | 0.274 / 0.003 | +0.002 / +0.001 / +0.014 | +0.011 (+4.0) / +0.020 (+3.0) / +0.035 | +0.023 (+3.5) |
+| movement dense | 0.646 / 0.002 | -0.089 (-13.8) / -0.101 (-14.9) / -0.118 (-13.5) | +0.001 | -0.098 (-14.5) |
+
+A/A p95 spreads: 0.004-0.017 ms (p99 up to 0.048). At 2 threads step 1 is a loss: open +0.036 / +0.040 / +0.038, dense +0.023 / +0.046 / +0.038, hordes300 +0.060 / +0.074 / +0.051, movement dense +0.050 / +0.047 (+7-8 %), team flat; step 2 +7-18 % everywhere, both worse still.
+- Dispatch (empty-ish group task, 2000 rounds, add + wait): 4 threads p50 / p99 10 / 18 us (n=32), 20 / 29 us (n=150), 34 / 43 us (n=300); 2 threads 7 / 13, 15 / 23, 30 / 35 us. Dispatch is not the blocker; the lambda call per element, refcount traffic and (step 2) the eager records are.
+- Verdict: step 2 (speculative `_nearest`) is slower on every row, drop it. Step 1 (`advance.move`) clears the written bar on 4 threads (gain beyond the A/A spread on open, dense, hordes300 p95, team match not worse) but by 0.04-0.07 ms (2-3 %), 14 % only on movement dense; at 2 threads it loses. Native only; the web atomics cost from 5a (Firefox +3-8 %) is larger than the step 1 gain, so a threaded web build is expected to lose. No budget or ceiling changed, no row closed (combat open p95 1.862 vs 1.82 stays exceeded).
