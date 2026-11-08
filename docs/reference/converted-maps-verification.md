@@ -5,16 +5,15 @@ Plan: [converted maps playable plan](../superpowers/plans/2026-11-08-converted-m
 ## Resume record
 
 ```text
-```text
 Resume record (updated 2026-11-09)
-Branch / base commit / working-tree state: converted-maps / 1c26efe / Task 3c diff uncommitted (convert.py, test_zh_map.py, 3 regenerated maps, more-maps.md, this file)
-Last green task / next incomplete task: Task 3b re-pin committed / Task 3c committed by coordinator, then a re-pin task for the moved pins below
-Changed paths since last commit: tools/zh_map/convert.py, tools/zh_map/test_zh_map.py, game/data/maps/{dry_wells,broken_crown,ashfall}.json, docs/reference/more-maps.md, docs/reference/converted-maps-verification.md
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 573 / 136886 / 4 (Fm1 pair + TB3 + TB4) / 1 / no marker
-Known red case or blocker: Fm1 pair (morning decision); TB3, TB4 and run_team_match.sh moved by the slot change (not re-pinned, see "Task 3c")
-Approved decisions, pre-authorizations used, deferred gates: re-pin of slot-moved pins pre-approved 2026-11-08, not used by this task
+Branch / base commit / working-tree state: converted-maps / ef9e698 / re-pin + converter cleanup uncommitted (test_team_match.gd, run_team_match.sh, tools/zh_map/{convert,test_zh_map}.py, more-maps.md, this file)
+Last green task / next incomplete task: Task 3c committed / coordinator commits the re-pin and cleanup as two commits
+Changed paths since last commit: game/tests/test_team_match.gd, tools/run_team_match.sh, tools/zh_map/convert.py, tools/zh_map/test_zh_map.py, docs/reference/more-maps.md, docs/reference/converted-maps-verification.md
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 573 / 136886 / 2 (Fm1 pair only) / 1 / no marker
+Known red case or blocker: Fm1 pair (morning decision)
+Approved decisions, pre-authorizations used, deferred gates: re-pin of slot-moved pins pre-approved 2026-11-08, used here
 Usage so far: not run
-Next exact action: coordinator commits 3c, then re-pin task
+Next exact action: coordinator commits; next task per plan
 ```
 
 ## Baseline
@@ -177,3 +176,11 @@ Moved pins (not re-pinned; no other pin moved: S1, Cs1, test_map, test_supply Pl
 Ashfall movement layout: scratch `MovementWorkload.create("ashfall")` spawned all 300 move-only units, exit 0, no assertion.
 
 Rows: tree `1c26efe` + 3c diff. `run_tests.sh` `CASES 573 CHECKS 136886 FAILURES 4`, exit 1, no marker; `run_lint.sh` exit 0; `run_warnings.sh` `WARNINGS CHECKED 116 FILES` exit 0; `run_team_match.sh` as above; `run_netplay.sh match` not run (skirmish.json unchanged). Logs: `wargrid-overnight-work/logs/t3c-*.log`.
+
+## Task 3c re-pin and cleanup
+
+Re-pinned, each verified by running: `FINAL_DIGEST` 1c2a5905802d4d9b -> b1c0606ee2bb58fc, `TEAM_CORE_SERIES` 205812011678164261 -> 7949105010122908522, `run_team_match.sh` `won tick=38510 winner=2 units_peak=207` -> `cap tick=45000 winner=null units_peak=246`. The Ashfall 3v3 team match ends at the cap with no winner again (it was a win at tick 38510 after Task 3b). Cause: the Task 3c supply center slot move changed the start layout and so the bots' economy and fight.
+
+Cleanup: two converter tests added (`test_supply_center_slot_ignores_small_piles`, `test_supply_center_slot_tie_takes_first_in_ring_scan`). RED with the delete_when_empty filter removed: `AssertionError: Tuples differ: (14, 17) != (22, 14)`. The tie test pins Ashfall-like geometry (equal-distance sites [8,16] and [9,16]; ring scan order picks x 8); it passed as written, since the tie rule is the existing `min` behaviour. `convert.py`: no-dock fallback replaced by `ConvertError("no supply dock")` (untested before, no shipped map or test needs it) and `SOURCE_W/SOURCE_H` replace `docks[0].get("footprint")`. Maps regenerated from `CnC_Modding_Support` `3aad8e4`: all three byte-identical. `more-maps.md`: Dry Wells seat 1 before is 27.2 (plan said 28.3); the moved slots are `supply_center`, `barracks`, `factory`, `command_center` on every seat, `power_plant` and `defence` unchanged. Duplicate fence fixed.
+
+Rows: tree `ef9e698` + diff. `run_tests.sh` `CASES 573 CHECKS 136886 FAILURES 2` (Fm1 pair), exit 1, no marker; `run_lint.sh` exit 0; `run_warnings.sh` `WARNINGS CHECKED 116 FILES` exit 0; `run_python_checks.sh` exit 0; `run_team_match.sh` `TEAM MATCH cap tick=45000 winner=null units_peak=246` exit 0. Load 1.8. Logs: `wargrid-overnight-work/logs/t3c-repin-*.log`.

@@ -9,5 +9,5 @@ code=$?
 cat "$log_dir/match.log"
 [ "$code" -eq 0 ] || exit 1
 if grep -E 'ERROR:|SCRIPT ERROR:' "$log_dir/match.log"; then exit 1; fi
-# Pinned outcome after the collector change (Task 3b), no longer the G3.5 cap waiver.
-grep -Eq '^TEAM MATCH won tick=38510 winner=2 units_peak=207$' "$log_dir/match.log" || exit 1
+# Pinned outcome: the cap, no winner (shape before Task 3b; the Task 3c slot move restored it).
+grep -Eq '^TEAM MATCH cap tick=45000 winner=null units_peak=246$' "$log_dir/match.log" || exit 1
