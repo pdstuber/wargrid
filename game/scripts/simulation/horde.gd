@@ -31,7 +31,10 @@ static func step(sim: Simulation, armed: Array[int]) -> void:
 static func _cell_size(members: Array[Dictionary]) -> float:
 	var widest: float = 0.0
 	var largest: float = 0.0
+	var seen: Dictionary = {}
 	for unit in members:
+		if seen.has(unit.kind): continue
+		seen[unit.kind] = true
 		widest = maxf(widest, Registry.kind(unit.kind).horde.radius)
 		largest = maxf(largest, CombatDefinitions.radius(unit.kind))
 	return widest + 2.0 * largest
@@ -49,6 +52,8 @@ static func _bucket(members: Array[Dictionary], size: float) -> Dictionary:
 
 static func _level(sim: Simulation, unit: Dictionary, grid: Dictionary, size: float) -> int:
 	var rule: Dictionary = Registry.kind(unit.kind).horde
+	var need: int = rule.count - 1
+	if need <= 0: return 2
 	var near: int = 0
 	var rubbed: bool = false
 	var home: Vector2i = _cell(unit, size)
@@ -61,7 +66,7 @@ static func _level(sim: Simulation, unit: Dictionary, grid: Dictionary, size: fl
 				if Combat._gap_between(ox, oy, CombatDefinitions.radius(unit.kind), CombatDefinitions.radius(other.kind)) > rule.radius: continue
 				near += 1
 				rubbed = rubbed or other.combat.horde == 2
-	if near >= rule.count - 1: return 2
+				if near >= need: return 2
 	return 1 if rubbed else 0
 
 static func _matches(rule: Dictionary, unit: Dictionary, other: Dictionary) -> bool:

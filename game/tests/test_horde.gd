@@ -5,10 +5,11 @@ const Fixture = preload("res://tests/combat_fixture.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const Combat = preload("res://scripts/simulation/combat.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
+const Horde = preload("res://scripts/simulation/horde.gd")
 const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
 
 func cases() -> Array[Callable]:
-	return [test_horde_needs_five, test_horde_infantry_mix_counts, test_horde_vehicle_exact_kind, test_horde_rub_off, test_horde_cadence, test_horde_allies_only, test_horde_change_restarts_delay, test_horde_spread_all_checked]
+	return [test_horde_needs_five, test_horde_infantry_mix_counts, test_horde_vehicle_exact_kind, test_horde_rub_off, test_horde_cadence, test_horde_allies_only, test_horde_change_restarts_delay, test_horde_spread_all_checked, test_horde_step_matches_oracle]
 
 func _world() -> RefCounted:
 	var sim = Fixture.world()
@@ -180,4 +181,107 @@ func test_horde_spread_all_checked(runner) -> bool:
 		sim.step()
 		checks += sim.horde_checks()
 	runner.check(checks >= count, "H8 every militia was checked in 40 ticks")
+	return true
+
+const _ORACLE_KINDS: Array[String] = ["china_rifle_infantry", "china_rifle_infantry", "china_rocket_infantry", "china_light_vehicle", "usa_rifle_infantry"]
+
+# Reference copy of the pre-optimisation Horde.step, levels only (no delay restart).
+func _oracle_step(sim, armed: Array[int]) -> void:
+	var members: Array[Dictionary] = []
+	for id in armed:
+		if sim._entities.has(id) and sim._entities[id].combat.has("horde"): members.append(sim._entities[id])
+	var grid: Dictionary = {}
+	var size: float = 0.0
+	for unit in members:
+		if unit.combat.horde_tick > sim._tick or unit.has("container_id"): continue
+		if grid.is_empty():
+			size = 0.0
+			var widest: float = 0.0
+			var largest: float = 0.0
+			for m in members:
+				widest = maxf(widest, Registry.kind(m.kind).horde.radius)
+				largest = maxf(largest, CombatDefinitions.radius(m.kind))
+			size = widest + 2.0 * largest
+			for m in members:
+				var cell := Vector2i(floori(m.position[0] / size), floori(m.position[1] / size))
+				if not grid.has(cell): grid[cell] = [] as Array[Dictionary]
+				grid[cell].append(m)
+		sim._horde_checks += 1
+		unit.combat.horde_tick = sim._tick + Horde.rate(unit.kind)
+		unit.combat.horde = _oracle_level(sim, unit, grid, size)
+
+func _oracle_level(sim, unit: Dictionary, grid: Dictionary, size: float) -> int:
+	var rule: Dictionary = Registry.kind(unit.kind).horde
+	var near: int = 0
+	var rubbed: bool = false
+	var home := Vector2i(floori(unit.position[0] / size), floori(unit.position[1] / size))
+	for dy in range(-1, 2):
+		for dx in range(-1, 2):
+			for other: Dictionary in grid.get(home + Vector2i(dx, dy), []):
+				if other.id == unit.id or other.has("container_id") or Combat.hostile(sim, unit.owner, other.owner): continue
+				if rule.match == "kind":
+					if other.kind != unit.kind: continue
+				elif Registry.kind(other.kind).get("class", "") != Registry.kind(unit.kind).get("class", ""): continue
+				var ox: float = other.position[0] - unit.position[0]
+				var oy: float = other.position[1] - unit.position[1]
+				if Combat._gap_between(ox, oy, CombatDefinitions.radius(unit.kind), CombatDefinitions.radius(other.kind)) > rule.radius: continue
+				near += 1
+				rubbed = rubbed or other.combat.horde == 2
+	if near >= rule.count - 1: return 2
+	return 1 if rubbed else 0
+
+func _horde_snapshot(sim, armed: Array[int]) -> Array:
+	var out: Array = [sim._horde_checks]
+	for id in armed:
+		if sim._entities.has(id) and sim._entities[id].combat.has("horde"): out.append([id, sim._entities[id].combat.horde, sim._entities[id].combat.horde_tick])
+	return out
+
+func test_horde_step_matches_oracle(runner) -> bool:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 20261108
+	var mismatches: int = 0
+	var checked: int = 0
+	var twos: int = 0
+	for trial in range(220):
+		var sim = Fixture.world()
+		for owner in range(1, 5): sim.add_player(owner, 0, "human", [0, 1, 1, 2][owner - 1])
+		var count: int = [0, 1, 2, 6, 25, 60][trial % 6]
+		var centres: Array[Vector2] = [Vector2(8.5, 8.5), Vector2(11.0, 9.0), Vector2(20.5, 20.5)]
+		var ids: Array[int] = []
+		for round_n in range(3):
+			for i in count:
+				if round_n > 0 and rng.randi() % 4 != 0: continue
+				var id: int = sim.spawn(1 + rng.randi() % 4, Vector2(1.5 + (ids.size() % 28), 1.5 + floorf(ids.size() / 28.0)), _ORACLE_KINDS[rng.randi() % _ORACLE_KINDS.size()])
+				if id <= 0: continue
+				var centre: Vector2 = centres[rng.randi() % 3]
+				sim._entities[id].position = [centre.x + rng.randf_range(-1.6, 1.6), centre.y + rng.randf_range(-1.6, 1.6)]
+				ids.append(id)
+			for id in ids.duplicate():
+				if sim._entities.has(id) and rng.randi() % 8 == 0 and round_n > 0:
+					sim.remove_object(id)
+					ids.erase(id)
+			var armed: Array[int] = []
+			for id in ids:
+				if not sim._entities.has(id): continue
+				var unit: Dictionary = sim._entities[id]
+				if unit.combat.has("horde"):
+					unit.combat.horde = rng.randi() % 3
+					unit.combat.horde_tick = sim._tick - 1 + rng.randi() % 3
+					if rng.randi() % 10 == 0: unit.container_id = 1
+				armed.append(id)
+			var saved: Array = _horde_snapshot(sim, armed)
+			_oracle_step(sim, armed)
+			var expected: Array = _horde_snapshot(sim, armed)
+			for entry in saved.slice(1):
+				sim._entities[entry[0]].combat.horde_tick = entry[2]
+				sim._entities[entry[0]].combat.horde = entry[1]
+			sim._horde_checks = saved[0]
+			Horde.step(sim, armed)
+			var actual: Array = _horde_snapshot(sim, armed)
+			checked += 1
+			twos += expected.slice(1).filter(func(e: Array) -> bool: return e[1] == 2).size()
+			if actual != expected: mismatches += 1
+			sim._tick += 1
+	runner.check(checked == 660 and twos > 200, "H9 oracle states ran with real hordes (states %d, level-2 units %d)" % [checked, twos])
+	runner.check(mismatches == 0, "H9 Horde.step levels, due ticks and check count equal the reference in all states (mismatches %d)" % mismatches)
 	return true
