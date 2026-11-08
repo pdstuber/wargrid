@@ -5,7 +5,7 @@ Plan: [converted maps playable plan](../superpowers/plans/2026-11-08-converted-m
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-09)
+Resume record (updated 2026-11-09, Task 4 measured)
 Branch / base commit / working-tree state: converted-maps / ef9e698 / re-pin + converter cleanup uncommitted (test_team_match.gd, run_team_match.sh, tools/zh_map/{convert,test_zh_map}.py, more-maps.md, this file)
 Last green task / next incomplete task: Task 3c committed / coordinator commits the re-pin and cleanup as two commits
 Changed paths since last commit: game/tests/test_team_match.gd, tools/run_team_match.sh, tools/zh_map/convert.py, tools/zh_map/test_zh_map.py, docs/reference/more-maps.md, docs/reference/converted-maps-verification.md
@@ -184,3 +184,9 @@ Re-pinned, each verified by running: `FINAL_DIGEST` 1c2a5905802d4d9b -> b1c0606e
 Cleanup: two converter tests added (`test_supply_center_slot_ignores_small_piles`, `test_supply_center_slot_tie_takes_first_in_ring_scan`). RED with the delete_when_empty filter removed: `AssertionError: Tuples differ: (14, 17) != (22, 14)`. The tie test pins Ashfall-like geometry (equal-distance sites [8,16] and [9,16]; ring scan order picks x 8); it passed as written, since the tie rule is the existing `min` behaviour. `convert.py`: no-dock fallback replaced by `ConvertError("no supply dock")` (untested before, no shipped map or test needs it) and `SOURCE_W/SOURCE_H` replace `docks[0].get("footprint")`. Maps regenerated from `CnC_Modding_Support` `3aad8e4`: all three byte-identical. `more-maps.md`: Dry Wells seat 1 before is 27.2 (plan said 28.3); the moved slots are `supply_center`, `barracks`, `factory`, `command_center` on every seat, `power_plant` and `defence` unchanged. Duplicate fence fixed.
 
 Rows: tree `ef9e698` + diff. `run_tests.sh` `CASES 573 CHECKS 136886 FAILURES 2` (Fm1 pair), exit 1, no marker; `run_lint.sh` exit 0; `run_warnings.sh` `WARNINGS CHECKED 116 FILES` exit 0; `run_python_checks.sh` exit 0; `run_team_match.sh` `TEAM MATCH cap tick=45000 winner=null units_peak=246` exit 0. Load 1.8. Logs: `wargrid-overnight-work/logs/t3c-repin-*.log`.
+
+## Task 4
+
+RED: n/a (measurement, no tracked source change). Tree measured: HEAD `bc43b77`, clean. Scratch source `wargrid-overnight-work/scratch/bot_match.gd` (copy and `.uid` deleted after the run).
+
+`BOT MATCH map=ashfall factions=usa,china seed=1 starts=[2, 6] end_tick=26371 winner=1 first_build=[390, 420] first_collect=[1350, 1290] first_enemy_damage=[23910, -1] tick_ms p50/p95/p99/max=0.741/1.057/1.961/5.367`, exit 0, 19 s wall, load 1.61 before / 1.44 after, Godot alone. Budgets (1.82 / 3.64, snapshot 0.91) pass; ledger row added in `performance.md`. Bots: both seats build and collect; seat 1 attacks (first enemy damage tick 23,910), seat 2 never damaged an enemy building before it lost. Task 8 owns any bot fix. Log: `wargrid-overnight-work/logs/t4-bot.log`.
