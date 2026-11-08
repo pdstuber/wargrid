@@ -299,6 +299,34 @@ B (design rule: phase-deferred retarget after a target loss, hold attack-move un
 
 Budget 1.82 / 3.64: A1 alone p95 open 1.958, dense 1.921, hordes300 3.740 (all still over 1.82, p99 open and dense pass). Nothing reaches 1.82 on p95. Recommendation: implement A1 (kept fix, trace-identical, -0.14 to -0.35 ms p95); do not build B as designed; if the tail is pursued further, profile the remaining post-removal ticks (plan bookkeeping and `firing_cell`, +0.3 to +0.5 ms) instead. Logs: scratchpad `ws2f0/{meas.*.log,ab_a1,ab_b,ab_ab,suite*.log}`.
 
+## 2k result (2026-11-08, HEAD ffa787f via git archive, scratch copies `ws2k` in the scratchpad, Apple M6, headless, load 1.2-1.7; nothing kept in the repo) - B re-tested fairly
+
+The 2f.0 prototype was unfair: it added `and not combat.retarget` to the resume branch, so a waiting attack-mover fell through to `elif not moving` and was demoted to guard (goal lost after its first kill). Rebuilt: the hold is its own branch (`elif combat.retarget: pass`, before the resume and the demotion), `object_removed` sets `retarget` for every attack-move unit and `repath_tick` to the phase tick (B1: `tick + 8 - (tick + id) % 8`; B2: `min(phase, max(tick + 1, next_fire_tick))`), the left-range retarget also sets `repath_tick = tick`, line 118 drops `or combat.retarget`.
+
+Suite (HEAD 485 cases / 136039 checks / 0 failures): B1 20 failures, B2 20 failures, same checks in both: A7 (retarget cleared once served), S1 (vanished chaser rescans at once; pinned outcome; core series), M1 (resumes goal), A3, A8 (2), B1 test (8, "resumes toward its unchanged slot": next-tick resume, a designed hold), Fm1, TB3, TB4, Cs1 (pinned outcomes). All encode the next-tick retarget or the pinned tick. Winners unchanged: Fm1 1 (HEAD 23534 -> B1 16621, B2 19267, ended tick), S1 1 (8501 -> 8611 / 8468), Cs1 2 (26359 -> 24879 / 25789). TB3 f95ee411007d11be (B1) / b52617a2526a43e1 (B2), TB4 5487475243737389530 / 9151850056622992091. Traces: economy identical; replay MOVES at tick 321 (first changed line), combat (line 201) and team (line 37) move. The replay move is explained: the world has guard units killing each other near tick 320, and the snapshot hash includes `repath_tick` (unit 9: 320 -> 327, unit 12: 320 -> 324 under B1), so behaviour is guard-only but the hashed state differs; the design's "replay trace stays identical" was wrong. Team match cap run: winner null at tick 45000 on all three, `units_peak` 160 -> 162.
+
+A/B (3 rounds A B A B A B, headless, medians, A/A spread 0.003-0.04 ms; budget 1.82 / 3.64):
+
+| Row | HEAD p95 | B1 p95 | B2 p95 | HEAD p99 | B1 p99 | B2 p99 |
+|-----|----------|--------|--------|----------|--------|--------|
+| open | 1.908 | 1.871 (-0.04) | 1.887 (-0.02) | 2.255 | 2.111 (-0.14) | 2.197 (-0.05) |
+| dense | 1.837 | 1.805 (-0.03) | 1.797 (-0.04) | 2.156 | 2.043 (-0.11) | 2.066 (-0.08) |
+| hordes300 | 2.959 | 2.924 (noise) | 2.930 (-0.03) | 3.444 | 3.202 (-0.24) | 3.154 (-0.30) |
+
+p50 slower: open +0.05 / +0.03, dense +0.11 / +0.10 (the deferral moves rescans onto phase ticks), hordes300 +0.04 / 0. Dense max falls 3.18 -> 2.43 / 2.40. movement open / dense: noise. `combat_work` p95 falls (open 1381 -> 1072 / 1031, dense 1522 -> 1366 / 1244), p50 rises. (HEAD numbers sit below the 2f.0 table because A1, 2j and 2h landed since; B1 / B2 are against the same HEAD.)
+
+Feel proxy (scratch `run_feel.gd`, 300 warm-up + 1800 ticks, per attacker of a removed target; acquisition = ticks from the death event to a non-null `target_id`, ticks to the next shot capped at 30 for the NEAR column):
+
+| Layout | HEAD acquisition mean / max | B1 | B2 | HEAD NEAR shot mean | B1 | B2 |
+|--------|-----------------------------|----|----|---------------------|----|----|
+| open | 1.02 / 2 | 4.52 / 16 | 4.16 / 16 | 12.9 | 13.8 | 12.8 |
+| dense | 1.03 / 4 | 4.52 / 30 | 4.02 / 16 | 10.6 | 12.6 | 11.6 |
+| hordes300 | 2.73 / 60 | 5.32 / 60 | 5.64 / 60 | 16.0 | 16.7 | 15.9 |
+
+Acquisition is +3.0 to +3.5 ticks mean (p95 8) in B1 and +3.1 to +3.4 in B2 against HEAD; the clamp barely helps because most rifle killers are mid-clip with next_fire_tick a few ticks away. Against Zero Hour (0-3 ticks, not yet measured here): mean ZH + 4 holds only if ZH mean >= about 1; max ZH + 8 (11) is exceeded by the 16 maxima (a second removal while waiting, or a long delay). Shot latency overall is dominated by approach walks (mean 27-60), so only the NEAR column is informative: +0.9 / +2.0 (B1), -0.1 / +1.0 (B2). Not measured: the Zero Hour fixture itself (2f.1), a per-id spread.
+
+Result: B fairly built is about -0.03 to -0.04 ms on p95 (open / dense), -0.05 to -0.14 on p99, p50 +0.03 to +0.11; it reaches 1.82 only on dense (1.805 / 1.797, within 0.02 of HEAD's 1.837) and not on open (1.871 / 1.887). The 2f.0 slowdown was the unfair prototype. Cost: 20 failing checks to re-word and 7 re-pins, a mean +3 tick retarget delay. Recommendation: drop B (gain is below what the re-pin and the feel departure justify); the open p95 gap of 0.05-0.09 ms is not closed by it. Logs: scratchpad `ws2k/{suite.*.log,feel.*.txt,ab_b1,ab_b2,ab_b1.out,ab_b2.out}`.
+
 ## 2h result (2026-11-08, working tree on f7ce33f vs git archive of f7ce33f, Apple M6, load 1.0-2.3; A1 as a kept fix, lazy per-bucket records)
 
 Change: `game/scripts/simulation/combat.gd` only. `_build_grid` stores target dictionaries per bucket as `[targets, null]`; `_nearest` builds the flat records (`_records`, `_record`: id, centre, radius, building flag, position, bounds) on the bucket's first scan of the tick; same float expressions inline, unit radius read only in edge mode (the `_plan_return` scout has no `kind`). N1 (`test_nearest_matches_oracle`) is the spec; no test added.
