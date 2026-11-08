@@ -245,6 +245,18 @@ jobs:
           path: relay-bin/
           retention-days: 1
           if-no-files-found: error
+  docker:
+    name: Docker / Build images
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - run: docker build relay
+      - name: Build the web image around a placeholder export
+        run: |
+          mkdir -p web/site
+          for f in index.wasm index.pck index.js index.html; do echo placeholder > "web/site/$f"; done
+          docker build web
   relay-lint:
     name: Relay / Lint
     runs-on: ubuntu-latest
