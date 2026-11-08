@@ -5,15 +5,15 @@ Plan: [converted maps playable plan](../superpowers/plans/2026-11-08-converted-m
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-08 22:15)
-Branch / base commit / working-tree state: converted-maps / aa9bea2 / Task 1 diff uncommitted (relay, protocol, wire.gd, test_wire.gd, launcher.gd, headless_client.gd)
-Last green task / next incomplete task: Task 1 green, awaiting coordinator commit and review / Task 2
-Changed paths since last commit: relay/{envelope,room}.go and tests, protocol/vectors (2 changed, 4 new), protocol/conformance/{client,conform}.go, game/scripts/net/wire.gd, game/scripts/{launcher.gd,net/headless_client.gd}, game/tests/test_wire.gd
-Last command / cases / checks / failures / exit / marker: sh tools/run_netplay.sh match / n/a / n/a / 0 / match terminal tick 8400, NETPLAY PASSED match
+Resume record (updated 2026-11-08 22:40)
+Branch / base commit / working-tree state: converted-maps / 90cb4a5 / Task 2 diff uncommitted (start_spots.gd, test_start_spots.gd, run_tests.gd registration)
+Last green task / next incomplete task: Task 2 green, awaiting coordinator commit and review / Task 3
+Changed paths since last commit: game/scripts/simulation/start_spots.gd (+.uid), game/tests/test_start_spots.gd (+.uid), game/tests/run_tests.gd
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh (twice) / 566 / 136868 / 0 / 0 / TESTS PASSED 136868
 Known red case or blocker: none
 Approved decisions, pre-authorizations used, deferred gates: none used
 Usage so far: not run
-Next exact action: Task 2 (start spots) RED run, after the coordinator's commit of Task 1
+Next exact action: Task 3 (chosen starts become seats 1 and 2)
 ```
 
 ## Baseline
@@ -53,6 +53,8 @@ Append-only. One row per command: tree, counts, exit, marker, load averages.
 | 2026-11-08 22:13 | aa9bea2 + Task 1 diff | `sh tools/run_tests.sh` | CASES 559, CHECKS 136859, FAILURES 0 | 0 | TESTS PASSED 136859 | 1.9 / 4.2 / 3.6 (22:14) | no |
 | 2026-11-08 22:14 | aa9bea2 + Task 1 diff | `sh tools/run_lint.sh` / `run_warnings.sh` | 114 files | 0 / 0 | WARNINGS CHECKED 114 FILES | 1.9 / 4.2 / 3.6 (22:14) | no |
 | 2026-11-08 22:14 | aa9bea2 + Task 1 diff | `sh tools/run_netplay.sh match` | n/a | 0 | match terminal tick 8400; NETPLAY PASSED match | 1.9 / 4.2 / 3.6 (22:14) | no |
+| 2026-11-08 22:40 | 90cb4a5 + Task 2 diff | `sh tools/run_tests.sh` (run twice, SS6 identical both times) | CASES 566, CHECKS 136868, FAILURES 0 | 0 | TESTS PASSED 136868 | n/a | no |
+| 2026-11-08 22:41 | 90cb4a5 + Task 2 diff | `sh tools/run_lint.sh` / `run_warnings.sh` | 114 files | 0 / 0 | Success: no problems found; WARNINGS CHECKED 114 FILES | n/a | no |
 
 ## Task 1 RED
 
@@ -82,3 +84,14 @@ Baseline facts for later tasks:
 - TestParseRules uses 4098 bytes, not 4097; conformance covers the boundary.
 - test_wire W3 `files.size() >= 15` but 16 vectors; should be `>= 16`.
 - conformance `expectStart` uses Atoi, accepts `"seed":+5`.
+
+## Task 2 RED and SS6 derivation
+
+- RED (tree `90cb4a5`, stub `assign` returning `[1, 2]`): `FAIL: SS2 each later one the free start with the largest summed straight-line distance to the taken ones`; `CASES 566 CHECKS 136868 FAILURES 8`.
+- SS6 derivation: first GREEN run, tree `90cb4a5` + Task 2 diff, macOS (Apple Silicon), Ashfall 1v1 seeds 0..15 printed `8-4,2-6,3-7,5-1,6-2,2-6,7-3,4-8,1-5,3-7,2-6,6-2,6-2,8-4,6-2,5-1`; only SS6 failed (empty literal), SS1-SS5 and SS7 passed. Literal pinned; two later full runs matched. Linux and Windows confirmation by CI is still open (user exit-gate item).
+
+### Task 2 review minors (Opus, APPROVE)
+- `team <= 0` (no team) rule untested (ZH Ashfall teams [0,0]); add before M9.
+- SS3 does not prove "summed": Ashfall teams [1,2,3,4], chosen [1,4,0,0] gives [1,4,7,5]; max-of-nearest gives [1,4,7,2].
+- SS6 pins only an 8-start map; draw sequence for 3/6-start maps unpinned.
+- No guard for more slots than starts or an off-map chosen seat (unreachable tonight).
