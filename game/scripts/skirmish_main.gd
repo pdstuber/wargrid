@@ -2,6 +2,8 @@ extends "res://scripts/base_main.gd"
 
 const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 const View = preload("res://scripts/presentation/world_view.gd")
+const SoundPlayer = preload("res://scripts/presentation/sound_player.gd")
+var _sound: SoundPlayer = null
 var _attack_move_mode: bool = false
 var inspected_id: int = -1
 static var factions: Dictionary = Registry.Factions.DEFAULT_SKIRMISH
@@ -20,6 +22,16 @@ func _escape_pending() -> bool:
 func _step_simulation() -> void:
 	Skirmish.issue_opponent(simulation)
 	simulation.step()
+	_collect_sound()
+
+func _ensure_sound() -> void:
+	if _sound != null: return
+	_sound = SoundPlayer.new(local_player)
+	add_child(_sound)
+
+func _collect_sound() -> void:
+	_ensure_sound()
+	_sound.collect_step(simulation.tick(), simulation.combat_events(), simulation.command_results())
 
 func _production_kind(building: Dictionary, state: Dictionary) -> String:
 	var kind: String = Skirmish.unit_for(_local_state(state).get("faction", Skirmish.default_faction()), building.kind)
@@ -34,6 +46,7 @@ func _enter_placement(kind: String) -> void:
 
 func _restart() -> void:
 	simulation = _create_simulation()
+	_sound.director.reset()
 	selected_ids.clear()
 	selected_building_id = -1
 	inspected_id = -1
@@ -148,7 +161,9 @@ func _result_text(match_state: Dictionary) -> String:
 	return "Victory" if match_state.winner == simulation.team_of(local_player) else "Defeat"
 
 func _refresh_hud(state: Dictionary) -> void:
+	_ensure_sound()
 	super._refresh_hud(state)
+	_sound.update(state)
 	var result: String = _result_text(state.match)
 	var building: Dictionary = _building(state, selected_building_id)
 	if _inspected(state).is_empty(): inspected_id = -1

@@ -59,7 +59,46 @@ From Zero Hour, by design (provisional until the playtest):
 
 ## Godot attenuation
 
-Filled in Task 1.
+Task 1, 2026-11-08. Source: `https://raw.githubusercontent.com/godotengine/godot/4.7.2-stable/scene/2d/audio_stream_player_2d.cpp` (fetched 2026-11-08), lines 154-171:
+
+```text
+AudioListener2D *listener = vp->get_audio_listener_2d();
+if (listener) {
+    listener_in_global = listener->get_global_position();
+    relative_to_listener = (global_pos - listener_in_global).rotated(-listener->get_global_rotation());
+    relative_to_listener *= full_canvas_transform.get_scale();
+} else {
+    listener_in_global = full_canvas_transform.affine_inverse().xform(screen_size * 0.5);
+    relative_to_listener = full_canvas_transform.xform(global_pos) - screen_size * 0.5;
+}
+float dist = global_pos.distance_to(listener_in_global);
+if (dist > max_distance) { continue; }
+float multiplier = Math::pow(1.0f - dist / max_distance, attenuation);
+```
+
+`dist` is in global (world) px, so camera zoom does not enter it, with or without an `AudioListener2D`; without one the listener is the screen centre mapped back to global. Zoom only enters `relative_to_listener`, which feeds the pan (`pan = relative_to_listener.x / screen_size.x`).
+
+Measured (Godot 4.7.2 headless, Dummy driver, which does mix into `AudioEffectCapture`): 1 kHz loop, `max_distance` 1145, `attenuation` 1.0, source on the +y axis (pan 0), RMS of 0.25 s, dB relative to d = 0:
+
+| d (plane px) | 0 | 250 | 500 | 716 | 1000 | 1145 | 1200 |
+|---|---|---|---|---|---|---|---|
+| formula `20 log10(1 - d/1145)` | 0 | -2.14 | -4.98 | -8.53 | -17.95 | silent | silent |
+| measured, zoom 0.5, 1, 2, no listener | 0 | -2.14 | -4.99 | -8.53 | -17.95 | silent (zoom 2: -34 dB ramp residue) | silent |
+| measured, zoom 0.5, 1, 2, `AudioListener2D` current | 0 | -1.9 to -2.1 | -4.8 to -5.0 | -8.3 to -8.5 | -16.9 to -17.95 | silent (zoom 2: residue) | silent |
+
+The gain is the power curve and does not depend on zoom. A first run with the source on the +x axis measured the left channel only and showed a zoom-dependent drop; that was the pan, not the distance. Stop condition not triggered. Task 4 still adds an `AudioListener2D` on the camera so the listener follows the view rather than the screen centre by accident; Gate B checks it by ear. A viewport must have `audio_listener_enable_2d` on (the Dummy run reported `is_audio_listener_2d() == true` for the root).
+
+Values. Zero Hour gain `min(1, 7 / cells)`, 0 past 32 cells, against Godot `(1 - cells / 32) ^ a`, dB:
+
+| cells | 3.5 | 7 | 10 | 14 | 20 | 28 | 32 |
+|---|---|---|---|---|---|---|---|
+| Zero Hour | 0 | 0 | -3.1 | -6.0 | -9.1 | -12.0 | silent |
+| a = 0.5 | -0.5 | -1.1 | -1.6 | -2.5 | -4.3 | -9.0 | silent |
+| a = 1 | -1.0 | -2.1 | -3.3 | -5.0 | -8.5 | -18.1 | silent |
+| a = 1.5 | -1.5 | -3.2 | -4.9 | -7.5 | -12.8 | -27.1 | silent |
+| a = 2 | -2.0 | -4.3 | -6.5 | -10.0 | -17.0 | -36.1 | silent |
+
+Worst-case error from 7 to 28 cells (0.1-cell steps): a = 0.5 4.9 dB (at 21.3 cells), a = 1 6.0 dB (28), a = 1.5 15.1 dB, a = 2 24.1 dB. Pick `ATTENUATION = 0.5`, `MAX_DISTANCE_PX = 1145.0` (32 cells x 35.78 px). Isometric limit: one cell is 45.25 px screen-horizontal and 22.63 px screen-vertical, so the audible edge lies at 25 to 51 cells by direction; the playtest judges it (fallback B, spec Approaches).
 
 ## Assets and levels
 

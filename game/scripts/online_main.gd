@@ -51,6 +51,7 @@ func _step_simulation() -> void:
 	for i in CATCH_UP_STEPS:
 		if _credit < 1 or not _lockstep.advance(simulation): break
 		_credit -= 1
+		_collect_sound()
 		var tick: int = simulation.tick()
 		_lockstep.finish_tick(tick, simulation.snapshot() if _lockstep.wants_snapshot(tick) else null)
 	var rejections: Array = _lockstep.rejections()

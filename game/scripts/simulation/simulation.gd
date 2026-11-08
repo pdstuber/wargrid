@@ -488,6 +488,14 @@ func navigation_local_updates() -> int:
 func tick() -> int:
 	return _tick
 
+# Read-only view; cleared in place by the next step.
+func combat_events() -> Array[Dictionary]:
+	return _combat_events
+
+# Read-only view; cleared in place by the next step.
+func command_results() -> Array[Dictionary]:
+	return _command_results
+
 func allocation_calls() -> int:
 	return _allocation_calls
 
