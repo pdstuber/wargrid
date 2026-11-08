@@ -18,7 +18,7 @@ const ASHFALL := "res://data/maps/ashfall.json"
 const CHOSEN: Array[int] = [5, 1]
 
 func cases() -> Array[Callable]:
-	return [test_skirmish_initial_state, test_roster_production, test_bot_cycles_unit_list, test_bot_reads_seat_faction, test_bot_plays_china, test_bot_plays_frc, test_bot_builds_tunnel_hub_never_enters, test_bot_keeps_one_builder_six_gatherers, test_bot_leaves_rebuild_alone, test_opponent_pays_and_retries, test_opponent_attack_policy, test_opponent_defends_base, test_defence_skips_busy_units, test_bot_ignores_contained_units, test_match_lifecycle, test_restart_state, test_bot_state_survives_seat_wrapper, test_headless_client_rejects_unknown_faction, test_chosen_starts_become_bases, test_no_starts_leaves_default_map, test_bot_builds_on_chosen_start, test_seeded_diagonal_on_broken_crown]
+	return [test_skirmish_initial_state, test_roster_production, test_bot_cycles_unit_list, test_bot_reads_seat_faction, test_bot_plays_china, test_bot_plays_frc, test_bot_builds_tunnel_hub_never_enters, test_bot_collectors_per_supply_center, test_bot_counts_queued_collectors, test_bot_keeps_one_builder_four_gatherers, test_bot_leaves_rebuild_alone, test_opponent_pays_and_retries, test_opponent_attack_policy, test_opponent_defends_base, test_defence_skips_busy_units, test_bot_ignores_contained_units, test_match_lifecycle, test_restart_state, test_bot_state_survives_seat_wrapper, test_headless_client_rejects_unknown_faction, test_chosen_starts_become_bases, test_no_starts_leaves_default_map, test_bot_builds_on_chosen_start, test_seeded_diagonal_on_broken_crown]
 
 func _owned(items: Array, player: int) -> Array:
 	return items.filter(func(item: Dictionary) -> bool: return item.owner == player)
@@ -145,7 +145,7 @@ func test_bot_leaves_rebuild_alone(runner) -> bool:
 			if not builder.is_empty() and not builder[0].has("hole_id"): interfered = "bot builder on the site"
 		var free: int = state.entities.filter(func(u: Dictionary) -> bool: return u.owner == 2 and u.kind == "frc_builder" and not u.has("hole_id")).size()
 		most = maxi(most, free)
-		recovered = recovered or (lost and not worker.is_empty() and worker[0].id != first_laborer and free == Skirmish.LABORERS and last_free < free)
+		recovered = recovered or (lost and not worker.is_empty() and worker[0].id != first_laborer and free == _frc_laborers() and last_free < free)
 		last_free = free
 		if killed and not worker.is_empty() and not lost and worker[0].id != first_laborer:
 			lost = true
@@ -154,8 +154,8 @@ func test_bot_leaves_rebuild_alone(runner) -> bool:
 		rebuilt = rebuilt or mine.any(func(b: Dictionary) -> bool: return b.completed and not b.has("hole_id") and b.id != barracks)
 	runner.check(interfered.is_empty(), "Fb2 the bot leaves the rebuild alone, saw: " + interfered)
 	runner.check(rebuilt, "Fb2 the hole rebuilt the barracks")
-	runner.check(most == Skirmish.LABORERS, "Fb2 the bot keeps %d laborers without the rebuild laborer, most %d" % [Skirmish.LABORERS, most])
-	runner.check(recovered, "Fb2 a bot laborer lost while the rebuild laborer works is replaced up to %d, final %d" % [Skirmish.LABORERS, last_free])
+	runner.check(most == _frc_laborers(), "Fb2 the bot keeps %d laborers without the rebuild laborer, most %d" % [_frc_laborers(), most])
+	runner.check(recovered, "Fb2 a bot laborer lost while the rebuild laborer works is replaced up to %d, final %d" % [_frc_laborers(), last_free])
 	runner.check(factory_tick >= 0 and factory_tick < removed_at + 300, "Fb2 the bot places the next build-order kind soon after the hole opens, tick %d" % factory_tick)
 	return true
 
@@ -421,7 +421,58 @@ func test_bot_plays_china(runner) -> bool:
 	runner.check(owned.any(func(k: String) -> bool: return k == "china_rifle_infantry" or k == "china_rocket_infantry" or k == "china_tank" or k == "china_light_vehicle"), "B5 a China bot trains combat units, got " + str(owned))
 	return true
 
-func test_bot_keeps_one_builder_six_gatherers(runner) -> bool:
+func _frc_laborers() -> int:
+	return Registry.faction("frc").bot_collectors_per_supply_center
+
+func _count_collectors(sim, kind: String) -> int:
+	return sim.snapshot().entities.filter(func(u: Dictionary) -> bool: return u.owner == 2 and u.kind == kind).size()
+
+func _run_collector_bot(faction: String, ticks: int):
+	var sim = Skirmish.create(true, "ai", {1: "usa", 2: faction})
+	sim._players[2].credits = 1000000
+	for tick in range(ticks):
+		Skirmish.issue_opponent(sim, 2)
+		sim.step()
+	return sim
+
+func test_bot_collectors_per_supply_center(runner) -> bool:
+	var usa = _run_collector_bot("usa", 3600)
+	runner.check(_count_collectors(usa, "usa_collector") == 2, "SK-C1 a USA bot runs two collectors per supply center, got %d" % _count_collectors(usa, "usa_collector"))
+	runner.check(Registry.faction("usa").bot_collectors_per_supply_center == 2 and Registry.faction("china").bot_collectors_per_supply_center == 3 and Registry.faction("frc").bot_collectors_per_supply_center == 5, "SK-C3 faction values are USA 2, China 3, FRC 5")
+	var china = _run_collector_bot("china", 3600)
+	runner.check(_count_collectors(china, "china_collector") == 3, "SK-C2 a China bot runs three, got %d" % _count_collectors(china, "china_collector"))
+	var lost: int = usa.snapshot().entities.filter(func(u: Dictionary) -> bool: return u.owner == 2 and u.kind == "usa_collector")[0].id
+	usa.remove_object(lost)
+	for tick in range(900):
+		Skirmish.issue_opponent(usa, 2)
+		usa.step()
+	runner.check(_count_collectors(usa, "usa_collector") == 2, "SK-C4 a lost collector is replaced, got %d" % _count_collectors(usa, "usa_collector"))
+	return true
+
+func _two_depot_collectors(faction: String, kind: String) -> int:
+	var sim = Skirmish.create(true, "ai", {1: "usa", 2: faction})
+	sim._players[2].credits = 1000000
+	var depot: String = faction + "_supply_center"
+	var second: bool = false
+	for tick in range(5400):
+		Skirmish.issue_opponent(sim, 2)
+		if not second and sim.snapshot().buildings.any(func(b: Dictionary) -> bool: return b.owner == 2 and b.kind == depot and b.completed):
+			var builder: int = sim.snapshot().entities.filter(func(u: Dictionary) -> bool: return u.owner == 2 and Registry.is_builder(u.kind))[0].id
+			var home: Vector2i = Skirmish._slot(sim, depot, 2)
+			var sequence: int = sim.snapshot().last_sequences.filter(func(e: Dictionary) -> bool: return e.player == 2)[0].sequence
+			for offset: Vector2i in [Vector2i(-6, 0), Vector2i(6, 0), Vector2i(0, -6), Vector2i(0, 6), Vector2i(-6, 6), Vector2i(6, -6), Vector2i(-10, 0), Vector2i(10, 0)]:
+				var site: Vector2i = home + offset
+				second = sim.issue_command({"type": "build", "builder_id": builder, "building_kind": depot, "origin": [site.x, site.y], "tick": sim.tick(), "player": 2, "sequence": sequence + 1}).ok
+				if second: break
+		sim.step()
+	return _count_collectors(sim, kind) if second else -1
+
+func test_bot_counts_queued_collectors(runner) -> bool:
+	runner.check(_two_depot_collectors("usa", "usa_collector") == 4, "SK-C5 two supply centers, a USA bot owns exactly 4, got %d" % _two_depot_collectors("usa", "usa_collector"))
+	runner.check(_two_depot_collectors("china", "china_collector") == 6, "SK-C5 two supply centers, a China bot owns exactly 6, got %d" % _two_depot_collectors("china", "china_collector"))
+	return true
+
+func test_bot_keeps_one_builder_four_gatherers(runner) -> bool:
 	var sim = Skirmish.create(true, "ai", {1: "usa", 2: "frc"})
 	var queued: bool = false
 	for tick in range(3000):
@@ -431,7 +482,7 @@ func test_bot_keeps_one_builder_six_gatherers(runner) -> bool:
 			if building.owner == 2 and building.kind == "frc_command_center" and not building.queue.is_empty(): queued = true
 	var laborers: Array = sim.snapshot().entities.filter(func(u: Dictionary) -> bool: return u.owner == 2 and u.kind == "frc_builder")
 	laborers.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.id < b.id)
-	runner.check(laborers.size() == Skirmish.LABORERS, "Fb1 the FRC bot owns exactly LABORERS laborers, got %d" % laborers.size())
+	runner.check(laborers.size() == _frc_laborers(), "Fb1 the FRC bot owns exactly the faction count of laborers, got %d" % laborers.size())
 	runner.check(not laborers.is_empty() and not laborers[0].collection.enabled, "Fb1 the lowest id stays the builder")
 	runner.check(laborers.size() > 1 and laborers.slice(1).all(func(u: Dictionary) -> bool: return u.collection.enabled), "Fb1 the others collect")
 	runner.check(not queued, "Fb1 the headquarters queue never held an entry")

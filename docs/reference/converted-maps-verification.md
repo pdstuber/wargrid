@@ -5,15 +5,15 @@ Plan: [converted maps playable plan](../superpowers/plans/2026-11-08-converted-m
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-08 23:10)
-Branch / base commit / working-tree state: converted-maps / b609404 / Task 3 diff uncommitted
-Last green task / next incomplete task: Task 3 green, awaiting coordinator commit and review / Task 3b
-Changed paths since last commit: game/scripts/simulation/map_data.gd, game/scripts/simulation/skirmish.gd, game/tests/test_map.gd, game/tests/test_skirmish.gd
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 571 / 136880 / 0 / 0 / TESTS PASSED 136880
-Known red case or blocker: none
-Approved decisions, pre-authorizations used, deferred gates: none used
+Resume record (updated 2026-11-09 00:20)
+Branch / base commit / working-tree state: converted-maps / 32e780d / Task 3b diff uncommitted
+Last green task / next incomplete task: Task 3b code complete incl. review fix (queued collectors counted), 8 pins moved by the collector change (listed under "Task 3b moved pins"), awaiting coordinator commit then re-pin task / Task 3c
+Changed paths since last commit: game/scripts/simulation/skirmish.gd, game/scripts/simulation/definitions/factions.gd, game/tests/test_skirmish.gd, docs/reference/converted-maps-verification.md
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 573 / 136886 / 7 (all pin moves) / 1 / no marker
+Known red case or blocker: the pin-moved tests below, awaiting the re-pin commit
+Approved decisions, pre-authorizations used, deferred gates: collector re-pin pre-approved 2026-11-08, not yet used
 Usage so far: not run
-Next exact action: Task 3b (bot collectors per supply center)
+Next exact action: coordinator commits Task 3b, then the re-pin task
 ```
 
 ## Baseline
@@ -58,6 +58,12 @@ Append-only. One row per command: tree, counts, exit, marker, load averages.
 | 2026-11-08 23:10 | b609404 + Task 3 diff | `sh tools/run_tests.sh` | CASES 571, CHECKS 136880, FAILURES 0 | 0 | TESTS PASSED 136880 | n/a | no |
 | 2026-11-08 23:11 | b609404 + Task 3 diff | `sh tools/run_lint.sh` / `run_warnings.sh` | 116 files | 0 / 0 | WARNINGS CHECKED 116 FILES | n/a | no |
 | 2026-11-08 23:12 | b609404 + Task 3 diff | `sh tools/run_netplay.sh match` | n/a | 0 | match terminal tick 8400; NETPLAY PASSED match | n/a | no |
+| 2026-11-08 23:45 | 32e780d + Task 3b diff | `sh tools/run_tests.sh` | CASES 572, CHECKS 136883, FAILURES 7 (pins only) | 1 | none | n/a | no |
+| 2026-11-08 23:48 | 32e780d + Task 3b diff | `sh tools/run_team_match.sh` | `TEAM MATCH won tick=38510 winner=2 units_peak=207` | 1 | pin mismatch | n/a | no |
+| 2026-11-08 23:49 | 32e780d + Task 3b diff | `sh tools/run_netplay.sh match` | terminal tick 8300 | 1 | NETPLAY FAILED match: terminal tick 8300, pinned 8400 | n/a | no |
+| 2026-11-08 23:50 | 32e780d + Task 3b diff | `sh tools/run_lint.sh` / `run_warnings.sh` | 116 files | 0 / 0 | WARNINGS CHECKED 116 FILES | n/a | no |
+| 2026-11-09 00:15 | 32e780d + Task 3b diff + review fix | `sh tools/run_tests.sh` | CASES 573, CHECKS 136886, FAILURES 7 (same pins, same values) | 1 | none | n/a | no |
+| 2026-11-09 00:18 | same | lint / warnings / `run_netplay.sh match` / `run_team_match.sh` | 116 files; terminal 8300; `won tick=38510 winner=2 units_peak=207` | 0 / 0 / 1 / 1 | pin mismatches only, identical to 23:48-23:49 | n/a | no |
 
 ## Task 1 RED
 
@@ -106,3 +112,30 @@ Parse-level RED only: with the new tests and no production code, `run_tests.sh` 
 ### Task 3 review (Opus, APPROVE)
 - RED gap closed by reviewer: mutant with `if false:` around with_starts fails all 3 SK-S1 checks, both SK-S3 checks and SK-S4 ("diagonal: 74.0").
 - Minors: bot wave `_rally` untested; off-map starts in create push_error then crash in MapData.create({}) (add `return null`); repeated seats / length != 2 unguarded; SK-S1 checks unit and building as one bool.
+
+## Task 3b RED
+
+Tree `32e780d` + new test and the faction key (FRC 7, no `_produce` change): `FAIL: SK-C1 a USA bot runs two collectors per supply center, got 1`; also `SK-C2 ... got 1`, `SK-C4 ... got 0`; `CASES 572 CHECKS 136883 FAILURES 3`.
+
+## Task 3b moved pins
+
+All failures after the change are pins; old values are the committed constants (equal to the Task 3 green run). Cause check against Task 3 commit not re-run: Task 3b touches only its Owns files.
+
+| Pin | Old | New | Command |
+|---|---|---|---|
+| `test_skirmish_match.gd` TERMINAL_TICK (S1) | 8501, winner 1 | 8452, winner 1 | `run_tests.sh` "S1 pinned outcome, got 8452" |
+| `test_skirmish_match.gd` S1_CORE_SERIES | 8576069817585818203 | 8642905752227994667 | "S1 core series pinned" |
+| `test_skirmish_match.gd` CHINA_TERMINAL_TICK (Cs1) | 26359, winner 2 | 27555, winner 2 | "Cs1 pinned outcome" |
+| `test_skirmish_match.gd` FRC_TERMINAL_TICK (Fm1) | 23534, winner 1 | no win by cap 45000 (status ongoing, terminal -1) | "Fm1 ... ends won inside the cap" and "pinned outcome" |
+| `test_team_match.gd` FINAL_DIGEST (TB3) | 020f659e77ee6c20 | 1c2a5905802d4d9b | "TB3 final digest" |
+| `test_team_match.gd` TEAM_CORE_SERIES (TB4) | 7692526877276561850 | 205812011678164261 | "TB4 team core series pinned" |
+| `run_team_match.sh` | cap tick=45000 winner=null units_peak=160 | won tick=38510 winner=2 units_peak=207 | `sh tools/run_team_match.sh` |
+| `run_netplay.sh match` terminal tick | 8400 | 8300 | `sh tools/run_netplay.sh match` |
+
+Note for the re-pin: Fm1 no longer ends within its cap (FRC 5 laborers per cache instead of 7 slows the economy); re-pinning needs a larger cap or a decision, not just a number. Replay traces: no other suite failure.
+
+## Task 3b review fix
+
+RED (fix removed, new tests present): `FAIL: SK-C5 two supply centers, a USA bot owns exactly 4, got 5` and `... China bot owns exactly 6, got 7`; `FAILURES 9` (7 pins + 2). Fix: `_produce` counts collectors queued in any depot. SK-C3 now pins faction values (USA 2, China 3, FRC 5); stale test renamed to `test_bot_keeps_one_builder_four_gatherers`. Single-depot pins unmoved.
+
+Fm1 cause per reviewer (plausible, not a bug; morning decision): the USA second helicopter drives USA income 41475 vs about 20000; map runs out of supply near t=30000; FRC wins at t=73560. USA1+FRC5 ends 26611, USA2+FRC7 ends 42951.

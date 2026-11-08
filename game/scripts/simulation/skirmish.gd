@@ -15,8 +15,6 @@ const WAVE_MIN: int = 6
 const WAVE_TIMEOUT: int = 1800
 const RALLY_RADIUS: float = 6.0
 const DISTANCE_STEP: float = 4.0
-# FRC bot: one builder plus six gatherers (user 2026-11-07); only for a faction whose start unit also collects.
-const LABORERS: int = 7
 const BOT_META := &"skirmish_bot"
 const MAP_PATH := "res://data/maps/skirmish.json"
 
@@ -120,19 +118,30 @@ static func _produce(ctx: Dictionary, state: Dictionary, buildings: Array, facti
 	var mine: Array = state.entities.filter(func(unit: Dictionary) -> bool: return unit.owner == ctx.player and not unit.has("hole_id"))
 	var replace_builder: bool = not mine.any(func(unit: Dictionary) -> bool: return Registry.is_builder(unit.kind))
 	var start_unit: String = Registry.faction(faction).start_unit
-	var gatherers: bool = not Registry.collects(start_unit).is_empty()
+	var per_depot: int = Registry.faction(faction).bot_collectors_per_supply_center
+	var depots: int = buildings.filter(func(building: Dictionary) -> bool: return building.completed and not building.has("hole_id") and Registry.kind(building.kind).receives_supply).size()
 	var owned: Array = mine.map(func(unit: Dictionary) -> String: return unit.kind)
+	var queued: Array = []
+	for building: Variant in buildings: queued.append_array(building.queue.map(func(entry: Dictionary) -> String: return entry.kind))
 	for building: Variant in buildings:
 		if not building.completed or not building.queue.is_empty(): continue
 		var row: Dictionary = Registry.kind(building.kind)
 		var kind: String = unit_for(faction, building.kind, owned)
-		if row.produces.has(start_unit) and (replace_builder or (gatherers and row.receives_supply and owned.count(start_unit) < LABORERS)): kind = start_unit
+		var collector: String = _collector_kind(row)
+		if row.produces.has(start_unit) and replace_builder: kind = start_unit
+		elif not collector.is_empty() and owned.count(collector) + queued.count(collector) < per_depot * depots: kind = collector
 		if kind.is_empty(): continue
 		var cost: int = Definitions.unit(kind).cost
 		if ctx.credits >= cost and _send(ctx, {"type": "produce", "building_id": building.id, "unit_kind": kind}):
 			ctx.credits -= cost
 			owned.append(kind)
 		if kind == start_unit: replace_builder = false
+
+static func _collector_kind(row: Dictionary) -> String:
+	if not row.receives_supply: return ""
+	for kind: String in row.produces:
+		if not Registry.collects(kind).is_empty(): return kind
+	return ""
 
 static func _faction(state: Dictionary, player: int) -> String:
 	for entry: Dictionary in state.players:
