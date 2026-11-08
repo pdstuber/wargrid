@@ -569,11 +569,13 @@ Matches with up to eight players in teams with team victory; a map converted fro
 
 **Planned 2026-11-05 (not started):** [approved design](docs/superpowers/specs/2026-11-05-m6-teams-full-map-design.md), [evidence](docs/reference/m6-map-and-feel.md), [execution plan](docs/superpowers/plans/2026-11-05-m6-teams-full-map.md). User decisions: one milestone (not split); headless only; edge-to-edge range, Ranger cadence 4/4/22, tank splash hurting allies too, start delay, acceleration and turn-in-place; elevation affects passability only; firing ignores heading (no turrets yet).
 
-### Ashfall playable (small task before M7; user, 2026-11-06)
+### Converted maps playable (small task; user, 2026-11-06; renamed from "Ashfall playable" and placed before unit avoidance 2026-11-08)
 
-Make the converted maps playable in the launcher (Ashfall, plus Dry Wells and Broken Crown converted 2026-11-07, see [more maps](docs/reference/more-maps.md); the online `start` message needs a map field first): map choice offline and online, camera limits for 196 × 196, terrain drawn as one batch (the performance spike measured about 5 fps with per-cell drawing). No minimap yet (HUD milestone).
+**Handoff:** [converted maps prompt](docs/converted-maps-prompt.txt) (user, 2026-11-08): Dry Wells, Broken Crown and Ashfall selectable offline and online 1v1, both clients guaranteed the same map, the existing bots build, collect and attack on all three. Not the M9 lobby, and not bot tuning (M8).
 
-**Partly done (2026-11-08, [more maps](docs/reference/more-maps.md)):** the launcher plays Dry Wells offline and online (camera starts on the own base); terrain draws as one cached batch (`a1dfb03`) and structures in a cached layer; supply sources have their own footprint, so small piles exist ([design](docs/superpowers/specs/2026-11-08-small-supply-piles-design.md)). Still open: map choice offline and online (the online `start` message needs a map field; until then old and new builds desync at the first hash check), Ashfall in the launcher, camera limits for 196 × 196.
+Make the converted maps playable in the launcher (Ashfall, plus Dry Wells and Broken Crown converted 2026-11-07, see [more maps](docs/reference/more-maps.md); the online `start` message needs a map field first): map choice offline and online, terrain drawn as one batch (the performance spike measured about 5 fps with per-cell drawing). No minimap yet (HUD milestone).
+
+**Partly done (2026-11-08, [more maps](docs/reference/more-maps.md)):** the launcher plays Dry Wells offline and online (camera starts on the own base); terrain draws as one cached batch (`a1dfb03`) and structures in a cached layer; supply sources have their own footprint, so small piles exist ([design](docs/superpowers/specs/2026-11-08-small-supply-piles-design.md)). Still open: map choice offline and online (the online `start` message carries no map, so two clients on different maps desync at the first hash check; different builds are already refused), Broken Crown and Ashfall in the launcher. Camera limits need no work: `main.gd` clamps panning to the map's own size (checked 2026-11-08); pan speed and the empty corners on the big maps are noted in the rendered check.
 
 ### M7 — Three factions with their signature mechanics
 
@@ -587,13 +589,13 @@ Make the converted maps playable in the launcher (Ashfall, plus Dry Wells and Br
 
 ### Performance spike, then unit avoidance (user, 2026-11-07; order recommended and accepted 2026-11-07, scope not designed)
 
-**Order:** M7 exit gate, performance spike, unit avoidance milestone, then ground batch A, M7.5, M7.6, M7.9, ground batch B, M8, M8.1, M9. Handoff for the spike: [performance spike prompt](docs/performance-spike-prompt.txt).
+**Order:** M7 exit gate, performance spike, converted maps playable (user, 2026-11-08), unit avoidance milestone, then ground batch A, M7.5, M7.6, M7.9, ground batch B, M8, M8.1, M9. Handoff for the spike: [performance spike prompt](docs/performance-spike-prompt.txt).
 
-**Status (2026-11-08):** the performance spike is done and merged to `main` (pushed 2026-11-08 with `4c98b9a`); results, remaining work and the tightened gates are in the [performance ledger](docs/reference/performance.md#post-m7-performance-spike-2026-11). The next step in this order is the unit avoidance milestone (not designed).
+**Status (2026-11-08):** the performance spike is done and merged to `main` (pushed 2026-11-08 with `4c98b9a`); results, remaining work and the tightened gates are in the [performance ledger](docs/reference/performance.md#post-m7-performance-spike-2026-11). The next step in this order is the converted maps playable task ([handoff](docs/converted-maps-prompt.txt)), then the unit avoidance milestone (not designed).
 
 - **Performance spike** right after M7, simulation cost first; rendered cost only for two items the user added on 2026-11-07 (large-map terrain and per-frame redraws, the unexplained rendered tick tail of about 10 ms since the terrain cache). The exceeded rows in the [performance ledger](docs/reference/performance.md) are accepted until then (combat stress, team match p99, the horde layout). Reported as exceeded, never loosened. It also answers whether a threaded web export is feasible.
 - **Unit avoidance milestone** after the spike: units go around each other instead of through each other (a firm requirement from the M7 gate 2 playtest; today the M2 design permits overlap in transit). It changes pathing for every unit, so it re-pins every trace and needs its own benchmarks, a design spike on one map first, and a playtest. Risks to design for: deadlocks at docks and chokepoints, trucks, container boarding, horde clusters, lockstep determinism and WASM cost.
-- **Why this order:** the spike gives avoidance a measured per-tick baseline and probably its spatial grid; avoidance comes before new content so later rosters, the art pass and the M8 bots are tuned once against the final movement, and the trace re-pin happens once. Fog and art do not touch movement.
+- **Why this order:** the spike gives avoidance a measured per-tick baseline and probably its spatial grid; avoidance comes before new content so later rosters, the art pass and the M8 bots are tuned once against the final movement, and the trace re-pin happens once. Fog and art do not touch movement. Converted maps playable goes first (user, 2026-11-08) so avoidance is designed against real docks and chokepoints, later playtests have map choice and M8 is tuned on three maps.
 
 ### Ground batch A (after unit avoidance; user, 2026-11-06; scope refined 2026-11-07, not designed)
 
