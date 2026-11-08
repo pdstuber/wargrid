@@ -1,10 +1,10 @@
 # More converted maps (2026-11-07, rebased onto M7 2026-11-08)
 
-Small task, not a milestone. Two more maps converted with `tools/zh_map/convert.py` (`convert.py <map> <out.json> <name>`), same rules as Ashfall (AGENTS.md map-data rule; notice in `game/data/maps/NOTICE.md`). Sources are 4 × 5 cells and starts carry M7's six slots (`power_plant`, `supply_center`, `barracks`, `factory`, `command_center`, `defence`).
+Small task, not a milestone. Two more maps converted with `tools/zh_map/convert.py` (`convert.py <map> <out.json> <name>`), same rules as Ashfall (AGENTS.md map-data rule; notice in `game/data/maps/NOTICE.md`). Supply docks are 4 × 5 cells, small piles 1 × 1, and starts carry M7's six slots (`power_plant`, `supply_center`, `barracks`, `factory`, `command_center`, `defence`).
 
 | Wargrid name | Source (CnC_Modding_Support `3aad8e4`, `Zero Hour/Maps/official/`) | Cells | Seats | Sources |
 |---|---|---|---|---|
-| Dry Wells | `Tournament Desert/Tournament Desert.map` | 81 × 108 | 2 | 4 docks of 400 (12 small piles not converted, see below) |
+| Dry Wells | `Tournament Desert/Tournament Desert.map` | 81 × 108 | 2 | 4 docks of 400 + 12 small piles of 50 |
 | Broken Crown | `Fallen Empire/Fallen Empire.map` | 112 × 100 | 4 | 8 docks of 400 |
 
 ## Converter changes
@@ -12,14 +12,18 @@ Small task, not a milestone. Two more maps converted with `tools/zh_map/convert.
 - **Water height.** Fallen Empire has one water polygon (height 7) over the whole map, with terrain above it. A cell is now wet only when the polygon contains it and the ground height is below the polygon's height. Before, every start was "wet" and the conversion failed (`start not open: seat 1`). Tournament Desert's wet cells fell from 372 to 259. Twilight Flame has no water; `ashfall.json` regenerates byte-identical to `main`.
 - **Skipped:** two `TechOilDerrick` on Tournament Desert (no tech buildings in Wargrid).
 
-## Small piles: not converted yet (user, 2026-11-08)
+## Small piles (2026-11-08)
 
-Tournament Desert has 12 `SupplyPileSmall` (`StartingBoxes = 50`, `data\ini\object\civilianbuilding.ini:570` in the pinned root `INIZH.big`; no map override) in two clusters, 600 of the map's 2,200 boxes. Dry Wells ships without them until sources can have their own footprint.
+Design: [small supply piles](../superpowers/specs/2026-11-08-small-supply-piles-design.md); plan: [execution plan](../superpowers/plans/2026-11-08-small-supply-piles.md). Tournament Desert's 12 `SupplyPileSmall` (`StartingBoxes = 50`, `data\ini\object\civilianbuilding.ini:570` in the pinned root `INIZH.big`) are now separate sources.
 
-- A first version merged piles closer than one footprint into one source. [M7 economy parity](m7-economy-parity.md) lists that as a mismatch: one source serves one collector at a time, so a merged cluster serves one collector where Zero Hour serves one per pile.
-- Under M7's 4 × 5 source footprint the 12 piles form 8 overlapping pairs, so they cannot be separate sources either.
-- A small pile is a cylinder of radius 16 units (`civilianbuilding.ini:570`), about 1.3 cells across; the closest two are 32.6 units apart. With a 1 × 1 footprint none overlap (2 × 2: 3 pairs).
-- Planned as its own small task: a per-source footprint (small pile 1 × 1), then convert the piles as separate 50-box sources.
+- Rule: 1 × 1 footprint, 50 boxes, removed in the step that takes the last box (`delete_when_empty`); the collector keeps the box it carries. Docks are unchanged (4 × 5, 400, never removed). Only non-default sources carry `footprint` / `delete_when_empty`.
+- Converter: emits piles as their own sources and checks that no two footprints overlap. Ashfall and Broken Crown regenerate byte-identical.
+- Checks on 82c4c53 (Apple M6, headless): suite `CASES 504 CHECKS 136252 FAILURES 0` (baseline 493), converter 19 tests OK, lint, warnings and python checks exit 0, `sh tools/run_benchmark.sh` exit 0 (`BENCHMARK PASSED 2`, `COMBAT BENCHMARK PASSED 10`, `LOCKSTEP BENCHMARK PASSED 1`, same as the baseline on 36c39e0).
+- Bot vs bot on Dry Wells (scratch script, cap 45,000 ticks): small boxes left at the end / piles removed: USA-USA 510 / 1 (cap), China-China 600 / 0 (ends tick 10,200), FRC-FRC 598 / 0 (10,500), USA-China 550 / 1 (11,400), China-FRC 600 / 0 (10,800), FRC-USA 595 / 0 (26,100). Collectors mostly stay on the docks, so this is data, not a failure. Forced run USA-China with every dock set to 0 boxes (cap 15,000): ended tick 11,700, 1 pile removed, 486 small boxes left (first pile below 50 at tick 1,200); credits are spent by the bots, so the credit trace (max 18,200, end 275) does not show the rise on its own, the 114 boxes taken do.
+- Rendered (window, `vsync=off`, 1280 × 720, camera on the eastern cluster, single run): see the [performance ledger](performance.md) row 2026-11-08 small supply piles; no regression against the old map.
+- Not measured: parity-harness timing (design non-goal).
+- Playtest item: labels of neighbouring 1 × 1 piles overlap on screen.
+- Builds before and after this change must not play Dry Wells online together (the map file and the sim records differ).
 
 ## Converter report
 

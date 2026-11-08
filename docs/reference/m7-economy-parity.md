@@ -84,8 +84,8 @@ Wargrid ground collectors already take (boxes + 1) x delay (`supply_collection.g
 
 ## Mismatch list (open items)
 
-1. Small-pile merge on the branch (concurrency and pile count differ from Tournament Desert).
-2. `main` converter ignores `SupplyPileSmall` (only docks), so a main-based Tournament Desert loses 600 boxes.
+1. Small-pile merge on the branch: resolved 2026-11-08, piles are separate 1 × 1 sources ([design](../superpowers/specs/2026-11-08-small-supply-piles-design.md)).
+2. `main` converter ignores `SupplyPileSmall` (only docks): resolved 2026-11-08 on the branch, Dry Wells has all 2,200 boxes ([more maps](more-maps.md)).
 3. Search radius 28 cells not used (small; see rework plan R2.4).
 
 Resolved since: pile/depot minimum distance and the d=1 laborer loop (`supply_clearance`, 4 x 5 pile, distinct dock points), air early departure.
