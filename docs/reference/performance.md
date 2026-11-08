@@ -253,7 +253,7 @@ Not reproduced at load up to 2.8; cause unproven. The ~10 ms rendered tick p95 s
 1. Persistent occupancy set for `_hold_cells`, maintained across ticks. Benefit: removes the 0.06-0.16 ms post-removal cost (2i), the largest remaining open / dense p95 item. Effort: medium. Risk: touches several functions in `combat.gd`; needs an Opus design first.
 2. Per-cell, per-team enemy counts so empty cells skip `_nearest` buckets. Benefit: fewer `_nearest` bucket visits (unmeasured). Effort: medium. Risk: state to keep in sync with removals.
 3. One entity pass for `draw.units` instead of five. Benefit: about 0.3-0.5 ms per rendered tick on 300 units (estimate, unmeasured). Effort: small. Risk: low, presentation only.
-4. hordes300 (2.82 against 1.82) needs a structural change; it is not closable in GDScript with what was tried. Benefit: large. Effort: large. Risk: high.
+4. hordes300 (2.82 against 1.82) needs a structural change; it is not closable in GDScript with what was tried. Benefit: large. Effort: large. Risk: high. **Planned for later (user, 2026-11-08):** a shared persistent grid with incremental horde and locomotion updates, as its own task after the `_hold_cells` occupancy set (item 1) has been measured; not started, needs its own design and the same trace-preservation gate.
 5. Consider enabling `unsafe_method_access` and `unsafe_property_access` warnings after counting the violations. Benefit: catches new Variant-in-hot-loop regressions. Effort: small to count, unknown to clear. Risk: warning noise.
 
 ### Gate recommendations
