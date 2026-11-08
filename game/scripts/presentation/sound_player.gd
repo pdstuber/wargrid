@@ -1,6 +1,7 @@
 extends Node2D
 
 const SoundDirector = preload("res://scripts/presentation/sound_director.gd")
+const Announcer = preload("res://scripts/presentation/announcer.gd")
 const Cues = preload("res://scripts/presentation/sound_cues.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 const WORLD_VOICES := 25
@@ -14,6 +15,7 @@ var _world: Array[AudioStreamPlayer2D] = []
 var _ui: Array[AudioStreamPlayer] = []
 var _world_cues: Array[String] = []
 var _ui_cues: Array[String] = []
+var _voice := AudioStreamPlayer.new()
 var _streams: Dictionary = {}
 var _last: Array[Dictionary] = []
 
@@ -22,6 +24,8 @@ func _init(local_player: int) -> void:
 	director = SoundDirector.new(local_player)
 
 func _ready() -> void:
+	_voice.bus = &"Voice"
+	add_child(_voice)
 	for i in WORLD_VOICES:
 		var player := AudioStreamPlayer2D.new()
 		player.bus = &"Effects"
@@ -44,6 +48,10 @@ func collect_step(tick: int, events: Array[Dictionary], results: Array[Dictionar
 
 func update(state: Dictionary) -> void:
 	play(director.update(state))
+	var line: String = director.announcer.next(state.get("tick", 0), _voice.playing)
+	if line.is_empty(): return
+	_voice.stream = load(Announcer.path(line))
+	_voice.play()
 
 func rejected(error: String) -> void:
 	director.rejected(error)

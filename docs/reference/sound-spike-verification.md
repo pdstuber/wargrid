@@ -5,13 +5,13 @@ Handoff: [sound-spike-prompt.txt](../sound-spike-prompt.txt). Plan: [sound spike
 ```text
 Resume record (updated 2026-11-08)
 Branch / base commit / working-tree state: spike-sound / base main 893332f (HEAD 1520b90) / clean after the ruling commit
-Last green task / next incomplete task: Task 4 done (checkpoint restart; uncommitted) / Task 5
-Changed paths since last commit: game/default_bus_layout.tres, game/scripts/presentation/sound_cues.gd, sound_director.gd, sound_player.gd, game/scripts/skirmish_main.gd, game/tests/test_sound.gd, this file
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, CASES 528 CHECKS 136420 FAILURES 0 (136427 with traces), exit 0, TESTS PASSED; lint, warnings exit 0; traces identical
+Last green task / next incomplete task: Task 5 done (uncommitted; Task 4 committed as 3ace0ea) / Task 6
+Changed paths since last commit: game/scripts/presentation/announcer.gd (new), sound_director.gd, sound_player.gd, game/tests/test_announcer.gd (new), run_tests.gd, this file
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, CASES 544 CHECKS 136465 FAILURES 0 (136472 with traces), exit 0, TESTS PASSED; lint, warnings (108 files) exit 0; traces identical
 Known red case or blocker: none. Online `rejected()` not wired (lockstep rejections carry no player and the sim result already gives the local error; see Task 4 section). Addendum for Task 6: mute button + key toggling Master (plan Task 6 addendum)
 Approved decisions, pre-authorizations used, deferred gates: Gate S passed (user, 2026-11-08); local commits after green checkpoints pre-authorized; no push, merge, window, install or fly without approval; Gate A passed (Max Rate off; MacLeod kept); Gate B and exit pending. Commit message for Task 3: 'Add the sound spike audio and credits'
 Usage so far (python3 tools/session_usage.py <session files>): not recorded
-Next exact action: commit Task 4 ("Play battle and UI sounds from per-step events"), then dispatch Task 5
+Next exact action: commit Task 5 ("Add the announcer"), then dispatch Task 6
 ```
 
 ## Baseline and trace checks
@@ -47,3 +47,9 @@ Gate A, MacLeod licence (user, 2026-11-08): keep Hitman and Stay the Course on t
 2026-11-08, tree: working tree on `spike-sound`, uncommitted. Red: with the Task 1 director and player, the suite stopped on parse errors (`MAX_DISTANCE_PX`, `plan()` missing). Green: suite CASES 528 CHECKS 136420 FAILURES 0, TESTS PASSED, exit 0 (20 new cases: SD5 to SD23 and SD1b); lint exit 0; warnings exit 0 (107 files); Python unchanged. SD1 now checks `consumed_ticks()` (steps `update` processed, bounded to 64) and that nothing is left pending; `collect_step` caps pending at 120 steps. Trace check against `$SOUND_WORK/traces/base` (new run `traces/t4.MP1A`, suite 136427 checks with traces): replay, economy, combat MATCHED 1200; team MATCHED 100; netplay `match` PASSED terminal tick 8400, s1 MATCHED 281.
 
 Deviation: `online_main` does not call `rejected()` for lockstep rejections. They carry no player (a peer's failure would beep for the local player) and the local failure already arrives as a command result through `update`. ATTENUATION 0.5 and MAX_DISTANCE_PX 1145.0 live in `sound_player.gd` (Task 1 only measured them). SD22 checks the Sound child but not the log for `ERROR:` (the suite fails on script errors already).
+
+## Task 5
+
+2026-11-08, tree: working tree on `spike-sound`, uncommitted. Tests were written after the implementation, so the red run is a mutation: with the base_under_attack and building_lost cooldowns removed, AN1 and AN2 failed (and four fixture bugs showed up in the same run until `Dictionary.merge(..., true)` was used). Green: suite CASES 544 CHECKS 136465 FAILURES 0, TESTS PASSED, exit 0 (16 new cases AN1 to AN16); lint exit 0; warnings exit 0 (108 files); Python unchanged. Trace check against `$SOUND_WORK/traces/base` (new run `traces/t5`, suite 136472 checks with traces): replay, economy, combat MATCHED 1200; team MATCHED 100; netplay `match` PASSED terminal tick 8400, s1 MATCHED 281.
+
+Notes: `Announcer` is preloaded, no `class_name`. The funds line comes from a failed own result (event tick) or `rejected()` (state tick on the next update); online `rejected()` stays unwired. `insufficient_funds` no longer gives the error beep. Tests use `Definitions` = `economy_definitions.gd` for FRC power data (AN12 checks every `frc_` building draws no power).

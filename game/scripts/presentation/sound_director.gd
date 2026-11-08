@@ -1,6 +1,7 @@
 extends RefCounted
 
 const Cues = preload("res://scripts/presentation/sound_cues.gd")
+const Announcer = preload("res://scripts/presentation/announcer.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const Shared = preload("res://scripts/simulation/definitions/shared.gd")
 const MAX_PENDING := 120
@@ -17,6 +18,9 @@ var _previous: Dictionary = {}
 var _previous_status: String = ""
 var _has_previous: bool = false
 var _last_shot: Dictionary = {}
+var _funds_rejected: bool = false
+var _was_low_power: bool = false
+var announcer := Announcer.new()
 
 func _init(local_player: int, rng: RandomNumberGenerator = null) -> void:
 	_local_player = local_player
@@ -43,7 +47,8 @@ func pending_step(index: int) -> Dictionary:
 	return _pending[index]
 
 func rejected(error: String) -> void:
-	if error != FUNDS_ERROR: _queued.append(ui_request("error"))
+	if error == FUNDS_ERROR: _funds_rejected = true
+	else: _queued.append(ui_request("error"))
 
 func update(state: Dictionary) -> Array[Dictionary]:
 	var requests: Array[Dictionary] = _queued.duplicate()
@@ -57,6 +62,11 @@ func update(state: Dictionary) -> Array[Dictionary]:
 			_consumed.append(step.tick)
 		if _consumed.size() > MAX_CONSUMED: _consumed = _consumed.slice(-MAX_CONSUMED)
 		_placements(current, status, requests)
+		_triggers(state, current, status)
+	var tick: int = state.get("tick", 0)
+	if _funds_rejected: announcer.request("insufficient_funds", tick)
+	_funds_rejected = false
+	_was_low_power = _low_power(state)
 	_pending.clear()
 	for id: Variant in _last_shot.keys():
 		if not current.has(id): _last_shot.erase(id)
@@ -70,6 +80,9 @@ func reset() -> void:
 	_queued.clear()
 	_consumed.clear()
 	_last_shot.clear()
+	announcer.clear()
+	_funds_rejected = false
+	_was_low_power = false
 	_previous = {}
 	_previous_status = ""
 	_has_previous = false
@@ -79,10 +92,10 @@ func _records(state: Dictionary) -> Dictionary:
 	var records: Dictionary = {}
 	for unit: Dictionary in state.get("entities", []):
 		var combat: Variant = unit.get("combat")
-		records[unit.id] = {"kind": unit.kind, "owner": unit.owner, "position": Vector2(unit.position[0], unit.position[1]), "tier": combat.get("tier", 0) if combat is Dictionary else 0, "building": false, "completed": true, "hole": false, "site": false}
+		records[unit.id] = {"kind": unit.kind, "owner": unit.owner, "position": Vector2(unit.position[0], unit.position[1]), "tier": combat.get("tier", 0) if combat is Dictionary else 0, "building": false, "completed": true, "hole": false, "site": false, "queue": []}
 	for building: Dictionary in state.get("buildings", []):
 		var footprint: Vector2i = Registry.kind(building.kind).get("footprint", Vector2i.ONE)
-		records[building.id] = {"kind": building.kind, "owner": building.owner, "position": Vector2(building.origin[0], building.origin[1]) + Vector2(footprint) / 2.0, "tier": 0, "building": true, "completed": building.get("completed", true), "hole": building.has("rebuild"), "site": building.has("hole_id")}
+		records[building.id] = {"kind": building.kind, "owner": building.owner, "position": Vector2(building.origin[0], building.origin[1]) + Vector2(footprint) / 2.0, "tier": 0, "building": true, "completed": building.get("completed", true), "hole": building.has("rebuild"), "site": building.has("hole_id"), "queue": building.get("queue", [])}
 	return records
 
 func _lookup(id: int, current: Dictionary) -> Dictionary:
@@ -93,9 +106,16 @@ func _consume(step: Dictionary, current: Dictionary, requests: Array[Dictionary]
 		if event.type == "shot": _shot(event, current, requests)
 		elif event.type == "death": _death(event, current, requests)
 	for result: Dictionary in step.results:
-		if result.player == _local_player and not result.ok and result.error != FUNDS_ERROR: requests.append(ui_request("error"))
+		if result.player != _local_player or result.ok: continue
+		if result.error == FUNDS_ERROR: announcer.request("insufficient_funds", result.tick)
+		else: requests.append(ui_request("error"))
+
+func _own_base(id: int, current: Dictionary) -> bool:
+	var record: Dictionary = _lookup(id, current)
+	return not record.is_empty() and record.building and record.owner == _local_player and not record.hole
 
 func _shot(event: Dictionary, current: Dictionary, requests: Array[Dictionary]) -> void:
+	if _own_base(event.target_id, current): announcer.request("base_under_attack", event.tick)
 	var attacker: Dictionary = _lookup(event.attacker_id, current)
 	if attacker.is_empty() or event.splash: return
 	var weapon: String = Cues.weapon_id(attacker.kind, attacker.tier)
@@ -111,6 +131,7 @@ func _shot(event: Dictionary, current: Dictionary, requests: Array[Dictionary]) 
 func _death(event: Dictionary, current: Dictionary, requests: Array[Dictionary]) -> void:
 	var dead: Dictionary = _lookup(event.object_id, current)
 	if dead.is_empty(): return
+	if _own_base(event.object_id, current): announcer.request("building_lost", event.tick)
 	var cue: String = Cues.death_cue(dead.kind, dead.building)
 	var request: Dictionary = _world(cue, dead.position)
 	if dead.building: request.sound = Cues.building_sound(dead.kind)
@@ -130,3 +151,37 @@ func _world(cue: String, position: Vector2) -> Dictionary:
 
 func ui_request(cue: String) -> Dictionary:
 	return {"cue": cue, "sound": Cues.CUES[cue].sound, "pitch": Cues.CUES[cue].pitch, "position": null}
+
+func _team_of(state: Dictionary, player: int) -> Variant:
+	for row: Dictionary in state.get("players", []):
+		if row.id == player: return row.team
+	return null
+
+func _low_power(state: Dictionary) -> bool:
+	for row: Dictionary in state.get("players", []):
+		if row.id == _local_player: return row.power_demand > row.power_supply
+	return false
+
+func _triggers(state: Dictionary, current: Dictionary, status: String) -> void:
+	if status != "ongoing" and not (status == "won" and _previous_status == "ongoing"): return
+	var tick: int = state.get("tick", 0)
+	if status == "won":
+		announcer.request("victory" if state.match.winner == _team_of(state, _local_player) else "defeat", tick)
+		return
+	if _previous_status != "ongoing": return
+	if _low_power(state) and not _was_low_power: announcer.request("low_power", tick)
+	for id: Variant in current:
+		var record: Dictionary = current[id]
+		if not record.building or record.owner != _local_player or not _previous.has(id): continue
+		var before: Dictionary = _previous[id]
+		if record.completed and not before.completed: announcer.request("construction_complete", tick)
+		if _unit_ready(before, record, current): announcer.request("unit_ready", tick)
+
+func _unit_ready(before: Dictionary, record: Dictionary, current: Dictionary) -> bool:
+	if before.queue.is_empty(): return false
+	var head: Dictionary = before.queue[0]
+	for entry: Dictionary in record.queue:
+		if entry.id == head.id: return false
+	for id: Variant in current:
+		if not _previous.has(id) and current[id].owner == _local_player and current[id].kind == head.kind: return true
+	return false
