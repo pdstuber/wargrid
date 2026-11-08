@@ -5,14 +5,14 @@ Handoff: [sound-spike-prompt.txt](../sound-spike-prompt.txt). Plan: [sound spike
 ```text
 Resume record (updated 2026-11-08)
 Branch / base commit / working-tree state: spike-sound / base main 893332f / uncommitted fixes on 3126722 (Gate B review findings)
-Last green task / next incomplete task: Task 6 + Gate B fixes + cannon/Effects trims committed (HEAD 8520781); Task 7 Steps 1, 2 and the Step 3 headless and rendered runs done (uncommitted) / Task 7 Step 4 (web check) and Step 5 (playtest) need the user; Step 6 /ponytail-review, push and CI need approval
+Last green task / next incomplete task: Task 7 done (Steps 1-5 by the user, 2026-11-08; online by tests only) and Step 6 final report written, HEAD 8653dc3 plus the status-line commit / push (merge 6d8d74c and later commits unpushed) and merge to main need approval
 Changed paths since last commit: game/scripts/online_main.gd, game/scripts/presentation/sound_director.gd, sound_player.gd, game/tests/test_announcer.gd, test_audio_settings.gd, test_online_scene.gd, docs/reference/sound-spike.md, the sound spike spec Goals line, this file
 Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh (with traces), CASES 558 CHECKS 136835 FAILURES 0, exit 0, TESTS PASSED; lint exit 0; warnings exit 0 (114 files); netplay match PASSED tick 8400; traces in $SOUND_WORK/traces/t6b MATCHED against base (replay, economy, combat 1200; team 100; s1 281)
 Known red case or blocker: none. Open: Gate B Step 5 (windowed) and Step 6 (closure). Unverified: panned-camera listener position and voice A/B by ear
 Approved decisions, pre-authorizations used, deferred gates: Gate S passed (user, 2026-11-08); local commits after green checkpoints pre-authorized; no push, merge, window, install or fly without approval; Gate A passed (Max Rate off; MacLeod kept); Gate B and exit pending
 CI on pushed 5fa614b (2026-11-08): run 42495724976 success, all 11 jobs green (Docker, Godot tests linux and windows, lint, exported builds linux and windows, Compare replays, Relay, Workflows, Python); compare_local_traces.sh 42495724976 exit 0: replay, economy, combat MATCHED 1200, team MATCHED 100, netplay MATCHED 281 (macOS local vs Linux and Windows CI)
 Usage so far (python3 tools/session_usage.py <session files>): not recorded
-Next exact action: user: web check (Step 4) and playtest (Step 5); then /ponytail-review, approval to commit and push, CI and compare_local_traces (Step 6). See "Task 7" below
+Next exact action: user: approve push; then CI on the merged tree and merge to main. A friend is playtesting; sound findings from that go to session notes.
 ```
 
 ## Baseline and trace checks
@@ -120,3 +120,4 @@ Performance ledger not edited.
 - 2026-11-08 (user): after the web check the USA tank sounded too quiet. Labelled A/B in Firefox (cannon at 0 / -1.5 / -2.5 / -3.8 dB against an unchanged rifle burst); user picked B (0) or D (-1.5). Chose -1.5: `sound_cues.gd` cannon `gain_db` -1.5. Effects bus -6 dB unchanged.
 - 2026-11-08 (user, playing): -1.5 dB tank still hard to hear while infantry fire is mixed; tried B (0 dB). `sound_cues.gd` cannon `gain_db` 0.0, pending user verdict.
 - 2026-11-08 (user): cannon 0 dB accepted ("very good now"). Zero Hour comparison from retail INI and wav loudness (SoundEffects.ini, ebur128; not heard through a measurement, Miles gain assumed linear): Crusader 90 / -13.5 LUFS, Ranger 60 / -12.6, RedGuard 95 / -21.5, Battlemaster 85 / -10.8; effective tank minus Ranger +2.6 to +3.5 dB, minus RedGuard +7.6 dB. Ours: cannon -26.6 LUFS, rifle_burst -28.9, carbine -31.1 (all gain 0), cannon +2.3 over rifle_burst, +4.5 over carbine. The earlier note's +3.8 (Crusader vs Ranger) was the 90/60 ratio only. User listened to the original windowed, no recording (no loopback device; BlackHole/microphone declined). Wizard rulings: carbine stays 0 dB, no per-shot volume variation, rifle limits stay 4. No further INI-based tuning.
+- 2026-11-08 (user): Step 5 playtest marked done (offline by ear; online covered by tests N6 and the rejected() wiring, not heard). A friend is playtesting; their sound findings are open input. Final suite: 559 cases, 136833 checks, 0 failures; lint 0, warnings 0 on 8653dc3.
