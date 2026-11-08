@@ -11,7 +11,7 @@ const View = preload("res://scripts/presentation/world_view.gd")
 const Probe = preload("res://scenes/movement_benchmark.tscn")
 
 func cases() -> Array[Callable]:
-	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_transports_fixture, test_defences_fixture, test_skirmish3v3_fixture, test_combat_work_ceiling, test_volley_retaliation_work, test_horde_render_layout, test_workload_asserts_pure, test_settled_matches_snapshot_predicate]
+	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_transports_fixture, test_defences_fixture, test_skirmish3v3_fixture, test_combat_work_ceiling, test_volley_retaliation_work, test_horde_render_layout, test_workload_asserts_pure, test_settled_matches_snapshot_predicate, test_gate_values]
 
 func test_statistics(runner) -> bool:
 	runner.check(Stats.summary(PackedFloat64Array()) == {"n": 0, "p50": 0.0, "p95": 0.0, "p99": 0.0, "max": 0.0}, "BM1 empty")
@@ -255,4 +255,16 @@ func test_settled_matches_snapshot_predicate(runner) -> bool:
 				leg += 1
 			sim.step()
 	runner.check(mismatches == 0 and flips >= 1, "BM6 settled equals the snapshot predicate on 3000 ticks (%d mismatches, %d flips)" % [mismatches, flips])
+	return true
+
+func test_gate_values(runner) -> bool:
+	var movement = load("res://benchmarks/run_movement.gd")
+	var combat = load("res://benchmarks/run_combat.gd")
+	runner.check(movement.BUDGET_P95_MS == 1.82 and movement.BUDGET_P99_MS == 3.64, "BM11 movement budget is enforced at 1.82 / 3.64")
+	runner.check(combat.BUDGET_P95_MS == 1.82 and combat.BUDGET_P99_MS == 3.64, "BM11 combat budget 1.82 / 3.64")
+	runner.check(combat.STRESS_CEILING == {"open": [2.10, 2.59], "dense": [2.64, 3.95], "hordes300": [3.07, 4.05]}, "BM11 stress ceilings")
+	runner.check(movement.within({"p95": 1.82, "p99": 3.64}, 1.82, 3.64), "BM11 limits are inclusive")
+	runner.check(not movement.within({"p95": 1.83, "p99": 1.0}, 1.82, 3.64), "BM11 p95 over the limit fails")
+	runner.check(not movement.within({"p95": 1.0, "p99": 3.65}, 1.82, 3.64), "BM11 p99 over the limit fails")
+	runner.check(combat.within({"p95": 1.83, "p99": 1.0}, 1.82, 3.64) == movement.within({"p95": 1.83, "p99": 1.0}, 1.82, 3.64), "BM11 combat helper agrees")
 	return true

@@ -6,10 +6,13 @@ const Simulation = preload("res://scripts/simulation/simulation.gd")
 
 const WARMUP: int = 300
 const SAMPLES: int = 1800
-# Report-only stress rows, pinned at the worst of the M7 runs (Task 0, 1, gate 1, gate 1 fixes) + 5% (user decision 2026-11-06, re-pinned after M7 armed units); raise only with user approval and a ledger line.
-const STRESS_CEILING := {"open": [3.05, 4.23], "dense": [3.31, 5.01]}
+# Regression ceilings for rows that exceed the budget: worst of 13 quiet runs + 5% (T3, 2026-11-08); raise only with user approval and a ledger line.
+const STRESS_CEILING := {"open": [2.10, 2.59], "dense": [2.64, 3.95], "hordes300": [3.07, 4.05]}
 const BUDGET_P95_MS: float = 1.82
 const BUDGET_P99_MS: float = 3.64
+
+static func within(summary: Dictionary, p95_limit: float, p99_limit: float) -> bool:
+	return summary.p95 <= p95_limit and summary.p99 <= p99_limit
 
 func _initialize() -> void:
 	_run.call_deferred()
@@ -124,55 +127,57 @@ func _measure(layout: String) -> bool:
 		" shots=", shots, " deaths=", deaths, " first_shot=", first_shot, " alive_start=", start_units, " alive_end=", alive,
 		" scan_chases_warmup=", warmup_chases, " scan_chases_window=", window_chases, " retaliations_window=", window_retaliations)
 	if layout == "transports":
-		print("COMBAT TRANSPORTS passenger_shots_window=", rider_shots, " passengers=", riders.size(), " report-only until gate 1")
+		print("COMBAT TRANSPORTS passenger_shots_window=", rider_shots, " passengers=", riders.size())
+		if not _budget_ok(layout, summary):
+			return false
 		if riders.size() != 100 or rider_shots == 0:
 			push_error("Combat benchmark: no passenger shots inside the timed window")
 			return false
 		return true
 	if layout == "defences":
-		print("COMBAT DEFENCES defence_shots_window=", defence_shots, " report-only until gate 1")
+		print("COMBAT DEFENCES defence_shots_window=", defence_shots)
+		if not _budget_ok(layout, summary):
+			return false
 		if defence_shots == 0:
 			push_error("Combat benchmark: no defence shots inside the timed window")
 			return false
 		return true
 	if layout == "ramp":
-		print("COMBAT RAMP level2_shots_window=", ramp_shots, " report-only")
+		print("COMBAT RAMP level2_shots_window=", ramp_shots)
+		if not _budget_ok(layout, summary):
+			return false
 		if ramp_shots == 0:
 			push_error("Combat benchmark: no level 2 ramp shot inside the timed window")
 			return false
 		return true
 	if layout == "frc":
-		print("COMBAT FRC tier_start=", frc.tier_start, " tier_end=", frc.tier_end, " occupant_hp_rose=", frc.occupant_gain, " hole_hp_rose=", frc.hole_gain, " report-only")
+		print("COMBAT FRC tier_start=", frc.tier_start, " tier_end=", frc.tier_end, " occupant_hp_rose=", frc.occupant_gain, " hole_hp_rose=", frc.hole_gain)
+		if not _budget_ok(layout, summary):
+			return false
 		if frc.tier_start != 0 or frc.tier_end != 1 or not frc.occupant_gain or not frc.hole_gain:
 			push_error("Combat benchmark: the frc salvage, tunnel heal or hole regeneration did not run inside the timed window")
 			return false
 		return true
 	if layout == "hordes300":
-		print("COMBAT ", layout.to_upper(), " checks_window=", horde_checks, " level2_peak_window=", horde_peak, " report-only")
+		print("COMBAT ", layout.to_upper(), " checks_window=", horde_checks, " level2_peak_window=", horde_peak)
+		if not _stress_ok(layout, summary):
+			return false
 		if horde_checks == 0 or horde_peak == 0:
 			push_error("Combat benchmark: no horde checks or no horde of five inside the timed window")
 			return false
 		return true
 	if layout == "docks":
 		var earned: int = sim.snapshot().players[0].credits - credits_at_window
-		print("COMBAT DOCKS credits_window=", earned, " waiting_ticks_window=", waiting_ticks, " stacked_ticks_window=", stacked_ticks, " report-only")
+		print("COMBAT DOCKS credits_window=", earned, " waiting_ticks_window=", waiting_ticks, " stacked_ticks_window=", stacked_ticks)
+		if not _budget_ok(layout, summary):
+			return false
 		if earned <= 0 or waiting_ticks == 0 or stacked_ticks > 0:
 			push_error("Combat benchmark: no deliveries, no queued trucks or stacked trucks inside the timed window")
 			return false
 		return true
-	if STRESS_CEILING.has(layout):
-		var ceiling: Array = STRESS_CEILING[layout]
-		var within: bool = summary.p95 <= ceiling[0] and summary.p99 <= ceiling[1]
-		print("COMBAT STRESS ", "PASS" if within else "FAIL", " ", layout, " exceeds the ", BUDGET_P95_MS, "/", BUDGET_P99_MS, " budget, report-only; ceiling p95/p99 ", ceiling)
-		if not within:
-			push_error("Combat stress ceiling exceeded for " + layout)
-			return false
-	else:
-		var within_budget: bool = summary.p95 <= BUDGET_P95_MS and summary.p99 <= BUDGET_P99_MS
-		print("COMBAT BUDGET ", "PASS" if within_budget else "FAIL", " ", layout, " simulation_only")
-		if not within_budget:
-			push_error("Combat budget exceeded for " + layout)
-			return false
+	var gate_ok: bool = _stress_ok(layout, summary) if STRESS_CEILING.has(layout) else _budget_ok(layout, summary)
+	if not gate_ok:
+		return false
 	if window_chases == 0 and layout != "contact":
 		push_error("Combat benchmark never chased inside the timed window for " + layout)
 		return false
@@ -183,6 +188,21 @@ func _measure(layout: String) -> bool:
 		push_error("Combat benchmark workload invalid for " + layout)
 		return false
 	return true
+
+func _budget_ok(layout: String, summary: Dictionary) -> bool:
+	var ok: bool = within(summary, BUDGET_P95_MS, BUDGET_P99_MS)
+	print("COMBAT BUDGET ", "PASS" if ok else "FAIL", " ", layout, " simulation_only")
+	if not ok:
+		push_error("Combat budget exceeded for " + layout)
+	return ok
+
+func _stress_ok(layout: String, summary: Dictionary) -> bool:
+	var ceiling: Array = STRESS_CEILING[layout]
+	var ok: bool = within(summary, ceiling[0], ceiling[1])
+	print("COMBAT STRESS ", "PASS" if ok else "FAIL", " ", layout, " exceeds the ", BUDGET_P95_MS, "/", BUDGET_P99_MS, " budget, regression ceiling p95/p99 ", ceiling)
+	if not ok:
+		push_error("Combat stress ceiling exceeded for " + layout)
+	return ok
 
 func _track_frc(state: Dictionary, frc: Dictionary) -> void:
 	for unit: Dictionary in state.entities:

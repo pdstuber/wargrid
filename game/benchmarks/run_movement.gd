@@ -4,6 +4,12 @@ const Workload = preload("res://scripts/debug/movement_workload.gd")
 const Stats = preload("res://scripts/debug/timing_stats.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 
+const BUDGET_P95_MS: float = 1.82
+const BUDGET_P99_MS: float = 3.64
+
+static func within(summary: Dictionary, p95_limit: float, p99_limit: float) -> bool:
+	return summary.p95 <= p95_limit and summary.p99 <= p99_limit
+
 func _initialize() -> void:
 	_run.call_deferred()
 
@@ -71,8 +77,11 @@ func _measure(layout: String) -> bool:
 	print("HEADLESS ", layout, " tick_ms=", JSON.stringify(summary), " command_tick_ms=", JSON.stringify(Stats.summary(command_samples)),
 		" queue_peak=", queue_peak, " queue_drain_ticks=", queue_drain, " timed_counts=", JSON.stringify(timed_counts),
 		" completed_legs=", completed, " drain_ticks=", drain_ticks, " final_counts=", JSON.stringify(_counts(sim.snapshot())), " unique_destinations=", destinations.size())
-	print("BUDGET ", "PASS" if summary.p95 <= 8.0 and summary.p99 <= 16.0 else "FAIL", " ", layout, " simulation_only")
-	return true
+	var within_budget: bool = within(summary, BUDGET_P95_MS, BUDGET_P99_MS)
+	print("BUDGET ", "PASS" if within_budget else "FAIL", " ", layout, " simulation_only")
+	if not within_budget:
+		push_error("Movement budget exceeded for " + layout)
+	return within_budget
 
 func _valid(state: Dictionary, leg_ticks: int) -> bool:
 	if leg_ticks > 3000:
