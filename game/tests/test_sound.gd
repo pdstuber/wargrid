@@ -335,5 +335,5 @@ func test_scenes_boot_with_sound(runner) -> bool:
 func test_bus_layout(runner) -> bool:
 	for bus in ["Music", "Effects", "Voice"]:
 		var index: int = AudioServer.get_bus_index(bus)
-		runner.check(index > 0 and AudioServer.get_bus_volume_db(index) == 0.0 and AudioServer.get_bus_send(index) == &"Master", "SD23 bus %s at 0 dB sending to Master" % bus)
+		runner.check(index > 0 and is_zero_approx(AudioServer.get_bus_volume_db(index) - (-6.0 if bus == "Effects" else 0.0)) and AudioServer.get_bus_send(index) == &"Master", "SD23 bus %s at its trim level sending to Master" % bus)
 	return true

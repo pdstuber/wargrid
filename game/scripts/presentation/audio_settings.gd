@@ -2,6 +2,7 @@ extends RefCounted
 
 const DEFAULTS := {"music": 1.0, "effects": 1.0, "voice": 1.0}
 const BUSES := {"music": "Music", "effects": "Effects", "voice": "Voice"}
+const EFFECTS_TRIM_DB := -6.0
 const SECTION := "audio"
 static var path := "user://settings.cfg"
 
@@ -24,4 +25,5 @@ static func apply(volumes: Dictionary) -> void:
 	for key: String in BUSES:
 		var index: int = AudioServer.get_bus_index(BUSES[key])
 		AudioServer.set_bus_mute(index, volumes[key] == 0.0)
-		if volumes[key] > 0.0: AudioServer.set_bus_volume_db(index, linear_to_db(volumes[key]))
+		var trim: float = EFFECTS_TRIM_DB if key == "effects" else 0.0
+		if volumes[key] > 0.0: AudioServer.set_bus_volume_db(index, linear_to_db(volumes[key]) + trim)

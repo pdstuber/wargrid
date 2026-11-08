@@ -11,7 +11,7 @@ const SCRATCH := "user://test-settings.cfg"
 const REAL := "user://settings.cfg"
 
 func cases() -> Array[Callable]:
-	return [test_settings_missing_and_corrupt, test_settings_round_trip, test_slider_sets_bus_and_saves, test_tests_use_scratch_settings, test_playlist_order_and_gap, test_menu_track_repeats, test_mute_toggle, test_mute_key_in_match, test_mute_key_in_launcher_and_text_field]
+	return [test_settings_missing_and_corrupt, test_settings_round_trip, test_slider_sets_bus_and_saves, test_bus_levels, test_tests_use_scratch_settings, test_playlist_order_and_gap, test_menu_track_repeats, test_mute_toggle, test_mute_key_in_match, test_mute_key_in_launcher_and_text_field]
 
 func _begin() -> String:
 	var saved: String = AudioSettings.path
@@ -70,6 +70,19 @@ func test_slider_sets_bus_and_saves(runner) -> bool:
 	runner.check(AudioServer.is_bus_mute(index), "AS3 0 mutes the bus")
 	sliders.free()
 	_end(saved)
+	return true
+
+func test_bus_levels(runner) -> bool:
+	var effects: int = AudioServer.get_bus_index("Effects")
+	AudioSettings.apply({"music": 1.0, "effects": 1.0, "voice": 1.0})
+	runner.check(absf(AudioServer.get_bus_volume_db(effects) + 6.0) < 0.01, "AS3b Effects 1.0 is -6 dB, got %s" % AudioServer.get_bus_volume_db(effects))
+	runner.check(absf(AudioServer.get_bus_volume_db(AudioServer.get_bus_index("Music"))) < 0.01, "AS3b Music 1.0 stays 0 dB")
+	runner.check(absf(AudioServer.get_bus_volume_db(AudioServer.get_bus_index("Voice"))) < 0.01, "AS3b Voice 1.0 stays 0 dB")
+	AudioSettings.apply({"music": 1.0, "effects": 0.5, "voice": 1.0})
+	runner.check(absf(AudioServer.get_bus_volume_db(effects) - (linear_to_db(0.5) - 6.0)) < 0.01, "AS3b Effects 0.5 is -12.02 dB, got %s" % AudioServer.get_bus_volume_db(effects))
+	AudioSettings.apply({"music": 1.0, "effects": 0.0, "voice": 1.0})
+	runner.check(AudioServer.is_bus_mute(effects), "AS3b Effects 0 mutes")
+	AudioSettings.apply(AudioSettings.DEFAULTS)
 	return true
 
 func test_tests_use_scratch_settings(runner) -> bool:
