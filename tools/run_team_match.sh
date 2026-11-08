@@ -9,5 +9,5 @@ code=$?
 cat "$log_dir/match.log"
 [ "$code" -eq 0 ] || exit 1
 if grep -E 'ERROR:|SCRIPT ERROR:' "$log_dir/match.log"; then exit 1; fi
-# User waiver 2026-11-07: the three-faction match ends at the cap with no winner (docs/reference/m7-verification-archive-gate3.md, G3.5 record).
-grep -Eq '^TEAM MATCH cap tick=45000 winner=null units_peak=160$' "$log_dir/match.log" || exit 1
+# Pinned outcome after the collector change (Task 3b), no longer the G3.5 cap waiver.
+grep -Eq '^TEAM MATCH won tick=38510 winner=2 units_peak=207$' "$log_dir/match.log" || exit 1

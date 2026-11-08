@@ -6,10 +6,10 @@ const ScriptedHuman = preload("res://scripts/simulation/scripted_human.gd")
 const StateHash = preload("res://scripts/simulation/state_hash.gd")
 
 const TICK_LIMIT: int = 18000
-const TERMINAL_TICK: int = 8501
+const TERMINAL_TICK: int = 8452
 const WINNER: int = 1
 
-const S1_CORE_SERIES: int = 8576069817585818203
+const S1_CORE_SERIES: int = 1809165491953682337
 
 func cases() -> Array[Callable]:
 	return [test_mirror_match_script, test_skirmish_core_series, test_china_skirmish_match, test_frc_skirmish_match]
@@ -103,7 +103,7 @@ func test_mirror_match_script(runner) -> bool:
 	return true
 
 const CHINA_TICK_CAP: int = 45000
-const CHINA_TERMINAL_TICK: int = 26359
+const CHINA_TERMINAL_TICK: int = 27555
 const CHINA_WINNER: int = 2
 
 func test_china_skirmish_match(runner) -> bool:

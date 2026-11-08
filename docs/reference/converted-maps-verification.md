@@ -5,15 +5,15 @@ Plan: [converted maps playable plan](../superpowers/plans/2026-11-08-converted-m
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-09 00:20)
-Branch / base commit / working-tree state: converted-maps / 32e780d / Task 3b diff uncommitted
-Last green task / next incomplete task: Task 3b code complete incl. review fix (queued collectors counted), 8 pins moved by the collector change (listed under "Task 3b moved pins"), awaiting coordinator commit then re-pin task / Task 3c
-Changed paths since last commit: game/scripts/simulation/skirmish.gd, game/scripts/simulation/definitions/factions.gd, game/tests/test_skirmish.gd, docs/reference/converted-maps-verification.md
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 573 / 136886 / 7 (all pin moves) / 1 / no marker
-Known red case or blocker: the pin-moved tests below, awaiting the re-pin commit
-Approved decisions, pre-authorizations used, deferred gates: collector re-pin pre-approved 2026-11-08, not yet used
+Resume record (updated 2026-11-09 01:00)
+Branch / base commit / working-tree state: converted-maps / b3e4824 / Task 3b re-pin diff uncommitted
+Last green task / next incomplete task: Task 3b committed, 7 pins re-pinned (see "Task 3b re-pin") / Task 3c
+Changed paths since last commit: game/tests/test_skirmish_match.gd, game/tests/test_team_match.gd, tools/run_netplay.sh, tools/run_team_match.sh, docs/reference/converted-maps-verification.md
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 573 / 136886 / 2 (Fm1 pair) / 1 / no marker
+Known red case or blocker: Fm1 (FRC_TERMINAL_TICK) only: "ends won inside the cap" and "pinned outcome"; needs a decision (larger cap or accept), see "Task 3b review fix"
+Approved decisions, pre-authorizations used, deferred gates: collector re-pin pre-approved 2026-11-08, used for the 7 non-Fm1 pins
 Usage so far: not run
-Next exact action: coordinator commits Task 3b, then the re-pin task
+Next exact action: coordinator commits re-pin, then Task 3c
 ```
 
 ## Baseline
@@ -139,3 +139,22 @@ Note for the re-pin: Fm1 no longer ends within its cap (FRC 5 laborers per cache
 RED (fix removed, new tests present): `FAIL: SK-C5 two supply centers, a USA bot owns exactly 4, got 5` and `... China bot owns exactly 6, got 7`; `FAILURES 9` (7 pins + 2). Fix: `_produce` counts collectors queued in any depot. SK-C3 now pins faction values (USA 2, China 3, FRC 5); stale test renamed to `test_bot_keeps_one_builder_four_gatherers`. Single-depot pins unmoved.
 
 Fm1 cause per reviewer (plausible, not a bug; morning decision): the USA second helicopter drives USA income 41475 vs about 20000; map runs out of supply near t=30000; FRC wins at t=73560. USA1+FRC5 ends 26611, USA2+FRC7 ends 42951.
+
+## Task 3b re-pin
+
+Tree `b3e4824` + re-pin diff. Cause for all: collectors per supply center USA 2, China 3, FRC 5 (Task 3b). Old values as in "Task 3b moved pins".
+
+| Pin | Old | New |
+|---|---|---|
+| S1 `TERMINAL_TICK` | 8501 | 8452 (winner 1) |
+| S1 `S1_CORE_SERIES` | 8576069817585818203 | 1809165491953682337 (the moved-pins table said 8642905752227994667, measured before the review fix; the suite reports 1809165491953682337, same on two runs) |
+| Cs1 `CHINA_TERMINAL_TICK` | 26359 | 27555 (winner 2) |
+| `FINAL_DIGEST` | 020f659e77ee6c20 | 1c2a5905802d4d9b |
+| `TEAM_CORE_SERIES` | 7692526877276561850 | 205812011678164261 |
+| `run_team_match.sh` | cap tick=45000 winner=null units_peak=160 | won tick=38510 winner=2 units_peak=207 (stale waiver comment replaced) |
+| `run_netplay.sh match` | 8400 | 8300 |
+
+Fm1 untouched, still red. Rows: `run_tests.sh` `CASES 573 CHECKS 136886 FAILURES 2` (Fm1 pair), exit 1, no marker; `run_lint.sh` exit 0; `run_warnings.sh` `WARNINGS CHECKED 116 FILES` exit 0; `run_netplay.sh match` `terminal tick 8300`, `NETPLAY PASSED match 14.5 s`; `run_team_match.sh` `TEAM MATCH won tick=38510 winner=2 units_peak=207` exit 0.
+
+### Coordinator note on S1_CORE_SERIES
+The moved-pins table value 8642905752227994667 was measured with TERMINAL_TICK 8501 (series loop runs `TERMINAL_TICK + 1` ticks). With TERMINAL_TICK 8452 the correct pin is 1809165491953682337 (cause check: clean `git archive` of b3e4824 reproduces 8642905752227994667 under the old tick constant). Fm1 pair remains the only known red case.
