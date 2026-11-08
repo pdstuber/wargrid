@@ -544,14 +544,18 @@ Make the converted maps playable in the launcher (Ashfall, plus Dry Wells and Br
 
 **Exit gate:** the three stop gates passed; a deterministic headless 3v3 bots-only match on Ashfall with all three factions, simulation ledger rows inside the budgets or reported as exceeded (design §1); parity results as a decision list.
 
+### Controls (small task after converted maps; user, 2026-11-08; not designed)
+
+From a friend's playtest. Camera: edge scrolling also in a window and the browser, right-drag pans while a short right-click still orders, Space jumps to the last alert, H centres on the Command Center. Orders: Ctrl + right-click force-attacks, Shift + right-click queues move points, Shift + place queues buildings for a builder. Selection: control groups on the number keys (Zero Hour layout), period (.) next idle builder, comma (,) next idle army unit. The mouse stays StarCraft style with no option to switch. Letter hotkeys on HUD buttons and camera spots on F1-F8 wait for M7.6. Evidence and sources: [design answers](reference/design-answers-2026-11-08.md#controls-friends-playtest-user-2026-11-08).
+
 ### Order after M7; unit avoidance (user, 2026-11-07; order recommended and accepted 2026-11-07, scope not designed)
 
-**Order:** M7 exit gate, performance spike, converted maps playable (user, 2026-11-08), unit avoidance milestone, then ground batch A, M7.5, M7.6, M7.9, ground batch B, M8, M8.1, M9. Handoff for the spike: [performance spike prompt](performance-spike-prompt.txt).
+**Order:** M7 exit gate, performance spike, converted maps playable (user, 2026-11-08), controls (small task, user, 2026-11-08), unit avoidance milestone, then ground batch A, M7.5, M7.6, M7.9, ground batch B, M8, M8.1, M9. Handoff for the spike: [performance spike prompt](performance-spike-prompt.txt).
 
 **Status (2026-11-08):** the performance spike is done and merged to `main` (pushed 2026-11-08 with `4c98b9a`); results, remaining work and the tightened gates are in the [performance ledger](reference/performance.md#post-m7-performance-spike-2026-11). The next step in this order is the converted maps playable task ([handoff](converted-maps-prompt.txt)), then the unit avoidance milestone (not designed).
 
 - **Performance spike** right after M7, simulation cost first; rendered cost only for two items the user added on 2026-11-07 (large-map terrain and per-frame redraws, the unexplained rendered tick tail of about 10 ms since the terrain cache). The exceeded rows in the [performance ledger](reference/performance.md) are accepted until then (combat stress, team match p99, the horde layout). Reported as exceeded, never loosened. It also answers whether a threaded web export is feasible.
-- **Unit avoidance milestone** after the spike: units go around each other instead of through each other (a firm requirement from the M7 gate 2 playtest; today the M2 design permits overlap in transit). It changes pathing for every unit, so it re-pins every trace and needs its own benchmarks, a design spike on one map first, and a playtest. Risks to design for: deadlocks at docks and chokepoints, trucks, container boarding, horde clusters, lockstep determinism and WASM cost.
+- **Unit avoidance milestone** after the spike: units go around each other instead of through each other (a firm requirement from the M7 gate 2 playtest; today the M2 design permits overlap in transit). It changes pathing for every unit, so it re-pins every trace and needs its own benchmarks, a design spike on one map first, and a playtest. Risks to design for: deadlocks at docks and chokepoints, trucks, container boarding, horde clusters, lockstep determinism and WASM cost. **User answers (2026-11-08):** scope and behaviour, mostly Zero Hour's rules (standing friends step aside, vehicles over infantry, infantry pass through infantry, trucks on a supply run drive through units, crushing, last-resort pass-through after about 5 s, 0.5 ms cost cap): [design answers](reference/design-answers-2026-11-08.md#unit-avoidance-scope). Also here: own units standing on a newly placed building's footprint move to the nearest free cell ([friend's playtest](reference/design-answers-2026-11-08.md#friends-playtest-reported-by-the-user-2026-11-08)).
 - **Why this order:** the spike gives avoidance a measured per-tick baseline and probably its spatial grid; avoidance comes before new content so later rosters, the art pass and the M8 bots are tuned once against the final movement, and the trace re-pin happens once. Fog and art do not touch movement. Converted maps playable goes first (user, 2026-11-08) so avoidance is designed against real docks and chokepoints, later playtests have map choice and M8 is tuned on three maps.
 
 ### Sound spike (user, 2026-11-08; after M7, before Ground batch A)
@@ -559,6 +563,8 @@ Make the converted maps playable in the launcher (Ashfall, plus Dry Wells and Br
 Futuristic generated effects for every weapon of USA, China and FRC, deaths and destroyed buildings, a vocoder announcer for the local player, launcher and match music and three volume sliders. Presentation only: no simulation, replay or netplay trace change. Design: [sound spike design](superpowers/specs/2026-11-08-sound-spike-design.md); plan: [sound spike plan](superpowers/plans/2026-11-08-sound-spike.md); handoff: [sound spike prompt](sound-spike-prompt.txt). Exit: user playtest offline and online.
 
 ### Ground batch A (after unit avoidance; user, 2026-11-06; scope refined 2026-11-07, not designed)
+
+**User answers (2026-11-08):** veterancy as Zero Hour (four levels, XP from kills per unit type, Zero Hour bonuses and Elite/Heroic self-heal): [design answers](reference/design-answers-2026-11-08.md#veterancy-ground-batch-a). Repair also lands here: idle builders auto-repair own buildings, plus a repair order, 2 % per second, free, as Zero Hour: [repair](reference/design-answers-2026-11-08.md#repair-friends-playtest-user-2026-11-08).
 
 The ground units that need only M7's systems plus veterancy, upgrades and the tech tree, hazard fields (poison, fire, radiation), new transport kinds, and travelling shots with minimum range (artillery). Replaces the earlier proposed "M7.1 roster fill". Per-unit evidence and the 32-unit split: [batch classification](reference/m7-factions.md#batch-classification-config-2026-11-07).
 
@@ -609,9 +615,13 @@ Give the game a deliberate look instead of placeholder rectangles and text label
 
 ### M7.6 — Generals-style HUD (user, 2026-11-06; scope not designed)
 
+**User answers (2026-11-08):** queue of 9, minimap flash on attack, minimap free with the Command Center for now, blank at low power or without a radar provider; "keep formation" command considered here: [design answers](reference/design-answers-2026-11-08.md#hud-m76).
+
 The interface, not the world graphics: a bottom control bar with minimap, command buttons with icons, build queue with progress, credits and power, selection info, laid out like Zero Hour's. Own art only (§12). The minimap lands here.
 
 ### M7.9 — Fog of war (placement and need decided by the user 2026-11-05; scope proposed, not approved)
+
+**User answers (2026-11-08):** Zero Hour's model: black at start, grey fog that hides enemy units, last-seen enemy buildings, no reveal from foundations, shared team vision: [design answers](reference/design-answers-2026-11-08.md#fog-of-war-m79).
 
 Fair bots only mean something when a human and a bot see the same limited picture, so fog of war lands before the bots. Starting point is the Zero Hour model: shroud (never seen), fog (explored, not visible now) and live vision from units and buildings, shared inside a team.
 
@@ -630,6 +640,8 @@ Stealth and detection, hacking, hijacking and capture: they need fog's visibilit
 
 ### M8 — Bots worth playing
 
+**User answers (2026-11-08):** start from Zero Hour's enemy choice, target scores and wave timing, then develop Wargrid's own, better rules; far from parity is fine for bots; a losing bot never gives up: [design answers](reference/design-answers-2026-11-08.md#bots-m8). **Do not forget (user, 2026-11-08):** the bot's supply depot site is a map-converter stopgap (slot nearest the supplies, converted maps task); M8 replaces it with the bot choosing its depot near supplies itself, as Zero Hour's `buildBySupplies` / `findSupplyCenter` (AIPlayer.cpp:1849-1960, 2180-2250).
+
 **Deliberate departure from Zero Hour (user, 2026-11-05):** fairness and challenge over parity. Zero Hour has three difficulties (`GameDifficulty`: easy, normal, hard); Wargrid bots follow the fair-play rules in the [fair bots research](reference/fair-bots-research.md) (user-supplied input, partly unverified; read it with its status note). A bot plays by the same rules, sees only what its team could see, and is held to a human-plausible command budget. No reference bot is a fairness model: checked 2026-11-05, OpenRA's squad targeting ignores shroud and fog, and Zero-K CAI marks its own threat check `FIXME: … maphax` (details in the research note), so the invariance test below is the real gate.
 
 **Proposed scope (not approved), one full-strength fair bot:**
@@ -645,6 +657,8 @@ Stealth and detection, hacking, hijacking and capture: they need fog's visibilit
 **Proposed exit gate:** the fairness suite (research §9) with zero violations, including a hidden-state invariance test (changing hidden enemy state leaves the bot's commands identical); the bot beats the M4 skirmish policy and a passive player across seeded matches in both slots, and defends; a ledger row for three bots on Ashfall; a local user playtest (online 3v3 needs M9).
 
 ### M8.1 — Difficulty levels and play styles (proposed 2026-11-05, scope not approved)
+
+**User answer (2026-11-08):** three play styles besides "random": aggressive, economic, defensive: [design answers](reference/design-answers-2026-11-08.md#bots-m81).
 
 **User decisions (2026-11-05):** about five levels, the hardest should beat the user and friends regularly, every level keeps a human-plausible command budget (larger at higher levels), play styles are selectable next to difficulty with "random" as an option.
 

@@ -46,7 +46,7 @@ Older entries (2026-11-04 to 2026-11-07): [session notes archive](session-notes-
 
 ## Next action
 
-**Next session (after 2026-11-08 evening):** start the converted maps playable task: `/kickoff`, then follow [its handoff](converted-maps-prompt.txt) (brainstorm first; online map agreement and start spots are decided in the handoff, user 2026-11-08). The user's M7 playtest (Pending user action) can come first if they want. Then the unit avoidance milestone (blueprint §7 order). Earlier next-action text: [session notes archive](session-notes-archive.md).
+**Overnight run (2026-11-08 night):** the brainstorm is done ([design](superpowers/specs/2026-11-08-converted-maps-playable-design.md), [plan](superpowers/plans/2026-11-08-converted-maps-playable.md)) and the user's design answers for later milestones are in [design answers](reference/design-answers-2026-11-08.md). A Sonnet coordinator runs [the converted maps handoff](converted-maps-prompt.txt) ("Overnight run" rules) on branch `converted-maps`, then the [unit avoidance research spike](unit-avoidance-research-prompt.txt) on `spike-avoidance`. **Next session:** read `~/projects/wargrid-overnight-work/morning-summary.md`, then review, revert or merge per commit with the user. **Restore** the `"Bash(sh tools/run_game.sh:*)"` ask rule in `.claude/settings.json`, removed for the overnight run only (user, 2026-11-08). The user's M7 playtest (Pending user action) can come first if they want. Then the unit avoidance milestone (blueprint §7 order). Earlier next-action text: [session notes archive](session-notes-archive.md).
 
 ## 2026-11-08 — Sound spike: A/B decisions in Firefox (user)
 

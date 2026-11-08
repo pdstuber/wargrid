@@ -1,0 +1,27 @@
+Wargrid unit avoidance research spike. Execution handoff (written 2026-11-08): reading this file does not authorize starting. It runs when the overnight queue in docs/converted-maps-prompt.txt reaches it, or when the user invokes it. Not a milestone: evidence only. No design decision, no merge, nothing on main.
+
+Goal: evidence for the unit-avoidance brainstorm with the user. Two prototype approaches side by side, measured, with screenshots, plus an options note. The requirements are the user's answers in docs/reference/design-answers-2026-11-08.md, sections "Unit avoidance: scope", "Unit avoidance: behaviour" and "Avoidance spike". The blueprint entry is docs/blueprint.md §7 "Unit avoidance milestone".
+
+Setup:
+- Branch spike-avoidance from main (not from converted-maps), in a new worktree ~/projects/wargrid-wt-avoid (`git worktree add`). Never switch the branch of the main checkout. Local commits per experiment on spike-avoidance are pre-authorized like milestone checkpoints; never push or merge.
+- AVOID_WORK = ~/projects/wargrid-overnight-work/avoidance (raw measurements, screenshots, scratch output). Nothing from there goes into the repo.
+- Research already done (read, do not redo): ~/projects/wargrid-overnight-work/questions/avoidance-zh.md, avoidance-other-engines.md, avoidance-wargrid.md. Spot-check any Zero Hour claim you build on (path:line).
+
+Models: an Opus (high) subagent first writes a short experiment plan to AVOID_WORK/plan.md: per approach the files touched, the minimal mechanics, the scenarios and the exact measurements. Sonnet (high) subagents implement one experiment each from that plan; an Opus (high) reviewer checks the final note against the measurements.
+
+Approaches (prototypes: enough to measure cost and jams, not production code):
+A) Zero Hour-style yielding on cells, as the user answered: right of way (builders, then vehicles over infantry, then the unit in front, then a tie-break by id); standing friends on a route step aside unless busy; head-on deadlock: the lower right of way sidesteps; re-route at once if the blocker stands, else after 60 ticks; infantry pass through infantry; trucks on a supply run pass through units; tanks/trucks/dozers crush ordinary enemy infantry (or record crushing as not prototyped); last-resort pass-through for vehicles after about 150 ticks blocked; shooting units hold their spot; aircraft unchanged.
+B) OpenRA-style comparison: cell reservation, wait 40 ticks, nudge an idle friend, repath; the same infantry and truck exceptions, so only the core rule differs.
+
+Measurements (record each with tree and `uptime` load at start and end):
+1. Per-tick simulation cost against a baseline on main: the run_benchmark.sh movement layouts (open, dense) and the combat layouts docks and hordes300; p95 and p99. Cap (user): about +0.5 ms p95 on the 300-unit benchmark.
+2. Jams: units blocked over 150 ticks, last-resort pass-throughs, deadlocks (no progress for 900 ticks) on dense (walls with gaps), docks, and Dry Wells in a scripted scenario (base exits, docks, a chokepoint, a 50-unit group move).
+3. Determinism: identical trace on two runs; list the float operations used (only + - * / sqrt, iteration sorted by id).
+4. Browser cost (user: yes): the web bench export (feature tag wargrid_bench, preset Web Bench) served with tools/serve_web_bench.py in a browser window, for each approach that fits the native cap; method as in docs/reference/performance.md "target factor measurement".
+5. Screenshots (user: a few per approach): windowed runs with `sh tools/run_game.sh --audio-driver Dummy <scene>`, a chokepoint and a dock per approach, saved under AVOID_WORK/shots.
+
+Rules: one Godot process at a time, and only after the converted-maps run has finished its Godot work; every suite/benchmark call with timeout 600000 and output to a file; scratch Godot scripts inside the worktree's game/ (untracked), quit() on every path; never loosen a budget; when blocked, record it and move on; questions for the user go to the morning summary, never decided here.
+
+Output: docs/reference/unit-avoidance-spike.md on spike-avoidance. For each approach: what was built (commit), cost table, jam table, determinism, browser number, screenshot paths, failure cases seen, and which user answers were hard to implement and why. Then a comparison, a recommendation and a list of open questions for the brainstorm.
+
+Spare time afterwards (user, 2026-11-08): more research on the next open design points. Read docs/blueprint.md §7 entries after unit avoidance and docs/reference/design-answers-2026-11-08.md; for undecided points not yet answered, look up the Zero Hour default and write question files ~/projects/wargrid-overnight-work/questions/next-*.md in the shape of ~/projects/wargrid-overnight-work/questions/RULES.md. No decisions, no repo changes.

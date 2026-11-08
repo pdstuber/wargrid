@@ -16,7 +16,6 @@
     "ask": [
       "Bash(gh pr:*)",
       "Bash(git merge:*)",
-      "Bash(sh tools/run_game.sh:*)",
       "Bash(sh tools/deploy_web.sh:*)",
       "Bash(fly:*)",
       "Bash(flyctl:*)"
