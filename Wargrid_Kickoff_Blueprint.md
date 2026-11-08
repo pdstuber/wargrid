@@ -632,7 +632,7 @@ A pushed `v*` tag runs the full test suite on that commit, builds Linux, Windows
 
 **R1.1 — Room matching on a simulation fingerprint (user, 2026-11-06; not planned yet):** clients send a hash of the simulation scripts and game data as the relay's `build` string instead of the exact version, so UI-only releases share rooms and any simulation change never does. The version stays for display and release names.
 
-**R1.2 — Release notes (user, 2026-11-08; not planned yet):** each GitHub Release says in players' words what changed since the last tag. `release.yml` uses `--generate-notes`, which lists merged pull requests; branches here are merged locally, so `v0.7.0` listed only a Dependabot bump and a compare link.
+**R1.2 — Release notes (user, 2026-11-08; not planned yet):** each GitHub Release says in players' words what changed since the last tag. `release.yml` uses `--generate-notes`, which lists merged pull requests; branches here are merged locally, so `v0.7.0` listed only a Dependabot bump and a compare link. The notes of `v0.6.0-rc.1` through `v0.8.0` were rewritten by hand on 2026-11-08.
 
 ### M7.5 — Art pass (placement decided by the user 2026-11-05; scope proposed, not approved)
 

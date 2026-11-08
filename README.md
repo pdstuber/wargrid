@@ -14,7 +14,7 @@ Wargrid is an isometric real-time strategy game written in Godot 4 and typed GDS
 
 How it works: a deterministic, tick-based simulation kept apart from rendering, so builds on different platforms produce identical replay traces (Linux and Windows compared in CI, macOS locally). Online play is lockstep through a small Go relay (`relay/`; the wire protocol is pinned by `protocol/`). About 480 headless test cases cover simulation, replays and HUD layout; CI also runs the exported builds and netplay scenarios through a local relay.
 
-Status: early development. `main` has three factions (USA, China, FRC), teams, three converted maps (the launcher plays Dry Wells; Ashfall is the full-scale map, not yet in the launcher), skirmish against a bot and online play (milestones M0–M7; M7 merged 2026-11-07 at its exit gate, CI, the macOS trace comparison and the user's playtest pending). Per-milestone plans and evidence: [Start here](#start-here).
+Status: early development. `main` has three factions (USA, China, FRC), teams, three converted maps (the launcher plays Dry Wells; Ashfall is the full-scale map, not yet in the launcher), skirmish against a bot and online play (milestones M0–M7; M7 merged 2026-11-07 at its exit gate, CI green and macOS traces matching, the user's playtest pending; latest release 0.8.0). Per-milestone plans and evidence: [Start here](#start-here).
 
 Developed with AI coding agents (Claude Code). [AGENTS.md](AGENTS.md), the [blueprint](Wargrid_Kickoff_Blueprint.md), `docs/superpowers/` and the [session notes](docs/session-notes.md) are that workflow's plans, decisions and evidence.
 
@@ -134,7 +134,7 @@ Status: Go relay first deployed at `wss://wargrid-relay-jvm.fly.dev/ws` (2026-11
 - Cold start after a stop 1.3–1.8 s; resume after a suspend 0.33–0.51 s.
 - Remote `run_netplay.sh match` PASSED.
 - Redeployed 2026-11-05 with shutdown drain and crash isolation (`58d13f2`); log shows `relay started … drain=3.5s`, probe `RELAY WELCOME` 1837 ms (cold start). A live drain on fly is not yet observed.
-- 2026-11-08: deployed as `wargrid-relay`; `https://relay.pdstuber.dev/health` ok, probe `RELAY WELCOME 77`. Release 0.7.0 (run 42472020039) deployed it through the workflow with the new deploy token; probe `RELAY WELCOME 71`.
+- 2026-11-08: deployed as `wargrid-relay`; `https://relay.pdstuber.dev/health` ok, probe `RELAY WELCOME 77`. Release 0.7.0 (run 42472020039) deployed it through the workflow with the new deploy token; probe `RELAY WELCOME 71`. Release 0.8.0 (run 42480130047) redeployed relay and web; both `/health` answer 200.
 
 Capacity: a shared vCPU's 6.25 % baseline holds about one 3v3 room ([relay scaling](docs/reference/relay-scaling.md#flyio-vs-railway-measured-2026-11-0405)).
 
