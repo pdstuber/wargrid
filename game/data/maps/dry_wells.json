@@ -229,7 +229,19 @@
   "sources": [
     {"origin": [23, 3], "boxes": 400},
     {"origin": [54, 99], "boxes": 400},
+    {"origin": [60, 49], "boxes": 50, "footprint": [1, 1], "delete_when_empty": true},
+    {"origin": [61, 50], "boxes": 50, "footprint": [1, 1], "delete_when_empty": true},
+    {"origin": [60, 51], "boxes": 50, "footprint": [1, 1], "delete_when_empty": true},
+    {"origin": [19, 55], "boxes": 50, "footprint": [1, 1], "delete_when_empty": true},
+    {"origin": [21, 56], "boxes": 50, "footprint": [1, 1], "delete_when_empty": true},
+    {"origin": [20, 57], "boxes": 50, "footprint": [1, 1], "delete_when_empty": true},
     {"origin": [67, 9], "boxes": 400},
-    {"origin": [8, 93], "boxes": 400}
+    {"origin": [8, 93], "boxes": 400},
+    {"origin": [56, 47], "boxes": 50, "footprint": [1, 1], "delete_when_empty": true},
+    {"origin": [25, 58], "boxes": 50, "footprint": [1, 1], "delete_when_empty": true},
+    {"origin": [30, 49], "boxes": 50, "footprint": [1, 1], "delete_when_empty": true},
+    {"origin": [28, 49], "boxes": 50, "footprint": [1, 1], "delete_when_empty": true},
+    {"origin": [54, 55], "boxes": 50, "footprint": [1, 1], "delete_when_empty": true},
+    {"origin": [51, 57], "boxes": 50, "footprint": [1, 1], "delete_when_empty": true}
   ]
 }

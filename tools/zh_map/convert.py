@@ -18,14 +18,16 @@ import refpack
 CELL = 25.0
 SAMPLE = 10.0
 HEIGHT_SCALE = 0.625
+SOURCE_W, SOURCE_H = 4, 5
 CLIFF_STEP = 9.8
 NOTICE = (
     "Converted from an Electronic Arts map source (Copyright 2025 Electronic Arts Inc., "
     "GPL-3.0 with EA's additional terms). Modified; not the original. "
     "Terms, source path and revision: game/data/maps/NOTICE.md."
 )
-# StartingBoxes in object/civilianbuilding.ini, Object SupplyDock (INIZH.big); no map override.
-BOXES = {"SupplyDock": 400}  # SupplyPileSmall (50) waits for per-source footprints, see docs/reference/more-maps.md
+# StartingBoxes and DeleteWhenEmpty in object/civilianbuilding.ini (INIZH.big); no map override.
+# The 1 x 1 pile footprint is Wargrid's choice so Dry Wells' piles do not overlap.
+SOURCES = {"SupplyDock": (400, (SOURCE_W, SOURCE_H), False), "SupplyPileSmall": (50, (1, 1), True)}
 FOOTPRINTS = (
     ("power_plant", 2),
     ("supply_center", 3),
@@ -36,7 +38,6 @@ FOOTPRINTS = (
 )
 # Mirror game/scripts/simulation/definitions/definitions.gd (SOURCE_FOOTPRINT, BUILD_EDGE_MARGIN) and the
 # supply_center supply_clearance in usa.gd; the game defines them, keep these in step.
-SOURCE_W, SOURCE_H = 4, 5
 EDGE_MARGIN = 1
 MAX_RING = 12
 SUPPLY_REACH = 20
@@ -286,15 +287,23 @@ def _find_slot(grid, size, taken):
 
 def place(grid, raw):
     sources: list[dict[str, Any]] = []
+    source_cells: set[tuple[int, int]] = set()
     for o in raw["objects"]:
-        if o["template"] in BOXES:
+        if o["template"] in SOURCES:
+            boxes, (sw, sh), delete = SOURCES[o["template"]]
             c = (int(o["x"] // CELL), int(o["y"] // CELL))
             w, h = grid["size"]
-            origin = [min(max(c[0] - SOURCE_W // 2, 0), w - SOURCE_W), min(max(c[1] - SOURCE_H // 2, 0), h - SOURCE_H)]
-            sources.append(dict(origin=origin, boxes=BOXES[o["template"]]))
-    source_cells = (
-        set().union(*(_rect(s["origin"][0], s["origin"][1], SOURCE_W, SOURCE_H) for s in sources)) if sources else set()
-    )
+            origin = [min(max(c[0] - sw // 2, 0), w - sw), min(max(c[1] - sh // 2, 0), h - sh)]
+            cells = _rect(origin[0], origin[1], sw, sh)
+            if cells & source_cells:
+                raise ConvertError("sources overlap")
+            source_cells |= cells
+            source = dict(origin=origin, boxes=boxes)
+            if (sw, sh) != (SOURCE_W, SOURCE_H):
+                source["footprint"] = [sw, sh]
+            if delete:
+                source["delete_when_empty"] = True
+            sources.append(source)
     seats = sorted((_seat_of(o), o) for o in raw["objects"] if _seat_of(o))
     starts = []
     for seat, o in seats:

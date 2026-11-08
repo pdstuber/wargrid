@@ -17,7 +17,7 @@ func test_maps_load(runner) -> bool:
 	return true
 
 func test_converted_maps_load(runner) -> bool:
-	var expected := {"dry_wells": ["Dry Wells", Vector2i(81, 108), 2, 4], "broken_crown": ["Broken Crown", Vector2i(112, 100), 4, 8]}
+	var expected := {"dry_wells": ["Dry Wells", Vector2i(81, 108), 2, 16], "broken_crown": ["Broken Crown", Vector2i(112, 100), 4, 8]}
 	for file: String in expected:
 		var map := MapData.load("res://data/maps/%s.json" % file)
 		var want: Array = expected[file]

@@ -206,10 +206,32 @@ class PlaceTest(unittest.TestCase):
                 self.assertFalse(a & b)
         self.assertEqual(out["sources"][0], {"origin": [14, 13], "boxes": 400})
 
-    def test_small_piles_are_not_sources_yet(self):
+    def test_small_piles_are_separate_sources(self):
         raw = raw_map(80, 30, starts=[(10, 15), (70, 15)], sources=[(16, 15), (64, 15)], piles=[(40, 5), (41, 6)])
         out = convert.convert(raw, "T", "n")
-        self.assertEqual([s["boxes"] for s in out["sources"]], [400, 400])
+        pile = dict(boxes=50, footprint=[1, 1], delete_when_empty=True)
+        self.assertEqual(
+            out["sources"],
+            [
+                {"origin": [14, 13], "boxes": 400},
+                {"origin": [62, 13], "boxes": 400},
+                dict(origin=[40, 5], **pile),
+                dict(origin=[41, 6], **pile),
+            ],
+        )
+
+    def test_overlapping_sources_fail(self):
+        raw = raw_map(80, 30, starts=[(10, 15), (70, 15)], sources=[(16, 15), (64, 15)], piles=[(40, 5), (40, 5)])
+        with self.assertRaisesRegex(convert.ConvertError, "sources overlap"):
+            convert.convert(raw, "T", "n")
+
+    def test_slots_keep_clearance_from_small_piles(self):
+        raw = raw_map(80, 30, starts=[(10, 15), (70, 15)], sources=[(24, 15), (64, 15)], piles=[(13, 15)])
+        out = convert.convert(raw, "T", "n")
+        sizes = dict(convert.FOOTPRINTS)
+        for kind, (x, y) in out["starts"][0]["slots"].items():
+            gap = min(max(abs(x + i - 13), abs(y + j - 15)) for i in range(sizes[kind]) for j in range(sizes[kind]))
+            self.assertGreater(gap, 1, kind + " clearance from the 1x1 pile")
 
     def test_edge_source_stays_inside_map(self):
         raw = raw_map(80, 30, starts=[(10, 15), (70, 15)], sources=[(16, 15), (79, 29)])
