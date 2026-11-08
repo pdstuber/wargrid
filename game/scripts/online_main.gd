@@ -56,6 +56,8 @@ func _step_simulation() -> void:
 		_lockstep.finish_tick(tick, simulation.snapshot() if _lockstep.wants_snapshot(tick) else null)
 	var rejections: Array = _lockstep.rejections()
 	if rejections.size() > _rejections_seen:
+		_ensure_sound()
+		for i in range(_rejections_seen, rejections.size()): _sound.rejected(rejections[i].error)
 		_error = "Rejected: " + rejections.back().error
 		_rejections_seen = rejections.size()
 	if not _finished and (simulation.match_over() or _lockstep.status().begins_with("ended")): _finish()

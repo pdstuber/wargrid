@@ -4,14 +4,14 @@ Handoff: [sound-spike-prompt.txt](../sound-spike-prompt.txt). Plan: [sound spike
 
 ```text
 Resume record (updated 2026-11-08)
-Branch / base commit / working-tree state: spike-sound / base main 893332f (HEAD 1520b90) / clean after the ruling commit
-Last green task / next incomplete task: Task 6 Steps 1-4 done (uncommitted; Task 5 committed as f7a7b62) / Task 6 Step 5 (Gate B windowed run, needs approval)
-Changed paths since last commit: game/scripts/presentation/audio_settings.gd, volume_sliders.gd, music_player.gd (new), pause_menu.gd, sound_player.gd, game/scripts/launcher.gd, skirmish_main.gd, game/tests/test_audio_settings.gd (new), test_online_scene.gd, test_pause_menu.gd, run_tests.gd, the sound spike spec Goals line, this file
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh, CASES 552 CHECKS 136802 FAILURES 0, exit 0, TESTS PASSED; lint, warnings (110 files, new files checked by hand) exit 0; trace check not rerun (no sim change)
-Known red case or blocker: none. Online `rejected()` not wired (lockstep rejections carry no player and the sim result already gives the local error; see Task 4 section). Gate B Step 5 (windowed) and Step 6 (review) open
-Approved decisions, pre-authorizations used, deferred gates: Gate S passed (user, 2026-11-08); local commits after green checkpoints pre-authorized; no push, merge, window, install or fly without approval; Gate A passed (Max Rate off; MacLeod kept); Gate B and exit pending. Commit message for Task 3: 'Add the sound spike audio and credits'
+Branch / base commit / working-tree state: spike-sound / base main 893332f / uncommitted fixes on 3126722 (Gate B review findings)
+Last green task / next incomplete task: Task 6 committed as 3126722; Gate B review findings 1-10 fixed (uncommitted) / Task 6 Step 5 (Gate B windowed run, needs user approval), then Step 6 closure
+Changed paths since last commit: game/scripts/online_main.gd, game/scripts/presentation/sound_director.gd, sound_player.gd, game/tests/test_announcer.gd, test_audio_settings.gd, test_online_scene.gd, docs/reference/sound-spike.md, the sound spike spec Goals line, this file
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh (with traces), CASES 558 CHECKS 136835 FAILURES 0, exit 0, TESTS PASSED; lint exit 0; warnings exit 0 (114 files); netplay match PASSED tick 8400; traces in $SOUND_WORK/traces/t6b MATCHED against base (replay, economy, combat 1200; team 100; s1 281)
+Known red case or blocker: none. Open: Gate B Step 5 (windowed) and Step 6 (closure). Unverified: panned-camera listener position and voice A/B by ear
+Approved decisions, pre-authorizations used, deferred gates: Gate S passed (user, 2026-11-08); local commits after green checkpoints pre-authorized; no push, merge, window, install or fly without approval; Gate A passed (Max Rate off; MacLeod kept); Gate B and exit pending
 Usage so far (python3 tools/session_usage.py <session files>): not recorded
-Next exact action: commit Task 6 ("Add music and volume sliders"), then Gate B Step 5 with user approval
+Next exact action: ask the user for the Gate B windowed run, then Step 6
 ```
 
 ## Baseline and trace checks
@@ -63,3 +63,11 @@ Notes: `Announcer` is preloaded, no `class_name`. The funds line comes from a fa
 Mute addendum: `M` was free (`rg` over `project.godot` and `game/scripts`: B, E, U, A, S, 1-9, F3 used). The `Mute` toggle button sits in `VolumeSliders` (row "Master"), so launcher and Esc menu get it; `VolumeSliders._unhandled_input` handles `M`, so the key works in every scene that holds the sliders (match: the hidden pause menu; launcher too) and no other script references `AudioSettings` (a second preloader of it made `run_warnings.sh` report 23 resources still in use at exit). Session-only; AS7 and AS8 cover the button, the key, the settings file and the slider values.
 
 Deviations: `MusicPlayer` does not call `play()` under the headless display server (the suite otherwise exits with Ogg playbacks reported as leaked resources, which `run_tests.sh` treats as an error). `run_tests.gd` sets `AudioSettings.path` to a scratch file so the `SoundPlayer` start-up `apply` never reads a developer's real volumes; the unparsable-file case is not tested because Godot logs an `ERROR:` for it, which the suite wrapper fails on (a failed load already gives defaults). Online scenes inherit the match playlist from `skirmish_main`.
+
+## Gate B review fixes
+
+2026-11-08, tree: uncommitted fixes on 3126722. Red first: N6 (online funds rejection not announced) and AN18 (`building_lost` after `defeat`) failed; the other new tests passed against the unchanged code and were proved by mutation (each mutation red, restored): funds line in `_consume`, in `update`, `skirmish_main._submit` rejected call, `online_main` rejected call, `director.reset()` in `_restart` (AN16, AN17), both `_previous_status` guards (AN15, SD19), the low-power edge (AN8, drain past the 3600 tick cooldown), `winner == local_player` (AN8, AN13 with seat id different from team), the `run_tests.gd` settings redirect (AS4).
+
+Changes: `online_main` calls `rejected()` for every new lockstep rejection (every entry is the local seat's, lockstep.gd `if s != _seat: continue`; issue-time failures return before command results, so no double). Victory and defeat clear the announcer queue. AN9 uses real kinds with non-empty queues; AN15 also checks the returned requests; AN16 asserts the voice line. AS4 now checks the redirect itself. AS8 pushes a real `InputEventKey` through `Viewport.push_input`; AS9 covers the launcher and a focused `LineEdit` (the field takes the letter, no mute). `SoundPlayer` does not call `_voice.play()` under the headless display server (a played headless line is reported as a leaked resource at exit once a scene test triggers one). `sound-spike.md`: no `AudioListener2D` exists; the Camera2D-following screen-centre fallback is source-read, zoom-only measured.
+
+Music encode (user, 2026-11-08): keep Ogg Vorbis quality 2 (`oggenc -b 96` maps to -q 2, about 85 kbps, 10.90 MB for 5 tracks). Smaller q1/q0 and larger q5 were measured (scratch listening page) and not adopted; CREDITS wording corrected from "96 kbps". LFS / uncompressed-in-repo / build-time encode rejected: sources are lossy, QOA already encodes at import.

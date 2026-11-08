@@ -166,6 +166,7 @@ func _triggers(state: Dictionary, current: Dictionary, status: String) -> void:
 	if status != "ongoing" and not (status == "won" and _previous_status == "ongoing"): return
 	var tick: int = state.get("tick", 0)
 	if status == "won":
+		announcer.clear()
 		announcer.request("victory" if state.match.winner == _team_of(state, _local_player) else "defeat", tick)
 		return
 	if _previous_status != "ongoing": return

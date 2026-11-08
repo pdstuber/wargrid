@@ -8,7 +8,7 @@ Placement (user, 2026-11-08): now, after M7 and before Ground batch A, on branch
 
 ## Goals, non-goals, anti-goals
 
-- **Goals:** every weapon of all three factions (USA, China, FRC) is audible; deaths and destroyed buildings are audible; an announcer tells the local player what matters; music in the launcher and in the match; volume sliders; a session-only Master mute (button in the launcher and the Esc menu, key M in the match; user addendum 2026-11-08).
+- **Goals:** every weapon of all three factions (USA, China, FRC) is audible; deaths and destroyed buildings are audible; an announcer tells the local player what matters; music in the launcher and in the match; volume sliders; a session-only Master mute (button in the launcher and the Esc menu, key M in the launcher and the match; user addendum 2026-11-08).
 - **Non-goals:** a realistic preset or any preset choice; unit replies (select/move/attack voices); engine, money, supply or flamethrower sounds; faction-specific music; shroud culling (M7.9); an options menu beyond the sliders.
 - **Anti-goals:** effects that drown the announcer or tire the ear (Zero Hour keeps effects "subtle and in the background", user 2026-11-07); any change to simulation, state hash, replays or netplay traces; any EA audio, text or data copied.
 

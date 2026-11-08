@@ -30,7 +30,7 @@ class FakeTransport extends RefCounted:
 	func rtt_samples() -> PackedInt64Array: return PackedInt64Array([40000])
 
 func cases() -> Array[Callable]:
-	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_rejection_line, test_overlay_net_line, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_launcher_layout, test_launcher_faction_selectors_fit, test_plays_dry_wells_from_each_seat]
+	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_rejection_line, test_funds_rejection_is_announced, test_overlay_net_line, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_launcher_layout, test_launcher_faction_selectors_fit, test_plays_dry_wells_from_each_seat]
 
 func _online(runner, seat: int) -> Dictionary:
 	var transport := FakeTransport.new()
@@ -213,6 +213,18 @@ func test_rejection_line(runner) -> bool:
 	_run(main, 1)
 	runner.check(main.get_node("HUD/Status").text.contains("Rejected: No units left"), "H5 online rejection line, got " + main.get_node("HUD/Status").text)
 	_layout_ok(runner, main, "rejection")
+	main.free()
+	return true
+
+func test_funds_rejection_is_announced(runner) -> bool:
+	var online: Dictionary = await _online(runner, 2)
+	var main = online.main
+	online.lockstep._rejections.append({"tick": 5, "sequence": 0, "error": "Insufficient credits"})
+	_run(main, 1)
+	var cues: Array = main._sound.last_requests().map(func(request: Dictionary) -> String: return request.cue)
+	var stream: AudioStream = main._sound._voice.stream
+	runner.check(stream != null and stream.resource_path.get_file() == "insufficient_funds.wav", "N6 online funds rejection says insufficient_funds")
+	runner.check(not cues.has("error"), "N6 online funds rejection gives no error beep, got %s" % [cues])
 	main.free()
 	return true
 

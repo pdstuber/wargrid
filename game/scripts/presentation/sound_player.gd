@@ -53,7 +53,7 @@ func update(state: Dictionary) -> void:
 	var line: String = director.announcer.next(state.get("tick", 0), _voice.playing)
 	if line.is_empty(): return
 	_voice.stream = load(Announcer.path(line))
-	_voice.play()
+	if DisplayServer.get_name() != "headless": _voice.play() # a headless Dummy-driver playback is reported as a leaked resource at exit
 
 func rejected(error: String) -> void:
 	director.rejected(error)

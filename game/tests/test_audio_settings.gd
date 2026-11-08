@@ -11,7 +11,7 @@ const SCRATCH := "user://test-settings.cfg"
 const REAL := "user://settings.cfg"
 
 func cases() -> Array[Callable]:
-	return [test_settings_missing_and_corrupt, test_settings_round_trip, test_slider_sets_bus_and_saves, test_tests_use_scratch_settings, test_playlist_order_and_gap, test_menu_track_repeats, test_mute_toggle, test_mute_key_in_match]
+	return [test_settings_missing_and_corrupt, test_settings_round_trip, test_slider_sets_bus_and_saves, test_tests_use_scratch_settings, test_playlist_order_and_gap, test_menu_track_repeats, test_mute_toggle, test_mute_key_in_match, test_mute_key_in_launcher_and_text_field]
 
 func _begin() -> String:
 	var saved: String = AudioSettings.path
@@ -74,18 +74,16 @@ func test_slider_sets_bus_and_saves(runner) -> bool:
 
 func test_tests_use_scratch_settings(runner) -> bool:
 	var before: int = FileAccess.get_modified_time(REAL) if FileAccess.file_exists(REAL) else 0
-	var launcher = Launcher.instantiate()
-	runner.root.add_child(launcher)
-	var menu := PauseMenu.new()
-	runner.root.add_child(menu)
-	await runner.process_frame
-	var saved := _begin()
-	menu.find_child("Music", true, false).value = 0.4
-	_end(saved)
+	runner.check(AudioSettings.path != REAL, "AS4 the suite redirects the settings path, got %s" % AudioSettings.path)
+	var sliders := VolumeSliders.new()
+	runner.root.add_child(sliders)
+	sliders.get_node("Music").value = 0.4
 	var after: int = FileAccess.get_modified_time(REAL) if FileAccess.file_exists(REAL) else 0
 	runner.check(before == after, "AS4 real settings file untouched (%d to %d)" % [before, after])
-	launcher.free()
-	menu.free()
+	runner.check(FileAccess.file_exists(AudioSettings.path), "AS4 slider change landed in the redirected file")
+	DirAccess.remove_absolute(AudioSettings.path)
+	AudioSettings.apply(AudioSettings.DEFAULTS)
+	sliders.free()
 	return true
 
 func test_playlist_order_and_gap(runner) -> bool:
@@ -128,20 +126,42 @@ func test_mute_toggle(runner) -> bool:
 	_end(saved)
 	return true
 
+func _key(code: Key, unicode: int = 0) -> InputEventKey:
+	var event := InputEventKey.new()
+	event.physical_keycode = code
+	event.keycode = code
+	event.unicode = unicode
+	event.pressed = true
+	return event
+
 func test_mute_key_in_match(runner) -> bool:
 	var main = Skirmish.instantiate()
 	runner.root.add_child(main)
 	main.set_process(false)
 	main.set_physics_process(false)
 	await runner.process_frame
-	var event := InputEventKey.new()
-	event.physical_keycode = KEY_M
-	event.keycode = KEY_M
-	event.pressed = true
-	main.find_child("Volume", true, false)._unhandled_input(event)
+	runner.root.push_input(_key(KEY_M, 109))
 	runner.check(AudioServer.is_bus_mute(0), "AS8 M mutes Master in a match")
-	main.find_child("Volume", true, false)._unhandled_input(event)
+	runner.root.push_input(_key(KEY_M, 109))
 	runner.check(not AudioServer.is_bus_mute(0), "AS8 M again restores Master")
 	AudioServer.set_bus_mute(0, false)
 	main.free()
+	return true
+
+func test_mute_key_in_launcher_and_text_field(runner) -> bool:
+	var launcher = Launcher.instantiate()
+	runner.root.add_child(launcher)
+	await runner.process_frame
+	await runner.process_frame
+	runner.root.push_input(_key(KEY_M, 109))
+	runner.check(AudioServer.is_bus_mute(0), "AS9 M mutes Master in the launcher")
+	runner.root.push_input(_key(KEY_M, 109))
+	var field: LineEdit = launcher.find_child("RelayUrl", true, false)
+	field.grab_focus()
+	var before: String = field.text
+	runner.root.push_input(_key(KEY_M, 109))
+	runner.check(field.has_focus() and field.text != before, "AS9 fixture: the focused field took the letter")
+	runner.check(not AudioServer.is_bus_mute(0), "AS9 M typed into a text field does not mute")
+	AudioServer.set_bus_mute(0, false)
+	launcher.free()
 	return true
