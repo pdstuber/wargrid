@@ -764,6 +764,7 @@ func test_waiters_reseek_when_small_pile_vanishes(runner) -> bool:
 		if Fixture.object(sim,pile).is_empty(): break
 		sim.step()
 	runner.check(Fixture.object(sim,pile).is_empty() and Fixture.object(sim,loader).collection.cargo == 2,"Sp2 the loader took both boxes")
+	runner.check(Fixture.object(sim,mover).status == "moving","Sp2 the mover is still on its way when the pile vanishes")
 	for id in [waiter,flyer]:
 		var lost: Dictionary = Fixture.object(sim,id).collection
 		runner.check(lost.target_id == null and not lost.has("dock") and lost.cargo == 0,"Sp2 released at once %d" % id)

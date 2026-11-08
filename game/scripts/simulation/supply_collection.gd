@@ -177,7 +177,7 @@ static func step(sim: Simulation, unit_ids: Array[int]) -> void:
 		collection.remaining_ticks -= 1
 		if collection.remaining_ticks > 0: continue
 		if collection.phase == "loading":
-			# Zero Hour waits one more delay after the last box, for every collector.
+			# Zero Hour waits one more delay after the last box at a permanent source.
 			if collection.cargo == Registry.collects(unit.kind).boxes or target.boxes == 0:
 				release(sim,id)
 				collection.retry_tick = sim._tick + 1
