@@ -56,8 +56,12 @@ Metric names and buckets, file layout inside `relay/`, dashboard panels.
 
 Deployed as `wargrid-relay` behind `relay.pdstuber.dev` (cert issued, probe `RELAY WELCOME 77`); metrics reached fly's Prometheus with label `app="wargrid-relay"`, and every dashboard metric existed there.
 
-The machine then stayed `started` with no players from 08:38 to 09:04 UTC, while the user's blog app suspended several times. First diagnosis, wrong: the metrics scrape keeps it awake. `[metrics]` was removed at 08:54 and the machine still stayed up. Evidence instead: fly's proxy metrics showed 126 HTTP 404 responses in 40 minutes (2 were our WebSocket probes as 101, 3 our health checks as 200), peaking 08:42–08:54 and fading after; the old `wargrid-relay-jvm` got 5 404s in 24 hours. A new hostname with a new certificate appears in Certificate Transparency logs and is scanned within minutes; every scanner request goes through Fly Proxy and resets the idle timer. Whether a `[metrics]` scrape alone would prevent suspend is **unverified**.
+Suspend, as measured from fly's logs and machine events (a once-a-minute `fly machine list` sample missed the short suspends and first suggested the machine never slept):
+
+- With `[metrics]` active the proxy autosuspended the machine at 08:43:50 UTC and a request resumed it 58 s later (08:44:48); with a scrape every 15 s, **the scrape neither prevented the suspend nor woke the machine**. It suspended again at 08:53:22 and the redeploy resumed it.
+- What did wake it: fly's proxy metrics showed 126 HTTP 404 responses in 40 minutes (2 were our WebSocket probes as 101, 3 our health checks as 200), peaking 08:42–08:54 and fading after; the old `wargrid-relay-jvm` got 5 404s in 24 hours. A new hostname with a new certificate appears in Certificate Transparency logs and gets scanned within minutes.
+- After the 08:54 redeploy the proxy cordoned the machine at 09:02:45 and 09:09:08 but logged no autosuspend and flyd uncordoned it about 15 s later. Cause not found.
 
 User decision (2026-11-08): remove the metrics code, dependency and dashboard anyway (the relay is plain WebSocket forwarding; metrics come back from git history, commits `935e8e7`, `2ae2f1f`, if the game shows problems). Kept: the new log lines (connection opened/closed, room created, seat joined).
 
-For the planned lobby service: metrics are likely worth more there (state, matchmaking); test first whether a `[metrics]` scrape keeps a fly machine awake, on a quiet machine.
+For the planned lobby service: metrics are likely worth more there (state, matchmaking); the evidence above says a `[metrics]` scrape does not keep a fly machine awake.
