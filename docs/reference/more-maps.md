@@ -1,6 +1,6 @@
 # More converted maps (2026-11-07, rebased onto M7 2026-11-08)
 
-Small task, not a milestone. Two more maps converted with `tools/zh_map/convert.py` (`convert.py <map> <out.json> <name>`), same rules as Ashfall (AGENTS.md map-data rule; notice in `game/data/maps/NOTICE.md`). Supply docks are 4 × 5 cells, small piles 1 × 1, and starts carry M7's six slots (`power_plant`, `supply_center`, `barracks`, `factory`, `command_center`, `defence`).
+Small task, not a milestone; merged to `main` at `4c98b9a` (2026-11-08). Two more maps converted with `tools/zh_map/convert.py` (`convert.py <map> <out.json> <name>`), same rules as Ashfall (AGENTS.md map-data rule; notice in `game/data/maps/NOTICE.md`). Supply docks are 4 × 5 cells, small piles 1 × 1, and starts carry M7's six slots (`power_plant`, `supply_center`, `barracks`, `factory`, `command_center`, `defence`).
 
 | Wargrid name | Source (CnC_Modding_Support `3aad8e4`, `Zero Hour/Maps/official/`) | Cells | Seats | Sources |
 |---|---|---|---|---|

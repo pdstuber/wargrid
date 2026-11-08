@@ -1,6 +1,6 @@
 # Small supply piles as separate sources (design, 2026-11-08)
 
-Status: approved by the user 2026-11-08 (short design). Small task on branch `spike-more-maps`, not a milestone.
+Status: approved by the user 2026-11-08 (short design); implemented and merged to `main` at `4c98b9a` (2026-11-08). Small task, not a milestone.
 
 ## Intent
 

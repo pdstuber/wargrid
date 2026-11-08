@@ -10,7 +10,7 @@
 
 **Spec:** [docs/superpowers/specs/2026-11-08-small-supply-piles-design.md](../specs/2026-11-08-small-supply-piles-design.md). Context: [more maps](../../reference/more-maps.md), [M7 economy parity](../../reference/m7-economy-parity.md).
 
-Status: **planned, not started** (2026-11-08, branch `spike-more-maps` at `a55dcef`). Small task, not a milestone.
+Status: **implemented and merged to `main`** (`4c98b9a`, 2026-11-08; tasks `c17f151`..`c30b8d0`, final-review fixes `52facb5`). Small task, not a milestone.
 
 ## Global Constraints
 
