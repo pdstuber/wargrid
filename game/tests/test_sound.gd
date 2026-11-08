@@ -4,6 +4,7 @@ extends RefCounted
 const Director = preload("res://scripts/presentation/sound_director.gd")
 const Cues = preload("res://scripts/presentation/sound_cues.gd")
 const Player = preload("res://scripts/presentation/sound_player.gd")
+const Music = preload("res://scripts/presentation/music_player.gd")
 const AudioSettings = preload("res://scripts/presentation/audio_settings.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const Shared = preload("res://scripts/simulation/definitions/shared.gd")
@@ -110,6 +111,7 @@ func test_every_weapon_and_kind_has_a_cue(runner) -> bool:
 		var is_building: bool = Registry.buildings().has(kind)
 		var cue: String = Cues.death_cue(kind, is_building)
 		runner.check(cue != "", "SD5 %s has a death cue" % kind)
+		if not is_building and Registry.kind(kind).get("armor", "") != "human": runner.check(cue == "vehicle_death", "SD5 %s is vehicle_death" % kind)
 		if Registry.kind(kind).get("armor", "") == "human": runner.check(cue == "infantry_death", "SD5 %s is infantry_death" % kind)
 	for cue: String in Cues.CUES:
 		runner.check(ResourceLoader.exists(Cues.path(Cues.CUES[cue].sound)), "SD5 sound file of %s exists" % cue)
@@ -318,6 +320,7 @@ func test_scenes_boot_with_sound(runner) -> bool:
 	await runner.process_frame
 	await runner.process_frame
 	runner.check(skirmish.get_node_or_null("Sound") != null, "SD22 skirmish has a Sound child")
+	runner.check(skirmish.get_children().any(func(c: Node) -> bool: return c.get_script() == Music), "SD22 skirmish has a Music player")
 	skirmish.free()
 	var suite = OnlineTests.new()
 	var online: Dictionary = await suite._online(runner, 1)
