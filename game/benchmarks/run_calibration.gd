@@ -1,5 +1,7 @@
 extends SceneTree
 
+const Stats = preload("res://scripts/debug/timing_stats.gd")
+
 # Report-only host calibration: fixed work per sample, no gate. Usage: -- --minutes=2
 const ITERATIONS := 20000
 const MINUTE_USEC := 60_000_000
@@ -43,12 +45,8 @@ func _work() -> float:
 		i += 1
 	return f + h
 
-func _percentile(sorted: PackedFloat64Array, p: float) -> float:
-	return sorted[mini(sorted.size() - 1, int(p * sorted.size()))]
-
 func _report(minute: int, samples: PackedFloat64Array) -> void:
 	if samples.is_empty():
 		return
-	samples.sort()
-	print("CAL minute=%d n=%d p50=%.3f p95=%.3f p99=%.3f max=%.3f ms" % [minute, samples.size(),
-		_percentile(samples, 0.5), _percentile(samples, 0.95), _percentile(samples, 0.99), samples[-1]])
+	var s: Dictionary = Stats.summary(samples)
+	print("CAL minute=%d n=%d p50=%.3f p95=%.3f p99=%.3f max=%.3f ms" % [minute, s.n, s.p50, s.p95, s.p99, s.max])

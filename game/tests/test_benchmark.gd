@@ -260,11 +260,10 @@ func test_settled_matches_snapshot_predicate(runner) -> bool:
 func test_gate_values(runner) -> bool:
 	var movement = load("res://benchmarks/run_movement.gd")
 	var combat = load("res://benchmarks/run_combat.gd")
-	runner.check(movement.BUDGET_P95_MS == 1.82 and movement.BUDGET_P99_MS == 3.64, "BM11 movement budget is enforced at 1.82 / 3.64")
-	runner.check(combat.BUDGET_P95_MS == 1.82 and combat.BUDGET_P99_MS == 3.64, "BM11 combat budget 1.82 / 3.64")
+	runner.check(Stats.BUDGET_P95_MS == 1.82 and Stats.BUDGET_P99_MS == 3.64, "BM11 movement and combat budget is enforced at 1.82 / 3.64")
+	runner.check(not movement.get_script_constant_map().has("BUDGET_P95_MS") and not combat.get_script_constant_map().has("BUDGET_P95_MS"), "BM11 both scripts use the shared budget")
 	runner.check(combat.STRESS_CEILING == {"open": [2.10, 2.59], "dense": [2.64, 3.95], "hordes300": [3.07, 4.05]}, "BM11 stress ceilings")
-	runner.check(movement.within({"p95": 1.82, "p99": 3.64}, 1.82, 3.64), "BM11 limits are inclusive")
-	runner.check(not movement.within({"p95": 1.83, "p99": 1.0}, 1.82, 3.64), "BM11 p95 over the limit fails")
-	runner.check(not movement.within({"p95": 1.0, "p99": 3.65}, 1.82, 3.64), "BM11 p99 over the limit fails")
-	runner.check(combat.within({"p95": 1.83, "p99": 1.0}, 1.82, 3.64) == movement.within({"p95": 1.83, "p99": 1.0}, 1.82, 3.64), "BM11 combat helper agrees")
+	runner.check(Stats.within({"p95": 1.82, "p99": 3.64}, 1.82, 3.64), "BM11 limits are inclusive")
+	runner.check(not Stats.within({"p95": 1.83, "p99": 1.0}, 1.82, 3.64), "BM11 p95 over the limit fails")
+	runner.check(not Stats.within({"p95": 1.0, "p99": 3.65}, 1.82, 3.64), "BM11 p99 over the limit fails")
 	return true

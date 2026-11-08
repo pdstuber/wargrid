@@ -133,11 +133,11 @@ func _team_match() -> void:
 	Profiler.reset()
 	Profiler.enabled = true
 	var peak: int = 0
-	while sim.snapshot().match.status == "ongoing" and sim.tick() < TeamMatch.TEAM_TICK_CAP:
+	while not sim.match_over() and sim.tick() < TeamMatch.TEAM_TICK_CAP:
 		if sim.tick() == WARMUP: _phase("team_match", true)
 		TeamMatch.step(sim)
 		_frame(sim, 1)
-		peak = maxi(peak, sim.snapshot().entities.size())
+		peak = maxi(peak, sim._entities.size())
 	_phase("team_match", false)
 	Profiler.enabled = false
 	print("PROFILE_END team_match ticks=", sim.tick(), " status=", sim.snapshot().match.status, " peak_entities=", peak)

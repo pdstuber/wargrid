@@ -8,12 +8,6 @@ const WARMUP: int = 300
 const SAMPLES: int = 1800
 # Regression ceilings for rows that exceed the budget: worst of 13 quiet runs + 5% (T3, 2026-11-08); raise only with user approval and a ledger line.
 const STRESS_CEILING := {"open": [2.10, 2.59], "dense": [2.64, 3.95], "hordes300": [3.07, 4.05]}
-const BUDGET_P95_MS: float = 1.82
-const BUDGET_P99_MS: float = 3.64
-
-static func within(summary: Dictionary, p95_limit: float, p99_limit: float) -> bool:
-	return summary.p95 <= p95_limit and summary.p99 <= p99_limit
-
 func _initialize() -> void:
 	_run.call_deferred()
 
@@ -190,7 +184,7 @@ func _measure(layout: String) -> bool:
 	return true
 
 func _budget_ok(layout: String, summary: Dictionary) -> bool:
-	var ok: bool = within(summary, BUDGET_P95_MS, BUDGET_P99_MS)
+	var ok: bool = Stats.within(summary, Stats.BUDGET_P95_MS, Stats.BUDGET_P99_MS)
 	print("COMBAT BUDGET ", "PASS" if ok else "FAIL", " ", layout, " simulation_only")
 	if not ok:
 		push_error("Combat budget exceeded for " + layout)
@@ -198,8 +192,8 @@ func _budget_ok(layout: String, summary: Dictionary) -> bool:
 
 func _stress_ok(layout: String, summary: Dictionary) -> bool:
 	var ceiling: Array = STRESS_CEILING[layout]
-	var ok: bool = within(summary, ceiling[0], ceiling[1])
-	print("COMBAT STRESS ", "PASS" if ok else "FAIL", " ", layout, " exceeds the ", BUDGET_P95_MS, "/", BUDGET_P99_MS, " budget, regression ceiling p95/p99 ", ceiling)
+	var ok: bool = Stats.within(summary, ceiling[0], ceiling[1])
+	print("COMBAT STRESS ", "PASS" if ok else "FAIL", " ", layout, " exceeds the ", Stats.BUDGET_P95_MS, "/", Stats.BUDGET_P99_MS, " budget, regression ceiling p95/p99 ", ceiling)
 	if not ok:
 		push_error("Combat stress ceiling exceeded for " + layout)
 	return ok
