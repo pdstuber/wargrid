@@ -23,6 +23,22 @@ static func slot(map: Dictionary, seat: int, kind: String) -> Vector2i:
 		if int(start.seat) == seat: return _cell(start.slots[Registry.kind(kind).slot])
 	return Vector2i(-1, -1)
 
+static func with_starts(map: Dictionary, seats: Array[int]) -> Dictionary:
+	var chosen: Array = []
+	for k in seats.size():
+		var found := false
+		for start: Dictionary in map.starts:
+			if int(start.seat) != seats[k]: continue
+			var copy: Dictionary = start.duplicate(true)
+			copy.seat = k + 1
+			chosen.append(copy)
+			found = true
+			break
+		if not found: return {}
+	var result: Dictionary = map.duplicate()
+	result.starts = chosen
+	return result
+
 static func start_cell(map: Dictionary, seat: int) -> Vector2i:
 	for start: Dictionary in map.starts:
 		if int(start.seat) == seat: return _cell(start.cell)

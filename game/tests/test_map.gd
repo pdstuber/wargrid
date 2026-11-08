@@ -6,7 +6,7 @@ const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 const StateHash = preload("res://scripts/simulation/state_hash.gd")
 
 func cases() -> Array[Callable]:
-	return [test_maps_load, test_converted_maps_load, test_bad_map_rejected, test_skirmish_identical, test_exports_ship_map_notice, test_small_source_from_map]
+	return [test_maps_load, test_converted_maps_load, test_bad_map_rejected, test_skirmish_identical, test_exports_ship_map_notice, test_small_source_from_map, test_with_starts]
 
 func test_maps_load(runner) -> bool:
 	var skirmish := MapData.load("res://data/maps/skirmish.json")
@@ -81,4 +81,15 @@ func test_small_source_from_map(runner) -> bool:
 	map.sources[2].delete_when_empty = true
 	map.sources[2].origin = [25, 28]
 	runner.check(MapData.parse(JSON.stringify(map)).is_empty(), "MP7 a 1x1 pile on the cliff cell is rejected")
+	return true
+
+func test_with_starts(runner) -> bool:
+	var ashfall := MapData.load("res://data/maps/ashfall.json")
+	var seats: Array[int] = [5, 1]
+	var chosen := MapData.with_starts(ashfall, seats)
+	runner.check(chosen.starts.size() == 2 and chosen.starts[0].seat == 1 and chosen.starts[0].cell == ashfall.starts[4].cell and chosen.starts[0].slots == ashfall.starts[4].slots, "MP8 first chosen start is seat 5 renumbered 1")
+	runner.check(chosen.starts[1].seat == 2 and chosen.starts[1].cell == ashfall.starts[0].cell and chosen.starts[1].slots == ashfall.starts[0].slots, "MP8 second chosen start is seat 1 renumbered 2")
+	runner.check(ashfall.starts.size() == 8 and ashfall.starts[4].seat == 5 and is_same(chosen.cells, ashfall.cells), "MP8 the loaded map is not mutated and cells are shared")
+	var bad: Array[int] = [1, 9]
+	runner.check(MapData.with_starts(MapData.load("res://data/maps/dry_wells.json"), bad).is_empty(), "MP8 a seat not in the map gives an empty map")
 	return true

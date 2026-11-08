@@ -5,15 +5,15 @@ Plan: [converted maps playable plan](../superpowers/plans/2026-11-08-converted-m
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-08 22:40)
-Branch / base commit / working-tree state: converted-maps / 90cb4a5 / Task 2 diff uncommitted (start_spots.gd, test_start_spots.gd, run_tests.gd registration)
-Last green task / next incomplete task: Task 2 green, awaiting coordinator commit and review / Task 3
-Changed paths since last commit: game/scripts/simulation/start_spots.gd (+.uid), game/tests/test_start_spots.gd (+.uid), game/tests/run_tests.gd
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh (twice) / 566 / 136868 / 0 / 0 / TESTS PASSED 136868
+Resume record (updated 2026-11-08 23:10)
+Branch / base commit / working-tree state: converted-maps / b609404 / Task 3 diff uncommitted
+Last green task / next incomplete task: Task 3 green, awaiting coordinator commit and review / Task 3b
+Changed paths since last commit: game/scripts/simulation/map_data.gd, game/scripts/simulation/skirmish.gd, game/tests/test_map.gd, game/tests/test_skirmish.gd
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 571 / 136880 / 0 / 0 / TESTS PASSED 136880
 Known red case or blocker: none
 Approved decisions, pre-authorizations used, deferred gates: none used
 Usage so far: not run
-Next exact action: Task 3 (chosen starts become seats 1 and 2)
+Next exact action: Task 3b (bot collectors per supply center)
 ```
 
 ## Baseline
@@ -55,6 +55,9 @@ Append-only. One row per command: tree, counts, exit, marker, load averages.
 | 2026-11-08 22:14 | aa9bea2 + Task 1 diff | `sh tools/run_netplay.sh match` | n/a | 0 | match terminal tick 8400; NETPLAY PASSED match | 1.9 / 4.2 / 3.6 (22:14) | no |
 | 2026-11-08 22:40 | 90cb4a5 + Task 2 diff | `sh tools/run_tests.sh` (run twice, SS6 identical both times) | CASES 566, CHECKS 136868, FAILURES 0 | 0 | TESTS PASSED 136868 | n/a | no |
 | 2026-11-08 22:41 | 90cb4a5 + Task 2 diff | `sh tools/run_lint.sh` / `run_warnings.sh` | 114 files | 0 / 0 | Success: no problems found; WARNINGS CHECKED 114 FILES | n/a | no |
+| 2026-11-08 23:10 | b609404 + Task 3 diff | `sh tools/run_tests.sh` | CASES 571, CHECKS 136880, FAILURES 0 | 0 | TESTS PASSED 136880 | n/a | no |
+| 2026-11-08 23:11 | b609404 + Task 3 diff | `sh tools/run_lint.sh` / `run_warnings.sh` | 116 files | 0 / 0 | WARNINGS CHECKED 116 FILES | n/a | no |
+| 2026-11-08 23:12 | b609404 + Task 3 diff | `sh tools/run_netplay.sh match` | n/a | 0 | match terminal tick 8400; NETPLAY PASSED match | n/a | no |
 
 ## Task 1 RED
 
@@ -95,3 +98,11 @@ Baseline facts for later tasks:
 - SS3 does not prove "summed": Ashfall teams [1,2,3,4], chosen [1,4,0,0] gives [1,4,7,5]; max-of-nearest gives [1,4,7,2].
 - SS6 pins only an 8-start map; draw sequence for 3/6-start maps unpinned.
 - No guard for more slots than starts or an off-map chosen seat (unreachable tonight).
+
+## Task 3 RED
+
+Parse-level RED only: with the new tests and no production code, `run_tests.sh` exit 1 with `Parse Error: Too many arguments for "create()" call. Expected at most 4 but received 5.` and `Static function "with_starts()" not found in base "res://scripts/simulation/map_data.gd"`. A stub-level run (so SK-S1 could fail by assertion) did not compile either (unused-parameter warnings are errors), so the SK-S1 assertion line was never observed failing.
+
+### Task 3 review (Opus, APPROVE)
+- RED gap closed by reviewer: mutant with `if false:` around with_starts fails all 3 SK-S1 checks, both SK-S3 checks and SK-S4 ("diagonal: 74.0").
+- Minors: bot wave `_rally` untested; off-map starts in create push_error then crash in MapData.create({}) (add `return null`); repeated seats / length != 2 unguarded; SK-S1 checks unit and building as one bool.

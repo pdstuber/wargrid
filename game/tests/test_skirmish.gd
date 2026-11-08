@@ -10,9 +10,15 @@ const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const SeatSim = preload("res://scripts/net/seat_sim.gd")
 const Client = preload("res://scripts/net/headless_client.gd")
 const Lockstep = preload("res://scripts/net/lockstep.gd")
+const MapData = preload("res://scripts/simulation/map_data.gd")
+const StartSpots = preload("res://scripts/simulation/start_spots.gd")
+const StateHash = preload("res://scripts/simulation/state_hash.gd")
+
+const ASHFALL := "res://data/maps/ashfall.json"
+const CHOSEN: Array[int] = [5, 1]
 
 func cases() -> Array[Callable]:
-	return [test_skirmish_initial_state, test_roster_production, test_bot_cycles_unit_list, test_bot_reads_seat_faction, test_bot_plays_china, test_bot_plays_frc, test_bot_builds_tunnel_hub_never_enters, test_bot_keeps_one_builder_six_gatherers, test_bot_leaves_rebuild_alone, test_opponent_pays_and_retries, test_opponent_attack_policy, test_opponent_defends_base, test_defence_skips_busy_units, test_bot_ignores_contained_units, test_match_lifecycle, test_restart_state, test_bot_state_survives_seat_wrapper, test_headless_client_rejects_unknown_faction]
+	return [test_skirmish_initial_state, test_roster_production, test_bot_cycles_unit_list, test_bot_reads_seat_faction, test_bot_plays_china, test_bot_plays_frc, test_bot_builds_tunnel_hub_never_enters, test_bot_keeps_one_builder_six_gatherers, test_bot_leaves_rebuild_alone, test_opponent_pays_and_retries, test_opponent_attack_policy, test_opponent_defends_base, test_defence_skips_busy_units, test_bot_ignores_contained_units, test_match_lifecycle, test_restart_state, test_bot_state_survives_seat_wrapper, test_headless_client_rejects_unknown_faction, test_chosen_starts_become_bases, test_no_starts_leaves_default_map, test_bot_builds_on_chosen_start, test_seeded_diagonal_on_broken_crown]
 
 func _owned(items: Array, player: int) -> Array:
 	return items.filter(func(item: Dictionary) -> bool: return item.owner == player)
@@ -479,4 +485,59 @@ func test_headless_client_rejects_unknown_faction(runner) -> bool:
 	client._args = {"faction": "gla"}
 	runner.check(client._faction_error().contains("'gla'") and client._faction_error().contains("usa"), "SK21 an unknown --faction names the value and the valid ones: %s" % client._faction_error())
 	client.free()
+	return true
+
+func _chosen_sim():
+	return Skirmish.create(true, "ai", {1: "usa", 2: "china"}, ASHFALL, CHOSEN)
+
+func _base_ok(sim, ashfall: Dictionary, player: int, seat: int, faction: String) -> bool:
+	var cell := MapData.start_cell(ashfall, seat)
+	var building: String = Registry.faction(faction).start_building
+	var state: Dictionary = sim.snapshot()
+	var unit_ok: bool = state.entities.any(func(e: Dictionary) -> bool: return e.owner == player and e.position == [cell.x + 0.5, cell.y + 0.5])
+	var slot := MapData.slot(ashfall, seat, building)
+	var building_ok: bool = state.buildings.any(func(b: Dictionary) -> bool: return b.owner == player and b.kind == building and b.origin == [slot.x, slot.y])
+	return unit_ok and building_ok
+
+func test_chosen_starts_become_bases(runner) -> bool:
+	var ashfall := MapData.load(ASHFALL)
+	var sim = _chosen_sim()
+	runner.check(_base_ok(sim, ashfall, 1, 5, "usa"), "SK-S1 player 1's start building is on Ashfall seat 5")
+	runner.check(_base_ok(sim, ashfall, 2, 1, "china"), "SK-S1 player 2's start building is on Ashfall seat 1")
+	runner.check(MapData.start_cell(sim.map_data(), 1) == MapData.start_cell(ashfall, 5), "SK-S1 the camera start cell is seat 5's")
+	return true
+
+func test_no_starts_leaves_default_map(runner) -> bool:
+	var a = Skirmish.create(true, "ai", Registry.Factions.DEFAULT_SKIRMISH, Skirmish.MAP_PATH)
+	var b = Skirmish.create(true, "ai", Registry.Factions.DEFAULT_SKIRMISH, Skirmish.MAP_PATH, [] as Array[int])
+	runner.check(StateHash.digest(a.snapshot()) == StateHash.digest(b.snapshot()), "SK-S2 empty starts keep the state hash")
+	runner.check(is_same(a.map_data(), b.map_data()), "SK-S2 empty starts reuse the cached map")
+	return true
+
+func test_bot_builds_on_chosen_start(runner) -> bool:
+	var ashfall := MapData.load(ASHFALL)
+	var sim = _chosen_sim()
+	var players: Array[int] = [1, 2]
+	while sim.tick() < 900:
+		Skirmish.issue_opponents(sim, players)
+		sim.step()
+	var first_usa: String = Skirmish.build_order("usa")[0]
+	var first_china: String = Skirmish.build_order("china")[0]
+	var state: Dictionary = sim.snapshot()
+	var usa_slot := MapData.slot(ashfall, 5, first_usa)
+	var china_slot := MapData.slot(ashfall, 1, first_china)
+	runner.check(state.buildings.any(func(b: Dictionary) -> bool: return b.owner == 1 and b.kind == first_usa and b.origin == [usa_slot.x, usa_slot.y]), "SK-S3 player 1's bot builds on seat 5's slot")
+	runner.check(state.buildings.any(func(b: Dictionary) -> bool: return b.owner == 2 and b.kind == first_china and b.origin == [china_slot.x, china_slot.y]), "SK-S3 player 2's bot builds on seat 1's slot")
+	return true
+
+func test_seeded_diagonal_on_broken_crown(runner) -> bool:
+	var path := "res://data/maps/broken_crown.json"
+	var crown := MapData.load(path)
+	var teams: Array[int] = [1, 2]
+	var chosen: Array[int] = [0, 0]
+	var seats := StartSpots.assign(crown, 7, teams, chosen)
+	var sim = Skirmish.create(true, "ai", Registry.Factions.DEFAULT_SKIRMISH, path, seats)
+	var a := MapData.start_cell(sim.map_data(), 1)
+	var b := MapData.start_cell(sim.map_data(), 2)
+	runner.check(absf(Vector2(a).distance_to(Vector2(b)) - 97.8) <= 0.1, "SK-S4 a seeded 1v1 on Broken Crown is diagonal: %s" % Vector2(a).distance_to(Vector2(b)))
 	return true
