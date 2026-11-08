@@ -4,6 +4,7 @@ extends RefCounted
 const Director = preload("res://scripts/presentation/sound_director.gd")
 const Cues = preload("res://scripts/presentation/sound_cues.gd")
 const Player = preload("res://scripts/presentation/sound_player.gd")
+const AudioSettings = preload("res://scripts/presentation/audio_settings.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const Shared = preload("res://scripts/simulation/definitions/shared.gd")
 const SkirmishScene = preload("res://scenes/skirmish.tscn")
@@ -333,6 +334,7 @@ func test_scenes_boot_with_sound(runner) -> bool:
 	return true
 
 func test_bus_layout(runner) -> bool:
+	AudioSettings.apply(AudioSettings.DEFAULTS)
 	for bus in ["Music", "Effects", "Voice"]:
 		var index: int = AudioServer.get_bus_index(bus)
 		runner.check(index > 0 and is_zero_approx(AudioServer.get_bus_volume_db(index) - (-6.0 if bus == "Effects" else 0.0)) and AudioServer.get_bus_send(index) == &"Master", "SD23 bus %s at its trim level sending to Master" % bus)

@@ -5,13 +5,13 @@ Handoff: [sound-spike-prompt.txt](../sound-spike-prompt.txt). Plan: [sound spike
 ```text
 Resume record (updated 2026-11-08)
 Branch / base commit / working-tree state: spike-sound / base main 893332f / uncommitted fixes on 3126722 (Gate B review findings)
-Last green task / next incomplete task: Task 6 committed as 3126722; Gate B review findings 1-10 fixed (uncommitted) / Task 6 Step 5 (Gate B windowed run, needs user approval), then Step 6 closure
+Last green task / next incomplete task: Task 6 + Gate B fixes + cannon/Effects trims committed (HEAD 8520781); Task 7 Steps 1, 2 and the Step 3 headless and rendered runs done (uncommitted) / Task 7 Step 4 (web check) and Step 5 (playtest) need the user; Step 6 /ponytail-review, push and CI need approval
 Changed paths since last commit: game/scripts/online_main.gd, game/scripts/presentation/sound_director.gd, sound_player.gd, game/tests/test_announcer.gd, test_audio_settings.gd, test_online_scene.gd, docs/reference/sound-spike.md, the sound spike spec Goals line, this file
 Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh (with traces), CASES 558 CHECKS 136835 FAILURES 0, exit 0, TESTS PASSED; lint exit 0; warnings exit 0 (114 files); netplay match PASSED tick 8400; traces in $SOUND_WORK/traces/t6b MATCHED against base (replay, economy, combat 1200; team 100; s1 281)
 Known red case or blocker: none. Open: Gate B Step 5 (windowed) and Step 6 (closure). Unverified: panned-camera listener position and voice A/B by ear
 Approved decisions, pre-authorizations used, deferred gates: Gate S passed (user, 2026-11-08); local commits after green checkpoints pre-authorized; no push, merge, window, install or fly without approval; Gate A passed (Max Rate off; MacLeod kept); Gate B and exit pending
 Usage so far (python3 tools/session_usage.py <session files>): not recorded
-Next exact action: Gate B windowed run executed, verdicts pending from user (see "Gate B windowed run"), then Step 6
+Next exact action: user: web check (Step 4) and playtest (Step 5); then /ponytail-review, approval to commit and push, CI and compare_local_traces (Step 6). See "Task 7" below
 ```
 
 ## Baseline and trace checks
@@ -94,3 +94,15 @@ Rendered benchmark, 2026-11-08, `sh tools/run_game.sh res://scenes/movement_benc
 | horde | 0.989 / 11.11 / 19.231 / 26.278 | 9.395 | 239 | reported, not gated; ledger 3.40-3.86 earlier, this run is about 3x higher with cumulative lag 0.75 ticks (not explained; load 2.0 from other sessions; reported, not loosened) |
 
 Performance ledger not edited.
+
+## Task 7 (headless and rendered parts)
+
+2026-11-08, tree: working tree on `spike-sound` at 8520781 plus uncommitted: `release.yml` extras gains `game/audio/CREDITS.md`; `game/tests/test_sound.gd` SD23 calls `AudioSettings.apply(DEFAULTS)` itself (it relied on an earlier case having applied; no isolated mutation run, the suite is sharded); `movement_benchmark.gd` `--sound` mode.
+
+- Step 1: actionlint v1.7.12 exit 0, no output; `python3 tools/test_package_release.py` 6 tests OK.
+- Step 2: trace check into `$SOUND_WORK/traces/t7`: suite CASES 559 CHECKS 136840 FAILURES 0 (with traces), TESTS PASSED, exit 0; netplay `match` PASSED tick 8400; replay, economy, combat MATCHED 1200; team MATCHED 100; netplay s1 MATCHED 281. Without trace vars, after the `--sound` edit: CASES 559 CHECKS 136833 FAILURES 0, TESTS PASSED, exit 0. Lint exit 0; warnings exit 0 (114 files); python checks exit 0.
+- `--sound` mode: `-- --sound` starts at the horde layout, adds `SoundPlayer(1)` with real rules, `collect_step` after each step, `update` per frame inside the sample window, prints `RENDERED SOUND cues=<n> update_p95_ms=<x>`, fails when cues == 0. No separate red test (benchmark scene, not in the suite); the cues==0 failure path was not exercised.
+- `sh tools/run_benchmark.sh` alone (no godot running; uptime 1.46 start, 1.25 end after waiting for load < 1.5): exit 0; BENCHMARK PASSED 2, COMBAT BENCHMARK PASSED 10, LOCKSTEP PASSED 1 (p99 0.066 ms, limit 0.6), every BUDGET line PASS. Headless open tick p95 0.682 / p99 0.84 ms, dense 0.671 / 0.88.
+- Rendered `sh tools/run_game.sh res://scenes/movement_benchmark.tscn` (window, sound on, 1280x720, vsync=off, load 1.52 at start, 2.35 at end), RENDERED BENCHMARK PASSED 4, frame p50 / p95 / p99 / max ms: open 0.364 / 0.635 / 3.254 / 8.388; dense 0.591 / 1.929 / 3.645 / 9.884; ashfall 0.829 / 2.725 / 3.893 / 14.526 (guard 3.3 pass); horde 0.84 / 5.766 / 8.239 / 21.215, tick p95 4.95 ms, draw calls p95 238. Earlier Gate B row (load 2.0): open 1.818, dense 1.974, ashfall 2.594, horde 11.11. Horde 5.766 is above the ledger's 3.40-3.86 and below the loaded 11.11: part load, part not explained; reported, not loosened (horde has no gate).
+- Rendered `-- --sound` (horde only, load 1.99 start, 2.61 end): exit 0, `RENDERED SOUND cues=1437 update_p95_ms=0.292`; frame p50 / p95 / p99 / max 1.129 / 6.094 / 9.265 / 19.613 ms, tick p95 4.741 (against 5.766 frame p95 without sound in the run above: +0.33 ms, within run-to-run noise at this load). `.pck` growth from Task 3 (1,138,288 to 12,938,240 bytes, Max Rate off). Ledger row not written (not edited by instruction).
+- Not done: Step 4 web check, Step 5 playtest, Step 6.

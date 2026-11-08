@@ -5,15 +5,22 @@ const Stats = preload("res://scripts/debug/timing_stats.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
 const CombatWorkload = preload("res://scripts/debug/combat_workload.gd")
+const SoundPlayer = preload("res://scripts/presentation/sound_player.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 # New with the ashfall layout (R2): worst of six rendered runs 3.02 ms plus about 50%. No ceiling exists for the other layouts.
 const ASHFALL_FRAME_P95_MS: float = 3.3
 const LAYOUTS: Array[String] = ["open", "dense", "ashfall", "horde"]
 # `-- --profile` adds profiling zones and a third, 196x196 combat leg (spike-performance only).
 var _profile: bool = OS.get_cmdline_user_args().has("--profile")
+# `-- --sound` runs only the horde layout with a SoundPlayer and reports its cost.
+var _sound_mode: bool = OS.get_cmdline_user_args().has("--sound")
+var _sound: SoundPlayer
+var _sound_state: Dictionary = {}
+var _sound_cues: int = 0
+var _sound_times := PackedFloat64Array()
 var _large: bool = false
 var _simulation: Simulation
-var _layout_index: int = 0
+var _layout_index: int = 3 if OS.get_cmdline_user_args().has("--sound") else 0
 var _layout_started: int
 var _sample_started: int = 0
 var _last_frame: int = 0
@@ -54,6 +61,11 @@ func _begin_layout() -> void:
 	_horde_marked_ticks = 0
 	if _layout_name() == "horde":
 		_simulation = CombatWorkload.create("horde_render")
+		if _sound_mode and _sound == null:
+			_sound = SoundPlayer.new(1)
+			add_child(_sound)
+		_sound_cues = 0
+		_sound_times.clear()
 		for unit: Dictionary in _simulation.snapshot().entities:
 			if unit.owner == 1: _horde_start[unit.id] = unit.position
 	else:
@@ -122,6 +134,10 @@ func _physics_process(_delta: float) -> void:
 
 func _process(_delta: float) -> void:
 	var now: int = Time.get_ticks_usec()
+	if _sound != null and _sample_started > 0 and not _sampling_done and not _sound_state.is_empty():
+		_sound.update(_sound_state)
+		_sound_cues += _sound.last_requests().size()
+		_sound_times.append((Time.get_ticks_usec() - now) / 1000.0)
 	if _sample_started == 0 and now - _layout_started >= 10000000:
 		_sample_started = now
 		_window_started = now
@@ -177,6 +193,9 @@ func _horde_tick() -> void:
 	var started: int = Time.get_ticks_usec()
 	_simulation.step()
 	var state: Dictionary = _simulation.snapshot()
+	if _sound != null:
+		_sound.collect_step(state.tick, _simulation.combat_events(), _simulation.command_results())
+		_sound_state = state
 	var no_selection: Array[int] = []
 	_view.set_state(state, no_selection)
 	_status.text = "horde | %s | tick %d | Esc: quit" % ["draining" if _sampling_done else ("sampling" if _sample_started > 0 else "warmup"), state.tick]
@@ -199,6 +218,11 @@ func _finish_horde(state: Dictionary) -> void:
 		_fail("Rendered horde workload drew no horde marks or no unit moved")
 		return
 	print("RENDERED COMPLETE horde horde_mark_peak=", _horde_peak, " marked_ticks=", _horde_marked_ticks, " of ", _sample_ticks, " units_moved=", moved)
+	if _sound != null:
+		if _sound_cues == 0:
+			_fail("RENDERED SOUND cues=0")
+			return
+		print("RENDERED SOUND cues=", _sound_cues, " update_p95_ms=", Stats.summary(_sound_times).p95)
 	print("RENDERED BENCHMARK PASSED 4")
 	if _profile:
 		_begin_large()

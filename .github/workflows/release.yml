@@ -56,7 +56,7 @@ jobs:
           test -s build/release/GODOT_LICENSES.txt
       - name: Package desktop zips
         run: |
-          extras=(LICENSE game/data/maps/NOTICE.md build/release/GODOT_LICENSES.txt)
+          extras=(LICENSE game/data/maps/NOTICE.md game/audio/CREDITS.md build/release/GODOT_LICENSES.txt)
           source="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/tree/$GITHUB_REF_NAME"
           python3 tools/package_release.py linux build/release/linux "release/Wargrid-$VERSION-linux.zip" "$source" "${extras[@]}"
           python3 tools/package_release.py windows build/release/windows "release/Wargrid-$VERSION-windows.zip" "$source" "${extras[@]}"
