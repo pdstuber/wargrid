@@ -124,7 +124,7 @@ Metrics: Prometheus format on a second port, `:9091/metrics` (rooms, seats, join
 
 ### Hosting
 
-fly.io, region `fra`, one shared-cpu-1x 256 MB machine that suspends when idle. Rooms live in memory, so deploy exactly one machine (`--ha=false`; `fly machine list` must show one). The app name stays `wargrid-relay-jvm` (fly apps cannot be renamed) although it now runs the Go relay.
+fly.io, region `fra`, one shared-cpu-1x 256 MB machine that suspends when idle. Rooms live in memory, so deploy exactly one machine (`--ha=false`; `fly machine list` must show one). App `wargrid-relay` behind `wss://relay.pdstuber.dev/ws` since 2026-11-08 (CNAME at Namecheap, Let's Encrypt cert issued by fly). The old app `wargrid-relay-jvm` (named before the Go port; fly apps cannot be renamed) still serves v0.6.0 clients and is removed after the next release.
 
 Status: Go relay deployed at `wss://wargrid-relay-jvm.fly.dev/ws` (2026-11-05):
 - Deploy took 54 s; image 3.6 MB.
@@ -132,6 +132,7 @@ Status: Go relay deployed at `wss://wargrid-relay-jvm.fly.dev/ws` (2026-11-05):
 - Cold start after a stop 1.3–1.8 s; resume after a suspend 0.33–0.51 s.
 - Remote `run_netplay.sh match` PASSED.
 - Redeployed 2026-11-05 with shutdown drain and crash isolation (`58d13f2`); log shows `relay started … drain=3.5s`, probe `RELAY WELCOME` 1837 ms (cold start). A live drain on fly is not yet observed.
+- 2026-11-08: deployed with metrics as `wargrid-relay`; `https://relay.pdstuber.dev/health` ok, probe `RELAY WELCOME 77`.
 
 Capacity: a shared vCPU's 6.25 % baseline holds about one 3v3 room ([relay scaling](docs/reference/relay-scaling.md#flyio-vs-railway-measured-2026-11-0405)).
 
@@ -142,9 +143,9 @@ Without the allowances, list prices ([pricing](https://fly.io/pricing.md)) are $
 The bill itself was not read.
 
 ```sh
-fly deploy relay -c $PWD/relay/fly.toml -a wargrid-relay-jvm --dockerfile $PWD/relay/Dockerfile --ha=false
-godot --headless --path game -- --probe-relay wss://wargrid-relay-jvm.fly.dev/ws   # prints RELAY WELCOME <ms>
-WARGRID_RELAY_URL=wss://wargrid-relay-jvm.fly.dev/ws WARGRID_MATCH_WAIT=600 sh tools/run_netplay.sh match
+fly deploy relay -c $PWD/relay/fly.toml -a wargrid-relay --dockerfile $PWD/relay/Dockerfile --ha=false
+godot --headless --path game -- --probe-relay wss://relay.pdstuber.dev/ws   # prints RELAY WELCOME <ms>
+WARGRID_RELAY_URL=wss://relay.pdstuber.dev/ws WARGRID_MATCH_WAIT=600 sh tools/run_netplay.sh match
 ```
 
 ## Browser build
@@ -166,7 +167,7 @@ A pushed tag `v<version>` runs [`release.yml`](.github/workflows/release.yml) (p
 
 1. Set `config/version` in `game/project.godot` to `<version>`, commit, push. The tag must equal `v` plus that value: the relay only lets clients with equal versions share a room.
 2. Push the tag. The full CI workflow runs on that commit, then Linux, Windows, macOS and Web are exported and packaged.
-3. Approve the `production` Environment. The job deploys the relay (`wargrid-relay-jvm`), checks `/health`, deploys the web build (`wargrid-web`), checks `/health`, then publishes the three desktop zips as a GitHub Release.
+3. Approve the `production` Environment. The job deploys the relay (`wargrid-relay`), checks `/health`, deploys the web build (`wargrid-web`), checks `/health`, then publishes the three desktop zips as a GitHub Release.
 4. Bump `config/version` on `main` to the next `-dev` version (`0.8.0-dev`), so local and test builds stay out of production rooms.
 
 A prerelease tag (`v0.7.0-rc.1`) skips both fly deploys and publishes a GitHub prerelease only. A relay deploy ends matches in progress, so release when nobody is playing. Builds are unsigned: on macOS 15 and later open System Settings > Privacy & Security > Open Anyway after the first blocked start (or run `xattr -dr com.apple.quarantine Wargrid.app` once); Windows SmartScreen needs More info, Run anyway. Each zip's `README.txt` says so and links the source for its tag. Re-running a failed release redeploys both fly apps, which ends live matches again.

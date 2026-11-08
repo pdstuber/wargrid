@@ -45,7 +45,7 @@ tooltip_text = "Opponent faction (offline only)"
 
 [node name="RelayUrl" type="LineEdit" parent="Center/Box"]
 layout_mode = 2
-text = "wss://wargrid-relay-jvm.fly.dev/ws"
+text = "wss://relay.pdstuber.dev/ws"
 placeholder_text = "Relay URL"
 
 [node name="Create" type="Button" parent="Center/Box"]
