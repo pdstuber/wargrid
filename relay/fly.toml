@@ -1,4 +1,4 @@
-app = "wargrid-relay-jvm"
+app = "wargrid-relay"
 primary_region = "fra"
 
 [http_service]
@@ -14,6 +14,10 @@ primary_region = "fra"
     method = "GET"
     timeout = "5s"
     path = "/health"
+
+[metrics]
+  port = 9091
+  path = "/metrics"
 
 [[vm]]
   size = "shared-cpu-1x"

@@ -120,6 +120,8 @@ Spike knobs, all off by default: `WARGRID_SEATS` (seats per room), `WARGRID_BATC
 
 Shutdown: on SIGINT (fly's default `kill_signal`) or SIGTERM the relay stops accepting connections, closes lobbies that have not started, lets started matches run for `WARGRID_DRAIN_MS` (default 3500; plus 1 s close grace stays under fly's default 5 s `kill_timeout`), then closes the rest; every room logs `MATCH END`. A second signal exits immediately. Hour-long matches do not survive a deploy; that drain is M9 ([relay scaling](docs/reference/relay-scaling.md)).
 
+Metrics: Prometheus format on a second port, `:9091/metrics` (rooms, seats, joins by result, matches, match duration, frames, rejects, crashes, plus Go runtime and process metrics); a taken port only logs a warning. Not public: fly's managed Prometheus scrapes it via `[metrics]` in `relay/fly.toml` and keeps about 15 days. Dashboard: import `relay/grafana-dashboard.json` in [fly-metrics.net](https://fly-metrics.net) (Dashboards → New → Import), pick the Prometheus data source. Logs: one line per connection open/close, room created, seat joined, match start and end; no client IPs.
+
 ### Hosting
 
 fly.io, region `fra`, one shared-cpu-1x 256 MB machine that suspends when idle. Rooms live in memory, so deploy exactly one machine (`--ha=false`; `fly machine list` must show one). The app name stays `wargrid-relay-jvm` (fly apps cannot be renamed) although it now runs the Go relay.
