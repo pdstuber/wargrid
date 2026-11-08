@@ -3,7 +3,7 @@
 **Version:** 0.4
 
 **Date:** 2026-11-02
-**Status:** Design specification; M0–M2 implemented; M3 headless implementation and cross-OS CI verified; positive user playtest reported; detailed visible coverage and retail parity pending; rendered benchmark measured on the development machine only, low-end budgets tracked in the [performance ledger](docs/reference/performance.md). [README](README.md) owns current verification status.
+**Status:** Design specification; M0–M2 implemented; M3 headless implementation and cross-OS CI verified; positive user playtest reported; detailed visible coverage and retail parity pending; rendered benchmark measured on the development machine only, low-end budgets tracked in the [performance ledger](docs/reference/performance.md). The [development notes](docs/development.md) own current verification status.
 
 **Working title:** Wargrid
 
@@ -448,7 +448,7 @@ Each pull request / agent change must:
 5. Store test results, failing fixture IDs and useful command/event traces as artifacts.
 6. Track performance regression measurements separately rather than making flaky elapsed-time thresholds mandatory from the first week.
 
-Configure push, pull-request and manual triggers. Pin one engine version in README and CI, verify its archive checksum before installing, and set a job timeout. M2 extends the Godot job to a Linux/Windows/macOS matrix with a dependent replay comparison job, per [M2 task 0](docs/superpowers/plans/2026-11-01-m2-groups.md). No engine comparisons or release/signing setup.
+Configure push, pull-request and manual triggers. Pin one engine version in the development notes and CI, verify its archive checksum before installing, and set a job timeout. M2 extends the Godot job to a Linux/Windows/macOS matrix with a dependent replay comparison job, per [M2 task 0](docs/superpowers/plans/2026-11-01-m2-groups.md). No engine comparisons or release/signing setup.
 
 **AI acceptance rule:** A coding agent must not say “implemented” without reporting test command, test counts/results and any missing parity evidence. A rendered screenshot is supplemental evidence only.
 
@@ -838,7 +838,7 @@ Keep `game/.godot/`, build output, local environment files, temporary generated 
 
 ### Agent operating rules
 
-[AGENTS.md](AGENTS.md) owns project-specific workflow instructions. [README.md](README.md) records current implementation status and verified commands; planned commands remain explicitly labeled until implemented and verified. Keep both aligned with this blueprint without duplicating its mechanic specifications.
+[AGENTS.md](AGENTS.md) owns project-specific workflow instructions. The [development notes](docs/development.md) record current implementation status and verified commands; planned commands remain explicitly labeled until implemented and verified. Keep both aligned with this blueprint without duplicating its mechanic specifications.
 
 ---
 

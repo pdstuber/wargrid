@@ -13,7 +13,7 @@ Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh 
 Known red case or blocker: none; deferred minors listed below
 Approved decisions, pre-authorizations used, deferred gates: plan Decisions (user, 2026-11-06); final review (Opus, fresh context) found 0 critical, 2 important (both fixed) and 9 minor (1 raised to important and fixed, 8 deferred below)
 Usage so far: not recorded
-Next exact action: none for R1; later releases follow README > Release
+Next exact action: none for R1; later releases follow [development notes > Release](../development.md#release)
 ```
 
 ## Task 0: pre-publication history scan (2026-11-06, all refs, tree ed48b2e)

@@ -29,6 +29,6 @@ Learnings from the Dry Wells session:
 - Rendered checks open a window: ask me first and batch them. I often run my own benchmarks: before starting Godot, check `ps` for my processes and ask; killing processes is blocked by the permission classifier, so pause your agents instead of killing.
 - Subagents: give each one a brief file plus a shared instructions file instead of pasting context; require a RED run (one implementer skipped it). A derived constant in a new test may be corrected only with a derivation; behavioural expectations never.
 - main moves fast: before merging, check `git merge-tree --write-tree HEAD main` and whether main already carries part of your work (my terrain commit reached main through M7). Never commit, push or merge without asking; ask again for each new commit.
-- When done, update README status + "Start here", AGENTS.md, blueprint §7, docs/reference/more-maps.md, the performance ledger and session notes, and check every link.
+- When done, update docs/development.md status + "Start here" (README.md only if what players see changes), AGENTS.md, blueprint §7, docs/reference/more-maps.md, the performance ledger and session notes, and check every link.
 
 Done when: the launcher lets me pick Dry Wells, Broken Crown or Ashfall offline and online; both online clients are guaranteed the same map (or refuse to start); bots build, collect and attack on all three; suite, lint, warnings, python checks and run_benchmark.sh pass; a rendered check of each map (including panning across it) is in the ledger; pins and traces are unchanged.

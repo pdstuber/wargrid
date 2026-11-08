@@ -1,6 +1,6 @@
 # M5 Online Spike Implementation Plan
 
-> **Historical (2026-11-05):** `relay/` is now a Go port; the Kotlin/Ktor and Gradle steps below describe M5 as built. Current relay commands: [README](../../../README.md#relay).
+> **Historical (2026-11-05):** `relay/` is now a Go port; the Kotlin/Ktor and Gradle steps below describe M5 as built. Current relay commands: [development notes](../../development.md#relay).
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task (native, sequential, per `prompt.txt`). Steps use checkbox (`- [ ]`) syntax for tracking. Implementer: **Sonnet 5.5, medium effort** (user, 2026-11-04). Steps marked **Opus preflight** dispatch one read-only Opus subagent before the task starts (see "Opus preflight" below).
 
