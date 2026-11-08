@@ -650,8 +650,10 @@ static func _plan_retaliate(sim: Simulation, unit: Dictionary, held: Dictionary,
 		_plan_return(sim, unit, home, vision, grid_box)
 		return
 	var attacker: Dictionary = record(sim, combat.target_id)
-	var away: bool = Vector2(unit.position[0], unit.position[1]).distance_squared_to(home) > pow(vision * LEASH_UNIT, 2)
-	if attacker.is_empty() or away or sim._tick >= combat.until or distance_squared(home, attacker) > pow(vision * LEASH_ATTACKER, 2):
+	var leash: float = vision * LEASH_UNIT
+	var attacker_leash: float = vision * LEASH_ATTACKER
+	var away: bool = Vector2(unit.position[0], unit.position[1]).distance_squared_to(home) > leash * leash
+	if attacker.is_empty() or away or sim._tick >= combat.until or distance_squared(home, attacker) > attacker_leash * attacker_leash:
 		_go_home(sim, unit)
 		return
 	_pursue(sim, unit, held)
