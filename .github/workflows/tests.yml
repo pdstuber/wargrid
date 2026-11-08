@@ -47,8 +47,8 @@ jobs:
       WARGRID_COMBAT_REPLAY_TRACE: ${{ github.workspace }}/combat-${{ matrix.platform }}.tsv
       WARGRID_TEAM_REPLAY_TRACE: ${{ github.workspace }}/team-${{ matrix.platform }}.tsv
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           name: relay-bin
           path: relay-bin
@@ -60,7 +60,7 @@ jobs:
           sh tools/run_tests.sh 2>&1 | tee test-results.log
       - name: GDScript warnings as errors
         run: sh tools/run_warnings.sh
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ${{ matrix.templates }}
           key: export-templates-desktop-web-${{ runner.os }}-${{ env.TEMPLATES_SHA256 }}
@@ -94,7 +94,7 @@ jobs:
             NETPLAY_OUT="$root/netplay/$scenario" sh tools/run_netplay.sh $scenario 2>&1 | tee -a netplay.log
           done
           cp netplay/match/s1.tsv netplay-${{ matrix.platform }}.tsv
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: replay-${{ matrix.platform }}
           path: |
@@ -107,12 +107,12 @@ jobs:
             ${{ github.workspace }}/export-combat-${{ matrix.platform }}.tsv
             ${{ github.workspace }}/export-team-${{ matrix.platform }}.tsv
           if-no-files-found: error
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: netplay-${{ matrix.platform }}
           path: netplay-${{ matrix.platform }}.tsv
           if-no-files-found: error
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: matrix.platform == 'windows'
         with:
           name: wargrid-windows
@@ -121,12 +121,12 @@ jobs:
             build/game/windows/Wargrid.exe
             build/game/windows/Wargrid.console.exe
           if-no-files-found: error
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: logs-netplay-${{ matrix.platform }}
           path: netplay/
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: test-results-${{ matrix.platform }}
@@ -138,8 +138,8 @@ jobs:
       run:
         working-directory: relay
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: relay/go.mod
           cache-dependency-path: |
@@ -155,7 +155,7 @@ jobs:
       - name: Conformance
         working-directory: .
         run: WARGRID_RELAY_BIN=$PWD/relay-bin/relay-linux sh tools/run_conformance.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: relay-bin
           path: relay-bin/
@@ -165,8 +165,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: relay/go.mod
           cache-dependency-path: relay/go.sum
@@ -178,18 +178,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      - run: pip install gdtoolkit==4.5.0
+      - run: pip install -r tools/requirements-dev.txt
       - run: sh tools/run_lint.sh
   python-lint:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - run: pip install -r tools/requirements-dev.txt
@@ -201,7 +201,7 @@ jobs:
       ACTIONLINT_VERSION: 1.7.12
       ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install pinned actionlint and lint the workflows (shellcheck is preinstalled)
         run: |
           archive="$RUNNER_TEMP/actionlint.tar.gz"
@@ -214,8 +214,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           pattern: "{replay,netplay}-*"
           merge-multiple: true
