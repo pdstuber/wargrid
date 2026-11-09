@@ -17,38 +17,6 @@ from check_reference import load_archive
 DEFAULT_ARCHIVE = Path(os.environ.get("HOME", "")) / "CnC/run/Command & Conquer Generals - Zero Hour/INIZH.big"
 DEFAULT_OUT = Path(__file__).resolve().parent.parent / "build/zh_ini/inizh.jsonl"
 
-RADIUS_CURSORS = (
-    "A10Strike",
-    "Ambulance",
-    "Ambush",
-    "AnthraxBomb",
-    "Artillery",
-    "AttackContinueArea",
-    "AttackDamageArea",
-    "AttackScatterArea",
-    "CarpetBomb",
-    "ClearMines",
-    "ClusterMines",
-    "DaisyCutter",
-    "EMPPulse",
-    "EmergencyRepair",
-    "Frenzy",
-    "FriendlySpecialPower",
-    "GuardArea",
-    "HelixNapalmBomb",
-    "NapalmStrike",
-    "NuclearMissile",
-    "OffensiveSpecialPower",
-    "Paradrop",
-    "ParticleCannon",
-    "Radar",
-    "ScudStorm",
-    "SpectreGunship",
-    "SpyDrone",
-    "SpySatellite",
-    "SuperweaponScatterArea",
-)
-
 # Retail INI has no opener syntax; Zero Hour's parser knows nested blocks per key.
 OPENERS: frozenset[str] = frozenset(
     {
@@ -65,7 +33,6 @@ OPENERS: frozenset[str] = frozenset(
         "Prerequisites",
         "Turret",
         "AltTurret",
-        "Nugget",
         "StaticGameLOD",
         "DynamicGameLOD",
         "ParticleSystem",
@@ -95,15 +62,16 @@ OPENERS: frozenset[str] = frozenset(
         "SkillSet1",
         "SkillSet2",
         "SkirmishBuildList",
-        "ParticlesAttachedToAnimatedBones",
         "FireWeapon",
         "Attack",
-        *(f"{name}RadiusCursor" for name in RADIUS_CURSORS),
-        *(f"GeneralPersona{i}" for i in range(12)),
     }
 )
 # Keys that open a block only without "=": "Turret = Turret01" is a plain field.
-BARE_ONLY: frozenset[str] = frozenset({"Turret", "AltTurret", "ParticlesAttachedToAnimatedBones", "ParticleSystem"})
+BARE_ONLY: frozenset[str] = frozenset({"Turret", "AltTurret", "ParticleSystem", "Attack", "FireWeapon"})
+
+
+def _opens(key: str) -> bool:
+    return key in OPENERS or key.endswith("RadiusCursor") or key.startswith("GeneralPersona")
 
 
 class Field(TypedDict):
@@ -123,7 +91,11 @@ class Block(TypedDict):
     fields: list[Field]
 
 
-COMMENT = re.compile(r";|//")
+COMMENT = re.compile(r";|(?:^|(?<=\s))//")
+
+
+def _is_end(line: str) -> bool:
+    return line.split(None, 1)[0].lower() == "end"
 
 
 def _split(text: str) -> tuple[str, str]:
@@ -144,7 +116,7 @@ def parse_entry(entry: str, text: str) -> list[Block]:
             continue
         if current is None:
             key, value = _split(line)
-            if "=" in line and key not in OPENERS:
+            if "=" in line and not _opens(key):
                 field: Field = {"line": number, "key": key, "value": value, "path": []}
                 blocks.append(
                     {
@@ -157,7 +129,7 @@ def parse_entry(entry: str, text: str) -> list[Block]:
                         "fields": [field],
                     }
                 )
-            elif line.lower() == "end":
+            elif _is_end(line):
                 raise ValueError(f"{entry}:{number}: End outside any block")
             else:
                 tokens = line.replace("=", " ").split()
@@ -171,7 +143,7 @@ def parse_entry(entry: str, text: str) -> list[Block]:
                     "fields": [],
                 }
             continue
-        if line.lower() == "end":
+        if _is_end(line):
             if stack:
                 stack.pop()
             else:
@@ -180,7 +152,7 @@ def parse_entry(entry: str, text: str) -> list[Block]:
                 current = None
             continue
         key, value = _split(line)
-        if key in OPENERS and not (key in BARE_ONLY and "=" in line):
+        if _opens(key) and not (key in BARE_ONLY and "=" in line):
             stack.append(" ".join(line.split()))
         else:
             current["fields"].append({"line": number, "key": key, "value": value, "path": list(stack)})
@@ -192,13 +164,15 @@ def parse_entry(entry: str, text: str) -> list[Block]:
 def dump(files: dict[str, str], out: Path) -> tuple[int, int, int]:
     entries = blocks = fields = 0
     out.parent.mkdir(parents=True, exist_ok=True)
-    with out.open("w", encoding="utf-8") as handle:
+    partial = out.with_name(out.name + ".tmp")
+    with partial.open("w", encoding="utf-8") as handle:
         for name in sorted(n for n in files if n.endswith(".ini")):
             entries += 1
             for block in parse_entry(name, files[name]):
                 blocks += 1
                 fields += len(block["fields"])
                 handle.write(json.dumps(block, ensure_ascii=False) + "\n")
+    partial.replace(out)
     return entries, blocks, fields
 
 
@@ -214,7 +188,7 @@ def main(argv: list[str], out: TextIO = sys.stdout) -> int:
         files = load_archive(args.archive, check_hash=not args.skip_hash)
         entries, blocks, fields = dump(files, target)
     except (OSError, ValueError) as error:
-        target.unlink(missing_ok=True)
+        target.with_name(target.name + ".tmp").unlink(missing_ok=True)
         print(f"zh_ini: {error}", file=sys.stderr)
         return 1
     print(f"ZH_INI entries={entries} blocks={blocks} fields={fields} out={target}", file=out)

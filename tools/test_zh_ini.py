@@ -1,6 +1,5 @@
 import io
 import json
-import os
 import sys
 import tempfile
 import unittest
@@ -27,11 +26,18 @@ End ; closing comment
 Reskin Beta Alpha
 End
 """
-REAL_ARCHIVE = Path(os.environ["HOME"]) / "CnC/run/Command & Conquer Generals - Zero Hour/INIZH.big"
+REAL_ARCHIVE = zh_ini.DEFAULT_ARCHIVE
 
 
-def parse(text: str) -> list[zh_ini.Block]:
-    with mock.patch.object(zh_ini, "OPENERS", frozenset({"Module"})):
+# Unindented lines inside a block: `Key Value` fields without "=" and nested bare ParticleSystem openers.
+UNINDENTED_IN_BLOCK = {"OptionsButtonDisabled", "BuddyButtonDisabled", "BeaconButtonDisabled", "ParticleSystem"}
+
+
+def parse(text: str, bare_only: frozenset[str] = frozenset()) -> list[zh_ini.Block]:
+    with (
+        mock.patch.object(zh_ini, "OPENERS", frozenset({"Module"})),
+        mock.patch.object(zh_ini, "BARE_ONLY", bare_only),
+    ):
         return zh_ini.parse_entry(ENTRY, text)
 
 
@@ -55,9 +61,25 @@ class ParseTest(unittest.TestCase):
         )
         self.assertEqual([(f["key"], f["value"], f["line"]) for f in gadget["fields"]], [("Size", "4", 10)])
 
-    def test_end_case_and_comment(self) -> None:
-        blocks = parse("A\n  X = 1\nEND\nB\n  Y = 2\nEnd ; done\n")
-        self.assertEqual([(b["kind"], b["end_line"]) for b in blocks], [("A", 3), ("B", 6)])
+    def test_end_with_trailing_token(self) -> None:
+        (block,) = parse("A\n  X = 1\nEnd Foo\n")
+        self.assertEqual(block["end_line"], 3)
+
+    def test_top_level_opener_key_value(self) -> None:
+        (block,) = parse("Module = Low\n  X = 1\nEnd\n")
+        self.assertEqual((block["kind"], block["name"], block["end_line"]), ("Module", "Low", 3))
+
+    def test_bare_only_with_equals_is_field(self) -> None:
+        (block,) = parse("A\n  Module = Foo\n  Y = 1\nEnd\n", frozenset({"Module"}))
+        self.assertEqual([(f["key"], f["path"]) for f in block["fields"]], [("Module", []), ("Y", [])])
+
+    def test_path_whitespace_collapsed(self) -> None:
+        (block,) = parse("A\n  Module   =   Spin   Tag\n    Rate = 3\n  End\nEnd\n")
+        self.assertEqual(block["fields"][0]["path"], ["Module = Spin Tag"])
+
+    def test_double_slash_inside_value_kept(self) -> None:
+        (block,) = parse("A\n  Url = http://x.y/z // note\nEnd\n")
+        self.assertEqual(block["fields"][0]["value"], "http://x.y/z")
 
     def test_unbalanced_raises(self) -> None:
         with self.assertRaisesRegex(ValueError, r"test\.ini.*2"):
@@ -96,9 +118,40 @@ class DumpTest(unittest.TestCase):
             self.assertTrue(stderr.getvalue())
             self.assertFalse(out.exists())
 
+    def test_failed_run_keeps_previous_dump(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "dump.jsonl"
+            out.write_text("old\n", encoding="utf-8")
+            archive = Path(tmp) / "x.big"
+            archive.write_bytes(big({ENTRY: "Widget A\n  X = 1\n"}))
+            with mock.patch.object(sys, "stderr", io.StringIO()):
+                code = zh_ini.main(["dump", str(archive), "--out", str(out), "--skip-hash"], io.StringIO())
+            self.assertEqual(code, 1)
+            self.assertEqual(out.read_text(encoding="utf-8"), "old\n")
+            self.assertFalse(out.with_name("dump.jsonl.tmp").exists())
+
 
 @unittest.skipUnless(REAL_ARCHIVE.exists(), "retail archive not present")
 class RealArchiveTest(unittest.TestCase):
+    def assert_column_zero_lines_start_blocks(
+        self, files: dict[str, str], parsed: dict[str, list[zh_ini.Block]]
+    ) -> None:
+        stray = []
+        for name, blocks in parsed.items():
+            starts = {b["line"] for b in blocks}
+            for number, raw in enumerate(files[name].splitlines(), 1):
+                tokens = raw.split()
+                if raw[:1].isspace() or not tokens or raw[0] in ";/" or "=" in raw:
+                    continue
+                if tokens[0].lower() != "end" and tokens[0] not in UNINDENTED_IN_BLOCK and number not in starts:
+                    stray.append((name, number))
+        self.assertEqual(stray, [])
+        for entry, kind, line in (
+            ("data\\ini\\soundeffects.ini", "AudioEvent", 19),
+            ("data\\ini\\object\\americavehicle.ini", "Object", 2057),
+        ):
+            self.assertIn((kind, line), {(b["kind"], b["line"]) for b in parsed[entry]})
+
     def test_real_archive(self) -> None:
         files = ref.load_archive(str(REAL_ARCHIVE))
         parsed = {name: zh_ini.parse_entry(name, text) for name, text in files.items() if name.endswith(".ini")}
@@ -120,6 +173,7 @@ class RealArchiveTest(unittest.TestCase):
         self.assertEqual(respawn["line"], 143)
         self.assertEqual(len(respawn["path"]), 1)
         self.assertTrue(respawn["path"][0].startswith("Behavior = RebuildHoleBehavior"))
+        self.assert_column_zero_lines_start_blocks(files, parsed)
         boxes = [f for f in find("data\\ini\\object\\civilianbuilding.ini", "StartingBoxes") if f["line"] == 406]
         self.assertEqual(len(boxes), 1)
         self.assertTrue(boxes[0]["value"].startswith("400"))
