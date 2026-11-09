@@ -55,7 +55,7 @@ Q7. Should infantry be drawn bigger than their real size? **A/B**
 Q8. Should tank turrets turn on their own toward their target?
    a) Yes, at a fixed turn rate — ZH default (TurretAI.cpp:178-181, about 60 deg/s)   b) No, the turret always faces the hull's direction
    Recommendation: a, because a turret tracking its target is the clearest "this tank is fighting that one" cue; it is drawing only, from the target already in the snapshot. Why it matters: small presentation state per unit, cleared on restart.
-   **Answered 2026-11-09: a, turrets turn toward their target at a fixed rate (drawing only).** Not checked: in ZH the turret must face the target before it fires, which would make turn rate a simulation rule; planning checks this.
+   **Answered 2026-11-09: a, turrets turn toward their target at a fixed rate (drawing only).** Checked 2026-11-09: in ZH the turret must be aligned in turn and pitch before the aim state hands over to firing (TurretAI.cpp:1169-1199; state machine :93-101), so turn rate is a gameplay rule there. Wargrid's M6 decision is "firing ignores heading (no turrets yet)" (blueprint M6), so the drawing-only answer stands until the user decides whether turret aiming joins the simulation (open question, 2026-11-09).
 
 Q9. How many detail levels, and when do they switch?
    a) One per existing zoom step: far at 0.5, normal at 1, close at 2   b) By measured on-screen size with hysteresis (art bible §9)   c) One drawing at every zoom
