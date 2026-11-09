@@ -159,6 +159,9 @@ Follow-up after the avoidance spike (user, 2026-11-09 evening; open questions fr
 - Round 2 is measured natively and in the browser (Firefox web bench, as round 1).
 - Steam Deck measurement by the user after round 2, only if round 2 passes the cap on the Mac.
 
+After round 2 (no variant met the cap; user, 2026-11-10):
+- Round 3 is a cost experiment on R1, no rule changes: trim the cheap path, merge the per-class grid fills, skip the grid for all-infantry, re-measure against r0 in the same interleave. Hard stop after one round: if it does not close the gap, the next step is a design brainstorm for a different structure (for example grids only near vehicles), not another experiment.
+
 ## Friend's playtest (reported by the user, 2026-11-08)
 
 Reported points, verbatim in substance: units in a building's footprint should move away when it is placed (as the friend remembers Zero Hour); queue buildings with Shift, and which Zero Hour keys to support; a USA bot on Dry Wells built only one Chinook and put its supply depot far from the boxes; defences such as the missile tower can be built anywhere (the friend thinks Zero Hour restricts this, maybe per faction); no way out after "Create match"; do dozers and workers auto-repair structures; the match code should be copy/pastable; can the camera move without arrow keys.
