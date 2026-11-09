@@ -20,7 +20,7 @@ Each panel carries an Optional label. These are proposals, not claims about exis
 2. Idle army count alongside idle builder count.
 3. Base-under-attack and unit-ready alert feed; arrow indicates camera-jump action.
 4. Global production/upgrade overview. Current example has active production and no upgrades; no new upgrade names invented.
-5. Hover tooltip: Medium Tank, cost 800, base build time 10 s, hotkey 2. “Base” distinguishes this from actual time during the displayed low-power state. Unit data: existing China definition has cost 800 and 300 ticks; ordering puts Medium Tank second in the factory menu.
+5. Hover tooltip: Medium Tank, cost 800, base build time 10 s, hotkey W (changed from 2 by Claude 2026-11-09: digits are control groups; production uses a letter grid, Q W E R ...). “Base” distinguishes this from actual time during the displayed low-power state. Unit data: existing China definition has cost 800 and 300 ticks; ordering puts Medium Tank second in the factory menu.
 6. Three-player allied team strip for 3v3: name, ownership color and connection status. “Ally 1” and “Ally 2” are sample name placeholders, not game character names.
 
 The factory is a pinned secondary context to show factory controls alongside the active twelve-unit army selection. This is an additional layout proposal, not an established selection contract. Pinning should never redirect A/G/S away from the primary army selection. If pinning is rejected, use the same dock for separate army/factory selection states.

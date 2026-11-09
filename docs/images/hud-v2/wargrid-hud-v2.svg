@@ -967,7 +967,7 @@
       <text x="881" y="949" fill="#E7EDEF" font-size="13" font-weight="700" text-anchor="start">Tank</text>
       <text x="844" y="978" fill="#E7EDEF" font-size="15" font-weight="700" text-anchor="start">800</text>
       <rect x="940" y="967" width="21" height="18" rx="2" fill="#101C22" />
-      <text x="950" y="981" fill="#29C8B8" font-size="12" font-weight="700" text-anchor="middle">1</text>
+      <text x="950" y="981" fill="#29C8B8" font-size="12" font-weight="700" text-anchor="middle">Q</text>
       <rect x="982" y="907" width="139" height="84" rx="5" fill="#1C2E36" stroke="#29C8B8" stroke-width="1" />
       <g transform="translate(1007 939) scale(1.25)">
         <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
@@ -986,7 +986,7 @@
       <text x="1031" y="949" fill="#E7EDEF" font-size="13" font-weight="700" text-anchor="start">Tank</text>
       <text x="994" y="978" fill="#E7EDEF" font-size="15" font-weight="700" text-anchor="start">800</text>
       <rect x="1090" y="967" width="21" height="18" rx="2" fill="#101C22" />
-      <text x="1100" y="981" fill="#29C8B8" font-size="12" font-weight="700" text-anchor="middle">2</text>
+      <text x="1100" y="981" fill="#29C8B8" font-size="12" font-weight="700" text-anchor="middle">W</text>
       <text x="832" y="1023" fill="#A6B6BC" font-size="11" font-weight="400" text-anchor="start">Building actions stay in this panel</text>
       <line x1="1139" y1="886" x2="1139" y2="1025" stroke="#65777E" stroke-width="1" />
       <text x="1158" y="895" fill="#A6B6BC" font-size="12" font-weight="700" text-anchor="start">PRODUCTION QUEUE</text>
@@ -1095,7 +1095,7 @@
       <text x="1176" y="741" fill="#A6B6BC" font-size="14" font-weight="400" text-anchor="start">Base build time</text>
       <text x="1454" y="741" fill="#E7EDEF" font-size="14" font-weight="700" text-anchor="end">10 s</text>
       <text x="1176" y="766" fill="#A6B6BC" font-size="14" font-weight="400" text-anchor="start">Hotkey</text>
-      <text x="1454" y="766" fill="#29C8B8" font-size="14" font-weight="700" text-anchor="end">2</text>
+      <text x="1454" y="766" fill="#29C8B8" font-size="14" font-weight="700" text-anchor="end">W</text>
     </g>
   </g>
 </svg>
