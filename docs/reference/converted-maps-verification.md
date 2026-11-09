@@ -5,7 +5,7 @@ Plan: [converted maps playable plan](../superpowers/plans/2026-11-08-converted-m
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-09, final-review fixes applied, uncommitted)
+Resume record (updated 2026-11-09, final checks green on 9ed2331; docs-only edits uncommitted)
 Branch / base commit / working-tree state: converted-maps / f1747db / morning fixes and final-review fixes uncommitted (more-maps sweep table regenerated, blueprint, development, relay-stack-spike, this file, run_team_match.sh comment, test_online_scene.gd N19 labels)
 Implemented: Tasks 1, 2, 3, 3b, 3c, 4, 5, 6, 6b, 7, 8, 9, 10 (committed through 026f2b2); final-review fixes (uncommitted)
 Verified on 882f182 plus the uncommitted re-pin: suite 600 / 137167 / 0 failures, TESTS PASSED, run_team_match.sh 0, run_netplay match PASSED (tick 9024), lint 0, warnings see Morning fixes re-pin section; credits fixes (answers 11, 12) on top: suite 604 / 137289 / 0, lint 0, warnings 120 files 0, python checks 0 (see Morning fixes credits); test gaps and replay fields (answers 13, 15) on top: suite 609 / 137297 / 0, lint 0, warnings 120 files 0, netplay match, maps, map-mismatch, perturb PASSED (see Morning fixes test gaps); credits test gaps and seed home on top: suite 609 / 137307 / 0, lint 0, warnings 120 files 0, run_netplay match tick 9024 and perturb PASSED (see Morning fixes credits gaps and seed home); report-field gaps on top: suite 609 / 137307 / 0, lint 0, warnings 120 files 0, run_netplay perturb and match PASSED (see Morning fixes report-field gaps)
@@ -14,7 +14,8 @@ Pending: user items in the plan's "Left for the user" (relay deploy, push and CI
 Known red case or blocker: none; wave-fix pins and Fm1 re-pinned (uncommitted); ashfall bot matches slower with the answer-20 retarget (see Morning fixes)
 Approved decisions, pre-authorizations used, deferred gates: none new
 Usage so far: not run
-Next exact action: user reviews the uncommitted diff, then commit approval
+Final checks (9ed2331): all green, see Final checks 2026-11-09; docs updated for Fm1 green, wave fix, conformance 41, match tick 9024
+Next exact action: user reviews the uncommitted docs diff, then commit approval; then push, CI, relay deploy, playtest
 Final-review fixes: sweep table in more-maps regenerated from t8-sweep.log (pairs lost their second value) and its judgement corrected (Dry Wells usa,usa is a cap, not a loss; range of first damage excludes frc,frc); Ashfall attack check (open, M8); blueprint status names Fm1; development.md entry above; relay-stack-spike eleven scenarios; N19 labels; run_team_match.sh waiver pointer restored; go test and golangci-lint rows lose the sh prefix
 ```
 
@@ -326,3 +327,8 @@ Rows: tree `fdb81c4` + Task 6 diff. `run_tests.sh` `CASES 585 CHECKS 136975 FAIL
 - 1: `run_netplay.sh perturb` Python check asserts `map == "skirmish"`, int `seed`, `starts == []`. RED (dropped `report.merge(...)` in `_write_logs`, log `m-gaps-red1.log`): `KeyError: 'map'`, `NETPLAY FAILED perturb`. Restored: PASSED.
 - 2: SK22 now runs `_replay_oracle` itself (subclass no-ops `_exit`, new `--oracle-ticks` arg bounds the loop; empty replay log). RED (`_replay_oracle` using `Skirmish.create(true,"human",{})`, log `m-gaps-red2.log`): `FAIL: SK22 ... seat 1 ... want seat 4`, seat 2 `want seat 8`, `FAILURES 2`. 3: `_oracle_sim` calls `_map_id()`.
 - Rows: uncommitted tree on `f1747db`. `run_tests.sh` `CASES 609 CHECKS 137307 FAILURES 0`, `TESTS PASSED 137307`, exit 0; lint exit 0; warnings `WARNINGS CHECKED 120 FILES`, exit 0; `run_netplay.sh perturb` PASSED, `match` PASSED (`match terminal tick 9024`). Logs `m-gaps-*.log`.
+
+## Final checks 2026-11-09 (tree `9ed2331`, docs-only edits uncommitted)
+- Rows, one at a time, logs `wargrid-overnight-work/logs/m-final-*.log`: `run_tests.sh` `CASES 609 CHECKS 137307 FAILURES 0`, `TESTS PASSED 137307`, exit 0; `run_lint.sh` exit 0; `run_warnings.sh` `WARNINGS CHECKED 120 FILES`, exit 0; `run_python_checks.sh` exit 0 (32 source files); `relay/` `go test -count=1 -race ./...` ok, exit 0; `golangci-lint run` 0 issues; `run_conformance.sh` `CONFORMANCE PASSED 41`, exit 0.
+- `run_netplay.sh` all exit 0 `NETPLAY PASSED`: match (terminal tick 9024), kill, stall, silent, spike, perturb, version, relay-down, relay-term, maps, map-mismatch. `run_team_match.sh` exit 0 (`TEAM MATCH cap tick=45000 winner=null units_peak=261`).
+- `run_benchmark.sh` alone, exit 0, load 1.17 start / 1.14 end: `BENCHMARK PASSED 2`, `COMBAT BENCHMARK PASSED 10`, `LOCKSTEP BENCHMARK PASSED 1`; exceeded and recorded in the ledger: combat open p95 1.857, hordes300 p95 2.855 (budget 1.82).
