@@ -1,0 +1,372 @@
+{
+  "version": 1,
+  "source": "Wargrid art-direction interview, 2026-11-08",
+  "questions": [
+    {
+      "n": 1,
+      "heading": "The overall aesthetic",
+      "ask": "Which overall aesthetic should Wargrid pursue, rather than replacing the original primitive graphics with traditional pixel sprites?",
+      "selected": "High-contrast flat geometric abstraction inspired by Space Invaders; the contrast from the early C image is valuable, but its faux-detailed/pixel-art look is not.",
+      "exact_user": "You said we should not replace them with pixel art, but above all three are pixel art. I was thinking more about space invaders and rectangles, circles and triangles. That being said what I like about your screenshot C is the high contrast. It dies go in the right direction",
+      "options": [
+        [
+          "A",
+          "Precision diagram — crisp, flat, abstract and functional."
+        ],
+        [
+          "B",
+          "Geometric diorama — chunky shapes, subtle depth, tactile and playful."
+        ],
+        [
+          "C",
+          "Neon tactical — dark, futuristic, glowy and digital."
+        ],
+        [
+          "Hybrid",
+          "B + A readability + selective C effects (the assistant’s *initial* preference, superseded)."
+        ]
+      ],
+      "rationale": "The user challenged the initial image direction: all three felt too much like pixel/low-poly art. The revised north star is deliberately primitive rectangles, circles, triangles and lines. Keep C’s high contrast, not its visual complexity.",
+      "images": [
+        [
+          "Original A/B/C concept triptych (unaltered generated image)",
+          "original-generated-images/q01_initial_abc_concept_triptych.png"
+        ],
+        [
+          "A original pixels (crop)",
+          "original-generated-images/q01_a_crop.png"
+        ],
+        [
+          "B original pixels (crop)",
+          "original-generated-images/q01_b_crop.png"
+        ],
+        [
+          "C original pixels (crop)",
+          "original-generated-images/q01_c_crop.png"
+        ]
+      ]
+    },
+    {
+      "n": 2,
+      "heading": "How abstract should the units be?",
+      "ask": "How should simple rectangles, circles, triangles and lines convey recognizable roles?",
+      "selected": "B — Functional icons made from simple primitives.",
+      "exact_user": "For Wargrid art direction question 2, I choose B: functional icons made from simple primitives. Continue the interview.",
+      "options": [
+        [
+          "A",
+          "Pure symbols — as few components as possible, almost arcade-like."
+        ],
+        [
+          "B",
+          "Functional icons — recognizable tracks, turrets, blades and machinery from simple primitives."
+        ],
+        [
+          "C",
+          "Adaptive abstraction — pure symbols at far zoom; functional icons at normal gameplay zoom."
+        ]
+      ],
+      "rationale": "Role clarity matters more than decorative fidelity. At normal gameplay zoom a tank must read as a tank, and a bulldozer as a bulldozer, without labels.",
+      "images": [
+        [
+          "Revised flat geometric battlefield (unaltered generated image)",
+          "original-generated-images/q02_revised_flat_vector_concept.png"
+        ],
+        [
+          "Primitive silhouette vocabulary (original PNG)",
+          "original-generated-images/q02_primitive_silhouette_sheet.png"
+        ],
+        [
+          "Primitive silhouette vocabulary (original SVG)",
+          "original-generated-images/q02_primitive_silhouette_sheet.svg"
+        ]
+      ]
+    },
+    {
+      "n": 3,
+      "heading": "Filled shapes or outlines?",
+      "ask": "How should geometric primitives be rendered?",
+      "selected": "C — Hybrid filled geometric shapes with selective outlines and accents.",
+      "exact_user": "For Wargrid art direction question 3, I choose C — Hybrid filled geometric shapes with selective outlines and accents. Continue the interview.",
+      "options": [
+        [
+          "A",
+          "Solid shapes — bold filled forms, strongly reminiscent of classic arcade graphics."
+        ],
+        [
+          "B",
+          "Outlines — wireframe-like tactical display, highly abstract."
+        ],
+        [
+          "C",
+          "Hybrid — filled shapes with selected outlines, highlights and contrasting accents."
+        ]
+      ],
+      "rationale": "Mass is conveyed by fills; an outline is added only where it clarifies depth, silhouette, selection or meaning."
+    },
+    {
+      "n": 4,
+      "heading": "How much personality should the geometry have?",
+      "ask": "How much mechanical motion and exaggeration should accompany each action?",
+      "selected": "B — Responsive and punchy animations.",
+      "exact_user": "For Wargrid art direction question 4, I choose B — Responsive and punchy animations. Continue the interview.",
+      "options": [
+        [
+          "A",
+          "Mechanical and restrained — rigid, realistic rotation and recoil."
+        ],
+        [
+          "B",
+          "Responsive and punchy — recoil, small hull reactions, impacts, debris and bursts."
+        ],
+        [
+          "C",
+          "Exaggerated arcade — bounce, squash/stretch, huge reactions."
+        ],
+        [
+          "Mix",
+          "Mechanical units, exaggerated effects — unchosen option."
+        ]
+      ],
+      "rationale": "Movement and impact should be felt without turning large-scale combat into a bouncy cartoon.",
+      "extra": "Between questions 4 and 5, the user additionally said: “The game should still be isometric, so i guess at some point they will have to look a bit 3d. Or could it work flat? I suppose that will look strange”. This led directly to Question 5."
+    },
+    {
+      "n": 5,
+      "heading": "How much depth should our shapes have?",
+      "ask": "How should flat primitives communicate physical depth within the existing isometric perspective?",
+      "selected": "B — Minimalist 2.5D with simple top and side faces.",
+      "exact_user": "For Wargrid art direction question 5, I choose B — Minimalist 2.5D with simple top and side faces. Continue the interview.",
+      "options": [
+        [
+          "A",
+          "Flat symbols — objects could resemble board markers painted on terrain."
+        ],
+        [
+          "B",
+          "Minimalist 2.5D — a top and one/two darker side faces, no elaborate 3D art."
+        ],
+        [
+          "C",
+          "Detailed geometric 3D — additional surfaces, mechanical details, more realistic depth."
+        ],
+        [
+          "Mix",
+          "Flat infantry with 2.5D vehicles and buildings — unchosen option."
+        ]
+      ],
+      "rationale": "Use cheap, deliberate extrusion to give objects presence, not conventional 3D meshes or textured sprites."
+    },
+    {
+      "n": 6,
+      "heading": "What should the terrain look like?",
+      "ask": "What should the battlefield do visually while still identifying different maps?",
+      "selected": "C — Muted biomes with bright units and effects.",
+      "exact_user": "For Wargrid art direction question 6, I choose C — Muted biomes with bright units and effects. Continue the interview.",
+      "options": [
+        [
+          "A",
+          "Tactical board — near-black terrain, subtle grid, abstract command display."
+        ],
+        [
+          "B",
+          "Colored biomes — saturated sand, greenery, snow and other natural colors."
+        ],
+        [
+          "C",
+          "Muted biomes — recognizable but desaturated/darker desert, forest, snow etc."
+        ],
+        [
+          "D",
+          "Mostly tactical board with distinct geometric environmental features — unchosen option."
+        ]
+      ],
+      "rationale": "Terrain should have location identity without stealing contrast from player colors or combat effects. Prominent full-map grids are unnecessary."
+    },
+    {
+      "n": 7,
+      "heading": "What should combat effects look like?",
+      "ask": "How much geometry, fragmentation, smoke, glow and spectacle belong in explosions?",
+      "selected": "D — Hybrid: geometric destruction for normal combat and cinematic geometric effects for powerful attacks.",
+      "exact_user": "For Wargrid art direction question 7, I choose D — Hybrid: geometric destruction for normal combat and cinematic geometric effects for powerful attacks. Continue the interview.",
+      "options": [
+        [
+          "A",
+          "Tactical — expanding circles, lines and small precise flashes."
+        ],
+        [
+          "B",
+          "Geometric destruction — angular bright polygons, chunks of debris, simple smoke."
+        ],
+        [
+          "C",
+          "Geometric spectacle — large shockwaves, powerful flashes, glow and layered particles."
+        ],
+        [
+          "D",
+          "B for ordinary combat, C only for particularly powerful attacks (chosen hybrid)."
+        ]
+      ],
+      "rationale": "Everyday fighting stays legible and relatively inexpensive; superweapons and major events may briefly be spectacular. Scale down redundant particles during heavy battles."
+    },
+    {
+      "n": 8,
+      "heading": "Should each faction have its own geometric language?",
+      "ask": "How should USA, China and FRC be identifiable while using the same geometric primitives?",
+      "selected": "B — Shared functions, faction-specific styling.",
+      "exact_user": "For Wargrid art direction question 8, I choose B — Shared functions, faction-specific styling. Continue the interview.",
+      "options": [
+        [
+          "A",
+          "Shared geometry with different colors — economical, limited faction identity."
+        ],
+        [
+          "B",
+          "Shared function silhouettes, different construction styles and proportions."
+        ],
+        [
+          "C",
+          "Completely distinct shape languages for each faction — recognizable but may hurt role readability."
+        ],
+        [
+          "D",
+          "Mostly B with radical differentiation for iconic objects — unchosen option."
+        ]
+      ],
+      "rationale": "Role → faction → owner: a tank reads as tank first, as USA/China/FRC second, then shows player color independently. The illustrative faction colors are examples, not mandated ownership colors."
+    },
+    {
+      "n": 9,
+      "heading": "How should buildings communicate their purpose?",
+      "ask": "Can a power plant and a war factory be recognizable from physical structure alone?",
+      "selected": "D — Functional building silhouettes with selective mechanical animations.",
+      "exact_user": "For Wargrid art direction question 9, I choose D — Functional building silhouettes with selective mechanical animations. Continue the interview.",
+      "options": [
+        [
+          "A",
+          "Symbolic buildings — box-shaped structures differentiated mainly with icons."
+        ],
+        [
+          "B",
+          "Functional silhouettes — distinct power-generator structures, factory doors, supply areas and so on."
+        ],
+        [
+          "C",
+          "Animated machinery — visibly rotating/pumping/opening components."
+        ],
+        [
+          "D",
+          "B + selective C: strong functional silhouette, purposeful animations (chosen hybrid)."
+        ]
+      ],
+      "rationale": "A factory should be recognizable in a still, then become lively when its door opens. A plant should have identifiable generators, then pulse when active.",
+      "special": "The original illustration compared a **power plant and war factory**, not separate A/B/C/D artwork. Only those two original object illustrations exist."
+    },
+    {
+      "n": 10,
+      "heading": "Lighting, shadows and glow",
+      "ask": "Should units feel like physical matte objects or luminous tactical holograms?",
+      "selected": "D — Matte and shaded objects with selective luminous components and effects.",
+      "exact_user": "For Wargrid art direction question 10, I choose D — Matte and shaded objects with selective luminous components and effects. Continue the interview.",
+      "options": [
+        [
+          "A",
+          "Pure graphic contrast — virtually no lighting and shadows."
+        ],
+        [
+          "B",
+          "Matte/shaded geometry — brighter tops, darker sides, shadows, minor highlights."
+        ],
+        [
+          "C",
+          "Luminous geometry — always-glowing outlines, rim lights and accents."
+        ],
+        [
+          "D",
+          "B with selective C — energy components, shots, selection and important effects glow."
+        ]
+      ],
+      "rationale": "Do not glow every hull edge; reserve strong luminance for communication and emphasis."
+    },
+    {
+      "n": 11,
+      "heading": "How should detail change when zooming out?",
+      "ask": "How do hundreds of units remain recognizable at smaller on-screen sizes?",
+      "selected": "B — Progressive simplification.",
+      "exact_user": "For Wargrid art direction question 11, I choose B — Progressive simplification. Continue the interview.",
+      "options": [
+        [
+          "A",
+          "Consistent geometry — same drawing at every zoom; detail simply disappears."
+        ],
+        [
+          "B",
+          "Progressive simplification — remove accents while preserving hull, turret, barrel, blade etc."
+        ],
+        [
+          "C",
+          "Tactical icon transition — switch to strategic icons at far zoom."
+        ],
+        [
+          "D",
+          "B plus optional separate tactical overview mode — unchosen option."
+        ]
+      ],
+      "rationale": "Role-defining structures are sacred. Outlines, minor highlights and tiny moving pieces are expendable; effects also scale with crowding."
+    },
+    {
+      "n": 12,
+      "heading": "How much player color should units have?",
+      "ask": "What portion of visible surfaces should show the owner color rather than neutral materials?",
+      "selected": "B — Balanced player-colored surfaces with neutral sides.",
+      "exact_user": "For Wargrid art direction question 12, I choose B — Balanced player-colored surfaces with neutral sides. Continue the interview.",
+      "options": [
+        [
+          "A",
+          "Full color — most of each unit uses the owner’s color."
+        ],
+        [
+          "B",
+          "Balanced — strong owner color on large upper-facing surfaces, darker neutral sides/machinery."
+        ],
+        [
+          "C",
+          "Color accents — neutral charcoal/steel machinery with small owner-color details."
+        ],
+        [
+          "D",
+          "B, but infantry and very small units with more ownership color — unchosen option."
+        ]
+      ],
+      "rationale": "Top-facing faction/ownership surfaces must be readable from the camera; avoid hiding color in thin edge strokes."
+    },
+    {
+      "n": 13,
+      "heading": "How polished should the simplicity feel?",
+      "ask": "Should Wargrid be raw arcade minimalism, refined primitives or high-production geometric spectacle?",
+      "selected": "B — Refined geometric minimalism.",
+      "exact_user": "For Wargrid art direction question 13, I choose B — Refined geometric minimalism. Please now create the complete AI-ready Wargrid art direction Markdown document and visual reference package based on our 13 decisions, with concrete Godot implementation guidance and milestone acceptance criteria.",
+      "options": [
+        [
+          "A",
+          "Raw arcade — ultra-minimal forms and almost no decorative treatment."
+        ],
+        [
+          "B",
+          "Refined geometry — deliberate proportions, consistent edges, subtle shadows and excellent timing."
+        ],
+        [
+          "C",
+          "Showpiece — more elaborate luminous layers, visual embellishment, intense effects."
+        ],
+        [
+          "D",
+          "B with some C spectacle for key moments — unchosen option."
+        ]
+      ],
+      "rationale": "Choose deliberate visual craftsmanship over decorative complexity. First perfect the readable machine made from a handful of shapes."
+    }
+  ],
+  "inline_diagrams": "Standalone SVG recreations of vector paths from original interactive question cards",
+  "original_generated_images": "Copied without alterations except clearly-labeled crops"
+}
