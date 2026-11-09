@@ -73,6 +73,13 @@ class ParseTest(unittest.TestCase):
         (block,) = parse("A\n  Module = Foo\n  Y = 1\nEnd\n", frozenset({"Module"}))
         self.assertEqual([(f["key"], f["path"]) for f in block["fields"]], [("Module", []), ("Y", [])])
 
+    def test_real_bare_only_keys_are_fields(self) -> None:
+        # Real sets, not patched: the real-archive test that also guards these skips in CI.
+        (block,) = zh_ini.parse_entry(ENTRY, "Weapon W\n  Attack = Slow\n  FireWeapon = Gun\n  Y = 1\nEnd\n")
+        self.assertEqual(
+            [(f["key"], f["path"]) for f in block["fields"]], [("Attack", []), ("FireWeapon", []), ("Y", [])]
+        )
+
     def test_path_whitespace_collapsed(self) -> None:
         (block,) = parse("A\n  Module   =   Spin   Tag\n    Rate = 3\n  End\nEnd\n")
         self.assertEqual(block["fields"][0]["path"], ["Module = Spin Tag"])
