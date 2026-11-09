@@ -651,7 +651,7 @@ Give the game a deliberate look instead of placeholder rectangles and text label
 
 ### M7.6 — Generals-style HUD (user, 2026-11-06; scope not designed)
 
-**User answers (2026-11-08):** queue of 9, minimap flash on attack, minimap free with the Command Center for now, blank at low power or without a radar provider; "keep formation" command considered here: [design answers](reference/design-answers-2026-11-08.md#hud-m76).
+**User answers (2026-11-08):** queue of 9, minimap flash on attack, minimap free with the Command Center for now, blank at low power or without a radar provider; "keep formation" command considered here; follow-ups 2026-11-09: selling (every building, 50 %, 3 s), Guard order, no selection limit, chevrons on all sides, map pings without text, health bars when selected or damaged: [design answers](reference/design-answers-2026-11-08.md#hud-m76).
 
 The interface, not the world graphics: a bottom control bar with minimap, command buttons with icons, build queue with progress, credits and power, selection info, laid out like Zero Hour's. Own art only (§12). The minimap lands here.
 

@@ -11,7 +11,7 @@ Researched questions for the user's design wizard: one short question at a time,
 | [next-m75-art-world.md](next-m75-art-world.md) | Art pass world: terrain, fog, effects (M7.5) | Q2-Q5, Q8, Q12 answered 2026-11-09; Q1, Q6, Q7, Q9-Q11, Q13 wait for the in-game art lab |
 | [next-batch-a.md](next-batch-a.md) | Ground batch A | answered 2026-11-09 (all Zero Hour defaults) |
 | [next-batch-b.md](next-batch-b.md) | Ground batch B | open |
-| [next-m76-hud.md](next-m76-hud.md) | HUD (M7.6) | open |
+| [next-m76-hud.md](next-m76-hud.md) | HUD (M7.6) | answered 2026-11-09 |
 | [next-m8-bot-economy.md](next-m8-bot-economy.md) | Bot economy (M8) | open |
 | [next-bot-attack-reach.md](next-bot-attack-reach.md) | Bot attack reach | open, partly overtaken by the 2026-11-09 wave fix |
 | [next-m81-styles.md](next-m81-styles.md) | Difficulty and play styles (M8.1) | open |
@@ -23,4 +23,4 @@ Researched questions for the user's design wizard: one short question at a time,
 | [playtest-controls.md](playtest-controls.md), [playtest-placement.md](playtest-placement.md) | Playtest follow-ups | answers in the design answers (friend's playtest, controls, repair); not checked question by question |
 | [avoidance-zh.md](avoidance-zh.md), [avoidance-other-engines.md](avoidance-other-engines.md), [avoidance-wargrid.md](avoidance-wargrid.md) | Unit avoidance research | answers in the design answers (unit avoidance scope and behaviour); spike on branch `spike-avoidance` |
 
-Next by milestone order: `next-m76-hud.md`; the remaining world questions wait for the in-game art lab.
+Next by milestone order: `next-batch-b.md` (M7.9 fog is answered); the remaining world questions wait for the in-game art lab.

@@ -37,6 +37,15 @@ Zero Hour defaults.
 - Production queue holds 9 entries per building (ProductionUpdate.cpp:109).
 - Minimap flashes where an off-screen unit is attacked (Radar.cpp:1171-1185), in addition to the existing announcer line.
 
+Follow-up answers (user, 2026-11-09; [next-m76-hud.md](../questions/next-m76-hud.md)):
+- Every building can be sold (`data\ini\commandset.ini:770`), for 50 % of its cost (`gamedata.ini:390`).
+- Selling takes 3 s while the building un-builds and can still be destroyed (BuildAssistant.cpp:177, 1499-1603); a "being sold" state blocks production and repair.
+- Health bars show for selected or damaged objects (Wargrid today, not Zero Hour's selected or hovered).
+- Veterancy chevrons show above every unit with a level, enemies included (Drawable.cpp:2807, 3797-3815; enemies inferred); bots may treat enemy veterancy as public information.
+- No selection limit (`data\ini\ingameui.ini:7`).
+- A Guard order: attack inside 1.8 x vision, chase to 2.2 x vision for up to 10 s, then return (`data\ini\default\aidata.ini:18-20`).
+- Map pings for teammates without text (against Zero Hour's 3 text beacons per player, `multiplayer.ini:37`); how many at once is not decided.
+
 ## Unit avoidance: scope
 
 - Re-pin every trace and pinned test once, at the end; no switch to turn avoidance off.

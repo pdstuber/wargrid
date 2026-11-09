@@ -11,6 +11,8 @@ Sources. **ZH src** = ~/projects/CnC_Generals_Zero_Hour @ 0a05454, paths under `
 - **source** Each player may place up to 3 map beacons (pings with text) visible to allies (`data\ini\multiplayer.ini:37`; beacon messages handled in GameLogic/System/GameLogicDispatch.cpp before :1783 "end beacon text").
 
 ## Questions
+**Answered 2026-11-09:** Q1-Q3 a (sell every building, 50 %, 3 s), Q4 b (selected or damaged, today), Q5 a, Q6 a, Q7 a, Q8 b (pings without text); recorded in the [design answers](../reference/design-answers-2026-11-08.md#hud-m76).
+
 Q1. Should players be able to sell their own buildings?
    a) Yes, every building has a Sell button — ZH default (commandset.ini:770)   b) No selling   c) Only non-production buildings
    Recommendation: a, because selling is a standard ZH escape valve and the HUD is the place for the button. Why it matters: a new command with same-tick cases against attack, capture and production.
