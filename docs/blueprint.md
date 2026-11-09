@@ -605,6 +605,8 @@ A pushed `v*` tag runs the full test suite on that commit, builds Linux, Windows
 
 **R1.2 — Release notes (user, 2026-11-08; not planned yet):** each GitHub Release says in players' words what changed since the last tag. `release.yml` uses `--generate-notes`, which lists merged pull requests; branches here are merged locally, so `v0.7.0` listed only a Dependabot bump and a compare link. The notes of `v0.6.0-rc.1` through `v0.8.0` were rewritten by hand on 2026-11-08.
 
+**R1.3 — Test relay (user, 2026-11-09; not planned yet):** a relay change should be tested on a test relay before it reaches production, as web builds already are (`wargrid-web-test`, which today shares the production relay by design: [test environment plan](superpowers/plans/2026-11-07-test-environment.md)). The protocol 2 deploy of 2026-11-09 goes straight to production as a one-off.
+
 ### M7.5 — Art pass (placement decided by the user 2026-11-05; scope proposed, not approved)
 
 Give the game a deliberate look instead of placeholder rectangles and text labels. Placed after ground batch A so most units are styled once, and before M8 so the bot playtests are played on the real look.
@@ -646,6 +648,8 @@ Stealth and detection, hacking, hijacking and capture: they need fog's visibilit
 
 **Stopgaps from the converted maps task (user, 2026-11-08):** Bot depot placement: the converter's slot near supplies is a stopgap (2026-11-08); M8 replaces it with the bot choosing the depot site near supplies itself, Zero Hour's buildBySupplies/findSupplyCenter (AIPlayer.cpp:1849-1960, 2180-2250). Bot collector counts per supply center (USA 2, China 3, FRC 5, user 2026-11-08, what human players do) are a stopgap; M8 revisits them, with stronger difficulty levels making increasingly optimal economic choices.
 
+**End-game income (user, 2026-11-09; placement not decided):** once the supply boxes run out, Zero Hour players live on secondary income built up earlier: USA Supply Drop Zone, China Internet Center with Hackers, GLA (Wargrid FRC) Black Market. Wargrid has none of these, so bots go broke and grind (Fm1 on `skirmish.json`: supply gone near tick 30,000, FRC wins only at 73,560; [converted maps verification](reference/converted-maps-verification.md)). Zero Hour's own skirmish bots build all three (`AIData.ini` in retail `INIZH.big`: `AmericaSupplyDropZone` :483, `ChinaInternetCenter` :620, `GLABlackMarket` :711; income amounts and timings not yet read). Today's plan has the Black Market in ground batch A and the Hacker in batch B; the Internet Center and the Supply Drop Zone are in no milestone yet (all buildings are wanted, see "Later"). To decide: where each lands so M8 bots can use them, and whether other end-game money sources are needed as well.
+
 **Deliberate departure from Zero Hour (user, 2026-11-05):** fairness and challenge over parity. Zero Hour has three difficulties (`GameDifficulty`: easy, normal, hard); Wargrid bots follow the fair-play rules in the [fair bots research](reference/fair-bots-research.md) (user-supplied input, partly unverified; read it with its status note). A bot plays by the same rules, sees only what its team could see, and is held to a human-plausible command budget. No reference bot is a fairness model: checked 2026-11-05, OpenRA's squad targeting ignores shroud and fog, and Zero-K CAI marks its own threat check `FIXME: … maphax` (details in the research note), so the invariance test below is the real gate.
 
 **Proposed scope (not approved), one full-strength fair bot:**
@@ -685,6 +689,8 @@ Lobby with slots, faction, team, bot difficulty and play style (layout candidate
 ### Later
 
 Aircraft (USA 4, China 2) with air combat; superweapons; more maps; campaign tooling. The three factions' full military rosters are a goal (user, 2026-11-06); Zero Hour generals' variants are not. Order beyond that by what play shows.
+
+**Every building and unit except superweapons (user, 2026-11-09):** the full roster includes all buildings, not only units; superweapons (Particle Cannon, Nuke Silo missile, Scud Storm) come later. The 2026-11-07 batch split classified units and their prerequisite buildings only, so these buildings are in no milestone yet (retail `commandset.ini` dozer and worker sets; [evidence](reference/m7-factions.md#batch-classification-config-2026-11-07)): USA Supply Drop Zone, Fire Base, Airfield; China Internet Center, Bunker, Speaker Tower, Airfield; FRC Stinger Site, Demo Trap. Placement not decided.
 
 ### 7.1 M0 implementation plan — stop before movement
 
