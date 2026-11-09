@@ -137,7 +137,7 @@ Follow-up after the avoidance spike (user, 2026-11-09 evening; open questions fr
 - Screenshots colour units by moving group, so crossings and who yielded are visible.
 - The overnight run of spike round 2 may open short-lived game windows for screenshots (no sound, closed by the run); this pre-approval covers that run only.
 - Round 2 continues on branch `spike-avoidance` (worktree `../wargrid-wt-avoid`), rebased onto current `main` first.
-- If round 2 still misses the cap: record the exceeded rows and what costs most, stop at the gate, never loosen; the user decides the next step (including whether to try the near-enough fallback).
+- If round 2 still misses the cap: record the exceeded rows and what costs most, never loosen. If the miss is on the movement rows, also measure the near-enough fallback as a separate variant next to the main one and report both; if only the horde row misses, report only (near-enough does not reduce bookkeeping cost). The user decides the next step (revised from "report only" after the user asked why not; 2026-11-09).
 - Round 2 is measured natively and in the browser (Firefox web bench, as round 1).
 - Steam Deck measurement by the user after round 2, only if round 2 passes the cap on the Mac.
 

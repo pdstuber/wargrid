@@ -4,7 +4,7 @@ NEXT EXACT ACTION (when invoked): if docs/reference/zh-ini-dump-verification.md 
 
 Process: follow docs/milestone-prompt.md "Unattended run". The coordinator reads only AGENTS.md, this file and the resume record; one fresh subagent per task, briefed with paths (the resume record and the plan task heading), returning at most ten lines (GREEN with counts, exit, marker and changed paths, or BLOCKED with question, options, recommendation). Models: Sonnet (medium) for both tasks; Opus (high) for the gate review, even when the coordinator runs on Sonnet. Local commits after green checkpoints are pre-authorized as in the milestone prompt; subagents never commit or push.
 
-State at handoff (2026-11-09, verify with git; a mismatch is a blocker): main clean and pushed at the commit that added this file and the plan; version 0.11.0-dev. The retail archive is at "$HOME/CnC/run/Command & Conquer Generals - Zero Hour/INIZH.big" (pinned hash checked by tools/check_reference.py load_archive).
+State at handoff (2026-11-09, verify with git; a mismatch is a blocker): main clean and pushed, at or after 03787f4 (the commit that added this file and the plan; later docs-only commits are expected); version 0.11.0-dev. The retail archive is at "$HOME/CnC/run/Command & Conquer Generals - Zero Hour/INIZH.big" (pinned hash checked by tools/check_reference.py load_archive).
 
 Read first (once): AGENTS.md; the blueprint section "Zero Hour data dump tool" (docs/blueprint.md §7); docs/superpowers/plans/2026-11-09-zh-ini-dump.md from the top through "File structure", then only the active task.
 

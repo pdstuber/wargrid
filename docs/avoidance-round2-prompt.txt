@@ -1,0 +1,30 @@
+Wargrid unit avoidance spike, round 2. Execution handoff (written 2026-11-09 late evening): reading this file does not authorize starting. It runs when docs/overnight-2026-11-09-prompt.txt reaches it, or when the user invokes it. Not a milestone: evidence only. No design decision, no merge, nothing on main.
+
+Goal: evidence whether Zero Hour-style yielding (round 1's approach A), refined by the user's round 2 decisions, fits the cost cap and finishes packed moves. Requirements: docs/reference/design-answers-2026-11-08.md, section "Unit avoidance: behaviour" including its follow-up "after the avoidance spike" (17 answers, 2026-11-09), plus "Unit avoidance: scope". Round 1 evidence and method: docs/reference/unit-avoidance-spike.md on branch spike-avoidance (read "Method and gates", "Recommendation", "What was NOT prototyped", "Open questions", "Reproduce").
+
+Setup:
+- Worktree ~/projects/wargrid-wt-avoid, branch spike-avoidance (4 local commits, base 07c3ab6). First rebase it onto current main (pre-authorized for this local, unpushed branch; on conflict stop and record). Never switch the branch of the main checkout. Local commits per experiment are pre-authorized; never push or merge.
+- AW2 = ~/projects/wargrid-overnight-work/avoidance/round2 (raw measurements, screenshots, scratch). Nothing from there goes into the repo. Round 1 raw data in ~/projects/wargrid-overnight-work/avoidance stays read-only.
+
+Models: an Opus (high) subagent first writes AW2/plan.md: per experiment the files touched, minimal mechanics, scenarios and exact measurements, derived from the decisions below. Sonnet (high) subagents implement one experiment each from it; an Opus (high) reviewer checks the final note against the measurements.
+
+Experiments (prototype quality; enough to measure cost and jams):
+R0. Baseline on the rebased main tree (main changed since round 1: converted maps, wave targeting): cost rows and jam harness as round 1.
+R1. Approach A refined, per the user's answers: within one cell of the destination ignore blockers (squeeze in), own reserved destination cells kept; last resort after 150 ticks of no progress towards the goal (not consecutive blocked ticks), then ignore blockers for 60 ticks; never give up an order while a path exists; speed matching in v1 (a faster unit behind a slower friend matches its speed, after 60 ticks blocked tries a way past); cut the fixed wrapper cost (no per-tick retry for blocked units, a cheaper infantry path); per-unit avoidance state included in the snapshot and the state hash (measure with it); crushing prototyped (a crusher moving into an ordinary enemy infantry cell kills it; heroes and allies never).
+R2. R1 plus round 1 B's "claim the next cell" only where R1's blocked-retry cost shows up (the user's chosen hypothesis). Skip R2 if R1 already meets the cap on every row with margin, and say so.
+R3 (conditional, user 2026-11-09). Only if the best of R1/R2 misses the cap on a movement row: the same plus "stop near enough when close and blocked", as a separate variant next to it. If only hordes300 misses, do not build R3.
+
+New scenarios in the harness: a synthetic layout with a 2-3 cell gap (groups through it both ways); the narrowest real passage on the three converted maps (find it with a script over the map data, record coordinates and width; if none is narrower than about 6 cells, say so); a mixed-owner scenario with tanks driving through an enemy infantry blob (crush counts and cost).
+
+Measurements (tree and `uptime` load at start and end of each):
+1. Cost, interleaved against R0 as round 1 (median of 3): movement open, movement dense, docks, hordes300; p95 and p99. Cap (user): +0.5 ms p95 on every 300-unit row, hordes300 included. Never loosen; report exceeded rows and what costs most.
+2. Jams: blocked over 150 ticks, last resorts, deadlocks (no progress 900 ticks), unfinished packed moves, given-up orders (must be 0), on all old and new scenarios.
+3. Determinism: identical traces on two runs, state hash included.
+4. Browser (user: yes): Web Bench export in Firefox as round 1, for R0 and each built variant.
+5. Screenshots (user: allowed tonight, windowed, no sound, close every window you open): units coloured by moving group; the narrow gap, the real passage and the mixed-owner scenario per built variant, saved under AW2/shots.
+6. Suite with each variant active: list every failing test with what behaviour changed and a proposed rewrite; do not change any test (the user decides per test before the milestone).
+Not measured here: Steam Deck (user, after round 2, only if a variant passes the cap on the Mac).
+
+Rules: one Godot process at a time; every suite/benchmark call with timeout 600000 and output to a file; scratch Godot scripts inside the worktree's game/ (untracked), quit() on every path; record and move on when blocked; questions go to the morning summary, never decided here. Still out of scope: column group moves, factory exit, building-placement move-away, aircraft, fog, keep formation.
+
+Output: a "Round 2" part appended to docs/reference/unit-avoidance-spike.md on spike-avoidance: per variant what was built (commit), cost table, jam table, determinism, browser numbers, screenshot paths, failing-test list with proposed rewrites; then comparison against the cap and round 1, a recommendation (a proposal), and the remaining open questions.

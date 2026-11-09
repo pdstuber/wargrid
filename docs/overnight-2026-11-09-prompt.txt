@@ -1,0 +1,13 @@
+Wargrid overnight run, 2026-11-09. Execution handoff: reading this file does not authorize starting. Start only when the user invokes it ("run docs/overnight-2026-11-09-prompt.txt").
+
+Queue, strictly one after the other (the avoidance timings need a quiet machine):
+1. docs/zh-ini-dump-prompt.txt (Zero Hour INI dump tool, branch zh-ini-dump in the main checkout). Run it through its exit gate (Opus gate review, /ponytail-review). At its gate do not wait for the user: record the gate result in its resume record and the morning summary, then continue with 2. Push and merge still wait for the user.
+2. docs/avoidance-round2-prompt.txt (unit avoidance spike round 2, worktree ~/projects/wargrid-wt-avoid). Start only after every process of step 1 has ended (`pgrep -fl 'godot|python3'` shows none of the run's own).
+
+Coordinator: follow docs/milestone-prompt.md "Unattended run" for both; the coordinator reads only AGENTS.md, this file, the active handoff and its resume record. Opus (high) for plans and reviews, Sonnet for implementation, as each handoff says.
+
+Pre-authorized for this run (user, 2026-11-09): local commits after green checkpoints on zh-ini-dump and spike-avoidance; rebasing spike-avoidance onto main; short-lived windowed screenshot runs for step 2 (no sound, closed by the run). Not authorized: push, merge, PR, deploy, changing main, loosening any budget or test.
+
+Questions: real choices only (see "Diagnose before asking" in the milestone prompt); otherwise record them for the morning summary and continue with the next item.
+
+Morning summary: final message plus ~/projects/wargrid-overnight-work/morning-summary-2026-11-10.md: per item status (gate reached / blocked where), commits per branch, the cap result per variant, open questions, and every process or window the run started and closed.
