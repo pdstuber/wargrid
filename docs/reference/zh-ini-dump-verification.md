@@ -4,12 +4,12 @@ Plan: [zh-ini dump plan](../superpowers/plans/2026-11-09-zh-ini-dump.md). Handof
 
 ```text
 Resume record (updated 2026-11-09, after gate-review fixes)
-Branch / base commit / working-tree state: zh-ini-dump / 39aeab6 (Tasks 1 and 2 committed) / gate-review fixes uncommitted (coordinator commits)
+Branch / base commit / working-tree state: zh-ini-dump / rebased onto main 1bc8392 (Tasks 1, 2 and the gate-review fixes committed: 0608070, d6ca541, 580402b) / clean
 Last green task / next incomplete task: Task 2 / none (stop gate: re-check of the fixes, then /ponytail-review)
-Changed paths since last commit: tools/zh_ini.py, tools/test_zh_ini.py, docs/reference/zh-ini-dump-verification.md, docs/superpowers/plans/2026-11-09-zh-ini-dump.md, docs/questions/RULES.md
-Last command / cases / checks / failures / exit / marker: python3 -m unittest discover -s tools -p 'test_*.py' (OK, exit 0); sh tools/run_python_checks.sh (ruff, mypy 34 files, exit 0)
+Changed paths since last commit: none
+Last command / cases / checks / failures / exit / marker: python3 -m unittest tools.test_zh_ini (13 tests, OK, exit 0) on the rebased tree; full sh tools/run_python_checks.sh not rerun (needs tools/.venv, deferred until the overnight benchmarks end)
 Known red case or blocker: none. Gate review FAIL on first pass at 39aeab6 (see Gate result)
-Approved decisions, pre-authorizations used, deferred gates: local commit after Task 2 pre-authorized; gate review and /ponytail-review pending; push and merge wait for the user
+Approved decisions, pre-authorizations used, deferred gates: user approved rebase onto main and merge into main on 2026-11-09; gate re-check of the fixes not done; push waits for the user
 Usage so far (python3 tools/session_usage.py <session files>): not measured
 Next exact action: commit the fixes with approval, then /ponytail-review, then stop
 ```

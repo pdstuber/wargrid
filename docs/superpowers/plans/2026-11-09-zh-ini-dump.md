@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3 standard library only; `unittest`; ruff and mypy via `sh tools/run_python_checks.sh`.
 
-**Spec:** [blueprint §7 "Zero Hour data dump tool"](../../blueprint.md#zero-hour-data-dump-tool-small-task-user-2026-11-09-before-ground-batch-a-planning-tool-done-ca7ad57-readers-pointed-2026-11-09) (user, 2026-11-09). Handoff: [docs/zh-ini-dump-prompt.txt](../../zh-ini-dump-prompt.txt). Resume record and evidence: `docs/reference/zh-ini-dump-verification.md` (created by Task 1).
+**Spec:** [blueprint §7 "Zero Hour data dump tool"](../../blueprint.md#zero-hour-data-dump-tool-small-task-user-2026-11-09-before-ground-batch-a-planning-tool-done-0608070-readers-pointed-2026-11-09) (user, 2026-11-09). Handoff: [docs/zh-ini-dump-prompt.txt](../../zh-ini-dump-prompt.txt). Resume record and evidence: `docs/reference/zh-ini-dump-verification.md` (created by Task 1).
 
 ## Global Constraints
 
