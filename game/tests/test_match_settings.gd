@@ -15,7 +15,7 @@ func test_names(runner) -> bool:
 
 func test_line_endings(runner) -> bool:
 	var original: String = MatchSettings.map_path("dry_wells")
-	var copy := "user://ms2_crlf.json"
+	var copy := "user://ms2_crlf-%d.json" % OS.get_process_id()
 	var file := FileAccess.open(copy, FileAccess.WRITE)
 	file.store_string(FileAccess.get_file_as_string(original).replace("\n", "\r\n"))
 	file.close()

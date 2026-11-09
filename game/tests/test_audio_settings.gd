@@ -7,20 +7,20 @@ const MusicPlayer = preload("res://scripts/presentation/music_player.gd")
 const PauseMenu = preload("res://scripts/presentation/pause_menu.gd")
 const Launcher = preload("res://scenes/launcher.tscn")
 const Skirmish = preload("res://scenes/skirmish.tscn")
-const SCRATCH := "user://test-settings.cfg"
 const REAL := "user://settings.cfg"
+var scratch: String = "user://test-settings-%d.cfg" % OS.get_process_id() # shards and worktrees share user://
 
 func cases() -> Array[Callable]:
 	return [test_settings_missing_and_corrupt, test_settings_round_trip, test_slider_sets_bus_and_saves, test_bus_levels, test_tests_use_scratch_settings, test_playlist_order_and_gap, test_menu_track_repeats, test_mute_toggle, test_mute_key_in_match, test_mute_key_in_launcher_and_text_field]
 
 func _begin() -> String:
 	var saved: String = AudioSettings.path
-	AudioSettings.path = SCRATCH
-	DirAccess.remove_absolute(SCRATCH)
+	AudioSettings.path = scratch
+	DirAccess.remove_absolute(scratch)
 	return saved
 
 func _end(saved: String) -> void:
-	DirAccess.remove_absolute(SCRATCH)
+	DirAccess.remove_absolute(scratch)
 	AudioSettings.path = saved
 	AudioSettings.apply(AudioSettings.DEFAULTS)
 	AudioServer.set_bus_mute(0, false)
@@ -28,7 +28,7 @@ func _end(saved: String) -> void:
 func _write(values: Dictionary) -> void:
 	var config := ConfigFile.new()
 	for key: String in values: config.set_value(AudioSettings.SECTION, key, values[key])
-	config.save(SCRATCH)
+	config.save(scratch)
 
 func test_settings_missing_and_corrupt(runner) -> bool:
 	var saved := _begin()
@@ -47,12 +47,12 @@ func test_settings_round_trip(runner) -> bool:
 	var config := ConfigFile.new()
 	config.set_value("audio", "other", 7)
 	config.set_value("video", "scale", 2)
-	config.save(SCRATCH)
+	config.save(scratch)
 	AudioSettings.save_volumes({"music": 0.25, "effects": 0.5, "voice": 0.75})
 	var volumes: Dictionary = AudioSettings.load_volumes()
 	runner.check(volumes.music == 0.25 and volumes.effects == 0.5 and volumes.voice == 0.75, "AS2 volumes load back, got %s" % [volumes])
 	config = ConfigFile.new()
-	config.load(SCRATCH)
+	config.load(scratch)
 	runner.check(config.get_value("audio", "other", 0) == 7 and config.get_value("video", "scale", 0) == 2, "AS2 unrelated keys and sections survive")
 	_end(saved)
 	return true
@@ -61,7 +61,7 @@ func test_slider_sets_bus_and_saves(runner) -> bool:
 	var saved := _begin()
 	var sliders := VolumeSliders.new()
 	runner.root.add_child(sliders)
-	runner.check(not FileAccess.file_exists(SCRATCH), "AS3 constructing sliders writes nothing")
+	runner.check(not FileAccess.file_exists(scratch), "AS3 constructing sliders writes nothing")
 	var index: int = AudioServer.get_bus_index("Music")
 	sliders.get_node("Music").value = 0.5
 	runner.check(absf(AudioServer.get_bus_volume_db(index) - linear_to_db(0.5)) < 0.01, "AS3 Music 0.5 sets the bus, got %s" % AudioServer.get_bus_volume_db(index))
@@ -133,7 +133,7 @@ func test_mute_toggle(runner) -> bool:
 	runner.check(AudioServer.is_bus_mute(0), "AS7 Mute button mutes Master")
 	mute.button_pressed = false
 	runner.check(not AudioServer.is_bus_mute(0), "AS7 second toggle restores Master")
-	runner.check(not FileAccess.file_exists(SCRATCH), "AS7 mute is not saved")
+	runner.check(not FileAccess.file_exists(scratch), "AS7 mute is not saved")
 	runner.check(AudioSettings.load_volumes().music == 1.0 and not AudioServer.is_bus_mute(AudioServer.get_bus_index("Music")), "AS7 slider values untouched")
 	sliders.free()
 	_end(saved)

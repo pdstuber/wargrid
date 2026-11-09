@@ -671,7 +671,7 @@ class OracleClient extends Client:
 		pass
 
 func test_replay_oracle_uses_match_map(runner) -> bool:
-	var log_path := "user://sk22_replay.log"
+	var log_path := "user://sk22_replay-%d.log" % OS.get_process_id()
 	FileAccess.open(log_path, FileAccess.WRITE).close()
 	var chosen := MatchSettings.starts("ashfall", 7)
 	var ashfall := MapData.load(ASHFALL)

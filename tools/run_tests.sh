@@ -4,23 +4,28 @@ log_dir=$(mktemp -d) || exit 1
 trap 'rm -rf "$log_dir"' EXIT HUP INT TERM
 engine=${GODOT_BIN:-godot}
 exe=${WARGRID_TEST_EXE:-} # an exported tests build runs the suite itself and needs no import
-if [ -z "$exe" ]; then
+stamp="$repo_root/game/.godot/wargrid-imported"
+stale() { [ ! -f "$stamp" ] || [ -n "$(find "$repo_root/game" -path "$repo_root/game/.godot" -prune -o -newer "$stamp" -print -quit)" ]; }
+if [ -z "$exe" ] && stale; then
+	mkdir -p "$repo_root/game/.godot" && touch "$stamp" # before the import, so an edit made during it still counts as newer
 	"$engine" --headless --path "$repo_root/game" --import >"$log_dir/import.log" 2>&1
 	code=$?
 	cat "$log_dir/import.log"
-	[ "$code" -eq 0 ] || exit 1
-	if grep -E 'ERROR:|SCRIPT ERROR:' "$log_dir/import.log"; then exit 1; fi
+	[ "$code" -eq 0 ] || { rm -f "$stamp"; exit 1; }
+	if grep -E 'ERROR:|SCRIPT ERROR:' "$log_dir/import.log"; then rm -f "$stamp"; exit 1; fi
 fi
+only=${WARGRID_TEST_ONLY:-}
 shards=${WARGRID_TEST_SHARDS:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1)}
 [ "$shards" -ge 1 ] 2>/dev/null || { echo "FAIL: WARGRID_TEST_SHARDS must be a number >= 1"; exit 1; }
 [ "$shards" -gt 4 ] && shards=4 # measured: 8 shards are no faster than 4, the slowest case bounds the run
+[ -n "$only" ] && shards=1 # a filtered run is short; one process boots fastest
 pids=""
 i=0
 while [ "$i" -lt "$shards" ]; do
 	if [ -n "$exe" ]; then
-		"$exe" --headless -- --shard="$i/$shards" >"$log_dir/tests.$i.log" 2>&1 &
+		"$exe" --headless -- --shard="$i/$shards" ${only:+"--only=$only"} >"$log_dir/tests.$i.log" 2>&1 &
 	else
-		"$engine" --headless --path "$repo_root/game" --script res://tests/run_tests.gd -- --shard="$i/$shards" >"$log_dir/tests.$i.log" 2>&1 &
+		"$engine" --headless --path "$repo_root/game" --script res://tests/run_tests.gd -- --shard="$i/$shards" ${only:+"--only=$only"} >"$log_dir/tests.$i.log" 2>&1 &
 	fi
 	pids="$pids $!"
 	i=$((i + 1))

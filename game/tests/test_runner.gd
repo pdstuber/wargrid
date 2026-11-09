@@ -4,7 +4,7 @@ extends RefCounted
 const Runner = preload("res://tests/run_tests.gd")
 
 func cases() -> Array[Callable]:
-	return [test_shards_cover_every_suite_once, test_no_shard_runs_everything, test_bad_shard_runs_nothing]
+	return [test_shards_cover_every_suite_once, test_no_shard_runs_everything, test_bad_shard_runs_nothing, test_only_filter]
 
 func test_shards_cover_every_suite_once(runner) -> bool:
 	var seen: Array[int] = []
@@ -22,4 +22,9 @@ func test_bad_shard_runs_nothing(runner) -> bool:
 	runner.check(Runner.shard(5, PackedStringArray(["--shard=2/2"])).is_empty(), "R3 index past count runs nothing")
 	runner.check(Runner.shard(5, PackedStringArray(["--shard=0/0"])).is_empty(), "R3 zero shards runs nothing")
 	runner.check(Runner.shard(5, PackedStringArray(["--shard=x"])).is_empty(), "R3 malformed shard runs nothing")
+	return true
+
+func test_only_filter(runner) -> bool:
+	runner.check(Runner.only_filter(PackedStringArray(["--shard=0/4", "--only=test_supply"])) == "test_supply", "R4 --only picks the filter text")
+	runner.check(Runner.only_filter(PackedStringArray(["--shard=0/4"])).is_empty(), "R4 no --only means no filter")
 	return true

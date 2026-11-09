@@ -33,24 +33,37 @@ static func shard(count: int, args: PackedStringArray) -> Array[int]:
 			picked.append(i)
 	return picked
 
+static func only_filter(args: PackedStringArray) -> String:
+	for arg in args:
+		if arg.begins_with("--only="):
+			return arg.trim_prefix("--only=")
+	return ""
+
 func _initialize() -> void:
 	_run.call_deferred()
 
 func _run() -> void:
-	AudioSettings.path = "user://test-settings.cfg" # a developer machine's real volumes must not reach the suite
+	AudioSettings.path = "user://test-settings-%d.cfg" % OS.get_process_id() # a developer machine's real volumes must not reach the suite
 	if current_scene != null: # exported builds also load the main scene (the launcher), whose UI swallows test clicks
 		current_scene.free()
-	create_timer(60.0).timeout.connect(_timeout)
+	create_timer(180.0).timeout.connect(_timeout) # a slow case on a host shared with other agents must not look hung
 	var suites: Array = [] # a Callable does not keep its RefCounted suite alive
 	var tests: Array[Callable] = []
+	var only: String = only_filter(OS.get_cmdline_user_args())
 	for suite_script in SUITES:
+		if not suite_script.can_instantiate():
+			print("FAIL: suite failed to load ", suite_script.resource_path)
+			quit(1)
+			return
 		var suite = suite_script.new()
 		suites.append(suite)
 		var selected: Array[Callable] = suite.cases()
 		if selected.is_empty():
 			failures += 1
 			print("FAIL: zero tests in suite")
-		tests.append_array(selected)
+		for test in selected:
+			if only.is_empty() or suite_script.resource_path.contains(only) or test.get_method().contains(only):
+				tests.append(test)
 	for i in shard(tests.size(), OS.get_cmdline_user_args()):
 		var test: Callable = tests[i]
 		_active_case = test.get_method()

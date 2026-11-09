@@ -158,6 +158,7 @@ class Game:
         while (f := self.call("/healthz")["frame"]) < target:
             if time.time() > deadline:
                 raise RuntimeError(f"no progress past frame {f} (wanted {target})")
+            time.sleep(0.005)  # the game needs the core more than this poll does
         assert f == target, f"stepped past frame {target} to {f}"
         self.frame = f
 

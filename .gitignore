@@ -8,3 +8,4 @@ __pycache__/
 relay/relay
 relay/relay.exe
 web/site/
+tools/.venv/
