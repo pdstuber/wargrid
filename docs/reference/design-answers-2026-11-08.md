@@ -122,6 +122,25 @@ Zero Hour defaults unless noted. Paths are under `GeneralsMD/Code/GameEngine/` (
 - "Keep formation" command (ZH Ctrl+F): later, with the M7.6 HUD, not in the avoidance milestone.
 - Aircraft do not take part in avoidance; ground units only.
 
+Follow-up after the avoidance spike (user, 2026-11-09 evening; open questions from the spike note on `spike-avoidance`, `docs/reference/unit-avoidance-spike.md`):
+- A unit within one cell of its destination ignores blockers and squeezes in; overlaps there are spread out afterwards (Zero Hour default, AIUpdate.cpp:1303-1311).
+- Each unit keeps its own reserved destination cell (today's rule) together with the squeeze-in rule; if packed moves still cannot finish within the cost cap, OpenRA-style "stop near enough when close and blocked" is the allowed fallback (user asked for its trade-offs first: cheaper, no fight for the last cells, but irregular end positions and a tail that can stop short).
+- The +0.5 ms cost cap applies to every 300-unit row, the all-infantry horde row included.
+- The next spike round builds on approach A (Zero Hour-style yielding) and borrows B's "claim the next cell" only where A's retry cost shows up (a hypothesis to test).
+- The about-5-s last resort counts "no progress towards the goal", not consecutive blocked ticks, so circling units are caught.
+- A move order is never given up because the unit is stuck; it fails only when no path exists (Zero Hour default, AIStates.cpp:1880-1895).
+- Speed matching (a fast unit follows a slower friend) is part of the first version, not a follow-up; it is expected to cut A's per-tick retries as well (inferred, not measured).
+- Narrow passages are tested twice: a synthetic benchmark layout with a 2-3 cell gap, and the narrowest real passage found on the three converted maps (the spike's Dry Wells "choke" was a 20-cell lane).
+- The next round adds a mixed-owner scenario (tanks driving through an enemy infantry blob) so crushing and its cost are measured.
+- Per-unit avoidance state goes into the snapshot and state hash already in the next spike round, so its measured cost is honest.
+- Existing tests that fail because behaviour changed (G3, P3, S8, BM6 in round 1) are listed with what changed and a proposed rewrite; the user decides per test before the avoidance milestone. The spike does not change them.
+- Screenshots colour units by moving group, so crossings and who yielded are visible.
+- The overnight run of spike round 2 may open short-lived game windows for screenshots (no sound, closed by the run); this pre-approval covers that run only.
+- Round 2 continues on branch `spike-avoidance` (worktree `../wargrid-wt-avoid`), rebased onto current `main` first.
+- If round 2 still misses the cap: record the exceeded rows and what costs most, stop at the gate, never loosen; the user decides the next step (including whether to try the near-enough fallback).
+- Round 2 is measured natively and in the browser (Firefox web bench, as round 1).
+- Steam Deck measurement by the user after round 2, only if round 2 passes the cap on the Mac.
+
 ## Friend's playtest (reported by the user, 2026-11-08)
 
 Reported points, verbatim in substance: units in a building's footprint should move away when it is placed (as the friend remembers Zero Hour); queue buildings with Shift, and which Zero Hour keys to support; a USA bot on Dry Wells built only one Chinook and put its supply depot far from the boxes; defences such as the missile tower can be built anywhere (the friend thinks Zero Hour restricts this, maybe per faction); no way out after "Create match"; do dozers and workers auto-repair structures; the match code should be copy/pastable; can the camera move without arrow keys.
