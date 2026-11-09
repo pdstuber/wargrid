@@ -71,7 +71,7 @@ Q11. Should the desktop build try Godot's "Separate" render thread?
 Q12. Should hot simulation code move to C++?
    a) Not now; only if the browser simulation budget still fails after the art pass and a simulation performance spike   b) Start a C++ spike now
    Recommendation: a, because it is large, risks desync between browser and desktop players, and does not help drawing. Why it matters: the horde simulation already exceeds its browser budget.
-   **Answered 2026-11-09: a, not now.** Later (user): would rather move to a different engine than port parts to C++, since simulation and drawing are separated for that reason.
+   **Answered 2026-11-09: a, not now.** Later (user): would rather move to a different engine than port parts to C++, since simulation and drawing are separated for that reason. Revised the same night (user): C++ in Godot is fine too.
 
 Q13. When should the browser simulation overrun (horde 14.5 ms against 10 ms) be tackled?
    a) A simulation performance spike right after the art lab   b) Before the art lab   c) Only when playtests show lag
