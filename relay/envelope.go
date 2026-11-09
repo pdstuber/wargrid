@@ -24,6 +24,8 @@ type envelope struct {
 	match    string
 	t        string // raw JSON number token, echoed byte-exact
 	settings []byte // raw JSON object of a hello, nil when absent
+	// badSettings is kept off the parse so join can answer protocol mismatch first.
+	badSettings bool
 }
 
 func asInt(v any) (int, bool) {
@@ -86,8 +88,11 @@ func parseEnvelope(text []byte) *envelope {
 		b, ok2 := asString(o["build"])
 		m, ok3 := asString(o["match"])
 		settings, ok4 := rawSettings(text)
-		if ok1 && ok2 && ok3 && ok4 {
-			return &envelope{typ: typ, protocol: p, build: b, match: m, settings: settings}
+		if !ok4 {
+			settings = nil
+		}
+		if ok1 && ok2 && ok3 {
+			return &envelope{typ: typ, protocol: p, build: b, match: m, settings: settings, badSettings: !ok4}
 		}
 	case "tick":
 		s, ok1 := asInt(o["seat"])

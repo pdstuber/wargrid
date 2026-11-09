@@ -261,6 +261,9 @@ func (g *registry) join(h *envelope, c *conn) joinResult {
 	if h.protocol != protocol {
 		return joinResult{reason: "protocol mismatch"}
 	}
+	if h.badSettings {
+		return joinResult{reason: "invalid message"}
+	}
 	if h.match == "" {
 		if h.settings == nil {
 			return joinResult{reason: "missing settings"}

@@ -308,6 +308,22 @@ func defaultCases() []tcase {
 			expect(cl, `{"type":"error","reason":"missing settings"}`)
 			expectClosed(cl)
 		}},
+		{"protocol_beats_bad_settings", func(url string) {
+			for _, bad := range []string{`"x"`, `{"k":"` + strings.Repeat("x", 4090) + `"}`} {
+				cl := must(dial(url))
+				cl.say(helloSettings("", "abc", 3, bad))
+				expect(cl, `{"type":"error","reason":"protocol mismatch"}`)
+				expectClosed(cl)
+				cl.close()
+			}
+		}},
+		{"settings_null_refused", func(url string) {
+			cl := must(dial(url))
+			defer cl.close()
+			cl.say(helloSettings("", "abc", 2, `null`))
+			expect(cl, errInvalid)
+			expectClosed(cl)
+		}},
 		{"settings_not_object_refused", func(url string) {
 			for _, bad := range []string{`"x"`, `[1]`} {
 				cl := must(dial(url))
