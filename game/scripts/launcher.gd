@@ -46,7 +46,7 @@ func _ready() -> void:
 func _show_credits(open: bool) -> void:
 	var text: RichTextLabel = $CreditsPanel/Box/Text
 	if open and text.text.is_empty():
-		text.text = Credits.text(FileAccess.get_file_as_string("res://audio/CREDITS.md"), FileAccess.get_file_as_string("res://data/maps/NOTICE.md"), Engine.get_license_text())
+		text.text = Credits.text(FileAccess.get_file_as_string("res://audio/CREDITS.md"), FileAccess.get_file_as_string("res://data/maps/NOTICE.md"), Engine.get_license_text(), Engine.get_copyright_info(), Engine.get_license_info())
 	$CreditsPanel.visible = open
 	$Center.visible = not open
 

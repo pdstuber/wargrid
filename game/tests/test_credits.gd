@@ -5,9 +5,14 @@ const Credits = preload("res://scripts/presentation/credits.gd")
 const CREDITS_PATH: String = "res://audio/CREDITS.md"
 const NOTICE_PATH: String = "res://data/maps/NOTICE.md"
 const LICENSE: String = "GODOT-LICENSE-MARKER " + "line two"
+const COMPONENTS: Array = [
+	{"name": "Foo Lib", "parts": [{"files": ["a.c"], "copyright": ["2020, Foo", "2021, Bar"], "license": "Expat"}, {"files": ["b.c"], "copyright": ["2020, Foo"], "license": "Zlib"}]},
+	{"name": "Baz Lib", "parts": [{"files": ["c.c"], "copyright": ["2019, Baz"], "license": "Expat"}]},
+]
+const LICENSES: Dictionary = {"Expat": "EXPAT-LICENCE-TEXT", "Zlib": "ZLIB-LICENCE-TEXT"}
 
 func cases() -> Array[Callable]:
-	return [test_every_music_row, test_new_row_appears, test_macleod_block, test_voice_line, test_maps_notice, test_godot_license, test_wargrid_line]
+	return [test_every_music_row, test_new_row_appears, test_macleod_block, test_voice_line, test_maps_notice, test_godot_license, test_wargrid_line, test_third_party_components, test_third_party_engine_data, test_macleod_ignores_earlier_fence, test_crlf_credits]
 
 func _credits() -> String:
 	return FileAccess.get_file_as_string(CREDITS_PATH)
@@ -16,7 +21,7 @@ func _notice() -> String:
 	return FileAccess.get_file_as_string(NOTICE_PATH)
 
 func _panel(credits_md: String) -> String:
-	return Credits.text(credits_md, _notice(), LICENSE)
+	return Credits.text(credits_md, _notice(), LICENSE, COMPONENTS, LICENSES)
 
 func _music_rows(credits_md: String) -> Array[PackedStringArray]:
 	var rows: Array[PackedStringArray] = []
@@ -29,8 +34,11 @@ func test_every_music_row(runner) -> bool:
 	var rows := _music_rows(_credits())
 	runner.check(rows.size() >= 5, "CR1 CREDITS.md has music rows, got %d" % rows.size())
 	for row in rows:
-		for column in [2, 3, 4, 5, 6]:
-			runner.check(row[column].strip_edges() in panel, "CR1 every CREDITS.md music row is in the panel: %s" % row[column].strip_edges())
+		var c: Array = Array(row).map(func(cell: String) -> String: return cell.strip_edges())
+		var expected: String = '"%s" by %s (%s), licensed %s (%s)' % [c[2], c[4], c[3], c[5], c[6]]
+		if c[7] != "-": expected += "; " + c[7]
+		expected += "; changes: " + c[8].replace("`", "")
+		runner.check(expected in panel, "CR1 the panel has this music line: %s" % expected)
 	return true
 
 func test_new_row_appears(runner) -> bool:
@@ -42,10 +50,13 @@ func test_new_row_appears(runner) -> bool:
 
 func test_macleod_block(runner) -> bool:
 	var text := _credits()
-	var start := text.find("```text\n") + 8
-	var block := text.substr(start, text.find("```", start) - start)
+	var block := _block(text)
 	runner.check(block.length() > 50 and block in _panel(text), "CR3 the MacLeod attribution block is verbatim")
 	return true
+
+func _block(text: String) -> String:
+	var start := text.find("```text\n", text.find(Credits.MACLEOD_HEADING)) + 8
+	return text.substr(start, text.find("```", start) - start).strip_edges()
 
 func test_voice_line(runner) -> bool:
 	var panel := _panel(_credits())
@@ -65,4 +76,41 @@ func test_godot_license(runner) -> bool:
 func test_wargrid_line(runner) -> bool:
 	var panel := _panel(_credits())
 	runner.check("Wargrid © 2026 Philipp Stuber. Free software under the GNU GPL v3 or later, with no warranty." in panel and "github.com/pdstuber/wargrid" in panel, "CR7 Wargrid GPL line")
+	return true
+
+func test_third_party_components(runner) -> bool:
+	var panel := _panel(_credits())
+	var godot := panel.find("\n\nGodot Engine\n")
+	var third := panel.find("\n\nThird-party components in Godot\n")
+	runner.check(godot >= 0 and third > godot + LICENSE.length(), "CR8 the third-party section follows the Godot licence")
+	var section := panel.substr(third)
+	for part in ["Foo Lib", "2020, Foo", "2021, Bar", "Baz Lib", "2019, Baz", "Expat", "Zlib"]:
+		runner.check(part in section, "CR8 the third-party section names %s" % part)
+	runner.check(section.count("2020, Foo") == 1, "CR8 a copyright line shared by two parts is listed once")
+	runner.check(section.count("EXPAT-LICENCE-TEXT") == 1 and section.count("ZLIB-LICENCE-TEXT") == 1, "CR8 each licence text appears once")
+	runner.check(section.find("Foo Lib") < section.find("EXPAT-LICENCE-TEXT") and section.find("Baz Lib") < section.find("EXPAT-LICENCE-TEXT"), "CR8 components come before the licence texts")
+	return true
+
+func test_third_party_engine_data(runner) -> bool:
+	var components: Array = Engine.get_copyright_info()
+	var licenses: Dictionary = Engine.get_license_info()
+	var panel := Credits.text(_credits(), _notice(), LICENSE, components, licenses)
+	runner.check(components.size() > 50 and licenses.size() > 5, "CR9 the engine ships third-party notices, got %d and %d" % [components.size(), licenses.size()])
+	for component: Dictionary in components:
+		runner.check(component.name in panel, "CR9 component named: %s" % component.name)
+	for license_name: String in licenses:
+		runner.check(licenses[license_name] in panel, "CR9 licence text present: %s" % license_name)
+	return true
+
+func test_macleod_ignores_earlier_fence(runner) -> bool:
+	var text := _credits().replace(Credits.MACLEOD_HEADING, "```text\nEARLIER-FENCE\n```\n\n" + Credits.MACLEOD_HEADING)
+	var panel := _panel(text)
+	runner.check(_block(text) in panel and "EARLIER-FENCE" not in panel, "CR10 the block comes from under the MacLeod heading")
+	return true
+
+func test_crlf_credits(runner) -> bool:
+	var text := _credits()
+	var panel := _panel(text.replace("\n", "\r\n"))
+	runner.check(_block(text) in panel, "CR11 the MacLeod block survives CRLF input")
+	runner.check(panel == _panel(text), "CR11 CRLF input gives the same panel")
 	return true

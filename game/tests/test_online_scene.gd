@@ -439,6 +439,22 @@ func test_host_told_opponent_left_before_start(runner) -> bool:
 	late.main.free()
 	return true
 
+func _credits_wired(runner, shown: String, size: Vector2i) -> void:
+	runner.check("Electronic Arts" in FileAccess.get_file_as_string("res://data/maps/NOTICE.md") and "Electronic Arts" in shown, "N10 Credits text carries the maps notice at %s" % size)
+	var license_line: String = ""
+	for line in Engine.get_license_text().split("\n"):
+		if line.length() > 40:
+			license_line = line
+			break
+	runner.check(not license_line.is_empty() and license_line in shown, "N10 Credits text carries Godot's licence text at %s" % size)
+	var at: Array[int] = []
+	for heading in ["Wargrid ©", "\nMusic\n", "\nVoice: ", "\nMaps\n", "\nGodot Engine\n", "\nThird-party components in Godot\n"]:
+		at.append(shown.find(heading))
+	var ordered: bool = at[0] >= 0
+	for i in range(1, at.size()):
+		ordered = ordered and at[i] > at[i - 1]
+	runner.check(ordered, "N10 Credits sections run Wargrid, Music, Voice, Maps, Godot, third-party at %s, got %s" % [size, at])
+
 func test_credits_panel_layout(runner) -> bool:
 	var original: Vector2i = runner.root.size
 	for size in [Vector2i(1280, 720), Vector2i(1920, 1080)]:
@@ -459,6 +475,7 @@ func test_credits_panel_layout(runner) -> bool:
 		runner.check(not launcher.get_node("Center").visible, "N10 launcher controls hidden behind Credits at %s" % size)
 		runner.check(panel.get_global_rect().encloses(text.get_global_rect()) and panel.get_global_rect().encloses(close.get_global_rect()) and not text.get_global_rect().intersects(close.get_global_rect()), "N10 Text and Close fit the panel at %s" % size)
 		runner.check("Zhelanov" in text.get_parsed_text(), "N10 Credits text names the composers at %s" % size)
+		_credits_wired(runner, text.get_parsed_text(), size)
 		close.pressed.emit()
 		runner.check(not panel.visible and launcher.get_node("Center").visible, "N10 Close returns to the launcher at %s" % size)
 		launcher.free()
