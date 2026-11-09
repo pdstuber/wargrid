@@ -92,5 +92,8 @@ Q12. Should allied health bars use team colours?
    a) No, one colour for all — ZH (**inferred**, not checked), Wargrid today (world_view.gd:254)   b) Yes, coloured by own / ally / enemy — SC2 2.0.4 "Display Team Colored Life Bar"
    Recommendation: b, because in a 3v3 brawl you must tell your units from your teammates' at a glance. Why it matters: must fit the decided selection colours of M7.5.
 
+## Answers (2026-11-09)
+Answered on a click page: Q1 b, Q2 a (against the recommendation), Q3 b, Q4 b, Q5 a, Q6 b, Q7 a (against the recommendation), Q8 b, Q9 b, Q10 a, Q11 a, Q12 c (compromise added on the page). Recorded in the [design answers](../reference/design-answers-2026-11-08.md#hud-m76).
+
 ## Source check (2026-11-09)
 A Sonnet agent fetched every cited page (10 web pages, 7 BAR files, all reachable): 26 claims confirmed, 2 partly (the AoE IV formation line above; and Q10's "formations on every group move" option: neither the AoE IV nor the AoE2 DE page says every group move uses formations), none unsupported. Still unsourced or inferred as marked: Company of Heroes 3, Zero Hour beacon lifetime, Q12's Zero Hour colour, the unread BAR widgets. Table with quotes kept outside the repo (session scratchpad).

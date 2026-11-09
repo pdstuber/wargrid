@@ -44,7 +44,23 @@ Follow-up answers (user, 2026-11-09; [next-m76-hud.md](../questions/next-m76-hud
 - Veterancy chevrons show above every unit with a level, enemies included (Drawable.cpp:2807, 3797-3815; enemies inferred); bots may treat enemy veterancy as public information.
 - No selection limit (`data\ini\ingameui.ini:7`).
 - A Guard order: attack inside 1.8 x vision, chase to 2.2 x vision for up to 10 s, then return (`data\ini\default\aidata.ini:18-20`).
-- Map pings for teammates without text (against Zero Hour's 3 text beacons per player, `multiplayer.ini:37`); how many at once is not decided.
+- Map pings for teammates without text (against Zero Hour's 3 text beacons per player, `multiplayer.ini:37`); one per player, a new ping replaces the old (OpenRA), lasting 30 s; plain ping only, no icon kinds (2026-11-09 HUD round).
+
+HUD round on a click page (user, 2026-11-09 late evening; [re-check](../questions/hud-modern-recheck.md), [mock-up review](../questions/next-m76-hud.md); recommendations unless noted):
+- Minimap attack flash at most once every 10 s per area (about 250 units), so an attack elsewhere still flashes (Zero Hour as written; retail's bug makes it map-wide).
+- No health-bar setting: fixed "selected or damaged" (against the recommendation of an "Always" option); the unit under the mouse also shows its bar (Zero Hour, OpenRA).
+- Health bars keep the green-yellow-red fill; a thin frame shows own / ally / enemy colour (compromise with look Q13).
+- Teammates' attacks also show on your minimap, in a different colour (AoE IV).
+- Idle builder button with a count only; no idle-army button (against the recommendation; the comma hotkey for idle army stays).
+- Control-group row with unit counts, click selects (SC2, BAR).
+- Production overview strip: each factory's current item and progress, click jumps there (AoE IV); no queueing from the strip.
+- Keep formation: Zero Hour's opt-in Ctrl+F.
+- Layout: the compact direction, one bottom dock with the minimap inside, optional panels as toggles (HUD v3 compact).
+- The army panel and a pinned factory panel side by side; the factory never takes army orders.
+- Production hotkeys by button position, the same grid in every building (AoE IV / BAR style). Open for M7.6 planning: with the pinned factory beside the army panel, the grid must not use Attack Move `A`, Guard `G` or Stop `S`.
+- Large selections show cards per kind with count and total health; click filters, shift-click adds.
+- Alert feed kept (click jumps to the event); team strip as a toggle in the compact dock; "Show performance" in the Esc menu or settings, next to F3.
+
 
 ## Unit avoidance: scope
 

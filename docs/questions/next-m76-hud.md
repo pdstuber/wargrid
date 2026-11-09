@@ -56,6 +56,9 @@ GPT's [HUD v2 mock-up](../images/hud-v2/wargrid-hud-v2.png) ([notes](../images/h
 - **Colours:** the notes propose exact owner colours and a teal UI accent that differ slightly from Claude's mock-up guesses; neither set is decided (art lab).
 - **Unchecked:** the three AoE IV / BAR source links in the notes were not fetched. Verified: Medium Tank cost 800 and 300 ticks (`game/scripts/simulation/definitions/china.gd:13`).
 
+## Mock-up questions answered (2026-11-09, click page)
+Layout compact (one bottom dock); army and pinned factory panels side by side; production hotkeys by position grid (must avoid A, G, S); large selection as cards per kind; alert feed kept; team strip as a toggle; "Show performance" in a menu. Recorded in the [design answers](../reference/design-answers-2026-11-08.md#hud-m76).
+
 ## HUD v3 frames review (2026-11-09)
 GPT's [HUD v3 frames](../images/hud-v3/wargrid-hud-v3-notes.md) (Steam Deck, compact, 120-unit selection, placement; proposals, not decisions). HUD coverage as measured by GPT (opaque panel area): compact 18.3 % at 1920 x 1080, Deck 33.9 % at 1280 x 800 (text at least 13 px), large selection 24.1 %, placement 27.5 %; v2 was about a third by eye.
 - **Layout:** the compact variant (one bottom dock, minimap inside, optional panels collapsed to toggles) is the strongest candidate; on the Deck the same dock is readable but costs a third of the screen.
