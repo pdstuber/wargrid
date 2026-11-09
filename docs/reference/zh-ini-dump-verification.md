@@ -3,15 +3,15 @@
 Plan: [zh-ini dump plan](../superpowers/plans/2026-11-09-zh-ini-dump.md). Handoff: [zh-ini-dump-prompt.txt](../zh-ini-dump-prompt.txt).
 
 ```text
-Resume record (updated 2026-11-09, after Task 1)
-Branch / base commit / working-tree state: zh-ini-dump / ea1fe2b / Task 1 files uncommitted (coordinator commits)
-Last green task / next incomplete task: Task 1 / Task 2 (point readers at the tool)
-Changed paths since last commit: tools/zh_ini.py, tools/test_zh_ini.py, docs/reference/zh-ini-dump-verification.md
-Last command / cases / checks / failures / exit / marker: python3 -m unittest discover -s tools -p 'test_*.py' (106 tests, 0 failures, exit 0, "OK"); sh tools/run_python_checks.sh (ruff format, ruff check, mypy 34 files, exit 0); python3 tools/zh_ini.py dump (exit 0)
+Resume record (updated 2026-11-09, after Task 2)
+Branch / base commit / working-tree state: zh-ini-dump / ca7ad57 / Task 2 doc edits uncommitted (coordinator commits)
+Last green task / next incomplete task: Task 2 / none (stop gate: Opus high gate review, then /ponytail-review)
+Changed paths since last commit: AGENTS.md, docs/development.md, docs/milestone-prompt.md, docs/questions/RULES.md, docs/reference/zero-hour-parity-harness.md, docs/reference/zero-hour-verification.md, docs/blueprint.md, docs/reference/zh-ini-dump-verification.md
+Last command / cases / checks / failures / exit / marker: python3 -m unittest discover -s tools -p 'test_*.py' (OK, exit 0); sh tools/run_python_checks.sh (ruff, mypy 34 files, exit 0)
 Known red case or blocker: none
-Approved decisions, pre-authorizations used, deferred gates: local commit after Task 1 pre-authorized (milestone prompt); gate review (Opus high) and /ponytail-review after Task 2; push and merge wait for the user
+Approved decisions, pre-authorizations used, deferred gates: local commit after Task 2 pre-authorized; gate review and /ponytail-review pending; push and merge wait for the user
 Usage so far (python3 tools/session_usage.py <session files>): not measured
-Next exact action: Task 2 of the plan
+Next exact action: gate review of the branch diff, then stop
 ```
 
 No Godot suite run: Task 1 changes no game code (Python tooling and docs only).

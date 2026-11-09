@@ -10,7 +10,7 @@ Not covered: anything that needs the retail binary (exact retail floating point,
 
 ## Setup (once per machine)
 
-1. Game data: extracted retail copy in `~/CnC/run/` ([installation](installation.md)). Other location: `ZH_PARITY_DATA=<dir containing INIZH.big>`.
+1. Game data: extracted retail copy in `~/CnC/run/` ([installation](installation.md)). Other location: `ZH_PARITY_DATA=<dir containing INIZH.big>`. To read the retail INI values, use `python3 tools/zh_ini.py dump` (local `build/zh_ini/inizh.jsonl`).
 2. Engine: the parity patch exists only in the local branch `wargrid-parity` of `~/projects/GeneralsGameCode-macOS` (never pushed; contents in the [spike](zero-hour-parity-spike.md#what-was-built)). On another machine, clone [dvcdsys/GeneralsGameCode-macOS](https://github.com/dvcdsys/GeneralsGameCode-macOS), then carry the branch over without publishing it: on this machine `git -C ~/projects/GeneralsGameCode-macOS bundle create wargrid-parity.bundle 8fedb1649..wargrid-parity`, on the other `git fetch <path>/wargrid-parity.bundle wargrid-parity:wargrid-parity && git switch wargrid-parity`. Other location: `ZH_PARITY_BIN=<path to generalszh_api>`.
 3. Build (about 15 minutes clean, Command Line Tools are enough):
    `cmake --preset apple-arm64-release -DRTS_BUILD_OUTPUT_SUFFIX=_api && cmake --build build/apple-arm64-release --config Release --target z_generals`

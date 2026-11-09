@@ -11,6 +11,8 @@ Status: **LEVEL 0 DONE (SOURCE/CONFIG); LEVEL 0 AUTOMATED (74 values, 0 differ);
 | 2 | Instrumented build of EA source logging per logic frame | only if level 1 shows disagreement that matters |
 | 3 | Replay/full-match trace comparison | rejected: Wargrid grid, direct-hit combat and pathing differ by design, so it fails by construction |
 
+Retail INI values are queried through `python3 tools/zh_ini.py dump` (local `build/zh_ini/inizh.jsonl`, cited as entry:line).
+
 Fixed facts: logic runs at 30 frames/s (`LOGICFRAMES_PER_SECOND = 30`, `GeneralsMD/Code/GameEngine/Include/Common/GameCommon.h:72`), same as Wargrid's tick, so frame counts in a recording map one-to-one to ticks. `WorldBuilder.exe` is present in the Zero Hour install backup (tar member listing), availability on the Steam Deck install itself unchecked. Source revision and archive hash as in [installation](installation.md) and [M4 combat](m4-combat.md); `Locomotor.ini` below read from root `INIZH.big` (SHA-256 `1a6d41a7…e9a0`, hash re-verified 2026-11-03).
 
 ## Level 0 result: speeds and scale

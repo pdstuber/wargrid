@@ -56,6 +56,7 @@ Still require explicit approval: push, PR, merge, visible game windows, design c
 ## Planning rules (used when the milestone plan is written)
 
 - **Risk first.** Name the 3–5 riskiest contracts, interactions and costs. Task 1 writes their failing tests, or a load spike measured against the [performance ledger](reference/performance.md), before any task depends on them.
+- **Zero Hour values.** Read them from the `python3 tools/zh_ini.py dump` output (`build/zh_ini/inizh.jsonl`) and cite them as entry:line; no hand-written INI decoders.
 - **Interactions.** Every new command gets same-tick cases against every existing command and against removal of its target or actor. Every AI policy rule gets a test using the spec's own wording.
 - **Benchmarks.** Each workload asserts that its mechanics happen inside the timed window, for example each weapon fires or chases and repaths occur. Startup, mass-order, placement and death spikes are reported separately.
 - **Outcome tests.** Never recommend relaxing an assertion; one that fails on real behaviour is a defect until a measurement says otherwise. A tuned system (rates, timings, costs) gets an outcome test against the measured reference (e.g. credits per minute), not only an invariant (e.g. one collector per dock).
