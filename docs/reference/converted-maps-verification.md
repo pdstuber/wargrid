@@ -335,3 +335,7 @@ Rows: tree `fdb81c4` + Task 6 diff. `run_tests.sh` `CASES 585 CHECKS 136975 FAIL
 
 ### Wave retarget diagnosis (Opus, 2026-11-09)
 With waves fighting units within `DEFENCE_RADIUS` on the way, Ashfall seed 1 `usa,china` no longer ends by 45,000 and in `china,china` seat 1 never damages a building (seat 2 wins at 26,969). Probe on 598 unit-target episodes: no target flapping (0 dropped while the unit lived), no stop-and-go (at most 16 whole-wave re-orders in an ~8,300-tick wave), no chasing (air units are filtered out, so the USA supply helicopter is never a target; distance grew >5 cells in 3 episodes), no unhittable targets. Cause: armies now meet mid-map; the side that wins the first battle (t9000: 43-45 vs 39 wave units) camps there and each new 6-unit wave of the loser (`WAVE_MIN`) dies near its own base. Verdict: honest grinding, no targeting defect; wave size goes to M8 (user answer 21, 2026-11-09).
+
+## User playtest (2026-11-09 evening)
+
+Test app `wargrid-web-test` at `17e7f3d`, Safari. Ashfall offline ("looks good", lost to the bot), Broken Crown offline (no issues), Dry Wells offline (adjacent small-pile labels overlap; cosmetic per the user, removed by the M7.5 no-map-text answer), Credits panel renders, Copy in the online waiting screen copies the match code, online match MacBook vs Mac mini through the deployed relay ("everything worked great"; MacBook over wifi: command latency 185 ms, RTT 34 ms, F3 overlay). Not checked: Linux/Windows desktop builds, Chrome, Firefox, a hidden tab during an online match.
