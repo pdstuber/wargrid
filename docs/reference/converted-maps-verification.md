@@ -8,9 +8,9 @@ Plan: [converted maps playable plan](../superpowers/plans/2026-11-08-converted-m
 Resume record (updated 2026-11-09, final-review fixes applied, uncommitted)
 Branch / base commit / working-tree state: converted-maps / 026f2b2 (Tasks 1-10 docs committed) / final-review fixes uncommitted (more-maps sweep table regenerated, blueprint, development, relay-stack-spike, this file, run_team_match.sh comment, test_online_scene.gd N19 labels)
 Implemented: Tasks 1, 2, 3, 3b, 3c, 4, 5, 6, 6b, 7, 8, 9, 10 (committed through 026f2b2); final-review fixes (uncommitted)
-Verified on 026f2b2 plus the uncommitted fixes: suite 600 / 137167 / 7 failures (moved pins S1 x2, Cs1, TB3, TB4 awaiting re-pin; Fm1 pair), lint 0, warnings 120 files 0, run_netplay match and run_team_match.sh red on moved pins (wave-targeting rework, see Morning fixes)
+Verified on 882f182 plus the uncommitted re-pin: suite 600 / 137167 / 0 failures, TESTS PASSED, run_team_match.sh 0, run_netplay match PASSED (tick 9024), lint 0, warnings see Morning fixes re-pin section
 Pending: coordinator commits the final-review fixes; user items in the plan's "Left for the user" (relay deploy, push and CI, merge, playtest, Fm1 decision); Done-when "attack on Ashfall" open (M8)
-Known red case or blocker: Fm1 pair (morning decision); pins moved by the wave-targeting rework (S1, Cs1, TB3, TB4, team units_peak, netplay match tick) wait for the re-pin step; ashfall bot matches slower with the answer-20 retarget (see Morning fixes)
+Known red case or blocker: none; wave-fix pins and Fm1 re-pinned (uncommitted); ashfall bot matches slower with the answer-20 retarget (see Morning fixes)
 Approved decisions, pre-authorizations used, deferred gates: none new
 Usage so far: not run
 Next exact action: coordinator commits the fixes
@@ -290,3 +290,11 @@ Rows: tree `fdb81c4` + Task 6 diff. `run_tests.sh` `CASES 585 CHECKS 136975 FAIL
 - Fm1 real end (`skirmish.json`, frc,usa, cap raised to 150000, scratch run): tick 48052, winner 1 (pinned 23534, the suite cap is 45000).
 - Moved pins, not re-pinned (old -> new): S1 `S1_CORE_SERIES` 1809165491953682337 -> 8424451727004271161, S1 outcome tick 8452 winner 1 -> 8569 winner 1; Cs1 tick 27555 winner 2 -> 11220 winner 2; TB3 `FINAL_DIGEST` b1c0606ee2bb58fc -> 69a1e12278c29044; TB4 `TEAM_CORE_SERIES` 7949105010122908522 -> 1748824102688385527; `run_team_match.sh` still `cap tick=45000 winner=null`, units_peak 246 -> 261 (script pin fails); `run_netplay.sh match` terminal tick 8300 -> 9024; Fm1 pair red as before (ongoing at 45000).
 - Rows: uncommitted tree on `bd5e4db`. Suite `CASES 600 CHECKS 137167 FAILURES 7` (S1 x2, Cs1, TB3, TB4, Fm1 x2), exit 1; lint exit 0; warnings 120 files, exit 0; `run_netplay.sh match` exit 1 (`terminal tick 9024, pinned 8300`); `run_team_match.sh` exit 1 (units_peak 261, pinned 246). Logs `wargrid-overnight-work/logs/m-wave2-*.log`.
+
+## Morning fixes 2026-11-09 — re-pin after wave fix
+- Cause of every pin below: wave-targeting fix 882f182 (answers 9, 10, 20); Fm1 per answers 1-2. Each new value taken from a run of the suite on the uncommitted tree on 882f182.
+- S1 `TERMINAL_TICK` 8452 -> 8569 (winner 1 unchanged); `S1_CORE_SERIES` 1809165491953682337 -> 6600229479106917126 (the implementer's 8424451727004271161 did not match the run; the series runs to the new tick, re-derived after the tick change).
+- Cs1 `CHINA_TERMINAL_TICK` 27555 -> 11220 (winner 2). TB3 `FINAL_DIGEST` b1c0606ee2bb58fc -> 69a1e12278c29044. TB4 `TEAM_CORE_SERIES` 7949105010122908522 -> 1748824102688385527.
+- `run_team_match.sh` units_peak 246 -> 261 (still `cap tick=45000 winner=null`). `run_netplay.sh match` terminal tick 8300 -> 9024 (no other 8300 in ci.yml, docs/development.md, README).
+- Fm1: `FRC_TICK_CAP` 45000 -> 50000 (end 48051, margin 1949 ticks); `FRC_TERMINAL_TICK` 23534 -> 48051 (loop index; the implementer's 48052 is the tick count), `FRC_WINNER` 1; "ends won inside the cap" assertion unchanged; one-line WHY comment on the cap.
+- Rows: suite `CASES 600 CHECKS 137167 FAILURES 0`, `TESTS PASSED 137167`, exit 0; `run_team_match.sh` exit 0; `run_netplay.sh match` `match terminal tick 9024`, `NETPLAY PASSED match`, exit 0; lint exit 0. Logs `wargrid-overnight-work/logs/m-repin-*.log`.

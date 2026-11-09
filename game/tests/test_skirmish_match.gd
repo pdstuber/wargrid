@@ -6,10 +6,10 @@ const ScriptedHuman = preload("res://scripts/simulation/scripted_human.gd")
 const StateHash = preload("res://scripts/simulation/state_hash.gd")
 
 const TICK_LIMIT: int = 18000
-const TERMINAL_TICK: int = 8452
+const TERMINAL_TICK: int = 8569
 const WINNER: int = 1
 
-const S1_CORE_SERIES: int = 1809165491953682337
+const S1_CORE_SERIES: int = 6600229479106917126
 
 func cases() -> Array[Callable]:
 	return [test_mirror_match_script, test_skirmish_core_series, test_china_skirmish_match, test_frc_skirmish_match]
@@ -103,7 +103,7 @@ func test_mirror_match_script(runner) -> bool:
 	return true
 
 const CHINA_TICK_CAP: int = 45000
-const CHINA_TERMINAL_TICK: int = 27555
+const CHINA_TERMINAL_TICK: int = 11220
 const CHINA_WINNER: int = 2
 
 func test_china_skirmish_match(runner) -> bool:
@@ -139,8 +139,9 @@ func test_china_skirmish_match(runner) -> bool:
 	runner.check(not seen.values().has(false), "Cs1 horde level 2, ramp level 2, truck delivery and a quantity pair all happened: " + str(seen))
 	return true
 
-const FRC_TICK_CAP: int = 45000
-const FRC_TERMINAL_TICK: int = 23534
+# No end-game income yet: supply runs out and bots grind (blueprint M8 "End-game income").
+const FRC_TICK_CAP: int = 50000
+const FRC_TERMINAL_TICK: int = 48051
 const FRC_WINNER: int = 1
 
 func test_frc_skirmish_match(runner) -> bool:
