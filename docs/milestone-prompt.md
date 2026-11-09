@@ -22,7 +22,7 @@ Next exact action:
 
 1. Read `AGENTS.md`, then the resume record. Do not re-read finished tasks.
 2. Run `git status --short` and `git log --oneline -3`; compare with the record. A mismatch is a blocker to report, not to repair silently.
-3. Run the baseline once: `sh tools/run_tests.sh > <log> 2>&1`, then read only the summary lines. Lint, warnings and `python3 -m unittest discover -s tools` may run at the same time; benchmarks always run alone.
+3. Run the baseline once: `sh tools/run_tests.sh > <log> 2>&1`, then read only the summary lines. Lint, warnings and `sh tools/run_python_checks.sh` (ruff, mypy and the Python tests) may run at the same time; benchmarks always run alone.
 4. Read only the active task: `rg -n '^#' <plan>` for headings, then that task's range, the interfaces it consumes, and decisions recorded since. The full design and plan are read once, at kickoff, in non-overlapping ranges.
 
 ## Unattended run
