@@ -625,7 +625,7 @@ The interface, not the world graphics: a bottom control bar with minimap, comman
 
 ### M7.9 — Fog of war (placement and need decided by the user 2026-11-05; scope proposed, not approved)
 
-**User answers (2026-11-08):** Zero Hour's model: black at start, grey fog that hides enemy units, last-seen enemy buildings, no reveal from foundations, shared team vision: [design answers](reference/design-answers-2026-11-08.md#fog-of-war-m79).
+**User answers (2026-11-08):** Zero Hour's model: map revealed at start as in retail multiplayer (`UseShroud = No`; changed from "black at start" by the user 2026-11-09), grey fog that hides enemy units, last-seen enemy buildings, no reveal from foundations, shared team vision: [design answers](reference/design-answers-2026-11-08.md#fog-of-war-m79).
 
 Fair bots only mean something when a human and a bot see the same limited picture, so fog of war lands before the bots. Starting point is the Zero Hour model: shroud (never seen), fog (explored, not visible now) and live vision from units and buildings, shared inside a team.
 
