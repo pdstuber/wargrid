@@ -31,7 +31,7 @@ Dry Wells: route 1-2 1525.0 (source grid 1524.1, ratio 1.001), width t = 10; bui
 
 Broken Crown: routes 1-2 1850.0, 1-3 2512.7, 1-4 1600.0, 2-3 1600.0, 2-4 2512.7, 3-4 1850.0 (ratios 0.985 to 0.995); widths t = 13 to 15; buildable within 12: 625 each; supply Chebyshev 13 to 16.
 
-## Dry Wells is the play map (user, 2026-11-07)
+## Dry Wells was the play map (user, 2026-11-07; superseded by map choice)
 
 Real play uses Dry Wells: the launcher sets `SkirmishMain.map_path` (as it sets `SkirmishMain.factions`) before it opens the offline or online scene, and the scenes pass it to `Skirmish.create` as the fourth argument after `factions`. Without the launcher, scenes, tests, replays, the netplay client and benchmarks keep the 48 × 32 `skirmish.json`, so every pin is unchanged (user, 2026-11-08: tests may use the old map). The camera starts on the local player's base instead of the map centre.
 
@@ -39,7 +39,7 @@ Real play uses Dry Wells: the launcher sets `SkirmishMain.map_path` (as it sets 
 - Rendered frame time on Dry Wells after the rebase: measured in the small-piles section above and the 2026-11-08 ledger row in [performance](performance.md).
 - The terrain cache this needed (`terrain_view.gd`, ledger row 2026-11-07) reached `main` through M7 (`a1dfb03`).
 - Online play uses a different map than the CI netplay client, which still plays `skirmish.json`. Old and new builds must not play each other online.
-- Still no map choice in the launcher and the online `start` message carries no map: that belongs to the "Converted maps playable" task (blueprint §7).
+- Map choice in the launcher and the map in the online `start` exchange are done on branch `converted-maps` (section "Converted maps playable" below).
 
 ## Supply center slot near supplies (2026-11-08)
 
@@ -85,3 +85,15 @@ Seed 1, cap 45,000 ticks, headless, one run at a time, tree `596db73` plus uncom
 | ashfall | china,frc | [2, | 25932 | seat 2 | [420, | [1470, | [-1, | 1.118 |
 
 Judgement on the new maps (Broken Crown, Ashfall): both seats build and collect in all 12 rows. Every Broken Crown row has both seats damaging an enemy building. On Ashfall, seat 1 or 2 never damaged an enemy building in four rows: `china,china` seat 1 (cap; seat 2 only at tick 43,950), `usa,china` seat 2, `frc,usa` seat 1, `china,frc` seat 1. In the three decided rows the non-damaging seat is the one that lost; the same pattern exists on Dry Wells (`usa,usa` and `usa,china` seat 2 at -1) and each loser lost before landing a hit on a building; not checked whether its army left home, so this is read as a lost fight, not a proven bot bug. No fix made. Finding for M8: Ashfall games are decided by one early wave (first enemy damage 14,970 to 43,950 ticks, against about 6,000 to 8,000 on `skirmish`), and `china,china` on Ashfall reaches the cap with first damage at tick 43,950. Runs that hit the cap (no winner) are existing behaviour, not failures: skirmish `frc,frc` and `frc,usa`; Dry Wells `usa,usa`, `frc,frc`, `frc,usa`; Broken Crown `frc,frc`, `frc,usa`, `china,frc`; Ashfall `usa,usa`, `china,china`.
+
+## Converted maps playable (2026-11-09)
+
+Branch `converted-maps` (local commits, not pushed or merged). Plan: [converted maps plan](../superpowers/plans/2026-11-08-converted-maps-playable.md); every check row, RED run and review ruling: [converted maps verification](converted-maps-verification.md). Player-visible: a map dropdown in the launcher (Dry Wells, Broken Crown, Ashfall), Cancel and Copy while waiting for player 2, a Credits panel.
+
+- **Protocol 2.** `hello` carries the host's opaque `settings` (map id and map hash, at most 4096 bytes, a JSON object); the relay echoes it in `start` with a relay-generated `seed`. The joiner hello carries no settings; the joiner refuses a different map before the simulation exists. Conformance is 39 cases (33 before). **Relay deploy order (left for the user):** deploy the relay to fly first; until then protocol 2 clients get "protocol mismatch" from the live relay, and after it 0.9.0 clients do.
+- **Start spots.** `StartSpots.assign` follows Zero Hour's start-spot rule for 1v1; the `SS6` seed 0..15 literal was derived on macOS (Apple Silicon) and is not yet confirmed on Linux or Windows (CI).
+- **Fm1 known red (two failures).** `test_skirmish_match.gd` `Fm1`: the FRC bot match no longer ends inside its 45,000-tick cap after Task 3b (FRC 5 collectors per supply center instead of 7). Cause per the Opus reviewer (plausible, not a bug): the USA second helicopter drives USA income to 41,475 against about 20,000, the map runs out of supply near tick 30,000, FRC wins at tick 73,560; USA1+FRC5 ends at 26,611, USA2+FRC7 at 42,951. Re-pinning needs a larger cap or a decision, not just a number. Morning decision.
+- **S1_CORE_SERIES derivation.** The Task 3b moved-pins table said 8642905752227994667, measured with `TERMINAL_TICK` 8501; the series loop runs `TERMINAL_TICK + 1` ticks, so with 8452 the pin is 1809165491953682337 (a clean `git archive` of `b3e4824` reproduces 8642905752227994667 under the old constant). Other moved pins and their old values: verification file "Task 3b moved pins" and "Task 3c".
+- **Bot findings (Task 8 sweep, table above).** Both seats build and collect on every new-map row. On Ashfall four rows have a seat that never damaged an enemy building, each the loser; read as lost fights, no fix. M8 finding: Ashfall games are decided by one early wave (first enemy damage 14,970 to 43,950 ticks). Stopgaps for M8 (depot site near supplies, collector counts) are in [blueprint §7 M8](../blueprint.md#m8--bots-worth-playing).
+- **Review minors, pointers.** Open minors from the Opus reviews are listed in the verification file under "Task 1 review minors", "Task 2 review minors", "Task 3 review", "Task 7 review" and the Task 5 and Task 6 RED and fix sections (Task 5: N12 restart mutant not run; Task 6: headless Copy does not touch the clipboard). Not fixed overnight: untested `team <= 0` start-spot rule, `"settings":null` unit case, CR1 whole-line check, `get_copyright_info()` question.
+- **Open question for M9.** Zero Hour does not count a chosen spot as its team's position (`teamPosIdx` only from random placement), so a teammate of a player with a chosen spot is placed far away; keep or fix?

@@ -5,15 +5,15 @@ Plan: [converted maps playable plan](../superpowers/plans/2026-11-08-converted-m
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-09, Task 7 green pending commit)
-Branch / base commit / working-tree state: converted-maps / 1dceeea (Task 6 committed) / Task 7 diff uncommitted (credits.gd, launcher.gd, launcher.tscn, export_presets.cfg, test_credits.gd, test_online_scene.gd, test_map.gd, run_tests.gd, this file)
-Last green task / next incomplete task: Task 9 green pending commit / Task 10
-Changed paths since last commit: see working-tree state
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 596 / 137159 / 2 (Fm1 pair only) / 1 / no marker
+Resume record (updated 2026-11-09, Task 10 Steps 1, 2 and 5 done)
+Branch / base commit / working-tree state: converted-maps / 15c38bf (Tasks 1-9 committed) / docs-only diff uncommitted (AGENTS.md, README.md, blueprint, development, more-maps, performance, relay-stack-spike, session-notes, this file)
+Implemented: Tasks 1, 2, 3, 3b, 3c, 4, 5, 6, 6b, 7, 8, 9 (committed); Task 10 docs (uncommitted)
+Verified on 15c38bf: suite 596 / 137159 / 2 failures (Fm1 pair only), lint, warnings, python checks, go test -race, golangci-lint 0 issues, conformance 39, netplay all 11 scenarios, benchmark exit 0 (rows above)
+Pending: Task 10 Step 3 (Opus whole-branch review) and Step 4 (/ponytail-review) by the coordinator; coordinator commits the Task 10 docs; user items in the plan's "Left for the user" (relay deploy, push and CI, merge, playtest, Fm1 decision)
 Known red case or blocker: Fm1 pair (morning decision)
 Approved decisions, pre-authorizations used, deferred gates: none new
 Usage so far: not run
-Next exact action: coordinator commits Task 9 (docs only); then Task 10
+Next exact action: coordinator runs the whole-branch review, then /ponytail-review, then commits docs
 ```
 
 ## Baseline
@@ -69,6 +69,25 @@ Append-only. One row per command: tree, counts, exit, marker, load averages.
 | 2026-11-08 23:38 | 2dc1a6c + Task 5 diff, regex check removed | `sh tools/run_tests.sh` | CASES 580, CHECKS 136958, FAILURES 5 (3 new MS3 + Fm1 pair) | 1 | none | n/a | no |
 | 2026-11-08 23:41 | 2dc1a6c + Task 5 diff + review fixes | `sh tools/run_tests.sh` | CASES 580, CHECKS 136958, FAILURES 2 (Fm1 pair only) | 1 | none | n/a | no |
 | 2026-11-08 23:44 | same | `sh tools/run_lint.sh` / `run_warnings.sh` | 116 files | 0 / 0 | WARNINGS CHECKED 116 FILES | n/a | no |
+| 2026-11-09 05:0x | 15c38bf (clean at start; docs-only edits uncommitted from the lint run on) | `sh tools/run_tests.sh` | CASES 596, CHECKS 137159, FAILURES 2 (Fm1 pair only) | 1 | none (no TESTS PASSED; known red) | 1.5-2.5 (uptime at 05:01 and 05:05) | no |
+| 2026-11-09 05:0x | 15c38bf (clean at start; docs-only edits uncommitted from the lint run on) | `sh tools/run_lint.sh` | no problems | 0 | exit 0 | 1.5-2.5 (uptime at 05:01 and 05:05) | no |
+| 2026-11-09 05:0x | 15c38bf (clean at start; docs-only edits uncommitted from the lint run on) | `sh tools/run_warnings.sh` | WARNINGS CHECKED 120 FILES | 0 | WARNINGS CHECKED 120 FILES | 1.5-2.5 (uptime at 05:01 and 05:05) | no |
+| 2026-11-09 05:0x | 15c38bf (clean at start; docs-only edits uncommitted from the lint run on) | `sh tools/run_python_checks.sh` | n/a | 0 | exit 0 | 1.5-2.5 (uptime at 05:01 and 05:05) | no |
+| 2026-11-09 05:0x | 15c38bf (clean at start; docs-only edits uncommitted from the lint run on) | `sh tools/go test -count=1 -race ./... (relay/)` | ok | 0 | exit 0 | 1.5-2.5 (uptime at 05:01 and 05:05) | no |
+| 2026-11-09 05:0x | 15c38bf (clean at start; docs-only edits uncommitted from the lint run on) | `sh tools/golangci-lint run (relay/)` | 0 issues | 0 | exit 0 | 1.5-2.5 (uptime at 05:01 and 05:05) | no |
+| 2026-11-09 05:0x | 15c38bf (clean at start; docs-only edits uncommitted from the lint run on) | `sh tools/run_conformance.sh` | n = 39 | 0 | CONFORMANCE PASSED 39 | 1.5-2.5 (uptime at 05:01 and 05:05) | no |
+| 2026-11-09 05:0x | 15c38bf (clean at start; docs-only edits uncommitted from the lint run on) | `sh tools/run_netplay.sh match` | terminal tick 8300 | 0 | NETPLAY PASSED match 14.0 s | 1.5-2.5 (uptime at 05:01 and 05:05) | no |
+| 2026-11-09 05:0x | 15c38bf (clean at start; docs-only edits uncommitted from the lint run on) | `sh tools/run_netplay.sh kill` | n/a | 0 | NETPLAY PASSED kill 2.2 s | 1.5-2.5 (uptime at 05:01 and 05:05) | no |
+| 2026-11-09 05:0x | 15c38bf (clean at start; docs-only edits uncommitted from the lint run on) | `sh tools/run_netplay.sh stall` | n/a | 0 | NETPLAY PASSED stall 15.2 s | 1.5-2.5 (uptime at 05:01 and 05:05) | no |
+| 2026-11-09 05:0x | 15c38bf (clean at start; docs-only edits uncommitted from the lint run on) | `sh tools/run_netplay.sh silent` | n/a | 0 | NETPLAY PASSED silent 11.5 s | 1.5-2.5 (uptime at 05:01 and 05:05) | no |
+| 2026-11-09 05:0x | 15c38bf (clean at start; docs-only edits uncommitted from the lint run on) | `sh tools/run_netplay.sh spike` | n/a | 0 | NETPLAY PASSED spike 38.5 s | 1.5-2.5 (uptime at 05:01 and 05:05) | no |
+| 2026-11-09 05:0x | 15c38bf (clean at start; docs-only edits uncommitted from the lint run on) | `sh tools/run_netplay.sh perturb` | n/a | 0 | NETPLAY PASSED perturb 1.6 s | 1.5-2.5 (uptime at 05:01 and 05:05) | no |
+| 2026-11-09 05:0x | 15c38bf (clean at start; docs-only edits uncommitted from the lint run on) | `sh tools/run_netplay.sh version` | n/a | 0 | NETPLAY PASSED version 1.3 s | 1.5-2.5 (uptime at 05:01 and 05:05) | no |
+| 2026-11-09 05:0x | 15c38bf (clean at start; docs-only edits uncommitted from the lint run on) | `sh tools/run_netplay.sh relay-down` | n/a | 0 | NETPLAY PASSED relay-down 3.2 s | 1.5-2.5 (uptime at 05:01 and 05:05) | no |
+| 2026-11-09 05:0x | 15c38bf (clean at start; docs-only edits uncommitted from the lint run on) | `sh tools/run_netplay.sh relay-term` | n/a | 0 | NETPLAY PASSED relay-term 3.6 s | 1.5-2.5 (uptime at 05:01 and 05:05) | no |
+| 2026-11-09 05:0x | 15c38bf (clean at start; docs-only edits uncommitted from the lint run on) | `sh tools/run_netplay.sh maps` | NETCLIENT MAP ashfall STARTS 6,2 | 0 | NETPLAY PASSED maps 2.6 s | 1.5-2.5 (uptime at 05:01 and 05:05) | no |
+| 2026-11-09 05:0x | 15c38bf (clean at start; docs-only edits uncommitted from the lint run on) | `sh tools/run_netplay.sh map-mismatch` | n/a | 0 | NETPLAY PASSED map-mismatch 1.3 s | 1.5-2.5 (uptime at 05:01 and 05:05) | no |
+| 2026-11-09 05:0x | 15c38bf (clean at start; docs-only edits uncommitted from the lint run on) | `sh tools/run_benchmark.sh (alone)` | hordes300 p95 2.819 and open p95 1.847 over 1.82 (recorded, not loosened) | 0 | BENCHMARK PASSED 2; COMBAT BENCHMARK PASSED 10; LOCKSTEP BENCHMARK PASSED 1 | 1.5-2.5 (uptime at 05:01 and 05:05) | no |
 
 ## Task 1 RED
 
