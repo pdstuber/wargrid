@@ -13,7 +13,7 @@ Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh 
 Known red case or blocker: Fm1 pair (morning decision)
 Approved decisions, pre-authorizations used, deferred gates: none new
 Usage so far: not run
-Next exact action: coordinator commits Task 7; then Task 8
+Next exact action: coordinator commits Task 7 and Task 8 (docs only); then Task 9
 ```
 
 ## Baseline
@@ -239,3 +239,8 @@ Rows: tree `fdb81c4` + Task 6 diff. `run_tests.sh` `CASES 585 CHECKS 136975 FAIL
 - Godot "Complying with licenses" may also want `Engine.get_copyright_info()` / `get_license_info()`; panel ships only `get_license_text()`. User decision.
 - N10 can leak click.wav playback near the end of a process (`1 resources still in use at exit`); the full 4-shard run is clean.
 - `_macleod` takes the first ```text fence, not the one under the heading; a CRLF checkout drops the block silently.
+
+## Task 8
+- Sweep: 24 runs (6 pairs x skirmish, dry_wells, broken_crown, ashfall), seed 1, cap 45,000, headless, alone, exit 0 each, tick p95 0.52 to 1.12 ms (budget 1.82). Table in `docs/reference/more-maps.md` "Bot-vs-bot sweep". Log `wargrid-overnight-work/logs/t8-sweep.log`.
+- Row: tree `596db73` plus uncommitted Task 6 to 7 diff; only tracked change is the docs table; scratch copy and .uid deleted. No suite run (docs only).
+- Both seats build and collect on every new-map row. Ashfall: four rows where one seat never damaged an enemy building (`china,china` seat 1 at cap; `usa,china` seat 2, `frc,usa` seat 1, `china,frc` seat 1, each the loser). Same pattern on Dry Wells. Judged lost fights, no fix, no pin touched. M8 finding: Ashfall games take 15,000 to 44,000 ticks to first building damage.

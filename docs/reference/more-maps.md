@@ -52,3 +52,36 @@ Slot centre to nearest full dock centre, cells (before from the converter at `1c
 | Dry Wells | 27.2, 19.5 | 8.3, 5.6 |
 | Broken Crown | 22.4, 18.1, 15.9, 19.8 | 4.6, 4.6, 4.5, 4.5 |
 | Ashfall | 21.5, 22.4, 25.1, 18.0, 20.4, 21.1, 23.7, 26.5 | 4.5, 5.5, 7.5, 4.9, 6.0, 5.6, 5.4, 7.5 |
+
+## Bot-vs-bot sweep (2026-11-09)
+
+Seed 1, cap 45,000 ticks, headless, one run at a time, tree `596db73` plus uncommitted Tasks 6 to 7 (no bot change). Scratch script `wargrid-overnight-work/scratch/bot_match.gd`; log `wargrid-overnight-work/logs/t8-sweep.log`. Starts are `StartSpots.assign` seats (empty for `skirmish`). Milestones are seat 1 / seat 2 ticks sampled every 30 ticks; `-1` means never. Ticks p95 in ms (budget 1.82); all 24 runs pass it.
+
+| Map | Pair | Starts | End tick | Winner | First build | First collect | First enemy damage | Tick p95 |
+|---|---|---|---|---|---|---|---|---|
+| skirmish | usa,usa | [] | 24619 | seat 2 | [450, | [990, | [6540, | 0.563 |
+| skirmish | china,china | [] | 26233 | seat 2 | [480, | [1110, | [6630, | 0.671 |
+| skirmish | frc,frc | [] | cap 45000 | none | [630, | [720, | [6120, | 0.602 |
+| skirmish | usa,china | [] | 17621 | seat 2 | [450, | [990, | [6540, | 0.666 |
+| skirmish | frc,usa | [] | cap 45000 | none | [630, | [720, | [6360, | 0.549 |
+| skirmish | china,frc | [] | 25515 | seat 2 | [480, | [1110, | [6360, | 0.676 |
+| dry_wells | usa,usa | [2, | cap 45000 | none | [390, | [1320, | [8130, | 0.524 |
+| dry_wells | china,china | [2, | 26598 | seat 2 | [420, | [1590, | [7530, | 0.645 |
+| dry_wells | frc,frc | [2, | cap 45000 | none | [990, | [1230, | [5970, | 0.609 |
+| dry_wells | usa,china | [2, | 10648 | seat 1 | [390, | [1320, | [8370, | 0.628 |
+| dry_wells | frc,usa | [2, | cap 45000 | none | [990, | [1230, | [7980, | 0.567 |
+| dry_wells | china,frc | [2, | 29579 | seat 2 | [420, | [1590, | [6570, | 0.640 |
+| broken_crown | usa,usa | [2, | 16520 | seat 2 | [390, | [1170, | [6930, | 0.783 |
+| broken_crown | china,china | [2, | 26851 | seat 1 | [420, | [1290, | [21300, | 0.882 |
+| broken_crown | frc,frc | [2, | cap 45000 | none | [870, | [990, | [6510, | 0.825 |
+| broken_crown | usa,china | [2, | 27029 | seat 1 | [390, | [1170, | [24450, | 0.829 |
+| broken_crown | frc,usa | [2, | cap 45000 | none | [870, | [990, | [6480, | 0.843 |
+| broken_crown | china,frc | [2, | cap 45000 | none | [420, | [1290, | [19770, | 0.806 |
+| ashfall | usa,usa | [2, | cap 45000 | none | [390, | [1350, | [44070, | 0.934 |
+| ashfall | china,china | [2, | cap 45000 | none | [420, | [1470, | [-1, | 1.029 |
+| ashfall | frc,frc | [2, | 41863 | seat 1 | [960, | [1050, | [7710, | 0.981 |
+| ashfall | usa,china | [2, | 26371 | seat 1 | [390, | [1350, | [23910, | 1.057 |
+| ashfall | frc,usa | [2, | 19054 | seat 2 | [960, | [1050, | [-1, | 1.051 |
+| ashfall | china,frc | [2, | 25932 | seat 2 | [420, | [1470, | [-1, | 1.118 |
+
+Judgement on the new maps (Broken Crown, Ashfall): both seats build and collect in all 12 rows. Every Broken Crown row has both seats damaging an enemy building. On Ashfall, seat 1 or 2 never damaged an enemy building in four rows: `china,china` seat 1 (cap; seat 2 only at tick 43,950), `usa,china` seat 2, `frc,usa` seat 1, `china,frc` seat 1. In the three decided rows the non-damaging seat is the one that lost; the same pattern exists on Dry Wells (`usa,usa` and `usa,china` seat 2 at -1) and each loser lost before landing a hit on a building; not checked whether its army left home, so this is read as a lost fight, not a proven bot bug. No fix made. Finding for M8: Ashfall games are decided by one early wave (first enemy damage 14,970 to 43,950 ticks, against about 6,000 to 8,000 on `skirmish`), and `china,china` on Ashfall reaches the cap with first damage at tick 43,950. Runs that hit the cap (no winner) are existing behaviour, not failures: skirmish `frc,frc` and `frc,usa`; Dry Wells `usa,usa`, `frc,frc`, `frc,usa`; Broken Crown `frc,frc`, `frc,usa`, `china,frc`; Ashfall `usa,usa`, `china,china`.
