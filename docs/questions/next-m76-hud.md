@@ -44,3 +44,14 @@ Q7. Should units get a Guard order (hold an area, attack what comes close, chase
 Q8. Should players be able to drop map beacons (a ping with a short text) for teammates?
    a) Yes, up to 3 per player — ZH default (multiplayer.ini:37)   b) Pings without text   c) No beacons
    Recommendation: a, because 3v3 with friends needs a way to point at the map. Why it matters: beacons are commands in the lockstep stream (ZH sends them as game messages).
+
+## HUD v2 mock-up review (2026-11-09)
+GPT's [HUD v2 mock-up](../images/hud-v2/wargrid-hud-v2.png) ([notes](../images/hud-v2/wargrid-hud-v2-notes.md)) is a proposal, not a decision, and need not be perfect (user). Reviewed by Claude at 1920 x 1080; points to settle in M7.6 planning:
+- **Hotkey clash:** production buttons use `1` and `2` (tooltip "Hotkey 2"), but `1`-`0` are control groups (blueprint Controls). Production needs letter hotkeys, as already decided for HUD buttons.
+- **Screen coverage:** the bottom dock is about 23 % of the height; with the top bar and the floating alert, team, control-group and tooltip panels roughly a third of the screen is HUD (estimated by eye, not measured). On the Steam Deck (1280 x 800, the budget device) it covers more, or the 11-12 px labels become unreadable. Check at Deck size before choosing a layout.
+- **Pinned factory context:** selection panel and a pinned factory panel side by side (produce without deselecting the army); the notes say A/G/S must never go to the pinned factory, fallback is one dock that switches between army and factory. Open choice.
+- **Optional panels** (control-group bar, idle army, alert feed, production/upgrade overview, hover tooltip, team strip): each open, keep or drop; see also [hud-modern-recheck.md](hud-modern-recheck.md) once written.
+- **Readability at true scale (for the M7.5 art lab, not HUD):** infantry at 12 px read as dots (true size was chosen 2026-11-09); veterancy chevrons and the white unit diamonds are hard to see.
+- **Minor:** the teammate ping is drawn in red/pink rings; it should probably use the pinging ally's colour. "12/10 LOW POWER" reads fine without a power bar.
+- **Colours:** the notes propose exact owner colours and a teal UI accent that differ slightly from Claude's mock-up guesses; neither set is decided (art lab).
+- **Unchecked:** the three AoE IV / BAR source links in the notes were not fetched. Verified: Medium Tank cost 800 and 300 ticks (`game/scripts/simulation/definitions/china.gd:13`).

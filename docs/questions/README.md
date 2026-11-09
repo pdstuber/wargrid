@@ -11,7 +11,7 @@ Researched questions for the user's design wizard: one short question at a time,
 | [next-m75-art-world.md](next-m75-art-world.md) | Art pass world: terrain, fog, effects (M7.5) | Q2-Q5, Q8, Q12 answered 2026-11-09; Q1, Q6, Q7, Q9-Q11, Q13 wait for the in-game art lab |
 | [next-batch-a.md](next-batch-a.md) | Ground batch A | answered 2026-11-09 (all Zero Hour defaults) |
 | [next-batch-b.md](next-batch-b.md) | Ground batch B | open |
-| [next-m76-hud.md](next-m76-hud.md) | HUD (M7.6) | answered 2026-11-09 |
+| [next-m76-hud.md](next-m76-hud.md) | HUD (M7.6) | answered 2026-11-09; HUD v2 mock-up review points open for M7.6 planning |
 | [next-m8-bot-economy.md](next-m8-bot-economy.md) | Bot economy (M8) | open |
 | [next-bot-attack-reach.md](next-bot-attack-reach.md) | Bot attack reach | open, partly overtaken by the 2026-11-09 wave fix |
 | [next-m81-styles.md](next-m81-styles.md) | Difficulty and play styles (M8.1) | open |
