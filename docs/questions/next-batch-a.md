@@ -15,6 +15,8 @@ Sources. **ZH src** = ~/projects/CnC_Generals_Zero_Hour @ 0a05454, paths under `
 - **source** Only USA buildings slowly self-heal: 0.3 % of max health per second after 3 s without damage (`data\ini\gamedata.ini:392-393`; `BaseRegenerateUpdate` on 12 USA buildings only, e.g. Command Center factionbuilding.ini:1195; logic in Object/Update/BaseRenerateUpdate.cpp:118-142, not while under construction or being sold).
 
 ## Questions
+**Answered 2026-11-09: all a (Zero Hour default)**; recorded in the [design answers](../reference/design-answers-2026-11-08.md#ground-batch-a-systems-user-2026-11-09).
+
 Q1. If the building that researched an upgrade is destroyed, does the player keep the upgrade?
    a) Yes, researched upgrades stay — ZH default (ProductionUpdate.cpp:379, Player.cpp:3118)   b) No, the upgrade is lost with the building   c) Lost until the building is rebuilt
    Recommendation: a, because it is ZH and needs no extra state. Why it matters: sets the value of raiding tech buildings.

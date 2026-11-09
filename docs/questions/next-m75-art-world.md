@@ -19,18 +19,22 @@ Q1. Which ground look does each map get? **A/B**
 Q2. How should cliffs look? **A/B**
    a) Raised blocks at the map's real heights   b) A low raised step with a lit top and dark side, low enough never to hide a unit   c) Flat, darker cells (today)
    Recommendation: b, because it reads as 2.5D without needing cliffs and units sorted together over thousands of cells. Why it matters: a could hide units behind cliffs.
+   **Answered 2026-11-09 (A/B page): b, a low raised step with a lit top.**
 
 Q3. Should water look different from cliffs?
    a) Yes, a muted blue-grey flat surface   b) No, same as cliffs (today)
    Recommendation: a, because players need to tell "too high" from "too wet" (later hovercraft or amphibious units care). Why it matters: one colour, already separate in map data.
+   **Answered 2026-11-09: a, muted blue-grey water.**
 
 Q4. Should the converter bring back the source maps' decorations for M7.5?
    a) None; keep the ground plain   b) Roads, rocks and tree clusters as decoration only, no effect on movement   c) Also bridges and oil derricks with their game rules
    Recommendation: b, because a plain plane gives no sense of place and roads guide the eye; c is gameplay and belongs in a map milestone. Why it matters: a converter change under `tools/zh_map/` and a decoration layer in the cached terrain.
+   **Answered 2026-11-09: b, roads, rocks and tree clusters as decoration only.**
 
 Q5. When is the cell grid shown?
    a) Only while placing a building   b) Always, faint (today); interview Q6 rejected the grid-board option   c) Toggle with a key
    Recommendation: a, because the sheets and ZH show no grid, and placement is the only time cells matter to the player. Why it matters: one less full-map draw.
+   **Answered 2026-11-09: a, grid only while placing a building.**
 
 Q6. How should fogged areas look (M7.9)? **A/B**
    a) Darkened to about half brightness — ZH default (gamedata.ini:444-447)   b) A grey veil: colour drained, brightness kept   c) Slightly darker and colour drained
@@ -43,6 +47,7 @@ Q7. How should a travelling shell or rocket look? **A/B**
 Q8. What happens when an infantry soldier dies?
    a) The body lies about 3 s, then fades, gone at 8 s — ZH default (americainfantry.ini:960-966)   b) Falls and fades within about 2 s   c) Vanishes at once with a small flash
    Recommendation: b, because China hordes kill many soldiers at once and 8 s bodies pile up drawing cost. Why it matters: drawing cost in the horde layout, which already exceeds the budget.
+   **Answered 2026-11-09: b, falls and fades within about 2 s.**
 
 Q9. Which events get the big "signature" effect (larger core and expanding rings)? **A/B**
    a) Only special weapons (Nuke Cannon, Scud and later superweapons)   b) Special weapons and building deaths   c) Also every vehicle death
@@ -59,6 +64,7 @@ Q11. Should a unit flash briefly when it is hit? **A/B**
 Q12. Should players get an option to show allies in one colour and enemies in another?
    a) No, always each player's own colour — ZH default (no such mode found in its options or radar code)   b) Yes, as an option, off by default
    Recommendation: b, because in 3v3 with 8 colours "who is on my side" is the first question, and it doubles as a colour-blind aid. Why it matters: a settings entry and a second colour lookup.
+   **Answered 2026-11-09: b, an ally/enemy colour option, off by default.**
 
 Q13. What happens to a destroyed vehicle? **A/B**
    a) A neutral wreck stays, then sinks: tanks about 20 s, light vehicles about 8 s; units drive through it — ZH default (hulk.ini:537-577, 820-848)   b) A short wreck, about 3 s   c) No wreck, only an explosion

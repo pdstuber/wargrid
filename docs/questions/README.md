@@ -5,11 +5,11 @@ Researched questions for the user's design wizard: one short question at a time,
 | File | Topic | Status |
 |---|---|---|
 | [next-m79-fog.md](next-m79-fog.md) | Fog of war details (M7.9) | answered 2026-11-09 |
-| [next-m75-art-scope.md](next-m75-art-scope.md) | Art pass scope and process (M7.5) | Q1-Q2 answered 2026-11-09 (merge prep); Q3-Q11 open (next) |
-| [next-perf-targets.md](next-perf-targets.md) | Performance targets for the new look (browser, presets, render rate) | open |
-| [next-m75-art-look.md](next-m75-art-look.md) | Art pass look: units, buildings, colour (M7.5) | open |
-| [next-m75-art-world.md](next-m75-art-world.md) | Art pass world: terrain, fog, effects (M7.5) | open |
-| [next-batch-a.md](next-batch-a.md) | Ground batch A | open |
+| [next-m75-art-scope.md](next-m75-art-scope.md) | Art pass scope and process (M7.5) | answered 2026-11-09 |
+| [next-perf-targets.md](next-perf-targets.md) | Performance targets for the new look (browser, presets, render rate) | answered 2026-11-09 |
+| [next-m75-art-look.md](next-m75-art-look.md) | Art pass look: units, buildings, colour (M7.5) | answered 2026-11-09 (A/B ones on mock-up pages) |
+| [next-m75-art-world.md](next-m75-art-world.md) | Art pass world: terrain, fog, effects (M7.5) | Q2-Q5, Q8, Q12 answered 2026-11-09; Q1, Q6, Q7, Q9-Q11, Q13 wait for the in-game art lab |
+| [next-batch-a.md](next-batch-a.md) | Ground batch A | answered 2026-11-09 (all Zero Hour defaults) |
 | [next-batch-b.md](next-batch-b.md) | Ground batch B | open |
 | [next-m76-hud.md](next-m76-hud.md) | HUD (M7.6) | open |
 | [next-m8-bot-economy.md](next-m8-bot-economy.md) | Bot economy (M8) | open |
@@ -23,4 +23,4 @@ Researched questions for the user's design wizard: one short question at a time,
 | [playtest-controls.md](playtest-controls.md), [playtest-placement.md](playtest-placement.md) | Playtest follow-ups | answers in the design answers (friend's playtest, controls, repair); not checked question by question |
 | [avoidance-zh.md](avoidance-zh.md), [avoidance-other-engines.md](avoidance-other-engines.md), [avoidance-wargrid.md](avoidance-wargrid.md) | Unit avoidance research | answers in the design answers (unit avoidance scope and behaviour); spike on branch `spike-avoidance` |
 
-Start a round with: "Continue the design questions with docs/questions/next-m75-art-scope.md" (from Q3).
+Next by milestone order: `next-m76-hud.md`; the remaining world questions wait for the in-game art lab.

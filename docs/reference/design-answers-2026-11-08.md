@@ -63,6 +63,24 @@ All Zero Hour defaults, checked in the retail `gamedata.ini` and `default\object
 - Bonuses: damage 110/120/130 %, rate of fire 120/140/160 %, max health 120/130/150 % (gamedata.ini:333-338, 352-354); current health keeps its ratio.
 - Elite and Heroic self-heal 10 HP per 1000 ms, starting 5000 ms after the last hit (default\object.ini:101-106).
 
+## Ground batch A systems (user, 2026-11-09)
+
+Questions and sources: [next-batch-a.md](../questions/next-batch-a.md).
+
+- Researched upgrades stay when the building that researched them is destroyed (Zero Hour default).
+- Add-ons die with their vehicle (Zero Hour default).
+- Prerequisites are checked only at queueing: queued units finish after the prerequisite is lost, new orders are refused until it is rebuilt (Zero Hour default).
+- A shell flies to where its target stood when it was fired; a fast unit can dodge (Zero Hour default).
+- Tank shells hit structures and walls on the way (Zero Hour default).
+- Tank shells scatter against infantry by Zero Hour's per-weapon radius (Crusader 10 units), using the simulation's seeded random (Zero Hour default).
+- A unit ordered to attack inside its minimum range backs away until the target is past it, then fires (Zero Hour default).
+- Poison and radiation fields hurt everything on the ground, own and allied units included, not aircraft (Zero Hour default).
+- A small poison field lives a fixed 10 s; a new field cleans its spot first, so fields never stack (Zero Hour default; replaces the blueprint's "duration after the last hit").
+- Hazard damage follows Zero Hour's armour table: tanks 25 % poison and 50 % radiation, trucks 50 % poison, buildings 1 % poison and 0 % radiation, Hazmat troops immune (Zero Hour default).
+- The FRC Palace's garrison cannot be cleared by flame or toxin clear-building weapons (Zero Hour default).
+- USA buildings self-heal 0.3 % of max health per second after 3 s without damage, not while under construction or being sold; other factions' buildings do not (Zero Hour default; capability data, not a faction branch).
+- FRC rebuild holes (raised by the user): most FRC buildings leave a hole when destroyed (Zero Hour GLA: 500 HP, heals 0.5 % per second, `HoleMaxHealth` / `HoleHealthRegen%PerSecond` in retail `data\ini\object\factionbuilding.ini:143-144`, 11 `RebuildHoleExposeDie` buildings); after 20 s (`WorkerRespawnDelay`) a worker spawns and rebuilds the building unless the hole is destroyed; a killed worker or rebuild restarts the wait (`RebuildHoleBehavior.cpp:200-335`). Lands in batch A gate A4 (FRC), Zero Hour behaviour. Not verified: whether the rebuild costs money (`ai->construct(..., TRUE)`, :259).
+
 ## Minimap (M7.6)
 
 - Free with the Command Center for all three factions for now (Zero Hour differs per faction: USA free, China $500 upgrade, GLA $500 radar van; revisit when those items exist).

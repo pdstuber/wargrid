@@ -12,6 +12,7 @@ Sources. The art pack (`docs/art-direction/`, made with GPT; trimmed 2026-11-09,
 - **source** The world view redraws only when a new tick's state arrives or the hover changes (`world_view.gd:53-88` `queue_redraw` calls); frames in between replay cached draw commands, so the cost sits in tick frames. Recoil, turret aim or smooth movement between ticks would need a redraw every frame. The render goal is 60 fps (16.7 ms), the simulation 30 Hz (`performance.md:8`).
 - **source** Retail ZH renders at 30 fps, the logic rate, and does not interpolate between logic frames: the frame limit is on and set to 30 (INI `data/ini/gamedata.ini:10-11`), one logic update per engine update (ZH src `GeneralsMD/Code/GameEngine/Source/Common/GameEngine.cpp:746-776, 879-884`), no lerp in `GameClient/Drawable.cpp`. The GeneralsGameCode fork added a frame pacer and interpolation later (its `Drawable.cpp:1381-1389`).
 - **source** User, 2026-11-09: the new graphics are not negotiable; if they exceed the budget, a performance spike speeds things up or the budgets change (by explicit decision, never silently: `AGENTS.md`).
+- **source** How other engines do it (Opus research agent, 2026-11-09, for Q7-Q8): data names one asset per kind and one shared renderer draws all kinds; per unit only a transform and a team-colour index enter a batch. OpenRA: YAML sequences per actor (`mods/ra/sequences/vehicles.yaml:99-108`), one sprite batcher flushing only when full (`OpenRA.Game/Graphics/SpriteRenderer.cs:37,108-116`); voxel units are rendered to offscreen sprites every frame, not baked per facing (`OpenRA.Mods.Cnc/Traits/World/ModelRenderer.cs:98,186-189`). Recoil: unit def `objectName` names the model (`rts/Sim/Units/UnitDef.cpp:646`), all models in one VAO drawn by one `glMultiDrawElementsIndirect` with a per-instance palette index (`rts/Rendering/Models/3DModelVAO.cpp:296-302,405-439`). Zero Hour: INI `W3DModelDraw` `Model =` per condition state (`W3DModelDraw.cpp:1210-1213,1420-1421`). No engine writes a draw function per kind (**inferred** from all three). **inferred** Godot `MultiMesh` per kind would break isometric depth order between kinds (2D has no depth buffer); one triangle array is the 2D equivalent. No flat-shaded indie RTS dev blog found.
 - **source** Licence for original art was "undecided" in README until Q2 below; the logo and Wargrid-made audio are GPL-3.0-or-later. Geometry drawn by code is code.
 
 ## Questions
@@ -30,37 +31,45 @@ Q2. Which licence should Wargrid's own art use (sheets, any later textures, icon
 Q3. Should the look questions marked **A/B** be answered on mock-up pages first, before any game code?
    a) Yes: variants of the reference SVGs (ground darkness, selection colour, roof colour, faction outlines at real size, 8 owner colours, shadows) on labelled A/B pages in Firefox, about five steps per page   b) No, wait for the in-game art lab
    Recommendation: a for colour and shape, because SVG variants cost minutes and you answered the sound spike this way; motion, shake, fog and cost still need the lab. Why it matters: most of the look files can be answered before `spike-design` merges.
+   **Answered 2026-11-09: a, SVG A/B pages first.**
 
 Q4. What should the M7.5 Task 1 spike compare, now that pixel sprites are out?
    a) Nothing: build the art lab straight in the new style   b) Today's rectangles against the new style, on one A/B page   c) Two variants of the new style for each open look question (for example dark vs lighter ground), on A/B pages
    Recommendation: c, because the open look questions are easier to answer side by side in the real game than as sheets, and that is the workflow you liked in the sound spike. Why it matters: decides how many lab variants get built.
-
+   **Answered 2026-11-09 (asked twice, reworded): c, two in-game variants for each look question the SVG pages cannot settle (motion, shake, fog, effects, cost).**
 Q5. When should the art lab run?
    a) Where M7.5 sits: after ground batch A   b) Right after `spike-design` merges, as an evidence-only spike on its own branch (like the sound spike); the rest of M7.5 stays after batch A   c) Before batch A, so batch A's new units are drawn once in the new style
    Recommendation: b, because the lab touches no simulation or movement, so it does not collide with avoidance, and early evidence on cost and readability shapes batch A's kinds. Why it matters: changes milestone order only if you pick c.
+   **Answered 2026-11-09: b, evidence-only spike on its own branch soon; rest of M7.5 after batch A.**
 
 Q6. Which objects go into the art lab?
    a) The handoff's five: tank, bulldozer, infantry, power plant, war factory   b) Those five plus supply source and supply depot (the economy screen)   c) One faction's full current roster
    Recommendation: b, because supply piles and the depot fill most of every base screen and the sheets barely show them. Why it matters: lab size.
+   **Answered 2026-11-09: b, the five plus supply source and supply depot.**
 
 Q7. How should shapes be described in code?
    a) A short shape list per kind (boxes and cylinders: offset, size, height, colour slot), drawn by one shared function   b) One hand-written draw function per kind, as the handoff suggests   c) Import the SVG sheets as textures
    Recommendation: a, because ~40 kinds as data is far less code than 40 functions, faction style stays data, and the same list rotates to any heading. Why it matters: decides how cheap it is to add every later unit.
+   **Answered 2026-11-09 (after the engine research above): a, a shape list per kind drawn by one shared function.**
 
 Q8. How should the game draw them?
    a) Triangulate each shape once at load, then send all units as one triangle array per tick (one draw call)   b) One `draw_polygon` per shape (simplest, but each is its own draw call: 3,000-7,500 per frame for 300 units)   c) Bake each kind, owner and heading into textures at match start and draw sprites
    Recommendation: a, because the Compatibility renderer cannot batch polygons, and a keeps the crisp vector look and depth order that c loses ([levers note](../reference/art-perf-levers.md) §3). Why it matters: the biggest performance risk of the whole art pass.
+   **Answered 2026-11-09: a, triangulate once at load, one triangle array per tick.**
 
 Q9. Must the art lab's exit include a measured Web build, not just the native benchmark?
    a) Native rendered benchmark row only (today's gate)   b) Native row plus a Web frame-time measurement of the same scene
    Recommendation: b, because polygon-heavy drawing costs more in WebAssembly and the Web build is a target platform. Why it matters: a native pass could hide a Web failure.
+   **Answered 2026-11-09: b, native row plus a Web frame-time measurement of the same scene.**
 
 Q10. Should every shot and death be shown even when online play catches up several ticks at once?
    a) Yes: collect visual events after every simulation step, as sound already does   b) No: show only the latest tick (today)
    Recommendation: a, because missing muzzle flashes online look like lag, and the pattern exists in `SoundDirector.collect_step()`. Why it matters: small new presentation code with tests for catch-up, repeated ticks and restart.
+   **Answered 2026-11-09: a, collect visual events after every step.**
 
 Q11. Should tall buildings and units overlap correctly (a tank behind a factory hidden by its roof)?
    a) Yes: draw buildings and units in one depth-sorted list   b) Keep buildings flat enough that it never matters   c) Keep drawing buildings always behind units (today)
    Recommendation: a, because the sheets' tall factories look wrong otherwise; picking stays on ground footprints. Why it matters: replaces one renderer assumption and its view test.
+   **Answered 2026-11-09: a, one depth-sorted list; picking stays on ground footprints.**
 
 Render rate, smooth movement, quality presets and the performance budget moved to [next-perf-targets.md](next-perf-targets.md) (2026-11-09).
