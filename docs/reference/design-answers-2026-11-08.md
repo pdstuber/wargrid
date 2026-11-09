@@ -173,3 +173,32 @@ Wargrid has no repair today (`rg -i repair game/scripts`: nothing). All Zero Hou
 - Rate 2 % of max health per second per builder, free, several builders add up (RepairHealthPercentPerSecond 2 %; DozerAIUpdate.cpp:719, 725-727).
 - Bot builders use the same scan range as humans (Zero Hour doubles it for bots, aidata.ini AIDozerBoredRadiusModifier 2.0; not copied, fair bots).
 - Pins moved by the depot-slot change (Ashfall team match digest, core series, peak units) may also be re-pinned overnight, recorded with old and new values, in their own commit (user, 2026-11-08).
+
+## Simulation core and state digest (user, 2026-11-09 late evening)
+
+Questions from [sim core options](sim-core-options.md) (Q1-Q15) and [state digest research](state-digest-research.md) (Q1-Q8). Own engine is out of scope unless done for fun; C++ in Godot is acceptable; Rust in Godot is the leaning; the browser stays the primary target, a reduced browser mode is only a measured fallback (user).
+
+- Write down the simulation's public interface (commands in, snapshot and events out) as a short note now.
+- New tests check the game only through that interface; the 19 existing test files that read internals are not migrated now.
+- Replace Godot's `Dictionary.hash()` in the online desync digest with our own hash over every field (one re-pin).
+- The hash walks every field automatically with sorted keys (not Zero Hour's hand-written per-class list).
+- Hash function: 64-bit FNV-1a with a fold, 16 hex characters on the wire (relay unchanged).
+- If the full hash is too slow on a hash tick, spread one hash over the next 30 ticks (desync detected about 1 s later), not Zero Hour's every-100-ticks.
+- 0.0 and -0.0 hash the same (as Godot today), so a Python checker can verify the JSON desync dump.
+- The new hash ships together with the golden test scenarios: one re-pin.
+- A new game version keeps old and new clients apart (the relay already refuses a build mismatch); no protocol bump.
+- The CI replay traces switch to the same digest (today a Godot-only SHA-256 over `var_to_bytes`, `test_replay.gd:56`).
+- The simulation performance spike starts with a one-day check that a tiny Rust extension (godot-rust) runs in Firefox on the Steam Deck.
+- If native code wins: Rust, with C++ only if Rust fails in the browser.
+- Pass line: Rust must show at least 5x after the data hand-off cost.
+- If native wins, production also sends the cross-origin isolation headers (needed for any extension in the browser; refines the earlier "test app only").
+- Whole simulation port or hot loops first: decided after the spike (the data hand-off cost decides).
+- During any port the GDScript simulation stays the reference until the golden scenarios match (the rollback).
+- Fixed-point (integer) simulation maths, like OpenRA's 1024 units per cell (`OpenRA.Game/WDist.cs:22`): not now; floats with written determinism rules and a CI check, and switch to integers as part of a Rust port if one happens (one re-pin). User asked for the upsides first (determinism by construction, cross-language for free, simpler hashing).
+- Browser fallback trigger (if the browser proves too slow): either skirmish simulation p95 over 10 ms in Firefox on the Steam Deck after the spike's fixes, or frame p95 over 16.7 ms at Low.
+- In that fallback the browser defaults to Low graphics; High stays available with a warning (graphics are per player).
+- In that fallback the host can pick a lower unit cap per match (a simulation switch, identical for all players).
+- No reduced update rate for far-away or idle units until measured (it changes fights).
+- Per-match switches travel with the host's match settings in the start message; only the code fingerprint (R1.1) gates rooms.
+- Golden scenarios get a horde-style case only when a horde mode is planned.
+
