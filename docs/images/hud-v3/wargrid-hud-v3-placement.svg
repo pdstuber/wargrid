@@ -1,0 +1,1292 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <style>text{font-family:Arial,Helvetica,sans-serif}</style>
+  <rect x="0" y="0" width="1920" height="1080" rx="0" fill="#575C55" />
+  <defs>
+    <clipPath id="view-0">
+      <rect x="0" y="72" width="960" height="720" rx="0" fill="white" />
+    </clipPath>
+    <clipPath id="view-1">
+      <rect x="960" y="72" width="960" height="720" rx="0" fill="white" />
+    </clipPath>
+  </defs>
+  <g clip-path="url(#view-0)">
+    <g id="state-0-world-at-game-scale" transform="translate(-380 -110)">
+      <polygon points="0,118 510,70 888,404 376,734 0,642" fill="#535A54" />
+      <polygon points="1100,85 1920,90 1920,699 1520,615 1302,342" fill="#5A6057" />
+      <polygon points="0,834 1360,95 1490,95 0,935" fill="#666657" />
+      <polygon points="1014,644 1450,484 1920,805 1920,1080 1400,1080" fill="#505A53" />
+      <polygon points="175,425 195,417 212,428 191,438" fill="#697267" />
+      <polygon points="196,437 216,429 233,440 212,450" fill="#697267" />
+      <polygon points="1500,666 1520,658 1537,669 1516,679" fill="#697267" />
+      <polygon points="1523,678 1543,670 1560,681 1539,691" fill="#697267" />
+      <polygon points="1320,184 1340,176 1357,187 1336,197" fill="#697267" />
+      <polygon points="1343,190 1363,182 1380,193 1359,203" fill="#697267" />
+      <g id="state-0-own-headquarters" transform="translate(410 252)" data-width="150">
+        <polygon points="-75.0,0 0,37.5 75.0,0 0,-37.5" fill="#354440" />
+        <polygon points="-75.0,-34.5 0,3.0 0,37.5 -75.0,0" fill="#2B414B" />
+        <polygon points="0,3.0 75.0,-34.5 75.0,0 0,37.5" fill="#3C5662" />
+        <polygon points="-75.0,-34.5 0,-72.0 75.0,-34.5 0,3.0" fill="#326A9B" />
+      </g>
+      <g id="state-0-own-power-plant" transform="translate(287 363)" data-width="112">
+        <polygon points="-56.0,0 0,28.0 56.0,0 0,-28.0" fill="#354440" />
+        <polygon points="-56.0,-25.76 0,2.2399999999999984 0,28.0 -56.0,0" fill="#2B414B" />
+        <polygon points="0,2.2399999999999984 56.0,-25.76 56.0,0 0,28.0" fill="#3C5662" />
+        <polygon points="-56.0,-25.76 0,-53.760000000000005 56.0,-25.76 0,2.2399999999999984" fill="#326A9B" />
+        <rect x="-28" y="-51.760000000000005" width="20" height="28" rx="0" fill="#3C5765" />
+        <ellipse cx="-18" cy="-51.760000000000005" rx="10" ry="5" fill="#326A9B" stroke="#456F90" stroke-width="2" />
+        <rect x="8" y="-51.760000000000005" width="20" height="28" rx="0" fill="#3C5765" />
+        <ellipse cx="18" cy="-51.760000000000005" rx="10" ry="5" fill="#326A9B" stroke="#456F90" stroke-width="2" />
+      </g>
+      <g id="state-0-own-factory" transform="translate(540 556)" data-width="190">
+        <polygon points="-95.0,0 0,47.5 95.0,0 0,-47.5" fill="#354440" />
+        <polygon points="-95.0,-43.7 0,3.799999999999997 0,47.5 -95.0,0" fill="#2B414B" />
+        <polygon points="0,3.799999999999997 95.0,-43.7 95.0,0 0,47.5" fill="#3C5662" />
+        <polygon points="-95.0,-43.7 0,-91.2 95.0,-43.7 0,3.799999999999997" fill="#326A9B" />
+        <polygon points="15.200000000000001,12.54 72.2,-23.560000000000002 72.2,11.399999999999999 15.200000000000001,47.5" fill="#0D1B22" />
+        <polygon points="15.200000000000001,47.5 72.2,11.399999999999999 90.25,23.75 33.25,59.85" fill="#718B95" />
+      </g>
+      <g id="state-0-own-supply-depot" transform="translate(366 650)" data-width="138">
+        <polygon points="-69.0,0 0,34.5 69.0,0 0,-34.5" fill="#354440" />
+        <polygon points="-32,-2 -20,-8 -9,-2 -21,4" fill="#A89566" />
+        <polygon points="-32,-2 -21,4 -21,13 -32,7" fill="#756D50" />
+        <polygon points="-8,10 4,4 15,10 3,16" fill="#A89566" />
+        <polygon points="-8,10 3,16 3,25 -8,19" fill="#756D50" />
+        <polygon points="15,-10 27,-16 38,-10 26,-4" fill="#A89566" />
+        <polygon points="15,-10 26,-4 26,5 15,-1" fill="#756D50" />
+        <line x1="-41.4" y1="0" x2="-41.4" y2="-31.740000000000002" stroke="#46616C" stroke-width="7" />
+        <line x1="41.4" y1="0" x2="41.4" y2="-31.740000000000002" stroke="#46616C" stroke-width="7" />
+        <line x1="-41.4" y1="-31.740000000000002" x2="41.4" y2="-31.740000000000002" stroke="#627E89" stroke-width="7" />
+      </g>
+      <g id="state-0-enemy-factory" transform="translate(1490 338)" data-width="190">
+        <polygon points="-95.0,0 0,47.5 95.0,0 0,-47.5" fill="#354440" />
+        <polygon points="-95.0,-43.7 0,3.799999999999997 0,47.5 -95.0,0" fill="#2B414B" />
+        <polygon points="0,3.799999999999997 95.0,-43.7 95.0,0 0,47.5" fill="#3C5662" />
+        <polygon points="-95.0,-43.7 0,-91.2 95.0,-43.7 0,3.799999999999997" fill="#9A504D" />
+        <polygon points="15.200000000000001,12.54 72.2,-23.560000000000002 72.2,11.399999999999999 15.200000000000001,47.5" fill="#0D1B22" />
+        <polygon points="15.200000000000001,47.5 72.2,11.399999999999999 90.25,23.75 33.25,59.85" fill="#718B95" />
+      </g>
+      <g id="state-0-enemy-power-plant" transform="translate(1642 429)" data-width="112">
+        <polygon points="-56.0,0 0,28.0 56.0,0 0,-28.0" fill="#354440" />
+        <polygon points="-56.0,-25.76 0,2.2399999999999984 0,28.0 -56.0,0" fill="#2B414B" />
+        <polygon points="0,2.2399999999999984 56.0,-25.76 56.0,0 0,28.0" fill="#3C5662" />
+        <polygon points="-56.0,-25.76 0,-53.760000000000005 56.0,-25.76 0,2.2399999999999984" fill="#9A504D" />
+        <rect x="-28" y="-51.760000000000005" width="20" height="28" rx="0" fill="#3C5765" />
+        <ellipse cx="-18" cy="-51.760000000000005" rx="10" ry="5" fill="#9A504D" stroke="#456F90" stroke-width="2" />
+        <rect x="8" y="-51.760000000000005" width="20" height="28" rx="0" fill="#3C5765" />
+        <ellipse cx="18" cy="-51.760000000000005" rx="10" ry="5" fill="#9A504D" stroke="#456F90" stroke-width="2" />
+      </g>
+      <g id="state-0-own-unit-01" transform="translate(842 482)" data-side="own" data-kind="tank" data-selected="true" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#438FE5" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#73BF73" />
+      </g>
+      <g id="state-0-own-unit-02" transform="translate(878 466)" data-side="own" data-kind="tank" data-selected="true" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#438FE5" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="20.16" height="3.5" rx="0" fill="#73BF73" />
+        <path d="M17 -14 l3 2 l3 -2" fill="none" stroke="#E9E1B9" stroke-width="1.2" stroke-linejoin="round" />
+      </g>
+      <g id="state-0-own-unit-03" transform="translate(907 488)" data-side="own" data-kind="tank" data-selected="true" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#438FE5" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="14.879999999999999" height="3.5" rx="0" fill="#E1BC55" />
+      </g>
+      <g id="state-0-own-unit-04" transform="translate(823 516)" data-side="own" data-kind="tank" data-selected="true" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#438FE5" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#73BF73" />
+      </g>
+      <g id="state-0-own-unit-05" transform="translate(860 534)" data-side="own" data-kind="tank" data-selected="true" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#438FE5" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="6.720000000000001" height="3.5" rx="0" fill="#E16B63" />
+      </g>
+      <g id="state-0-own-unit-06" transform="translate(903 530)" data-side="own" data-kind="tank" data-selected="true" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#438FE5" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="22.080000000000002" height="3.5" rx="0" fill="#73BF73" />
+      </g>
+      <g id="state-0-own-unit-07" transform="translate(941 510)" data-side="own" data-kind="rotary" data-selected="true" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#438FE5" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="2" y1="-7" x2="13" y2="-12" stroke="#93AAB4" stroke-width="1.8" />
+          <line x1="4" y1="-7" x2="15" y2="-12" stroke="#93AAB4" stroke-width="1.8" />
+        </g>
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="18.48" height="3.5" rx="0" fill="#73BF73" />
+        <path d="M17 -14 l3 2 l3 -2" fill="none" stroke="#E9E1B9" stroke-width="1.2" stroke-linejoin="round" />
+      </g>
+      <g id="state-0-own-unit-08" transform="translate(957 543)" data-side="own" data-kind="rotary" data-selected="true" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#438FE5" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="2" y1="-7" x2="13" y2="-12" stroke="#93AAB4" stroke-width="1.8" />
+          <line x1="4" y1="-7" x2="15" y2="-12" stroke="#93AAB4" stroke-width="1.8" />
+        </g>
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="11.52" height="3.5" rx="0" fill="#E1BC55" />
+      </g>
+      <g id="state-0-own-unit-09" transform="translate(878 569)" data-side="own" data-kind="infantry" data-selected="true" data-width="12">
+        <ellipse cx="0" cy="0" rx="6" ry="3" fill="#1F2C30" opacity="0.45" />
+        <polygon points="-3,-2 0,0 0,-9 -3,-11" fill="#2D4149" />
+        <polygon points="0,0 4,-2 4,-11 0,-9" fill="#3F5963" />
+        <ellipse cx="0" cy="-12" rx="4" ry="2.5" fill="#438FE5" />
+        <line x1="2" y1="-7" x2="6" y2="-10" stroke="#94ABB3" stroke-width="1.5" />
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#73BF73" />
+      </g>
+      <g id="state-0-own-unit-10" transform="translate(900 581)" data-side="own" data-kind="infantry" data-selected="true" data-width="12">
+        <ellipse cx="0" cy="0" rx="6" ry="3" fill="#1F2C30" opacity="0.45" />
+        <polygon points="-3,-2 0,0 0,-9 -3,-11" fill="#2D4149" />
+        <polygon points="0,0 4,-2 4,-11 0,-9" fill="#3F5963" />
+        <ellipse cx="0" cy="-12" rx="4" ry="2.5" fill="#438FE5" />
+        <line x1="2" y1="-7" x2="6" y2="-10" stroke="#94ABB3" stroke-width="1.5" />
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="16.799999999999997" height="3.5" rx="0" fill="#73BF73" />
+        <path d="M17 -14 l3 2 l3 -2" fill="none" stroke="#E9E1B9" stroke-width="1.2" stroke-linejoin="round" />
+      </g>
+      <g id="state-0-own-unit-11" transform="translate(925 566)" data-side="own" data-kind="infantry" data-selected="true" data-width="12">
+        <ellipse cx="0" cy="0" rx="6" ry="3" fill="#1F2C30" opacity="0.45" />
+        <polygon points="-3,-2 0,0 0,-9 -3,-11" fill="#2D4149" />
+        <polygon points="0,0 4,-2 4,-11 0,-9" fill="#3F5963" />
+        <ellipse cx="0" cy="-12" rx="4" ry="2.5" fill="#438FE5" />
+        <line x1="2" y1="-7" x2="6" y2="-10" stroke="#94ABB3" stroke-width="1.5" />
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="13.200000000000001" height="3.5" rx="0" fill="#E1BC55" />
+      </g>
+      <g id="state-0-own-unit-12" transform="translate(947 586)" data-side="own" data-kind="infantry" data-selected="true" data-width="12">
+        <ellipse cx="0" cy="0" rx="6" ry="3" fill="#1F2C30" opacity="0.45" />
+        <polygon points="-3,-2 0,0 0,-9 -3,-11" fill="#2D4149" />
+        <polygon points="0,0 4,-2 4,-11 0,-9" fill="#3F5963" />
+        <ellipse cx="0" cy="-12" rx="4" ry="2.5" fill="#438FE5" />
+        <line x1="2" y1="-7" x2="6" y2="-10" stroke="#94ABB3" stroke-width="1.5" />
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#73BF73" />
+      </g>
+      <g id="state-0-own-unit-13" transform="translate(734 583)" data-side="own" data-kind="tank" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#438FE5" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+      </g>
+      <g id="state-0-own-unit-14" transform="translate(776 601)" data-side="own" data-kind="tank" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#438FE5" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+      </g>
+      <g id="state-0-own-unit-15" transform="translate(748 624)" data-side="own" data-kind="tank" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#438FE5" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+      </g>
+      <g id="state-0-own-unit-16" transform="translate(1063 601)" data-side="own" data-kind="tank" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#438FE5" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="17.28" height="3.5" rx="0" fill="#73BF73" />
+      </g>
+      <g id="state-0-own-unit-17" transform="translate(1096 580)" data-side="own" data-kind="tank" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#438FE5" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+        <path d="M17 -14 l3 2 l3 -2" fill="none" stroke="#E9E1B9" stroke-width="1.2" stroke-linejoin="round" />
+      </g>
+      <g id="state-0-own-unit-18" transform="translate(1041 570)" data-side="own" data-kind="rotary" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#438FE5" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="2" y1="-7" x2="13" y2="-12" stroke="#93AAB4" stroke-width="1.8" />
+          <line x1="4" y1="-7" x2="15" y2="-12" stroke="#93AAB4" stroke-width="1.8" />
+        </g>
+      </g>
+      <g id="state-0-own-unit-19" transform="translate(1065 546)" data-side="own" data-kind="rotary" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#438FE5" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="2" y1="-7" x2="13" y2="-12" stroke="#93AAB4" stroke-width="1.8" />
+          <line x1="4" y1="-7" x2="15" y2="-12" stroke="#93AAB4" stroke-width="1.8" />
+        </g>
+      </g>
+      <g id="state-0-own-unit-20" transform="translate(726 647)" data-side="own" data-kind="infantry" data-selected="false" data-width="12">
+        <ellipse cx="0" cy="0" rx="6" ry="3" fill="#1F2C30" opacity="0.45" />
+        <polygon points="-3,-2 0,0 0,-9 -3,-11" fill="#2D4149" />
+        <polygon points="0,0 4,-2 4,-11 0,-9" fill="#3F5963" />
+        <ellipse cx="0" cy="-12" rx="4" ry="2.5" fill="#438FE5" />
+        <line x1="2" y1="-7" x2="6" y2="-10" stroke="#94ABB3" stroke-width="1.5" />
+      </g>
+      <g id="state-0-own-unit-21" transform="translate(751 660)" data-side="own" data-kind="infantry" data-selected="false" data-width="12">
+        <ellipse cx="0" cy="0" rx="6" ry="3" fill="#1F2C30" opacity="0.45" />
+        <polygon points="-3,-2 0,0 0,-9 -3,-11" fill="#2D4149" />
+        <polygon points="0,0 4,-2 4,-11 0,-9" fill="#3F5963" />
+        <ellipse cx="0" cy="-12" rx="4" ry="2.5" fill="#438FE5" />
+        <line x1="2" y1="-7" x2="6" y2="-10" stroke="#94ABB3" stroke-width="1.5" />
+      </g>
+      <g id="state-0-own-unit-22" transform="translate(399 636)" data-side="own" data-kind="truck" data-selected="false" data-width="24">
+        <ellipse cx="0" cy="4" rx="12.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(0.8)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-11,-3 -3,-7 4,-4 -4,0" fill="#647B86" />
+          <polygon points="4,-4 9,-6 14,-3 9,0" fill="#438FE5" />
+        </g>
+      </g>
+      <g id="state-0-own-unit-23" transform="translate(432 657)" data-side="own" data-kind="truck" data-selected="false" data-width="24">
+        <ellipse cx="0" cy="4" rx="12.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(0.8)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-11,-3 -3,-7 4,-4 -4,0" fill="#647B86" />
+          <polygon points="4,-4 9,-6 14,-3 9,0" fill="#438FE5" />
+        </g>
+      </g>
+      <g id="state-0-own-unit-24" transform="translate(321 621)" data-side="own" data-kind="truck" data-selected="false" data-width="24">
+        <ellipse cx="0" cy="4" rx="12.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(0.8)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-11,-3 -3,-7 4,-4 -4,0" fill="#647B86" />
+          <polygon points="4,-4 9,-6 14,-3 9,0" fill="#438FE5" />
+        </g>
+      </g>
+      <g id="state-0-own-unit-25" transform="translate(610 603)" data-side="own" data-kind="builder" data-selected="false" data-width="24">
+        <ellipse cx="0" cy="4" rx="12.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(0.8)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-5,-6 1,-9 6,-6 0,-3" fill="#438FE5" />
+          <polygon points="-5,-6 0,-3 0,3 -5,0" fill="#2E4550" />
+          <polygon points="7,1 16,-4 18,2 9,7" fill="#8AA0AA" />
+        </g>
+        <polygon points="-16,1 0,-7 16,1 0,9" fill="none" stroke="#FFFFFF" stroke-width="1" />
+      </g>
+      <g id="state-0-enemy-unit-01" transform="translate(1134 430)" data-side="enemy" data-kind="tank" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#E66963" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#E66963" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="9.600000000000001" height="3.5" rx="0" fill="#E1BC55" />
+      </g>
+      <g id="state-0-enemy-unit-02" transform="translate(1172 409)" data-side="enemy" data-kind="tank" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#E66963" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#E66963" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+      </g>
+      <g id="state-0-enemy-unit-03" transform="translate(1208 432)" data-side="enemy" data-kind="tank" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#E66963" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#E66963" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="19.200000000000003" height="3.5" rx="0" fill="#73BF73" />
+        <path d="M17 -14 l3 2 l3 -2" fill="none" stroke="#E9E1B9" stroke-width="1.2" stroke-linejoin="round" />
+        <path d="M17 -18 l3 2 l3 -2" fill="none" stroke="#E9E1B9" stroke-width="1.2" stroke-linejoin="round" />
+      </g>
+      <g id="state-0-enemy-unit-04" transform="translate(1238 399)" data-side="enemy" data-kind="tank" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#E66963" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#E66963" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+      </g>
+      <g id="state-0-enemy-unit-05" transform="translate(1161 465)" data-side="enemy" data-kind="tank" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#E66963" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#E66963" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+      </g>
+      <g id="state-0-enemy-unit-06" transform="translate(1203 471)" data-side="enemy" data-kind="tank" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#E66963" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#E66963" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="19.200000000000003" height="3.5" rx="0" fill="#73BF73" />
+        <path d="M17 -14 l3 2 l3 -2" fill="none" stroke="#E9E1B9" stroke-width="1.2" stroke-linejoin="round" />
+      </g>
+      <g id="state-0-enemy-unit-07" transform="translate(1250 450)" data-side="enemy" data-kind="tank" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#E66963" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#E66963" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+      </g>
+      <g id="state-0-enemy-unit-08" transform="translate(1294 428)" data-side="enemy" data-kind="tank" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#E66963" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#E66963" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+      </g>
+      <g id="state-0-enemy-unit-09" transform="translate(1233 500)" data-side="enemy" data-kind="rotary" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#E66963" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#E66963" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="2" y1="-7" x2="13" y2="-12" stroke="#93AAB4" stroke-width="1.8" />
+          <line x1="4" y1="-7" x2="15" y2="-12" stroke="#93AAB4" stroke-width="1.8" />
+        </g>
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="19.200000000000003" height="3.5" rx="0" fill="#73BF73" />
+        <path d="M17 -14 l3 2 l3 -2" fill="none" stroke="#E9E1B9" stroke-width="1.2" stroke-linejoin="round" />
+      </g>
+      <g id="state-0-enemy-unit-10" transform="translate(1270 480)" data-side="enemy" data-kind="rotary" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#E66963" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#E66963" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="2" y1="-7" x2="13" y2="-12" stroke="#93AAB4" stroke-width="1.8" />
+          <line x1="4" y1="-7" x2="15" y2="-12" stroke="#93AAB4" stroke-width="1.8" />
+        </g>
+      </g>
+      <g id="state-0-enemy-unit-11" transform="translate(1307 467)" data-side="enemy" data-kind="rotary" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#E66963" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#E66963" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="2" y1="-7" x2="13" y2="-12" stroke="#93AAB4" stroke-width="1.8" />
+          <line x1="4" y1="-7" x2="15" y2="-12" stroke="#93AAB4" stroke-width="1.8" />
+        </g>
+      </g>
+      <g id="state-0-enemy-unit-12" transform="translate(1174 506)" data-side="enemy" data-kind="infantry" data-selected="false" data-width="12">
+        <ellipse cx="0" cy="0" rx="6" ry="3" fill="#1F2C30" opacity="0.45" />
+        <polygon points="-3,-2 0,0 0,-9 -3,-11" fill="#2D4149" />
+        <polygon points="0,0 4,-2 4,-11 0,-9" fill="#3F5963" />
+        <ellipse cx="0" cy="-12" rx="4" ry="2.5" fill="#E66963" />
+        <line x1="2" y1="-7" x2="6" y2="-10" stroke="#94ABB3" stroke-width="1.5" />
+      </g>
+      <g id="state-0-enemy-unit-13" transform="translate(1190 518)" data-side="enemy" data-kind="infantry" data-selected="false" data-width="12">
+        <ellipse cx="0" cy="0" rx="6" ry="3" fill="#1F2C30" opacity="0.45" />
+        <polygon points="-3,-2 0,0 0,-9 -3,-11" fill="#2D4149" />
+        <polygon points="0,0 4,-2 4,-11 0,-9" fill="#3F5963" />
+        <ellipse cx="0" cy="-12" rx="4" ry="2.5" fill="#E66963" />
+        <line x1="2" y1="-7" x2="6" y2="-10" stroke="#94ABB3" stroke-width="1.5" />
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="9.600000000000001" height="3.5" rx="0" fill="#E1BC55" />
+      </g>
+      <g id="state-0-enemy-unit-14" transform="translate(1207 529)" data-side="enemy" data-kind="infantry" data-selected="false" data-width="12">
+        <ellipse cx="0" cy="0" rx="6" ry="3" fill="#1F2C30" opacity="0.45" />
+        <polygon points="-3,-2 0,0 0,-9 -3,-11" fill="#2D4149" />
+        <polygon points="0,0 4,-2 4,-11 0,-9" fill="#3F5963" />
+        <ellipse cx="0" cy="-12" rx="4" ry="2.5" fill="#E66963" />
+        <line x1="2" y1="-7" x2="6" y2="-10" stroke="#94ABB3" stroke-width="1.5" />
+      </g>
+      <g id="state-0-enemy-unit-15" transform="translate(1227 543)" data-side="enemy" data-kind="infantry" data-selected="false" data-width="12">
+        <ellipse cx="0" cy="0" rx="6" ry="3" fill="#1F2C30" opacity="0.45" />
+        <polygon points="-3,-2 0,0 0,-9 -3,-11" fill="#2D4149" />
+        <polygon points="0,0 4,-2 4,-11 0,-9" fill="#3F5963" />
+        <ellipse cx="0" cy="-12" rx="4" ry="2.5" fill="#E66963" />
+        <line x1="2" y1="-7" x2="6" y2="-10" stroke="#94ABB3" stroke-width="1.5" />
+      </g>
+      <g id="state-0-teammate-ping" aria-label="Ally 2 location ping">
+        <ellipse cx="1041" cy="352" rx="13" ry="6.5" fill="none" stroke="#E78DB5" stroke-width="2" opacity="1" />
+        <ellipse cx="1041" cy="352" rx="24" ry="12.0" fill="none" stroke="#E78DB5" stroke-width="2" opacity="0.55" />
+        <ellipse cx="1041" cy="352" rx="35" ry="17.5" fill="none" stroke="#E78DB5" stroke-width="2" opacity="0.22" />
+      </g>
+      <line x1="946" y1="510" x2="1117" y2="437" stroke="#E8CA83" stroke-width="1" />
+      <polygon points="1121,433 1124,440 1131,442 1124,445 1121,452 1118,445 1111,442 1118,439" fill="#F1D49A" />
+    </g>
+  </g>
+  <line x1="392" y1="640" x2="616" y2="528" stroke="#82938B" stroke-width="0.65" />
+  <line x1="392" y1="640" x2="616" y2="752" stroke="#82938B" stroke-width="0.65" />
+  <line x1="424" y1="656" x2="648" y2="544" stroke="#82938B" stroke-width="0.65" />
+  <line x1="424" y1="624" x2="648" y2="736" stroke="#82938B" stroke-width="0.65" />
+  <line x1="456" y1="672" x2="680" y2="560" stroke="#82938B" stroke-width="0.65" />
+  <line x1="456" y1="608" x2="680" y2="720" stroke="#82938B" stroke-width="0.65" />
+  <line x1="488" y1="688" x2="712" y2="576" stroke="#82938B" stroke-width="0.65" />
+  <line x1="488" y1="592" x2="712" y2="704" stroke="#82938B" stroke-width="0.65" />
+  <line x1="520" y1="704" x2="744" y2="592" stroke="#82938B" stroke-width="0.65" />
+  <line x1="520" y1="576" x2="744" y2="688" stroke="#82938B" stroke-width="0.65" />
+  <line x1="552" y1="720" x2="776" y2="608" stroke="#82938B" stroke-width="0.65" />
+  <line x1="552" y1="560" x2="776" y2="672" stroke="#82938B" stroke-width="0.65" />
+  <line x1="584" y1="736" x2="808" y2="624" stroke="#82938B" stroke-width="0.65" />
+  <line x1="584" y1="544" x2="808" y2="656" stroke="#82938B" stroke-width="0.65" />
+  <line x1="616" y1="752" x2="840" y2="640" stroke="#82938B" stroke-width="0.65" />
+  <line x1="616" y1="528" x2="840" y2="640" stroke="#82938B" stroke-width="0.65" />
+  <g opacity="0.38">
+    <g id="preview-0" transform="translate(520 640)" data-width="190">
+      <polygon points="-95.0,0 0,47.5 95.0,0 0,-47.5" fill="#354440" />
+      <polygon points="-95.0,-43.7 0,3.799999999999997 0,47.5 -95.0,0" fill="#2B414B" />
+      <polygon points="0,3.799999999999997 95.0,-43.7 95.0,0 0,47.5" fill="#3C5662" />
+      <polygon points="-95.0,-43.7 0,-91.2 95.0,-43.7 0,3.799999999999997" fill="#326A9B" />
+      <polygon points="15.200000000000001,12.54 72.2,-23.560000000000002 72.2,11.399999999999999 15.200000000000001,47.5" fill="#0D1B22" />
+      <polygon points="15.200000000000001,47.5 72.2,11.399999999999999 90.25,23.75 33.25,59.85" fill="#718B95" />
+    </g>
+  </g>
+  <polygon points="424,640 520,592 616,640 520,688" fill="none" stroke="#FFFFFF" stroke-width="2" />
+  <path d="M618 676 v22 l6 -6 6 10 5 -3 -6 -10 9 -1 Z" fill="#FFFFFF" stroke="#17242A" stroke-width="1" stroke-linejoin="round" />
+  <rect x="16" y="16" width="928" height="44" rx="5" fill="#101C22" stroke="#65777E" stroke-width="1" />
+  <text x="32" y="45" fill="#E7EDEF" font-size="17" font-weight="700" text-anchor="start">PLACEMENT VALID</text>
+  <g clip-path="url(#view-1)">
+    <g id="state-1-world-at-game-scale" transform="translate(580 -110)">
+      <polygon points="0,118 510,70 888,404 376,734 0,642" fill="#535A54" />
+      <polygon points="1100,85 1920,90 1920,699 1520,615 1302,342" fill="#5A6057" />
+      <polygon points="0,834 1360,95 1490,95 0,935" fill="#666657" />
+      <polygon points="1014,644 1450,484 1920,805 1920,1080 1400,1080" fill="#505A53" />
+      <polygon points="175,425 195,417 212,428 191,438" fill="#697267" />
+      <polygon points="196,437 216,429 233,440 212,450" fill="#697267" />
+      <polygon points="1500,666 1520,658 1537,669 1516,679" fill="#697267" />
+      <polygon points="1523,678 1543,670 1560,681 1539,691" fill="#697267" />
+      <polygon points="1320,184 1340,176 1357,187 1336,197" fill="#697267" />
+      <polygon points="1343,190 1363,182 1380,193 1359,203" fill="#697267" />
+      <g id="state-1-own-headquarters" transform="translate(410 252)" data-width="150">
+        <polygon points="-75.0,0 0,37.5 75.0,0 0,-37.5" fill="#354440" />
+        <polygon points="-75.0,-34.5 0,3.0 0,37.5 -75.0,0" fill="#2B414B" />
+        <polygon points="0,3.0 75.0,-34.5 75.0,0 0,37.5" fill="#3C5662" />
+        <polygon points="-75.0,-34.5 0,-72.0 75.0,-34.5 0,3.0" fill="#326A9B" />
+      </g>
+      <g id="state-1-own-power-plant" transform="translate(287 363)" data-width="112">
+        <polygon points="-56.0,0 0,28.0 56.0,0 0,-28.0" fill="#354440" />
+        <polygon points="-56.0,-25.76 0,2.2399999999999984 0,28.0 -56.0,0" fill="#2B414B" />
+        <polygon points="0,2.2399999999999984 56.0,-25.76 56.0,0 0,28.0" fill="#3C5662" />
+        <polygon points="-56.0,-25.76 0,-53.760000000000005 56.0,-25.76 0,2.2399999999999984" fill="#326A9B" />
+        <rect x="-28" y="-51.760000000000005" width="20" height="28" rx="0" fill="#3C5765" />
+        <ellipse cx="-18" cy="-51.760000000000005" rx="10" ry="5" fill="#326A9B" stroke="#456F90" stroke-width="2" />
+        <rect x="8" y="-51.760000000000005" width="20" height="28" rx="0" fill="#3C5765" />
+        <ellipse cx="18" cy="-51.760000000000005" rx="10" ry="5" fill="#326A9B" stroke="#456F90" stroke-width="2" />
+      </g>
+      <g id="state-1-own-factory" transform="translate(540 556)" data-width="190">
+        <polygon points="-95.0,0 0,47.5 95.0,0 0,-47.5" fill="#354440" />
+        <polygon points="-95.0,-43.7 0,3.799999999999997 0,47.5 -95.0,0" fill="#2B414B" />
+        <polygon points="0,3.799999999999997 95.0,-43.7 95.0,0 0,47.5" fill="#3C5662" />
+        <polygon points="-95.0,-43.7 0,-91.2 95.0,-43.7 0,3.799999999999997" fill="#326A9B" />
+        <polygon points="15.200000000000001,12.54 72.2,-23.560000000000002 72.2,11.399999999999999 15.200000000000001,47.5" fill="#0D1B22" />
+        <polygon points="15.200000000000001,47.5 72.2,11.399999999999999 90.25,23.75 33.25,59.85" fill="#718B95" />
+      </g>
+      <g id="state-1-own-supply-depot" transform="translate(366 650)" data-width="138">
+        <polygon points="-69.0,0 0,34.5 69.0,0 0,-34.5" fill="#354440" />
+        <polygon points="-32,-2 -20,-8 -9,-2 -21,4" fill="#A89566" />
+        <polygon points="-32,-2 -21,4 -21,13 -32,7" fill="#756D50" />
+        <polygon points="-8,10 4,4 15,10 3,16" fill="#A89566" />
+        <polygon points="-8,10 3,16 3,25 -8,19" fill="#756D50" />
+        <polygon points="15,-10 27,-16 38,-10 26,-4" fill="#A89566" />
+        <polygon points="15,-10 26,-4 26,5 15,-1" fill="#756D50" />
+        <line x1="-41.4" y1="0" x2="-41.4" y2="-31.740000000000002" stroke="#46616C" stroke-width="7" />
+        <line x1="41.4" y1="0" x2="41.4" y2="-31.740000000000002" stroke="#46616C" stroke-width="7" />
+        <line x1="-41.4" y1="-31.740000000000002" x2="41.4" y2="-31.740000000000002" stroke="#627E89" stroke-width="7" />
+      </g>
+      <g id="state-1-enemy-factory" transform="translate(1490 338)" data-width="190">
+        <polygon points="-95.0,0 0,47.5 95.0,0 0,-47.5" fill="#354440" />
+        <polygon points="-95.0,-43.7 0,3.799999999999997 0,47.5 -95.0,0" fill="#2B414B" />
+        <polygon points="0,3.799999999999997 95.0,-43.7 95.0,0 0,47.5" fill="#3C5662" />
+        <polygon points="-95.0,-43.7 0,-91.2 95.0,-43.7 0,3.799999999999997" fill="#9A504D" />
+        <polygon points="15.200000000000001,12.54 72.2,-23.560000000000002 72.2,11.399999999999999 15.200000000000001,47.5" fill="#0D1B22" />
+        <polygon points="15.200000000000001,47.5 72.2,11.399999999999999 90.25,23.75 33.25,59.85" fill="#718B95" />
+      </g>
+      <g id="state-1-enemy-power-plant" transform="translate(1642 429)" data-width="112">
+        <polygon points="-56.0,0 0,28.0 56.0,0 0,-28.0" fill="#354440" />
+        <polygon points="-56.0,-25.76 0,2.2399999999999984 0,28.0 -56.0,0" fill="#2B414B" />
+        <polygon points="0,2.2399999999999984 56.0,-25.76 56.0,0 0,28.0" fill="#3C5662" />
+        <polygon points="-56.0,-25.76 0,-53.760000000000005 56.0,-25.76 0,2.2399999999999984" fill="#9A504D" />
+        <rect x="-28" y="-51.760000000000005" width="20" height="28" rx="0" fill="#3C5765" />
+        <ellipse cx="-18" cy="-51.760000000000005" rx="10" ry="5" fill="#9A504D" stroke="#456F90" stroke-width="2" />
+        <rect x="8" y="-51.760000000000005" width="20" height="28" rx="0" fill="#3C5765" />
+        <ellipse cx="18" cy="-51.760000000000005" rx="10" ry="5" fill="#9A504D" stroke="#456F90" stroke-width="2" />
+      </g>
+      <g id="state-1-own-unit-01" transform="translate(842 482)" data-side="own" data-kind="tank" data-selected="true" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#438FE5" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#73BF73" />
+      </g>
+      <g id="state-1-own-unit-02" transform="translate(878 466)" data-side="own" data-kind="tank" data-selected="true" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#438FE5" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="20.16" height="3.5" rx="0" fill="#73BF73" />
+        <path d="M17 -14 l3 2 l3 -2" fill="none" stroke="#E9E1B9" stroke-width="1.2" stroke-linejoin="round" />
+      </g>
+      <g id="state-1-own-unit-03" transform="translate(907 488)" data-side="own" data-kind="tank" data-selected="true" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#438FE5" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="14.879999999999999" height="3.5" rx="0" fill="#E1BC55" />
+      </g>
+      <g id="state-1-own-unit-04" transform="translate(823 516)" data-side="own" data-kind="tank" data-selected="true" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#438FE5" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#73BF73" />
+      </g>
+      <g id="state-1-own-unit-05" transform="translate(860 534)" data-side="own" data-kind="tank" data-selected="true" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#438FE5" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="6.720000000000001" height="3.5" rx="0" fill="#E16B63" />
+      </g>
+      <g id="state-1-own-unit-06" transform="translate(903 530)" data-side="own" data-kind="tank" data-selected="true" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#438FE5" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="22.080000000000002" height="3.5" rx="0" fill="#73BF73" />
+      </g>
+      <g id="state-1-own-unit-07" transform="translate(941 510)" data-side="own" data-kind="rotary" data-selected="true" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#438FE5" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="2" y1="-7" x2="13" y2="-12" stroke="#93AAB4" stroke-width="1.8" />
+          <line x1="4" y1="-7" x2="15" y2="-12" stroke="#93AAB4" stroke-width="1.8" />
+        </g>
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="18.48" height="3.5" rx="0" fill="#73BF73" />
+        <path d="M17 -14 l3 2 l3 -2" fill="none" stroke="#E9E1B9" stroke-width="1.2" stroke-linejoin="round" />
+      </g>
+      <g id="state-1-own-unit-08" transform="translate(957 543)" data-side="own" data-kind="rotary" data-selected="true" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#438FE5" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="2" y1="-7" x2="13" y2="-12" stroke="#93AAB4" stroke-width="1.8" />
+          <line x1="4" y1="-7" x2="15" y2="-12" stroke="#93AAB4" stroke-width="1.8" />
+        </g>
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="11.52" height="3.5" rx="0" fill="#E1BC55" />
+      </g>
+      <g id="state-1-own-unit-09" transform="translate(878 569)" data-side="own" data-kind="infantry" data-selected="true" data-width="12">
+        <ellipse cx="0" cy="0" rx="6" ry="3" fill="#1F2C30" opacity="0.45" />
+        <polygon points="-3,-2 0,0 0,-9 -3,-11" fill="#2D4149" />
+        <polygon points="0,0 4,-2 4,-11 0,-9" fill="#3F5963" />
+        <ellipse cx="0" cy="-12" rx="4" ry="2.5" fill="#438FE5" />
+        <line x1="2" y1="-7" x2="6" y2="-10" stroke="#94ABB3" stroke-width="1.5" />
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#73BF73" />
+      </g>
+      <g id="state-1-own-unit-10" transform="translate(900 581)" data-side="own" data-kind="infantry" data-selected="true" data-width="12">
+        <ellipse cx="0" cy="0" rx="6" ry="3" fill="#1F2C30" opacity="0.45" />
+        <polygon points="-3,-2 0,0 0,-9 -3,-11" fill="#2D4149" />
+        <polygon points="0,0 4,-2 4,-11 0,-9" fill="#3F5963" />
+        <ellipse cx="0" cy="-12" rx="4" ry="2.5" fill="#438FE5" />
+        <line x1="2" y1="-7" x2="6" y2="-10" stroke="#94ABB3" stroke-width="1.5" />
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="16.799999999999997" height="3.5" rx="0" fill="#73BF73" />
+        <path d="M17 -14 l3 2 l3 -2" fill="none" stroke="#E9E1B9" stroke-width="1.2" stroke-linejoin="round" />
+      </g>
+      <g id="state-1-own-unit-11" transform="translate(925 566)" data-side="own" data-kind="infantry" data-selected="true" data-width="12">
+        <ellipse cx="0" cy="0" rx="6" ry="3" fill="#1F2C30" opacity="0.45" />
+        <polygon points="-3,-2 0,0 0,-9 -3,-11" fill="#2D4149" />
+        <polygon points="0,0 4,-2 4,-11 0,-9" fill="#3F5963" />
+        <ellipse cx="0" cy="-12" rx="4" ry="2.5" fill="#438FE5" />
+        <line x1="2" y1="-7" x2="6" y2="-10" stroke="#94ABB3" stroke-width="1.5" />
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="13.200000000000001" height="3.5" rx="0" fill="#E1BC55" />
+      </g>
+      <g id="state-1-own-unit-12" transform="translate(947 586)" data-side="own" data-kind="infantry" data-selected="true" data-width="12">
+        <ellipse cx="0" cy="0" rx="6" ry="3" fill="#1F2C30" opacity="0.45" />
+        <polygon points="-3,-2 0,0 0,-9 -3,-11" fill="#2D4149" />
+        <polygon points="0,0 4,-2 4,-11 0,-9" fill="#3F5963" />
+        <ellipse cx="0" cy="-12" rx="4" ry="2.5" fill="#438FE5" />
+        <line x1="2" y1="-7" x2="6" y2="-10" stroke="#94ABB3" stroke-width="1.5" />
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#73BF73" />
+      </g>
+      <g id="state-1-own-unit-13" transform="translate(734 583)" data-side="own" data-kind="tank" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#438FE5" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+      </g>
+      <g id="state-1-own-unit-14" transform="translate(776 601)" data-side="own" data-kind="tank" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#438FE5" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+      </g>
+      <g id="state-1-own-unit-15" transform="translate(748 624)" data-side="own" data-kind="tank" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#438FE5" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+      </g>
+      <g id="state-1-own-unit-16" transform="translate(1063 601)" data-side="own" data-kind="tank" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#438FE5" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="17.28" height="3.5" rx="0" fill="#73BF73" />
+      </g>
+      <g id="state-1-own-unit-17" transform="translate(1096 580)" data-side="own" data-kind="tank" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#438FE5" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+        <path d="M17 -14 l3 2 l3 -2" fill="none" stroke="#E9E1B9" stroke-width="1.2" stroke-linejoin="round" />
+      </g>
+      <g id="state-1-own-unit-18" transform="translate(1041 570)" data-side="own" data-kind="rotary" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#438FE5" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="2" y1="-7" x2="13" y2="-12" stroke="#93AAB4" stroke-width="1.8" />
+          <line x1="4" y1="-7" x2="15" y2="-12" stroke="#93AAB4" stroke-width="1.8" />
+        </g>
+      </g>
+      <g id="state-1-own-unit-19" transform="translate(1065 546)" data-side="own" data-kind="rotary" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#438FE5" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="2" y1="-7" x2="13" y2="-12" stroke="#93AAB4" stroke-width="1.8" />
+          <line x1="4" y1="-7" x2="15" y2="-12" stroke="#93AAB4" stroke-width="1.8" />
+        </g>
+      </g>
+      <g id="state-1-own-unit-20" transform="translate(726 647)" data-side="own" data-kind="infantry" data-selected="false" data-width="12">
+        <ellipse cx="0" cy="0" rx="6" ry="3" fill="#1F2C30" opacity="0.45" />
+        <polygon points="-3,-2 0,0 0,-9 -3,-11" fill="#2D4149" />
+        <polygon points="0,0 4,-2 4,-11 0,-9" fill="#3F5963" />
+        <ellipse cx="0" cy="-12" rx="4" ry="2.5" fill="#438FE5" />
+        <line x1="2" y1="-7" x2="6" y2="-10" stroke="#94ABB3" stroke-width="1.5" />
+      </g>
+      <g id="state-1-own-unit-21" transform="translate(751 660)" data-side="own" data-kind="infantry" data-selected="false" data-width="12">
+        <ellipse cx="0" cy="0" rx="6" ry="3" fill="#1F2C30" opacity="0.45" />
+        <polygon points="-3,-2 0,0 0,-9 -3,-11" fill="#2D4149" />
+        <polygon points="0,0 4,-2 4,-11 0,-9" fill="#3F5963" />
+        <ellipse cx="0" cy="-12" rx="4" ry="2.5" fill="#438FE5" />
+        <line x1="2" y1="-7" x2="6" y2="-10" stroke="#94ABB3" stroke-width="1.5" />
+      </g>
+      <g id="state-1-own-unit-22" transform="translate(399 636)" data-side="own" data-kind="truck" data-selected="false" data-width="24">
+        <ellipse cx="0" cy="4" rx="12.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(0.8)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-11,-3 -3,-7 4,-4 -4,0" fill="#647B86" />
+          <polygon points="4,-4 9,-6 14,-3 9,0" fill="#438FE5" />
+        </g>
+      </g>
+      <g id="state-1-own-unit-23" transform="translate(432 657)" data-side="own" data-kind="truck" data-selected="false" data-width="24">
+        <ellipse cx="0" cy="4" rx="12.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(0.8)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-11,-3 -3,-7 4,-4 -4,0" fill="#647B86" />
+          <polygon points="4,-4 9,-6 14,-3 9,0" fill="#438FE5" />
+        </g>
+      </g>
+      <g id="state-1-own-unit-24" transform="translate(321 621)" data-side="own" data-kind="truck" data-selected="false" data-width="24">
+        <ellipse cx="0" cy="4" rx="12.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(0.8)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-11,-3 -3,-7 4,-4 -4,0" fill="#647B86" />
+          <polygon points="4,-4 9,-6 14,-3 9,0" fill="#438FE5" />
+        </g>
+      </g>
+      <g id="state-1-own-unit-25" transform="translate(610 603)" data-side="own" data-kind="builder" data-selected="false" data-width="24">
+        <ellipse cx="0" cy="4" rx="12.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(0.8)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#438FE5" />
+          <polygon points="-5,-6 1,-9 6,-6 0,-3" fill="#438FE5" />
+          <polygon points="-5,-6 0,-3 0,3 -5,0" fill="#2E4550" />
+          <polygon points="7,1 16,-4 18,2 9,7" fill="#8AA0AA" />
+        </g>
+        <polygon points="-16,1 0,-7 16,1 0,9" fill="none" stroke="#FFFFFF" stroke-width="1" />
+      </g>
+      <g id="state-1-enemy-unit-01" transform="translate(1134 430)" data-side="enemy" data-kind="tank" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#E66963" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#E66963" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="9.600000000000001" height="3.5" rx="0" fill="#E1BC55" />
+      </g>
+      <g id="state-1-enemy-unit-02" transform="translate(1172 409)" data-side="enemy" data-kind="tank" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#E66963" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#E66963" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+      </g>
+      <g id="state-1-enemy-unit-03" transform="translate(1208 432)" data-side="enemy" data-kind="tank" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#E66963" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#E66963" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="19.200000000000003" height="3.5" rx="0" fill="#73BF73" />
+        <path d="M17 -14 l3 2 l3 -2" fill="none" stroke="#E9E1B9" stroke-width="1.2" stroke-linejoin="round" />
+        <path d="M17 -18 l3 2 l3 -2" fill="none" stroke="#E9E1B9" stroke-width="1.2" stroke-linejoin="round" />
+      </g>
+      <g id="state-1-enemy-unit-04" transform="translate(1238 399)" data-side="enemy" data-kind="tank" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#E66963" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#E66963" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+      </g>
+      <g id="state-1-enemy-unit-05" transform="translate(1161 465)" data-side="enemy" data-kind="tank" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#E66963" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#E66963" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+      </g>
+      <g id="state-1-enemy-unit-06" transform="translate(1203 471)" data-side="enemy" data-kind="tank" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#E66963" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#E66963" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="19.200000000000003" height="3.5" rx="0" fill="#73BF73" />
+        <path d="M17 -14 l3 2 l3 -2" fill="none" stroke="#E9E1B9" stroke-width="1.2" stroke-linejoin="round" />
+      </g>
+      <g id="state-1-enemy-unit-07" transform="translate(1250 450)" data-side="enemy" data-kind="tank" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#E66963" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#E66963" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+      </g>
+      <g id="state-1-enemy-unit-08" transform="translate(1294 428)" data-side="enemy" data-kind="tank" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#E66963" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#E66963" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+        </g>
+      </g>
+      <g id="state-1-enemy-unit-09" transform="translate(1233 500)" data-side="enemy" data-kind="rotary" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#E66963" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#E66963" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="2" y1="-7" x2="13" y2="-12" stroke="#93AAB4" stroke-width="1.8" />
+          <line x1="4" y1="-7" x2="15" y2="-12" stroke="#93AAB4" stroke-width="1.8" />
+        </g>
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="19.200000000000003" height="3.5" rx="0" fill="#73BF73" />
+        <path d="M17 -14 l3 2 l3 -2" fill="none" stroke="#E9E1B9" stroke-width="1.2" stroke-linejoin="round" />
+      </g>
+      <g id="state-1-enemy-unit-10" transform="translate(1270 480)" data-side="enemy" data-kind="rotary" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#E66963" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#E66963" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="2" y1="-7" x2="13" y2="-12" stroke="#93AAB4" stroke-width="1.8" />
+          <line x1="4" y1="-7" x2="15" y2="-12" stroke="#93AAB4" stroke-width="1.8" />
+        </g>
+      </g>
+      <g id="state-1-enemy-unit-11" transform="translate(1307 467)" data-side="enemy" data-kind="rotary" data-selected="false" data-width="30">
+        <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+        <g transform="scale(1.0)">
+          <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+          <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+          <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+          <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#E66963" />
+          <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#E66963" />
+          <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+          <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+          <line x1="2" y1="-7" x2="13" y2="-12" stroke="#93AAB4" stroke-width="1.8" />
+          <line x1="4" y1="-7" x2="15" y2="-12" stroke="#93AAB4" stroke-width="1.8" />
+        </g>
+      </g>
+      <g id="state-1-enemy-unit-12" transform="translate(1174 506)" data-side="enemy" data-kind="infantry" data-selected="false" data-width="12">
+        <ellipse cx="0" cy="0" rx="6" ry="3" fill="#1F2C30" opacity="0.45" />
+        <polygon points="-3,-2 0,0 0,-9 -3,-11" fill="#2D4149" />
+        <polygon points="0,0 4,-2 4,-11 0,-9" fill="#3F5963" />
+        <ellipse cx="0" cy="-12" rx="4" ry="2.5" fill="#E66963" />
+        <line x1="2" y1="-7" x2="6" y2="-10" stroke="#94ABB3" stroke-width="1.5" />
+      </g>
+      <g id="state-1-enemy-unit-13" transform="translate(1190 518)" data-side="enemy" data-kind="infantry" data-selected="false" data-width="12">
+        <ellipse cx="0" cy="0" rx="6" ry="3" fill="#1F2C30" opacity="0.45" />
+        <polygon points="-3,-2 0,0 0,-9 -3,-11" fill="#2D4149" />
+        <polygon points="0,0 4,-2 4,-11 0,-9" fill="#3F5963" />
+        <ellipse cx="0" cy="-12" rx="4" ry="2.5" fill="#E66963" />
+        <line x1="2" y1="-7" x2="6" y2="-10" stroke="#94ABB3" stroke-width="1.5" />
+        <rect x="-12" y="-23" width="24" height="3.5" rx="0" fill="#26312E" />
+        <rect x="-12" y="-23" width="9.600000000000001" height="3.5" rx="0" fill="#E1BC55" />
+      </g>
+      <g id="state-1-enemy-unit-14" transform="translate(1207 529)" data-side="enemy" data-kind="infantry" data-selected="false" data-width="12">
+        <ellipse cx="0" cy="0" rx="6" ry="3" fill="#1F2C30" opacity="0.45" />
+        <polygon points="-3,-2 0,0 0,-9 -3,-11" fill="#2D4149" />
+        <polygon points="0,0 4,-2 4,-11 0,-9" fill="#3F5963" />
+        <ellipse cx="0" cy="-12" rx="4" ry="2.5" fill="#E66963" />
+        <line x1="2" y1="-7" x2="6" y2="-10" stroke="#94ABB3" stroke-width="1.5" />
+      </g>
+      <g id="state-1-enemy-unit-15" transform="translate(1227 543)" data-side="enemy" data-kind="infantry" data-selected="false" data-width="12">
+        <ellipse cx="0" cy="0" rx="6" ry="3" fill="#1F2C30" opacity="0.45" />
+        <polygon points="-3,-2 0,0 0,-9 -3,-11" fill="#2D4149" />
+        <polygon points="0,0 4,-2 4,-11 0,-9" fill="#3F5963" />
+        <ellipse cx="0" cy="-12" rx="4" ry="2.5" fill="#E66963" />
+        <line x1="2" y1="-7" x2="6" y2="-10" stroke="#94ABB3" stroke-width="1.5" />
+      </g>
+      <g id="state-1-teammate-ping" aria-label="Ally 2 location ping">
+        <ellipse cx="1041" cy="352" rx="13" ry="6.5" fill="none" stroke="#E78DB5" stroke-width="2" opacity="1" />
+        <ellipse cx="1041" cy="352" rx="24" ry="12.0" fill="none" stroke="#E78DB5" stroke-width="2" opacity="0.55" />
+        <ellipse cx="1041" cy="352" rx="35" ry="17.5" fill="none" stroke="#E78DB5" stroke-width="2" opacity="0.22" />
+      </g>
+      <line x1="946" y1="510" x2="1117" y2="437" stroke="#E8CA83" stroke-width="1" />
+      <polygon points="1121,433 1124,440 1131,442 1124,445 1121,452 1118,445 1111,442 1118,439" fill="#F1D49A" />
+    </g>
+  </g>
+  <line x1="1352" y1="640" x2="1576" y2="528" stroke="#82938B" stroke-width="0.65" />
+  <line x1="1352" y1="640" x2="1576" y2="752" stroke="#82938B" stroke-width="0.65" />
+  <line x1="1384" y1="656" x2="1608" y2="544" stroke="#82938B" stroke-width="0.65" />
+  <line x1="1384" y1="624" x2="1608" y2="736" stroke="#82938B" stroke-width="0.65" />
+  <line x1="1416" y1="672" x2="1640" y2="560" stroke="#82938B" stroke-width="0.65" />
+  <line x1="1416" y1="608" x2="1640" y2="720" stroke="#82938B" stroke-width="0.65" />
+  <line x1="1448" y1="688" x2="1672" y2="576" stroke="#82938B" stroke-width="0.65" />
+  <line x1="1448" y1="592" x2="1672" y2="704" stroke="#82938B" stroke-width="0.65" />
+  <line x1="1480" y1="704" x2="1704" y2="592" stroke="#82938B" stroke-width="0.65" />
+  <line x1="1480" y1="576" x2="1704" y2="688" stroke="#82938B" stroke-width="0.65" />
+  <line x1="1512" y1="720" x2="1736" y2="608" stroke="#82938B" stroke-width="0.65" />
+  <line x1="1512" y1="560" x2="1736" y2="672" stroke="#82938B" stroke-width="0.65" />
+  <line x1="1544" y1="736" x2="1768" y2="624" stroke="#82938B" stroke-width="0.65" />
+  <line x1="1544" y1="544" x2="1768" y2="656" stroke="#82938B" stroke-width="0.65" />
+  <line x1="1576" y1="752" x2="1800" y2="640" stroke="#82938B" stroke-width="0.65" />
+  <line x1="1576" y1="528" x2="1800" y2="640" stroke="#82938B" stroke-width="0.65" />
+  <g opacity="0.38">
+    <g id="preview-1" transform="translate(1480 640)" data-width="190">
+      <polygon points="-95.0,0 0,47.5 95.0,0 0,-47.5" fill="#354440" />
+      <polygon points="-95.0,-43.7 0,3.799999999999997 0,47.5 -95.0,0" fill="#2B414B" />
+      <polygon points="0,3.799999999999997 95.0,-43.7 95.0,0 0,47.5" fill="#3C5662" />
+      <polygon points="-95.0,-43.7 0,-91.2 95.0,-43.7 0,3.799999999999997" fill="#326A9B" />
+      <polygon points="15.200000000000001,12.54 72.2,-23.560000000000002 72.2,11.399999999999999 15.200000000000001,47.5" fill="#0D1B22" />
+      <polygon points="15.200000000000001,47.5 72.2,11.399999999999999 90.25,23.75 33.25,59.85" fill="#718B95" />
+    </g>
+  </g>
+  <polygon points="1384,640 1480,592 1576,640 1480,688" fill="none" stroke="#EF786C" stroke-width="2" />
+  <g transform="translate(1508 645)">
+    <ellipse cx="0" cy="4" rx="15.0" ry="5" fill="#1D292A" opacity="0.42" />
+    <g transform="scale(1.0)">
+      <polygon points="-15,0 -2,-7 13,-1 1,7" fill="#243A43" />
+      <polygon points="-15,0 1,7 1,11 -15,4" fill="#263C45" />
+      <polygon points="1,7 13,-1 13,3 1,11" fill="#3D5662" />
+      <polygon points="-13,-2 -2,-8 12,-2 1,5" fill="#E66963" />
+      <polygon points="-6,-8 0,-11 7,-7 1,-4" fill="#E66963" />
+      <polygon points="-6,-8 1,-4 1,0 -6,-4" fill="#38535F" />
+      <polygon points="1,-4 7,-7 7,-3 1,0" fill="#466471" />
+      <line x1="3" y1="-7" x2="14" y2="-12" stroke="#93AAB4" stroke-width="2.4" />
+    </g>
+    <ellipse cx="0" cy="2" rx="22" ry="12" fill="none" stroke="#EF786C" stroke-width="2" />
+  </g>
+  <path d="M1488 626 l8 8 m-8 0 l8 -8" fill="none" stroke="#EF786C" stroke-width="2" stroke-linejoin="round" />
+  <path d="M1520 650 l8 8 m-8 0 l8 -8" fill="none" stroke="#EF786C" stroke-width="2" stroke-linejoin="round" />
+  <path d="M1578 676 v22 l6 -6 6 10 5 -3 -6 -10 9 -1 Z" fill="#FFFFFF" stroke="#17242A" stroke-width="1" stroke-linejoin="round" />
+  <rect x="976" y="16" width="928" height="44" rx="5" fill="#101C22" stroke="#65777E" stroke-width="1" />
+  <text x="992" y="45" fill="#E7EDEF" font-size="17" font-weight="700" text-anchor="start">PLACEMENT REFUSED · UNIT BLOCKING</text>
+  <line x1="960" y1="70" x2="960" y2="796" stroke="#A6B6BC" stroke-width="1" />
+  <rect x="12" y="810" width="1896" height="258" rx="5" fill="#101C22" stroke="#65777E" stroke-width="1" />
+  <rect x="24" y="870" width="176" height="176" rx="5" fill="#101C22" stroke="#65777E" stroke-width="1" />
+  <text x="112.0" y="956.24" fill="#E7EDEF" font-size="16" font-weight="700" text-anchor="middle">NO RADAR</text>
+  <text x="112.0" y="984.4" fill="#E1BC55" font-size="14" font-weight="400" text-anchor="middle">Low power</text>
+  <path d="M172 898 l16 -16 m-10 0 h10 v10" fill="none" stroke="#E7EDEF" stroke-width="1.6" stroke-linejoin="round" />
+  <text x="224" y="844" fill="#E7EDEF" font-size="21" font-weight="700" text-anchor="start">Bulldozer selected · Place Vehicle Factory</text>
+  <text x="224" y="879" fill="#E7EDEF" font-size="15" font-weight="400" text-anchor="start">Grid appears only near the preview. White outline = valid footprint.</text>
+  <text x="224" y="908" fill="#E7EDEF" font-size="15" font-weight="400" text-anchor="start">Blocked state: footprint + blocking unit use a coral warning outline.</text>
+  <text x="224" y="937" fill="#A6B6BC" font-size="15" font-weight="400" text-anchor="start">Left click: place     Esc / right click: cancel</text>
+  <rect x="224" y="980" width="160" height="38" rx="5" fill="#1C2D35" stroke="#65777E" stroke-width="1" />
+  <text x="236" y="1005" fill="#E7EDEF" font-size="16" font-weight="700" text-anchor="start">Attack Move</text>
+  <rect x="354" y="988" width="22" height="22" rx="3" fill="#101C22" />
+  <text x="365" y="1004" fill="#29C8B8" font-size="13" font-weight="700" text-anchor="middle">A</text>
+  <rect x="398" y="980" width="126" height="38" rx="5" fill="#1C2D35" stroke="#65777E" stroke-width="1" />
+  <text x="410" y="1005" fill="#E7EDEF" font-size="16" font-weight="700" text-anchor="start">Guard</text>
+  <rect x="494" y="988" width="22" height="22" rx="3" fill="#101C22" />
+  <text x="505" y="1004" fill="#29C8B8" font-size="13" font-weight="700" text-anchor="middle">G</text>
+  <rect x="538" y="980" width="120" height="38" rx="5" fill="#1C2D35" stroke="#65777E" stroke-width="1" />
+  <text x="550" y="1005" fill="#E7EDEF" font-size="16" font-weight="700" text-anchor="start">Stop</text>
+  <rect x="628" y="988" width="22" height="22" rx="3" fill="#101C22" />
+  <text x="639" y="1004" fill="#29C8B8" font-size="13" font-weight="700" text-anchor="middle">S</text>
+  <text x="730" y="844" fill="#E7EDEF" font-size="14" font-weight="700" text-anchor="start">BUILD</text>
+  <rect x="730" y="863" width="140" height="38" rx="5" fill="#1C2D35" stroke="#65777E" stroke-width="1" />
+  <text x="742" y="888" fill="#E7EDEF" font-size="16" font-weight="700" text-anchor="start">Power</text>
+  <rect x="840" y="871" width="22" height="22" rx="3" fill="#101C22" />
+  <text x="851" y="887" fill="#29C8B8" font-size="13" font-weight="700" text-anchor="middle">Q</text>
+  <rect x="881" y="863" width="140" height="38" rx="5" fill="#1C2D35" stroke="#65777E" stroke-width="1" />
+  <text x="893" y="888" fill="#E7EDEF" font-size="16" font-weight="700" text-anchor="start">Supply</text>
+  <rect x="991" y="871" width="22" height="22" rx="3" fill="#101C22" />
+  <text x="1002" y="887" fill="#29C8B8" font-size="13" font-weight="700" text-anchor="middle">W</text>
+  <rect x="1032" y="863" width="140" height="38" rx="5" fill="#1C2D35" stroke="#65777E" stroke-width="1" />
+  <text x="1044" y="888" fill="#E7EDEF" font-size="16" font-weight="700" text-anchor="start">Barracks</text>
+  <rect x="1142" y="871" width="22" height="22" rx="3" fill="#101C22" />
+  <text x="1153" y="887" fill="#29C8B8" font-size="13" font-weight="700" text-anchor="middle">E</text>
+  <rect x="1183" y="863" width="140" height="38" rx="5" fill="#1A3338" stroke="#29C8B8" stroke-width="1" />
+  <text x="1195" y="888" fill="#E7EDEF" font-size="16" font-weight="700" text-anchor="start">Factory</text>
+  <rect x="1293" y="871" width="22" height="22" rx="3" fill="#101C22" />
+  <text x="1304" y="887" fill="#29C8B8" font-size="13" font-weight="700" text-anchor="middle">R</text>
+  <text x="730" y="929" fill="#E7EDEF" font-size="15" font-weight="400" text-anchor="start">Credits 4,800   ·   Cost 2,000   ·   Power 12 / 10</text>
+  <text x="730" y="958" fill="#A6B6BC" font-size="13" font-weight="400" text-anchor="start">Placement is modal; factory production remains in its own context.</text>
+  <text x="730" y="1007" fill="#29C8B8" font-size="13" font-weight="700" text-anchor="start">OPTIONAL</text>
+  <text x="730" y="1031" fill="#E7EDEF" font-size="13" font-weight="400" text-anchor="start">Groups 1–0  ·  Alerts  ·  Team  ·  Overview  ·  Idle army</text>
+</svg>
