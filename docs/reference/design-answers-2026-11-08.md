@@ -223,3 +223,12 @@ Questions from [sim core options](sim-core-options.md) (Q1-Q15) and [state diges
 - Per-match switches travel with the host's match settings in the start message; only the code fingerprint (R1.1) gates rooms.
 - Golden scenarios get a horde-style case only when a horde mode is planned.
 
+
+## Turret aiming (user, 2026-11-10; [impact note](turret-aiming.md))
+
+- A tank's turret must point at its target before it fires: it turns at its rate and fires once aligned (Zero Hour default, TurretAI.cpp:1169-1199). Replaces "firing ignores heading" (blueprint M6).
+- It lands in ground batch A, together with travelling shells and minimum range, so one re-pin covers all of them. Until then turrets are drawing only (the art lab uses that stand-in).
+- Soldiers (no turret) turn their whole body to within about 2 degrees of the target before firing, at their turn rate (Zero Hour default, AIStates.cpp:5051-5072; at most about 0.36 s).
+- Each turreted kind keeps its own Zero Hour turret rate (Crusader 180, BattleMaster 120, Scorpion 100, Technical 240 deg/s; table in the impact note). China/FRC kind mappings are inferred from display names: re-check with `tools/zh_ini.py` at batch A planning.
+- After losing its target a turret holds for `RecenterTime` (2 s; Humvee and Scorpion 5 s), then turns back to face forward (Zero Hour default, TurretAI.cpp:200, :1439).
+- Turreted units fire while driving at whatever is in range once their turret is aligned; units without a turret still stop to fire (Zero Hour: the turret's idle state picks targets on its own timer, TurretAI.cpp:879-900, :1306-1327; `getNextMoodTarget` has no movement check, AIUpdate.cpp:4495; source reading, not every guard traced). Check each unit's `AutoAcquireEnemiesWhenIdle` with `tools/zh_ini.py` at batch A planning.
