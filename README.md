@@ -17,7 +17,7 @@ Wargrid is an isometric real-time strategy game written in Godot 4 and typed GDS
 
 ## Status
 
-Early development. Three factions (USA, China, FRC), skirmish against a bot and online 1v1 on Dry Wells, Broken Crown or Ashfall (map choice in the launcher; on `main`, not yet in a release). Latest release: see [Releases](https://github.com/pdstuber/wargrid/releases).
+Early development. Three factions (USA, China, FRC), skirmish against a bot and online 1v1 on Dry Wells, Broken Crown or Ashfall (map choice in the launcher, since 0.10.0). Latest release: see [Releases](https://github.com/pdstuber/wargrid/releases).
 
 ## How it's built
 
