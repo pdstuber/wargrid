@@ -33,7 +33,7 @@ Idle units, control groups, production overview
 
 Formation
 - **source** ZH Ctrl+F (`MSG_CREATE_FORMATION`, `Source/GameLogic/System/GameLogicDispatch.cpp:885-889`) stores each unit's offset (`Source/GameLogic/AI/AIGroup.cpp:1097-1105`); a group moves at its slowest member's speed (`AIGroup.cpp:399-443`).
-- **source** BAR draws formation lines with right-drag (`cmd_customformations2.lua:22`); Wargrid's right-drag already pans (decided). **source** AoE IV has formations on group moves (update 17718: "Units will now respect formation changes after finding a target"); AoE2 DE lists "Formations" as an advanced command (learn-to-play page). Default formations change how every group moves, which is gameplay, not interface (**inferred**).
+- **source** BAR draws formation lines with right-drag (`cmd_customformations2.lua:22`); Wargrid's right-drag already pans (decided). **source** AoE IV has formations (update 17718: "Units will now respect formation changes after finding a target"; source check 2026-11-09: PARTLY, the page shows formations exist, not that every group move uses them); AoE2 DE lists "Formations" as an advanced command (learn-to-play page). Default formations change how every group moves, which is gameplay, not interface (**inferred**).
 
 Kept without a question (re-checked, no better modern option found)
 - Queue of 9: OpenRA RA has no limit (`OpenRA.Mods.Common/Traits/Player/ProductionQueue.cs:55`, default 0), D2K uses 6 (`mods/d2k/rules/player.yaml:68`); SC2's queue size not found in a Blizzard page. Queue size affects how much money a player commits ahead (ZH charges at queueing), so it stays ZH.
@@ -91,3 +91,6 @@ Q11. Should the unit under the mouse also show its health bar?
 Q12. Should allied health bars use team colours?
    a) No, one colour for all — ZH (**inferred**, not checked), Wargrid today (world_view.gd:254)   b) Yes, coloured by own / ally / enemy — SC2 2.0.4 "Display Team Colored Life Bar"
    Recommendation: b, because in a 3v3 brawl you must tell your units from your teammates' at a glance. Why it matters: must fit the decided selection colours of M7.5.
+
+## Source check (2026-11-09)
+A Sonnet agent fetched every cited page (10 web pages, 7 BAR files, all reachable): 26 claims confirmed, 2 partly (the AoE IV formation line above; and Q10's "formations on every group move" option: neither the AoE IV nor the AoE2 DE page says every group move uses formations), none unsupported. Still unsourced or inferred as marked: Company of Heroes 3, Zero Hour beacon lifetime, Q12's Zero Hour colour, the unread BAR widgets. Table with quotes kept outside the repo (session scratchpad).
