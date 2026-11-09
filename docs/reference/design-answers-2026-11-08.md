@@ -142,6 +142,8 @@ Follow-up after the avoidance spike (user, 2026-11-09 evening; open questions fr
 - A unit within one cell of its destination ignores blockers and squeezes in; overlaps there are spread out afterwards (Zero Hour default, AIUpdate.cpp:1303-1311).
 - Each unit keeps its own reserved destination cell (today's rule) together with the squeeze-in rule; if packed moves still cannot finish within the cost cap, OpenRA-style "stop near enough when close and blocked" is the allowed fallback (user asked for its trade-offs first: cheaper, no fight for the last cells, but irregular end positions and a tail that can stop short).
 - The +0.5 ms cost cap applies to every 300-unit row, the all-infantry horde row included.
+  - That means all five rows: HEADLESS movement open and dense, docks, COMBAT open and dense (150 v 150), and COMBAT hordes300.
+  - A miss on COMBAT open or dense counts as a movement-row miss for the near-enough fallback below (user, 2026-11-09).
 - The next spike round builds on approach A (Zero Hour-style yielding) and borrows B's "claim the next cell" only where A's retry cost shows up (a hypothesis to test).
 - The about-5-s last resort counts "no progress towards the goal", not consecutive blocked ticks, so circling units are caught.
 - A move order is never given up because the unit is stuck; it fails only when no path exists (Zero Hour default, AIStates.cpp:1880-1895).
