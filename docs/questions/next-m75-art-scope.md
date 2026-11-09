@@ -37,6 +37,7 @@ Q4. What should the M7.5 Task 1 spike compare, now that pixel sprites are out?
    a) Nothing: build the art lab straight in the new style   b) Today's rectangles against the new style, on one A/B page   c) Two variants of the new style for each open look question (for example dark vs lighter ground), on A/B pages
    Recommendation: c, because the open look questions are easier to answer side by side in the real game than as sheets, and that is the workflow you liked in the sound spike. Why it matters: decides how many lab variants get built.
    **Answered 2026-11-09 (asked twice, reworded): c, two in-game variants for each look question the SVG pages cannot settle (motion, shake, fog, effects, cost).**
+
 Q5. When should the art lab run?
    a) Where M7.5 sits: after ground batch A   b) Right after `spike-design` merges, as an evidence-only spike on its own branch (like the sound spike); the rest of M7.5 stays after batch A   c) Before batch A, so batch A's new units are drawn once in the new style
    Recommendation: b, because the lab touches no simulation or movement, so it does not collide with avoidance, and early evidence on cost and readability shapes batch A's kinds. Why it matters: changes milestone order only if you pick c.
