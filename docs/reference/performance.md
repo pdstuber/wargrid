@@ -341,3 +341,18 @@ Later work (each with its payoff bound):
 - **Scaling sweep (Q2)**: changes no gate or threshold. Bound: 300 fighting units already sit at the line (open 1.89) and 400 at 2.85, so it refines the slope and the owner-count cost only. Scripts in scratchpad `ws8`, never run; about 25 min quiet plus debugging. Objective 5 stays not met.
 - **Memory proxy (Q3)**: changes no gate. A flat static-memory and object-count line closes objective 1's memory half; growth would be a leak finding. Proxy only (refcounting, no GC, no allocation counter). Script in `ws8`, never run.
 - Hold-cells Q5 (the design's Task 0, its expected gain 0.03-0.05 ms is the size of the spread); the shared persistent grid (rec 4, the only route to hordes300 under 1.82); the `bench_runner.gd` `hordes300` edit (prepared, not applied); 13 unprofiled rendered runs for a G9 gate and a tighter G10; a Deck run of HEAD for the movement-row F; a team match gate (G7, n 13 needed).
+
+## Rendered check per play map (2026-11-09, converted maps Task 9)
+
+Tree `2354087`, macOS M-series, 1280x720, vsync off, `--audio-driver Dummy`, load averages 1.9 / 1.8 / 1.7 at start (`uptime` 04:51). Scratch script (pan_check.gd, not tracked) starts the skirmish scene with seed 1, waits 5 s, then pans the camera at the game's 400 px/s (zoom 0.5 default, via `pan_camera`) from the local start to the top, right, bottom and left corner of the map diamond and back. Frame interval = time between `process_frame` signals over all legs (simulation running, AI opponent on, no player units). Logs `wargrid-overnight-work/logs/t9_*.log`.
+
+| Map | Frames | Frame p50 / p95 / p99 / max (ms) | Leg to top / right / bottom / left (s, return equal) | Against 16.7 ms goal |
+|---|---|---|---|---|
+| dry_wells | 68848 | 0.65 / 0.95 / 2.67 / 16.80 | 6.1 / 10.2 / 2.9 / 5.2 | p99 within; one max frame 0.1 ms over |
+| broken_crown | 91687 | 0.61 / 0.88 / 2.61 / 15.58 | 7.4 / 3.0 / 6.5 / 14.0 | within |
+| ashfall | 149347 | 0.65 / 1.02 / 2.72 / 15.96 | 12.4 / 23.5 / 10.2 / 7.3 | within |
+
+- The 3.04 ms Ashfall-layout budget is a different workload (300 moving units on a 64x64 grid with the Ashfall layout, headless sim tick); these frames have no player units and only the AI start, so a comparison is not like for like. Ashfall frame p99 2.72 ms sits below 3.04 anyway, as a reference only.
+- Rendered movement benchmark rerun alone (`sh tools/run_game.sh --audio-driver Dummy res://scenes/movement_benchmark.tscn`, uptime load 2.0 at start): `RENDERED BENCHMARK PASSED 4`; Ashfall guard `frame_p95_ms=2.936` against 3.3 ms; open p95 0.387, dense 2.159, horde 3.46 ms. Log `t9_bench.log`.
+- Observation for the user, not a decision. Screenshots in `wargrid-overnight-work/screens/` (`<map>_<corner>.png`, `credits.png`). The camera clamp is the bounding rectangle of the diamond, so at each corner the view is centred on the diamond vertex: about half the 1280x720 screen is empty grey outside the map (the top and bottom corners show the diamond filling one half, left and right one side). Away from the corners the diamond fills the view. Leg times are 3 to 23 s; the right corner of Ashfall is the longest at 23.5 s. Labels checked in the screenshots seen (ashfall_top, dry_wells_left, broken_crown_bottom): no overlap, "Boxes 400" supply label readable; the HUD text and the build buttons overlap the map at the top left only. Credits panel (`credits.png`): readable, white text on dark panel, music entries and Kevin MacLeod attribution visible, scroll bar present (text continues below, so the licence text is scrolled out of view), Close button at the bottom.
+- Not measured: a real frame-time with player units and fog on these maps, vsync-on behaviour, the web build.

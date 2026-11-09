@@ -7,13 +7,13 @@ Plan: [converted maps playable plan](../superpowers/plans/2026-11-08-converted-m
 ```text
 Resume record (updated 2026-11-09, Task 7 green pending commit)
 Branch / base commit / working-tree state: converted-maps / 1dceeea (Task 6 committed) / Task 7 diff uncommitted (credits.gd, launcher.gd, launcher.tscn, export_presets.cfg, test_credits.gd, test_online_scene.gd, test_map.gd, run_tests.gd, this file)
-Last green task / next incomplete task: Task 7 green pending commit / Task 8
+Last green task / next incomplete task: Task 9 green pending commit / Task 10
 Changed paths since last commit: see working-tree state
 Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 596 / 137159 / 2 (Fm1 pair only) / 1 / no marker
 Known red case or blocker: Fm1 pair (morning decision)
 Approved decisions, pre-authorizations used, deferred gates: none new
 Usage so far: not run
-Next exact action: coordinator commits Task 7 and Task 8 (docs only); then Task 9
+Next exact action: coordinator commits Task 9 (docs only); then Task 10
 ```
 
 ## Baseline
@@ -244,3 +244,7 @@ Rows: tree `fdb81c4` + Task 6 diff. `run_tests.sh` `CASES 585 CHECKS 136975 FAIL
 - Sweep: 24 runs (6 pairs x skirmish, dry_wells, broken_crown, ashfall), seed 1, cap 45,000, headless, alone, exit 0 each, tick p95 0.52 to 1.12 ms (budget 1.82). Table in `docs/reference/more-maps.md` "Bot-vs-bot sweep". Log `wargrid-overnight-work/logs/t8-sweep.log`.
 - Row: tree `596db73` plus uncommitted Task 6 to 7 diff; only tracked change is the docs table; scratch copy and .uid deleted. No suite run (docs only).
 - Both seats build and collect on every new-map row. Ashfall: four rows where one seat never damaged an enemy building (`china,china` seat 1 at cap; `usa,china` seat 2, `frc,usa` seat 1, `china,frc` seat 1, each the loser). Same pattern on Dry Wells. Judged lost fights, no fix, no pin touched. M8 finding: Ashfall games take 15,000 to 44,000 ticks to first building damage.
+
+## Task 9
+- Rendered pan check on dry_wells, broken_crown, ashfall plus Credits screenshot and rendered movement benchmark, alone, `--audio-driver Dummy`, every window ended by itself. No `godot` process was running beforehand. Results and observations in `docs/reference/performance.md` "Rendered check per map".
+- Rows: tree `2354087`. `PAN CHECK` p99 frame 2.67 / 2.61 / 2.72 ms; `RENDERED BENCHMARK PASSED 4`, Ashfall guard 2.936 ms, exit 0. Scratch copies and .uid deleted from `game/`; only tracked change is the two docs. Logs `wargrid-overnight-work/logs/t9-*` (`t9_*.log`).
