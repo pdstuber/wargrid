@@ -5,15 +5,15 @@ Plan: [converted maps playable plan](../superpowers/plans/2026-11-08-converted-m
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-09, Task 6b fixes green pending commit)
-Branch / base commit / working-tree state: converted-maps / 1dceeea (Task 6 committed) / Task 6b diff uncommitted (launcher.gd, launcher.tscn, test_online_scene.gd, this file)
-Last green task / next incomplete task: Task 6b with review fixes green pending commit / Task 7
+Resume record (updated 2026-11-09, Task 7 green pending commit)
+Branch / base commit / working-tree state: converted-maps / 1dceeea (Task 6 committed) / Task 7 diff uncommitted (credits.gd, launcher.gd, launcher.tscn, export_presets.cfg, test_credits.gd, test_online_scene.gd, test_map.gd, run_tests.gd, this file)
+Last green task / next incomplete task: Task 7 green pending commit / Task 8
 Changed paths since last commit: see working-tree state
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 587 / 137058 / 2 (Fm1 pair only) / 1 / no marker
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 596 / 137159 / 2 (Fm1 pair only) / 1 / no marker
 Known red case or blocker: Fm1 pair (morning decision)
 Approved decisions, pre-authorizations used, deferred gates: none new
 Usage so far: not run
-Next exact action: coordinator commits Task 6b (launcher.gd, launcher.tscn, test_online_scene.gd, this file); then Task 7
+Next exact action: coordinator commits Task 7; then Task 8
 ```
 
 ## Baseline
@@ -225,3 +225,17 @@ Rows: tree `fdb81c4` + Task 6 diff. `run_tests.sh` `CASES 585 CHECKS 136975 FAIL
 - Fixed: Copy press and clipboard check only when `DisplayServer.has_feature(FEATURE_CLIPBOARD)`; `await runner.process_frame` before `launcher.free()`; first N17 check also asserts Copy and Cancel stay enabled (RED by mutant: `WaitRow/Copy` added to `_set_busy`, `FAIL: N17 waiting shows Copy and Cancel, launcher stays busy`, FAILURES 3; restored); volume sliders now sit above WaitRow, so WaitRow is directly above Status.
 - N18 headless: only the stored `_code` is asserted; Copy's clipboard effect is unverified headless (the clipboard branch does not run).
 - Row: uncommitted tree on 1dceeea. `run_tests.sh` `CASES 587 CHECKS 137058 FAILURES 2` (Fm1 pair only), exit 1, no marker; `run_lint.sh` exit 0; `run_warnings.sh` `WARNINGS CHECKED 118 FILES` exit 0. Logs `wargrid-overnight-work/logs/t6bf-*.log`.
+
+## Task 7
+- RED (stub `credits.gd` returning "", tests registered; without the stub the suite did not compile): `FAIL: CR1 every CREDITS.md music row is in the panel: Conflict`, `FAIL: CR3 the MacLeod attribution block is verbatim`, `FAIL: CR7 Wargrid GPL line`, `ERROR: Node not found: "CreditsPanel" (relative to "/root/Launcher")` (N10), 10 MP9 failures; `CASES 596 CHECKS 136723 FAILURES 48`. CASES rose 587 to 596 (7 CR + MP9 + N10).
+- Layout: Credits sits directly under JoinRow (volume sliders now sit between it and WaitRow); N5 passes at 1280x720 and 1920x1080, no fallback needed.
+- Rows: uncommitted tree on `b06e307`. `run_tests.sh` `CASES 596 CHECKS 137159 FAILURES 2` (Fm1 pair only), exit 1, no marker; `run_lint.sh` exit 0; `run_warnings.sh` `WARNINGS CHECKED 118 FILES` exit 0; `run_python_checks.sh` exit 0.
+- Export evidence (templates 4.7.2 installed): `export_build.sh Linux` exit 0, `grep -ac Zhelanov` on the binary (embedded pck) 2; `export_build.sh Web` exit 0, `grep -ac Zhelanov` on `index.pck` 2. Handoff's 0.9.0 exe had 0. Outputs in `wargrid-overnight-work/scratch/t7/`. Logs `wargrid-overnight-work/logs/t7-*.log`.
+- Unverified: panel look on screen (Task 9); Godot licence text content is whatever `Engine.get_license_text()` returns, tests use a marker string.
+
+### Task 7 review (Opus, APPROVE) - minors for the morning
+- No test covers the attribution notice or the `changes:` field (CR1 checks columns 2-6 as substrings only); strengthen CR1 to assert the whole line per row.
+- launcher.gd wiring untested: a wrong NOTICE.md path or `""` instead of `Engine.get_license_text()` passes; section order unasserted.
+- Godot "Complying with licenses" may also want `Engine.get_copyright_info()` / `get_license_info()`; panel ships only `get_license_text()`. User decision.
+- N10 can leak click.wav playback near the end of a process (`1 resources still in use at exit`); the full 4-shard run is clean.
+- `_macleod` takes the first ```text fence, not the one under the heading; a CRLF checkout drops the block silently.

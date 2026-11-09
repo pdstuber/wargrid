@@ -6,7 +6,7 @@ const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 const StateHash = preload("res://scripts/simulation/state_hash.gd")
 
 func cases() -> Array[Callable]:
-	return [test_maps_load, test_converted_maps_load, test_bad_map_rejected, test_skirmish_identical, test_exports_ship_map_notice, test_small_source_from_map, test_with_starts]
+	return [test_maps_load, test_converted_maps_load, test_bad_map_rejected, test_skirmish_identical, test_exports_ship_map_notice, test_exports_ship_audio_credits, test_small_source_from_map, test_with_starts]
 
 func test_maps_load(runner) -> bool:
 	var skirmish := MapData.load("res://data/maps/skirmish.json")
@@ -57,6 +57,19 @@ func test_exports_ship_map_notice(runner) -> bool:
 		presets += 1
 		runner.check("data/maps/NOTICE.md" in str(config.get_value(section, "include_filter", "")), "MP5 %s ships EA's map notice" % config.get_value(section, "name", section))
 	runner.check(presets == 10, "MP5 ten presets checked")
+	return true
+
+func test_exports_ship_audio_credits(runner) -> bool:
+	runner.check(FileAccess.file_exists("res://audio/CREDITS.md"), "MP9 audio credits are in the project or pack")
+	if not FileAccess.file_exists("res://export_presets.cfg"): return true
+	var config := ConfigFile.new()
+	runner.check(config.load("res://export_presets.cfg") == OK, "MP9 export presets load")
+	var presets: int = 0
+	for section in config.get_sections():
+		if section.ends_with(".options"): continue
+		presets += 1
+		runner.check("audio/CREDITS.md" in str(config.get_value(section, "include_filter", "")), "MP9 %s ships the audio credits" % config.get_value(section, "name", section))
+	runner.check(presets == 10, "MP9 ten presets checked")
 	return true
 
 func test_small_source_from_map(runner) -> bool:

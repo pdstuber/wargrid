@@ -31,7 +31,7 @@ class FakeTransport extends RefCounted:
 	func rtt_samples() -> PackedInt64Array: return PackedInt64Array([40000])
 
 func cases() -> Array[Callable]:
-	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_rejection_line, test_funds_rejection_is_announced, test_overlay_net_line, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_launcher_layout, test_launcher_faction_selectors_fit, test_plays_dry_wells_from_each_seat, test_offline_uses_chosen_map, test_restart_keeps_map_and_starts, test_joiner_refuses_other_map, test_old_relay_mismatch_is_shown, test_cancel_and_copy_while_waiting, test_start_without_settings_is_a_protocol_error, test_both_seats_share_map_and_starts, test_host_told_opponent_left_before_start]
+	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_rejection_line, test_funds_rejection_is_announced, test_overlay_net_line, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_launcher_layout, test_launcher_faction_selectors_fit, test_plays_dry_wells_from_each_seat, test_offline_uses_chosen_map, test_restart_keeps_map_and_starts, test_joiner_refuses_other_map, test_old_relay_mismatch_is_shown, test_cancel_and_copy_while_waiting, test_start_without_settings_is_a_protocol_error, test_both_seats_share_map_and_starts, test_host_told_opponent_left_before_start, test_credits_panel_layout]
 
 func _online(runner, seat: int) -> Dictionary:
 	var transport := FakeTransport.new()
@@ -182,7 +182,7 @@ func test_launcher_layout(runner) -> bool:
 		await runner.process_frame
 		await runner.process_frame
 		var rects: Array[Rect2] = []
-		for path in ["Title", "Offline", "Map", "RelayUrl", "Create", "JoinRow/Code", "JoinRow/Join", "WaitRow/Copy", "WaitRow/Cancel", "Volume/MusicLabel", "Volume/Music", "Volume/EffectsLabel", "Volume/Effects", "Volume/VoiceLabel", "Volume/Voice", "Volume/MuteLabel", "Volume/Mute", "Status", "Legal"]:
+		for path in ["Title", "Offline", "Map", "RelayUrl", "Create", "JoinRow/Code", "JoinRow/Join", "Credits", "WaitRow/Copy", "WaitRow/Cancel", "Volume/MusicLabel", "Volume/Music", "Volume/EffectsLabel", "Volume/Effects", "Volume/VoiceLabel", "Volume/Voice", "Volume/MuteLabel", "Volume/Mute", "Status", "Legal"]:
 			var control: Control = launcher.get_node("Center/Box/" + path)
 			rects.append(control.get_global_rect())
 			runner.check(Rect2(Vector2.ZERO, Vector2(size)).encloses(control.get_global_rect()), "N5 %s inside %s" % [path, size])
@@ -437,4 +437,30 @@ func test_host_told_opponent_left_before_start(runner) -> bool:
 	var text: String = late.main.get_node("HUD/Status").text
 	runner.check(text.contains("Player 2 disconnected") and not text.contains(notice), "N16 a later leave keeps the plain text, got " + text)
 	late.main.free()
+	return true
+
+func test_credits_panel_layout(runner) -> bool:
+	var original: Vector2i = runner.root.size
+	for size in [Vector2i(1280, 720), Vector2i(1920, 1080)]:
+		runner.root.size = size
+		var launcher = Launcher.instantiate()
+		runner.root.add_child(launcher)
+		await runner.process_frame
+		await runner.process_frame
+		var panel: Control = launcher.get_node("CreditsPanel")
+		runner.check(not panel.visible and launcher.get_node("Center").visible, "N10 Credits panel starts hidden at %s" % size)
+		launcher.get_node("Center/Box/Credits").pressed.emit()
+		await runner.process_frame
+		await runner.process_frame
+		var text: RichTextLabel = panel.get_node("Box/Text")
+		var close: Control = panel.get_node("Box/Close")
+		var view := Rect2(Vector2.ZERO, Vector2(size))
+		runner.check(panel.visible and view.encloses(panel.get_global_rect()), "N10 Credits panel inside the viewport at %s" % size)
+		runner.check(not launcher.get_node("Center").visible, "N10 launcher controls hidden behind Credits at %s" % size)
+		runner.check(panel.get_global_rect().encloses(text.get_global_rect()) and panel.get_global_rect().encloses(close.get_global_rect()) and not text.get_global_rect().intersects(close.get_global_rect()), "N10 Text and Close fit the panel at %s" % size)
+		runner.check("Zhelanov" in text.get_parsed_text(), "N10 Credits text names the composers at %s" % size)
+		close.pressed.emit()
+		runner.check(not panel.visible and launcher.get_node("Center").visible, "N10 Close returns to the launcher at %s" % size)
+		launcher.free()
+	runner.root.size = original
 	return true

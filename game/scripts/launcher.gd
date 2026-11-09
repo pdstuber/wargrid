@@ -10,6 +10,7 @@ const MusicPlayer = preload("res://scripts/presentation/music_player.gd")
 const VolumeSliders = preload("res://scripts/presentation/volume_sliders.gd")
 const SkirmishMain = preload("res://scripts/skirmish_main.gd")
 const MatchSettings = preload("res://scripts/match_settings.gd")
+const Credits = preload("res://scripts/presentation/credits.gd")
 const OFFLINE_SCENE: String = "res://scenes/skirmish.tscn"
 const HEADLESS_FLAGS: Array[String] = ["--netclient", "--relay", "--replay-log", "--probe-relay"]
 var _transport: RefCounted
@@ -34,11 +35,20 @@ func _ready() -> void:
 		get_tree().change_scene_to_file(OFFLINE_SCENE))
 	$Center/Box/Create.pressed.connect(_connect.bind(""))
 	$Center/Box/JoinRow/Join.pressed.connect(func() -> void: _connect($Center/Box/JoinRow/Code.text.strip_edges().to_upper()))
+	$Center/Box/Credits.pressed.connect(_show_credits.bind(true))
+	$CreditsPanel/Box/Close.pressed.connect(_show_credits.bind(false))
 	$Center/Box/WaitRow/Copy.pressed.connect(func() -> void: DisplayServer.clipboard_set(_code))
 	$Center/Box/WaitRow/Cancel.pressed.connect(func() -> void:
 		_transport.close()
 		_fail("Match cancelled"))
 	set_process(false)
+
+func _show_credits(open: bool) -> void:
+	var text: RichTextLabel = $CreditsPanel/Box/Text
+	if open and text.text.is_empty():
+		text.text = Credits.text(FileAccess.get_file_as_string("res://audio/CREDITS.md"), FileAccess.get_file_as_string("res://data/maps/NOTICE.md"), Engine.get_license_text())
+	$CreditsPanel.visible = open
+	$Center.visible = not open
 
 func _add_audio() -> void:
 	add_child(SoundPlayer.new(0))
