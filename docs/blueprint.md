@@ -593,6 +593,8 @@ Batch B keeps the other 11: Burton, Pathfinder, Sentry Drone, Hacker, Black Lotu
 - **A2 USA, A3 China, A4 FRC:** units, buildings and upgrades as data, plus each faction's new mechanics. USA: point-defence laser, target designator, building disable, drones as follower units. China: Overlord add-ons, assault deploy, missile jammer and vehicle disable, deploy-to-fire, Nationalism and Subliminal on horde. FRC: spawn nexus, rider-dependent weapons, second life, suicide weapons, three salvage tiers, garrison.
 - **Exit gate:** a deterministic headless 3v3 bot match on Ashfall with the new units in the bot lists, ledger rows inside budgets or reported as exceeded, parity decision list (`turn_`, `move_`, `range_`, `reach_` per new unit, flight time per projectile), CI, one review and `/ponytail-review`, user playtest.
 
+**Line of sight for direct fire (user, 2026-11-09):** direct-fire units need a clear line over terrain and obstacles to auto-target, artillery does not, as in Zero Hour; this lands in batch A with artillery and replaces M6's "elevation affects passability only" ([design answers](reference/design-answers-2026-11-08.md#fog-of-war-m79)).
+
 **Not in batch A:** aircraft; anti-air halves of ground weapons have no targets until then (Avenger's air laser, Quad Cannon's air gun); superweapons, general's powers and promotions.
 
 **Risks:** as many units as M7's whole roster plus five new systems, so the design session may still split it. Travelling shots and hazard fields add per-tick objects on the rows the performance spike works on; measure in A1 before any roster gate. Scatter and jammer redirection must use simulation randomness only.
