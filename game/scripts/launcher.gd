@@ -85,7 +85,8 @@ func _offline_setup() -> void:
 	var id: String = _map_id()
 	SkirmishMain.factions = {1: _faction($Center/Box/FactionRow/Own), 2: _faction($Center/Box/FactionRow/Opponent)}
 	SkirmishMain.map_path = MatchSettings.map_path(id)
-	SkirmishMain.starts = MatchSettings.starts(id, randi())
+	SkirmishMain.match_seed = randi()
+	SkirmishMain.starts = MatchSettings.starts(id, SkirmishMain.match_seed)
 
 func _connect(code: String) -> void:
 	_match = code
@@ -160,6 +161,7 @@ func _start(message: Dictionary) -> bool:
 	_lockstep = Lockstep.new(_seat, seats, message.delay)
 	var id: String = message.settings.map
 	SkirmishMain.map_path = MatchSettings.map_path(id)
+	SkirmishMain.match_seed = message.seed
 	SkirmishMain.starts = MatchSettings.starts(id, message.seed)
 	$Center/Box/WaitRow.hide()
 	var game: Node = OnlineScene.instantiate()

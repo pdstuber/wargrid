@@ -27,6 +27,9 @@ var _reason: String = ""
 var _closing_since: int = 0
 var _ending: bool = false
 var _connect_msec: int = 0
+var _match_map: String = MatchSettings.TEST_MAP
+var _chosen: Array[int] = []
+var _match_seed: int = 0
 
 func _ready() -> void:
 	_args = _parse(OS.get_cmdline_user_args())
@@ -115,13 +118,22 @@ func _start(message: Dictionary) -> void:
 	var seats: Array[int] = []
 	seats.assign(message.seats)
 	var id: String = message.settings.map
-	var chosen: Array[int] = MatchSettings.starts(id, message.seed)
-	print("NETCLIENT MAP ", id, " STARTS ", ",".join(chosen.map(str)) if not chosen.is_empty() else "-")
-	_sim = Skirmish.create(true, "human", {}, MatchSettings.map_path(id), chosen)
+	_match_map = id
+	_match_seed = message.seed
+	_chosen = MatchSettings.starts(id, _match_seed)
+	print("NETCLIENT MAP ", id, " SEED ", message.seed, " STARTS ", ",".join(_chosen.map(str)) if not _chosen.is_empty() else "-")
+	_sim = _match_sim(id, _chosen)
 	_lockstep = Lockstep.new(_seat, seats, message.delay)
 	_lockstep.send = _transport.send_text
 	_lockstep.submit({"type": "choose_faction", "faction": _args.get("faction", Skirmish.default_faction())})
 	_lockstep.start(_sim.snapshot())
+
+func _match_sim(id: String, chosen: Array[int]) -> Simulation:
+	return Skirmish.create(true, "human", {}, MatchSettings.map_path(id), chosen)
+
+func _oracle_sim() -> Simulation:
+	var id: String = _map_id()
+	return _match_sim(id, MatchSettings.starts(id, int(_args.get("seed", "0"))))
 
 func _run_steps(limit: int) -> void:
 	for i in limit:
@@ -197,7 +209,9 @@ func _write_logs() -> void:
 	if _status == "ended_desync" and _args.has("report-dir"):
 		var file := FileAccess.open("%s/desync-seat%d.json" % [_args["report-dir"], _seat], FileAccess.WRITE)
 		if file == null: return
-		file.store_string(JSON.stringify(_lockstep.desync_report(), "", true, true))
+		var report: Dictionary = _lockstep.desync_report()
+		report.merge(MatchSettings.report_fields(_match_map, _match_seed, _chosen))
+		file.store_string(JSON.stringify(report, "", true, true))
 		file.close()
 
 func _command_lines(log_rows: Array[Dictionary]) -> PackedStringArray:
@@ -223,10 +237,11 @@ func _replay_oracle() -> void:
 			return
 		by_tick[decoded.message.tick] = decoded.message.commands
 	var every: int = _int_arg("hash-every") if _args.has("hash-every") else 30
-	var sim: Simulation = Skirmish.create(true, "human", {})
+	var max_ticks: int = _int_arg("oracle-ticks") if _args.has("oracle-ticks") else ORACLE_MAX_TICKS
+	var sim: Simulation = _oracle_sim()
 	_sim = sim
 	var rows := PackedStringArray(["0\t" + StateHash.digest(sim.snapshot())])
-	while not sim.match_over() and sim.tick() < ORACLE_MAX_TICKS:
+	while not sim.match_over() and sim.tick() < max_ticks:
 		for command: Variant in by_tick.get(sim.tick(), []): sim.issue_command(command)
 		sim.step()
 		if sim.tick() % every == 0: rows.append("%d\t%s" % [sim.tick(), StateHash.digest(sim.snapshot())])

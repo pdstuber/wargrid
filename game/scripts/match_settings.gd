@@ -24,6 +24,9 @@ static func refusal(settings: Dictionary) -> String:
 	if not theirs is String or theirs != map_hash(map_path(id)): return "Your copy of %s differs from the host's" % PLAY_MAPS.get(id, id)
 	return ""
 
+static func report_fields(id: String, match_seed: int, chosen: Array[int]) -> Dictionary:
+	return {"map": id, "seed": match_seed, "starts": chosen}
+
 static func starts(id: String, match_seed: int) -> Array[int]:
 	# The test map keeps seat N on start N so pinned traces hold.
 	if id == TEST_MAP: return []

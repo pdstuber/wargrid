@@ -7,7 +7,7 @@ const StartSpots = preload("res://scripts/simulation/start_spots.gd")
 const SS6_PINNED := "8-4,2-6,3-7,5-1,6-2,2-6,7-3,4-8,1-5,3-7,2-6,6-2,6-2,8-4,6-2,5-1"
 
 func cases() -> Array[Callable]:
-	return [test_first_random, test_farthest, test_summed, test_teammates, test_chosen, test_pinned, test_ties]
+	return [test_first_random, test_farthest, test_summed, test_teammates, test_chosen, test_pinned, test_ties, test_no_team, test_summed_not_nearest]
 
 func _ashfall() -> Dictionary:
 	return MapData.load("res://data/maps/ashfall.json")
@@ -85,4 +85,20 @@ func test_ties(runner) -> bool:
 	runner.check(ok, "SS7 ties go to the lowest seat")
 	runner.check(StartSpots.assign(map, 0, _ints([0, 0, 0]), _ints([1, 0, 0])) == _ints([1, 3, 2]), "SS7 summed tie goes to the lowest seat")
 	runner.check(StartSpots.assign(map, 0, _ints([1, 1]), _ints([1, 0])) == _ints([1, 3]), "SS7 a chosen spot is not its team's position")
+	return true
+
+func test_no_team(runner) -> bool:
+	var rows := {1: 5, 2: 6, 3: 7, 4: 8, 5: 1, 6: 2, 7: 3, 8: 4}
+	var map := _ashfall()
+	var ok := true
+	for s in 64:
+		var a := StartSpots.assign(map, s, _ints([0, 0]), _ints([0, 0]))
+		ok = ok and a[1] == rows[a[0]]
+	runner.check(ok, "SS8 no team (0) never makes slot 2 a teammate: it takes the farthest start like SS2")
+	return true
+
+func test_summed_not_nearest(runner) -> bool:
+	var ok := true
+	for s in 32: ok = ok and StartSpots.assign(_ashfall(), s, _ints([1, 2, 3, 4]), _ints([1, 4, 0, 0])) == _ints([1, 4, 7, 5])
+	runner.check(ok, "SS9 the farthest start maximises the summed distance, not the distance to the nearest taken one")
 	return true

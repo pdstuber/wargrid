@@ -121,7 +121,9 @@ case $scenario in
     ${PYTHON:-python3} - "$out" <<'PY' || fail "desync report tick is not 60"
 import json, sys
 for seat in (1, 2):
-    assert json.load(open(f"{sys.argv[1]}/desync-seat{seat}.json"))["tick"] == 60
+    report = json.load(open(f"{sys.argv[1]}/desync-seat{seat}.json"))
+    assert report["tick"] == 60
+    assert report["map"] == "skirmish" and isinstance(report["seed"], int) and report["starts"] == []
 PY
     diff_out=$(${PYTHON:-python3} "$repo_root/tools/desync_diff.py" "$out/desync-seat1.json" "$out/desync-seat2.json")
     [ $? -eq 1 ] || fail "desync_diff should exit 1"

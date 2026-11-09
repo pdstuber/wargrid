@@ -257,6 +257,7 @@ func _start_message(id: String, match_seed: int) -> Dictionary:
 func test_plays_dry_wells_from_each_seat(runner) -> bool:
 	var before: String = SkirmishMain.map_path
 	var before_starts: Array[int] = SkirmishMain.starts
+	var before_seed: int = SkirmishMain.match_seed
 	runner.check(before == "res://data/maps/skirmish.json", "N7 without the launcher the scenes keep the test map")
 	for seat in [1, 2]:
 		var launcher = Launcher.instantiate()
@@ -273,11 +274,13 @@ func test_plays_dry_wells_from_each_seat(runner) -> bool:
 		await runner.process_frame
 	SkirmishMain.map_path = before
 	SkirmishMain.starts = before_starts
+	SkirmishMain.match_seed = before_seed
 	return true
 
 func test_offline_uses_chosen_map(runner) -> bool:
 	var before_path: String = SkirmishMain.map_path
 	var before_starts: Array[int] = SkirmishMain.starts
+	var before_seed: int = SkirmishMain.match_seed
 	var launcher = Launcher.instantiate()
 	runner.root.add_child(launcher)
 	await runner.process_frame
@@ -292,16 +295,19 @@ func test_offline_uses_chosen_map(runner) -> bool:
 		launcher._offline_setup()
 		runner.check(SkirmishMain.map_path == MatchSettings.map_path(id), "N11 %s: Play offline uses the chosen map" % id)
 		runner.check(SkirmishMain.starts.size() == 2, "N11 %s: two start spots chosen" % id)
+		runner.check(SkirmishMain.starts == MatchSettings.starts(id, SkirmishMain.match_seed), "N11 %s: the starts come from the recorded match seed" % id)
 		if id == "ashfall":
 			runner.check((SkirmishMain.starts[0] - SkirmishMain.starts[1] + 8) % 8 == 4, "N11 Ashfall pair is diagonal, got %s" % str(SkirmishMain.starts))
 	launcher.free()
 	SkirmishMain.map_path = before_path
 	SkirmishMain.starts = before_starts
+	SkirmishMain.match_seed = before_seed
 	return true
 
 func test_restart_keeps_map_and_starts(runner) -> bool:
 	var before_path: String = SkirmishMain.map_path
 	var before_starts: Array[int] = SkirmishMain.starts
+	var before_seed: int = SkirmishMain.match_seed
 	SkirmishMain.map_path = MatchSettings.map_path("broken_crown")
 	SkirmishMain.starts = [3, 1]
 	var main = load(LauncherScript.OFFLINE_SCENE).instantiate()
@@ -317,11 +323,13 @@ func test_restart_keeps_map_and_starts(runner) -> bool:
 	main.free()
 	SkirmishMain.map_path = before_path
 	SkirmishMain.starts = before_starts
+	SkirmishMain.match_seed = before_seed
 	return true
 
 func test_joiner_refuses_other_map(runner) -> bool:
 	var before_path: String = SkirmishMain.map_path
 	var before_starts: Array[int] = SkirmishMain.starts
+	var before_seed: int = SkirmishMain.match_seed
 	var launcher = Launcher.instantiate()
 	runner.root.add_child(launcher)
 	await runner.process_frame
@@ -340,6 +348,7 @@ func test_joiner_refuses_other_map(runner) -> bool:
 	launcher.free()
 	SkirmishMain.map_path = before_path
 	SkirmishMain.starts = before_starts
+	SkirmishMain.match_seed = before_seed
 	return true
 
 func test_old_relay_mismatch_is_shown(runner) -> bool:
@@ -401,6 +410,7 @@ func test_start_without_settings_is_a_protocol_error(runner) -> bool:
 func test_both_seats_share_map_and_starts(runner) -> bool:
 	var before_path: String = SkirmishMain.map_path
 	var before_starts: Array[int] = SkirmishMain.starts
+	var before_seed: int = SkirmishMain.match_seed
 	var chosen: Array[int] = MatchSettings.starts("ashfall", 11)
 	var raw: Dictionary = MapData.load(MatchSettings.map_path("ashfall"))
 	runner.check((chosen[0] - chosen[1] + 8) % 8 == 4, "N19 the seeded pair is diagonal, got %s" % str(chosen))
@@ -411,6 +421,7 @@ func test_both_seats_share_map_and_starts(runner) -> bool:
 		launcher._transport = FakeTransport.new()
 		launcher._seat = seat
 		launcher._start(_start_message("ashfall", 11))
+		runner.check(SkirmishMain.match_seed == 11, "N19 seat %d records the host's seed for reports, got %d" % [seat, SkirmishMain.match_seed])
 		var main = runner.root.get_tree().current_scene
 		var map: Dictionary = main.simulation.map_data()
 		var cells: Array = [MapData.start_cell(map, 1), MapData.start_cell(map, 2)]
@@ -420,6 +431,7 @@ func test_both_seats_share_map_and_starts(runner) -> bool:
 		await runner.process_frame
 	SkirmishMain.map_path = before_path
 	SkirmishMain.starts = before_starts
+	SkirmishMain.match_seed = before_seed
 	return true
 
 func test_host_told_opponent_left_before_start(runner) -> bool:
@@ -447,6 +459,14 @@ func _credits_wired(runner, shown: String, size: Vector2i) -> void:
 			license_line = line
 			break
 	runner.check(not license_line.is_empty() and license_line in shown, "N10 Credits text carries Godot's licence text at %s" % size)
+	var info: Dictionary = Engine.get_license_info()
+	var info_line: String = ""
+	for line in info[info.keys()[0]].split("\n"):
+		if line.length() > 40 and "[" not in line:
+			info_line = line
+			break
+	runner.check(Engine.get_copyright_info()[-1].name in shown, "N10 Credits text names an engine component at %s" % size)
+	runner.check(not info_line.is_empty() and info_line in shown, "N10 Credits text carries an engine licence text at %s" % size)
 	var at: Array[int] = []
 	for heading in ["Wargrid ©", "\nMusic\n", "\nVoice: ", "\nMaps\n", "\nGodot Engine\n", "\nThird-party components in Godot\n"]:
 		at.append(shown.find(heading))

@@ -13,12 +13,15 @@ const Lockstep = preload("res://scripts/net/lockstep.gd")
 const MapData = preload("res://scripts/simulation/map_data.gd")
 const StartSpots = preload("res://scripts/simulation/start_spots.gd")
 const StateHash = preload("res://scripts/simulation/state_hash.gd")
+const MatchSettings = preload("res://scripts/match_settings.gd")
+const OnlineMain = preload("res://scripts/online_main.gd")
+const SkirmishMain = preload("res://scripts/skirmish_main.gd")
 
 const ASHFALL := "res://data/maps/ashfall.json"
 const CHOSEN: Array[int] = [5, 1]
 
 func cases() -> Array[Callable]:
-	return [test_skirmish_initial_state, test_roster_production, test_bot_cycles_unit_list, test_bot_reads_seat_faction, test_bot_plays_china, test_bot_plays_frc, test_bot_builds_tunnel_hub_never_enters, test_bot_collectors_per_supply_center, test_bot_counts_queued_collectors, test_bot_keeps_one_builder_four_gatherers, test_bot_leaves_rebuild_alone, test_opponent_pays_and_retries, test_opponent_attack_policy, test_wave_targets_base_unless_enemy_near, test_wave_target_removed_same_tick, test_wave_fights_unit_met_on_the_way, test_wave_ignores_far_unit_beside_building, test_opponent_defends_base, test_defence_skips_busy_units, test_bot_ignores_contained_units, test_match_lifecycle, test_restart_state, test_bot_state_survives_seat_wrapper, test_headless_client_rejects_unknown_faction, test_chosen_starts_become_bases, test_no_starts_leaves_default_map, test_bot_builds_on_chosen_start, test_seeded_diagonal_on_broken_crown]
+	return [test_skirmish_initial_state, test_roster_production, test_bot_cycles_unit_list, test_bot_reads_seat_faction, test_bot_plays_china, test_bot_plays_frc, test_bot_builds_tunnel_hub_never_enters, test_bot_collectors_per_supply_center, test_bot_counts_queued_collectors, test_bot_keeps_one_builder_four_gatherers, test_bot_leaves_rebuild_alone, test_opponent_pays_and_retries, test_opponent_attack_policy, test_wave_targets_base_unless_enemy_near, test_wave_target_removed_same_tick, test_wave_fights_unit_met_on_the_way, test_wave_ignores_far_unit_beside_building, test_opponent_defends_base, test_defence_skips_busy_units, test_bot_ignores_contained_units, test_match_lifecycle, test_restart_state, test_bot_state_survives_seat_wrapper, test_headless_client_rejects_unknown_faction, test_chosen_starts_become_bases, test_no_starts_leaves_default_map, test_bot_builds_on_chosen_start, test_bot_rally_follows_chosen_start, test_replay_oracle_uses_match_map, test_desync_report_names_map_seed_starts, test_seeded_diagonal_on_broken_crown]
 
 func _owned(items: Array, player: int) -> Array:
 	return items.filter(func(item: Dictionary) -> bool: return item.owner == player)
@@ -650,6 +653,58 @@ func test_bot_builds_on_chosen_start(runner) -> bool:
 	var china_slot := MapData.slot(ashfall, 1, first_china)
 	runner.check(state.buildings.any(func(b: Dictionary) -> bool: return b.owner == 1 and b.kind == first_usa and b.origin == [usa_slot.x, usa_slot.y]), "SK-S3 player 1's bot builds on seat 5's slot")
 	runner.check(state.buildings.any(func(b: Dictionary) -> bool: return b.owner == 2 and b.kind == first_china and b.origin == [china_slot.x, china_slot.y]), "SK-S3 player 2's bot builds on seat 1's slot")
+	return true
+
+func test_bot_rally_follows_chosen_start(runner) -> bool:
+	var ashfall := MapData.load(ASHFALL)
+	var sim = _chosen_sim()
+	sim.spawn(1, Vector2(MapData.start_cell(ashfall, 3)) + Vector2(0.5, 0.5), "usa_rifle_infantry")
+	var players: Array[int] = [1]
+	Skirmish.issue_opponents(sim, players, 0)
+	var seat5 := Vector2(MapData.start_cell(ashfall, 5)) + Vector2(0.5, 0.5)
+	var moves: Array = sim.snapshot().pending_commands.filter(func(c: Dictionary) -> bool: return c.type == "move" and c.player == 1)
+	runner.check(moves.size() == 1 and moves[0].target == [seat5.x, seat5.y], "SK-S3 player 1's wave rally is seat 5's start cell, got %s" % str(moves))
+	return true
+
+class OracleClient extends Client:
+	func _exit() -> void:
+		pass
+
+func test_replay_oracle_uses_match_map(runner) -> bool:
+	var log_path := "user://sk22_replay.log"
+	FileAccess.open(log_path, FileAccess.WRITE).close()
+	var chosen := MatchSettings.starts("ashfall", 7)
+	var ashfall := MapData.load(ASHFALL)
+	var client = OracleClient.new()
+	client._args = {"map": "ashfall", "seed": "7", "replay-log": log_path, "oracle-ticks": "1"}
+	client._replay_oracle()
+	var sim = client._sim
+	runner.check(MapData.start_cell(sim.map_data(), 1) == MapData.start_cell(ashfall, chosen[0]), "SK22 the replay oracle puts seat 1 on the live match's start, want seat %d" % chosen[0])
+	runner.check(MapData.start_cell(sim.map_data(), 2) == MapData.start_cell(ashfall, chosen[1]), "SK22 the replay oracle puts seat 2 on the live match's start, want seat %d" % chosen[1])
+	client.free()
+	client = OracleClient.new()
+	client._args = {"replay-log": log_path, "oracle-ticks": "1"}
+	client._replay_oracle()
+	runner.check(is_same(client._sim.map_data(), Skirmish.create(true, "human", {}).map_data()), "SK22 no --map keeps the test map")
+	client.free()
+	DirAccess.remove_absolute(log_path)
+	return true
+
+func test_desync_report_names_map_seed_starts(runner) -> bool:
+	var before_path: String = SkirmishMain.map_path
+	var before_starts: Array[int] = SkirmishMain.starts
+	var before_seed: int = SkirmishMain.match_seed
+	SkirmishMain.map_path = MatchSettings.map_path("ashfall")
+	SkirmishMain.starts = MatchSettings.starts("ashfall", 7)
+	SkirmishMain.match_seed = 7
+	var main = OnlineMain.new()
+	main._lockstep = Lockstep.new(1, [1, 2] as Array[int])
+	var report: Dictionary = main._report()
+	runner.check(report.get("map") == "ashfall" and report.get("seed") == 7 and report.get("starts") == SkirmishMain.starts, "SK23 the online desync report names map, seed and starts, got %s" % [[report.get("map"), report.get("seed"), report.get("starts")]])
+	main.free()
+	SkirmishMain.map_path = before_path
+	SkirmishMain.starts = before_starts
+	SkirmishMain.match_seed = before_seed
 	return true
 
 func test_seeded_diagonal_on_broken_crown(runner) -> bool:

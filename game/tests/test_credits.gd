@@ -86,6 +86,7 @@ func test_third_party_components(runner) -> bool:
 	var section := panel.substr(third)
 	for part in ["Foo Lib", "2020, Foo", "2021, Bar", "Baz Lib", "2019, Baz", "Expat", "Zlib"]:
 		runner.check(part in section, "CR8 the third-party section names %s" % part)
+	runner.check("Foo Lib\n2020, Foo\n2021, Bar\nLicense: Expat, Zlib\n\nBaz Lib\n2019, Baz\nLicense: Expat" in section, "CR8 each component block is name, copyright lines, then its licence names")
 	runner.check(section.count("2020, Foo") == 1, "CR8 a copyright line shared by two parts is listed once")
 	runner.check(section.count("EXPAT-LICENCE-TEXT") == 1 and section.count("ZLIB-LICENCE-TEXT") == 1, "CR8 each licence text appears once")
 	runner.check(section.find("Foo Lib") < section.find("EXPAT-LICENCE-TEXT") and section.find("Baz Lib") < section.find("EXPAT-LICENCE-TEXT"), "CR8 components come before the licence texts")

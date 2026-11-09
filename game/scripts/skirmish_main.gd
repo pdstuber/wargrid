@@ -10,6 +10,7 @@ var inspected_id: int = -1
 static var factions: Dictionary = Registry.Factions.DEFAULT_SKIRMISH
 static var map_path: String = Skirmish.MAP_PATH
 static var starts: Array[int] = []
+static var match_seed: int = 0
 
 func _ready() -> void:
 	super._ready()

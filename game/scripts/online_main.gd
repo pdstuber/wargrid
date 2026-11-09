@@ -1,6 +1,7 @@
 extends "res://scripts/skirmish_main.gd"
 
 const TimingStats = preload("res://scripts/debug/timing_stats.gd")
+const MatchSettings = preload("res://scripts/match_settings.gd")
 const CATCH_UP_STEPS: int = 2
 const MAX_CATCH_UP_CREDIT: int = 4
 const DESYNC_DIR: String = "user://desync"
@@ -79,13 +80,18 @@ func _finish() -> void:
 
 func _write_report() -> String:
 	DirAccess.make_dir_recursive_absolute(DESYNC_DIR)
-	var report: Dictionary = _lockstep.desync_report()
+	var report: Dictionary = _report()
 	var path: String = "%s/desync-seat%d.json" % [DESYNC_DIR, report.seat]
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file == null: return ""
 	file.store_string(JSON.stringify(report, "", true, true))
 	file.close()
 	return ProjectSettings.globalize_path(path)
+
+func _report() -> Dictionary:
+	var report: Dictionary = _lockstep.desync_report()
+	report.merge(MatchSettings.report_fields(map_path.get_file().get_basename(), match_seed, starts))
+	return report
 
 func _net_line() -> String:
 	var latency: Dictionary = TimingStats.summary(_ms(_lockstep.latency_samples()))
