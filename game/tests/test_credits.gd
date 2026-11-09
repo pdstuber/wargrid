@@ -15,7 +15,7 @@ func cases() -> Array[Callable]:
 	return [test_every_music_row, test_new_row_appears, test_macleod_block, test_voice_line, test_maps_notice, test_godot_license, test_wargrid_line, test_third_party_components, test_third_party_engine_data, test_macleod_ignores_earlier_fence, test_crlf_credits]
 
 func _credits() -> String:
-	return FileAccess.get_file_as_string(CREDITS_PATH)
+	return FileAccess.get_file_as_string(CREDITS_PATH).replace("\r\n", "\n")
 
 func _notice() -> String:
 	return FileAccess.get_file_as_string(NOTICE_PATH)
