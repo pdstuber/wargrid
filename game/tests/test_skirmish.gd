@@ -18,7 +18,7 @@ const ASHFALL := "res://data/maps/ashfall.json"
 const CHOSEN: Array[int] = [5, 1]
 
 func cases() -> Array[Callable]:
-	return [test_skirmish_initial_state, test_roster_production, test_bot_cycles_unit_list, test_bot_reads_seat_faction, test_bot_plays_china, test_bot_plays_frc, test_bot_builds_tunnel_hub_never_enters, test_bot_collectors_per_supply_center, test_bot_counts_queued_collectors, test_bot_keeps_one_builder_four_gatherers, test_bot_leaves_rebuild_alone, test_opponent_pays_and_retries, test_opponent_attack_policy, test_opponent_defends_base, test_defence_skips_busy_units, test_bot_ignores_contained_units, test_match_lifecycle, test_restart_state, test_bot_state_survives_seat_wrapper, test_headless_client_rejects_unknown_faction, test_chosen_starts_become_bases, test_no_starts_leaves_default_map, test_bot_builds_on_chosen_start, test_seeded_diagonal_on_broken_crown]
+	return [test_skirmish_initial_state, test_roster_production, test_bot_cycles_unit_list, test_bot_reads_seat_faction, test_bot_plays_china, test_bot_plays_frc, test_bot_builds_tunnel_hub_never_enters, test_bot_collectors_per_supply_center, test_bot_counts_queued_collectors, test_bot_keeps_one_builder_four_gatherers, test_bot_leaves_rebuild_alone, test_opponent_pays_and_retries, test_opponent_attack_policy, test_wave_targets_base_unless_enemy_near, test_wave_target_removed_same_tick, test_wave_fights_unit_met_on_the_way, test_wave_ignores_far_unit_beside_building, test_opponent_defends_base, test_defence_skips_busy_units, test_bot_ignores_contained_units, test_match_lifecycle, test_restart_state, test_bot_state_survives_seat_wrapper, test_headless_client_rejects_unknown_faction, test_chosen_starts_become_bases, test_no_starts_leaves_default_map, test_bot_builds_on_chosen_start, test_seeded_diagonal_on_broken_crown]
 
 func _owned(items: Array, player: int) -> Array:
 	return items.filter(func(item: Dictionary) -> bool: return item.owner == player)
@@ -227,8 +227,10 @@ func test_opponent_attack_policy(runner) -> bool:
 	var depot: int = Economy.build(runner, sim, "usa_supply_center", Skirmish.origin("usa_supply_center", 1))
 	var barracks: int = Economy.build(runner, sim, "usa_barracks", Skirmish.origin("usa_barracks", 1))
 	var reactor: int = depot - 1
-	var first: int = sim.spawn(1, Vector2(20.5, 9.5), "usa_builder")
-	var second: int = sim.spawn(1, Vector2(20.5, 11.5), "usa_builder")
+	sim.remove_object(3)
+	sim.remove_object(4)
+	var first: int = sim.spawn(1, Vector2(41.5, 22.5), "usa_builder")
+	var second: int = sim.spawn(1, Vector2(45.5, 6.5), "usa_builder")
 	_to_tick(sim, 5370)
 	var army: Array = _army(sim)
 	while sim.tick() < 5399:
@@ -252,6 +254,75 @@ func test_opponent_attack_policy(runner) -> bool:
 	var before: Dictionary = lone.snapshot()
 	Skirmish.issue_opponent(lone)
 	runner.check(lone.snapshot() == before, "A3 an eliminated opponent submits nothing")
+	return true
+
+func _wave_world(rifle_at: Vector2) -> Array:
+	var sim = Simulation.new([], Vector2i(160, 32))
+	sim.add_player(1, 10000)
+	sim.add_player(2, 10000)
+	var building: int = Economy.add_completed(sim, 1, "usa_supply_center", Vector2i(150, 10))
+	var rifle: int = sim.spawn(1, rifle_at, "usa_rifle_infantry")
+	return [sim, _army(sim), building, rifle]
+
+func test_wave_targets_base_unless_enemy_near(runner) -> bool:
+	for case in [[Vector2(43.5, 22.5), 3], [Vector2(70.5, 11.5), 2]]:
+		var world: Array = _wave_world(case[0])
+		_to_tick(world[0], Skirmish.ATTACK_TICK)
+		_bot_until_attack(world[0], world[1], Skirmish.ATTACK_TICK + 4000)
+		var expected: int = world[case[1]]
+		runner.check(_attack_targets(world[0], world[1]) == [expected, expected, expected, expected], "W1 enemy unit at " + str(case[0]) + ": wave targets " + str(expected) + ", got " + str(_attack_targets(world[0], world[1])))
+	return true
+
+func test_wave_target_removed_same_tick(runner) -> bool:
+	var world: Array = _wave_world(Vector2(85.5, 11.5))
+	var sim = world[0]
+	_to_tick(sim, Skirmish.ATTACK_TICK)
+	var ordered: Callable = func() -> bool: return sim.snapshot().pending_commands.any(func(command: Dictionary) -> bool: return command.type == "attack")
+	while sim.tick() < Skirmish.ATTACK_TICK + 4000:
+		Skirmish.issue_opponent(sim)
+		if ordered.call(): break
+		sim.step()
+	runner.check(sim.snapshot().pending_commands.any(func(command: Dictionary) -> bool: return command.type == "attack" and command.target_id == world[2]), "W2 the wave order against the building is queued before it is removed")
+	sim.remove_object(world[2])
+	sim.step()
+	_to_tick(sim, sim.tick() + Skirmish.DECISION_TICKS - sim.tick() % Skirmish.DECISION_TICKS)
+	Skirmish.issue_opponent(sim)
+	sim.step()
+	runner.check(_attack_targets(sim, world[1]) == [world[3], world[3], world[3], world[3]], "W2 wave retargets the remaining unit after its target vanished, got " + str(_attack_targets(sim, world[1])))
+	return true
+
+func test_wave_fights_unit_met_on_the_way(runner) -> bool:
+	var world: Array = _wave_world(Vector2(85.5, 11.5))
+	var sim = world[0]
+	_to_tick(sim, Skirmish.ATTACK_TICK)
+	_bot_until_attack(sim, world[1], Skirmish.ATTACK_TICK + 4000)
+	runner.check(_attack_targets(sim, world[1]) == [world[2], world[2], world[2], world[2]], "W3 the wave marches on the building, got " + str(_attack_targets(sim, world[1])))
+	var wave_at: Vector2 = Vector2.ZERO
+	for unit in sim.snapshot().entities:
+		if world[1].has(unit.id): wave_at += Vector2(unit.position[0], unit.position[1]) / world[1].size()
+	var met: int = sim.spawn(1, wave_at + Vector2(0.0, 6.0), "usa_rifle_infantry")
+	_to_tick(sim, sim.tick() + Skirmish.DECISION_TICKS - sim.tick() % Skirmish.DECISION_TICKS)
+	Skirmish.issue_opponent(sim)
+	sim.step()
+	runner.check(_attack_targets(sim, world[1]) == [met, met, met, met], "W3 a wave marching to a base fights an enemy unit that comes within reach, got " + str(_attack_targets(sim, world[1])))
+	sim.remove_object(met)
+	sim.step()
+	_to_tick(sim, sim.tick() + Skirmish.DECISION_TICKS - sim.tick() % Skirmish.DECISION_TICKS)
+	Skirmish.issue_opponent(sim)
+	sim.step()
+	runner.check(_attack_targets(sim, world[1]).has(world[2]) and not _attack_targets(sim, world[1]).has(met), "W3 once the unit is dead the wave resumes, got " + str(_attack_targets(sim, world[1])))
+	return true
+
+func test_wave_ignores_far_unit_beside_building(runner) -> bool:
+	var sim = Simulation.new([], Vector2i(160, 32))
+	sim.add_player(1, 10000)
+	sim.add_player(2, 10000)
+	var building: int = Economy.add_completed(sim, 1, "usa_power_plant", Vector2i(53, 10))
+	sim.spawn(1, Vector2(43.5, 25.5), "usa_tank")
+	var army: Array = _army(sim)
+	_to_tick(sim, Skirmish.ATTACK_TICK)
+	_bot_until_attack(sim, army, Skirmish.ATTACK_TICK + 4000)
+	runner.check(_attack_targets(sim, army) == [building, building, building, building], "W4 a building in reach beats a unit beyond it, got " + str(_attack_targets(sim, army)))
 	return true
 
 func _defence_world(runner) -> Array:

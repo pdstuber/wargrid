@@ -168,13 +168,17 @@ static func _drive_waves(ctx: Dictionary, bot: Dictionary, mine: Dictionary, ene
 	for wave: Dictionary in bot.waves:
 		wave.ids = wave.ids.filter(func(id: int) -> bool: return mine.has(id))
 		if wave.ids.is_empty(): continue
-		if not enemies.any(func(enemy: Dictionary) -> bool: return enemy.id == wave.target):
-			var target: Variant = _pick(_centre(wave.ids, mine), enemies)
+		var centre: Vector2 = _centre(wave.ids, mine)
+		var hits: Array = enemies.filter(func(enemy: Dictionary) -> bool: return enemy.id == wave.target)
+		var switched: bool = false
+		if hits.is_empty() or (_is_building(hits[0]) and _engaged(centre, enemies)):
+			var target: Variant = _pick(centre, enemies)
 			if target == null: continue
+			switched = not hits.is_empty() and target != wave.target
 			wave.target = target
 		live.append(wave)
-		var idle: Array = wave.ids.filter(func(id: int) -> bool: return not skip.has(id) and _idle(mine[id]))
-		if not idle.is_empty(): _send(ctx, {"type": "attack", "entity_ids": idle, "target_id": wave.target})
+		var pool: Array = wave.ids.filter(func(id: int) -> bool: return not skip.has(id) and (switched or _idle(mine[id])))
+		if not pool.is_empty(): _send(ctx, {"type": "attack", "entity_ids": pool, "target_id": wave.target})
 	bot.waves = live
 
 static func _gather(ctx: Dictionary, bot: Dictionary, mine: Dictionary, enemies: Array, skip: Dictionary) -> void:
@@ -238,12 +242,23 @@ static func _defend(ctx: Dictionary, state: Dictionary, buildings: Array) -> Dic
 static func _pick(position: Vector2, enemies: Array) -> Variant:
 	var best: Variant = null
 	var best_score: int = 0
-	for enemy: Dictionary in enemies:
+	for enemy: Dictionary in _candidates(position, enemies):
 		var score: int = maxi(_priority(enemy.kind) - floori(sqrt(Combat.distance_squared(position, enemy)) / DISTANCE_STEP), 1)
 		if best == null or score > best_score or (score == best_score and enemy.id < best):
 			best = enemy.id
 			best_score = score
 	return best
+
+static func _is_building(enemy: Dictionary) -> bool:
+	return not Registry.kind(enemy.kind).has("class")
+
+# A wave heads for a building, not for a far unit it would trickle into, until an enemy unit comes within defence reach.
+static func _engaged(position: Vector2, enemies: Array) -> bool:
+	return enemies.any(func(enemy: Dictionary) -> bool: return not _is_building(enemy) and Combat.distance_squared(position, enemy) <= DEFENCE_RADIUS * DEFENCE_RADIUS)
+
+static func _candidates(position: Vector2, enemies: Array) -> Array:
+	var buildings: Array = enemies.filter(_is_building)
+	return enemies if buildings.is_empty() or _engaged(position, enemies) else buildings
 
 static func _priority(kind: String) -> int:
 	var row: Dictionary = Registry.kind(kind)

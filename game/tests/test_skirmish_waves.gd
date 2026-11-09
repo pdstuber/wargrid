@@ -140,8 +140,8 @@ func test_target_score_classes(runner) -> bool:
 	runner.check(picked == ids[1], "T4 the headquarters (26) ranks below a power plant (27) one cell farther, got " + str(picked) + " of " + str(ids))
 	ids.clear()
 	picked = _released_target(runner, func(sim) -> void:
-		ids.append(Economy.add_completed(sim, 1, "usa_power_plant", Vector2i(28, 10)))
-		ids.append(sim.spawn(1, Vector2(29.5, 14.5), "usa_tank")), "T5")
+		ids.append(Economy.add_completed(sim, 1, "usa_power_plant", Vector2i(38, 23)))
+		ids.append(sim.spawn(1, Vector2(43.5, 23.5), "usa_tank")), "T5")
 	runner.check(picked == ids[1], "T5 a vehicle (28) ranks above a power plant (27) one cell farther, got " + str(picked) + " of " + str(ids))
 	return true
 
