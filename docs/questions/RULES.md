@@ -17,6 +17,6 @@ Q1. <one plain sentence, no jargon>
    Recommendation: <letter>, because <one line>. Why it matters: <one line>.
 ```
 
-- 8 to 15 questions. Each question is ONE choice with 2-4 concrete options. Split anything compound into several questions. Order them from most to least important. Put the ZH behaviour first as an option whenever it exists, labelled "ZH default".
+- 8 to 15 questions. Each question is ONE choice with 2-4 concrete options. Split anything compound into several questions. Order them from most to least important. Put the ZH behaviour first as an option whenever it exists, labelled "ZH default". Gameplay should play like ZH; UI/UX may improve on it (user, 2026-11-09): for interface, controls and feedback questions also offer what modern RTS games do (cite the game and a primary source), and do not recommend the ZH option just because it is ZH.
 - Skip anything already decided: check docs/blueprint.md §7 and §14 and docs/session-notes.md "Deferred experiments and research" for existing user decisions, and do not ask those again.
 - Return to the coordinator at most 6 lines: the file path, the number of questions, and the single most surprising finding.

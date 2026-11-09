@@ -72,6 +72,8 @@ The art-direction interview (2026-11-08, [answers](art-direction/interview/INTER
 
 Questions for M7.5 (mostly answered 2026-11-09): [scope](questions/next-m75-art-scope.md), [look](questions/next-m75-art-look.md), [world](questions/next-m75-art-world.md).
 
+**Gameplay vs interface (user, 2026-11-09):** Zero Hour is from 2003. Wargrid should play like it, but the interface, controls and feedback may adopt improvements from modern RTS games, and the art style is Wargrid's own (above).
+
 ### Visual target
 
 - **View:** Fixed-angle pseudo-isometric projection. Players perceive terrain depth and building height while controls remain a conventional RTS.
@@ -653,7 +655,7 @@ Give the game a deliberate look instead of placeholder rectangles and text label
 
 **User answers (2026-11-08):** queue of 9, minimap flash on attack, minimap free with the Command Center for now, blank at low power or without a radar provider; "keep formation" command considered here; follow-ups 2026-11-09: selling (every building, 50 %, 3 s), Guard order, no selection limit, chevrons on all sides, map pings without text, health bars when selected or damaged: [design answers](reference/design-answers-2026-11-08.md#hud-m76).
 
-The interface, not the world graphics: a bottom control bar with minimap, command buttons with icons, build queue with progress, credits and power, selection info, laid out like Zero Hour's. Own art only (§12). The minimap lands here.
+The interface, not the world graphics: a bottom control bar with minimap, command buttons with icons, build queue with progress, credits and power, selection info. Layout need not follow Zero Hour closely (user, 2026-11-09, after a GPT HUD mock-up); the decided selection colours, real scale and HUD answers still apply. Reference mock-up (GPT, a proposal, not a decision; its optional panels and pinned factory context are open questions): [HUD v2](images/hud-v2/wargrid-hud-v2.png) with [notes](images/hud-v2/wargrid-hud-v2-notes.md). Own art only (§12). The minimap lands here.
 
 ### M7.9 — Fog of war (placement and need decided by the user 2026-11-05; scope proposed, not approved)
 
