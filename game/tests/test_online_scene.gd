@@ -403,7 +403,7 @@ func test_both_seats_share_map_and_starts(runner) -> bool:
 	var before_starts: Array[int] = SkirmishMain.starts
 	var chosen: Array[int] = MatchSettings.starts("ashfall", 11)
 	var raw: Dictionary = MapData.load(MatchSettings.map_path("ashfall"))
-	runner.check((chosen[0] - chosen[1] + 8) % 8 == 4, "N15 the seeded pair is diagonal, got %s" % str(chosen))
+	runner.check((chosen[0] - chosen[1] + 8) % 8 == 4, "N19 the seeded pair is diagonal, got %s" % str(chosen))
 	for seat in [1, 2]:
 		var launcher = Launcher.instantiate()
 		runner.root.add_child(launcher)
@@ -414,8 +414,8 @@ func test_both_seats_share_map_and_starts(runner) -> bool:
 		var main = runner.root.get_tree().current_scene
 		var map: Dictionary = main.simulation.map_data()
 		var cells: Array = [MapData.start_cell(map, 1), MapData.start_cell(map, 2)]
-		runner.check(cells == [MapData.start_cell(raw, chosen[0]), MapData.start_cell(raw, chosen[1])], "N15 seat %d sim starts on the seeded cells, got %s" % [seat, str(cells)])
-		runner.check(main.get_node("Camera2D").position == Iso.world_to_plane(Vector2(cells[seat - 1]) + Vector2(0.5, 0.5)), "N15 seat %d camera on its own base" % seat)
+		runner.check(cells == [MapData.start_cell(raw, chosen[0]), MapData.start_cell(raw, chosen[1])], "N19 seat %d sim starts on the seeded cells, got %s" % [seat, str(cells)])
+		runner.check(main.get_node("Camera2D").position == Iso.world_to_plane(Vector2(cells[seat - 1]) + Vector2(0.5, 0.5)), "N19 seat %d camera on its own base" % seat)
 		main.free()
 		await runner.process_frame
 	SkirmishMain.map_path = before_path

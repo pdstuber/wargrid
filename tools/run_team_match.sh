@@ -9,5 +9,5 @@ code=$?
 cat "$log_dir/match.log"
 [ "$code" -eq 0 ] || exit 1
 if grep -E 'ERROR:|SCRIPT ERROR:' "$log_dir/match.log"; then exit 1; fi
-# Pinned outcome: the cap, no winner (shape before Task 3b; the Task 3c slot move restored it).
+# Pinned outcome: the cap, no winner; user waiver 2026-11-07 accepts that (docs/reference/m7-verification.md, G3.5 record).
 grep -Eq '^TEAM MATCH cap tick=45000 winner=null units_peak=246$' "$log_dir/match.log" || exit 1

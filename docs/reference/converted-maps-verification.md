@@ -5,15 +5,16 @@ Plan: [converted maps playable plan](../superpowers/plans/2026-11-08-converted-m
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-09, Task 10 Steps 1, 2 and 5 done)
-Branch / base commit / working-tree state: converted-maps / 15c38bf (Tasks 1-9 committed) / docs-only diff uncommitted (AGENTS.md, README.md, blueprint, development, more-maps, performance, relay-stack-spike, session-notes, this file)
-Implemented: Tasks 1, 2, 3, 3b, 3c, 4, 5, 6, 6b, 7, 8, 9 (committed); Task 10 docs (uncommitted)
-Verified on 15c38bf: suite 596 / 137159 / 2 failures (Fm1 pair only), lint, warnings, python checks, go test -race, golangci-lint 0 issues, conformance 39, netplay all 11 scenarios, benchmark exit 0 (rows above)
-Pending: Task 10 Step 3 (Opus whole-branch review) and Step 4 (/ponytail-review) by the coordinator; coordinator commits the Task 10 docs; user items in the plan's "Left for the user" (relay deploy, push and CI, merge, playtest, Fm1 decision)
+Resume record (updated 2026-11-09, final-review fixes applied, uncommitted)
+Branch / base commit / working-tree state: converted-maps / 026f2b2 (Tasks 1-10 docs committed) / final-review fixes uncommitted (more-maps sweep table regenerated, blueprint, development, relay-stack-spike, this file, run_team_match.sh comment, test_online_scene.gd N19 labels)
+Implemented: Tasks 1, 2, 3, 3b, 3c, 4, 5, 6, 6b, 7, 8, 9, 10 (committed through 026f2b2); final-review fixes (uncommitted)
+Verified on 026f2b2 plus the uncommitted fixes: suite 596 / 137159 / 2 failures (Fm1 pair only), lint 0, warnings 120 files 0, run_team_match.sh exit 0
+Pending: coordinator commits the final-review fixes; user items in the plan's "Left for the user" (relay deploy, push and CI, merge, playtest, Fm1 decision); Done-when "attack on Ashfall" open (M8)
 Known red case or blocker: Fm1 pair (morning decision)
 Approved decisions, pre-authorizations used, deferred gates: none new
 Usage so far: not run
-Next exact action: coordinator runs the whole-branch review, then /ponytail-review, then commits docs
+Next exact action: coordinator commits the fixes
+Final-review fixes: sweep table in more-maps regenerated from t8-sweep.log (pairs lost their second value) and its judgement corrected (Dry Wells usa,usa is a cap, not a loss; range of first damage excludes frc,frc); Ashfall attack check (open, M8); blueprint status names Fm1; development.md entry above; relay-stack-spike eleven scenarios; N19 labels; run_team_match.sh waiver pointer restored; go test and golangci-lint rows lose the sh prefix
 ```
 
 ## Baseline
@@ -73,8 +74,8 @@ Append-only. One row per command: tree, counts, exit, marker, load averages.
 | 2026-11-09 05:0x | 15c38bf (clean at start; docs-only edits uncommitted from the lint run on) | `sh tools/run_lint.sh` | no problems | 0 | exit 0 | 1.5-2.5 (uptime at 05:01 and 05:05) | no |
 | 2026-11-09 05:0x | 15c38bf (clean at start; docs-only edits uncommitted from the lint run on) | `sh tools/run_warnings.sh` | WARNINGS CHECKED 120 FILES | 0 | WARNINGS CHECKED 120 FILES | 1.5-2.5 (uptime at 05:01 and 05:05) | no |
 | 2026-11-09 05:0x | 15c38bf (clean at start; docs-only edits uncommitted from the lint run on) | `sh tools/run_python_checks.sh` | n/a | 0 | exit 0 | 1.5-2.5 (uptime at 05:01 and 05:05) | no |
-| 2026-11-09 05:0x | 15c38bf (clean at start; docs-only edits uncommitted from the lint run on) | `sh tools/go test -count=1 -race ./... (relay/)` | ok | 0 | exit 0 | 1.5-2.5 (uptime at 05:01 and 05:05) | no |
-| 2026-11-09 05:0x | 15c38bf (clean at start; docs-only edits uncommitted from the lint run on) | `sh tools/golangci-lint run (relay/)` | 0 issues | 0 | exit 0 | 1.5-2.5 (uptime at 05:01 and 05:05) | no |
+| 2026-11-09 05:0x | 15c38bf (clean at start; docs-only edits uncommitted from the lint run on) | `go test -count=1 -race ./... (relay/)` | ok | 0 | exit 0 | 1.5-2.5 (uptime at 05:01 and 05:05) | no |
+| 2026-11-09 05:0x | 15c38bf (clean at start; docs-only edits uncommitted from the lint run on) | `golangci-lint run (relay/)` | 0 issues | 0 | exit 0 | 1.5-2.5 (uptime at 05:01 and 05:05) | no |
 | 2026-11-09 05:0x | 15c38bf (clean at start; docs-only edits uncommitted from the lint run on) | `sh tools/run_conformance.sh` | n = 39 | 0 | CONFORMANCE PASSED 39 | 1.5-2.5 (uptime at 05:01 and 05:05) | no |
 | 2026-11-09 05:0x | 15c38bf (clean at start; docs-only edits uncommitted from the lint run on) | `sh tools/run_netplay.sh match` | terminal tick 8300 | 0 | NETPLAY PASSED match 14.0 s | 1.5-2.5 (uptime at 05:01 and 05:05) | no |
 | 2026-11-09 05:0x | 15c38bf (clean at start; docs-only edits uncommitted from the lint run on) | `sh tools/run_netplay.sh kill` | n/a | 0 | NETPLAY PASSED kill 2.2 s | 1.5-2.5 (uptime at 05:01 and 05:05) | no |
@@ -262,8 +263,13 @@ Rows: tree `fdb81c4` + Task 6 diff. `run_tests.sh` `CASES 585 CHECKS 136975 FAIL
 ## Task 8
 - Sweep: 24 runs (6 pairs x skirmish, dry_wells, broken_crown, ashfall), seed 1, cap 45,000, headless, alone, exit 0 each, tick p95 0.52 to 1.12 ms (budget 1.82). Table in `docs/reference/more-maps.md` "Bot-vs-bot sweep". Log `wargrid-overnight-work/logs/t8-sweep.log`.
 - Row: tree `596db73` plus uncommitted Task 6 to 7 diff; only tracked change is the docs table; scratch copy and .uid deleted. No suite run (docs only).
-- Both seats build and collect on every new-map row. Ashfall: four rows where one seat never damaged an enemy building (`china,china` seat 1 at cap; `usa,china` seat 2, `frc,usa` seat 1, `china,frc` seat 1, each the loser). Same pattern on Dry Wells. Judged lost fights, no fix, no pin touched. M8 finding: Ashfall games take 15,000 to 44,000 ticks to first building damage.
+- Both seats build and collect on every new-map row. Ashfall: four rows where one seat never damaged an enemy building (`china,china` seat 1 at cap; `usa,china` seat 2, `frc,usa` seat 1, `china,frc` seat 1, the last three each the loser). Same pattern on Dry Wells. Final-review attack check (seeds 1 to 3, Ashfall): waves launch but armies end 30 to 60 cells short of the enemy base, army sizes fall; not a wave-never-sets-out bug, no fix, no pin touched. **Done-when "attack on Ashfall": open (M8).** Ashfall first building damage 14,970 to 44,070 ticks outside `frc,frc`.
 
 ## Task 9
 - Rendered pan check on dry_wells, broken_crown, ashfall plus Credits screenshot and rendered movement benchmark, alone, `--audio-driver Dummy`, every window ended by itself. No `godot` process was running beforehand. Results and observations in `docs/reference/performance.md` "Rendered check per map".
 - Rows: tree `2354087`. `PAN CHECK` p99 frame 2.67 / 2.61 / 2.72 ms; `RENDERED BENCHMARK PASSED 4`, Ashfall guard 2.936 ms, exit 0. Scratch copies and .uid deleted from `game/`; only tracked change is the two docs. Logs `wargrid-overnight-work/logs/t9-*` (`t9_*.log`).
+
+## Final-review fixes
+- Rows: tree `026f2b2` plus uncommitted fixes. `sh tools/run_tests.sh` `CASES 596 CHECKS 137159 FAILURES 2` (Fm1 pair only), exit 1 by design; `sh tools/run_lint.sh` exit 0; `sh tools/run_warnings.sh` `WARNINGS CHECKED 120 FILES`, exit 0; `sh tools/run_team_match.sh` exit 0. Logs `wargrid-overnight-work/logs/ff-*.log`. No netplay run: no production or pin change.
+- Ashfall attack check: scratch Godot script (`game/diag_wave.gd`, deleted afterwards) logged army position per seat every 1,200 ticks from tick 6,000 to 16,000, `china,china` seeds 1 to 3 and `usa,china` seeds 1 and 2 (logs `diag_*.txt`). Waves launch; closest army centroid to the enemy start 30 to 63 cells (start distance 154 to 168); armies shrink. Not a wave-never-sets-out bug, so no fix. Whether armies die midway or stall on the long path is unchecked: M8.
+- Finding for M9 or debug: `headless_client` `_replay_oracle` always loads `skirmish.json`, so replaying a `--map` client's log checks against the wrong map, and the desync report carries no map, seed or starts.

@@ -59,32 +59,36 @@ Seed 1, cap 45,000 ticks, headless, one run at a time, tree `596db73` plus uncom
 
 | Map | Pair | Starts | End tick | Winner | First build | First collect | First enemy damage | Tick p95 |
 |---|---|---|---|---|---|---|---|---|
-| skirmish | usa,usa | [] | 24619 | seat 2 | [450, | [990, | [6540, | 0.563 |
-| skirmish | china,china | [] | 26233 | seat 2 | [480, | [1110, | [6630, | 0.671 |
-| skirmish | frc,frc | [] | cap 45000 | none | [630, | [720, | [6120, | 0.602 |
-| skirmish | usa,china | [] | 17621 | seat 2 | [450, | [990, | [6540, | 0.666 |
-| skirmish | frc,usa | [] | cap 45000 | none | [630, | [720, | [6360, | 0.549 |
-| skirmish | china,frc | [] | 25515 | seat 2 | [480, | [1110, | [6360, | 0.676 |
-| dry_wells | usa,usa | [2, | cap 45000 | none | [390, | [1320, | [8130, | 0.524 |
-| dry_wells | china,china | [2, | 26598 | seat 2 | [420, | [1590, | [7530, | 0.645 |
-| dry_wells | frc,frc | [2, | cap 45000 | none | [990, | [1230, | [5970, | 0.609 |
-| dry_wells | usa,china | [2, | 10648 | seat 1 | [390, | [1320, | [8370, | 0.628 |
-| dry_wells | frc,usa | [2, | cap 45000 | none | [990, | [1230, | [7980, | 0.567 |
-| dry_wells | china,frc | [2, | 29579 | seat 2 | [420, | [1590, | [6570, | 0.640 |
-| broken_crown | usa,usa | [2, | 16520 | seat 2 | [390, | [1170, | [6930, | 0.783 |
-| broken_crown | china,china | [2, | 26851 | seat 1 | [420, | [1290, | [21300, | 0.882 |
-| broken_crown | frc,frc | [2, | cap 45000 | none | [870, | [990, | [6510, | 0.825 |
-| broken_crown | usa,china | [2, | 27029 | seat 1 | [390, | [1170, | [24450, | 0.829 |
-| broken_crown | frc,usa | [2, | cap 45000 | none | [870, | [990, | [6480, | 0.843 |
-| broken_crown | china,frc | [2, | cap 45000 | none | [420, | [1290, | [19770, | 0.806 |
-| ashfall | usa,usa | [2, | cap 45000 | none | [390, | [1350, | [44070, | 0.934 |
-| ashfall | china,china | [2, | cap 45000 | none | [420, | [1470, | [-1, | 1.029 |
-| ashfall | frc,frc | [2, | 41863 | seat 1 | [960, | [1050, | [7710, | 0.981 |
-| ashfall | usa,china | [2, | 26371 | seat 1 | [390, | [1350, | [23910, | 1.057 |
-| ashfall | frc,usa | [2, | 19054 | seat 2 | [960, | [1050, | [-1, | 1.051 |
-| ashfall | china,frc | [2, | 25932 | seat 2 | [420, | [1470, | [-1, | 1.118 |
+| skirmish | usa,usa | [] | 24619 | seat 2 | 450/450 | 990/990 | 6540/6540 | 0.563 |
+| skirmish | china,china | [] | 26233 | seat 2 | 480/480 | 1110/1110 | 6630/6630 | 0.671 |
+| skirmish | frc,frc | [] | cap 45000 | none | 630/630 | 720/780 | 6120/6060 | 0.602 |
+| skirmish | usa,china | [] | 17621 | seat 2 | 450/480 | 990/1110 | 6540/6690 | 0.666 |
+| skirmish | frc,usa | [] | cap 45000 | none | 630/450 | 720/990 | 6360/6270 | 0.549 |
+| skirmish | china,frc | [] | 25515 | seat 2 | 480/630 | 1110/780 | 6360/6360 | 0.676 |
+| dry_wells | usa,usa | [2/1] | cap 45000 | none | 390/390 | 1320/1260 | 8130/-1 | 0.524 |
+| dry_wells | china,china | [2/1] | 26598 | seat 2 | 420/420 | 1590/1380 | 7530/23820 | 0.645 |
+| dry_wells | frc,frc | [2/1] | cap 45000 | none | 990/900 | 1230/1020 | 5970/5850 | 0.609 |
+| dry_wells | usa,china | [2/1] | 10648 | seat 1 | 390/420 | 1320/1380 | 8370/-1 | 0.628 |
+| dry_wells | frc,usa | [2/1] | cap 45000 | none | 990/390 | 1230/1260 | 7980/6030 | 0.567 |
+| dry_wells | china,frc | [2/1] | 29579 | seat 2 | 420/900 | 1590/1020 | 6570/6450 | 0.640 |
+| broken_crown | usa,usa | [2/4] | 16520 | seat 2 | 390/390 | 1170/1290 | 6930/13560 | 0.783 |
+| broken_crown | china,china | [2/4] | 26851 | seat 1 | 420/420 | 1290/1410 | 21300/11340 | 0.882 |
+| broken_crown | frc,frc | [2/4] | cap 45000 | none | 870/900 | 990/960 | 6510/10440 | 0.825 |
+| broken_crown | usa,china | [2/4] | 27029 | seat 1 | 390/420 | 1170/1410 | 24450/12960 | 0.829 |
+| broken_crown | frc,usa | [2/4] | cap 45000 | none | 870/390 | 990/1290 | 6480/13110 | 0.843 |
+| broken_crown | china,frc | [2/4] | cap 45000 | none | 420/900 | 1290/960 | 19770/27390 | 0.806 |
+| ashfall | usa,usa | [2/6] | cap 45000 | none | 390/390 | 1350/1200 | 44070/33450 | 0.934 |
+| ashfall | china,china | [2/6] | cap 45000 | none | 420/420 | 1470/1290 | -1/43950 | 1.029 |
+| ashfall | frc,frc | [2/6] | 41863 | seat 1 | 960/930 | 1050/990 | 7710/7470 | 0.981 |
+| ashfall | usa,china | [2/6] | 26371 | seat 1 | 390/420 | 1350/1290 | 23910/-1 | 1.057 |
+| ashfall | frc,usa | [2/6] | 19054 | seat 2 | 960/390 | 1050/1200 | -1/14970 | 1.051 |
+| ashfall | china,frc | [2/6] | 25932 | seat 2 | 420/930 | 1470/990 | -1/23610 | 1.118 |
 
-Judgement on the new maps (Broken Crown, Ashfall): both seats build and collect in all 12 rows. Every Broken Crown row has both seats damaging an enemy building. On Ashfall, seat 1 or 2 never damaged an enemy building in four rows: `china,china` seat 1 (cap; seat 2 only at tick 43,950), `usa,china` seat 2, `frc,usa` seat 1, `china,frc` seat 1. In the three decided rows the non-damaging seat is the one that lost; the same pattern exists on Dry Wells (`usa,usa` and `usa,china` seat 2 at -1) and each loser lost before landing a hit on a building; not checked whether its army left home, so this is read as a lost fight, not a proven bot bug. No fix made. Finding for M8: Ashfall games are decided by one early wave (first enemy damage 14,970 to 43,950 ticks, against about 6,000 to 8,000 on `skirmish`), and `china,china` on Ashfall reaches the cap with first damage at tick 43,950. Runs that hit the cap (no winner) are existing behaviour, not failures: skirmish `frc,frc` and `frc,usa`; Dry Wells `usa,usa`, `frc,frc`, `frc,usa`; Broken Crown `frc,frc`, `frc,usa`, `china,frc`; Ashfall `usa,usa`, `china,china`.
+Judgement on the new maps (Broken Crown, Ashfall): both seats build and collect in all 12 rows. Every Broken Crown row has both seats damaging an enemy building. On Ashfall, one seat never damaged an enemy building in four rows: `china,china` seat 1 (cap; seat 2 only at tick 43,950), `usa,china` seat 2, `frc,usa` seat 1, `china,frc` seat 1. In the three decided rows the non-damaging seat is the one that lost. Dry Wells has the same pattern: seat 2 never damaged in `usa,usa` (cap, no loser) and `usa,china` (seat 2 lost). No fix made.
+
+Attack check on Ashfall (2026-11-09, tree `026f2b2`, scratch script, seeds 1 to 3, ticks 6,000 to 16,000, since deleted): the waves do set out. By tick 9,600 most of each army (combat units) is more than 24 cells from its start and the bot holds live waves (`china,china` seed 1: three to eight per seat). Closest approach of any army centroid to the enemy start, in cells (start-to-start distance 157 at seed 1, 154 at seed 2): seed 1 `china,china` seat 1 43 and seat 2 36 (both at tick 8,400), `usa,china` seat 1 63 and seat 2 36; seed 2 `china,china` 45 and 30, `usa,china` 57 and 30; seed 3 `china,china` seat 1 31 and seat 2 43 (start distance 168). So the armies meet or stall roughly 30 to 60 cells short of the enemy base and the army sizes fall (seat 2 `china,china` seed 1 from 51 units at tick 9,600 to 21 at 15,600); whether they die in the middle or stall on the 157-cell path was not checked. This is not a bug in `issue_opponents` that stops a wave setting out, so no fix was made. **Ashfall attack landing a hit on a building: open (M8).** Done-when item "bots attack on all three" is shown for `skirmish`, Dry Wells and Broken Crown (every row has first enemy damage for at least one seat) and for Ashfall only in the sense that waves launch.
+
+Ashfall first enemy damage ranges from 14,970 to 44,070 ticks in the rows where it happens (the `frc,frc` row, 7,470 and 7,710, is the exception), against about 6,000 to 8,000 on `skirmish`, and `china,china` reaches the cap with seat 1 never damaging. Runs that hit the cap (no winner) are existing behaviour, not failures: skirmish `frc,frc` and `frc,usa`; Dry Wells `usa,usa`, `frc,frc`, `frc,usa`; Broken Crown `frc,frc`, `frc,usa`, `china,frc`; Ashfall `usa,usa`, `china,china`.
 
 ## Converted maps playable (2026-11-09)
 
@@ -94,6 +98,6 @@ Branch `converted-maps` (local commits, not pushed or merged). Plan: [converted 
 - **Start spots.** `StartSpots.assign` follows Zero Hour's start-spot rule for 1v1; the `SS6` seed 0..15 literal was derived on macOS (Apple Silicon) and is not yet confirmed on Linux or Windows (CI).
 - **Fm1 known red (two failures).** `test_skirmish_match.gd` `Fm1`: the FRC bot match no longer ends inside its 45,000-tick cap after Task 3b (FRC 5 collectors per supply center instead of 7). Cause per the Opus reviewer (plausible, not a bug): the USA second helicopter drives USA income to 41,475 against about 20,000, the map runs out of supply near tick 30,000, FRC wins at tick 73,560; USA1+FRC5 ends at 26,611, USA2+FRC7 at 42,951. Re-pinning needs a larger cap or a decision, not just a number. Morning decision.
 - **S1_CORE_SERIES derivation.** The Task 3b moved-pins table said 8642905752227994667, measured with `TERMINAL_TICK` 8501; the series loop runs `TERMINAL_TICK + 1` ticks, so with 8452 the pin is 1809165491953682337 (a clean `git archive` of `b3e4824` reproduces 8642905752227994667 under the old constant). Other moved pins and their old values: verification file "Task 3b moved pins" and "Task 3c".
-- **Bot findings (Task 8 sweep, table above).** Both seats build and collect on every new-map row. On Ashfall four rows have a seat that never damaged an enemy building, each the loser; read as lost fights, no fix. M8 finding: Ashfall games are decided by one early wave (first enemy damage 14,970 to 43,950 ticks). Stopgaps for M8 (depot site near supplies, collector counts) are in [blueprint §7 M8](../blueprint.md#m8--bots-worth-playing).
+- **Bot findings (Task 8 sweep, table above).** Both seats build and collect on every new-map row. On Ashfall four rows have a seat that never damaged an enemy building (the three decided ones are the loser). Waves do launch but armies end 30 to 60 cells short of the enemy base (attack check above). **Open (M8): Ashfall bot attack landing on a building.** Ashfall first enemy damage is late (14,970 to 44,070 ticks outside `frc,frc`). Stopgaps for M8 (depot site near supplies, collector counts) are in [blueprint §7 M8](../blueprint.md#m8--bots-worth-playing).
 - **Review minors, pointers.** Open minors from the Opus reviews are listed in the verification file under "Task 1 review minors", "Task 2 review minors", "Task 3 review", "Task 7 review" and the Task 5 and Task 6 RED and fix sections (Task 5: N12 restart mutant not run; Task 6: headless Copy does not touch the clipboard). Not fixed overnight: untested `team <= 0` start-spot rule, `"settings":null` unit case, CR1 whole-line check, `get_copyright_info()` question.
 - **Open question for M9.** Zero Hour does not count a chosen spot as its team's position (`teamPosIdx` only from random placement), so a teammate of a player with a chosen spot is placed far away; keep or fix?
