@@ -158,6 +158,7 @@ M5 measurements of the Kotlin relay and the native decision: [M5 verification](r
 
 - OpenRA (GPL-3.0-or-later): `~/projects/OpenRA`; reading for M5 lockstep (`OpenRA.Game/Network`: `OrderManager.cs`, `SyncReport.cs`) and M8 bot structure (`OpenRA.Mods.Common/Traits/BotModules`). Reported to have smarter bots; unverified.
 - TheSuperHackers patched Zero Hour source: `~/projects/GeneralsGameCode`; cross-check for EA source and known retail bugs.
+- Art-direction archive (not a git repo, not vendored): `~/projects/wargrid-art-archive/`; interview images, GPT's QA images, validation, provenance and handoff notes from the 2026-11-09 art-direction pack. The kept parts are in `docs/art-direction/`; see blueprint §2.
 - Native macOS Zero Hour fork (GPL, never vendored): `~/projects/GeneralsGameCode-macOS`, local branch `wargrid-parity` (`eb595cfc9`, never pushed); engine for the [parity harness](reference/zero-hour-parity-harness.md).
 
 These sibling projects and backups are research inputs, not future build/test dependencies. Keep original EA source and game assets outside Wargrid. Exact retail executable version, mod status and runtime behavior remain unverified.

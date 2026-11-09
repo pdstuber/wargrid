@@ -1,0 +1,36 @@
+{
+  "version": "1.3",
+  "status": "proposed art tokens; not current in-game owner mapping",
+  "canvas": {
+    "background": "#111C24",
+    "panel": "#192831",
+    "divider": "#30434E",
+    "text": "#EDF3F3",
+    "muted_text": "#A8BBC4"
+  },
+  "terrain": {
+    "desert": "#49483F",
+    "ash": "#343A3C",
+    "forest": "#35483F",
+    "snow": "#536872"
+  },
+  "player_samples": {
+    "blue": "#44ADF4",
+    "red": "#EE7169",
+    "green": "#69CEAA"
+  },
+  "materials": {
+    "neutral_side": "#3D515F",
+    "dark_side": "#263842",
+    "mechanical_top": "#8098A5"
+  },
+  "semantics": {
+    "selection_energy": "#60E5ED",
+    "impact_heat_resources": "#F7C871"
+  },
+  "rules": [
+    "Faction is independent of owner hue",
+    "Use shape/state feedback alongside color",
+    "No unverified accessibility or performance claim"
+  ]
+}

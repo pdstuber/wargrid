@@ -4,7 +4,7 @@ Living design and milestone plan; current status lives in the [development notes
 
 **Working title:** Wargrid
 
-> **North star:** Preserve the strong *game design and feel* of **Command & Conquer: Generals — Zero Hour**, while fixing defects and avoiding its performance limitations, using **Godot** and an original **isometric pixel-art / 2.5D** presentation. Treat the original game as the behavioral reference, not as a codebase to port wholesale.
+> **North star:** Preserve the strong *game design and feel* of **Command & Conquer: Generals — Zero Hour**, while fixing defects and avoiding its performance limitations, using **Godot** and an original **isometric geometric 2.5D** presentation (§2). Treat the original game as the behavioral reference, not as a codebase to port wholesale.
 >
 > **Non-negotiable engineering principle:** **Build the behavior-test suite alongside the game, starting on day one.** No mechanic is considered complete merely because it looks right in a screenshot or works in one manual playthrough.
 
@@ -12,7 +12,7 @@ Living design and milestone plan; current status lives in the [development notes
 
 ## 1. Vision and intent
 
-Wargrid is a passion/learning project: a modern, scriptable, testable, pixel-art recreation of the RTS mechanics that make *Generals: Zero Hour* enjoyable.
+Wargrid is a passion/learning project: a modern, scriptable, testable recreation of the RTS mechanics that make *Generals: Zero Hour* enjoyable.
 
 **Target: Zero Hour-inspired game design, with reliable behavior and responsive performance.** Preserve faction identity, strategic tradeoffs, economy and combat pacing. Original bugs, exploits, stuck units, command failures and slowdowns are not compatibility requirements. Reference measurements inform design; they do not override an explicitly chosen correction. Start with a constrained playable subset.
 
@@ -32,7 +32,7 @@ Wargrid is a passion/learning project: a modern, scriptable, testable, pixel-art
 
 ### What to change
 
-- **Rendering:** 3D visuals become **2D isometric pixel-art sprites**, environments and effects.
+- **Rendering:** 3D visuals become **isometric geometric 2.5D shapes** drawn by Wargrid, with matching environments and effects (§2).
 - **Engine and code:** original Godot implementation, data-driven where useful, with testable game simulation separated from visual scenes.
 - **Developer workflow:** reproducible, headless tests and command-line automation so Codex / Claude Code can work largely without editor clicking.
 
@@ -50,16 +50,34 @@ Using Zero Hour as a game-design reference does **not** mean rights to distribut
 
 ---
 
-## 2. Visual direction: isometric pixel art
+## 2. Visual direction: geometric 2.5D
 
-**Chosen:** Isometric / 2.5D pixel art, not a straight overhead camera. Think detailed desert bases, chunky vehicles, readable silhouettes, blue/red faction colors, clear health bars, explosions and smoke, a classic RTS HUD, and a densely populated battlefield.
+**Chosen (user, 2026-11-09; replaces the earlier pixel-art plan):** refined geometric minimalism. Units and buildings are built from a few flat primitives with simple top and side faces in the fixed isometric view, bright owner colour over quiet terrain, no textures. Details, colour values and the eight reference sheets: [art direction](art-direction/ART_DIRECTION.md); Godot findings: [art pass integration note](reference/art-godot-integration.md). Material that left the repository (interview images, GPT's QA and bookkeeping) lives in `~/projects/wargrid-art-archive/`.
+
+The art-direction interview (2026-11-08, [answers](art-direction/interview/INTERVIEW_ARCHIVE.md)) is the starting point; any answer may be revisited (user, 2026-11-09):
+
+1. High-contrast flat geometry from rectangles, circles and triangles; no pixel art or detailed low-poly.
+2. Functional icons: tracks, turrets, blades and machinery from simple primitives.
+3. Filled shapes with selective outlines and accents.
+4. Responsive, punchy animation: recoil, small hull reactions, impacts; no cartoon bounce.
+5. Minimal 2.5D: one top and one or two darker side faces.
+6. Muted, darker biomes with bright units and effects.
+7. Small geometric destruction normally; spectacle only for powerful attacks.
+8. Shared role silhouettes with faction-specific construction; faction never shown by colour.
+9. Buildings read by silhouette, with selective mechanical animation.
+10. Matte shaded objects; only energy parts, shots, selection and key effects glow.
+11. Progressive simplification when zoomed out; role features stay.
+12. Owner colour on large top surfaces, neutral sides and machinery.
+13. Refined minimalism: proportions, spacing and timing before extra detail.
+
+Open questions for M7.5: [scope](questions/next-m75-art-scope.md), [look](questions/next-m75-art-look.md), [world](questions/next-m75-art-world.md).
 
 ### Visual target
 
 - **View:** Fixed-angle pseudo-isometric projection. Players perceive terrain depth and building height while controls remain a conventional RTS.
 - **World:** Desert maps initially: sandy ground, roads, cliffs, a bridge/river if useful for the first test scenario, occasional vegetation.
-- **Units:** Infantry, tanks, construction units and aircraft rendered as directional sprites (start with a small number of directions; increase as needed).
-- **Buildings:** Footprints and clear entrances, larger pixel-art silhouettes, construction phases and damage states later.
+- **Units:** Infantry, tanks, construction units and aircraft drawn as geometry at their simulation heading.
+- **Buildings:** Footprints and clear entrances, functional silhouettes, construction phases and damage states later.
 - **HUD:** Minimap bottom-left, selected-unit details and orders, build/production options, resources, power and population/capacity indicators where applicable.
 - **Readability over detail:** Selection rings, color identity, health bars, range feedback, targeting feedback, no vital unit information hidden by scenery.
 
@@ -71,13 +89,13 @@ Maintain a normal 2D top-down **world plane** for unit positions, distances, col
 
 This prevents the chosen art style from complicating basic RTS rules, and lets tests run without rendering.
 
-### Pixel-art rendering guidelines
+### Rendering guidelines
 
-- Pick a consistent reference tile scale and art resolution deliberately; avoid arbitrary per-asset scaling.
+- Pick a consistent reference tile scale deliberately; avoid arbitrary per-object scaling.
 - Enforce consistent direction conventions, feet/ground anchors, shadows and occlusion ordering.
-- Sort sprites by their world-ground anchor rather than by the tallest visible pixel.
+- Sort drawn objects by their world-ground anchor rather than by their tallest visible point.
 - Keep the camera zoom intentional; test readability with 50+ units on screen.
-- Use placeholders until behavior tests pass, then iterate on sprites and effects.
+- Use placeholders until behavior tests pass, then iterate on shapes and effects.
 
 ---
 
@@ -111,7 +129,7 @@ Use `~/projects/hells-verdict` as the local tooling reference (inspected HEAD `3
 | `game/tests/run_tests.gd` | Adapt assertion diagnostics and completion checks only. Keep suites small and grouped by system; do not copy the monolithic game-specific suite. |
 | `game/scripts/debug/frame_stats.gd` | At M2, adapt percentile-reporting idea for separate tick/frame measurements, including p50/p95/p99. No display-tuning subsystem in M0. |
 
-Wargrid keeps **Compatibility rendering and 30 Hz simulation**. Do not inherit Hell's Verdict's Mobile renderer, Jolt, 60 Hz physics, 144 FPS cap, disabled VSync, shooter inputs, server-authority assumptions or 3D interpolation settings. Choose pixel-art display settings during M1. These small scripts do not warrant a shared cross-project library.
+Wargrid keeps **Compatibility rendering and 30 Hz simulation**. Do not inherit Hell's Verdict's Mobile renderer, Jolt, 60 Hz physics, 144 FPS cap, disabled VSync, shooter inputs, server-authority assumptions or 3D interpolation settings. Choose display settings during M1. These small scripts do not warrant a shared cross-project library.
 
 ### Architecture: strong boundaries, not premature abstractions
 
@@ -619,7 +637,9 @@ Give the game a deliberate look instead of placeholder rectangles and text label
 
 **User note (2026-11-05):** the coloured-rectangle look is more fun than expected, so a stylised geometric direction is explored before sprites are committed to. Blueprint §2 chose pixel-art sprites; switching is a design change the user decides after the comparison below.
 
-**Proposed scope (not approved):** Task 1 is an art-direction spike on one scene with two candidates: (A) USA unit and building sprites (asset source decided first; no EA assets, see §1) and (B) the current geometry pushed further with per-faction shape language, outlines, shading and effects, kept varied at full-match unit counts. Each gets a rendered benchmark row. The user picks one (or a mix) from a neutrally labelled A/B page opened in Firefox, the workflow the user liked in the sound spike (see session notes 2026-11-08); the rest of M7.5 applies it to terrain, selection and health feedback, shot and death effects, and the other factions. Visuals only represent simulation state and never own rules (§2).
+**Direction chosen (user, 2026-11-09):** geometric 2.5D replaces pixel art (§2), from an art-direction interview with reference sheets. The pixel-sprite candidate (A) below is dropped; Task 1 and the rest of the scope are being reworked in the [scope questions](questions/next-m75-art-scope.md). New look, Wargrid-made art: GPL-3.0-or-later (user, 2026-11-09).
+
+**Proposed scope (not approved; superseded 2026-11-09 by the note above, kept until the scope questions are answered):** Task 1 is an art-direction spike on one scene with two candidates: (A) USA unit and building sprites (asset source decided first; no EA assets, see §1) and (B) the current geometry pushed further with per-faction shape language, outlines, shading and effects, kept varied at full-match unit counts. Each gets a rendered benchmark row. The user picks one (or a mix) from a neutrally labelled A/B page opened in Firefox, the workflow the user liked in the sound spike (see session notes 2026-11-08); the rest of M7.5 applies it to terrain, selection and health feedback, shot and death effects, and the other factions. Visuals only represent simulation state and never own rules (§2).
 
 **Proposed exit gate:** the user's chosen direction recorded (blueprint §2 updated if it changes), a rendered benchmark row in the [performance ledger](reference/performance.md) with the chosen look and effects on, inside the same budgets and assumed slowdown; no simulation, replay or netplay trace change; user playtest of the look.
 
@@ -820,7 +840,7 @@ Archived: the root `prompt.txt` handoff and the M1-era research-agent prompt are
 | Decision | Status | Reason |
 |---|---|---|
 | Name | **Wargrid** (working title) | Short, tactical, memorable. |
-| Artistic direction | **Isometric pixel-art 2.5D** | Closer to Generals' visual depth and large-building feel. |
+| Artistic direction | **Isometric geometric 2.5D** (user, 2026-11-09; was pixel art) | Keeps Generals' visual depth and large-building feel; the placeholder rectangles proved geometry fun and readable. §2 |
 | Game design | **Zero Hour design strengths; deliberate defect fixes** | Preserve strategic identity and feel, without bug or performance compatibility. |
 | Engine | **Godot 4.x** | Supports 2D art, UI, map editor and headless development. |
 | Language | **GDScript first** | Best iteration speed; optimize after profiling. |
