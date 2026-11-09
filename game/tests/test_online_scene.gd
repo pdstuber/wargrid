@@ -31,7 +31,7 @@ class FakeTransport extends RefCounted:
 	func rtt_samples() -> PackedInt64Array: return PackedInt64Array([40000])
 
 func cases() -> Array[Callable]:
-	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_rejection_line, test_funds_rejection_is_announced, test_overlay_net_line, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_launcher_layout, test_launcher_faction_selectors_fit, test_plays_dry_wells_from_each_seat, test_offline_uses_chosen_map, test_restart_keeps_map_and_starts, test_joiner_refuses_other_map, test_old_relay_mismatch_is_shown, test_start_without_settings_is_a_protocol_error, test_both_seats_share_map_and_starts, test_host_told_opponent_left_before_start]
+	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_rejection_line, test_funds_rejection_is_announced, test_overlay_net_line, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_launcher_layout, test_launcher_faction_selectors_fit, test_plays_dry_wells_from_each_seat, test_offline_uses_chosen_map, test_restart_keeps_map_and_starts, test_joiner_refuses_other_map, test_old_relay_mismatch_is_shown, test_cancel_and_copy_while_waiting, test_start_without_settings_is_a_protocol_error, test_both_seats_share_map_and_starts, test_host_told_opponent_left_before_start]
 
 func _online(runner, seat: int) -> Dictionary:
 	var transport := FakeTransport.new()
@@ -178,10 +178,11 @@ func test_launcher_layout(runner) -> bool:
 		runner.root.size = size
 		var launcher = Launcher.instantiate()
 		runner.root.add_child(launcher)
+		launcher.get_node("Center/Box/WaitRow").visible = true
 		await runner.process_frame
 		await runner.process_frame
 		var rects: Array[Rect2] = []
-		for path in ["Title", "Offline", "Map", "RelayUrl", "Create", "JoinRow/Code", "JoinRow/Join", "Volume/MusicLabel", "Volume/Music", "Volume/EffectsLabel", "Volume/Effects", "Volume/VoiceLabel", "Volume/Voice", "Volume/MuteLabel", "Volume/Mute", "Status", "Legal"]:
+		for path in ["Title", "Offline", "Map", "RelayUrl", "Create", "JoinRow/Code", "JoinRow/Join", "WaitRow/Copy", "WaitRow/Cancel", "Volume/MusicLabel", "Volume/Music", "Volume/EffectsLabel", "Volume/Effects", "Volume/VoiceLabel", "Volume/Voice", "Volume/MuteLabel", "Volume/Mute", "Status", "Legal"]:
 			var control: Control = launcher.get_node("Center/Box/" + path)
 			rects.append(control.get_global_rect())
 			runner.check(Rect2(Vector2.ZERO, Vector2(size)).encloses(control.get_global_rect()), "N5 %s inside %s" % [path, size])
@@ -349,6 +350,33 @@ func test_old_relay_mismatch_is_shown(runner) -> bool:
 	launcher._set_busy(true)
 	launcher._handle('{"type":"error","reason":"protocol mismatch"}')
 	runner.check(launcher.get_node("Center/Box/Status").text == "protocol mismatch" and not launcher.get_node("Center/Box/Create").disabled, "N14 a protocol mismatch from an old relay is shown")
+	launcher.free()
+	return true
+
+func test_cancel_and_copy_while_waiting(runner) -> bool:
+	var launcher = Launcher.instantiate()
+	runner.root.add_child(launcher)
+	await runner.process_frame
+	var transport := FakeTransport.new()
+	launcher._transport = transport
+	launcher._set_busy(true)
+	launcher.set_process(true)
+	var wait: Control = launcher.get_node("Center/Box/WaitRow")
+	launcher._handle('{"type":"welcome","seat":1,"match":"ABC234"}')
+	runner.check(wait.visible and launcher.get_node("Center/Box/Offline").disabled and launcher.get_node("Center/Box/Create").disabled and not launcher.get_node("Center/Box/WaitRow/Copy").disabled and not launcher.get_node("Center/Box/WaitRow/Cancel").disabled, "N17 waiting shows Copy and Cancel, launcher stays busy")
+	runner.check(launcher._code == "ABC234", "N18 welcome stores the match code for Copy")
+	if DisplayServer.has_feature(DisplayServer.FEATURE_CLIPBOARD):
+		launcher.get_node("Center/Box/WaitRow/Copy").pressed.emit()
+		runner.check(DisplayServer.clipboard_get() == "ABC234", "N18 Copy puts the match code on the clipboard")
+	launcher.get_node("Center/Box/WaitRow/Cancel").pressed.emit()
+	var enabled: bool = true
+	for path in ["Offline", "Create", "JoinRow/Join", "Map", "FactionRow/Own", "FactionRow/Opponent"]:
+		enabled = enabled and not launcher.get_node("Center/Box/" + path).disabled
+	runner.check(transport.close_calls == 1 and not wait.visible and enabled, "N17 Cancel restores the launcher")
+	runner.check(launcher.get_node("Center/Box/Status").text == "Match cancelled" and not launcher.is_processing(), "N17 Cancel says so and stops polling")
+	launcher._handle('{"type":"welcome","seat":2,"match":"ABC234"}')
+	runner.check(not wait.visible, "N18 seat 2 never sees the wait row")
+	await runner.process_frame
 	launcher.free()
 	return true
 

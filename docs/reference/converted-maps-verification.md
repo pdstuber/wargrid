@@ -5,15 +5,15 @@ Plan: [converted maps playable plan](../superpowers/plans/2026-11-08-converted-m
 ## Resume record
 
 ```text
-Resume record (updated 2026-11-09, Task 6 green pending commit)
-Branch / base commit / working-tree state: converted-maps / fdb81c4 / Task 6 diff uncommitted (launcher.gd, online_main.gd, net/lockstep.gd, net/headless_client.gd, run_netplay.sh, ci.yml, test_online_scene.gd, test_lockstep.gd, this file)
-Last green task / next incomplete task: Task 5 committed, Task 6 green pending commit / Task 6b
+Resume record (updated 2026-11-09, Task 6b fixes green pending commit)
+Branch / base commit / working-tree state: converted-maps / 1dceeea (Task 6 committed) / Task 6b diff uncommitted (launcher.gd, launcher.tscn, test_online_scene.gd, this file)
+Last green task / next incomplete task: Task 6b with review fixes green pending commit / Task 7
 Changed paths since last commit: see working-tree state
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 585 / 136975 / 2 (Fm1 pair only) / 1 / no marker
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 587 / 137058 / 2 (Fm1 pair only) / 1 / no marker
 Known red case or blocker: Fm1 pair (morning decision)
 Approved decisions, pre-authorizations used, deferred gates: none new
 Usage so far: not run
-Next exact action: coordinator commits Task 6; then Task 6b
+Next exact action: coordinator commits Task 6b (launcher.gd, launcher.tscn, test_online_scene.gd, this file); then Task 7
 ```
 
 ## Baseline
@@ -214,3 +214,14 @@ Rows: tree `fdb81c4` + Task 6 diff. `run_tests.sh` `CASES 585 CHECKS 136975 FAIL
 - RED: N14 and N13 `Create usable` failed with `_set_busy(false)` removed from `_fail` (suite FAILURES 5); N15 `transport closed once, Create usable` failed with the decode-failure close removed (FAILURES 3).
 - Fixed: N13/N14 call `_set_busy(true)` first; new N15 (start without settings, plus unexpected type closes the transport); launcher closes transport on unexpected type; `--perturb-map-hash` applies to seat 2 only.
 - Row: uncommitted tree on fdb81c4; suite CASES 586 CHECKS 136979 FAILURES 2 (Fm1 pair only), lint and warnings exit 0, netplay map-mismatch and maps PASSED.
+
+## Task 6b
+- RED (tests present, no production change): `ERROR: Node not found: "Center/Box/WaitRow" (relative to "/root/Launcher").` and `FAIL: incomplete/empty case test_launcher_layout` (N5), N17/N18 case also errors on the missing node; `CASES 586 CHECKS 136662 FAILURES 3`.
+- Row: uncommitted tree on fdb81c4 (Task 6 diff + 6b diff). `run_tests.sh` `CASES 586 CHECKS 137053 FAILURES 2` (Fm1 pair only), exit 1, no marker; `run_lint.sh` exit 0; `run_warnings.sh` `WARNINGS CHECKED 118 FILES` exit 0. Logs `wargrid-overnight-work/logs/t6b-*.log`.
+- Unverified: see review fixes below; browser clipboard needs a user gesture and secure context, not checked until a web run.
+
+## Task 6b review fixes
+- RED: registering `test_cancel_and_copy_while_waiting` (CASES 586 to 587) printed `ERROR: Clipboard is not supported by this display server.` (log line 23); the case is now run, not skipped.
+- Fixed: Copy press and clipboard check only when `DisplayServer.has_feature(FEATURE_CLIPBOARD)`; `await runner.process_frame` before `launcher.free()`; first N17 check also asserts Copy and Cancel stay enabled (RED by mutant: `WaitRow/Copy` added to `_set_busy`, `FAIL: N17 waiting shows Copy and Cancel, launcher stays busy`, FAILURES 3; restored); volume sliders now sit above WaitRow, so WaitRow is directly above Status.
+- N18 headless: only the stored `_code` is asserted; Copy's clipboard effect is unverified headless (the clipboard branch does not run).
+- Row: uncommitted tree on 1dceeea. `run_tests.sh` `CASES 587 CHECKS 137058 FAILURES 2` (Fm1 pair only), exit 1, no marker; `run_lint.sh` exit 0; `run_warnings.sh` `WARNINGS CHECKED 118 FILES` exit 0. Logs `wargrid-overnight-work/logs/t6bf-*.log`.

@@ -69,6 +69,20 @@ max_length = 6
 layout_mode = 2
 text = "Join"
 
+[node name="WaitRow" type="HBoxContainer" parent="Center/Box"]
+visible = false
+layout_mode = 2
+
+[node name="Copy" type="Button" parent="Center/Box/WaitRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Copy code"
+
+[node name="Cancel" type="Button" parent="Center/Box/WaitRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Cancel"
+
 [node name="Status" type="Label" parent="Center/Box"]
 custom_minimum_size = Vector2(520, 48)
 layout_mode = 2

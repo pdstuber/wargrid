@@ -15,6 +15,7 @@ const HEADLESS_FLAGS: Array[String] = ["--netclient", "--relay", "--replay-log",
 var _transport: RefCounted
 var _match: String = ""
 var _seat: int = 0
+var _code: String = ""
 var _hello_sent: bool = false
 var _lockstep: RefCounted
 @onready var _status: Label = $Center/Box/Status
@@ -33,6 +34,10 @@ func _ready() -> void:
 		get_tree().change_scene_to_file(OFFLINE_SCENE))
 	$Center/Box/Create.pressed.connect(_connect.bind(""))
 	$Center/Box/JoinRow/Join.pressed.connect(func() -> void: _connect($Center/Box/JoinRow/Code.text.strip_edges().to_upper()))
+	$Center/Box/WaitRow/Copy.pressed.connect(func() -> void: DisplayServer.clipboard_set(_code))
+	$Center/Box/WaitRow/Cancel.pressed.connect(func() -> void:
+		_transport.close()
+		_fail("Match cancelled"))
 	set_process(false)
 
 func _add_audio() -> void:
@@ -42,7 +47,7 @@ func _add_audio() -> void:
 	music.play_list([MusicPlayer.MENU], 0.0)
 	var sliders := VolumeSliders.new()
 	$Center/Box.add_child(sliders)
-	$Center/Box.move_child(sliders, _status.get_index())
+	$Center/Box.move_child(sliders, $Center/Box/WaitRow.get_index())
 
 func _fill_factions() -> void:
 	var ids: Array = Registry.Factions.FACTIONS.keys()
@@ -93,6 +98,7 @@ func _set_busy(busy: bool) -> void:
 func _fail(reason: String) -> void:
 	_status.text = reason
 	_transport = null
+	$Center/Box/WaitRow.hide()
 	_set_busy(false)
 	set_process(false)
 
@@ -119,6 +125,8 @@ func _handle(text: String) -> bool:
 	match message.type:
 		"welcome":
 			_seat = message.seat
+			_code = message.match
+			$Center/Box/WaitRow.visible = _seat == 1
 			_status.text = "Match code: %s — waiting for player 2" % message.match if _seat == 1 else "Joined match %s" % message.match
 		"start": return _start(message)
 		"error":
@@ -143,6 +151,7 @@ func _start(message: Dictionary) -> bool:
 	var id: String = message.settings.map
 	SkirmishMain.map_path = MatchSettings.map_path(id)
 	SkirmishMain.starts = MatchSettings.starts(id, message.seed)
+	$Center/Box/WaitRow.hide()
 	var game: Node = OnlineScene.instantiate()
 	game.setup(_transport, _lockstep, _seat, _faction($Center/Box/FactionRow/Own))
 	get_tree().root.add_child(game)
