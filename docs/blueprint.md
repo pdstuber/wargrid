@@ -564,6 +564,10 @@ From a friend's playtest. Camera: edge scrolling also in a window and the browse
 
 Futuristic generated effects for every weapon of USA, China and FRC, deaths and destroyed buildings, a vocoder announcer for the local player, launcher and match music and three volume sliders. Presentation only: no simulation, replay or netplay trace change. Design: [sound spike design](superpowers/specs/2026-11-08-sound-spike-design.md); plan: [sound spike plan](superpowers/plans/2026-11-08-sound-spike.md); handoff: [sound spike prompt](sound-spike-prompt.txt). Exit: user playtest offline and online.
 
+### Zero Hour data dump tool (small task, user 2026-11-09; before ground batch A planning; not planned yet)
+
+`tools/zh_ini.py dump` parses every block of the pinned root `INIZH.big` (the existing `read_big`) into a local, gitignored JSONL file: one object or block per line with archive entry and line numbers, so findings stay citable as path:line and agents query it with `rg`, `jq` or `python3` instead of each writing its own decoder (a hand-rolled parse of `factionbuilding.ini` came out garbled on 2026-11-09). The tool and its test are tracked; the dump never is (EA data stays out of the public repo, §1); extracted values keep going into the reference notes with their sources.
+
 ### Ground batch A (after unit avoidance; user, 2026-11-06; scope refined 2026-11-07, not designed)
 
 **User answers (2026-11-08):** veterancy as Zero Hour (four levels, XP from kills per unit type, Zero Hour bonuses and Elite/Heroic self-heal): [design answers](reference/design-answers-2026-11-08.md#veterancy-ground-batch-a). Repair also lands here: idle builders auto-repair own buildings, plus a repair order, 2 % per second, free, as Zero Hour: [repair](reference/design-answers-2026-11-08.md#repair-friends-playtest-user-2026-11-08).
