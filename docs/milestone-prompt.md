@@ -95,7 +95,7 @@ An empty or one-line report is a failed review. Record it and dispatch a second 
 All of the following, run on the final tree, with each result recorded with the tree it ran on:
 
 - full suite;
-- `sh tools/run_benchmark.sh` with a new ledger row, run alone on a quiet host with the `uptime` load average at start and end in the row;
+- `PERF_LABEL="<milestone task>" sh tools/run_benchmark.sh` with a new ledger row (the label puts the run in `docs/reference/perf-history.csv` and the status table; rendered logs by hand, see the [ledger rule](reference/performance.md)), run alone on a quiet host with the `uptime` load average at start and end in the row;
 - a rendered rerun if presentation changed;
 - CI on Linux and Windows, plus `sh tools/compare_local_traces.sh <run id>` for macOS;
 - one substantive review and one lean-only `/ponytail-review`;
