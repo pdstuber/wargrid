@@ -18,7 +18,7 @@ const CombatFixture = preload("res://tests/combat_fixture.gd")
 const MovementWorkload = preload("res://scripts/debug/movement_workload.gd")
 
 func cases() -> Array[Callable]:
-	return [test_pick, test_pile_label_drawn_over_buildings, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_depth_order_matches_comparator,test_battery_target_line,test_building_label_has_no_kind_id,test_horde_count,test_rebuild_laborer_unselectable, test_crate_marks_frc_only, test_passengers_not_pickable, test_terrain_redraws_only_when_map_changes, test_structures_redraw_only_when_they_change, test_small_pile_view, test_structures_redraw_when_a_pile_vanishes, test_pick_under_roof, test_structure_bodies_in_shared_list, test_building_health_bar_in_overlay_pass, test_health_bar_rule, test_health_color_ends, test_selection_is_ground_diamond, test_biome_change_redraws_terrain, test_grid_only_while_placing, test_chevron_placeholder, test_cues_draw_on_low_in_the_view, test_effects_age_per_tick_not_per_refresh, test_bodies_submitted_each_frame, test_quality_change_rebuilds, test_draw_timing_only_on_request, test_air_pick_box_follows_lift, test_pick_covers_drawn_body, test_selected_battery_line_without_a_shot, test_kind_info_follows_air_kinds, test_custom_ground_colors_rearm_the_biome, test_default_biome_is_sand, test_ground_is_built_once, test_blend_between_ticks, test_overlays_and_picks_follow_the_drawn_pose, test_stall_holds_and_does_not_rebuild, test_catch_up_and_restart_snap, test_same_tick_refresh_keeps_the_pose, test_heading_wraps, test_low_never_blends, test_blend_leaves_effects_alone, test_wide_infantry_pick_default, test_pivot_roles_pick_extent_covers_every_pose, test_horde_ring_in_the_batch, test_neon_reaches_structures_and_rings, test_selection_is_a_set_for_per_frame_loops]
+	return [test_pick, test_pile_label_drawn_over_buildings, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_hint_replaced_and_fades, test_resume_hint,test_depth_order_matches_comparator,test_battery_target_line,test_building_label_has_no_kind_id,test_horde_count,test_rebuild_laborer_unselectable, test_crate_marks_frc_only, test_passengers_not_pickable, test_terrain_redraws_only_when_map_changes, test_structures_redraw_only_when_they_change, test_small_pile_view, test_structures_redraw_when_a_pile_vanishes, test_pick_under_roof, test_structure_bodies_in_shared_list, test_building_health_bar_in_overlay_pass, test_health_bar_rule, test_health_color_ends, test_selection_is_ground_diamond, test_biome_change_redraws_terrain, test_grid_only_while_placing, test_chevron_placeholder, test_cues_draw_on_low_in_the_view, test_effects_age_per_tick_not_per_refresh, test_bodies_submitted_each_frame, test_quality_change_rebuilds, test_draw_timing_only_on_request, test_air_pick_box_follows_lift, test_pick_covers_drawn_body, test_selected_battery_line_without_a_shot, test_kind_info_follows_air_kinds, test_custom_ground_colors_rearm_the_biome, test_default_biome_is_sand, test_ground_is_built_once, test_blend_between_ticks, test_overlays_and_picks_follow_the_drawn_pose, test_stall_holds_and_does_not_rebuild, test_catch_up_and_restart_snap, test_same_tick_refresh_keeps_the_pose, test_heading_wraps, test_low_never_blends, test_smooth_off_never_blends, test_blend_leaves_effects_alone, test_wide_infantry_pick_default, test_pivot_roles_pick_extent_covers_every_pose, test_horde_ring_in_the_batch, test_neon_reaches_structures_and_rings, test_selection_is_a_set_for_per_frame_loops]
 
 func test_pick(runner) -> bool:
 	var view = View.new()
@@ -124,6 +124,19 @@ func test_click_hint_lifetime(runner) -> bool:
 	runner.check(view.hints().size() == 1, "H1 hint alive at +39")
 	view.set_state(_tick_state(sim, 1), [])
 	runner.check(view.hints().is_empty(), "H1 hint gone at +40")
+	view.free()
+	return true
+
+func test_hint_replaced_and_fades(runner) -> bool:
+	var view = View.new()
+	var sim = Simulation.new()
+	sim.spawn(1, Vector2(2.5, 2.5))
+	var state: Dictionary = sim.snapshot()
+	view.set_state(state, [])
+	view.add_hint(Vector2(5, 5), state.tick)
+	view.add_hint(Vector2(7, 3), state.tick)
+	runner.check(view.hints().size() == 1 and view.hints()[0].point == Vector2(7, 3), "H2 a new command replaces the previous marker")
+	runner.check(is_equal_approx(View.hint_alpha(0.0), 1.0) and is_equal_approx(View.hint_alpha(0.5), 0.5) and is_equal_approx(View.hint_alpha(1.0), 0.0), "H2 the ring fades linearly to nothing")
 	view.free()
 	return true
 
@@ -828,6 +841,30 @@ func test_heading_wraps(runner) -> bool:
 	runner.check(cos(angle) < -0.99, "W3 a heading crossing 180 degrees turns the short way, got %f" % rad_to_deg(angle))
 	view.blend(1.0)
 	runner.check(is_equal_approx(wrapf(_item(view, f.id).heading - deg_to_rad(-170.0), -PI, PI), 0.0), "W3 alpha 1 ends on the new heading")
+	view.free()
+	return true
+
+func test_smooth_off_never_blends(runner) -> bool:
+	var f := _pair()
+	var view = View.new()
+	view.set_smooth(false)
+	view.set_state(f.a, [])
+	view.set_state(f.b, [])
+	view.blend(0.5)
+	runner.check(_anchor(view, f.id).is_equal_approx(Vector2(13.5, 10.5)), "W9 Smooth off keeps the tick position, got %s" % _anchor(view, f.id))
+	view.set_smooth(true)
+	view.set_state(f.a, [])
+	view.set_state(f.b, [])
+	view.blend(0.5)
+	runner.check(_anchor(view, f.id).is_equal_approx(Vector2(12.0, 10.5)), "W9 Smooth on blends under High")
+	view.set_smooth(false)
+	runner.check(_anchor(view, f.id).is_equal_approx(Vector2(13.5, 10.5)), "W9 switching Smooth off mid-blend returns to the tick pose")
+	view.set_quality(GraphicsSettings.LOW)
+	view.set_smooth(true)
+	view.set_state(f.a, [])
+	view.set_state(f.b, [])
+	view.blend(0.5)
+	runner.check(_anchor(view, f.id).is_equal_approx(Vector2(13.5, 10.5)), "W9 Low never blends even with Smooth on")
 	view.free()
 	return true
 

@@ -43,9 +43,13 @@ func _ready() -> void:
 	_pause.quit_requested.connect(func() -> void: get_tree().quit())
 	_pause.quality_changed.connect(_view.set_quality)
 	_pause.neon_changed.connect(_view.set_bright_owners)
+	_pause.smooth_changed.connect(_view.set_smooth)
+	_pause.destinations_changed.connect(_view.set_show_destinations)
 	$HUD.add_child(_pause)
 	_view.set_quality(GraphicsSettings.stored_quality())
 	_view.set_bright_owners(GraphicsSettings.load_neon())
+	_view.set_smooth(GraphicsSettings.load_smooth())
+	_view.set_show_destinations(GraphicsSettings.load_destinations())
 	_view.local_player = local_player
 	simulation = _create_simulation()
 	_reset_camera()

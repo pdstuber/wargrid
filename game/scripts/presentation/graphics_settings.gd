@@ -41,3 +41,17 @@ static func load_neon() -> bool:
 
 static func save_neon(neon: bool) -> void:
 	_write("neon", neon)
+
+static func load_destinations() -> bool:
+	var value: Variant = _read("destinations", false)
+	return value is bool and value
+
+static func save_destinations(on: bool) -> void:
+	_write("destinations", on)
+
+static func load_smooth() -> bool:
+	var value: Variant = _read("smooth", -1)
+	return value if value is bool else stored_quality() == HIGH
+
+static func save_smooth(smooth: bool) -> void:
+	_write("smooth", smooth)

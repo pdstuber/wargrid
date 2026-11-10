@@ -14,7 +14,7 @@ const Probe = preload("res://scenes/movement_benchmark.tscn")
 const MovementBenchmark = preload("res://scripts/debug/movement_benchmark.gd")
 
 func cases() -> Array[Callable]:
-	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_transports_fixture, test_defences_fixture, test_skirmish3v3_fixture, test_combat_work_ceiling, test_volley_retaliation_work, test_horde_render_layout, test_horde_render_500_counts, test_workload_asserts_pure, test_settled_matches_snapshot_predicate, test_gate_values, test_draw_call_ceiling, test_cpu_frame_pairs_draw_with_its_tick, test_web_run_is_report_only, test_units_reported_are_units_run, test_horde_camera_follows_army_when_zoomed]
+	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_transports_fixture, test_defences_fixture, test_skirmish3v3_fixture, test_combat_work_ceiling, test_volley_retaliation_work, test_horde_render_layout, test_horde_render_500_counts, test_workload_asserts_pure, test_settled_matches_snapshot_predicate, test_gate_values, test_draw_call_ceiling, test_cpu_frame_pairs_draw_with_its_tick, test_web_run_is_report_only, test_interpolation_arg, test_benchmark_runs_without_interpolation, test_units_reported_are_units_run, test_horde_camera_follows_army_when_zoomed]
 
 func test_statistics(runner) -> bool:
 	runner.check(Stats.summary(PackedFloat64Array()) == {"n": 0, "p50": 0.0, "p95": 0.0, "p99": 0.0, "max": 0.0}, "BM1 empty")
@@ -80,6 +80,19 @@ func test_rendered_probe_ticks(runner) -> bool:
 	await runner.physics_frame
 	await runner.physics_frame
 	runner.check(probe.get_node("HUD/Status").text.contains("tick"), "BM4 probe reaches view update")
+	probe.free()
+	return true
+
+func test_benchmark_runs_without_interpolation(runner) -> bool:
+	var probe = Probe.instantiate()
+	runner.root.add_child(probe)
+	for i in 12: await runner.physics_frame
+	var view = probe.get_node("WorldView")
+	runner.check(not view._smooth and not view._interpolating(), "BM18 the benchmark view starts with interpolation off")
+	runner.check(view._pose.is_empty() and view._moves.is_empty(), "BM18 no poses are tracked and no moves are blended")
+	var builds: int = view.batch_builds
+	for i in 5: view.advance_frame(Time.get_ticks_usec() + 10000)
+	runner.check(view.batch_builds == builds, "BM18 advance_frame rebuilds nothing per frame")
 	probe.free()
 	return true
 
@@ -310,6 +323,18 @@ func test_web_run_is_report_only(runner) -> bool:
 	var bench = MovementBenchmark.new()
 	bench._web = true
 	runner.check(bench._report_only(), "BM15 the web run is report-only")
+	bench.free()
+	return true
+
+func test_interpolation_arg(runner) -> bool:
+	var bench = MovementBenchmark.new()
+	runner.check(not bench._interpolation_from([]), "BM17 interpolation defaults off")
+	runner.check(not bench._interpolation_from(["--interpolation=off"]), "BM17 off is off")
+	runner.check(bench._interpolation_from(["--interpolation=on"]), "BM17 on is on")
+	runner.check(not bench._report_only_from([]), "BM17 no args stays gated")
+	runner.check(not bench._report_only_from(["--interpolation=off"]), "BM17 interpolation off stays gated")
+	runner.check(bench._report_only_from(["--interpolation=on"]), "BM17 interpolation on is report-only")
+	runner.check(bench._report_only_from(["--zoom=1.0"]), "BM17 other args stay report-only")
 	bench.free()
 	return true
 

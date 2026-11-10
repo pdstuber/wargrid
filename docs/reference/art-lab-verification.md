@@ -1,10 +1,10 @@
-Resume record (updated 2026-11-10, timed runs for the winners done)
-Branch / base commit / working-tree state: spike-art-lab / ab698df / docs only (performance.md, art-lab-verification.md) plus the coordinator's own uncommitted edits
-Last green task / next incomplete task: winners timed runs / none in the lab; integration steps
-Changed paths since last commit: docs/reference/performance.md, docs/reference/art-lab-verification.md
-Last command / cases / checks / failures / exit / marker: `sh tools/run_benchmark.sh` / exit 0 / 10 BUDGET PASS; rendered rows w-a/b/z n 3 (a rows exit 1 at the 3.3 ashfall guard, b and z exit 0); web row posted RENDERED BENCHMARK PASSED 2
-Known red case or blocker: none in tests; perf rows EXCEEDED (not loosened); High 0.5 ashfall frame p95 3.56-4.76 breaks its 3.3 guard
-Approved decisions, pre-authorizations used, deferred gates: as before; no window beyond the pre-approved rendered row set and the web row
+Resume record (updated 2026-11-10, smooth movement toggle, destinations toggle, click marker done)
+Branch / base commit / working-tree state: spike-art-lab / fdf3e49 / uncommitted code and docs (game/scripts/{main.gd,debug/movement_benchmark.gd,presentation/{graphics_settings,pause_menu,world_view}.gd}, tests, performance.md, this file)
+Last green task / next incomplete task: toggles and click marker / none in the lab; integration steps
+Changed paths since last commit: see Branch line
+Last command / cases / checks / failures / exit / marker: full suite / 728 cases, 139569 checks, 0 failures / exit 0 / TESTS PASSED 139569; lint 0; warnings 137 files 0; `sh tools/run_benchmark.sh` exit 0, 10 BUDGET PASS
+Known red case or blocker: none in tests; gated Ashfall frame p95 7.753 and 19.144 ms vs 3.3 guard EXCEEDED with interpolation off (machine-wide slowdown, cause not established); default config (interpolation on, High) exceeds the Ashfall guard
+Approved decisions, pre-authorizations used, deferred gates: as before; timed runs shortened by user request (2 gated + 1 report-only per layout)
 Next exact action: coordinator: push spike-art-lab, test deploy, local merge into main, then the sim interface and determinism notes (approval needed for push and deploy)
 
 ## Evidence rows (append-only)
@@ -235,3 +235,12 @@ A/B click results (`~/projects/wargrid-art-work/ab-results/web-20261110-155052.l
 - `run_benchmark.sh` exit 0, 10 BUDGET PASS. Headless per tick Low 0.913-0.921, High 1.044-1.049 ms (0.91 budget, EXCEEDED). Per frame blend 300u mean 0.87 / 400u 0.91-0.94; blend+overlay+submit p95 3.04-3.16 / 3.22-3.26 (EXCEEDED vs 3.04).
 - Rendered rows and web row, medians and worst runs: see performance.md "Art lab winners" and its ledger row. Draw calls 4 / 5 / 24 / 5 under ceilings 50 / 50 / 60 / 50 (PASS). High 0.5 runs exit 1 at the ashfall frame guard (4.315 / 4.764 / 3.562 > 3.3), so no High 0.5 horde row. Web horde 11.40, ashfall 10.28 ms (EXCEEDED about 2.1-2.6x per C2).
 - Nothing loosened. Logs in ~/projects/wargrid-art-work: w-bench.log, w-tick.log, w-frame.log, w-{a,b,z}{1,2,3}.log, web-results4/. Server on 8062 stopped; Firefox left running.
+
+### 2026-11-10 Smooth movement, destinations toggle, click marker (tree: worktree, fdf3e49 plus diff)
+
+- Red first (assertion failures, logs `smooth-red-*.log`, `dest-red-*.log`): S1/S2 (setting, menu, wiring), W9 (view honours it), BM17 (`--interpolation` arg), E8 (menu layout), D1 and P1 (destinations), H2/H3 (marker). Green: full suite 728 cases, 139569 checks, 0 failures, exit 0, TESTS PASSED 139569; lint and warnings (137 files) pass.
+- Smooth movement: `GraphicsSettings.load_smooth/save_smooth` (default On under stored High, Off under Low; wrong type falls back), menu button "Smooth movement", `WorldView.set_smooth`; interpolation runs only when smooth and High. Benchmark `--interpolation=on|off` (default off, header prints it, on is report-only). BM18 (added after the code, a check of existing behaviour so no red step) shows the benchmark view has interpolation off, tracks no poses and rebuilds nothing per frame.
+- Unit destinations: order crosses hidden by default; Esc-menu "Show unit destinations" (default off, saved), `WorldView.set_show_destinations`; P1 updated to check hidden by default then shown after the toggle.
+- Click marker: the existing move/attack-move/rally ring (`add_hint`, 40 ticks, own `_submit` only) now replaces the previous marker and fades (`hint_alpha`); H3 changed from "adds a second hint" to "stays one". Lifetime is 40 sim ticks (1.33 s at 30 Hz), not wall time, so it freezes while an offline match is paused; no marker for a right click with no movable selection. Drawn in the overlay as before, no new draw call.
+- Menu layout test E8 at 1280x720 and 1920x1080 includes the Smooth and Destinations buttons: no overlap.
+- Timed runs (shortened to 2 gated, 1 report-only per layout at the user's request): see performance.md "Smooth movement toggle". Gated ashfall frame p95 7.753 and 19.144 ms vs 3.3 guard: EXCEEDED; interpolation off does not fix it; ashfall tick p50 8-10 ms (earlier 2.8-3.2) in on and off runs alike, so the cause looks machine-wide, not established. `sh tools/run_benchmark.sh` alone: exit 0, 10 BUDGET PASS.

@@ -66,11 +66,13 @@ func _ready() -> void:
 	$Camera2D.zoom = Vector2(zoom, zoom)
 	_view.time_draws = true
 	_view.set_quality(_quality())
+	_view.set_smooth(_interpolation_from(OS.get_cmdline_user_args()))
 	_view.set_zoom(zoom)
 	RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
 	_emit("M2 RENDERED engine=" + Engine.get_version_info().string + " os=" + OS.get_name()
 		+ " cpu=" + OS.get_processor_name() + " resolution=" + str(get_viewport().get_visible_rect().size)
 		+ " zoom=" + str(zoom) + " quality=" + ("high" if _quality() == GraphicsSettings.HIGH else "low")
+		+ " interpolation=" + ("on" if _interpolation_from(OS.get_cmdline_user_args()) else "off")
 		+ " layouts=" + ",".join(_sequence) + " map=64x64 (ashfall layout 194x187) units=" + str(units_run(_units(), _sequence))
 		+ " seed=none vsync=" + ("browser" if _web else "off") + " warmup_wall_seconds=10 sample_wall_seconds=60")
 	_begin_layout()
@@ -264,12 +266,18 @@ static func draw_call_failure(layout: String, max_calls: float) -> String:
 		return "Layout %s draws %d calls, ceiling %d" % [layout, int(max_calls), DRAW_CALL_CEILINGS[layout]]
 	return ""
 
-func _report_only() -> bool:
-	if _web: return true
-	for arg: String in OS.get_cmdline_user_args():
+# Gated rows run without interpolation so they stay comparable to every earlier row.
+func _interpolation_from(args: Array) -> bool:
+	return args.has("--interpolation=on")
+
+func _report_only_from(args: Array) -> bool:
+	for arg: String in args:
 		for flag: String in ["--quality", "--zoom", "--units", "--layout"]:
 			if arg.begins_with(flag): return true
-	return false
+	return _interpolation_from(args)
+
+func _report_only() -> bool:
+	return _web or _report_only_from(OS.get_cmdline_user_args())
 
 func _report_draw_calls(layout: String) -> bool:
 	var max_calls: float = Stats.summary(_draw_calls).max

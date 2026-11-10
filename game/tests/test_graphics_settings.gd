@@ -9,7 +9,7 @@ const Skirmish = preload("res://scenes/skirmish.tscn")
 var scratch: String = "user://test-graphics-%d.cfg" % OS.get_process_id()
 
 func cases() -> Array[Callable]:
-	return [test_detail_by_zoom, test_pick_threshold, test_settings_round_trip_keeps_audio, test_corrupt_file_gives_unset, test_auto_pick_skipped_headless, test_menu_toggle_saves_and_emits, test_view_follows_quality_and_zoom, test_auto_pick_ignores_cold_frames, test_menu_label_follows_stored_quality, test_auto_pick_samples_tick_and_draw_time, test_neon_setting, test_neon_menu_and_wiring]
+	return [test_detail_by_zoom, test_pick_threshold, test_settings_round_trip_keeps_audio, test_corrupt_file_gives_unset, test_auto_pick_skipped_headless, test_menu_toggle_saves_and_emits, test_view_follows_quality_and_zoom, test_auto_pick_ignores_cold_frames, test_menu_label_follows_stored_quality, test_auto_pick_samples_tick_and_draw_time, test_neon_setting, test_neon_menu_and_wiring, test_smooth_setting, test_smooth_menu_and_wiring, test_destinations_setting_and_menu]
 
 func _begin() -> String:
 	var saved: String = AudioSettings.path
@@ -191,6 +191,78 @@ func test_neon_menu_and_wiring(runner) -> bool:
 	runner.check(main._view._batch.bright_owners, "W8 a stored Neon setting applies at start")
 	main._pause.neon_changed.emit(false)
 	runner.check(not main._view._batch.bright_owners, "W8 the menu signal reaches the view")
+	main.free()
+	_end(saved)
+	return true
+
+func test_smooth_setting(runner) -> bool:
+	var saved := _begin()
+	runner.check(GraphicsSettings.load_smooth(), "S1 Smooth defaults on when quality is unset (High)")
+	GraphicsSettings.save_quality(GraphicsSettings.LOW)
+	runner.check(not GraphicsSettings.load_smooth(), "S1 Smooth defaults off when stored quality is Low")
+	GraphicsSettings.save_smooth(true)
+	runner.check(GraphicsSettings.load_smooth() and GraphicsSettings.load_quality() == GraphicsSettings.LOW, "S1 an explicit value wins and keeps quality")
+	GraphicsSettings.save_quality(GraphicsSettings.HIGH)
+	GraphicsSettings.save_smooth(false)
+	runner.check(not GraphicsSettings.load_smooth() and not GraphicsSettings.load_neon(), "S1 explicit off survives High and keeps Neon")
+	var config := ConfigFile.new()
+	config.set_value("graphics", "smooth", "yes")
+	config.save(scratch)
+	runner.check(GraphicsSettings.load_smooth(), "S1 a wrong type falls back to the quality default")
+	_end(saved)
+	return true
+
+func test_smooth_menu_and_wiring(runner) -> bool:
+	var saved := _begin()
+	var menu = PauseMenu.new(false)
+	runner.root.add_child(menu)
+	var seen: Array[bool] = []
+	menu.smooth_changed.connect(func(smooth: bool) -> void: seen.append(smooth))
+	var button: Button = menu.find_child("Smooth", true, false)
+	runner.check(button != null and button.text == "Smooth movement: On", "S2 the menu starts with Smooth on under High")
+	button.pressed.emit()
+	runner.check(seen == [false] and not GraphicsSettings.load_smooth() and button.text == "Smooth movement: Off", "S2 the toggle saves and emits")
+	GraphicsSettings.save_smooth(true)
+	menu.open()
+	runner.check(button.text == "Smooth movement: On", "S2 opening the menu re-reads the stored setting")
+	menu.free()
+	GraphicsSettings.save_smooth(false)
+	var main = Skirmish.instantiate()
+	runner.root.add_child(main)
+	await runner.process_frame
+	runner.check(not main._view._smooth, "S2 a stored Off applies at start")
+	main._pause.smooth_changed.emit(true)
+	runner.check(main._view._smooth, "S2 the menu signal reaches the view")
+	main.free()
+	_end(saved)
+	return true
+
+func test_destinations_setting_and_menu(runner) -> bool:
+	var saved := _begin()
+	runner.check(not GraphicsSettings.load_destinations(), "D1 destinations are off without a file")
+	GraphicsSettings.save_destinations(true)
+	GraphicsSettings.save_neon(true)
+	runner.check(GraphicsSettings.load_destinations() and GraphicsSettings.load_neon(), "D1 round trip keeps Neon")
+	GraphicsSettings.save_destinations(false)
+	var menu = PauseMenu.new(false)
+	runner.root.add_child(menu)
+	var seen: Array[bool] = []
+	menu.destinations_changed.connect(func(on: bool) -> void: seen.append(on))
+	var button: Button = menu.find_child("Destinations", true, false)
+	runner.check(button != null and button.text == "Show unit destinations: Off", "D1 the menu starts with destinations off")
+	button.pressed.emit()
+	runner.check(seen == [true] and GraphicsSettings.load_destinations() and button.text == "Show unit destinations: On", "D1 the toggle saves and emits")
+	GraphicsSettings.save_destinations(false)
+	menu.open()
+	runner.check(button.text == "Show unit destinations: Off", "D1 opening the menu re-reads the stored setting")
+	menu.free()
+	GraphicsSettings.save_destinations(true)
+	var main = Skirmish.instantiate()
+	runner.root.add_child(main)
+	await runner.process_frame
+	runner.check(main._view._show_destinations, "D1 a stored On applies at start")
+	main._pause.destinations_changed.emit(false)
+	runner.check(not main._view._show_destinations, "D1 the menu signal reaches the view")
 	main.free()
 	_end(saved)
 	return true

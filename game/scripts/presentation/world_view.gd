@@ -40,6 +40,8 @@ var time_draws: bool = false
 var _quality: int = GraphicsSettings.HIGH
 var _zoom: float = 1.0
 var _bright: bool = false
+var _smooth: bool = true
+var _show_destinations: bool = false
 var batch_builds: int = 0
 var _tick_usec: int = 0
 var _alpha: float = 1.0
@@ -87,11 +89,22 @@ static func shows_health(selected: bool, hp: int, max_hp: int, hovered: bool) ->
 
 func set_quality(quality: int) -> void:
 	_quality = quality
-	if quality != GraphicsSettings.HIGH and not _moves.is_empty():
-		_apply_alpha(1.0)
-		_moves.clear()
-		_drawn.clear()
+	_settle_if_not_interpolating()
 	_rebuild_batch()
+
+func set_smooth(smooth: bool) -> void:
+	_smooth = smooth
+	_settle_if_not_interpolating()
+	_rebuild_batch()
+
+func _interpolating() -> bool:
+	return _smooth and _quality == GraphicsSettings.HIGH
+
+func _settle_if_not_interpolating() -> void:
+	if _interpolating() or _moves.is_empty(): return
+	_apply_alpha(1.0)
+	_moves.clear()
+	_drawn.clear()
 
 func set_zoom(zoom: float) -> void:
 	_zoom = zoom
@@ -197,14 +210,14 @@ func _track_poses(entity_count: int) -> void:
 	if tick != _blend_tick:
 		_prev_pose = _pose if tick == _blend_tick + 1 else {}
 		_pose = {}
-		if _quality == GraphicsSettings.HIGH:
+		if _interpolating():
 			for i in entity_count: _pose[_items[i].id] = _pose_of(_items[i])
 		_blend_tick = tick
 		_alpha = 0.0
 		_tick_usec = Time.get_ticks_usec()
 		_fresh = true
 	_moves = []
-	if _quality != GraphicsSettings.HIGH: return
+	if not _interpolating(): return
 	for i in entity_count:
 		var item: Dictionary = _items[i]
 		var old: Variant = _prev_pose.get(item.id)
@@ -259,8 +272,11 @@ func _rebuild_batch() -> void:
 	_bodies.queue_redraw()
 	queue_redraw()
 
+static func hint_alpha(age: float) -> float:
+	return clampf(1.0 - age, 0.0, 1.0)
+
 func add_hint(point: Vector2, tick: int) -> void:
-	_hints.append({"point": point, "tick": tick})
+	_hints = [{"point": point, "tick": tick}]
 	queue_redraw()
 
 func hints() -> Array:
@@ -317,8 +333,13 @@ func _pick_bounds(unit: Dictionary) -> Rect2:
 	var centre: float = bounds.get_center().x
 	return Rect2(centre - WIDE_PICK_WIDTH / 2.0, bounds.position.y, WIDE_PICK_WIDTH, bounds.size.y)
 
+func set_show_destinations(on: bool) -> void:
+	_show_destinations = on
+	queue_redraw()
+
 func order_marks() -> Array[Vector2]:
 	var marks: Array[Vector2] = []
+	if not _show_destinations: return marks
 	for unit: Dictionary in _state.get("entities", []):
 		if unit.owner == local_player and unit.order != null: marks.append(Iso.world_to_plane(Vector2(unit.order.target[0], unit.order.target[1])))
 	return marks
@@ -500,7 +521,7 @@ func _draw_hints() -> void:
 	for hint in _hints:
 		var age: float = float(_state.tick - hint.tick) / HINT_TICKS
 		var center: Vector2 = Iso.world_to_plane(hint.point)
-		draw_arc(center, 14.0 * age + 4.0, 0.0, TAU, 16, Color("8cff87"), 2.0)
+		draw_arc(center, 14.0 * age + 4.0, 0.0, TAU, 16, Color(SELECT_COLOR, hint_alpha(age)), 2.0)
 
 func rally_marker() -> Array:
 	for building: Dictionary in _state.get("buildings", []):
