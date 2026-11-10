@@ -4,6 +4,7 @@ extends RefCounted
 const View = preload("res://scripts/presentation/world_view.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Fixture = preload("res://tests/economy_fixture.gd")
+const Palette = preload("res://scripts/presentation/palette.gd")
 const WorldBatch = preload("res://scripts/presentation/world_batch.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
@@ -11,7 +12,7 @@ const CombatFixture = preload("res://tests/combat_fixture.gd")
 const MovementWorkload = preload("res://scripts/debug/movement_workload.gd")
 
 func cases() -> Array[Callable]:
-	return [test_pick, test_pile_label_drawn_over_buildings, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_heading_mark_layout,test_depth_order_matches_comparator,test_battery_shot_line,test_battery_target_line,test_building_icons,test_building_label_has_no_kind_id,test_horde_marks,test_rebuild_laborer_unselectable, test_crate_marks_frc_only, test_passengers_not_pickable, test_terrain_redraws_only_when_map_changes, test_structures_redraw_only_when_they_change, test_small_pile_view, test_structures_redraw_when_a_pile_vanishes, test_pick_under_roof, test_structure_bodies_in_shared_list, test_building_health_bar_in_overlay_pass]
+	return [test_pick, test_pile_label_drawn_over_buildings, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_depth_order_matches_comparator,test_battery_shot_line,test_battery_target_line,test_building_label_has_no_kind_id,test_horde_marks,test_rebuild_laborer_unselectable, test_crate_marks_frc_only, test_passengers_not_pickable, test_terrain_redraws_only_when_map_changes, test_structures_redraw_only_when_they_change, test_small_pile_view, test_structures_redraw_when_a_pile_vanishes, test_pick_under_roof, test_structure_bodies_in_shared_list, test_building_health_bar_in_overlay_pass, test_health_bar_rule, test_health_color_ends, test_selection_is_ground_diamond, test_biome_change_redraws_terrain, test_grid_only_while_placing, test_no_glyphs_or_heading_ticks, test_chevron_placeholder]
 
 func test_pick(runner) -> bool:
 	var view = View.new()
@@ -145,23 +146,6 @@ func test_resume_hint(runner) -> bool:
 	view.free()
 	return true
 
-func test_heading_mark_layout(runner) -> bool:
-	var view = View.new()
-	var sim = Simulation.new([], Vector2i(32, 32))
-	sim.add_player(1, 1000)
-	var ids: Array = []
-	for kind in ["usa_rifle_infantry", "usa_tank", "usa_builder", "usa_light_vehicle", "usa_collector"]:
-		ids.append(sim.spawn(1, Vector2(3.5 + ids.size() * 2, 4.5), kind))
-	view.set_state(sim.snapshot(), [])
-	var marks: Array[Dictionary] = view.heading_marks()
-	runner.check(marks.size() == 4, "V2 one mark per ground unit")
-	for mark in marks:
-		var bounds: Rect2 = view._vehicle_bounds(view._state.entities[ids.find(mark.id)])
-		runner.check(bounds.has_point(mark.from) and bounds.has_point(mark.to), "V2 mark inside the unit rectangle " + str(mark.id))
-		runner.check(mark.id != ids[4], "V2 no mark for a collector")
-	view.free()
-	return true
-
 func test_depth_order_matches_comparator(runner) -> bool:
 	var sim = MovementWorkload.create("open")
 	for i in range(40): sim.step()
@@ -225,23 +209,6 @@ func test_battery_target_line(runner) -> bool:
 	view.set_state(idle[0].snapshot(), [idle[1]])
 	runner.check(view.battery_target_lines().is_empty(), "V6 selected battery without a target draws none")
 	view.free()
-	return true
-
-func test_building_icons(runner) -> bool:
-	var expected := {"usa_command_center": "command", "usa_power_plant": "power", "usa_supply_center": "supply", "usa_barracks": "barracks", "usa_factory": "factory", "usa_defence": "battery"}
-	for kind: String in expected: runner.check(View.icon_name(kind) == expected[kind], "I1 %s icon, got %s" % [kind, View.icon_name(kind)])
-	for kind: String in Registry.buildings().filter(func(id: String) -> bool: return id not in ["china_defence", "frc_defence", "frc_hole_1", "frc_hole_2", "frc_hole_3"]): runner.check(not Registry.icon(kind).is_empty(), "I1 %s defines an icon" % kind)
-	Registry.add_test_kind("test_depot", {"display_name": "Zeta Depot", "footprint": Vector2i(1, 1)})
-	runner.check(View.icon_name("test_depot").is_empty() and View.fallback_letter("test_depot") == "Z", "I2 no icon falls back to the display-name initial")
-	Registry.add_test_kind("test_other", {"display_name": "Other", "icon": "factory", "footprint": Vector2i(1, 1)})
-	runner.check(View.icon_name("test_other") == "factory", "I2 a new kind picks its glyph from data alone")
-	Registry.add_test_kind("test_odd", {"display_name": "Odd", "icon": "unheard_of", "footprint": Vector2i(1, 1)})
-	runner.check(View.icon_name("test_odd").is_empty() and View.fallback_letter("test_odd") == "O", "I2 an unknown icon name falls back too")
-	Registry.clear_test_kinds()
-	for size in [1, 2, 3]:
-		var radius: float = View.icon_radius(Vector2i(size, size + 1))
-		runner.check(3.0 * radius <= 32.0 * size, "I3 glyph box stays inside a %d-cell diamond" % size)
-		runner.check(radius < 23.0, "I3 glyph clear of the health bar at %d cells" % size)
 	return true
 
 func test_building_label_has_no_kind_id(runner) -> bool:
@@ -397,10 +364,10 @@ class LoggingView extends View:
 	var order: Array[String] = []
 
 	func _draw_label(_point: Vector2, text: String) -> void:
-		if text.begins_with("Boxes"): order.append("label")
+		if text.begins_with("Boxes"): order.append("label on parent" if _canvas == self else "label on other")
 
 	func _draw_footprint(_origin: Array, size: Vector2i, color: Color, _selected: bool) -> void:
-		if size == Vector2i(3, 3) and color != Color("9f8045"): order.append("building")
+		if size == Vector2i(3, 3) and color != Color("9f8045"): order.append("building on parent" if _canvas == self else "building behind")
 
 func test_pile_label_drawn_over_buildings(runner) -> bool:
 	var sim = Fixture.make_world()
@@ -416,7 +383,8 @@ func test_pile_label_drawn_over_buildings(runner) -> bool:
 	runner.check(not Geometry2D.intersect_polygons(diamond, PackedVector2Array([label.position, Vector2(label.end.x, label.position.y), label.end, Vector2(label.position.x, label.end.y)])).is_empty(), "V11 fixture: the building diamond reaches the pile label")
 	await runner.process_frame
 	await runner.process_frame
-	runner.check(view.order == ["building", "label"], "V11 the pile label is drawn after every building, got " + str(view.order))
+	runner.check(view.order.has("building behind") and not view.order.has("building on parent"), "V11 the footprint is drawn on the layer behind the parent, got " + str(view.order))
+	runner.check(view.order.has("label on parent") and not view.order.has("label on other"), "V11 the pile label is drawn by the parent, over every body, got " + str(view.order))
 	view.free()
 	return true
 
@@ -498,5 +466,103 @@ func test_building_health_bar_in_overlay_pass(runner) -> bool:
 	await runner.process_frame
 	await runner.process_frame
 	runner.check(not view.canvases.is_empty() and view.canvases.all(func(canvas) -> bool: return canvas == view), "V17 the building bar is drawn by the parent, got %d on other canvases" % view.canvases.filter(func(canvas) -> bool: return canvas != view).size())
+	view.free()
+	return true
+
+func test_health_bar_rule(runner) -> bool:
+	runner.check(not View.shows_health(false, 100, 100, false), "V18 unselected full hp shows no bar")
+	runner.check(View.shows_health(true, 100, 100, false), "V18 selected full hp shows a bar")
+	runner.check(View.shows_health(false, 99, 100, false), "V18 damaged shows a bar")
+	runner.check(View.shows_health(false, 100, 100, true), "V18 hovered shows a bar")
+	return true
+
+func test_health_color_ends(runner) -> bool:
+	runner.check(View.health_color(1.0) == Palette.HEALTH_GREEN, "V19 full is green")
+	runner.check(View.health_color(0.5) == Palette.HEALTH_YELLOW, "V19 half is yellow")
+	runner.check(View.health_color(0.0) == Palette.HEALTH_RED, "V19 empty is red")
+	runner.check(View.health_color(0.75).is_equal_approx(Palette.HEALTH_YELLOW.lerp(Palette.HEALTH_GREEN, 0.5)), "V19 linear between")
+	runner.check(View.health_color(2.0) == Palette.HEALTH_GREEN and View.health_color(-1.0) == Palette.HEALTH_RED, "V19 clamped")
+	return true
+
+func test_selection_is_ground_diamond(runner) -> bool:
+	var sim = Simulation.new([], Vector2i(32, 32))
+	sim.add_player(1, 1000)
+	var tank: int = sim.spawn(1, Vector2(6.5, 7.5), "usa_tank")
+	var view = View.new()
+	view.set_state(sim.snapshot(), [])
+	runner.check(view.selected_unit_lines().is_empty(), "V20 nothing selected draws no diamond")
+	var selected: Array[int] = [tank]
+	view.set_state(sim.snapshot(), selected)
+	var lines: PackedVector2Array = view.selected_unit_lines()
+	var anchor: Vector2 = Iso.world_to_plane(Vector2(6.5, 7.5))
+	runner.check(lines.size() == 8, "V20 a selected unit adds 4 segments, got %d points" % lines.size())
+	var center := Vector2.ZERO
+	for point in lines: center += point / lines.size()
+	runner.check(center.distance_to(anchor) < 0.01, "V20 the diamond is centred on the ground anchor")
+	var top: float = lines[0].y
+	var bottom: float = lines[4].y
+	runner.check(lines[0].x == anchor.x and lines[2].x - lines[6].x > 2.0 * (bottom - top) - 0.01, "V20 the diamond is twice as wide as high, like a cell")
+	view.free()
+	return true
+
+func test_biome_change_redraws_terrain(runner) -> bool:
+	var sim = Fixture.make_world()
+	var view = View.new()
+	runner.root.add_child(view)
+	var terrain = view.get_node("Terrain")
+	view.set_state(sim.snapshot(), [])
+	await runner.process_frame
+	var first: int = terrain.draws
+	view.set_biome(1)
+	await runner.process_frame
+	runner.check(terrain.draws == first + 1, "V21 a biome change on the same map redraws the terrain once")
+	view.set_biome(1)
+	await runner.process_frame
+	runner.check(terrain.draws == first + 1, "V21 the same biome again keeps the cached terrain")
+	terrain.set_palette(Palette.ground(0))
+	await runner.process_frame
+	runner.check(terrain.draws == first + 2, "V21 set_palette always redraws")
+	view.free()
+	return true
+
+func test_grid_only_while_placing(runner) -> bool:
+	var sim = Fixture.make_world()
+	var view = View.new()
+	runner.root.add_child(view)
+	var terrain = view.get_node("Terrain")
+	view.set_state(sim.snapshot(), [])
+	await runner.process_frame
+	var draws: int = terrain.draws
+	runner.check(view.grid_lines().is_empty(), "V22 no grid without a preview")
+	view.set_build_preview([Vector2i(8, 4)], true)
+	await runner.process_frame
+	runner.check(not view.grid_lines().is_empty() and view.grid_lines().size() % 2 == 0, "V22 grid lines while placing")
+	view.set_build_preview([], false)
+	await runner.process_frame
+	runner.check(view.grid_lines().is_empty(), "V22 the grid ends with the preview")
+	runner.check(terrain.draws == draws, "V22 the grid never redraws the cached terrain")
+	view.free()
+	return true
+
+func test_no_glyphs_or_heading_ticks(runner) -> bool:
+	var sim = Fixture.make_world()
+	Fixture.add_completed(sim, 1, "usa_power_plant", Vector2i(14, 8))
+	sim.spawn(1, Vector2(3.5, 4.5), "usa_tank")
+	var view = View.new()
+	runner.root.add_child(view)
+	view.set_state(sim.snapshot(), [])
+	await runner.process_frame
+	runner.check(not view.has_method("heading_marks") and not view.has_method("_draw_glyph") and not view.has_method("_draw_building_mark"), "V23 no heading tick or building glyph drawing is left")
+	view.free()
+	return true
+
+func test_chevron_placeholder(runner) -> bool:
+	var view = View.new()
+	var unit := {"id": 1, "kind": "usa_tank", "position": [3.0, 3.0]}
+	runner.check(view.veterancy_lines(unit).is_empty(), "V24 no veterancy draws no chevron")
+	unit.veterancy = 1
+	runner.check(view.veterancy_lines(unit).size() == 4, "V24 rank 1 is one chevron of two segments")
+	unit.veterancy = 3
+	runner.check(view.veterancy_lines(unit).size() == 12, "V24 rank 3 is three chevrons")
 	view.free()
 	return true

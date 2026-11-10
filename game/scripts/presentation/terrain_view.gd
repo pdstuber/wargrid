@@ -2,12 +2,16 @@ extends Node2D
 
 const Iso = preload("res://scripts/presentation/isometric.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
-const GROUND := Color("c4a568")
-const BLOCKED := Color("665744")
-const GRID := Color("a88b55")
+const Palette = preload("res://scripts/presentation/palette.gd")
+const CLIFF_HEIGHT: float = 8.0
 
 var draws: int = 0
 var _map: Dictionary = {}
+var _colors: Dictionary = Palette.ground(0)
+
+func set_palette(colors: Dictionary) -> void:
+	_colors = colors
+	queue_redraw()
 
 func set_map(map: Dictionary) -> void:
 	# The navigation snapshot is rebuilt only when blocked cells change, so identity is the change test.
@@ -20,33 +24,31 @@ func _draw() -> void:
 	var zone: int = Profiler.begin()
 	draws += 1
 	var size := Vector2(_map.size[0], _map.size[1])
-	draw_colored_polygon(_corners(Vector2.ZERO, size), GROUND)
+	draw_colored_polygon(_corners(Vector2.ZERO, size), _colors.ground)
 	_draw_blocked(_map.blocked_cells)
-	_draw_grid(size)
 	Profiler.end(&"draw.terrain", zone)
 
+# Back to front, so a cell in front covers the side faces of the one behind it.
 func _draw_blocked(cells: Array) -> void:
 	if cells.is_empty(): return
+	var sorted: Array = cells.duplicate()
+	sorted.sort_custom(func(a: Array, b: Array) -> bool: return a[0] + a[1] < b[0] + b[1])
 	var points := PackedVector2Array()
-	var indices := PackedInt32Array()
-	for cell: Variant in cells:
-		var base: int = points.size()
-		points.append_array(_corners(Vector2(cell[0], cell[1]), Vector2.ONE))
-		indices.append_array([base, base + 1, base + 2, base, base + 2, base + 3])
 	var colors := PackedColorArray()
-	colors.resize(points.size())
-	colors.fill(BLOCKED)
+	var indices := PackedInt32Array()
+	var lift := Vector2(0, -CLIFF_HEIGHT)
+	for cell: Array in sorted:
+		var c: PackedVector2Array = _corners(Vector2(cell[0], cell[1]), Vector2.ONE)
+		_add_quad(points, colors, indices, PackedVector2Array([c[3], c[2], c[2] + lift, c[3] + lift]), _colors.cliff_side.lightened(0.08))
+		_add_quad(points, colors, indices, PackedVector2Array([c[2], c[1], c[1] + lift, c[2] + lift]), _colors.cliff_side)
+		_add_quad(points, colors, indices, PackedVector2Array([c[0] + lift, c[1] + lift, c[2] + lift, c[3] + lift]), _colors.cliff_top)
 	RenderingServer.canvas_item_add_triangle_array(get_canvas_item(), indices, points, colors)
 
-func _draw_grid(size: Vector2) -> void:
-	var lines := PackedVector2Array()
-	for x in range(int(size.x) + 1):
-		lines.append(Iso.world_to_plane(Vector2(x, 0)))
-		lines.append(Iso.world_to_plane(Vector2(x, size.y)))
-	for y in range(int(size.y) + 1):
-		lines.append(Iso.world_to_plane(Vector2(0, y)))
-		lines.append(Iso.world_to_plane(Vector2(size.x, y)))
-	draw_multiline(lines, GRID, 1.0)
+func _add_quad(points: PackedVector2Array, colors: PackedColorArray, indices: PackedInt32Array, quad: PackedVector2Array, color: Color) -> void:
+	var base: int = points.size()
+	points.append_array(quad)
+	for i in 4: colors.append(color)
+	indices.append_array([base, base + 1, base + 2, base, base + 2, base + 3])
 
 func _corners(origin: Vector2, size: Vector2) -> PackedVector2Array:
 	return PackedVector2Array([Iso.world_to_plane(origin), Iso.world_to_plane(origin + Vector2(size.x, 0)),

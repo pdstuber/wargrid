@@ -1,12 +1,12 @@
-Resume record (updated 2026-11-10, Task 4b green)
-Branch / base commit / working-tree state: spike-art-lab / 7d56851 / Task 4 changes uncommitted on top of d7693d5 (coordinator commits)
-Last green task / next incomplete task: Task 4b / Task 5 (overlays and terrain look)
-Changed paths since last commit: game/scripts/presentation/shapes.gd, game/tests/test_shapes.gd, docs/reference/art-lab-verification.md (no new scripts, no new .uid)
-Last command / cases / checks / failures / exit / marker: `sh tools/run_tests.sh` / 640 cases / 138250 checks / 0 failures / exit 0 / TESTS PASSED 138250
-Known red case or blocker: none. Draw-call gate is on and passes. Watch: view build adds about 1.3 ms to a 300-unit tick (tick_ms p50 1.57 -> 2.85), Ashfall frame p95 1.15 -> 2.49 (guard 3.3)
-Approved decisions, pre-authorizations used, deferred gates: plan approval 2026-11-10 covers Task 3 rendered window (used twice: first run exposed a per-vertex GDScript cost, second run after the Transform2D/cached-colour fix is the recorded one); ceilings fixed 50/50/50/60
+Resume record (updated 2026-11-10, Task 5 green)
+Branch / base commit / working-tree state: spike-art-lab / 7d34719 / Task 5 changes uncommitted (coordinator commits)
+Last green task / next incomplete task: Task 5 / Task 6 (visual events and local motion)
+Changed paths since last commit: game/scripts/presentation/{world_view,terrain_view,palette}.gd, game/tests/test_view.gd, docs/reference/art-lab-verification.md (no new scripts, no new .uid)
+Last command / cases / checks / failures / exit / marker: `sh tools/run_tests.sh` / 645 cases / 138236 checks / 0 failures / exit 0 / TESTS PASSED 138236
+Known red case or blocker: none. Watch: view build adds about 1.3 ms to a 300-unit tick (unchanged by Task 5); Ashfall frame p95 guard 3.3 (Task 8)
+Approved decisions, pre-authorizations used, deferred gates: plan approval 2026-11-10 covers rendered windows of Tasks 1, 3, 8 only; ceilings fixed 50/50/50/60
 Usage so far (python3 tools/session_usage.py <session files>): not measured
-Next exact action: dispatch Task 5 of docs/superpowers/plans/2026-11-10-art-lab-spike.md
+Next exact action: dispatch Task 6 of docs/superpowers/plans/2026-11-10-art-lab-spike.md
 
 ## Evidence rows (append-only)
 
@@ -71,3 +71,15 @@ Functions reading `_state` directly: `set_state`, `_prune_hints`, `_refresh_stru
 - New roles: `light_vehicle`, `collector_truck` (`*_collector` wheels), `helicopter` (`usa_collector`; body plus fixed-angle `rotor` part; air layer already comes from `Registry.air_kinds`), `rocket_infantry`, `command_center`, `barracks`, `defence` (fixed base plus `turret` part pivoting on its top), `rubble_1/2/3` (`*_hole_N`, sized from footprint). Every registry kind now maps to a non-default role; defaults stay only as fallback.
 - Deviations: `*_rocket_infantry` moved from `infantry` to the new `rocket_infantry` role (Task 4's `test_lab_roles_mapped` expectation updated; `frc_builder` stays `infantry`). `china_light_vehicle` is a treaded Medium Tank with a cannon, so it uses `tank_china` instead of `light_vehicle`. Damage variants apply to command center and barracks (shared slab); defence and rubble ignore them. Defence turret has no aim until Task 6 (heading 0 for buildings).
 - Per-tick path untouched (only baked part data changed); timing not re-run. Not checked: how the new shapes look (no render).
+
+### 2026-11-10 Task 5: overlays and terrain look (tree: worktree, 7d34719 plus Task 5 diff)
+
+- Red (stubs returning wrong values, `t5-red.log`): `WARGRID_TEST_ONLY=test_view` exit 1, 20 assertion failures, e.g. "V18 unselected full hp shows no bar", "V19 full is green", "V21 a biome change on the same map redraws the terrain once", "V22 no grid without a preview", "V24 rank 1 is one chevron of two segments". Green: `test_view` 29 cases / 107 checks; full suite 645 cases, 138236 checks, 0 failures, exit 0, TESTS PASSED 138236. Lint pass, warnings pass (127 files).
+- Built: `WorldView.health_color` / `shows_health` / `set_biome` / `selected_unit_lines` (4 segments, ground diamond, half width + 4 px, 2:1) / `grid_lines` (only with a build preview) / `veterancy_lines` (placeholder, 4 points per rank); `TerrainView.set_palette`; `Palette.HEALTH_*`; `owner_color` now reads the 8-owner palette. `_draw` order: preview polygons, one rect pass (crates, all bars), one line pass per colour (grid; selection plus order crosses; chevrons), existing focus/cue code, text last. Terrain: ground from `Palette.ground(biome)`, cliffs as an 8 px step (two side faces plus lit top) in one triangle array, sorted back to front; grid removed from the cached terrain. Removed: building glyphs (`_draw_glyph`, icon helpers), `heading_marks`, unit selection rect, tests `test_building_icons` and `test_heading_mark_layout`.
+- Labels kept (stop condition, for M7.6): pile text (Boxes / docked / waiting) is shown nowhere else, and the build percent plus "paused" is not in the panel (it shows raw `Work a/b` for the selected building only). Both moved from the cached structure layer to the parent's text pass above the bodies; the structure cache key no longer holds boxes, waiting, work or builder id, so it redraws less. `test_pile_label_drawn_over_buildings` now asserts the canvas (footprint behind, label on the parent) because a parent's `_draw` callback runs before its behind-children's.
+- Per-tick/frame cost (headless scratch, `~/projects/wargrid-art-work/t5_time.gd`: 300 mixed units, 30 selected, 6 factories, 1 pile, 100 frames): overlay `_draw` 0.799 ms on 7d34719 -> 0.627 ms (unit bounds are computed only for units that show a bar). `set_state` plus engine frame 6.79 ms both (engine-dominated). `objects()`+`build()` untouched. Draw calls: terrain still one cached draw (the grid line batch is gone from it); overlays now 1 rect run, up to 3 multilines, 1 text run per frame instead of rect/line interleaved per unit; rendered draw-call counts not measured (no window pre-approved).
+- Deviations / not checked: `test_selection_is_ground_diamond` cannot assert the old rect outline is gone (draw calls are not observable), it checks the lines' geometry; glyph/heading removal is asserted by absent methods. Water has no map data, so `Palette.water` is unused. Cliffs sit in the terrain layer, so a unit just behind a cliff draws over its step (8 px). Biome 1 is the old tan look from the palette; the A/B candidate comes in Task 9. Look not rendered.
+
+### 2026-11-10 User remark (not a playtest)
+
+- The user watched the Task 3 benchmark window (placeholder default shapes, before the Task 4 lab shapes) and found the new tanks and infantry "pretty good, way better than the current shapes". The Task 4 lab shapes have not been seen on screen yet.

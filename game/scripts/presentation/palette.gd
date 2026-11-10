@@ -5,6 +5,9 @@ const OWNER_BASE: Array[Color] = [
 	Color("d27a2c"), Color("7a4fa0"), Color("2f9c9c"), Color("c8628f"),
 ]
 const FALLBACK := Color("808080")
+const HEALTH_GREEN := Color("5cc85a")
+const HEALTH_YELLOW := Color("e0d060")
+const HEALTH_RED := Color("d8453a")
 
 static func owner_colors(owner: int) -> PackedColorArray:
 	var base: Color = OWNER_BASE[owner - 1] if owner >= 1 and owner <= OWNER_BASE.size() else FALLBACK
