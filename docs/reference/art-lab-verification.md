@@ -1,12 +1,12 @@
 Resume record (updated 2026-11-10, Task 10 Steps 1-2 headless done)
 Branch / base commit / working-tree state: spike-art-lab / 8f8a80e / Task 10 changes uncommitted (coordinator commits)
-Last green task / next incomplete task: Task 10 Steps 1-2 headless / Task 10 rendered rerun (coordinator, needs the user's OK), then Step 3 reviews
+Last green task / next incomplete task: Task 10 Steps 1-2 (headless and rendered) / Task 10 Step 3 reviews
 Changed paths since last commit: game/scripts/presentation/{shapes,shape_bake,palette,world_batch,world_view,visual_director,graphics_settings,pause_menu}.gd, game/scripts/{skirmish_main,debug/movement_benchmark}.gd, game/tests/test_{shapes,world_batch,view,visual,graphics_settings,benchmark}.gd, docs/reference/{art-lab-verification,performance}.md, art-lab design and plan (wording correction), game/scripts/presentation/{world_batch,world_view}.gd, game/tests/test_world_batch.gd (speed-ups), game/scripts/presentation/{shapes,shape_bake,palette,world_batch,world_view}.gd, game/tests/test_{shapes,shape_audit,view,world_batch}.gd (shape audit fixes)
 Last command / cases / checks / failures / exit / marker: `sh tools/run_tests.sh` / 704 cases / 139534 checks / 0 failures / exit 0 / TESTS PASSED 139534 (worktree, uncommitted over 8f8a80e); `sh tools/run_lint.sh` exit 0; `sh tools/run_warnings.sh` 137 files exit 0; `sh tools/run_benchmark.sh` exit 0
-Known red case or blocker: none. Pending: rendered rerun on this final tree (FRC turret fix and everything since Task 8 changed presentation); headline numbers in performance.md are still the Task 8 / shape-audit rows; budgets still EXCEEDED where recorded
+Known red case or blocker: none. Rendered rerun on 96f89e8 done (performance.md, Art lab exit rerun); budgets still EXCEEDED where recorded
 Approved decisions, pre-authorizations used, deferred gates: plan approval 2026-11-10 covers rendered windows of Tasks 1, 3, 8 only; ceilings fixed 50/50/50/60; user rulings at stop gate 2 in ~/projects/wargrid-art-work/gate2-review.md (budget option 1; infantry 16 px cap; 0.8-cell hulls a compromise; infantry narrower, 2026-11-10)
 Usage so far (python3 tools/session_usage.py <session files>): not measured
-Next exact action: coordinator asks the user for a quiet machine and the OK for a rendered rerun (`sh tools/run_game.sh res://scenes/movement_benchmark.tscn`, four layouts plus zoom 1.0, n >= 3), then the Opus gate review (fresh context) and `/ponytail-review` on `main..spike-art-lab`; then STOP (merge, push, deploy are the user's)
+Next exact action: coordinator: Opus gate review (fresh context) and `/ponytail-review` on `main..spike-art-lab`; then STOP (merge, push, deploy are the user's)
 
 ## Evidence rows (append-only)
 
@@ -195,3 +195,9 @@ A/B click results (`~/projects/wargrid-art-work/ab-results/web-20261110-155052.l
 - Final-tree headless (worktree, uncommitted over 8f8a80e): full suite 704 cases, 139534 checks, 0 failures, exit 0, TESTS PASSED 139534; lint exit 0 ("no problems found"); warnings 137 files exit 0; `sh tools/run_benchmark.sh` exit 0 (all BUDGET/COMBAT/LOCKSTEP PASS lines, including the accepted open/dense/hordes300 simulation ceilings; load 2.2-2.8, no WoW). Isolation command prints only `game/tests/run_tests.gd:6`; `git diff main -- game/scripts/simulation game/scripts/net` is empty. Link check of changed docs (blueprint, world questions, verification, session notes, performance): 0 missing local targets.
 - Per-tick cost not re-timed: only the baking path changed (per body-cache miss, one `Shapes.parts` lookup for the pivot check); the per-tick transform path is unchanged.
 - Pending (coordinator): rendered rerun on this tree; Opus gate review; `/ponytail-review`.
+
+### 2026-11-10 Task 10 Step 2 rendered rerun (tree 96f89e8, clean)
+
+- `s3-rows.sh` (a High 0.5, a at zoom 1.0, b Low, c horde zoom 2, d 500 units; n 3) plus one rerun of a2 (guard `ashfall frame p95 9.902 > 3.3` while `duetexpertd` used 98 % CPU), headless `t7_time.gd` n 3, Web Render Bench export on Firefox 160.0 (server stopped, Firefox and the user's tabs left running). Load 1.5-2.4, no WoW.
+- Tick p95 vs 3.04: High medians open 2.99, dense 3.07, ashfall 2.97, horde 6.05; Low 2.97, 3.06, 3.12, 6.10; worst runs up to 3.40 (non-horde) and 6.80 (horde): EXCEEDED, recorded, not loosened. Draw calls 4/5/24/5. Per tick: Low 0.870-0.877, High 1.005-1.014 ms (0.91 budget: High EXCEEDED). Web horde 10.68 ms, 6.7-7.5 editor-equivalent: EXCEEDED about 2.1-2.5x. Details in performance.md "Art lab exit rerun".
+- Changed: docs/reference/performance.md, docs/reference/art-lab-verification.md only.
