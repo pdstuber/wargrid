@@ -123,7 +123,7 @@ mod tests {
 
     #[test]
     fn stubs_report_not_implemented() {
-        for name in ["horde", "move"] {
+        for name in ["move"] {
             let err = new_slice(name).unwrap().step(&[]).unwrap_err();
             assert!(err.contains("not implemented"), "{name}: {err}");
         }
