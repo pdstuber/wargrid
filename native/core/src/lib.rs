@@ -122,11 +122,7 @@ mod tests {
     }
 
     #[test]
-    fn stubs_report_not_implemented() {
-        for name in ["move"] {
-            let err = new_slice(name).unwrap().step(&[]).unwrap_err();
-            assert!(err.contains("not implemented"), "{name}: {err}");
-        }
+    fn unknown_slice_is_rejected() {
         assert!(new_slice("nope").is_err());
     }
 }

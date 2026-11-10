@@ -81,7 +81,12 @@ static func report() -> Dictionary:
 	return {"mode": _mode, "slices": _stats.duplicate(true), "ticks": _ticks, "tick_sum": _tick_sum}
 
 static func reset_report() -> void:
-	for slice_name: String in _stats: _stats[slice_name] = _empty_stats()
+	# Problems survive the warmup reset, so a mismatch before the sampled window is still reported.
+	for slice_name: String in _stats:
+		var old: Dictionary = _stats[slice_name]
+		_stats[slice_name] = _empty_stats()
+		_stats[slice_name].mismatch = old.mismatch
+		_stats[slice_name].error = old.error
 	if _parts.is_empty(): _stats = {}
 	_ticks = 0
 	_tick_sum = 0

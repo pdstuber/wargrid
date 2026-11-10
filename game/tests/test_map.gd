@@ -56,7 +56,7 @@ func test_exports_ship_map_notice(runner) -> bool:
 		if section.ends_with(".options"): continue
 		presets += 1
 		runner.check("data/maps/NOTICE.md" in str(config.get_value(section, "include_filter", "")), "MP5 %s ships EA's map notice" % config.get_value(section, "name", section))
-	runner.check(presets == 11, "MP5 eleven presets checked")
+	runner.check(presets == 13, "MP5 thirteen presets checked")
 	return true
 
 func test_exports_ship_audio_credits(runner) -> bool:
@@ -69,7 +69,7 @@ func test_exports_ship_audio_credits(runner) -> bool:
 		if section.ends_with(".options"): continue
 		presets += 1
 		runner.check("audio/CREDITS.md" in str(config.get_value(section, "include_filter", "")), "MP9 %s ships the audio credits" % config.get_value(section, "name", section))
-	runner.check(presets == 11, "MP9 eleven presets checked")
+	runner.check(presets == 13, "MP9 thirteen presets checked")
 	return true
 
 func test_small_source_from_map(runner) -> bool:
