@@ -1,12 +1,12 @@
-Resume record (updated 2026-11-10, Task 7 green)
-Branch / base commit / working-tree state: spike-art-lab / 6443bf1 / Task 7 changes uncommitted (coordinator commits)
-Last green task / next incomplete task: Task 7 / Task 8 (numbers, stop gate 2)
-Changed paths since last commit: game/scripts/presentation/{graphics_settings.gd (+.gd.uid),pause_menu,world_batch,world_view}.gd, game/scripts/{main,skirmish_main}.gd, game/tests/{test_graphics_settings.gd (+.gd.uid),test_pause_menu,run_tests}.gd, docs/reference/art-lab-verification.md
-Last command / cases / checks / failures / exit / marker: `sh tools/run_tests.sh` / 665 cases / 138312 checks / 0 failures / exit 0 / TESTS PASSED 138312
+Resume record (updated 2026-11-10, Task 8 numbers green, stop gate 2)
+Branch / base commit / working-tree state: spike-art-lab / d33fd74 / Task 8 changes uncommitted (coordinator commits)
+Last green task / next incomplete task: Task 8 (stop gate 2: Opus gate review, user sees numbers) / Task 9
+Changed paths since last commit: game/{export_presets.cfg,project.godot}, game/scripts/debug/{combat_workload,movement_benchmark}.gd, game/scripts/presentation/world_view.gd, game/tests/{test_benchmark,test_map}.gd, docs/reference/{art-lab-verification,performance}.md
+Last command / cases / checks / failures / exit / marker: `sh tools/run_tests.sh` / 666 cases / 138316 checks / 0 failures / exit 0 / TESTS PASSED 138316
 Known red case or blocker: none. Watch: per-tick presentation about 1.55 ms plus director 0.22 ms in a stress case (see Task 6 row); Ashfall frame p95 guard 3.3 (Task 8)
 Approved decisions, pre-authorizations used, deferred gates: plan approval 2026-11-10 covers rendered windows of Tasks 1, 3, 8 only; ceilings fixed 50/50/50/60
 Usage so far (python3 tools/session_usage.py <session files>): not measured
-Next exact action: dispatch Task 8 of docs/superpowers/plans/2026-11-10-art-lab-spike.md
+Next exact action: Opus gate review of Task 8, then show the user the numbers (stop gate 2); then dispatch Task 9 of docs/superpowers/plans/2026-11-10-art-lab-spike.md
 
 ## Evidence rows (append-only)
 
@@ -100,3 +100,12 @@ Functions reading `_state` directly: `set_state`, `_prune_hints`, `_refresh_stru
 - Design: `GraphicsSettings` owns the flag constants (`WorldBatch.FLAG_*` alias them); a first version preloaded `WorldBatch` from it, which made `run_warnings.sh` report "26 resources still in use at exit" for test_pause_menu/test_perf_overlay through the pause menu's preload chain. Low drops shadows and effects (outlines flag is defined but nothing draws outlines yet). Stored quality read at `_ready` (unset = High); `set_zoom` from `change_zoom` and from restart.
 - Auto-pick: `skirmish_main` samples `TIME_PROCESS + TIME_PHYSICS_PROCESS` for 120 frames when unset and not headless, saves `pick(p95)`. Not exercised for real (headless only; rendered window not pre-approved for Task 7); `movement_benchmark.gd` does not auto-pick and keeps the View defaults (High, zoom 1.0 -> same as before, plus the unused outlines flag). Online skirmish does not auto-pick (only the offline skirmish scene), noted for the coordinator.
 - Per-tick cost (headless `WorldBatch.objects` + `build`, 300 mixed units + 6 factories, zoom 1.0, 200 reps, `~/projects/wargrid-art-work/t7_time.gd`, 3 runs): Low (detail 0, flags 0) 1.13 ms, 3156 triangles; High (detail 1, all flags) 1.37-1.39 ms, 6400 triangles. Task 4 was 1.318 ms for High; the +0.06 ms is run noise, no new per-tick work. Both above the 0.91 ms plumbing budget, as before; reported, not loosened.
+
+### 2026-11-10 Task 8: numbers (tree: worktree, d33fd74 plus Task 8 diff)
+
+- Red: `WARGRID_TEST_ONLY=test_horde_render_500` failed on a missing layout (assert, null `snapshot`, 0 checks; `t8-red.log`). Green: 2 cases / 5 checks. Full suite 666 cases, 138316 checks, 0 failures, exit 0, TESTS PASSED 138316 (two preset-count checks updated 10 -> 11 for the new export preset). Lint and warnings (131 files) pass.
+- Built: `CombatWorkload.create("horde_render_500")` (25x16 army, asserted); benchmark args `--quality`, `--zoom`, `--layout`, `--units=500` (report-only, header prints real values, ashfall guard also skipped when report-only); layout sequence and `_advance`; CPU_FRAME line (script / render / setup / total); `WorldView.draw_usec` (two `ticks_usec` per frame); export preset `Web Render Bench` with `wargrid_render_bench` feature and main scene override; web run is report-only, posts lines (and a failure message) to `/result`.
+- Bench run: exit 0, no failing BUDGET line. Rendered rows a-d and web: see the performance ledger section "Art lab rendered rows". Row c was first run with a mis-split argument (zsh), rerun correctly; the bad log is `t8-c-bad.log`. The first web attempt posted nothing: the typed layout list came out empty in the browser and the gate path hid the failure; fixed by building the typed array explicitly and posting failures.
+- Per-tick (t7_time.gd, 3 runs): Low 1.143-1.152 ms, High 1.401-1.405 ms vs 0.91 ms dev budget: exceeded, unchanged per-tick work.
+- No simulation change: `git diff main -- game/scripts/simulation game/scripts/net` empty. Netplay: `match` PASSED terminal tick 9024 (the pin), `maps` PASSED, `perturb` PASSED. CI traces (`compare_local_traces.sh`): pending a user-approved push.
+- Not checked: Deck / other browsers; GPU time on WebGL; per-frame native script p95 reads 0 (ticks are 1 % of vsync-off frames), so native CPU_FRAME p95 is not a tick cost, use p99/max. Firefox tabs I opened (2) left open. Load fluctuated 1.3-2.9, no WoW.

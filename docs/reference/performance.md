@@ -358,3 +358,19 @@ Tree `2354087`, macOS M-series, 1280x720, vsync off, `--audio-driver Dummy`, loa
 - Rendered movement benchmark rerun alone (`sh tools/run_game.sh --audio-driver Dummy res://scenes/movement_benchmark.tscn`, uptime load 2.0 at start): `RENDERED BENCHMARK PASSED 4`; Ashfall guard `frame_p95_ms=2.936` against 3.3 ms; open p95 0.387, dense 2.159, horde 3.46 ms. Log `t9_bench.log`.
 - Observation for the user, not a decision. Screenshots in `wargrid-overnight-work/screens/` (`<map>_<corner>.png`, `credits.png`). The camera clamp is the bounding rectangle of the diamond, so at each corner the view is centred on the diamond vertex: about half the 1280x720 screen is empty grey outside the map (the top and bottom corners show the diamond filling one half, left and right one side). Away from the corners the diamond fills the view. Leg times are 3 to 23 s; the right corner of Ashfall is the longest at 23.5 s. Labels checked in the screenshots seen (ashfall_top, dry_wells_left, broken_crown_bottom): no overlap, "Boxes 400" supply label readable; the HUD text and the build buttons overlap the map at the top left only. Credits panel (`credits.png`): readable, white text on dark panel, music entries and Kevin MacLeod attribution visible, scroll bar present (text continues below, so the licence text is scrolled out of view), Close button at the bottom.
 - Not measured: a real frame-time with player units and fog on these maps, vsync-on behaviour, the web build.
+
+## Art lab rendered rows (2026-11-10, Task 8; tree: worktree, d33fd74 plus Task 8 diff)
+
+Load 1.9-2.9 (1-min avg 2.0-2.5), no WoW process. Rows a-d: `sh tools/run_game.sh res://scenes/movement_benchmark.tscn [-- args]`, vsync off, 1280x720, one run each (n 1), logs outside the repo (`t8-*.log`). Ceilings 50/50/50/60 and guard 3.3 unchanged. Over-budget lines are recorded, not rerun.
+
+| Row | Args | open p95 / calls | dense p95 / calls | ashfall p95 (guard 3.3) / calls (ceiling 60) | horde p95 (budget 3.04) / calls (ceiling 50) |
+|---|---|---|---|---|---|
+| a | default High, zoom 0.5, gated | 0.447 / 4 | 0.470 / 5 | 0.582 / 24 | 2.176 / 5 |
+| b | `--quality=low` | 1.053 / 4 | 0.352 / 5 | 0.398 / 24 | 0.720 / 5 |
+| c | `--zoom=2 --layout=horde` | | | | 0.304 / 3 (p99 5.283) |
+| d | `--units=500` (horde, 500 units) | | | | 0.766 / 5 (tick p95 8.33) |
+
+- All draw calls far under ceilings (horde 239 -> 5 since Task 1). Frame p95 within budget in every row; no EXCEEDED rendered row. Frame intervals are vsync-off, so they are small; the sim tick itself (horde tick p95 6.3-6.8 ms with the view, 8.3 at 500 units) is the main cost.
+- `sh tools/run_benchmark.sh`: exit 0, all BUDGET PASS (2 + 7 + 1), no failing line.
+- Headless presentation per tick (`WorldBatch.objects` + `build`, 300 mixed units + 6 factories, zoom 1.0, 200 reps, 3 runs): Low 1.143-1.152 ms, High 1.401-1.405 ms, against the 0.91 ms plumbing dev budget: **EXCEEDED** (as since Task 4), not a rendered gate.
+- Web (Firefox 159, macOS, Mac M6, `Web Render Bench` export, served by `tools/serve_web_bench.py`, vsync=browser): label **CPU frame time, not vsync-off interval**. Method: per frame, script time (tick + `set_state` + `_draw` incl. body layer) + `viewport_get_measured_render_time_cpu` + `get_frame_setup_time_cpu`. Render part reads non-zero on WebGL (0.08-0.22 ms, probably submit time only). horde: total p95 10.98, p99 11.44 ms, 5 calls; ashfall: total p95 10.80, p99 11.16, 24 calls; browser frame interval p95 about 27.5 ms (rAF pace, 3600 frames per 60 s). Against 3.04 x 5.5 = 16.7 ms: both within on this Mac (Deck not measured). Max single frame 226-333 ms (load hitches).

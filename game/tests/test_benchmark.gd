@@ -13,7 +13,7 @@ const Probe = preload("res://scenes/movement_benchmark.tscn")
 const MovementBenchmark = preload("res://scripts/debug/movement_benchmark.gd")
 
 func cases() -> Array[Callable]:
-	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_transports_fixture, test_defences_fixture, test_skirmish3v3_fixture, test_combat_work_ceiling, test_volley_retaliation_work, test_horde_render_layout, test_workload_asserts_pure, test_settled_matches_snapshot_predicate, test_gate_values, test_draw_call_ceiling, test_gate_fails_over_ceiling]
+	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_transports_fixture, test_defences_fixture, test_skirmish3v3_fixture, test_combat_work_ceiling, test_volley_retaliation_work, test_horde_render_layout, test_horde_render_500_counts, test_workload_asserts_pure, test_settled_matches_snapshot_predicate, test_gate_values, test_draw_call_ceiling, test_gate_fails_over_ceiling]
 
 func test_statistics(runner) -> bool:
 	runner.check(Stats.summary(PackedFloat64Array()) == {"n": 0, "p50": 0.0, "p95": 0.0, "p99": 0.0, "max": 0.0}, "BM1 empty")
@@ -226,6 +226,16 @@ func test_horde_render_layout(runner) -> bool:
 	runner.check(peak > 0, "BM9 horde marks drawn in the window")
 	print("BM9 horde_render peak_marks=", peak, " marked_ticks=", marked_ticks, " moved=", moved)
 	view.free()
+	return true
+
+func test_horde_render_500_counts(runner) -> bool:
+	var sim: Simulation = CombatWorkload.create("horde_render_500")
+	var entities: Array = sim.snapshot().entities
+	var first: int = 0
+	for unit in entities:
+		first += 1 if unit.owner == 1 else 0
+	runner.check(entities.size() == 500, "BM9b 500 units, got %d" % entities.size())
+	runner.check(first == 400, "BM9b 400 owned by player 1, got %d" % first)
 	return true
 
 func test_workload_asserts_pure(runner) -> bool:

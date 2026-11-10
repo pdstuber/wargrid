@@ -13,6 +13,7 @@ const ASHFALL_FRAME_P95_MS: float = 3.3
 # Fixed ceilings on max draw calls per frame in the sample window; never raised to pass.
 const DRAW_CALL_CEILINGS: Dictionary = {"open": 50, "dense": 50, "horde": 50, "ashfall": 60}
 const LAYOUTS: Array[String] = ["open", "dense", "ashfall", "horde"]
+const GraphicsSettings = preload("res://scripts/presentation/graphics_settings.gd")
 # `-- --profile` adds profiling zones and a third, 196x196 combat leg (spike-performance only).
 var _profile: bool = OS.get_cmdline_user_args().has("--profile")
 # `-- --sound` runs only the horde layout with a SoundPlayer and reports its cost.
@@ -24,7 +25,15 @@ var _sound_cues: int = 0
 var _sound_times := PackedFloat64Array()
 var _large: bool = false
 var _simulation: Simulation
-var _layout_index: int = 3 if OS.get_cmdline_user_args().has("--sound") else 0
+var _web: bool = OS.has_feature("wargrid_render_bench")
+var _sequence: Array[String] = _layouts_to_run()
+var _layout_index: int = 0
+var _lines := PackedStringArray()
+var _script_usec: int = 0
+var _cpu_script := PackedFloat64Array()
+var _cpu_render := PackedFloat64Array()
+var _cpu_setup := PackedFloat64Array()
+var _cpu_total := PackedFloat64Array()
 var _layout_started: int
 var _sample_started: int = 0
 var _last_frame: int = 0
@@ -50,15 +59,55 @@ var _horde_marked_ticks: int = 0
 
 func _ready() -> void:
 	# Vsync would quantize frame intervals to display refresh and hide render cost.
-	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	if not _web: DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	var zoom: float = _zoom()
 	$Camera2D.position = Iso.world_to_plane(Vector2(32, 32))
-	$Camera2D.zoom = Vector2(0.5, 0.5)
-	print("M2 RENDERED engine=", Engine.get_version_info().string, " os=", OS.get_name(),
-		" cpu=", OS.get_processor_name(), " resolution=", get_viewport().get_visible_rect().size,
-		" zoom=0.5 map=64x64 (ashfall layout 194x187) units=300 seed=none vsync=off warmup_wall_seconds=10 sample_wall_seconds=60")
+	$Camera2D.zoom = Vector2(zoom, zoom)
+	_view.set_quality(_quality())
+	_view.set_zoom(zoom)
+	RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
+	_emit("M2 RENDERED engine=" + Engine.get_version_info().string + " os=" + OS.get_name()
+		+ " cpu=" + OS.get_processor_name() + " resolution=" + str(get_viewport().get_visible_rect().size)
+		+ " zoom=" + str(zoom) + " quality=" + ("high" if _quality() == GraphicsSettings.HIGH else "low")
+		+ " layouts=" + ",".join(_sequence) + " map=64x64 (ashfall layout 194x187) units=" + str(_units())
+		+ " seed=none vsync=" + ("browser" if _web else "off") + " warmup_wall_seconds=10 sample_wall_seconds=60")
 	_begin_layout()
 
+func _arg(flag: String, fallback: String) -> String:
+	for arg: String in OS.get_cmdline_user_args():
+		if arg.begins_with(flag + "="): return arg.trim_prefix(flag + "=")
+	return fallback
+
+func _layouts_to_run() -> Array[String]:
+	var only: String = _arg("--layout", "")
+	if only != "":
+		assert(LAYOUTS.has(only), "unknown layout " + only)
+		return [only] as Array[String]
+	if _units() == 500 or OS.get_cmdline_user_args().has("--sound"): return ["horde"] as Array[String]
+	var all: Array[String] = LAYOUTS.duplicate()
+	if _web: all = ["horde", "ashfall"]
+	return all
+
+func _units() -> int:
+	return int(_arg("--units", "300"))
+
+func _zoom() -> float:
+	return float(_arg("--zoom", "0.5"))
+
+func _quality() -> int:
+	return GraphicsSettings.LOW if _arg("--quality", "high") == "low" else GraphicsSettings.HIGH
+
+func _emit(line: String) -> void:
+	print(line)
+	_lines.append(line)
+
 func _begin_layout() -> void:
+	_script_usec = 0
+	_view.draw_usec = 0
+	_cpu_script.clear()
+	_cpu_render.clear()
+	_cpu_setup.clear()
+	_cpu_total.clear()
 	$Camera2D.position = Iso.world_to_plane(Vector2(32, 32)) if _layout_name() != "ashfall" else Iso.world_to_plane(Vector2(26, 118))
 	_visuals.reset()
 	_view.set_visuals(_visuals)
@@ -66,7 +115,7 @@ func _begin_layout() -> void:
 	_horde_peak = 0
 	_horde_marked_ticks = 0
 	if _layout_name() == "horde":
-		_simulation = CombatWorkload.create("horde_render")
+		_simulation = CombatWorkload.create("horde_render_500" if _units() == 500 else "horde_render")
 		if _sound_mode and _sound == null:
 			_sound = SoundPlayer.new(1)
 			add_child(_sound)
@@ -75,7 +124,7 @@ func _begin_layout() -> void:
 		for unit: Dictionary in _simulation.snapshot().entities:
 			if unit.owner == 1: _horde_start[unit.id] = unit.position
 	else:
-		_simulation = Workload.create(LAYOUTS[_layout_index])
+		_simulation = Workload.create(_layout_name())
 	_layout_started = Time.get_ticks_usec()
 	_sample_started = 0
 	_last_frame = 0
@@ -114,13 +163,14 @@ func _physics_process(_delta: float) -> void:
 	var state: Dictionary = _simulation.snapshot()
 	var no_selection: Array[int] = []
 	_view.set_state(state, no_selection)
-	_status.text = "%s | %s | tick %d | leg %d | Esc: quit" % [LAYOUTS[_layout_index],
+	_status.text = "%s | %s | tick %d | leg %d | Esc: quit" % [_layout_name(),
 		"draining" if _sampling_done else ("sampling" if _sample_started > 0 else "warmup"), state.tick, _leg]
 	var elapsed: float = (Time.get_ticks_usec() - started) / 1000.0
 	if _sample_started > 0 and not _sampling_done:
 		_sample_ticks += 1
 		_window_ticks += 1
 		_tick_times.append(elapsed)
+		_script_usec += Time.get_ticks_usec() - started
 	if command_tick:
 		_command_times.append(elapsed)
 	Profiler.end_tick()
@@ -153,6 +203,7 @@ func _process(_delta: float) -> void:
 	elif _sample_started > 0 and not _sampling_done:
 		_frame_times.append((now - _last_frame) / 1000.0)
 		_draw_calls.append(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))
+		_record_cpu_frame()
 		_last_frame = now
 		if now - _window_started >= 10000000:
 			var seconds: float = (now - _window_started) / 1000000.0
@@ -163,16 +214,31 @@ func _process(_delta: float) -> void:
 			_window_ticks = 0
 		if now - _sample_started >= 60000000:
 			_sampling_done = true
-			print("RENDERED SAMPLE ", _layout_name(), " wall_seconds=", (now - _sample_started) / 1000000.0,
-				" physics_ticks=", _sample_ticks, " tick_ms=", JSON.stringify(Stats.summary(_tick_times)),
-				" frame_interval_ms=", JSON.stringify(Stats.summary(_frame_times)),
-				" command_tick_ms=", JSON.stringify(Stats.summary(_command_times)),
-				" draw_calls=", JSON.stringify(Stats.summary(_draw_calls)))
+			_emit("RENDERED SAMPLE " + _layout_name() + " wall_seconds=" + str((now - _sample_started) / 1000000.0)
+				+ " physics_ticks=" + str(_sample_ticks) + " tick_ms=" + JSON.stringify(Stats.summary(_tick_times))
+				+ " frame_interval_ms=" + JSON.stringify(Stats.summary(_frame_times))
+				+ " command_tick_ms=" + JSON.stringify(Stats.summary(_command_times))
+				+ " draw_calls=" + JSON.stringify(Stats.summary(_draw_calls)))
+			_emit("CPU_FRAME " + _layout_name() + " script_ms=" + JSON.stringify(Stats.summary(_cpu_script))
+				+ " render_ms=" + JSON.stringify(Stats.summary(_cpu_render))
+				+ " setup_ms=" + JSON.stringify(Stats.summary(_cpu_setup))
+				+ " total_ms=" + JSON.stringify(Stats.summary(_cpu_total)))
 			for line in Profiler.report("rendered_" + _layout_name(), &"draw"): print(line)
 			Profiler.enabled = false
 			if _large:
 				print("RENDERED PROFILE COMPLETE")
 				get_tree().quit(0)
+
+func _record_cpu_frame() -> void:
+	var script_ms: float = (_script_usec + _view.draw_usec) / 1000.0
+	_script_usec = 0
+	_view.draw_usec = 0
+	var render_ms: float = RenderingServer.viewport_get_measured_render_time_cpu(get_viewport().get_viewport_rid())
+	var setup_ms: float = RenderingServer.get_frame_setup_time_cpu()
+	_cpu_script.append(script_ms)
+	_cpu_render.append(render_ms)
+	_cpu_setup.append(setup_ms)
+	_cpu_total.append(script_ms + render_ms + setup_ms)
 
 static func draw_call_failure(layout: String, max_calls: float) -> String:
 	if not DRAW_CALL_CEILINGS.has(layout):
@@ -185,6 +251,7 @@ static func draw_call_gate(layout: String, max_calls: float, report_only: bool) 
 	return "" if report_only else draw_call_failure(layout, max_calls)
 
 func _report_only() -> bool:
+	if _web: return true
 	for arg: String in OS.get_cmdline_user_args():
 		for flag: String in ["--quality", "--zoom", "--units", "--layout"]:
 			if arg.begins_with(flag): return true
@@ -193,7 +260,7 @@ func _report_only() -> bool:
 func _report_draw_calls(layout: String) -> bool:
 	var max_calls: float = Stats.summary(_draw_calls).max
 	var failure: String = draw_call_failure(layout, max_calls)
-	print("DRAW_CALLS ", layout, " max=", int(max_calls), " p50=", int(Stats.summary(_draw_calls).p50), " ceiling=", DRAW_CALL_CEILINGS.get(layout, -1), " over=", failure != "")
+	_emit("DRAW_CALLS " + layout + " max=" + str(int(max_calls)) + " p50=" + str(int(Stats.summary(_draw_calls).p50)) + " ceiling=" + str(DRAW_CALL_CEILINGS.get(layout, -1)) + " over=" + str(failure != ""))
 	var gate: String = draw_call_gate(layout, max_calls, _report_only())
 	if gate != "":
 		_fail(gate)
@@ -212,15 +279,39 @@ func _finish_layout(state: Dictionary) -> void:
 		return
 	if _layout_name() == "ashfall":
 		var frame_p95: float = Stats.summary(_frame_times).p95
-		print("ASHFALL map=194x187 units=300 buildings=6 frame_p95_ms=", frame_p95)
-		if frame_p95 > ASHFALL_FRAME_P95_MS:
+		_emit("ASHFALL map=194x187 units=300 buildings=6 frame_p95_ms=" + str(frame_p95))
+		if frame_p95 > ASHFALL_FRAME_P95_MS and not _report_only():
 			_fail("Rendered ashfall frame p95 %.3f ms exceeds %.1f ms" % [frame_p95, ASHFALL_FRAME_P95_MS])
 			return
 	if not _report_draw_calls(_layout_name()): return
-	print("RENDERED COMPLETE ", LAYOUTS[_layout_index], " completed_legs=", _completed_legs + 1,
-		" queue_peak=", _queue_peak, " queue_drain_ticks=", _queue_drain, " arrived=300 unique_destinations=", goals.size())
+	_emit("RENDERED COMPLETE " + _layout_name() + " completed_legs=" + str(_completed_legs + 1)
+		+ " queue_peak=" + str(_queue_peak) + " queue_drain_ticks=" + str(_queue_drain) + " arrived=300 unique_destinations=" + str(goals.size()))
+	_advance()
+
+func _advance() -> void:
 	_layout_index += 1
-	_begin_layout()
+	if _layout_index < _sequence.size():
+		_begin_layout()
+		return
+	_emit("RENDERED BENCHMARK PASSED " + str(_sequence.size()))
+	if _profile:
+		_begin_large()
+	elif _web:
+		_post()
+	else:
+		get_tree().quit(0)
+
+func _post() -> void:
+	set_physics_process(false)
+	set_process(false)
+	var http := HTTPRequest.new()
+	add_child(http)
+	var origin: String = str(JavaScriptBridge.eval("location.origin"))
+	var body: String = "\n".join(_lines) + "\nUA " + str(JavaScriptBridge.eval("navigator.userAgent")) + "\n"
+	http.request_completed.connect(func(_result: int, code: int, _headers: PackedStringArray, _body: PackedByteArray) -> void:
+		_status.text = "posted" if code == 204 else "post failed %d" % code)
+	if http.request(origin + "/result", ["Content-Type: text/plain"], HTTPClient.METHOD_POST, body) != OK:
+		_status.text = "post failed"
 
 func _horde_tick() -> void:
 	var started: int = Time.get_ticks_usec()
@@ -237,6 +328,7 @@ func _horde_tick() -> void:
 		_sample_ticks += 1
 		_window_ticks += 1
 		_tick_times.append((Time.get_ticks_usec() - started) / 1000.0)
+		_script_usec += Time.get_ticks_usec() - started
 		var marks: int = _view.horde_marks().size()
 		_horde_peak = maxi(_horde_peak, marks)
 		_horde_marked_ticks += 1 if marks > 0 else 0
@@ -252,20 +344,20 @@ func _finish_horde(state: Dictionary) -> void:
 		_fail("Rendered horde workload drew no horde marks or no unit moved")
 		return
 	if not _report_draw_calls("horde"): return
-	print("RENDERED COMPLETE horde horde_mark_peak=", _horde_peak, " marked_ticks=", _horde_marked_ticks, " of ", _sample_ticks, " units_moved=", moved)
+	_emit("RENDERED COMPLETE horde horde_mark_peak=" + str(_horde_peak) + " marked_ticks=" + str(_horde_marked_ticks) + " of " + str(_sample_ticks) + " units_moved=" + str(moved))
 	if _sound != null:
 		if _sound_cues == 0:
 			_fail("RENDERED SOUND cues=0")
 			return
 		print("RENDERED SOUND cues=", _sound_cues, " update_p95_ms=", Stats.summary(_sound_times).p95)
-	print("RENDERED BENCHMARK PASSED 4")
-	if _profile:
-		_begin_large()
-		return
-	get_tree().quit(0)
+	_advance()
 
 func _fail(message: String) -> void:
 	push_error(message)
+	if _web:
+		_emit("RENDERED FAILED " + message)
+		_post()
+		return
 	set_physics_process(false)
 	set_process(false)
 	get_tree().quit(1)
@@ -275,7 +367,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_tree().quit(1)
 
 func _layout_name() -> String:
-	return "large_196" if _large else LAYOUTS[_layout_index]
+	return "large_196" if _large else _sequence[_layout_index]
 
 func _begin_large() -> void:
 	_large = true

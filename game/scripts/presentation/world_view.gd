@@ -35,6 +35,7 @@ var _visuals: Director
 var _visual_tick: int = -1
 var _waiting: Dictionary = {}
 var _canvas: CanvasItem
+var draw_usec: int = 0
 var _quality: int = GraphicsSettings.HIGH
 var _zoom: float = 1.0
 const HINT_TICKS: int = 40
@@ -262,6 +263,7 @@ func pick_entity(plane_point: Vector2, any_owner: bool = false) -> int:
 func _draw() -> void:
 	if not _state.has("map"):
 		return
+	var started: int = Time.get_ticks_usec()
 	var total: int = Profiler.begin()
 	var zone: int = Profiler.begin()
 	for cell in _preview_cells:
@@ -279,6 +281,7 @@ func _draw() -> void:
 	_draw_labels()
 	Profiler.end(&"draw.overlays", zone)
 	Profiler.end(&"draw", total)
+	draw_usec += Time.get_ticks_usec() - started
 
 # One pass per command type: all rects here, then all lines, then text.
 func _draw_rects() -> void:
@@ -313,7 +316,9 @@ func _draw_labels() -> void:
 		for i in lines.size(): _draw_label(points[i], lines[i])
 
 func draw_bodies() -> void:
+	var started: int = Time.get_ticks_usec()
 	_batch.submit(_bodies.get_canvas_item())
+	draw_usec += Time.get_ticks_usec() - started
 
 # Drawn into the child layer, which redraws only when `_structure_key` changes.
 func draw_structures() -> void:
