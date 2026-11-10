@@ -121,6 +121,11 @@ func set_horde_diamonds(shown: bool) -> void:
 func set_ground_variation(varied: bool) -> void:
 	_terrain.set_varied(varied)
 
+# Lab: any ground colours; the next set_biome call applies again.
+func set_ground_colors(colors: Dictionary) -> void:
+	_biome = -1
+	_terrain.set_palette(colors)
+
 func set_biome(biome: int) -> void:
 	if biome == _biome: return
 	_biome = biome

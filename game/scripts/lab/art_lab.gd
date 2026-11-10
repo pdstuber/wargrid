@@ -64,6 +64,7 @@ func restart() -> void:
 	advance()
 
 func _show(state: Dictionary) -> void:
+	variants.focus = current_question()
 	variants.apply(_view, _camera)
 	_view.set_state(AbVariants.recolored(state, variants.opponent_owner), _selected)
 
@@ -81,20 +82,25 @@ func _process(delta: float) -> void:
 func status_text() -> String:
 	var question: StringName = current_question()
 	var labels: Array = AbVariants.LABELS[question]
-	var letter: String = "B" if variants.is_b(question) else "A"
+	var letter: String = "ABCDEF"[variants.variant(question)]
+	var options := PackedStringArray()
+	for i in labels.size(): options.append("%s: %s" % ["ABCDEF"[i], labels[i]])
+	var separator: String = " | " if labels.size() > 2 else "\n"
 	var lines: PackedStringArray = [
 		"%d/%d %s | variant %s | %s | zoom %s" % [question_index + 1, AbVariants.QUESTIONS.size(), question, letter, "High" if quality == GraphicsSettings.HIGH else "Low", ZOOMS[zoom_index]],
-		"A: %s\nB: %s" % labels,
-		"PageUp/PageDown or [ ]: question | Tab: A/B | Q: Low/High | Z: zoom | O: opponent colour (now P%d) | Space: pause | R: restart | arrows: pan | Esc: quit" % variants.opponent_owner,
+		separator.join(options),
+		"PageUp/PageDown or [ ]: question | Tab: next variant | Q: Low/High | Z: zoom | O: opponent colour (now P%d) | Space: pause | R: restart | arrows: pan | Esc: quit" % variants.opponent_owner,
 	]
+	if question == &"sand_tone": lines.append("step %d/%d %s" % [variants.variant(question) + 1, labels.size(), labels[variants.variant(question)]])
 	if question == &"infantry_pick": lines.append("Clicks test the infantry click box. Last click: " + picked_text)
 	return "\n".join(lines)
 
 func step_question(direction: int) -> void:
 	question_index = posmod(question_index + direction, AbVariants.QUESTIONS.size())
+	if not _current.is_empty(): _show(_current)
 
 func toggle_variant() -> void:
-	variants.set_variant(current_question(), 1 - variants.variant(current_question()))
+	variants.set_variant(current_question(), (variants.variant(current_question()) + 1) % variants.variant_count(current_question()))
 	_show(_current)
 
 func toggle_quality() -> void:

@@ -78,9 +78,10 @@ func test_every_variant_draws(runner) -> bool:
 	var view = parts[0]
 	var variants = parts[2]
 	for question in AbVariants.QUESTIONS:
-		for choice in 2:
+		variants.focus = question
+		for choice in variants.variant_count(question):
 			for quality in [GraphicsSettings.LOW, GraphicsSettings.HIGH]:
-				var label := "%s %s %s" % [question, "AB"[choice], "High" if quality == GraphicsSettings.HIGH else "Low"]
+				var label := "%s %s %s" % [question, "ABCDEF"[choice], "High" if quality == GraphicsSettings.HIGH else "Low"]
 				variants.set_variant(question, choice)
 				fight.step()
 				var state: Dictionary = fight.simulation.snapshot()
@@ -100,6 +101,7 @@ func _picture(fight, question: StringName, choice: int) -> Array:
 	var parts := _drawn_tree_headless()
 	var variants = parts[1]
 	variants.set_variant(question, choice)
+	variants.focus = question
 	var state: Dictionary = fight.simulation.snapshot()
 	variants.observe(state, WorldBatch.objects(state), _events())
 	variants.apply(parts[0], parts[2])
@@ -121,6 +123,10 @@ func test_b_variants_change_the_picture(runner) -> bool:
 	for question in AbVariants.QUESTIONS:
 		var a: Array = _picture(fight, question, 0)
 		var b: Array = _picture(fight, question, 1)
+		if question == &"sand_tone":
+			var last: Array = _picture(fight, question, 5)
+			runner.check(a[4] == Color("7b7566") and b[4] == Color("8a7d62") and last[4] == Color("c4a568"), "AB3 sand_tone steps 1, 2 and 6 set their ground")
+			continue
 		match question:
 			&"body_size", &"light_vehicle_gun": runner.check(a[0] != b[0], "AB3 %s B changes the shapes" % question)
 			&"infantry_colour", &"owner_palette": runner.check(a[1] != b[1], "AB3 %s B changes the colours" % question)
@@ -209,7 +215,9 @@ func test_lab_keys_and_no_match_keys(runner) -> bool:
 	lab._unhandled_input(_key(KEY_Z))
 	runner.check(lab.quality == GraphicsSettings.LOW and lab.zoom_index == 2, "AB7 Q and Z change quality and zoom")
 	var text: String = lab.status_text()
-	runner.check(text.contains("ground_tone") and text.contains("Low") and text.contains("zoom 2") and text.contains("variant A"), "AB7 the HUD names question, variant, quality and zoom: %s" % text.get_slice("\n", 0))
+	runner.check(text.contains("sand_tone") and text.contains("step 1/6 #7B7566") and text.contains("Low") and text.contains("zoom 2") and text.contains("variant A"), "AB7 the HUD names question, variant, quality and zoom: %s" % text.get_slice("\n", 0))
+	for i in 6: lab._unhandled_input(_key(KEY_TAB))
+	runner.check(lab.variants.variant(&"sand_tone") == 0, "AB7 Tab cycles six sand steps and wraps")
 	for i in 7: lab._unhandled_input(_key(KEY_O))
 	runner.check(lab.variants.opponent_owner == 2, "AB7 O cycles the opponent colour 2..8 and back")
 	lab._unhandled_input(_key(KEY_O))

@@ -9,7 +9,7 @@ const Fight = preload("res://scripts/lab/lab_fight.gd")
 
 const QUESTIONS: Array[StringName] = [
 	&"biome", &"fog", &"shots", &"signature", &"shake", &"hit_flash", &"wrecks",
-	&"ground", &"body_size", &"infantry_pick", &"horde_mark", &"interpolation", &"light_vehicle_gun", &"infantry_colour", &"owner_contrast", &"owner_palette", &"ground_tone",
+	&"ground", &"body_size", &"infantry_pick", &"horde_mark", &"interpolation", &"light_vehicle_gun", &"infantry_colour", &"owner_contrast", &"owner_palette", &"ground_tone", &"sand_tone",
 ]
 const LABELS := {
 	&"biome": ["dark ground (today)", "sand ground"],
@@ -29,7 +29,10 @@ const LABELS := {
 	&"owner_contrast": ["blue-grey side faces (today)", "neutral grey sides plus an owner-coloured band on hulls and walls"],
 	&"owner_palette": ["today's owner colours", "brighter, more saturated owner colours"],
 	&"ground_tone": ["dark ground #575C55 (today)", "lighter, warmer ground #7B7566 (dark biome only)"],
+	&"sand_tone": ["#7B7566", "#8A7D62", "#998559", "#A88E5C", "#B29763", "#C4A568"],
 }
+const SAND_STEPS: Array[Color] = [Color("7b7566"), Color("8a7d62"), Color("998559"), Color("a88e5c"), Color("b29763"), Color("c4a568")]
+const WATER := Color("3b6f8f")
 const FOG_CLEAR := 12.0
 const FOG_FULL := 17.0
 const SHOT_TICKS: int = 6
@@ -45,8 +48,9 @@ const RING_RADIUS := Vector2(11.0, 5.5)
 const WRECK_COLOR := Color("2b2d2f")
 
 var opponent_owner: int = 2
+var focus: StringName = &""
 var _variants := {}
-var _applied := {}
+var _applied := []
 var _tick: int = 0
 var _items := {}
 var _map_size := Vector2i.ZERO
@@ -62,9 +66,16 @@ func variant(question: StringName) -> int:
 func is_b(question: StringName) -> bool:
 	return variant(question) == 1
 
+func variant_count(question: StringName) -> int:
+	return LABELS[question].size()
+
+func sand_colors() -> Dictionary:
+	var ground: Color = SAND_STEPS[variant(&"sand_tone")]
+	return {"ground": ground, "cliff_top": ground.lightened(0.15), "cliff_side": ground.darkened(0.4), "water": WATER}
+
 func set_variant(question: StringName, value: int) -> void:
 	assert(QUESTIONS.has(question))
-	_variants[question] = clampi(value, 0, 1)
+	_variants[question] = clampi(value, 0, variant_count(question) - 1)
 
 func reset() -> void:
 	_items = {}
@@ -76,9 +87,11 @@ func reset() -> void:
 
 # The production hooks the variants plug into; each setter defaults to today's behaviour.
 func apply(view: Node2D, camera: Camera2D) -> void:
-	if _applied != _variants:
-		_applied = _variants.duplicate()
-		view.set_biome(1 if is_b(&"biome") else (2 if is_b(&"ground_tone") else 0))
+	var state := [_variants, focus]
+	if _applied != state:
+		_applied = [_variants.duplicate(), focus]
+		if focus == &"sand_tone": view.set_ground_colors(sand_colors())
+		else: view.set_biome(1 if is_b(&"biome") else (2 if is_b(&"ground_tone") else 0))
 		view.set_neutral_sides(is_b(&"owner_contrast"))
 		view.set_bright_owners(is_b(&"owner_palette"))
 		view.set_ground_variation(is_b(&"ground"))
