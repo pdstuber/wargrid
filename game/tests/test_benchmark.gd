@@ -4,14 +4,17 @@ extends RefCounted
 const Stats = preload("res://scripts/debug/timing_stats.gd")
 const Workload = preload("res://scripts/debug/movement_workload.gd")
 const CombatWorkload = preload("res://scripts/debug/combat_workload.gd")
+const Iso = preload("res://scripts/presentation/isometric.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Navigation = preload("res://scripts/simulation/grid_navigation.gd")
 const Economy = preload("res://tests/economy_fixture.gd")
 const View = preload("res://scripts/presentation/world_view.gd")
 const Probe = preload("res://scenes/movement_benchmark.tscn")
 
+const MovementBenchmark = preload("res://scripts/debug/movement_benchmark.gd")
+
 func cases() -> Array[Callable]:
-	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_transports_fixture, test_defences_fixture, test_skirmish3v3_fixture, test_combat_work_ceiling, test_volley_retaliation_work, test_horde_render_layout, test_workload_asserts_pure, test_settled_matches_snapshot_predicate, test_gate_values]
+	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_transports_fixture, test_defences_fixture, test_skirmish3v3_fixture, test_combat_work_ceiling, test_volley_retaliation_work, test_horde_render_layout, test_horde_render_500_counts, test_workload_asserts_pure, test_settled_matches_snapshot_predicate, test_gate_values, test_draw_call_ceiling, test_cpu_frame_pairs_draw_with_its_tick, test_web_run_is_report_only, test_interpolation_arg, test_benchmark_runs_without_interpolation, test_units_reported_are_units_run, test_horde_camera_follows_army_when_zoomed]
 
 func test_statistics(runner) -> bool:
 	runner.check(Stats.summary(PackedFloat64Array()) == {"n": 0, "p50": 0.0, "p95": 0.0, "p99": 0.0, "max": 0.0}, "BM1 empty")
@@ -77,6 +80,19 @@ func test_rendered_probe_ticks(runner) -> bool:
 	await runner.physics_frame
 	await runner.physics_frame
 	runner.check(probe.get_node("HUD/Status").text.contains("tick"), "BM4 probe reaches view update")
+	probe.free()
+	return true
+
+func test_benchmark_runs_without_interpolation(runner) -> bool:
+	var probe = Probe.instantiate()
+	runner.root.add_child(probe)
+	for i in 12: await runner.physics_frame
+	var view = probe.get_node("WorldView")
+	runner.check(not view._smooth and not view._interpolating(), "BM18 the benchmark view starts with interpolation off")
+	runner.check(view._pose.is_empty() and view._moves.is_empty(), "BM18 no poses are tracked and no moves are blended")
+	var builds: int = view.batch_builds
+	for i in 5: view.advance_frame(Time.get_ticks_usec() + 10000)
+	runner.check(view.batch_builds == builds, "BM18 advance_frame rebuilds nothing per frame")
 	probe.free()
 	return true
 
@@ -213,7 +229,7 @@ func test_horde_render_layout(runner) -> bool:
 		sim.step()
 		if tick >= 300:
 			view.set_state(sim.snapshot(), [])
-			var count: int = view.horde_marks().size()
+			var count: int = view.horde_count()
 			peak = maxi(peak, count)
 			marked_ticks += 1 if count > 0 else 0
 	var moved: int = 0
@@ -224,6 +240,16 @@ func test_horde_render_layout(runner) -> bool:
 	runner.check(peak > 0, "BM9 horde marks drawn in the window")
 	print("BM9 horde_render peak_marks=", peak, " marked_ticks=", marked_ticks, " moved=", moved)
 	view.free()
+	return true
+
+func test_horde_render_500_counts(runner) -> bool:
+	var sim: Simulation = CombatWorkload.create("horde_render_500")
+	var entities: Array = sim.snapshot().entities
+	var first: int = 0
+	for unit in entities:
+		first += 1 if unit.owner == 1 else 0
+	runner.check(entities.size() == 500, "BM9b 500 units, got %d" % entities.size())
+	runner.check(first == 400, "BM9b 400 owned by player 1, got %d" % first)
 	return true
 
 func test_workload_asserts_pure(runner) -> bool:
@@ -266,4 +292,71 @@ func test_gate_values(runner) -> bool:
 	runner.check(Stats.within({"p95": 1.82, "p99": 3.64}, 1.82, 3.64), "BM11 limits are inclusive")
 	runner.check(not Stats.within({"p95": 1.83, "p99": 1.0}, 1.82, 3.64), "BM11 p95 over the limit fails")
 	runner.check(not Stats.within({"p95": 1.0, "p99": 3.65}, 1.82, 3.64), "BM11 p99 over the limit fails")
+	return true
+
+func test_draw_call_ceiling(runner) -> bool:
+	var bench = MovementBenchmark
+	runner.check(bench.draw_call_failure("open", 50.0) == "", "BM12 open at ceiling passes")
+	runner.check(bench.draw_call_failure("open", 51.0) != "", "BM12 open over ceiling fails")
+	runner.check(bench.draw_call_failure("ashfall", 60.0) == "", "BM12 ashfall at ceiling passes")
+	runner.check(bench.draw_call_failure("ashfall", 61.0) != "", "BM12 ashfall over ceiling fails")
+	runner.check(bench.draw_call_failure("nope", 1.0) != "", "BM12 layout without ceiling fails loudly")
+	return true
+
+func test_cpu_frame_pairs_draw_with_its_tick(runner) -> bool:
+	var bench = MovementBenchmark.new()
+	bench._view = View.new()
+	bench._script_usec = 2000
+	bench._view.draw_usec = 500
+	var first: float = bench._script_ms()
+	runner.check(is_equal_approx(first, 0.5), "BM14 the first sample holds the draw of the frame before it, got %f" % first)
+	bench._script_usec = 3000
+	bench._view.draw_usec = 700
+	var second: float = bench._script_ms()
+	runner.check(is_equal_approx(second, 2.7), "BM14 the next sample adds that frame's tick to the next draw, got %f" % second)
+	runner.check(bench._script_usec == 0 and bench._view.draw_usec == 0, "BM14 both counters restart")
+	bench._view.free()
+	bench.free()
+	return true
+
+func test_web_run_is_report_only(runner) -> bool:
+	var bench = MovementBenchmark.new()
+	bench._web = true
+	runner.check(bench._report_only(), "BM15 the web run is report-only")
+	bench.free()
+	return true
+
+func test_interpolation_arg(runner) -> bool:
+	var bench = MovementBenchmark.new()
+	runner.check(not bench._interpolation_from([]), "BM17 interpolation defaults off")
+	runner.check(not bench._interpolation_from(["--interpolation=off"]), "BM17 off is off")
+	runner.check(bench._interpolation_from(["--interpolation=on"]), "BM17 on is on")
+	runner.check(not bench._report_only_from([]), "BM17 no args stays gated")
+	runner.check(not bench._report_only_from(["--interpolation=off"]), "BM17 interpolation off stays gated")
+	runner.check(bench._report_only_from(["--interpolation=on"]), "BM17 interpolation on is report-only")
+	runner.check(bench._report_only_from(["--zoom=1.0"]), "BM17 other args stay report-only")
+	bench.free()
+	return true
+
+func test_units_reported_are_units_run(runner) -> bool:
+	runner.check(MovementBenchmark.units_run(500, ["open"] as Array[String]) == 300, "BM16 500 on the open layout still runs 300")
+	runner.check(MovementBenchmark.units_run(500, ["horde"] as Array[String]) == 500, "BM16 500 on horde runs 500")
+	runner.check(MovementBenchmark.units_run(300, ["horde"] as Array[String]) == 300, "BM16 default horde runs 300")
+	return true
+
+func test_horde_camera_follows_army_when_zoomed(runner) -> bool:
+	var sim: RefCounted = CombatWorkload.create("horde_render")
+	for i in range(300):
+		sim.step()
+	var entities: Array = sim.snapshot().entities
+	var sum := Vector2.ZERO
+	var count: int = 0
+	for unit: Dictionary in entities:
+		if unit.owner == 1:
+			sum += Vector2(unit.position[0], unit.position[1])
+			count += 1
+	var centroid: Vector2 = sum / count
+	var camera: Vector2 = MovementBenchmark.horde_camera(entities, 2.0)
+	runner.check(camera.distance_to(Iso.world_to_plane(centroid)) < 1.0 * Iso.world_to_plane(Vector2(1, 0)).length(), "BM17 zoom 2 camera is within a cell of the owner-1 centroid, got %s vs %s" % [camera, Iso.world_to_plane(centroid)])
+	runner.check(MovementBenchmark.horde_camera(entities, 0.5) == Iso.world_to_plane(Vector2(32, 32)), "BM17 zoom 0.5 keeps the fixed camera")
 	return true

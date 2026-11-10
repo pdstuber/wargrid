@@ -101,7 +101,7 @@ func test_production_ui(runner) -> bool:
 	main._refresh()
 	pointer(main,Iso.world_to_plane(Vector2(11.5,5.5)),MOUSE_BUTTON_LEFT,true)
 	pointer(main,Iso.world_to_plane(Vector2(11.5,5.5)),MOUSE_BUTTON_LEFT,false)
-	runner.check(main.selected_building_id == depot and main.selected_ids.is_empty() and main.get_node("WorldView")._selected_ids == [depot],"Bs3 building selection outline")
+	runner.check(main.selected_building_id == depot and main.selected_ids.is_empty() and main.get_node("WorldView")._selection.keys() == [depot],"Bs3 building selection outline")
 	main.selected_building_id = depot
 	main.get_node("HUD/Economy/Produce").pressed.emit()
 	key(main,KEY_E)

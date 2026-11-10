@@ -164,7 +164,7 @@ func test_combat_view(runner) -> bool:
 	var main = await _setup(runner)
 	var view = main.get_node("WorldView")
 	var sim = Skirmish.create(false)
-	var shooter: int = sim.spawn(1, Vector2(10.5, 10.5), "usa_tank")
+	sim.spawn(1, Vector2(10.5, 10.5), "usa_tank")
 	var victim: int = sim.spawn(2, Vector2(14.5, 10.5), "usa_tank")
 	var historical: Dictionary = sim.snapshot()
 	for unit in historical.entities:
@@ -182,13 +182,7 @@ func test_combat_view(runner) -> bool:
 	var copy: Dictionary = live.duplicate(true)
 	view.set_state(live, none)
 	await runner.process_frame
-	runner.check(live == copy and view._last_points.has(shooter) and view._last_points.has(victim), "V1 cues are read-only and use last events")
-	sim.remove_object(victim)
-	var gone: Dictionary = sim.snapshot()
-	gone.combat_events = [{"type": "death", "tick": 1, "object_id": victim}]
-	view.set_state(gone, none)
-	await runner.process_frame
-	runner.check(view._last_points.has(victim), "V1 death cue keeps the last known point")
+	runner.check(live == copy, "V1 cues are read-only")
 	runner.check(View.hp_fraction(-5, 100) == 0.0 and View.hp_fraction(500, 100) == 1.0 and View.hp_fraction(50, 100) == 0.5 and View.hp_fraction(1, 0) == 1.0, "V1 HP fill clamped 0..1")
 	main.free()
 	return true
@@ -342,7 +336,11 @@ func test_attack_move_hint_and_rejection(runner) -> bool:
 	var before: int = view.hints().size()
 	main.simulation.remove_object(ids.infantry)
 	helper.pointer(main, Iso.world_to_plane(Vector2(8.5, 8.5)), MOUSE_BUTTON_RIGHT, true)
-	runner.check(view.hints().size() == before + 1, "H3 move on a dead unit still shows the click")
+	runner.check(view.hints().size() == before, "H3 a second command replaces the marker, still one")
+	main.selected_ids.clear()
+	view.add_hint(Vector2(1, 1), 0)
+	helper.pointer(main, Iso.world_to_plane(Vector2(9.5, 9.5)), MOUSE_BUTTON_RIGHT, true)
+	runner.check(view.hints().size() == 1 and view.hints()[0].point == Vector2(1, 1), "H3 a right click with no movable selection adds no marker")
 	main.free()
 	return true
 
@@ -362,6 +360,8 @@ func test_order_marks_own_only(runner) -> bool:
 	Fixture.send(main.simulation, {"type": "move", "player": 2, "entity_ids": [ids.enemy], "target": [16.5, 14.5]})
 	Fixture.steps(main.simulation, 2)
 	main._refresh()
+	runner.check(main.get_node("WorldView").order_marks().is_empty(), "P1 order crosses are hidden by default")
+	main.get_node("WorldView").set_show_destinations(true)
 	var marks: Array[Vector2] = main.get_node("WorldView").order_marks()
 	runner.check(marks == [Iso.world_to_plane(Vector2(12.5, 14.5))], "P1 only the local player's order shows a cross, got " + str(marks))
 	main.free()

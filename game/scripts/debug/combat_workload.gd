@@ -4,13 +4,14 @@ const Simulation = preload("res://scripts/simulation/simulation.gd")
 const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
 
 static func create(layout: String) -> Simulation:
-	assert(layout == "open" or layout == "dense" or layout == "contact" or layout == "skirmish3v3" or layout == "transports" or layout == "defences" or layout == "docks" or layout == "hordes300" or layout == "horde_render" or layout == "ramp" or layout == "frc")
+	assert(layout == "open" or layout == "dense" or layout == "contact" or layout == "skirmish3v3" or layout == "transports" or layout == "defences" or layout == "docks" or layout == "hordes300" or layout == "horde_render" or layout == "horde_render_500" or layout == "ramp" or layout == "frc")
 	if layout == "skirmish3v3": return _skirmish3v3()
 	if layout == "transports": return _transports()
 	if layout == "defences": return _defences()
 	if layout == "docks": return _docks()
 	if layout == "hordes300": return _hordes300()
-	if layout == "horde_render": return _horde_render()
+	if layout == "horde_render": return _horde_render(20, 15)
+	if layout == "horde_render_500": return _horde_render(25, 16)
 	if layout == "ramp": return _ramp()
 	if layout == "frc": return _frc()
 	var solids: Array[Vector2i] = []
@@ -131,20 +132,21 @@ static func _hordes300() -> Simulation:
 	return sim
 
 # Rendered benchmark: 300 packed China units (rifle, rocket, light vehicle, tank rows) attack-move onto 100 riflemen so hordes form on screen.
-static func _horde_render() -> Simulation:
+static func _horde_render(columns: int, rows: int) -> Simulation:
 	var sim: Simulation = Simulation.new([], Vector2i(64, 64))
 	sim.add_player(1, 0)
 	sim.add_player(2, 0)
 	var kinds: Array[String] = ["china_rifle_infantry", "china_rifle_infantry", "china_rocket_infantry", "china_light_vehicle", "china_tank"]
 	var army: Array[int] = []
-	for column in range(20):
-		for row in range(15):
+	for column in range(columns):
+		for row in range(rows):
 			army.append(sim.spawn(1, Vector2(3.5 + column, 10.5 + row), kinds[row % kinds.size()]))
 	for column in range(10):
 		for row in range(10):
 			var enemy: int = sim.spawn(2, Vector2(48.5 + column, 19.5 + row), "usa_rifle_infantry")
 			assert(enemy > 0)
 	assert(army.all(func(id: int) -> bool: return id > 0))
+	assert(army.size() == columns * rows)
 	_attack_move(sim, army, [60.5, 24.5])
 	return sim
 

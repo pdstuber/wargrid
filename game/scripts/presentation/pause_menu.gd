@@ -1,14 +1,27 @@
 extends Control
 
 const UiStyle = preload("res://scripts/presentation/ui_style.gd")
+const GraphicsSettings = preload("res://scripts/presentation/graphics_settings.gd")
 const VolumeSliders = preload("res://scripts/presentation/volume_sliders.gd")
 signal resume_requested
 signal leave_requested
 signal quit_requested
+signal quality_changed(quality: int)
+signal neon_changed(neon: bool)
+signal smooth_changed(smooth: bool)
+signal destinations_changed(on: bool)
 var confirm_leave: bool = false
 var _confirming: bool = false
 var _main_box: VBoxContainer
 var _confirm_box: VBoxContainer
+var _quality_button: Button
+var _neon_button: Button
+var _smooth_button: Button
+var _smooth: bool = true
+var _destinations_button: Button
+var _destinations: bool = false
+var _neon: bool = false
+var _quality: int = GraphicsSettings.HIGH
 
 func _init(web: bool = OS.has_feature("web")) -> void:
 	name = "PauseMenu"
@@ -30,6 +43,18 @@ func _init(web: bool = OS.has_feature("web")) -> void:
 	_button(_main_box, "Back to main menu", _leave_pressed)
 	# The browser tab cannot be closed by the game.
 	if not web: _button(_main_box, "Quit", quit_requested.emit)
+	_quality_button = _button(_main_box, "", _toggle_quality)
+	_quality_button.name = "Quality"
+	_show_quality(GraphicsSettings.stored_quality())
+	_neon_button = _button(_main_box, "", _toggle_neon)
+	_neon_button.name = "Neon"
+	_show_neon(GraphicsSettings.load_neon())
+	_smooth_button = _button(_main_box, "", _toggle_smooth)
+	_smooth_button.name = "Smooth"
+	_show_smooth(GraphicsSettings.load_smooth())
+	_destinations_button = _button(_main_box, "", _toggle_destinations)
+	_destinations_button.name = "Destinations"
+	_show_destinations(GraphicsSettings.load_destinations())
 	_main_box.add_child(VolumeSliders.new())
 	_confirm_box = _box(center)
 	_confirm_box.visible = false
@@ -44,6 +69,10 @@ func is_confirming() -> bool:
 	return _confirming
 
 func open() -> void:
+	_show_quality(GraphicsSettings.stored_quality())
+	_show_neon(GraphicsSettings.load_neon())
+	_show_smooth(GraphicsSettings.load_smooth())
+	_show_destinations(GraphicsSettings.load_destinations())
 	visible = true
 	_show_main()
 
@@ -60,11 +89,12 @@ func _box(parent: Control) -> VBoxContainer:
 	parent.add_child(box)
 	return box
 
-func _button(parent: Control, text: String, action: Callable) -> void:
+func _button(parent: Control, text: String, action: Callable) -> Button:
 	var button := Button.new()
 	button.text = text
 	button.pressed.connect(action)
 	parent.add_child(button)
+	return button
 
 func _leave_pressed() -> void:
 	if not confirm_leave:
@@ -80,3 +110,39 @@ func _show_main() -> void:
 	_confirm_box.visible = false
 	_main_box.visible = true
 	_main_box.get_child(0).grab_focus()
+
+func _toggle_quality() -> void:
+	_show_quality(GraphicsSettings.HIGH if _quality == GraphicsSettings.LOW else GraphicsSettings.LOW)
+	GraphicsSettings.save_quality(_quality)
+	quality_changed.emit(_quality)
+
+func _show_quality(quality: int) -> void:
+	_quality = quality
+	_quality_button.text = "Quality: " + ("Low" if _quality == GraphicsSettings.LOW else "High")
+
+func _toggle_neon() -> void:
+	_show_neon(not _neon)
+	GraphicsSettings.save_neon(_neon)
+	neon_changed.emit(_neon)
+
+func _show_neon(neon: bool) -> void:
+	_neon = neon
+	_neon_button.text = "Neon colours: " + ("On" if neon else "Off")
+
+func _toggle_smooth() -> void:
+	_show_smooth(not _smooth)
+	GraphicsSettings.save_smooth(_smooth)
+	smooth_changed.emit(_smooth)
+
+func _show_smooth(smooth: bool) -> void:
+	_smooth = smooth
+	_smooth_button.text = "Smooth movement: " + ("On" if smooth else "Off")
+
+func _toggle_destinations() -> void:
+	_show_destinations(not _destinations)
+	GraphicsSettings.save_destinations(_destinations)
+	destinations_changed.emit(_destinations)
+
+func _show_destinations(on: bool) -> void:
+	_destinations = on
+	_destinations_button.text = "Show unit destinations: " + ("On" if on else "Off")

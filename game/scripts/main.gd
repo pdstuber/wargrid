@@ -5,6 +5,7 @@ const Iso = preload("res://scripts/presentation/isometric.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
 const PerfOverlay = preload("res://scripts/presentation/perf_overlay.gd")
 const PauseMenu = preload("res://scripts/presentation/pause_menu.gd")
+const GraphicsSettings = preload("res://scripts/presentation/graphics_settings.gd")
 const LAUNCHER_SCENE: String = "res://scenes/launcher.tscn"
 const MapData = preload("res://scripts/simulation/map_data.gd")
 const ZOOMS: Array[float] = [0.5, 1.0, 2.0]
@@ -40,7 +41,15 @@ func _ready() -> void:
 	_pause.resume_requested.connect(_pause.close)
 	_pause.leave_requested.connect(_leave)
 	_pause.quit_requested.connect(func() -> void: get_tree().quit())
+	_pause.quality_changed.connect(_view.set_quality)
+	_pause.neon_changed.connect(_view.set_bright_owners)
+	_pause.smooth_changed.connect(_view.set_smooth)
+	_pause.destinations_changed.connect(_view.set_show_destinations)
 	$HUD.add_child(_pause)
+	_view.set_quality(GraphicsSettings.stored_quality())
+	_view.set_bright_owners(GraphicsSettings.load_neon())
+	_view.set_smooth(GraphicsSettings.load_smooth())
+	_view.set_show_destinations(GraphicsSettings.load_destinations())
 	_view.local_player = local_player
 	simulation = _create_simulation()
 	_reset_camera()
@@ -96,6 +105,7 @@ func _physics_process(_delta: float) -> void:
 
 func _process(delta: float) -> void:
 	pan_camera(Input.get_vector("camera_left", "camera_right", "camera_up", "camera_down"), delta)
+	_view.advance_frame()
 
 func pan_camera(direction: Vector2, delta: float) -> void:
 	if _selecting:
@@ -109,6 +119,7 @@ func change_zoom(direction: int) -> void:
 	var index: int = ZOOMS.find(_camera.zoom.x)
 	index = clampi(index + signi(direction), 0, ZOOMS.size() - 1)
 	_camera.zoom = Vector2.ONE * ZOOMS[index]
+	_view.set_zoom(ZOOMS[index])
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_F3:

@@ -11,6 +11,7 @@ boot_splash/bg_color=Color(0.3019608, 0.3019608, 0.3019608, 1)
 run/main_scene="res://scenes/launcher.tscn"
 run/main_loop_type.wargrid_tests="WargridTestRunner"
 run/main_loop_type.wargrid_bench="WargridBenchRunner"
+run/main_scene.wargrid_render_bench="res://scenes/movement_benchmark.tscn"
 run/flush_stdout_on_print=true
 
 [display]
