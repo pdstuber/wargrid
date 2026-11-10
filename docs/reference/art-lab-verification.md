@@ -1,12 +1,12 @@
-Resume record (updated 2026-11-10, Task 3 green)
-Branch / base commit / working-tree state: spike-art-lab / 7d56851 / Task 3 changes uncommitted (coordinator commits)
-Last green task / next incomplete task: Task 3 / Task 4 (lab shapes and decided body look)
-Changed paths since last commit: game/scripts/presentation/{world_batch,body_layer}.gd (+.uid), world_view.gd, game/scripts/debug/movement_benchmark.gd, game/tests/{test_world_batch.gd (+.uid),test_view,test_benchmark,test_shapes,run_tests}.gd, docs/reference/art-lab-verification.md
-Last command / cases / checks / failures / exit / marker: `sh tools/run_tests.sh` / 629 cases / 137474 checks / 0 failures / exit 0 / TESTS PASSED 137474
+Resume record (updated 2026-11-10, Task 4 green)
+Branch / base commit / working-tree state: spike-art-lab / 7d56851 / Task 4 changes uncommitted on top of d7693d5 (coordinator commits)
+Last green task / next incomplete task: Task 4 / Task 4b (whole roster in the same vocabulary)
+Changed paths since last commit: game/scripts/presentation/{shapes,shape_bake,world_batch,world_view}.gd, game/tests/{test_shapes,test_world_batch}.gd, docs/reference/art-lab-verification.md (no new scripts, no new .uid)
+Last command / cases / checks / failures / exit / marker: `sh tools/run_tests.sh` / 638 cases / 137718 checks / 0 failures / exit 0 / TESTS PASSED 137718
 Known red case or blocker: none. Draw-call gate is on and passes. Watch: view build adds about 1.3 ms to a 300-unit tick (tick_ms p50 1.57 -> 2.85), Ashfall frame p95 1.15 -> 2.49 (guard 3.3)
 Approved decisions, pre-authorizations used, deferred gates: plan approval 2026-11-10 covers Task 3 rendered window (used twice: first run exposed a per-vertex GDScript cost, second run after the Transform2D/cached-colour fix is the recorded one); ceilings fixed 50/50/50/60
 Usage so far (python3 tools/session_usage.py <session files>): not measured
-Next exact action: dispatch Task 4 of docs/superpowers/plans/2026-11-10-art-lab-spike.md
+Next exact action: dispatch Task 4b of docs/superpowers/plans/2026-11-10-art-lab-spike.md
 
 ## Evidence rows (append-only)
 
@@ -54,3 +54,13 @@ Next exact action: dispatch Task 4 of docs/superpowers/plans/2026-11-10-art-lab-
 ### Direct snapshot readers left in `world_view.gd` (for the sim interface note)
 
 Functions reading `_state` directly: `set_state`, `_prune_hints`, `_refresh_structures`, `_waiting_counts`, `_remember_points`, `_remember_building_shots`, `resume_candidate`, `order_marks`, `horde_marks`, `crate_marks`, `heading_marks`, `focus_targets`, `battery_target_lines`, `rally_marker`, `pick_target`, `pick_entity`, `pick_entities`, `pick_source`, `pick_object`, `draw_structures`, `_draw`, `_draw_cues`, `_draw_focus`, `_draw_inspected`, `_draw_resume_outline`, `_draw_hints`. New drawing code reads the snapshot only through `WorldBatch.objects()`.
+
+### 2026-11-10 Task 4: lab shapes and decided body look (tree: worktree, d7693d5 plus Task 4 diff)
+
+- Red (before production code): `WARGRID_TEST_ONLY=test_shapes` and `test_world_batch` both exit 1 with parse errors "Too many arguments for parts()" and "Static function damage_stage() not found" (logs `t4-red-*.log`). Two further red-for-the-right-reason runs: SH8 (roof count) failed until ROOF_DARK sides got their own slot; WB12/13 failed because my test reused one pile origin.
+- Green: `test_shapes` 9 cases / 352 checks, `test_world_batch` 14 cases / 44 checks; full suite 638 cases, 137718 checks, 0 failures, exit 0, TESTS PASSED 137718. Lint and warnings (127 files) pass.
+- Built: roles `tank_usa/china/frc` (hull + `turret` part pivoting on hull top), `bulldozer`, `infantry` (all infantry classes incl. `frc_builder`), `power_plant`, `war_factory`, `supply_depot`, `supply_source`. `Shapes.parts(role, detail, variant)` is cached; the variant is the mesh variant: building damage stage (0-2), for piles `Shapes.source_variant(boxes, footprint)` packs stack level (steps 1/5/15/40 boxes) and footprint so a small pile bakes inside its own footprint. `WorldBatch.damage_stage` (integer percent, 70 and 35 inclusive), `FLAG_SHADOWS/OUTLINES/EFFECTS`; shadows only with `FLAG_SHADOWS` (units 6 px, air 8 px), `world_view.gd` now passes `FLAG_SHADOWS` so air shadows stay. Mesh and parts caches are keyed by int, not formatted strings.
+- Damage looks: stage 1 darker roof with the front quadrant removed; stage 2 adds a `SLOT_GLOW` smoke column in the gap. Roofs are four quadrant boxes (so a corner can go).
+- Deviations: `test_turret_pivot_on_hull_top` checks the turret's `SLOT_ROOF` (top face) triangles with lift added back (ground projection) against the pivot, since the raw projection differs from the pivot by the lift and barrel triangles would bias the centroid. `test_building_rises_with_work` would pass on the old default box for height alone, so it also asserts the role is `war_factory`. Non-tank vehicles (scout car, collectors, `china_light_vehicle`) stay `default_vehicle` until Task 4b.
+- Per-tick cost (headless scratch timing of `WorldBatch.objects` + `build`, 300 mixed units + 6 factories, detail 1, shadows on, 200 reps; script `~/projects/wargrid-art-work/t4_time.gd`, run as a temporary test script): 1.138 ms before, 1.318 ms after (+0.18 ms; triangles 3448 -> 6400). Still above the ledger's 0.91 ms presentation-plumbing budget, as at Task 3; no new per-vertex GDScript, only cached-array transforms. Rendered window not opened (not pre-approved for Task 4).
+- Not checked: how the shapes look (no render), Ashfall frame p95 with the richer shapes (Task 8).

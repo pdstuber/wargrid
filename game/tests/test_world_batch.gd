@@ -2,10 +2,13 @@
 extends RefCounted
 
 const WorldBatch = preload("res://scripts/presentation/world_batch.gd")
+const Shapes = preload("res://scripts/presentation/shapes.gd")
+const Bake = preload("res://scripts/presentation/shape_bake.gd")
+const Iso = preload("res://scripts/presentation/isometric.gd")
 const Fixture = preload("res://tests/economy_fixture.gd")
 
 func cases() -> Array[Callable]:
-	return [test_sort_key_orders_layers_then_depth, test_unit_in_front_of_factory_draws_later, test_unit_behind_factory_draws_earlier, test_air_kind_draws_above_ground, test_build_one_submission, test_empty_state, test_marks_join_the_array, test_rise_from_work]
+	return [test_sort_key_orders_layers_then_depth, test_unit_in_front_of_factory_draws_later, test_unit_behind_factory_draws_earlier, test_air_kind_draws_above_ground, test_build_one_submission, test_empty_state, test_marks_join_the_array, test_rise_from_work, test_damage_stage_edges, test_building_rises_with_work, test_supply_stack_shrinks, test_small_pile_inside_footprint, test_shadow_only_with_flag, test_lab_roles_mapped]
 
 func _find(items: Array[Dictionary], id: int) -> Dictionary:
 	for item in items:
@@ -90,4 +93,98 @@ func test_rise_from_work(runner) -> bool:
 	var items: Array[Dictionary] = WorldBatch.objects(sim.snapshot())
 	runner.check(_find(items, done).rise == 1.0, "WB8 completed building is fully risen")
 	runner.check(is_equal_approx(_find(items, half).rise, 0.5), "WB8 half the work is half risen")
+	return true
+
+func test_lab_roles_mapped(runner) -> bool:
+	var sim = Fixture.make_world()
+	var factory: int = Fixture.add_completed(sim, 1, "usa_factory", Vector2i(10, 10))
+	var tank: int = sim.spawn(1, Vector2(5.5, 5.5), "usa_tank")
+	var pile: int = sim.add_supply_source(Vector2i(20, 20), 8)
+	var items: Array[Dictionary] = WorldBatch.objects(sim.snapshot())
+	runner.check(_find(items, factory).role == &"war_factory", "WB9 factory role")
+	runner.check(_find(items, tank).role == &"tank_usa", "WB9 tank role")
+	runner.check(_find(items, pile).role == &"supply_source", "WB9 source role")
+	return true
+
+func test_damage_stage_edges(runner) -> bool:
+	runner.check(WorldBatch.damage_stage(70, 100) == 1, "WB10 70 percent is stage 1")
+	runner.check(WorldBatch.damage_stage(71, 100) == 0, "WB10 71 percent is stage 0")
+	runner.check(WorldBatch.damage_stage(35, 100) == 2, "WB10 35 percent is stage 2")
+	runner.check(WorldBatch.damage_stage(36, 100) == 1, "WB10 36 percent is stage 1")
+	runner.check(WorldBatch.damage_stage(0, 0) == 0, "WB10 no max hp is stage 0")
+	return true
+
+func _single(item: Dictionary, flags: int = 0) -> Object:
+	var batch = WorldBatch.new()
+	batch.build([item] as Array[Dictionary], {}, 2, flags)
+	return batch
+
+func _top(batch: Object) -> float:
+	var top: float = 1e9
+	for point in batch.points: top = minf(top, point.y)
+	return top
+
+func test_building_rises_with_work(runner) -> bool:
+	var sim = Fixture.make_world()
+	var factory: int = Fixture.add_completed(sim, 1, "usa_factory", Vector2i(10, 10))
+	var item: Dictionary = _find(WorldBatch.objects(sim.snapshot()), factory)
+	runner.check(item.role == &"war_factory", "WB11 factory role")
+	var done = _single(item)
+	var before: int = Bake.bake_count
+	item.rise = 0.5
+	var half = _single(item)
+	var full_height: float = _ground_top()
+	runner.check(absf((_top(half) - _top(done)) - full_height / 2.0) <= 1.0, "WB11 half risen is half the height")
+	item.rise = 0.0
+	var flat = _single(item)
+	runner.check(is_equal_approx(_top(flat) - _top(done), full_height), "WB11 rise 0 is flat")
+	runner.check(Bake.bake_count == before, "WB11 no new bake for rise")
+	return true
+
+func _ground_top() -> float:
+	var lift: float = 0.0
+	var mesh: Dictionary = Bake.mesh(&"war_factory", 0, 0, 2)
+	for value in mesh.lifts: lift = maxf(lift, value)
+	return lift
+
+var _next_pile_x: int = 0
+
+func _pile(sim, boxes: int, footprint: Vector2i = Vector2i(4, 5)) -> Dictionary:
+	_next_pile_x += 6
+	var id: int = sim.add_supply_source(Vector2i(_next_pile_x, 10), boxes, footprint)
+	return _find(WorldBatch.objects(sim.snapshot()), id)
+
+func test_supply_stack_shrinks(runner) -> bool:
+	var sim = Fixture.make_world()
+	var base: int = _single(_pile(sim, 0)).triangle_count
+	var one: int = _single(_pile(sim, 1)).triangle_count
+	var many: int = _single(_pile(sim, 400)).triangle_count
+	runner.check(base > 0, "WB12 empty pile still draws its base")
+	runner.check(one < many and base < one, "WB12 stack grows with boxes (%d, %d, %d)" % [base, one, many])
+	return true
+
+func test_small_pile_inside_footprint(runner) -> bool:
+	var sim = Fixture.make_world(10000, Vector2i(96, 32))
+	for footprint in [Vector2i(1, 1), Vector2i(2, 2), Vector2i(4, 5)]:
+		for boxes in [0, 3, 400]:
+			var item: Dictionary = _pile(sim, boxes, footprint)
+			var batch = _single(item)
+			var origin: Vector2 = item.anchor - Vector2(footprint) / 2.0
+			var inside: bool = true
+			var lifts := PackedFloat32Array()
+			for mesh_part in Shapes.parts(item.role, 2, item.variant).size():
+				lifts.append_array(Bake.mesh(item.role, mesh_part, 0, 2, item.variant).lifts)
+			for i in batch.points.size():
+				var ground: Vector2 = Iso.plane_to_world(batch.points[i] + Vector2(0, lifts[i]))
+				if ground.x < origin.x - 0.01 or ground.y < origin.y - 0.01 or ground.x > origin.x + footprint.x + 0.01 or ground.y > origin.y + footprint.y + 0.01: inside = false
+			runner.check(inside and batch.points.size() > 0, "WB13 pile %s boxes %d inside footprint" % [footprint, boxes])
+	return true
+
+func test_shadow_only_with_flag(runner) -> bool:
+	var sim = Fixture.make_world()
+	var tank: int = sim.spawn(1, Vector2(5.5, 5.5), "usa_tank")
+	var item: Dictionary = _find(WorldBatch.objects(sim.snapshot()), tank)
+	var plain = _single(item)
+	var shadowed = _single(item, WorldBatch.FLAG_SHADOWS)
+	runner.check(shadowed.triangle_count == plain.triangle_count + 2, "WB14 shadow adds two triangles only with the flag")
 	return true

@@ -73,7 +73,7 @@ func set_state(state: Dictionary, selected_ids: Array[int]) -> void:
 	_refresh_structures()
 	Profiler.end(&"view.structures_key", zone)
 	zone = Profiler.begin()
-	_batch.build(WorldBatch.objects(_state), {}, BODY_DETAIL, 0, horde_marks())
+	_batch.build(WorldBatch.objects(_state), {}, BODY_DETAIL, WorldBatch.FLAG_SHADOWS, horde_marks())
 	_bodies.queue_redraw()
 	Profiler.end(&"view.batch", zone)
 	queue_redraw()

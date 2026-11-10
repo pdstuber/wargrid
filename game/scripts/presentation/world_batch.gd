@@ -16,6 +16,10 @@ const DEPTH_BITS := 22
 const AIR_LIFT := 18.0
 const SHADOW_RADIUS := 8.0
 const MARK_RADIUS := 3.0
+const GROUND_SHADOW_RADIUS := 6.0
+const FLAG_SHADOWS := 1
+const FLAG_OUTLINES := 2
+const FLAG_EFFECTS := 4
 
 var points := PackedVector2Array()
 var colors := PackedColorArray()
@@ -28,21 +32,29 @@ static func objects(state: Dictionary) -> Array[Dictionary]:
 		var combat: Variant = unit.get("combat")
 		var kind: String = unit.get("kind", "")
 		found.append(_item(unit, kind, Shapes.role(kind), LAYER_AIR if Registry.air_kinds.has(kind) else LAYER_GROUND, Vector2(unit.position[0], unit.position[1]), Vector2i.ONE, atan2(heading[1], heading[0]), 1.0, -1 if combat == null or combat.target_id == null else combat.target_id))
+		found[-1].shadow = SHADOW_RADIUS if found[-1].layer == LAYER_AIR else GROUND_SHADOW_RADIUS
 	for building: Dictionary in state.get("buildings", []):
 		var definition: Dictionary = Economy.building(building.kind)
 		if definition.is_empty(): continue
 		var size: Vector2i = definition.footprint
 		var rise: float = 1.0 if building.completed else float(building.work) / (definition.ticks * 1000)
 		found.append(_item(building, building.kind, Shapes.role(building.kind), LAYER_GROUND, Vector2(building.origin[0], building.origin[1]) + Vector2(size) / 2.0, size, 0.0, rise, -1))
+		found[-1].variant = damage_stage(found[-1].hp, found[-1].max_hp)
 	for source: Dictionary in state.get("sources", []):
 		var size: Vector2i = Registry.source_footprint(source)
-		var item := _item(source, "", &"default_source", LAYER_GROUND, Vector2(source.origin[0], source.origin[1]) + Vector2(size) / 2.0, size, 0.0, 1.0, -1)
+		var item := _item(source, "", &"supply_source", LAYER_GROUND, Vector2(source.origin[0], source.origin[1]) + Vector2(size) / 2.0, size, 0.0, 1.0, -1)
 		item.boxes = source.get("boxes", 0)
+		item.variant = Shapes.source_variant(item.boxes, size)
 		found.append(item)
 	return found
 
 static func _item(row: Dictionary, kind: String, role: StringName, layer: int, anchor: Vector2, footprint: Vector2i, heading: float, rise: float, target_id: int) -> Dictionary:
-	return {"id": row.id, "kind": kind, "owner": row.get("owner", 0), "role": role, "layer": layer, "anchor": anchor, "footprint": footprint, "heading": heading, "target_id": target_id, "hp": row.get("hp", 0), "max_hp": row.get("max_hp", 0), "rise": rise, "boxes": 0}
+	return {"id": row.id, "kind": kind, "owner": row.get("owner", 0), "role": role, "layer": layer, "anchor": anchor, "footprint": footprint, "heading": heading, "target_id": target_id, "hp": row.get("hp", 0), "max_hp": row.get("max_hp", 0), "rise": rise, "boxes": 0, "variant": 0, "shadow": 0.0}
+
+# Integer percent maths: exactly 70 % and 35 % count as the worse stage.
+static func damage_stage(hp: int, max_hp: int) -> int:
+	if max_hp <= 0 or hp * 100 > max_hp * 70: return 0
+	return 2 if hp * 100 <= max_hp * 35 else 1
 
 static func sort_key(layer: int, anchor: Vector2, id: int) -> int:
 	assert(id < (1 << ID_BITS))
@@ -65,7 +77,7 @@ static func depth_sorted(entities: Array) -> Array:
 		sorted[i] = by_key[keys[i]]
 	return sorted
 
-func build(items: Array[Dictionary], _turret_angles: Dictionary, detail: int, _flags: int, marks: Array[Vector2] = []) -> void:
+func build(items: Array[Dictionary], _turret_angles: Dictionary, detail: int, flags: int, marks: Array[Vector2] = []) -> void:
 	points.clear()
 	colors.clear()
 	var keys := PackedInt64Array()
@@ -75,8 +87,9 @@ func build(items: Array[Dictionary], _turret_angles: Dictionary, detail: int, _f
 		keys.append(key)
 		by_key[key] = item
 	keys.sort()
-	for key in keys:
-		if by_key[key].layer == LAYER_AIR: _append_shadow(by_key[key].anchor)
+	if flags & FLAG_SHADOWS:
+		for key in keys:
+			if by_key[key].shadow > 0.0: _append_shadow(by_key[key])
 	for key in keys:
 		_append_body(by_key[key], detail)
 	for mark in marks:
@@ -93,8 +106,8 @@ func _append_body(item: Dictionary, detail: int) -> void:
 	var move := Transform2D(0.0, Iso.world_to_plane(item.anchor) + Vector2(0, -AIR_LIFT if item.layer == LAYER_AIR else 0.0))
 	var bucket: int = Bake.bucket(item.heading)
 	var rise: float = item.rise
-	for part in Shapes.parts(item.role, detail).size():
-		var mesh: Dictionary = Bake.mesh(item.role, part, bucket, detail)
+	for part in Shapes.parts(item.role, detail, item.variant).size():
+		var mesh: Dictionary = Bake.mesh(item.role, part, bucket, detail, item.variant)
 		var mesh_points: PackedVector2Array = mesh.points
 		if rise < 1.0:
 			var lifts: PackedFloat32Array = mesh.lifts
@@ -116,8 +129,8 @@ func _mesh_colors(mesh: Dictionary, owner: int) -> PackedColorArray:
 		by_owner[owner] = built
 	return by_owner[owner]
 
-func _append_shadow(anchor: Vector2) -> void:
-	_append_quad(Iso.world_to_plane(anchor), SHADOW_RADIUS, Palette.owner_colors(0)[Shapes.SLOT_SHADOW])
+func _append_shadow(item: Dictionary) -> void:
+	_append_quad(Iso.world_to_plane(item.anchor), item.shadow, Palette.owner_colors(0)[Shapes.SLOT_SHADOW])
 
 func _append_quad(center: Vector2, radius: float, color: Color) -> void:
 	var corners: Array[Vector2] = [center + Vector2(0, -radius), center + Vector2(radius, 0), center + Vector2(0, radius), center + Vector2(-radius, 0)]

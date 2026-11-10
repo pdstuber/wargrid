@@ -10,15 +10,16 @@ static func bucket(angle: float) -> int:
 	return posmod(roundi(angle / TAU * Shapes.HEADING_BUCKETS), Shapes.HEADING_BUCKETS)
 
 static func mesh(role: StringName, part: int, bucket_index: int, detail: int, variant: int = 0) -> Dictionary:
-	var key := "%s/%d/%d/%d/%d" % [role, part, bucket_index, detail, variant]
-	if not _cache.has(key):
-		_cache[key] = _bake(role, part, bucket_index, detail)
+	var by_role: Dictionary = _cache.get_or_add(role, {})
+	var key: int = variant | (detail << 12) | (bucket_index << 14) | (part << 20)
+	if not by_role.has(key):
+		by_role[key] = _bake(role, part, bucket_index, detail, variant)
 		bake_count += 1
-	return _cache[key]
+	return by_role[key]
 
-static func _bake(role: StringName, part: int, bucket_index: int, detail: int) -> Dictionary:
+static func _bake(role: StringName, part: int, bucket_index: int, detail: int, variant: int) -> Dictionary:
 	var out := {"points": PackedVector2Array(), "slots": PackedByteArray(), "lifts": PackedFloat32Array()}
-	var spec: Dictionary = Shapes.parts(role, detail)[part]
+	var spec: Dictionary = Shapes.parts(role, detail, variant)[part]
 	var angle: float = 0.0 if spec.angle == &"fixed" else bucket_index * TAU / Shapes.HEADING_BUCKETS
 	var pivot: Vector3 = spec.pivot
 	for prim: Dictionary in spec.prims:
@@ -47,6 +48,8 @@ static func _append_prim(out: Dictionary, ring: PackedVector2Array, base: float,
 	var side_slots: Array[int] = [slot, slot]
 	if slot == Shapes.SLOT_ROOF:
 		side_slots = [Shapes.SLOT_SIDE, Shapes.SLOT_SIDE_DARK]
+	elif slot == Shapes.SLOT_ROOF_DARK:
+		side_slots = [Shapes.SLOT_SIDE_DARK, Shapes.SLOT_SIDE_DARK]
 	for i in ring.size():
 		var a: Vector2 = ring[i]
 		var b: Vector2 = ring[(i + 1) % ring.size()]

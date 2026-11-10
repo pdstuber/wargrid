@@ -12,27 +12,128 @@ const SLOT_GLOW: int = 5
 const SLOT_OUTLINE: int = 6
 const SLOT_SHADOW: int = 7
 
+const TANK_ROLES := {"usa_tank": &"tank_usa", "china_tank": &"tank_china", "frc_tank": &"tank_frc"}
+const SUPPLY_STEPS: Array[int] = [1, 5, 15, 40]
+
+static var _parts_cache: Dictionary = {}
+
 static func role(kind: String) -> StringName:
 	var row: Dictionary = Definitions.kind(kind)
+	if TANK_ROLES.has(kind):
+		return TANK_ROLES[kind]
 	if row.has("footprint"):
-		return &"default_building"
-	return &"default_infantry" if row.get("class", "") == "infantry" else &"default_vehicle"
+		return _building_role(kind)
+	if row.get("class", "") == "infantry":
+		return &"infantry"
+	return &"bulldozer" if kind.ends_with("_builder") else &"default_vehicle"
 
-static func parts(role_name: StringName, detail: int) -> Array[Dictionary]:
+static func _building_role(kind: String) -> StringName:
+	for suffix: String in ["power_plant", "factory", "supply_center"]:
+		if kind.ends_with(suffix):
+			return {"power_plant": &"power_plant", "factory": &"war_factory", "supply_center": &"supply_depot"}[suffix]
+	return &"default_building"
+
+# A pile's variant packs stack level (0-4) with its footprint, so small piles bake smaller.
+static func source_variant(boxes: int, footprint: Vector2i) -> int:
+	var level: int = 0
+	for step in SUPPLY_STEPS:
+		if boxes >= step: level += 1
+	return level | (footprint.x << 4) | (footprint.y << 8)
+
+static func parts(role_name: StringName, detail: int, variant: int = 0) -> Array[Dictionary]:
+	var by_role: Dictionary = _parts_cache.get_or_add(role_name, {})
+	var key: int = detail | (variant << 2)
+	if not by_role.has(key):
+		by_role[key] = _build_parts(role_name, detail, variant)
+	return by_role[key]
+
+static func _build_parts(role_name: StringName, detail: int, variant: int) -> Array[Dictionary]:
 	var found: Array[Dictionary] = []
 	match role_name:
-		&"default_infantry":
-			found.append(_part(&"body", &"heading", [_prim(&"cylinder", Vector3.ZERO, Vector3(0.3, 0.3, 9), SLOT_ROOF)]))
+		&"infantry":
+			var prims: Array = [_prim(&"cylinder", Vector3.ZERO, Vector3(0.3, 0.3, 6), SLOT_ROOF)]
+			if detail > 0:
+				prims.append(_prim(&"cylinder", Vector3(0, 0, 6), Vector3(0.2, 0.2, 3), SLOT_MACHINE))
+			found.append(_part(&"body", &"heading", prims))
+		&"bulldozer":
+			var prims: Array = [_prim(&"box", Vector3.ZERO, Vector3(1.1, 0.8, 4), SLOT_ROOF), _prim(&"box", Vector3(0.65, 0, 0), Vector3(0.2, 1.1, 3), SLOT_MACHINE)]
+			if detail > 0:
+				prims.append(_prim(&"box", Vector3(-0.15, 0, 4), Vector3(0.5, 0.6, 3), SLOT_ROOF_DARK))
+			found.append(_part(&"body", &"heading", prims))
+		&"tank_usa":
+			_append_tank(found, detail, Vector3(1.4, 0.9, 4), Vector3(0.6, 0.6, 3), 0.7)
+		&"tank_china":
+			_append_tank(found, detail, Vector3(1.5, 1.0, 3), Vector3(0.9, 0.7, 2), 0.9)
+		&"tank_frc":
+			_append_tank(found, detail, Vector3(1.2, 0.7, 4), Vector3(0.4, 0.4, 5), 0.5)
+		&"power_plant":
+			found.append(_part(&"body", &"fixed", _slab(1.7, 10, variant) + _tower(detail, variant)))
+		&"war_factory":
+			var prims: Array = _slab(2.6, 14, variant)
+			if detail > 0:
+				prims.append(_prim(&"box", Vector3(1.0, 0, 0), Vector3(0.5, 1.2, 8), SLOT_MACHINE))
+			found.append(_part(&"body", &"fixed", prims + _smoke(2.6, 14, variant)))
+		&"supply_depot":
+			var prims: Array = _slab(2.6, 8, variant)
+			if detail > 0:
+				prims.append(_prim(&"box", Vector3.ZERO, Vector3(1.2, 1.2, 12), SLOT_ROOF_DARK if variant > 0 else SLOT_GLOW))
+			found.append(_part(&"body", &"fixed", prims))
+		&"supply_source":
+			found.append(_part(&"body", &"fixed", _pile(variant)))
 		&"default_building":
 			found.append(_part(&"body", &"fixed", [_prim(&"box", Vector3.ZERO, Vector3(2.0, 2.0, 14), SLOT_ROOF)]))
-		&"default_source":
-			found.append(_part(&"body", &"fixed", [_prim(&"cylinder", Vector3.ZERO, Vector3(1.2, 1.2, 3), SLOT_GLOW)]))
 		_:
 			var prims: Array = [_prim(&"box", Vector3.ZERO, Vector3(0.8, 0.5, 8), SLOT_ROOF)]
 			if detail > 0:
 				prims.append(_prim(&"box", Vector3(0, 0, 8), Vector3(0.3, 0.3, 3), SLOT_MACHINE))
 			found.append(_part(&"body", &"heading", prims))
 	return found
+
+static func _append_tank(found: Array[Dictionary], detail: int, hull: Vector3, dome: Vector3, barrel: float) -> void:
+	found.append(_part(&"body", &"heading", [_prim(&"box", Vector3.ZERO, hull, SLOT_ROOF)]))
+	var prims: Array = [_prim(&"box", Vector3(0, 0, hull.z), dome, SLOT_ROOF)]
+	if detail > 0:
+		prims.append(_prim(&"box", Vector3(dome.x / 2.0 + barrel / 2.0, 0, hull.z + dome.z / 2.0), Vector3(barrel, 0.15, 1), SLOT_MACHINE))
+	var turret := _part(&"turret", &"heading", prims)
+	turret.pivot = Vector3(0, 0, hull.z)
+	found.append(turret)
+
+# Four quadrants, so damage can knock one out and the roof gets fewer triangles.
+static func _slab(side: float, height: float, variant: int) -> Array:
+	var roof: int = SLOT_ROOF if variant == 0 else SLOT_ROOF_DARK
+	var prims: Array = []
+	var quarter: float = side / 2.0
+	for corner: Vector2 in [Vector2(-1, -1), Vector2(1, -1), Vector2(-1, 1), Vector2(1, 1)]:
+		if variant > 0 and corner == Vector2(1, 1):
+			continue
+		prims.append(_prim(&"box", Vector3(corner.x * quarter / 2.0, corner.y * quarter / 2.0, 0), Vector3(quarter, quarter, height), roof))
+	return prims
+
+static func _smoke(side: float, height: float, variant: int) -> Array:
+	if variant < 2:
+		return []
+	return [_prim(&"box", Vector3(side / 4.0, side / 4.0, 0), Vector3(0.4, 0.4, height + 8), SLOT_GLOW)]
+
+static func _tower(detail: int, variant: int) -> Array:
+	var prims: Array = _smoke(1.7, 10, variant)
+	if detail > 0:
+		prims.append(_prim(&"cylinder", Vector3(-0.4, -0.4, 10), Vector3(0.4, 0.4, 6), SLOT_MACHINE))
+	return prims
+
+static func _pile(variant: int) -> Array:
+	var level: int = variant & 15
+	var footprint := Vector2(maxi((variant >> 4) & 15, 1), maxi((variant >> 8) & 15, 1))
+	if variant == 0:
+		footprint = Vector2(4, 5)
+	var crate: float = minf(footprint.x, footprint.y) * 0.3
+	var rise: float = 4.0
+	var prims: Array = [_prim(&"box", Vector3.ZERO, Vector3(footprint.x - 0.2, footprint.y - 0.2, 1.5), SLOT_MACHINE)]
+	var spots: Array = [[Vector2(-0.25, -0.2), 0.0, 2], [Vector2.ZERO, 0.0, 1], [Vector2.ZERO, rise, 4], [Vector2(0.25, 0.2), 0.0, 3]]
+	for spot: Array in spots:
+		if level >= spot[2]:
+			var at: Vector2 = spot[0]
+			prims.append(_prim(&"box", Vector3(at.x * footprint.x, at.y * footprint.y, 1.5 + spot[1]), Vector3(crate, crate, rise), SLOT_ROOF))
+	return prims
 
 static func _part(part_name: StringName, angle: StringName, prims: Array) -> Dictionary:
 	return {"name": part_name, "angle": angle, "pivot": Vector3.ZERO, "prims": prims}
