@@ -3,16 +3,15 @@
 Resume record and dated evidence for [the handoff](../native-sim-spike-prompt.txt) and [its plan](../superpowers/plans/2026-11-10-native-sim-spike.md). Labels: **measured** (run here), **source** (quoted file or fetched page), **inferred**, **unverified**. Rows below the resume record are append-only.
 
 ```text
-Resume record (updated 2026-11-10 phase 4 done, coordinator)
-Branch / base commit / working-tree state: spike-native-sim in ~/projects/wargrid-wt-native, base dde868e, clean after this commit
-Last green task / next incomplete task: T0-T11 green and integrated (T9 ffc172e, T8 1eb8f89, T11 f3b91ff; T10 wrote rows only) / T12 report (opus, WT)
+Resume record (updated 2026-11-10 run finished, coordinator)
+Branch / base commit / working-tree state: spike-native-sim in ~/projects/wargrid-wt-native, base dde868e, clean after this commit; not pushed
+Last green task / next incomplete task: T0-T14 all green / none; the run is finished
 Changed paths since last commit: none
-Last command / cases / checks / failures / exit / marker: suite 737 cases 139594 checks 0 failures (extension removed, T9); per-task rows in ~/projects/wargrid-native-work/rows/ (t8, t10, t11 not yet copied into this file; T12 copies them)
-Known red case or blocker: none. Open: Windows unverified; Safari, Vivaldi and emcc 4.0.20 single runs; T8 move_dense p95 -7.8% unexplained
-Environment: Mac M6 macOS 27.2.1; Deck Firefox 159 (preflight said 159.0.1)
-Approved decisions, pre-authorizations used, deferred gates: see handoff "Authorized for this run"
+Last command / cases / checks / failures / exit / marker: T14: cargo test 24 passed, clippy, lint, warnings, python checks exit 0; last suite run 737 cases 139594 checks 0 failures (T9, extension removed)
+Known red case or blocker: none. Outcome CONDITIONAL GO (whole port only); open items in docs/reference/native-sim-spike.md
+Approved decisions, pre-authorizations used, deferred gates: local commits only; no push, PR, merge or deploy
 Usage so far: not recorded
-Next exact action: dispatch T12, then T13 (fresh opus reviewer), T14
+Next exact action: user reads docs/reference/native-sim-spike.md and ~/projects/wargrid-native-work/morning-summary.md
 ```
 
 ## Stage 1 record (done 2026-11-10 with the user, before invocation)
