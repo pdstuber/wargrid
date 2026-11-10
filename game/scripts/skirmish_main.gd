@@ -66,6 +66,7 @@ func _physics_process(delta: float) -> void:
 
 func _process(delta: float) -> void:
 	pan_camera(Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down"), delta)
+	_view.advance_frame()
 	if not _auto_pending: return
 	_auto_sample((_auto_tick_usec + _view.draw_usec) / 1000.0)
 	_auto_tick_usec = 0

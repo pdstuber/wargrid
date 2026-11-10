@@ -14,6 +14,7 @@ const ASHFALL_FRAME_P95_MS: float = 3.3
 const DRAW_CALL_CEILINGS: Dictionary = {"open": 50, "dense": 50, "horde": 50, "ashfall": 60}
 const LAYOUTS: Array[String] = ["open", "dense", "ashfall", "horde"]
 const GraphicsSettings = preload("res://scripts/presentation/graphics_settings.gd")
+const Palette = preload("res://scripts/presentation/palette.gd")
 # `-- --profile` adds profiling zones and a third, 196x196 combat leg (spike-performance only).
 var _profile: bool = OS.get_cmdline_user_args().has("--profile")
 # `-- --sound` runs only the horde layout with a SoundPlayer and reports its cost.
@@ -66,6 +67,7 @@ func _ready() -> void:
 	$Camera2D.zoom = Vector2(zoom, zoom)
 	_view.time_draws = true
 	_view.set_quality(_quality())
+	_view.set_biome(Palette.DEFAULT_BIOME)
 	_view.set_zoom(zoom)
 	RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
 	_emit("M2 RENDERED engine=" + Engine.get_version_info().string + " os=" + OS.get_name()
@@ -192,6 +194,7 @@ func _physics_process(_delta: float) -> void:
 		_finish_layout(state)
 
 func _process(_delta: float) -> void:
+	_view.advance_frame()
 	var now: int = Time.get_ticks_usec()
 	if _sound != null and _sample_started > 0 and not _sampling_done and not _sound_state.is_empty():
 		_sound.update(_sound_state)
@@ -361,7 +364,7 @@ func _horde_tick() -> void:
 		_window_ticks += 1
 		_tick_times.append((Time.get_ticks_usec() - started) / 1000.0)
 		_script_usec += Time.get_ticks_usec() - started
-		var marks: int = _view.horde_marks().size()
+		var marks: int = _view.horde_count()
 		_horde_peak = maxi(_horde_peak, marks)
 		_horde_marked_ticks += 1 if marks > 0 else 0
 	Profiler.end_tick()

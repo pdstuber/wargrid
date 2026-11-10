@@ -6,6 +6,7 @@ const Profiler = preload("res://scripts/debug/profiler.gd")
 const PerfOverlay = preload("res://scripts/presentation/perf_overlay.gd")
 const PauseMenu = preload("res://scripts/presentation/pause_menu.gd")
 const GraphicsSettings = preload("res://scripts/presentation/graphics_settings.gd")
+const Palette = preload("res://scripts/presentation/palette.gd")
 const LAUNCHER_SCENE: String = "res://scenes/launcher.tscn"
 const MapData = preload("res://scripts/simulation/map_data.gd")
 const ZOOMS: Array[float] = [0.5, 1.0, 2.0]
@@ -42,8 +43,11 @@ func _ready() -> void:
 	_pause.leave_requested.connect(_leave)
 	_pause.quit_requested.connect(func() -> void: get_tree().quit())
 	_pause.quality_changed.connect(_view.set_quality)
+	_pause.neon_changed.connect(_view.set_bright_owners)
 	$HUD.add_child(_pause)
 	_view.set_quality(stored_quality())
+	_view.set_bright_owners(GraphicsSettings.load_neon())
+	_view.set_biome(Palette.DEFAULT_BIOME)
 	_view.local_player = local_player
 	simulation = _create_simulation()
 	_reset_camera()
@@ -103,6 +107,7 @@ func _physics_process(_delta: float) -> void:
 
 func _process(delta: float) -> void:
 	pan_camera(Input.get_vector("camera_left", "camera_right", "camera_up", "camera_down"), delta)
+	_view.advance_frame()
 
 func pan_camera(direction: Vector2, delta: float) -> void:
 	if _selecting:

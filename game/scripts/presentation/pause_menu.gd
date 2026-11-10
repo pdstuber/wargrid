@@ -7,11 +7,14 @@ signal resume_requested
 signal leave_requested
 signal quit_requested
 signal quality_changed(quality: int)
+signal neon_changed(neon: bool)
 var confirm_leave: bool = false
 var _confirming: bool = false
 var _main_box: VBoxContainer
 var _confirm_box: VBoxContainer
 var _quality_button: Button
+var _neon_button: Button
+var _neon: bool = false
 var _quality: int = GraphicsSettings.HIGH
 
 func _init(web: bool = OS.has_feature("web")) -> void:
@@ -37,6 +40,9 @@ func _init(web: bool = OS.has_feature("web")) -> void:
 	_quality_button = _button(_main_box, "", _toggle_quality)
 	_quality_button.name = "Quality"
 	_show_quality(GraphicsSettings.load_quality())
+	_neon_button = _button(_main_box, "", _toggle_neon)
+	_neon_button.name = "Neon"
+	_show_neon(GraphicsSettings.load_neon())
 	_main_box.add_child(VolumeSliders.new())
 	_confirm_box = _box(center)
 	_confirm_box.visible = false
@@ -52,6 +58,7 @@ func is_confirming() -> bool:
 
 func open() -> void:
 	_show_quality(GraphicsSettings.load_quality())
+	_show_neon(GraphicsSettings.load_neon())
 	visible = true
 	_show_main()
 
@@ -98,3 +105,12 @@ func _toggle_quality() -> void:
 func _show_quality(stored: int) -> void:
 	_quality = stored if stored != -1 else GraphicsSettings.HIGH
 	_quality_button.text = "Quality: " + ("Low" if _quality == GraphicsSettings.LOW else "High")
+
+func _toggle_neon() -> void:
+	_show_neon(not _neon)
+	GraphicsSettings.save_neon(_neon)
+	neon_changed.emit(_neon)
+
+func _show_neon(neon: bool) -> void:
+	_neon = neon
+	_neon_button.text = "Neon colours: " + ("On" if neon else "Off")

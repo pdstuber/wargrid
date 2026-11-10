@@ -121,7 +121,7 @@ func test_cues_draw_on_low(runner) -> bool:
 	for type: StringName in [&"muzzle", &"hit", &"fade"]:
 		var batch := WorldBatch.new()
 		var effects: Array[Dictionary] = [{"type": type, "anchor": Vector2(3, 3), "age": 0, "id": 1}]
-		batch.build([], {}, 0, 0, [], effects)
+		batch.build([], {}, 0, 0, effects)
 		runner.check(batch.triangle_count > 0, "VI9 %s draws with flags 0" % type)
 	return true
 
@@ -135,7 +135,7 @@ func test_pending_bounded(runner) -> bool:
 
 func test_turret_angle_changes_triangles(runner) -> bool:
 	var tank: Array[Dictionary] = [_obj(1, Vector2(3, 3))]
-	tank[0].merge({"owner": 1, "layer": 1, "footprint": Vector2i.ONE, "rise": 1.0, "boxes": 0, "variant": 0, "shadow": 0.0, "hp": 1, "max_hp": 1}, true)
+	tank[0].merge({"owner": 1, "layer": 1, "footprint": Vector2i.ONE, "rise": 1.0, "boxes": 0, "variant": 0, "shadow": 0.0, "horde": false, "hp": 1, "max_hp": 1}, true)
 	var plain := WorldBatch.new()
 	plain.build(tank, {}, 1, 0)
 	var turned := WorldBatch.new()

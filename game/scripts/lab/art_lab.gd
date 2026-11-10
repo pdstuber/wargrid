@@ -18,7 +18,6 @@ var quality: int = GraphicsSettings.HIGH
 var zoom_index: int = 1
 var picked_text: String = "none yet"
 var paused: bool = false
-var _previous: Dictionary = {}
 var _current: Dictionary = {}
 var _selected: Array[int] = []
 var _visuals := VisualDirector.new()
@@ -48,7 +47,6 @@ func advance() -> void:
 	var sim := fight.simulation
 	fight.step()
 	_visuals.collect_step(sim.tick(), sim.combat_events(), sim.command_results())
-	_previous = _current
 	_current = sim.snapshot()
 	variants.observe(_current, WorldBatch.objects(_current), sim.combat_events())
 	_show(_current)
@@ -58,7 +56,6 @@ func restart() -> void:
 	fight = Fight.new()
 	_visuals.reset()
 	variants.reset()
-	_previous = {}
 	_current = {}
 	_selected.clear()
 	advance()
@@ -74,7 +71,7 @@ func _physics_process(_delta: float) -> void:
 func _process(delta: float) -> void:
 	var pan := Vector2(int(Input.is_physical_key_pressed(KEY_RIGHT)) - int(Input.is_physical_key_pressed(KEY_LEFT)), int(Input.is_physical_key_pressed(KEY_DOWN)) - int(Input.is_physical_key_pressed(KEY_UP)))
 	_camera.position += pan.normalized() * PAN_SPEED * delta / _camera.zoom.x
-	if variants.is_b(&"interpolation") and not paused: _show(AbVariants.interpolate(_previous, _current, Engine.get_physics_interpolation_fraction()))
+	if not paused: _view.advance_frame()
 	_ground.queue_redraw()
 	_top.queue_redraw()
 	_status.text = status_text()
@@ -92,7 +89,6 @@ func status_text() -> String:
 		"PageUp/PageDown or [ ]: question | Tab: next variant | Q: Low/High | Z: zoom | O: opponent colour (now P%d) | Space: pause | R: restart | arrows: pan | Esc: quit" % variants.opponent_owner,
 	]
 	if question == &"sand_tone": lines.append("step %d/%d %s" % [variants.variant(question) + 1, labels.size(), labels[variants.variant(question)]])
-	if question == &"infantry_pick": lines.append("Clicks test the infantry click box. Last click: " + picked_text)
 	return "\n".join(lines)
 
 func step_question(direction: int) -> void:

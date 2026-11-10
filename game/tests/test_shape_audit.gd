@@ -16,7 +16,7 @@ const GROUND_UNITS: Array[StringName] = [&"light_vehicle", &"bulldozer", &"colle
 const BUILDINGS := {&"power_plant": 2, &"war_factory": 3, &"supply_depot": 3, &"command_center": 3, &"barracks": 2, &"defence_usa": 1, &"defence_china": 1, &"defence_frc": 1, &"rubble_1": 1, &"rubble_2": 2, &"rubble_3": 3}
 const DEPTH_EPSILON := 0.02
 const STEP := 1.0
-const OWNER_SLOTS: Array[int] = [Shapes.SLOT_ROOF, Shapes.SLOT_ROOF_DARK, Shapes.SLOT_GLOW]
+const OWNER_SLOTS: Array[int] = [Shapes.SLOT_ROOF, Shapes.SLOT_ROOF_DARK, Shapes.SLOT_GLOW, Shapes.SLOT_OWNER_FLAT]
 
 func cases() -> Array[Callable]:
 	return [test_units_fit_one_cell, test_buildings_stay_in_footprint, test_identity_at_every_detail, test_painter_order_matches_depth, test_owner_colour_share, test_weapons_and_distinct_silhouettes]

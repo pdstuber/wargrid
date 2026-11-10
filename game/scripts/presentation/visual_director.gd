@@ -7,6 +7,7 @@ const FADE_TICKS := 60
 const MUZZLE_TICKS := 4
 const HIT_TICKS := 6
 const TURRET_RATE := 0.15
+const DASH_TICKS := 6
 
 var dropped: int = 0
 var _pending: Array[Dictionary] = []
@@ -59,7 +60,11 @@ func _age() -> void:
 	_effects = live
 
 func _life(type: StringName) -> int:
-	return FADE_TICKS if type == &"fade" else (MUZZLE_TICKS if type == &"muzzle" else HIT_TICKS)
+	match type:
+		&"fade": return FADE_TICKS
+		&"muzzle": return MUZZLE_TICKS
+		&"dash": return DASH_TICKS
+	return HIT_TICKS
 
 func _consume(step: Dictionary) -> void:
 	var seen := {}
@@ -67,6 +72,7 @@ func _consume(step: Dictionary) -> void:
 		if event.type == "shot":
 			_add_once(seen, &"muzzle", event.attacker_id, 0)
 			_add_once(seen, &"hit", event.target_id, 1)
+			_add_dash(seen, event)
 		elif event.type == "death":
 			_add_once(seen, &"fade", event.object_id, 2)
 
@@ -76,6 +82,14 @@ func _add_once(seen: Dictionary, type: StringName, id: int, slot: int) -> void:
 	if seen.has(key) or anchor == null: return
 	seen[key] = true
 	_effects.append({"type": type, "anchor": anchor, "age": 0, "id": id})
+
+func _add_dash(seen: Dictionary, event: Dictionary) -> void:
+	var key: int = event.attacker_id * 4 + 3
+	var from: Variant = _anchors.get(event.attacker_id, _previous.get(event.attacker_id))
+	var to: Variant = _anchors.get(event.target_id, _previous.get(event.target_id))
+	if seen.has(key) or from == null or to == null: return
+	seen[key] = true
+	_effects.append({"type": &"dash", "anchor": from, "to": to, "age": 0, "id": event.attacker_id})
 
 func _aim(objects: Array[Dictionary]) -> void:
 	for id: int in _angles.keys():

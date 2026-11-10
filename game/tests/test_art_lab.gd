@@ -20,7 +20,7 @@ static func _events() -> Array[Dictionary]:
 	return []
 
 func cases() -> Array[Callable]:
-	return [test_lab_fight_shows_every_state, test_every_variant_draws, test_b_variants_change_the_picture, test_infantry_pick_box, test_interpolation_blends, test_events_drive_the_effects, test_lab_keys_and_no_match_keys, test_palette_and_shape_choices, test_rejected_variants_leave_no_shape_hooks]
+	return [test_lab_fight_shows_every_state, test_every_variant_draws, test_b_variants_change_the_picture, test_events_drive_the_effects, test_lab_keys_and_no_match_keys, test_palette_and_shape_choices, test_rejected_variants_leave_no_shape_hooks]
 
 class BodySpyView extends View:
 	var body_draws: int = 0
@@ -107,11 +107,10 @@ func _picture(fight, question: StringName, choice: int) -> Array:
 	variants.apply(parts[0], parts[2])
 	parts[0].set_state(state, _ids())
 	var batch = parts[0]._batch
-	var terrain_varied: bool = parts[0]._terrain._varied
 	var ground: Color = parts[0]._terrain._colors.ground
 	parts[0].free()
 	parts[2].free()
-	return [hash(batch.points), hash(batch.colors), batch.triangle_count, terrain_varied, ground]
+	return [hash(batch.points), hash(batch.colors), batch.triangle_count, ground]
 
 func _drawn_tree_headless() -> Array:
 	return [View.new(), AbVariants.new(), Camera2D.new()]
@@ -119,50 +118,17 @@ func _drawn_tree_headless() -> Array:
 func test_b_variants_change_the_picture(runner) -> bool:
 	var fight = Fight.new()
 	for tick in 40: fight.step()
-	runner.check(fight.simulation.snapshot().entities.any(func(unit: Dictionary) -> bool: return unit.combat != null and unit.combat.get("horde", 0) > 0), "AB3 a horde stands in the fight")
 	for question in AbVariants.QUESTIONS:
 		var a: Array = _picture(fight, question, 0)
 		var b: Array = _picture(fight, question, 1)
 		if question == &"sand_tone":
 			var last: Array = _picture(fight, question, 5)
-			runner.check(a[4] == Color("7b7566") and b[4] == Color("8a7d62") and last[4] == Color("c4a568"), "AB3 sand_tone steps 1, 2 and 6 set their ground")
+			runner.check(a[3] == Color("7b7566") and b[3] == Color("8a7d62") and last[3] == Color("c4a568"), "AB3 sand_tone steps 1, 2 and 6 set their ground")
 			continue
 		match question:
-			&"infantry_colour", &"owner_palette": runner.check(a[1] != b[1], "AB3 %s B changes the colours" % question)
-			&"horde_mark": runner.check(b[2] < a[2], "AB3 horde_mark B drops the diamonds (%d -> %d triangles)" % [a[2], b[2]])
-			&"ground": runner.check(not a[3] and b[3], "AB3 ground B turns on the per-cell variation")
-			&"ground_tone": runner.check(a[4] == Color("575c55") and b[4].get_luminance() > a[4].get_luminance(), "AB3 ground_tone B is lighter")
-			&"biome": runner.check(a[4] != b[4], "AB3 biome B changes the ground")
+			&"owner_palette": runner.check(a[1] != b[1], "AB3 owner_palette B changes the colours")
+			&"biome": runner.check(a[3] == Palette.ground(Palette.DEFAULT_BIOME).ground and b[3] == Palette.ground(0).ground, "AB3 biome A is the game's sand and B the dark ground")
 			_: runner.check(a.slice(0, 3) == b.slice(0, 3), "AB3 %s changes nothing in the batch itself" % question)
-	return true
-
-func test_infantry_pick_box(runner) -> bool:
-	var sim = Fixture.make_world()
-	var id: int = sim.spawn(1, Vector2(10.5, 10.5), "usa_rifle_infantry")
-	var view = View.new()
-	view.set_state(sim.snapshot(), _ids())
-	var extent: Rect2 = WorldBatch.pick_extent("usa_rifle_infantry")
-	var point: Vector2 = Iso.world_to_plane(Vector2(10.5, 10.5)) + extent.get_center() + Vector2(16.0, 0)
-	runner.check(view.pick_entity(point) != id, "AB4 a click 16 px beside the body misses today (box 23 px)")
-	view.set_wide_infantry_pick(true)
-	runner.check(view.pick_entity(point) == id, "AB4 the wide box catches it")
-	runner.check(view.pick_entity(point + Vector2(5.0, 0)) != id, "AB4 the wide box is 36 px, not unlimited")
-	view.free()
-	return true
-
-func test_interpolation_blends(runner) -> bool:
-	var before := {"entities": [{"id": 1, "position": [1.0, 1.0], "heading": [1.0, 0.0]}, {"id": 2, "position": [5.0, 5.0], "heading": [1.0, 0.0]}]}
-	var after := {"tick": 2, "entities": [{"id": 1, "position": [3.0, 1.0], "heading": [0.0, 1.0]}, {"id": 2, "position": [5.0, 5.0], "heading": [1.0, 0.0]}, {"id": 3, "position": [9.0, 9.0], "heading": [1.0, 0.0]}]}
-	var half: Dictionary = AbVariants.interpolate(before, after, 0.5)
-	runner.check(is_equal_approx(half.entities[0].position[0], 2.0) and is_equal_approx(half.entities[0].position[1], 1.0), "AB5 position halfway")
-	runner.check(is_equal_approx(atan2(half.entities[0].heading[1], half.entities[0].heading[0]), PI / 4.0), "AB5 heading halfway")
-	runner.check(half.entities[1] == after.entities[1] and half.entities[2] == after.entities[2], "AB5 still and new units pass through")
-	runner.check(after.entities[0].position == [3.0, 1.0], "AB5 the source snapshot is not changed")
-	runner.check(AbVariants.interpolate({}, after, 0.5) == after, "AB5 no previous snapshot draws the current one")
-	var west := deg_to_rad(170.0)
-	var east := deg_to_rad(-170.0)
-	var turn: Dictionary = AbVariants.interpolate({"entities": [{"id": 1, "position": [1.0, 1.0], "heading": [cos(west), sin(west)]}]}, {"entities": [{"id": 1, "position": [2.0, 1.0], "heading": [cos(east), sin(east)]}]}, 0.5)
-	runner.check(turn.entities[0].heading[0] < -0.99, "AB5 a heading crossing 180 degrees turns the short way, got %s" % [turn.entities[0].heading])
 	return true
 
 func _duel_tick(variants, sim, events: Array[Dictionary]) -> void:
@@ -179,10 +145,10 @@ func test_events_drive_the_effects(runner) -> bool:
 	var none: Array[Dictionary] = []
 	for choice in 2:
 		var variants = AbVariants.new()
-		for question in [&"shots", &"hit_flash", &"signature", &"shake", &"wrecks"]: variants.set_variant(question, choice)
+		for question in [&"hit_flash", &"signature", &"shake", &"wrecks"]: variants.set_variant(question, choice)
 		_duel_tick(variants, sim, shot)
 		_duel_tick(variants, sim, death)
-		runner.check(variants.active_shots().size() == choice and variants.active_flashes().size() == choice, "AB6 shots and flashes only in B (%d)" % choice)
+		runner.check(variants.active_flashes().size() == choice, "AB6 flashes only in B (%d)" % choice)
 		runner.check(variants.active_signatures().size() == choice, "AB6 the signature effect only in B")
 		runner.check((variants.shake_offset() != Vector2.ZERO) == (choice == 1), "AB6 shake only in B")
 		runner.check(variants.active_wrecks().size() == 1, "AB6 a dead tank leaves a wreck in both")
@@ -224,23 +190,19 @@ func test_lab_keys_and_no_match_keys(runner) -> bool:
 	runner.check(lab.variants.opponent_owner == 2, "AB7 O cycles the opponent colour 2..8 and back")
 	lab._unhandled_input(_key(KEY_O))
 	runner.check(lab.variants.opponent_owner == 3, "AB7 O steps to the next colour")
-	while lab.current_question() != &"infantry_pick": lab._unhandled_input(_key(KEY_PAGEUP))
-	runner.check(lab.status_text().contains("Clicks test"), "AB7 the infantry_pick HUD says clicks test the box")
 	lab._unhandled_input(_key(KEY_SPACE))
 	runner.check(lab.paused, "AB7 Space pauses")
 	lab.free()
 	return true
 
 func test_palette_and_shape_choices(runner) -> bool:
+	var warm: Dictionary = Palette.ground(0)
+	runner.check(_distance(warm.ground, warm.cliff_top) > 0.1 and _distance(warm.ground, warm.cliff_side) > 0.25, "AB8 the dark ground keeps its cliffs readable")
 	for i in Palette.OWNER_BRIGHT.size():
 		for j in range(i + 1, Palette.OWNER_BRIGHT.size()):
 			runner.check(_distance(Palette.OWNER_BRIGHT[i], Palette.OWNER_BRIGHT[j]) > 0.25, "AB8 bright owners %d and %d are distinguishable" % [i + 1, j + 1])
 		for other: Color in [Palette.HEALTH_GREEN, Palette.HEALTH_YELLOW, Palette.HEALTH_RED, Palette.NEUTRAL]:
 			runner.check(_distance(Palette.OWNER_BRIGHT[i], other) > 0.12, "AB8 bright owner %d stays apart from %s" % [i + 1, other.to_html(false)])
-	var warm: Dictionary = Palette.ground(2)
-	runner.check(_distance(warm.ground, warm.cliff_top) > 0.1 and _distance(warm.ground, warm.cliff_side) > 0.25, "AB8 the warm ground keeps its cliffs readable")
-	var soldier: Array = Shapes.parts(&"infantry", 2, Shapes.VARIANT_STRONG_COLOUR)[0].prims
-	runner.check(soldier[1].slot == Shapes.SLOT_OWNER_FLAT and soldier[2].slot == Shapes.SLOT_SKIN and soldier[0].slot == Shapes.SLOT_SIDE_DARK, "AB9 strong infantry: owner torso, light head, dark legs")
 	return true
 
 func test_rejected_variants_leave_no_shape_hooks(runner) -> bool:

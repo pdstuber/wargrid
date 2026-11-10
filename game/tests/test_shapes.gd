@@ -9,7 +9,7 @@ const Definitions = preload("res://scripts/simulation/definitions/definitions.gd
 const TURRET_OFFSET := {&"tank_frc": 0.055}
 const TANK_ROLES: Array[StringName] = [&"tank_usa", &"tank_china", &"tank_china_gatling", &"tank_frc"]
 const Z: float = 3.5
-const PRIM_SLOTS: Array[int] = [Shapes.SLOT_ROOF, Shapes.SLOT_ROOF_DARK, Shapes.SLOT_SIDE, Shapes.SLOT_SIDE_DARK, Shapes.SLOT_MACHINE, Shapes.SLOT_GLOW, Shapes.SLOT_SMOKE]
+const PRIM_SLOTS: Array[int] = [Shapes.SLOT_ROOF, Shapes.SLOT_ROOF_DARK, Shapes.SLOT_SIDE, Shapes.SLOT_SIDE_DARK, Shapes.SLOT_MACHINE, Shapes.SLOT_GLOW, Shapes.SLOT_SMOKE, Shapes.SLOT_OWNER_FLAT, Shapes.SLOT_SKIN]
 
 func cases() -> Array[Callable]:
 	return [test_bucket_wraps, test_box_top_face_on_top, test_bake_is_cached, test_unknown_kind_gets_default_role, test_owner_palette_eight, test_lab_roles_mapped, test_damage_stage_changes_geometry, test_turret_pivot_on_hull_top, test_offset_turret_pivot_follows_hull, test_no_kind_uses_default_role, test_roster_shares_slots, test_unit_heights, test_hulls_fit_one_cell, test_tracks_deck_and_cannon, test_neutral_faces, test_infantry_narrow_with_head, test_prims_sorted_per_heading, test_cylinder_segments_by_detail, test_back_faces_not_baked]
@@ -52,7 +52,7 @@ func test_owner_palette_eight(runner) -> bool:
 	var seen: Dictionary = {}
 	for owner in range(1, 9):
 		var colors: PackedColorArray = Palette.owner_colors(owner)
-		runner.check(colors.size() == 8, "SH6 eight slots owner %d" % owner)
+		runner.check(colors.size() == 10, "SH6 ten slots owner %d" % owner)
 		seen[colors[Shapes.SLOT_ROOF]] = true
 	runner.check(seen.size() == 8, "SH6 distinct roofs")
 	runner.check(Palette.owner_colors(9)[Shapes.SLOT_ROOF] == Palette.FALLBACK, "SH6 grey fallback")
@@ -211,8 +211,8 @@ func test_infantry_narrow_with_head(runner) -> bool:
 		for detail in 3:
 			var prims: Array = Shapes.parts(role, detail)[0].prims.filter(func(prim: Dictionary) -> bool: return prim.type == &"cylinder")
 			runner.check(prims.size() == 3 and prims.all(func(prim: Dictionary) -> bool: return prim.size.x <= 0.16), "SH16 %s is three cylinders at most 0.16 wide" % role)
-			runner.check(prims[1].slot == Shapes.SLOT_GLOW and prims[0].slot == Shapes.SLOT_ROOF_DARK, "SH16 %s has an owner torso over owner legs" % role)
-			runner.check(is_equal_approx(prims[2].offset.z, 3.2) and is_equal_approx(prims[2].size.z, 1.3) and prims[2].size.x < prims[1].size.x and prims[2].slot == Shapes.SLOT_MACHINE, "SH16 %s detail %d has a narrower light head" % [role, detail])
+			runner.check(prims[1].slot == Shapes.SLOT_OWNER_FLAT and prims[0].slot == Shapes.SLOT_SIDE_DARK, "SH16 %s has a full owner colour torso over dark legs" % role)
+			runner.check(is_equal_approx(prims[2].offset.z, 3.2) and is_equal_approx(prims[2].size.z, 1.3) and prims[2].size.x < prims[1].size.x and prims[2].slot == Shapes.SLOT_SKIN, "SH16 %s detail %d has a narrower light head" % [role, detail])
 	return true
 
 func _first_and_last(mesh: Dictionary, slot: int) -> Vector2i:
@@ -233,7 +233,7 @@ func test_cylinder_segments_by_detail(runner) -> bool:
 		var mesh: Dictionary = Bake.mesh(&"infantry", 0, 0, detail)
 		var tops: int = 0
 		for i in range(0, mesh.slots.size(), 3):
-			if mesh.slots[i] == Shapes.SLOT_MACHINE and is_equal_approx(mesh.lifts[i], 4.5 * Z): tops += 1
+			if mesh.slots[i] == Shapes.SLOT_SKIN and [0, 1, 2].all(func(k: int) -> bool: return is_equal_approx(mesh.lifts[i + k], 4.5 * Z)): tops += 1
 		runner.check(tops == [2, 4, 6][detail], "SH18 detail %d head top fan has %d triangles, got %d" % [detail, [2, 4, 6][detail], tops])
 	return true
 

@@ -17,31 +17,28 @@ const SMOKE := Color("2a2c2e")
 const FALLBACK := Color("808080")
 # Owner 0 is neutral supply: amber crates (palette-proposal.json, impact_heat_resources).
 const NEUTRAL := Color("f7c871")
+const WATER := Color("3b6f8f")
+const SAND := Color("a88e5c")
+const DEFAULT_BIOME := 1
 const HEALTH_GREEN := Color("5cc85a")
 const HEALTH_YELLOW := Color("e0d060")
 const HEALTH_RED := Color("d8453a")
 
-static func owner_colors(owner: int) -> PackedColorArray:
+# Ten slots: the eight Shapes slots plus a flat owner colour and a light skin tone; bright swaps in the Neon hues.
+static func owner_colors(owner: int, bright: bool = false) -> PackedColorArray:
 	var base: Color = OWNER_BASE[owner - 1] if owner >= 1 and owner <= OWNER_BASE.size() else (NEUTRAL if owner == 0 else FALLBACK)
+	if bright and owner >= 1 and owner <= OWNER_BRIGHT.size(): base = OWNER_BRIGHT[owner - 1]
 	return PackedColorArray([
 		base, base.darkened(0.25), SIDE, SIDE_DARK,
 		MACHINE, base.lightened(0.5), SMOKE, Color(0, 0, 0, 0.3),
+		base, SKIN,
 	])
 
-# Lab: the eight normal slots plus a flat owner colour for every face and a light skin tone; bright swaps the owner hues.
-static func extended_colors(owner: int, bright: bool = false) -> PackedColorArray:
-	var colors: PackedColorArray = owner_colors(owner)
-	if bright and owner >= 1 and owner <= OWNER_BRIGHT.size():
-		colors[0] = OWNER_BRIGHT[owner - 1]
-		colors[1] = colors[0].darkened(0.25)
-		colors[5] = colors[0].lightened(0.5)
-	colors.append(colors[0])
-	colors.append(SKIN)
-	return colors
+# Cliffs read against the ground: top lighter, sides much darker.
+static func ground_set(tone: Color) -> Dictionary:
+	return {"ground": tone, "cliff_top": tone.lightened(0.15), "cliff_side": tone.darkened(0.4), "water": WATER}
 
 static func ground(biome: int) -> Dictionary:
-	if biome == 2:
-		return {"ground": Color("7b7566"), "cliff_top": Color("968f7c"), "cliff_side": Color("4a463c"), "water": Color("3b6f8f")}
-	if biome == 1:
-		return {"ground": Color("c4a568"), "cliff_top": Color("a88b55"), "cliff_side": Color("665744"), "water": Color("3b6f8f")}
-	return {"ground": Color("575c55"), "cliff_top": Color("6d7268"), "cliff_side": Color("3e423c"), "water": Color("34576b")}
+	if biome == 0:
+		return {"ground": Color("7b7566"), "cliff_top": Color("968f7c"), "cliff_side": Color("4a463c"), "water": WATER}
+	return ground_set(SAND)

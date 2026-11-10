@@ -182,6 +182,8 @@ func test_menu_layout(runner) -> bool:
 			hud.append(Rect2(control.global_position, control.get_combined_minimum_size()))
 		var quality: Button = menu.find_child("Quality", true, false)
 		runner.check(quality != null and quality.is_visible_in_tree() and buttons.has(quality), "E8 quality toggle is visible")
+		var neon: Button = menu.find_child("Neon", true, false)
+		runner.check(neon != null and neon.is_visible_in_tree() and buttons.has(neon), "E8 the Neon toggle is visible at %s" % size)
 		var sliders: Array = menu.find_children("*", "Range", true, false).filter(func(slider: Range) -> bool: return slider.is_visible_in_tree())
 		var labels: Array = menu.find_child("Volume", true, false).find_children("*Label", "Label", true, false)
 		runner.check(sliders.size() == 3 and labels.size() == 4, "E8 menu has 3 sliders and their labels, got %d and %d" % [sliders.size(), labels.size()])

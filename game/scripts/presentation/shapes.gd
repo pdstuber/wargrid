@@ -16,8 +16,6 @@ const SLOT_SKIN: int = 9
 
 const TANK_ROLES := {"usa_tank": &"tank_usa", "china_tank": &"tank_china_gatling", "frc_tank": &"tank_frc", "china_light_vehicle": &"tank_china"}
 const BUILDING_SUFFIXES := {"power_plant": &"power_plant", "factory": &"war_factory", "supply_center": &"supply_depot", "command_center": &"command_center", "barracks": &"barracks"}
-# Infantry roles use this bit only when the A/B lab asks for it through WorldBatch.role_variants.
-const VARIANT_STRONG_COLOUR := 8
 const SUPPLY_STEPS: Array[int] = [1, 5, 15, 40]
 
 static var _parts_cache: Dictionary = {}
@@ -75,11 +73,11 @@ static func _build_parts(role_name: StringName, detail: int, variant: int) -> Ar
 	var found: Array[Dictionary] = []
 	match role_name:
 		&"infantry":
-			found.append(_part(&"body", &"heading", _soldier(variant) + [_prim(&"box", Vector3(0.12, 0.1, 2.2), Vector3(0.22, 0.04, 0.4), SLOT_MACHINE)]))
+			found.append(_part(&"body", &"heading", _soldier() + [_prim(&"box", Vector3(0.12, 0.1, 2.2), Vector3(0.22, 0.04, 0.4), SLOT_MACHINE)]))
 		&"laborer":
-			found.append(_part(&"body", &"heading", _soldier(variant) + [_prim(&"box", Vector3(-0.15, 0, 2.2), Vector3(0.14, 0.14, 0.5), SLOT_ROOF_DARK)]))
+			found.append(_part(&"body", &"heading", _soldier() + [_prim(&"box", Vector3(-0.15, 0, 2.2), Vector3(0.14, 0.14, 0.5), SLOT_ROOF_DARK)]))
 		&"rocket_infantry":
-			found.append(_part(&"body", &"heading", _soldier(variant) + [_prim(&"box", Vector3(0, 0.11, 2.4), Vector3(0.3, 0.07, 0.7), SLOT_MACHINE)]))
+			found.append(_part(&"body", &"heading", _soldier() + [_prim(&"box", Vector3(0, 0.11, 2.4), Vector3(0.3, 0.07, 0.7), SLOT_MACHINE)]))
 		&"bulldozer":
 			found.append(_part(&"body", &"heading", [_prim(&"box", Vector3(-0.04, 0, 0), Vector3(0.56, 0.44, 2.5), SLOT_ROOF), _prim(&"box", Vector3(0.29, 0, 0), Vector3(0.1, 0.6, 2.5), SLOT_MACHINE)]))
 			found.append(_part(&"cab", &"heading", [_prim(&"box", Vector3(-0.1, 0, 2.5), Vector3(0.28, 0.32, 2), SLOT_ROOF_DARK)]))
@@ -157,11 +155,9 @@ static func _append_tank(found: Array[Dictionary], hull: Vector2, dome: Vector3,
 		turret.append(_prim(&"box", Vector3(reach, 0, 2.2), Vector3(barrel, 0.12, 0.7), SLOT_MACHINE))
 	found.append(_part(&"turret", &"turret", turret, Vector2(0, sideways)))
 
-# 0.16 cell wide, 4.5 units tall: owner legs and torso, light head.
-static func _soldier(variant: int = 0) -> Array:
-	if variant == VARIANT_STRONG_COLOUR:
-		return [_prim(&"cylinder", Vector3.ZERO, Vector3(0.13, 0.13, 1.8), SLOT_SIDE_DARK), _prim(&"cylinder", Vector3(0, 0, 1.8), Vector3(0.16, 0.16, 1.4), SLOT_OWNER_FLAT), _prim(&"cylinder", Vector3(0, 0, 3.2), Vector3(0.11, 0.11, 1.3), SLOT_SKIN)]
-	return [_prim(&"cylinder", Vector3.ZERO, Vector3(0.13, 0.13, 1.8), SLOT_ROOF_DARK), _prim(&"cylinder", Vector3(0, 0, 1.8), Vector3(0.16, 0.16, 1.4), SLOT_GLOW), _prim(&"cylinder", Vector3(0, 0, 3.2), Vector3(0.11, 0.11, 1.3), SLOT_MACHINE)]
+# 0.16 cell wide, 4.5 units tall: dark legs, torso in the full owner colour, light head.
+static func _soldier() -> Array:
+	return [_prim(&"cylinder", Vector3.ZERO, Vector3(0.13, 0.13, 1.8), SLOT_SIDE_DARK), _prim(&"cylinder", Vector3(0, 0, 1.8), Vector3(0.16, 0.16, 1.4), SLOT_OWNER_FLAT), _prim(&"cylinder", Vector3(0, 0, 3.2), Vector3(0.11, 0.11, 1.3), SLOT_SKIN)]
 
 # Four quadrants, so damage can knock one out and the roof gets fewer triangles.
 static func _slab(side: float, height: float, variant: int) -> Array:

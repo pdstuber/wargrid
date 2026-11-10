@@ -28,3 +28,15 @@ static func flags(quality: int) -> int:
 static func detail(quality: int, zoom: float) -> int:
 	if quality != HIGH: return 0
 	return 0 if zoom < 1.0 else (1 if zoom < 2.0 else 2)
+
+static func load_neon() -> bool:
+	var config := ConfigFile.new()
+	if config.load(AudioSettings.path) != OK: return false
+	var value: Variant = config.get_value(SECTION, "neon", false)
+	return value is bool and value
+
+static func save_neon(neon: bool) -> void:
+	var config := ConfigFile.new()
+	config.load(AudioSettings.path)
+	config.set_value(SECTION, "neon", neon)
+	config.save(AudioSettings.path)

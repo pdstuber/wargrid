@@ -16,7 +16,7 @@ const CombatFixture = preload("res://tests/combat_fixture.gd")
 const MovementWorkload = preload("res://scripts/debug/movement_workload.gd")
 
 func cases() -> Array[Callable]:
-	return [test_pick, test_pile_label_drawn_over_buildings, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_depth_order_matches_comparator,test_battery_shot_line,test_battery_target_line,test_building_label_has_no_kind_id,test_horde_marks,test_rebuild_laborer_unselectable, test_crate_marks_frc_only, test_passengers_not_pickable, test_terrain_redraws_only_when_map_changes, test_structures_redraw_only_when_they_change, test_small_pile_view, test_structures_redraw_when_a_pile_vanishes, test_pick_under_roof, test_structure_bodies_in_shared_list, test_building_health_bar_in_overlay_pass, test_health_bar_rule, test_health_color_ends, test_selection_is_ground_diamond, test_biome_change_redraws_terrain, test_grid_only_while_placing, test_chevron_placeholder, test_cues_draw_on_low_in_the_view, test_effects_age_per_tick_not_per_refresh, test_bodies_submitted_each_frame, test_quality_change_rebuilds, test_draw_timing_only_on_request, test_air_pick_box_follows_lift, test_pick_covers_drawn_body, test_death_point_falls_back_to_previous_tick, test_selected_battery_line_without_a_shot, test_kind_info_follows_air_kinds, test_custom_ground_colors_rearm_the_biome]
+	return [test_pick, test_pile_label_drawn_over_buildings, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_depth_order_matches_comparator,test_battery_shot_line,test_battery_target_line,test_building_label_has_no_kind_id,test_horde_count,test_rebuild_laborer_unselectable, test_crate_marks_frc_only, test_passengers_not_pickable, test_terrain_redraws_only_when_map_changes, test_structures_redraw_only_when_they_change, test_small_pile_view, test_structures_redraw_when_a_pile_vanishes, test_pick_under_roof, test_structure_bodies_in_shared_list, test_building_health_bar_in_overlay_pass, test_health_bar_rule, test_health_color_ends, test_selection_is_ground_diamond, test_biome_change_redraws_terrain, test_grid_only_while_placing, test_chevron_placeholder, test_cues_draw_on_low_in_the_view, test_effects_age_per_tick_not_per_refresh, test_bodies_submitted_each_frame, test_quality_change_rebuilds, test_draw_timing_only_on_request, test_air_pick_box_follows_lift, test_pick_covers_drawn_body, test_death_point_falls_back_to_previous_tick, test_selected_battery_line_without_a_shot, test_kind_info_follows_air_kinds, test_custom_ground_colors_rearm_the_biome]
 
 func test_pick(runner) -> bool:
 	var view = View.new()
@@ -227,7 +227,7 @@ func test_building_label_has_no_kind_id(runner) -> bool:
 	runner.check(View.building_label(building).is_empty(), "I4 a completed building has no world text")
 	return true
 
-func test_horde_marks(runner) -> bool:
+func test_horde_count(runner) -> bool:
 	var view = View.new()
 	var sim = Simulation.new([], Vector2i(32, 32))
 	sim.add_player(1, 1000)
@@ -237,12 +237,7 @@ func test_horde_marks(runner) -> bool:
 	sim._entities[ids[0]].combat.horde = 2
 	sim._entities[ids[2]].combat.horde = 1
 	view.set_state(sim.snapshot(), [])
-	var marks: Array[Vector2] = view.horde_marks()
-	runner.check(marks.size() == 2, "V3 one horde mark per unit with a bonus")
-	for index in [0, 2]:
-		var bounds: Rect2 = view._vehicle_bounds(view._state.entities[index])
-		var hit: Array = marks.filter(func(mark: Vector2) -> bool: return bounds.has_point(mark) and mark.y > view.health_rect(bounds).end.y)
-		runner.check(hit.size() == 1, "V3 the mark of unit %d sits inside its bounds below the health bar" % index)
+	runner.check(view.horde_count() == 2, "V3 two units carry a horde bonus, got %d" % view.horde_count())
 	view.free()
 	return true
 

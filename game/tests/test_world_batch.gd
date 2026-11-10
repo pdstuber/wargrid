@@ -9,7 +9,7 @@ const Fixture = preload("res://tests/economy_fixture.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 
 func cases() -> Array[Callable]:
-	return [test_sort_key_orders_layers_then_depth, test_unit_in_front_of_factory_draws_later, test_unit_behind_factory_draws_earlier, test_air_kind_draws_above_ground, test_build_one_submission, test_empty_state, test_marks_join_the_array, test_rise_from_work, test_damage_stage_edges, test_building_rises_with_work, test_supply_stack_shrinks, test_small_pile_inside_footprint, test_shadow_only_with_flag, test_lab_roles_mapped, test_back_to_front_across_objects, test_lifts_clear_unit_height, test_top_lift_by_role, test_golden_output]
+	return [test_sort_key_orders_layers_then_depth, test_unit_in_front_of_factory_draws_later, test_unit_behind_factory_draws_earlier, test_air_kind_draws_above_ground, test_build_one_submission, test_empty_state, test_rise_from_work, test_damage_stage_edges, test_building_rises_with_work, test_supply_stack_shrinks, test_small_pile_inside_footprint, test_shadow_only_with_flag, test_lab_roles_mapped, test_back_to_front_across_objects, test_lifts_clear_unit_height, test_top_lift_by_role, test_golden_output]
 
 func _find(items: Array[Dictionary], id: int) -> Dictionary:
 	for item in items:
@@ -70,16 +70,6 @@ func test_empty_state(runner) -> bool:
 	batch.build(WorldBatch.objects({}), {}, 1, 0)
 	runner.check(batch.points.is_empty() and batch.colors.is_empty() and batch.triangle_count == 0, "WB6 empty arrays")
 	batch.submit(RID())
-	return true
-
-func test_marks_join_the_array(runner) -> bool:
-	var sim = Fixture.make_world()
-	var objects: Array[Dictionary] = WorldBatch.objects(sim.snapshot())
-	var plain = WorldBatch.new()
-	plain.build(objects, {}, 1, 0)
-	var marked = WorldBatch.new()
-	marked.build(objects, {}, 1, 0, [Vector2(0, 0), Vector2(10, 0), Vector2(20, 0)])
-	runner.check(marked.triangle_count == plain.triangle_count + 6, "WB7 three marks add six triangles")
 	return true
 
 func test_rise_from_work(runner) -> bool:
@@ -208,7 +198,7 @@ func test_top_lift_by_role(runner) -> bool:
 	runner.check(WorldBatch.top_lift("usa_power_plant") > WorldBatch.top_lift("usa_barracks"), "WB17 the power plant's drums rise above a barracks")
 	return true
 
-const GOLDEN_DIGEST := "598c4b03ad16e3634fae26e968b00da401a8f0605a04f7546844eec46ce6485d"
+const GOLDEN_DIGEST := "412a2fbb528014cb4ac18bbcab7aff90ab359ecffe19cbf69f94133fed70bb79"
 
 func _golden_state() -> Dictionary:
 	var sim = Fixture.make_world(10000, Vector2i(96, 96))
@@ -223,6 +213,7 @@ func _golden_state() -> Dictionary:
 			next_id += 1
 			unit.kind = kind
 			unit.owner = 1 + n % 3
+			if n % 7 == 0 and unit.combat != null: unit.combat.horde = 1
 			unit.position = [2.0 + (n % 20) * 1.3, 2.0 + floorf(n / 20.0) * 1.3]
 			unit.heading = [cos(h * TAU / 8.0 + n * 0.07), sin(h * TAU / 8.0 + n * 0.07)]
 			entities.append(unit)
@@ -246,8 +237,7 @@ func test_golden_output(runner) -> bool:
 	for i in items.size():
 		if i % 3 == 0: angles[items[i].id] = i * 0.31
 	var effects: Array[Dictionary] = []
-	for i in 6: effects.append({"type": [&"muzzle", &"hit", &"fade"][i % 3], "anchor": Vector2(5 + i, 5 + i), "age": i % 4, "id": i})
-	var marks: Array[Vector2] = [Vector2(0, 0), Vector2(30, 40), Vector2(-20, 7)]
+	for i in 6: effects.append({"type": [&"muzzle", &"hit", &"fade", &"dash"][i % 4], "anchor": Vector2(5 + i, 5 + i), "to": Vector2(9 + i, 4), "age": i % 4, "id": i})
 	var hasher := HashingContext.new()
 	hasher.start(HashingContext.HASH_SHA256)
 	var triangles: int = 0
@@ -255,7 +245,7 @@ func test_golden_output(runner) -> bool:
 		for flags in [0, WorldBatch.FLAG_SHADOWS]:
 			for with_extras in [false, true]:
 				var batch = WorldBatch.new()
-				if with_extras: batch.build(items, angles, detail, flags, marks, effects)
+				if with_extras: batch.build(items, angles, detail, flags, effects)
 				else: batch.build(items, {}, detail, flags)
 				hasher.update(batch.points.to_byte_array())
 				hasher.update(batch.colors.to_byte_array())
@@ -270,5 +260,5 @@ func test_golden_output(runner) -> bool:
 	var digest: String = hasher.finish().hex_encode()
 	print("GOLDEN %s %d" % [digest, triangles])
 	runner.check(triangles > 20000, "WB18 fixture is big (%d triangles)" % triangles)
-	runner.check(digest == GOLDEN_DIGEST, "WB18 output equals the digest re-recorded after the FRC turret pivot fix (intended look change, 52556 triangles; was d0067244 after the shape audit fixes)")
+	runner.check(digest == GOLDEN_DIGEST, "WB18 output equals the digest re-recorded for the winners task (intended look change: sand-independent; infantry colour B, horde rings in the batch, no marks; was 598c4b03 at 52556 triangles)")
 	return true

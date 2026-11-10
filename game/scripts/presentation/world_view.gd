@@ -44,8 +44,16 @@ var _items: Array[Dictionary] = []
 var time_draws: bool = false
 var _quality: int = GraphicsSettings.HIGH
 var _zoom: float = 1.0
-var _wide_infantry_pick: bool = false
-var _horde_diamonds: bool = true
+var _bright: bool = false
+var batch_builds: int = 0
+var _tick_usec: int = 0
+var _alpha: float = 1.0
+var _fresh: bool = false
+var _blend_tick: int = -1
+var _pose := {}
+var _prev_pose := {}
+var _moves: Array = []
+var _drawn := {}
 const WIDE_PICK_WIDTH: float = 36.0
 const HINT_TICKS: int = 40
 const SHOT_TICKS: int = 6
@@ -68,8 +76,11 @@ func _init() -> void:
 	add_child(_bodies)
 	_canvas = self
 
-static func owner_color(owner_id: int) -> Color:
-	return Palette.owner_colors(owner_id)[0]
+static func owner_color(owner_id: int, bright: bool = false) -> Color:
+	return Palette.owner_colors(owner_id, bright)[0]
+
+func _tint(owner_id: int) -> Color:
+	return owner_color(owner_id, _bright)
 
 static func health_color(fraction: float) -> Color:
 	var f: float = clampf(fraction, 0.0, 1.0)
@@ -82,6 +93,10 @@ static func shows_health(selected: bool, hp: int, max_hp: int, hovered: bool) ->
 
 func set_quality(quality: int) -> void:
 	_quality = quality
+	if quality != GraphicsSettings.HIGH and not _moves.is_empty():
+		_apply_alpha(1.0)
+		_moves.clear()
+		_drawn.clear()
 	_rebuild_batch()
 
 func set_zoom(zoom: float) -> void:
@@ -97,25 +112,13 @@ func flags() -> int:
 func set_visuals(director: Director) -> void:
 	_visuals = director
 
-func set_role_variants(variants: Dictionary) -> void:
-	_batch.role_variants = variants
-	_rebuild_batch()
-
+# Neon mode: brighter owner hues on bodies, rings and structure footprints.
 func set_bright_owners(bright: bool) -> void:
+	_bright = bright
 	_batch.bright_owners = bright
+	_structure_key = []
+	_structures.queue_redraw()
 	_rebuild_batch()
-
-# Lab: widens the infantry click box; off keeps the drawn-body box.
-func set_wide_infantry_pick(wide: bool) -> void:
-	_wide_infantry_pick = wide
-
-# Lab: false hides the white horde diamonds so a ground ring can replace them.
-func set_horde_diamonds(shown: bool) -> void:
-	_horde_diamonds = shown
-	_rebuild_batch()
-
-func set_ground_variation(varied: bool) -> void:
-	_terrain.set_varied(varied)
 
 # Lab: any ground colours; the next set_biome call applies again.
 func set_ground_colors(colors: Dictionary) -> void:
@@ -134,7 +137,7 @@ func selected_unit_lines() -> PackedVector2Array:
 	return lines
 
 func _ground_diamond(unit: Dictionary) -> PackedVector2Array:
-	var anchor: Vector2 = Iso.world_to_plane(Vector2(unit.position[0], unit.position[1]))
+	var anchor: Vector2 = Iso.world_to_plane(_drawn_position(unit))
 	var rx: float = _half_width(unit.kind) + 4.0
 	var top: Vector2 = anchor + Vector2(0, -rx * 0.5)
 	var right: Vector2 = anchor + Vector2(rx, 0)
@@ -159,7 +162,7 @@ func veterancy_lines(unit: Dictionary) -> PackedVector2Array:
 	var lines := PackedVector2Array()
 	var rank: int = unit.get("veterancy", 0)
 	if rank <= 0: return lines
-	var base: Vector2 = Iso.world_to_plane(Vector2(unit.position[0], unit.position[1])) + Vector2(_half_width(unit.kind) + 6.0, -8.0)
+	var base: Vector2 = Iso.world_to_plane(_drawn_position(unit)) + Vector2(_half_width(unit.kind) + 6.0, -8.0)
 	for i in rank:
 		var tip: Vector2 = base + Vector2(0, -3.0 * i)
 		lines.append_array([tip + Vector2(-CHEVRON_WIDTH / 2.0, -2.0), tip, tip, tip + Vector2(CHEVRON_WIDTH / 2.0, -2.0)])
@@ -187,22 +190,79 @@ func set_state(state: Dictionary, selected_ids: Array[int]) -> void:
 	Profiler.end(&"view.structures_key", zone)
 	zone = Profiler.begin()
 	_items = WorldBatch.objects(_state)
+	_track_poses(_state.get("entities", []).size())
+	_apply_alpha(_alpha)
 	if _visuals != null and _state.get("tick", 0) != _visual_tick:
 		_visual_tick = _state.get("tick", 0)
 		_visuals.update(_items)
 	_rebuild_batch()
 	Profiler.end(&"view.batch", zone)
 
+# Interpolation (High only): each moving unit is drawn between its previous and its current tick.
+# More than one tick at once (online catch-up, a restart) snaps instead of blending.
+func _track_poses(entity_count: int) -> void:
+	var tick: int = _state.get("tick", 0)
+	if tick != _blend_tick:
+		_prev_pose = _pose if tick == _blend_tick + 1 else {}
+		_pose = {}
+		for i in entity_count: _pose[_items[i].id] = _pose_of(_items[i])
+		_blend_tick = tick
+		_alpha = 0.0
+		_tick_usec = Time.get_ticks_usec()
+		_fresh = true
+	_moves = []
+	if _quality != GraphicsSettings.HIGH: return
+	for i in entity_count:
+		var item: Dictionary = _items[i]
+		var old: Variant = _prev_pose.get(item.id)
+		var now: Vector3 = _pose_of(item)
+		if old != null and old != now: _moves.append([item, old, now])
+
+static func _pose_of(item: Dictionary) -> Vector3:
+	return Vector3(item.anchor.x, item.anchor.y, item.heading)
+
+func _apply_alpha(alpha: float) -> void:
+	_alpha = alpha
+	_drawn.clear()
+	for move: Array in _moves:
+		var item: Dictionary = move[0]
+		var from: Vector3 = move[1]
+		var to: Vector3 = move[2]
+		item.anchor = Vector2(lerpf(from.x, to.x, alpha), lerpf(from.y, to.y, alpha))
+		item.heading = lerp_angle(from.z, to.z, alpha)
+		_drawn[item.id] = item.anchor
+
+# alpha runs 0 to 1 over one tick and stays at 1 while no tick arrives (a lockstep stall), so nothing rubber-bands.
+func blend(alpha: float) -> void:
+	if _moves.is_empty(): return
+	_apply_alpha(clampf(alpha, 0.0, 1.0))
+	_rebuild_batch()
+
+# Called once per rendered frame. The frame that carried a tick already drew alpha 0.
+func advance_frame(now_usec: int = -1) -> void:
+	if _fresh:
+		_fresh = false
+		return
+	if _moves.is_empty(): return
+	var now: int = Time.get_ticks_usec() if now_usec < 0 else now_usec
+	var alpha: float = clampf(float(now - _tick_usec) * Engine.physics_ticks_per_second / 1.0e6, 0.0, 1.0)
+	if alpha == _alpha: return
+	var started: int = Time.get_ticks_usec() if time_draws else 0
+	blend(alpha)
+	if time_draws: draw_usec += Time.get_ticks_usec() - started
+
+func _drawn_position(unit: Dictionary) -> Vector2:
+	return _drawn.get(unit.id, Vector2(unit.position[0], unit.position[1]))
+
 func _rebuild_batch() -> void:
 	if not _state.has("map"): return
+	batch_builds += 1
 	var angles := {}
 	var effects: Array[Dictionary] = []
 	if _visuals != null:
 		angles = _visuals.turret_angles()
 		effects = _visuals.effects()
-	var marks: Array[Vector2] = []
-	if _horde_diamonds: marks = horde_marks()
-	_batch.build(_items, angles, detail(), flags(), marks, effects)
+	_batch.build(_items, angles, detail(), flags(), effects)
 	_bodies.queue_redraw()
 	queue_redraw()
 
@@ -260,13 +320,13 @@ func _compute_half_width(kind: String) -> float:
 	return 15.0 if weapon.get("damage_type", "") == "armor_piercing" else 12.0
 
 func _vehicle_bounds(unit: Dictionary) -> Rect2:
-	var point := Vector2(unit.position[0], unit.position[1])
+	var point: Vector2 = _drawn_position(unit)
 	var extent: Rect2 = WorldBatch.pick_extent(unit.get("kind"))
 	return Rect2(extent.position + Iso.world_to_plane(point), extent.size)
 
 func _pick_bounds(unit: Dictionary) -> Rect2:
 	var bounds: Rect2 = _vehicle_bounds(unit)
-	if not _wide_infantry_pick or not WorldBatch.INFANTRY_ROLES.has(WorldBatch.kind_info(unit.kind)[0]): return bounds
+	if not WorldBatch.INFANTRY_ROLES.has(WorldBatch.kind_info(unit.kind)[0]): return bounds
 	var centre: float = bounds.get_center().x
 	return Rect2(centre - WIDE_PICK_WIDTH / 2.0, bounds.position.y, WIDE_PICK_WIDTH, bounds.size.y)
 
@@ -280,14 +340,8 @@ func order_marks() -> Array[Vector2]:
 func health_rect(bounds: Rect2) -> Rect2:
 	return Rect2(bounds.position + Vector2(0, -10), HEALTH_BAR)
 
-# Top edge of the unit rectangle, just under its health bar.
-func horde_marks() -> Array[Vector2]:
-	var marks: Array[Vector2] = []
-	for unit: Dictionary in _state.get("entities", []):
-		if unit.get("combat") != null and unit.combat.get("horde", 0) > 0:
-			var bounds: Rect2 = _vehicle_bounds(unit)
-			marks.append(Vector2(bounds.get_center().x, bounds.position.y + 4.0))
-	return marks
+func horde_count() -> int:
+	return _items.filter(func(item: Dictionary) -> bool: return item.horde).size()
 
 # Zero Hour draws a salvage crate only for the faction that can pick it up.
 func crate_marks() -> Array[Vector2]:
@@ -384,7 +438,7 @@ func draw_structures() -> void:
 	for building: Dictionary in _state.get("buildings",[]):
 		var definition: Dictionary = Definitions.building(building.kind)
 		if definition.is_empty(): continue
-		var tint: Color = owner_color(building.owner)
+		var tint: Color = _tint(building.owner)
 		_draw_footprint(building.origin,definition.footprint,tint.lerp(Color("687b8c"),0.4) if building.completed else tint.lerp(Color("887966"),0.6),_selected_ids.has(building.id))
 	Profiler.end(&"draw.structures", zone)
 	_canvas = self
@@ -560,7 +614,7 @@ func pick_entities(plane_rect: Rect2) -> Array[int]:
 	var rect := plane_rect.abs()
 	var ids: Array[int] = []
 	for unit: Dictionary in _state.get("entities", []):
-		var point: Vector2 = Iso.world_to_plane(Vector2(unit.position[0], unit.position[1]))
+		var point: Vector2 = Iso.world_to_plane(_drawn_position(unit))
 		if unit.owner == local_player and not unit.has("hole_id") and not unit.has("container_id") and point.x >= rect.position.x and point.y >= rect.position.y and point.x <= rect.end.x and point.y <= rect.end.y:
 			ids.append(unit.id)
 	ids.sort()

@@ -6,17 +6,13 @@ const Palette = preload("res://scripts/presentation/palette.gd")
 const CLIFF_HEIGHT: float = 8.0
 
 var draws: int = 0
+var ground_builds: int = 0
 var _map: Dictionary = {}
 var _colors: Dictionary = Palette.ground(0)
-var _varied: bool = false
+var _ground: Dictionary = {}
 
 func set_palette(colors: Dictionary) -> void:
 	_colors = colors
-	queue_redraw()
-
-func set_varied(varied: bool) -> void:
-	if varied == _varied: return
-	_varied = varied
 	queue_redraw()
 
 func set_map(map: Dictionary) -> void:
@@ -30,13 +26,18 @@ func _draw() -> void:
 	var zone: int = Profiler.begin()
 	draws += 1
 	var size := Vector2(_map.size[0], _map.size[1])
-	if _varied: _draw_varied_ground(size)
-	else: draw_colored_polygon(_corners(Vector2.ZERO, size), _colors.ground)
+	_draw_ground(size)
 	_draw_blocked(_map.blocked_cells)
 	Profiler.end(&"draw.terrain", zone)
 
-# Lab: one triangle array, every cell a few percent lighter or darker by a hash of its position.
-func _draw_varied_ground(size: Vector2) -> void:
+# Built once per map size and ground colour: a placement redraws the cliffs but not these 70k triangles.
+func _draw_ground(size: Vector2) -> void:
+	if _ground.get("key") != [size, _colors.ground]: _ground = _build_ground(size)
+	RenderingServer.canvas_item_add_triangle_array(get_canvas_item(), _ground.indices, _ground.points, _ground.colors)
+
+# Every cell a few percent lighter or darker by a hash of its position.
+func _build_ground(size: Vector2) -> Dictionary:
+	ground_builds += 1
 	var points := PackedVector2Array()
 	var colors := PackedColorArray()
 	var indices := PackedInt32Array()
@@ -45,7 +46,7 @@ func _draw_varied_ground(size: Vector2) -> void:
 			var shade: float = float(((x * 73856093) ^ (y * 19349663)) & 15) / 15.0 - 0.5
 			var color: Color = _colors.ground.lightened(shade * 0.08) if shade > 0.0 else _colors.ground.darkened(-shade * 0.08)
 			_add_quad(points, colors, indices, _corners(Vector2(x, y), Vector2.ONE), color)
-	RenderingServer.canvas_item_add_triangle_array(get_canvas_item(), indices, points, colors)
+	return {"key": [size, _colors.ground], "points": points, "colors": colors, "indices": indices}
 
 # Back to front, so a cell in front covers the side faces of the one behind it.
 func _draw_blocked(cells: Array) -> void:

@@ -216,7 +216,7 @@ func test_horde_render_layout(runner) -> bool:
 		sim.step()
 		if tick >= 300:
 			view.set_state(sim.snapshot(), [])
-			var count: int = view.horde_marks().size()
+			var count: int = view.horde_count()
 			peak = maxi(peak, count)
 			marked_ticks += 1 if count > 0 else 0
 	var moved: int = 0

@@ -18,8 +18,18 @@ const INDEX_BITS := 16
 const BODY_CACHE_CAP := 4096
 const AIR_LIFT := 30.0
 const SHADOW_RADIUS := 8.0
-const MARK_RADIUS := 3.0
 const GROUND_SHADOW_RADIUS := 6.0
+const RING_RADIUS := Vector2(11.0, 5.5)
+const RING_WIDTH := Vector2(2.0, 1.0)
+const RING_SEGMENTS := 8
+const RING_FILL_ALPHA := 0.25
+const RING_LINE_ALPHA := 0.9
+const DASH_COLOR := Color("fff2b0")
+const DASH_HALF_LENGTH := 6.0
+const DASH_HALF_WIDTH := 1.0
+const DASH_FROM_LIFT := 16.0
+const DASH_TO_LIFT := 8.0
+const PIVOT_PICK_MARGIN := 3.0
 const MUZZLE_LIFT := 16.0
 const MUZZLE_COLOR := Color("ffe680")
 const HIT_COLOR := Color("ff8a3c")
@@ -30,9 +40,7 @@ const INFANTRY_ROLES := [&"infantry", &"rocket_infantry", &"laborer"]
 var points := PackedVector2Array()
 var colors := PackedColorArray()
 var triangle_count: int = 0
-# Role -> variant bits OR-ed into the item's own; the A/B lab fills it, empty keeps every shape as it is.
-var role_variants: Dictionary = {}
-# Lab: a brighter set of owner hues.
+# Neon mode: a brighter set of owner hues.
 var bright_owners: bool = false
 
 static var _top_lifts: Dictionary = {}
@@ -44,6 +52,8 @@ static var _body_count: int = 0
 static var _quads: Dictionary = {}
 static var _quad_colors: Dictionary = {}
 static var _turreted: Dictionary = {}
+static var _ring_mesh := PackedVector2Array()
+static var _ring_colors: Dictionary = {}
 
 # [role, layer] per unit kind; test kinds replace Registry.air_kinds, which drops the cache.
 static func kind_info(kind: String) -> Array:
@@ -74,7 +84,10 @@ static func pick_extent(kind: String) -> Rect2:
 				for point: Vector2 in Bake.mesh(role, part, bucket, 1).points:
 					lo = lo.min(point)
 					hi = hi.max(point)
-		_pick_extents[role] = Rect2(lo, hi - lo)
+		var extent := Rect2(lo, hi - lo)
+		# shortcut: a margin instead of sweeping every hull-by-turret pose (4096 bakes); measured overshoot is under 2 px.
+		if Shapes.parts(role, 1).any(func(part: Dictionary) -> bool: return part.pivot != Vector2.ZERO): extent = extent.grow(PIVOT_PICK_MARGIN)
+		_pick_extents[role] = extent
 	var extent: Rect2 = _pick_extents[role]
 	return Rect2(extent.position + Vector2(0, -AIR_LIFT), extent.size) if kind_info(kind)[1] == LAYER_AIR else extent
 
@@ -87,6 +100,7 @@ static func objects(state: Dictionary) -> Array[Dictionary]:
 		var info: Array = kind_info(kind)
 		found.append(_item(unit, kind, info[0], info[1], Vector2(unit.position[0], unit.position[1]), Vector2i.ONE, atan2(heading[1], heading[0]), 1.0, -1 if combat == null or combat.target_id == null else combat.target_id))
 		found[-1].shadow = SHADOW_RADIUS if found[-1].layer == LAYER_AIR else GROUND_SHADOW_RADIUS
+		found[-1].horde = combat != null and combat.get("horde", 0) > 0
 	for building: Dictionary in state.get("buildings", []):
 		var definition: Dictionary = Economy.building(building.kind)
 		if definition.is_empty(): continue
@@ -105,7 +119,7 @@ static func objects(state: Dictionary) -> Array[Dictionary]:
 	return found
 
 static func _item(row: Dictionary, kind: String, role: StringName, layer: int, anchor: Vector2, footprint: Vector2i, heading: float, rise: float, target_id: int) -> Dictionary:
-	return {"id": row.id, "kind": kind, "owner": row.get("owner", 0), "role": role, "layer": layer, "anchor": anchor, "footprint": footprint, "heading": heading, "target_id": target_id, "hp": row.get("hp", 0), "max_hp": row.get("max_hp", 0), "rise": rise, "boxes": 0, "variant": 0, "shadow": 0.0}
+	return {"id": row.id, "kind": kind, "owner": row.get("owner", 0), "role": role, "layer": layer, "anchor": anchor, "footprint": footprint, "heading": heading, "target_id": target_id, "hp": row.get("hp", 0), "max_hp": row.get("max_hp", 0), "rise": rise, "boxes": 0, "variant": 0, "shadow": 0.0, "horde": false}
 
 # Integer percent maths: exactly 70 % and 35 % count as the worse stage.
 static func damage_stage(hp: int, max_hp: int) -> int:
@@ -132,7 +146,7 @@ static func depth_sorted(entities: Array) -> Array:
 		sorted[i] = entities[keys[i] & ((1 << INDEX_BITS) - 1)]
 	return sorted
 
-func build(items: Array[Dictionary], turret_angles: Dictionary, detail: int, flags: int, marks: Array[Vector2] = [], effects: Array[Dictionary] = []) -> void:
+func build(items: Array[Dictionary], turret_angles: Dictionary, detail: int, flags: int, effects: Array[Dictionary] = []) -> void:
 	points.clear()
 	colors.clear()
 	assert(items.size() < (1 << INDEX_BITS))
@@ -143,17 +157,15 @@ func build(items: Array[Dictionary], turret_angles: Dictionary, detail: int, fla
 		keys[i] = (sort_key(item.layer, item.anchor, item.id) << INDEX_BITS) | i
 	keys.sort()
 	var mask: int = (1 << INDEX_BITS) - 1
-	if flags & FLAG_SHADOWS:
-		var shadow_colors: PackedColorArray = _quad_colors_for(Palette.owner_colors(0)[Shapes.SLOT_SHADOW])
-		for key in keys:
-			var item: Dictionary = items[key & mask]
-			if item.shadow > 0.0: _append_quad(Iso.world_to_plane(item.anchor), item.shadow, shadow_colors)
+	var shadow_colors: PackedColorArray = _quad_colors_for(Palette.owner_colors(0)[Shapes.SLOT_SHADOW])
+	var shadows: bool = flags & FLAG_SHADOWS != 0
+	for key in keys:
+		var item: Dictionary = items[key & mask]
+		if shadows and item.shadow > 0.0: _append_quad(Iso.world_to_plane(item.anchor), item.shadow, shadow_colors)
+		if item.horde: _append_ring(Iso.world_to_plane(item.anchor), item.owner)
 	for key in keys:
 		_append_body(items[key & mask], detail, turret_angles)
 	for effect in effects: _append_effect(effect)
-	var mark_colors: PackedColorArray = _quad_colors_for(Color.WHITE)
-	for mark in marks:
-		_append_quad(mark, MARK_RADIUS, mark_colors)
 	@warning_ignore("integer_division")
 	triangle_count = points.size() / 3
 
@@ -164,7 +176,7 @@ func submit(item: RID) -> void:
 func _append_body(item: Dictionary, detail: int, turret_angles: Dictionary) -> void:
 	var move := Transform2D(0.0, Iso.world_to_plane(item.anchor) + Vector2(0, -AIR_LIFT if item.layer == LAYER_AIR else 0.0))
 	var bucket: int = Bake.bucket(item.heading)
-	var variant: int = item.variant if role_variants.is_empty() else item.variant | role_variants.get(item.role, 0)
+	var variant: int = item.variant
 	var turret_bucket: int = Bake.bucket(turret_angles[item.id]) if turret_angles.has(item.id) and _has_turret(item.role, detail, variant) else bucket
 	var body: Dictionary = _body(item.role, detail, variant, bucket, turret_bucket)
 	var mesh_points: PackedVector2Array = body.points
@@ -209,7 +221,7 @@ func _mesh_colors(mesh: Dictionary, owner: int) -> PackedColorArray:
 	var by_owner: Dictionary = mesh.get_or_add("colors", {})
 	var key: int = owner + (1000 if bright_owners else 0)
 	if not by_owner.has(key):
-		var palette: PackedColorArray = Palette.extended_colors(owner, bright_owners)
+		var palette: PackedColorArray = Palette.owner_colors(owner, bright_owners)
 		var slots: PackedByteArray = mesh.slots
 		var built := PackedColorArray()
 		built.resize(slots.size())
@@ -224,6 +236,52 @@ func _append_effect(effect: Dictionary) -> void:
 		&"muzzle": _append_quad(at + Vector2(0, -MUZZLE_LIFT), maxf(6.0 - age, 2.0), _quad_colors_for(MUZZLE_COLOR))
 		&"hit": _append_quad(at + Vector2(0, -8), 3.0 + age, _quad_colors_for(Color(HIT_COLOR, 1.0 - age / 6.0)))
 		&"fade": _append_quad(at, 9.0, _quad_colors_for(Color(FADE_COLOR, 0.6 * (1.0 - age / Director.FADE_TICKS))))
+		&"dash": _append_dash(at + Vector2(0, -DASH_FROM_LIFT), Iso.world_to_plane(effect.to) + Vector2(0, -DASH_TO_LIFT), (age + 1.0) / (Director.DASH_TICKS + 1))
+
+# A short bright streak on its way from the attacker to the target, as one quad.
+func _append_dash(from: Vector2, to: Vector2, along: float) -> void:
+	var centre: Vector2 = from.lerp(to, along)
+	var direction: Vector2 = (to - from).normalized()
+	var half: Vector2 = direction * DASH_HALF_LENGTH
+	var side: Vector2 = direction.orthogonal() * DASH_HALF_WIDTH
+	var a: Vector2 = centre - half - side
+	var b: Vector2 = centre + half - side
+	var c: Vector2 = centre + half + side
+	var d: Vector2 = centre - half + side
+	points.append_array(PackedVector2Array([a, b, c, a, c, d]))
+	colors.append_array(_quad_colors_for(DASH_COLOR))
+
+# A flat ellipse under the unit: translucent fill, then a thin ring, 24 triangles in all.
+func _append_ring(centre: Vector2, owner: int) -> void:
+	if _ring_mesh.is_empty(): _ring_mesh = _build_ring()
+	points.append_array(Transform2D(0.0, centre) * _ring_mesh)
+	var key: int = owner + (1000 if bright_owners else 0)
+	if not _ring_colors.has(key):
+		var base: Color = Palette.owner_colors(owner, bright_owners)[0]
+		var built := PackedColorArray()
+		for i in RING_SEGMENTS * 3: built.append(Color(base, RING_FILL_ALPHA))
+		for i in RING_SEGMENTS * 6: built.append(Color(base, RING_LINE_ALPHA))
+		_ring_colors[key] = built
+	colors.append_array(_ring_colors[key])
+
+static func _build_ring() -> PackedVector2Array:
+	var mesh := PackedVector2Array()
+	var inner: Vector2 = RING_RADIUS - RING_WIDTH
+	for i in RING_SEGMENTS:
+		var a: float = TAU * i / RING_SEGMENTS
+		var b: float = TAU * (i + 1) / RING_SEGMENTS
+		var outer_a := Vector2(cos(a), sin(a)) * RING_RADIUS
+		var outer_b := Vector2(cos(b), sin(b)) * RING_RADIUS
+		mesh.append_array(PackedVector2Array([Vector2.ZERO, outer_a, outer_b]))
+	for i in RING_SEGMENTS:
+		var a: float = TAU * i / RING_SEGMENTS
+		var b: float = TAU * (i + 1) / RING_SEGMENTS
+		var outer_a := Vector2(cos(a), sin(a)) * RING_RADIUS
+		var outer_b := Vector2(cos(b), sin(b)) * RING_RADIUS
+		var inner_a := Vector2(cos(a), sin(a)) * inner
+		var inner_b := Vector2(cos(b), sin(b)) * inner
+		mesh.append_array(PackedVector2Array([inner_a, outer_a, outer_b, inner_a, outer_b, inner_b]))
+	return mesh
 
 static func _quad_colors_for(color: Color) -> PackedColorArray:
 	if not _quad_colors.has(color):
