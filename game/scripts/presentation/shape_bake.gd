@@ -3,6 +3,10 @@ extends RefCounted
 const Iso = preload("res://scripts/presentation/isometric.gd")
 const Shapes = preload("res://scripts/presentation/shapes.gd")
 
+# Part heights in shapes.gd are in these units; one unit is 3.5 px.
+const Z_SCALE := 3.5
+const MAX_VARIANT := 4096
+
 static var bake_count: int = 0
 static var _cache: Dictionary = {}
 
@@ -10,6 +14,7 @@ static func bucket(angle: float) -> int:
 	return posmod(roundi(angle / TAU * Shapes.HEADING_BUCKETS), Shapes.HEADING_BUCKETS)
 
 static func mesh(role: StringName, part: int, bucket_index: int, detail: int, variant: int = 0) -> Dictionary:
+	assert(variant < MAX_VARIANT)
 	var by_role: Dictionary = _cache.get_or_add(role, {})
 	var key: int = variant | (detail << 12) | (bucket_index << 14) | (part << 20)
 	if not by_role.has(key):
@@ -21,8 +26,7 @@ static func _bake(role: StringName, part: int, bucket_index: int, detail: int, v
 	var out := {"points": PackedVector2Array(), "slots": PackedByteArray(), "lifts": PackedFloat32Array()}
 	var spec: Dictionary = Shapes.parts(role, detail, variant)[part]
 	var angle: float = 0.0 if spec.angle == &"fixed" else bucket_index * TAU / Shapes.HEADING_BUCKETS
-	var pivot: Vector3 = spec.pivot
-	for prim: Dictionary in spec.prims:
+	for prim: Dictionary in _back_to_front(spec.prims, angle):
 		var size: Vector3 = prim.size
 		var corners := PackedVector2Array()
 		if prim.type == &"cylinder":
@@ -36,10 +40,19 @@ static func _bake(role: StringName, part: int, bucket_index: int, detail: int, v
 		var offset: Vector3 = prim.offset
 		var ring := PackedVector2Array()
 		for corner in corners:
-			var local := Vector2(offset.x, offset.y) + corner
-			ring.append(Vector2(pivot.x, pivot.y) + (local - Vector2(pivot.x, pivot.y)).rotated(angle))
-		_append_prim(out, ring, offset.z, size.z, prim.slot)
+			ring.append((Vector2(offset.x, offset.y) + corner).rotated(angle))
+		_append_prim(out, ring, offset.z * Z_SCALE, size.z * Z_SCALE, prim.slot)
 	return out
+
+# Back to front for this heading, so a blade or cannon facing away is painted over by its body.
+static func _back_to_front(prims: Array, angle: float) -> Array:
+	var keyed: Array = []
+	for i in prims.size():
+		var offset: Vector3 = prims[i].offset
+		var centre: Vector2 = Vector2(offset.x, offset.y).rotated(angle)
+		keyed.append([centre.x + centre.y, offset.z, i])
+	keyed.sort()
+	return keyed.map(func(key: Array) -> Dictionary: return prims[key[2]])
 
 static func _append_prim(out: Dictionary, ring: PackedVector2Array, base: float, height: float, slot: int) -> void:
 	var top: float = base + height

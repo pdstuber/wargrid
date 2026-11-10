@@ -8,7 +8,7 @@ const Iso = preload("res://scripts/presentation/isometric.gd")
 const Fixture = preload("res://tests/economy_fixture.gd")
 
 func cases() -> Array[Callable]:
-	return [test_sort_key_orders_layers_then_depth, test_unit_in_front_of_factory_draws_later, test_unit_behind_factory_draws_earlier, test_air_kind_draws_above_ground, test_build_one_submission, test_empty_state, test_marks_join_the_array, test_rise_from_work, test_damage_stage_edges, test_building_rises_with_work, test_supply_stack_shrinks, test_small_pile_inside_footprint, test_shadow_only_with_flag, test_lab_roles_mapped]
+	return [test_sort_key_orders_layers_then_depth, test_unit_in_front_of_factory_draws_later, test_unit_behind_factory_draws_earlier, test_air_kind_draws_above_ground, test_build_one_submission, test_empty_state, test_marks_join_the_array, test_rise_from_work, test_damage_stage_edges, test_building_rises_with_work, test_supply_stack_shrinks, test_small_pile_inside_footprint, test_shadow_only_with_flag, test_lab_roles_mapped, test_back_to_front_across_objects, test_lifts_clear_unit_height, test_top_lift_by_role]
 
 func _find(items: Array[Dictionary], id: int) -> Dictionary:
 	for item in items:
@@ -20,7 +20,6 @@ func _key(item: Dictionary) -> int:
 
 func test_sort_key_orders_layers_then_depth(runner) -> bool:
 	runner.check(WorldBatch.sort_key(WorldBatch.LAYER_AIR, Vector2(0, 0), 9) > WorldBatch.sort_key(WorldBatch.LAYER_GROUND, Vector2(90, 90), 1), "WB1 air above ground at any depth")
-	runner.check(WorldBatch.sort_key(WorldBatch.LAYER_GROUND, Vector2(5, 5), 1) > WorldBatch.sort_key(WorldBatch.LAYER_DECAL, Vector2(90, 90), 1), "WB1 ground above decal")
 	runner.check(WorldBatch.sort_key(1, Vector2(4, 4), 1) > WorldBatch.sort_key(1, Vector2(3, 4), 99), "WB1 larger x+y later")
 	runner.check(WorldBatch.sort_key(1, Vector2(4, 4), 2) > WorldBatch.sort_key(1, Vector2(4, 4), 1), "WB1 equal depth, lower id first")
 	return true
@@ -70,7 +69,6 @@ func test_empty_state(runner) -> bool:
 	batch.build(WorldBatch.objects({}), {}, 1, 0)
 	runner.check(batch.points.is_empty() and batch.colors.is_empty() and batch.triangle_count == 0, "WB6 empty arrays")
 	batch.submit(RID())
-	runner.check(true, "WB6 submit of nothing does not error")
 	return true
 
 func test_marks_join_the_array(runner) -> bool:
@@ -187,4 +185,24 @@ func test_shadow_only_with_flag(runner) -> bool:
 	var plain = _single(item)
 	var shadowed = _single(item, WorldBatch.FLAG_SHADOWS)
 	runner.check(shadowed.triangle_count == plain.triangle_count + 2, "WB14 shadow adds two triangles only with the flag")
+	return true
+
+func test_back_to_front_across_objects(runner) -> bool:
+	var pair := _factory_world(Vector2(11.5, 13.5))
+	var factory_only = _single(pair[0], 0)
+	var both = WorldBatch.new()
+	both.build([pair[1], pair[0]] as Array[Dictionary], {}, 2, 0)
+	runner.check(factory_only.points.size() > 0 and both.points.slice(0, factory_only.points.size()) == factory_only.points, "WB15 the factory behind the tank is painted first")
+	runner.check(both.points.size() > factory_only.points.size(), "WB15 the tank follows")
+	return true
+
+func test_lifts_clear_unit_height(runner) -> bool:
+	runner.check(WorldBatch.MUZZLE_LIFT >= 15.75, "WB16 muzzle flash sits at or above a tank top (15.75 px), got %f" % WorldBatch.MUZZLE_LIFT)
+	runner.check(WorldBatch.AIR_LIFT >= 30.0, "WB16 aircraft fly at least 30 px above their ground point, got %f" % WorldBatch.AIR_LIFT)
+	return true
+
+func test_top_lift_by_role(runner) -> bool:
+	runner.check(is_equal_approx(WorldBatch.top_lift("usa_factory"), 49.0), "WB17 factory roof is 49 px")
+	runner.check(is_equal_approx(WorldBatch.top_lift("usa_command_center"), 63.0), "WB17 command centre is 63 px")
+	runner.check(WorldBatch.top_lift("usa_power_plant") > WorldBatch.top_lift("usa_barracks"), "WB17 the power plant's drums rise above a barracks")
 	return true

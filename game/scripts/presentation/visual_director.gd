@@ -10,7 +10,6 @@ const TURRET_RATE := 0.15
 
 var dropped: int = 0
 var _pending: Array[Dictionary] = []
-var _consumed: Array[int] = []
 var _effects: Array[Dictionary] = []
 var _angles: Dictionary = {}
 var _anchors: Dictionary = {}
@@ -33,8 +32,6 @@ func update(objects: Array[Dictionary]) -> void:
 	_age()
 	for step: Dictionary in _pending:
 		_consume(step)
-		_consumed.append(step.tick)
-	if _consumed.size() > MAX_PENDING: _consumed = _consumed.slice(-MAX_PENDING)
 	_pending.clear()
 	if _effects.size() > MAX_EFFECTS: _effects = _effects.slice(-MAX_EFFECTS)
 	_aim(objects)
@@ -45,12 +42,8 @@ func effects() -> Array[Dictionary]:
 func turret_angles() -> Dictionary:
 	return _angles
 
-func consumed_ticks() -> Array[int]:
-	return _consumed
-
 func reset() -> void:
 	_pending.clear()
-	_consumed.clear()
 	_effects.clear()
 	_angles.clear()
 	_anchors = {}

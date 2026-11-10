@@ -36,6 +36,8 @@ var _visual_tick: int = -1
 var _waiting: Dictionary = {}
 var _canvas: CanvasItem
 var draw_usec: int = 0
+var _items: Array[Dictionary] = []
+var time_draws: bool = false
 var _quality: int = GraphicsSettings.HIGH
 var _zoom: float = 1.0
 const HINT_TICKS: int = 40
@@ -73,9 +75,11 @@ static func shows_health(selected: bool, hp: int, max_hp: int, hovered: bool) ->
 
 func set_quality(quality: int) -> void:
 	_quality = quality
+	_rebuild_batch()
 
 func set_zoom(zoom: float) -> void:
 	_zoom = zoom
+	_rebuild_batch()
 
 func detail() -> int:
 	return GraphicsSettings.detail(_quality, _zoom)
@@ -150,18 +154,22 @@ func set_state(state: Dictionary, selected_ids: Array[int]) -> void:
 	_refresh_structures()
 	Profiler.end(&"view.structures_key", zone)
 	zone = Profiler.begin()
-	var items: Array[Dictionary] = WorldBatch.objects(_state)
+	_items = WorldBatch.objects(_state)
+	if _visuals != null and _state.get("tick", 0) != _visual_tick:
+		_visual_tick = _state.get("tick", 0)
+		_visuals.update(_items)
+	_rebuild_batch()
+	Profiler.end(&"view.batch", zone)
+
+func _rebuild_batch() -> void:
+	if not _state.has("map"): return
 	var angles := {}
 	var effects: Array[Dictionary] = []
 	if _visuals != null:
-		if _state.get("tick", 0) != _visual_tick:
-			_visual_tick = _state.get("tick", 0)
-			_visuals.update(items)
 		angles = _visuals.turret_angles()
-		effects = _visuals.effects() if flags() & WorldBatch.FLAG_EFFECTS else effects
-	_batch.build(items, angles, detail(), flags(), horde_marks(), effects)
+		effects = _visuals.effects()
+	_batch.build(_items, angles, detail(), flags(), horde_marks(), effects)
 	_bodies.queue_redraw()
-	Profiler.end(&"view.batch", zone)
 	queue_redraw()
 
 func add_hint(point: Vector2, tick: int) -> void:
@@ -213,7 +221,7 @@ func _half_width(kind: String) -> float:
 func _vehicle_bounds(unit: Dictionary) -> Rect2:
 	var point := Vector2(unit.position[0], unit.position[1])
 	var half: float = _half_width(unit.get("kind"))
-	return Rect2(Iso.world_to_plane(point) + Vector2(-half, -34 if Registry.air_kinds.has(unit.get("kind")) else -16), Vector2(half * 2.0, 16))
+	return Rect2(Iso.world_to_plane(point) + Vector2(-half, -(WorldBatch.AIR_LIFT + 16.0) if Registry.air_kinds.has(unit.get("kind")) else -16.0), Vector2(half * 2.0, 16))
 
 func order_marks() -> Array[Vector2]:
 	var marks: Array[Vector2] = []
@@ -263,7 +271,7 @@ func pick_entity(plane_point: Vector2, any_owner: bool = false) -> int:
 func _draw() -> void:
 	if not _state.has("map"):
 		return
-	var started: int = Time.get_ticks_usec()
+	var started: int = Time.get_ticks_usec() if time_draws else 0
 	var total: int = Profiler.begin()
 	var zone: int = Profiler.begin()
 	for cell in _preview_cells:
@@ -281,7 +289,7 @@ func _draw() -> void:
 	_draw_labels()
 	Profiler.end(&"draw.overlays", zone)
 	Profiler.end(&"draw", total)
-	draw_usec += Time.get_ticks_usec() - started
+	if time_draws: draw_usec += Time.get_ticks_usec() - started
 
 # One pass per command type: all rects here, then all lines, then text.
 func _draw_rects() -> void:
@@ -292,7 +300,7 @@ func _draw_rects() -> void:
 	for building: Dictionary in _state.get("buildings", []):
 		var definition: Dictionary = Definitions.building(building.kind)
 		if definition.is_empty(): continue
-		_draw_health(Iso.world_to_plane(Vector2(building.origin[0], building.origin[1]) + Vector2(definition.footprint) / 2.0) + Vector2(-16, -26), building, _selected_ids.has(building.id))
+		_draw_health(Iso.world_to_plane(Vector2(building.origin[0], building.origin[1]) + Vector2(definition.footprint) / 2.0) + Vector2(-HEALTH_BAR.x / 2.0, -WorldBatch.top_lift(building.kind) - 10.0), building, _selected_ids.has(building.id))
 
 func _draw_lines() -> void:
 	var grid: PackedVector2Array = grid_lines()
@@ -316,9 +324,9 @@ func _draw_labels() -> void:
 		for i in lines.size(): _draw_label(points[i], lines[i])
 
 func draw_bodies() -> void:
-	var started: int = Time.get_ticks_usec()
+	var started: int = Time.get_ticks_usec() if time_draws else 0
 	_batch.submit(_bodies.get_canvas_item())
-	draw_usec += Time.get_ticks_usec() - started
+	if time_draws: draw_usec += Time.get_ticks_usec() - started
 
 # Drawn into the child layer, which redraws only when `_structure_key` changes.
 func draw_structures() -> void:

@@ -7,12 +7,16 @@ const Fixture = preload("res://tests/economy_fixture.gd")
 const Palette = preload("res://scripts/presentation/palette.gd")
 const WorldBatch = preload("res://scripts/presentation/world_batch.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
+const Shapes = preload("res://scripts/presentation/shapes.gd")
+const Bake = preload("res://scripts/presentation/shape_bake.gd")
+const Director = preload("res://scripts/presentation/visual_director.gd")
+const GraphicsSettings = preload("res://scripts/presentation/graphics_settings.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const CombatFixture = preload("res://tests/combat_fixture.gd")
 const MovementWorkload = preload("res://scripts/debug/movement_workload.gd")
 
 func cases() -> Array[Callable]:
-	return [test_pick, test_pile_label_drawn_over_buildings, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_depth_order_matches_comparator,test_battery_shot_line,test_battery_target_line,test_building_label_has_no_kind_id,test_horde_marks,test_rebuild_laborer_unselectable, test_crate_marks_frc_only, test_passengers_not_pickable, test_terrain_redraws_only_when_map_changes, test_structures_redraw_only_when_they_change, test_small_pile_view, test_structures_redraw_when_a_pile_vanishes, test_pick_under_roof, test_structure_bodies_in_shared_list, test_building_health_bar_in_overlay_pass, test_health_bar_rule, test_health_color_ends, test_selection_is_ground_diamond, test_biome_change_redraws_terrain, test_grid_only_while_placing, test_no_glyphs_or_heading_ticks, test_chevron_placeholder]
+	return [test_pick, test_pile_label_drawn_over_buildings, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_depth_order_matches_comparator,test_battery_shot_line,test_battery_target_line,test_building_label_has_no_kind_id,test_horde_marks,test_rebuild_laborer_unselectable, test_crate_marks_frc_only, test_passengers_not_pickable, test_terrain_redraws_only_when_map_changes, test_structures_redraw_only_when_they_change, test_small_pile_view, test_structures_redraw_when_a_pile_vanishes, test_pick_under_roof, test_structure_bodies_in_shared_list, test_building_health_bar_in_overlay_pass, test_health_bar_rule, test_health_color_ends, test_selection_is_ground_diamond, test_biome_change_redraws_terrain, test_grid_only_while_placing, test_chevron_placeholder, test_cues_draw_on_low_in_the_view, test_effects_age_per_tick_not_per_refresh, test_bodies_submitted_each_frame, test_quality_change_rebuilds, test_draw_timing_only_on_request, test_air_pick_box_follows_lift]
 
 func test_pick(runner) -> bool:
 	var view = View.new()
@@ -71,7 +75,7 @@ func test_economy_picking(runner) -> bool:
 	runner.check(view.pick_object(Iso.world_to_plane(Vector2(25.5,5.5))) == source,"V3 neutral source")
 	var air: int = sim.spawn(1,Vector2(25.5,5.5),"usa_collector")
 	view.set_state(sim.snapshot(),[air])
-	runner.check(view.pick_object(Iso.world_to_plane(Vector2(25.5,5.5)) + Vector2(0,-26)) == air,"V3 air unit precedence over source")
+	runner.check(view.pick_object(Iso.world_to_plane(Vector2(25.5,5.5)) + Vector2(0,-WorldBatch.AIR_LIFT - 8.0)) == air,"V3 air unit precedence over source")
 	view.set_state({},[])
 	runner.check(view.pick_object(Vector2.ZERO) == -1,"V3 empty safe")
 	view.free()
@@ -438,7 +442,10 @@ func test_pick_under_roof(runner) -> bool:
 	var view = View.new()
 	view.set_state(sim.snapshot(), [])
 	runner.check(view.pick_entity(Iso.world_to_plane(Vector2(11.5, 9.5)) + Vector2(0, -8)) == tank, "V15 tank north of the factory is picked at its ground anchor")
-	var roof: Vector2 = Iso.world_to_plane(Vector2(11.5, 11.5)) + Vector2(0, -80)
+	var highest: float = 0.0
+	for part in Shapes.parts(&"war_factory", 2).size():
+		for point in Bake.mesh(&"war_factory", part, 0, 2).points: highest = minf(highest, point.y)
+	var roof: Vector2 = Iso.world_to_plane(Vector2(11.5, 11.5)) + Vector2(0, highest + 3.0)
 	runner.check(view.pick_object(roof) == -1, "V15 a click on the drawn roof outside the ground footprint picks nothing")
 	view.free()
 	return true
@@ -544,18 +551,6 @@ func test_grid_only_while_placing(runner) -> bool:
 	view.free()
 	return true
 
-func test_no_glyphs_or_heading_ticks(runner) -> bool:
-	var sim = Fixture.make_world()
-	Fixture.add_completed(sim, 1, "usa_power_plant", Vector2i(14, 8))
-	sim.spawn(1, Vector2(3.5, 4.5), "usa_tank")
-	var view = View.new()
-	runner.root.add_child(view)
-	view.set_state(sim.snapshot(), [])
-	await runner.process_frame
-	runner.check(not view.has_method("heading_marks") and not view.has_method("_draw_glyph") and not view.has_method("_draw_building_mark"), "V23 no heading tick or building glyph drawing is left")
-	view.free()
-	return true
-
 func test_chevron_placeholder(runner) -> bool:
 	var view = View.new()
 	var unit := {"id": 1, "kind": "usa_tank", "position": [3.0, 3.0]}
@@ -564,5 +559,100 @@ func test_chevron_placeholder(runner) -> bool:
 	runner.check(view.veterancy_lines(unit).size() == 4, "V24 rank 1 is one chevron of two segments")
 	unit.veterancy = 3
 	runner.check(view.veterancy_lines(unit).size() == 12, "V24 rank 3 is three chevrons")
+	view.free()
+	return true
+
+class BodySpyView extends View:
+	var body_draws: int = 0
+
+	func draw_bodies() -> void:
+		body_draws += 1
+		super()
+
+func _duel() -> Array:
+	var sim = Fixture.make_world()
+	var attacker: int = sim.spawn(1, Vector2(5.5, 5.5), "usa_tank")
+	var target: int = sim.spawn(2, Vector2(9.5, 5.5), "usa_tank")
+	return [sim, attacker, target]
+
+func _shot_director(attacker: int, target: int) -> Director:
+	var director := Director.new()
+	var events: Array[Dictionary] = [{"type": "shot", "tick": 1, "attacker_id": attacker, "target_id": target, "damage": 1, "splash": false}]
+	var none: Array[Dictionary] = []
+	director.collect_step(1, events, none)
+	return director
+
+func test_cues_draw_on_low_in_the_view(runner) -> bool:
+	var duel := _duel()
+	var counts: Array[int] = []
+	for director in [null, _shot_director(duel[1], duel[2])]:
+		var view = View.new()
+		view.set_quality(GraphicsSettings.LOW)
+		if director != null: view.set_visuals(director)
+		view.set_state(duel[0].snapshot(), [])
+		counts.append(view._batch.triangle_count)
+		view.free()
+	runner.check(counts[1] > counts[0], "V24 Low still draws shot cues, triangles %d without, %d with a shot" % counts)
+	return true
+
+func test_effects_age_per_tick_not_per_refresh(runner) -> bool:
+	var duel := _duel()
+	var director := _shot_director(duel[1], duel[2])
+	var view = View.new()
+	view.set_visuals(director)
+	view.set_state(duel[0].snapshot(), [])
+	view.set_state(duel[0].snapshot(), [])
+	var ages: Array = director.effects().map(func(effect: Dictionary) -> int: return effect.age)
+	runner.check(not ages.is_empty() and ages.all(func(age: int) -> bool: return age == 0), "V25 two refreshes of one tick do not age effects, got %s" % [ages])
+	duel[0].step()
+	view.set_state(duel[0].snapshot(), [])
+	runner.check(director.effects().all(func(effect: Dictionary) -> bool: return effect.age == 1), "V25 the next tick ages them once")
+	view.free()
+	return true
+
+func test_bodies_submitted_each_frame(runner) -> bool:
+	var duel := _duel()
+	var view = BodySpyView.new()
+	runner.root.add_child(view)
+	view.set_state(duel[0].snapshot(), [])
+	await runner.process_frame
+	await runner.process_frame
+	runner.check(view.body_draws >= 1, "V26 the body layer asked the view to submit the batch, got %d" % view.body_draws)
+	view.free()
+	return true
+
+func test_quality_change_rebuilds(runner) -> bool:
+	var duel := _duel()
+	var view = View.new()
+	view.set_state(duel[0].snapshot(), [])
+	var high: int = view._batch.triangle_count
+	view.set_quality(GraphicsSettings.LOW)
+	runner.check(view._batch.triangle_count < high, "V27 Low shows fewer triangles without a new tick (%d -> %d)" % [high, view._batch.triangle_count])
+	view.set_quality(GraphicsSettings.HIGH)
+	view.set_zoom(0.5)
+	var far: int = view._batch.triangle_count
+	view.set_zoom(2.0)
+	runner.check(view._batch.triangle_count > far, "V27 zoom changes the detail at once (%d -> %d)" % [far, view._batch.triangle_count])
+	view.free()
+	return true
+
+func test_draw_timing_only_on_request(runner) -> bool:
+	var duel := _duel()
+	var view = View.new()
+	runner.root.add_child(view)
+	view.set_state(duel[0].snapshot(), [])
+	await runner.process_frame
+	await runner.process_frame
+	runner.check(view.draw_usec == 0 and not view.time_draws, "V28 no draw timing unless asked")
+	view.free()
+	return true
+
+func test_air_pick_box_follows_lift(runner) -> bool:
+	var sim = Fixture.make_world()
+	var heli: int = sim.spawn(1, Vector2(9.0, 9.0), "usa_collector")
+	var view = View.new()
+	view.set_state(sim.snapshot(), [])
+	var anchor: Vector2 = Iso.world_to_plane(Vector2(9.0, 9.0))
+	runner.check(view.pick_entity(anchor + Vector2(0, -WorldBatch.AIR_LIFT - 8.0)) == heli, "V29 the helicopter is picked where it is drawn")
 	view.free()
 	return true

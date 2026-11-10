@@ -9,27 +9,35 @@ const Palette = preload("res://scripts/presentation/palette.gd")
 const GraphicsSettings = preload("res://scripts/presentation/graphics_settings.gd")
 const Director = preload("res://scripts/presentation/visual_director.gd")
 
-const LAYER_DECAL := 0
 const LAYER_GROUND := 1
 const LAYER_AIR := 2
 const DEPTH_SCALE := 1024.0
 const ID_BITS := 20
 const DEPTH_BITS := 22
-const AIR_LIFT := 18.0
+const AIR_LIFT := 30.0
 const SHADOW_RADIUS := 8.0
 const MARK_RADIUS := 3.0
 const GROUND_SHADOW_RADIUS := 6.0
-const MUZZLE_LIFT := 12.0
+const MUZZLE_LIFT := 16.0
 const MUZZLE_COLOR := Color("ffe680")
 const HIT_COLOR := Color("ff8a3c")
 const FADE_COLOR := Color("1c1a18")
 const FLAG_SHADOWS := GraphicsSettings.FLAG_SHADOWS
-const FLAG_OUTLINES := GraphicsSettings.FLAG_OUTLINES
-const FLAG_EFFECTS := GraphicsSettings.FLAG_EFFECTS
 
 var points := PackedVector2Array()
 var colors := PackedColorArray()
 var triangle_count: int = 0
+
+static var _top_lifts: Dictionary = {}
+
+# Roof height in px of a building kind's baked shape, for things drawn above it.
+static func top_lift(kind: String) -> float:
+	var role: StringName = Shapes.role(kind)
+	if not _top_lifts.has(role):
+		var top: float = 0.0
+		for part in Shapes.parts(role, 0).size(): top = maxf(top, Array(Bake.mesh(role, part, 0, 0).lifts).max())
+		_top_lifts[role] = top
+	return _top_lifts[role]
 
 static func objects(state: Dictionary) -> Array[Dictionary]:
 	var found: Array[Dictionary] = []
@@ -118,7 +126,7 @@ func _append_body(item: Dictionary, detail: int, turret_angles: Dictionary) -> v
 	var specs: Array[Dictionary] = Shapes.parts(item.role, detail, item.variant)
 	var turret_bucket: int = Bake.bucket(turret_angles[item.id]) if turret_angles.has(item.id) else bucket
 	for part in specs.size():
-		var mesh: Dictionary = Bake.mesh(item.role, part, turret_bucket if specs[part].name == &"turret" else bucket, detail, item.variant)
+		var mesh: Dictionary = Bake.mesh(item.role, part, turret_bucket if specs[part].angle == &"turret" else bucket, detail, item.variant)
 		var mesh_points: PackedVector2Array = mesh.points
 		if rise < 1.0:
 			var lifts: PackedFloat32Array = mesh.lifts

@@ -13,7 +13,7 @@ const Probe = preload("res://scenes/movement_benchmark.tscn")
 const MovementBenchmark = preload("res://scripts/debug/movement_benchmark.gd")
 
 func cases() -> Array[Callable]:
-	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_transports_fixture, test_defences_fixture, test_skirmish3v3_fixture, test_combat_work_ceiling, test_volley_retaliation_work, test_horde_render_layout, test_horde_render_500_counts, test_workload_asserts_pure, test_settled_matches_snapshot_predicate, test_gate_values, test_draw_call_ceiling, test_gate_fails_over_ceiling]
+	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_transports_fixture, test_defences_fixture, test_skirmish3v3_fixture, test_combat_work_ceiling, test_volley_retaliation_work, test_horde_render_layout, test_horde_render_500_counts, test_workload_asserts_pure, test_settled_matches_snapshot_predicate, test_gate_values, test_draw_call_ceiling, test_gate_fails_over_ceiling, test_cpu_frame_pairs_draw_with_its_tick, test_gate_is_wired_to_the_ceiling, test_units_reported_are_units_run]
 
 func test_statistics(runner) -> bool:
 	runner.check(Stats.summary(PackedFloat64Array()) == {"n": 0, "p50": 0.0, "p95": 0.0, "p99": 0.0, "max": 0.0}, "BM1 empty")
@@ -294,4 +294,35 @@ func test_gate_fails_over_ceiling(runner) -> bool:
 	runner.check(bench.draw_call_gate("horde", 51.0, false) != "", "BM13 default run over the ceiling fails")
 	runner.check(bench.draw_call_gate("horde", 50.0, false) == "", "BM13 default run at the ceiling passes")
 	runner.check(bench.draw_call_gate("horde", 500.0, true) == "", "BM13 report-only run never fails")
+	return true
+
+func test_cpu_frame_pairs_draw_with_its_tick(runner) -> bool:
+	var bench = MovementBenchmark.new()
+	bench._view = View.new()
+	bench._script_usec = 2000
+	bench._view.draw_usec = 500
+	var first: float = bench._script_ms()
+	runner.check(is_equal_approx(first, 0.5), "BM14 the first sample holds the draw of the frame before it, got %f" % first)
+	bench._script_usec = 3000
+	bench._view.draw_usec = 700
+	var second: float = bench._script_ms()
+	runner.check(is_equal_approx(second, 2.7), "BM14 the next sample adds that frame's tick to the next draw, got %f" % second)
+	runner.check(bench._script_usec == 0 and bench._view.draw_usec == 0, "BM14 both counters restart")
+	bench._view.free()
+	bench.free()
+	return true
+
+func test_gate_is_wired_to_the_ceiling(runner) -> bool:
+	var bench = MovementBenchmark.new()
+	bench._draw_calls = PackedFloat64Array([120.0])
+	runner.check(bench._draw_call_gate("open") != "", "BM15 a default run over the ceiling reaches the failure path")
+	bench._web = true
+	runner.check(bench._draw_call_gate("open") == "", "BM15 the web run is report-only")
+	bench.free()
+	return true
+
+func test_units_reported_are_units_run(runner) -> bool:
+	runner.check(MovementBenchmark.units_run(500, ["open"] as Array[String]) == 300, "BM16 500 on the open layout still runs 300")
+	runner.check(MovementBenchmark.units_run(500, ["horde"] as Array[String]) == 500, "BM16 500 on horde runs 500")
+	runner.check(MovementBenchmark.units_run(300, ["horde"] as Array[String]) == 300, "BM16 default horde runs 300")
 	return true

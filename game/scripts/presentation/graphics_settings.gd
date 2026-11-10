@@ -5,8 +5,6 @@ const LOW := 0
 const HIGH := 1
 const AUTO_LOW_P95_MS := 8.3
 const FLAG_SHADOWS := 1
-const FLAG_OUTLINES := 2
-const FLAG_EFFECTS := 4
 const SECTION := "graphics"
 
 static func load_quality() -> int:
@@ -25,7 +23,7 @@ static func pick(frame_p95_ms: float) -> int:
 	return LOW if frame_p95_ms > AUTO_LOW_P95_MS else HIGH
 
 static func flags(quality: int) -> int:
-	return FLAG_SHADOWS | FLAG_OUTLINES | FLAG_EFFECTS if quality == HIGH else 0
+	return FLAG_SHADOWS if quality == HIGH else 0
 
 static func detail(quality: int, zoom: float) -> int:
 	if quality != HIGH: return 0

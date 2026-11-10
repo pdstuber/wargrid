@@ -8,7 +8,11 @@ const MusicPlayer = preload("res://scripts/presentation/music_player.gd")
 var _sound: SoundPlayer = null
 var _auto_samples := PackedFloat32Array()
 var _auto_pending: bool = false
+var _auto_frame: int = 0
 const AUTO_FRAMES: int = 120
+const AUTO_SKIP_FRAMES: int = 60
+var _auto_tick_usec: int = 0
+
 var _visuals := VisualDirector.new()
 var _attack_move_mode: bool = false
 var inspected_id: int = -1
@@ -21,6 +25,7 @@ func _ready() -> void:
 	super._ready()
 	_view.set_visuals(_visuals)
 	_auto_pending = GraphicsSettings.load_quality() == -1 and DisplayServer.get_name() != "headless"
+	_view.time_draws = _auto_pending
 	$HUD/Restart.pressed.connect(_restart)
 	var music := MusicPlayer.new()
 	add_child(music)
@@ -55,15 +60,27 @@ func _production_kind(building: Dictionary, state: Dictionary) -> String:
 	var kind: String = Skirmish.unit_for(_local_state(state).get("faction", Skirmish.default_faction()), building.kind)
 	return kind if not kind.is_empty() else super._production_kind(building, state)
 
+func _physics_process(delta: float) -> void:
+	var started: int = Time.get_ticks_usec()
+	super(delta)
+	if _auto_pending: _auto_tick_usec += Time.get_ticks_usec() - started
+
 func _process(delta: float) -> void:
 	pan_camera(Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down"), delta)
-	if _auto_pending: _sample_auto_pick()
+	if not _auto_pending: return
+	_auto_sample((_auto_tick_usec + _view.draw_usec) / 1000.0)
+	_auto_tick_usec = 0
+	_view.draw_usec = 0
 
 # shortcut: measured at match start on a nearly empty map, so it only catches very slow machines; re-check under load if playtesters report a slow High.
-func _sample_auto_pick() -> void:
-	_auto_samples.append((Performance.get_monitor(Performance.TIME_PROCESS) + Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS)) * 1000.0)
+# The first frames hold scene load and lazy bakes, so they are skipped.
+func _auto_sample(frame_ms: float) -> void:
+	_auto_frame += 1
+	if _auto_frame <= AUTO_SKIP_FRAMES: return
+	_auto_samples.append(frame_ms)
 	if _auto_samples.size() < AUTO_FRAMES: return
 	_auto_pending = false
+	_view.time_draws = false
 	_auto_samples.sort()
 	var quality: int = GraphicsSettings.pick(_auto_samples[int(AUTO_FRAMES * 0.95)])
 	GraphicsSettings.save_quality(quality)

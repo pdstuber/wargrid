@@ -51,6 +51,7 @@ func is_confirming() -> bool:
 	return _confirming
 
 func open() -> void:
+	_show_quality(GraphicsSettings.load_quality())
 	visible = true
 	_show_main()
 

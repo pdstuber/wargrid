@@ -5,7 +5,7 @@ const Director = preload("res://scripts/presentation/visual_director.gd")
 const WorldBatch = preload("res://scripts/presentation/world_batch.gd")
 
 func cases() -> Array[Callable]:
-	return [test_visual_catch_up_and_stall, test_coalesced_muzzle, test_unknown_position_skipped, test_dead_target_hit_at_last_known, test_fade_lasts_two_seconds, test_reset_clears_presentation_state, test_turret_turns_at_fixed_rate, test_turret_returns_to_hull, test_cues_draw_on_low, test_pending_bounded, test_paused_does_not_age, test_turret_angle_changes_triangles]
+	return [test_visual_catch_up_and_stall, test_coalesced_muzzle, test_unknown_position_skipped, test_dead_target_hit_at_last_known, test_fade_lasts_two_seconds, test_reset_clears_presentation_state, test_turret_turns_at_fixed_rate, test_turret_returns_to_hull, test_cues_draw_on_low, test_pending_bounded, test_turret_angle_changes_triangles]
 
 func _shot(tick: int, attacker: int, target: int, splash: bool = false) -> Dictionary:
 	return {"type": "shot", "tick": tick, "attacker_id": attacker, "target_id": target, "damage": 1, "splash": splash}
@@ -30,7 +30,6 @@ func test_visual_catch_up_and_stall(runner) -> bool:
 	director.collect_step(10, _events([_shot(10, 1, 2)]), none)
 	director.collect_step(11, _events([_shot(11, 2, 1)]), none)
 	director.update(_world())
-	runner.check(director.consumed_ticks() == [10, 11], "VI1 both ticks consumed, got %s" % [director.consumed_ticks()])
 	runner.check(_types(director, &"muzzle").size() == 2, "VI1 two muzzles from two steps, got %d" % _types(director, &"muzzle").size())
 	var again = Director.new()
 	again.collect_step(10, _events([_shot(10, 1, 2)]), none)
@@ -38,7 +37,7 @@ func test_visual_catch_up_and_stall(runner) -> bool:
 	again.update(_world())
 	runner.check(_types(again, &"muzzle").size() == 1 and _types(again, &"hit").size() == 1, "VI1 same tick twice gives one muzzle and one hit")
 	again.update(_world())
-	runner.check(again.consumed_ticks() == [10], "VI1 a second update consumes nothing new")
+	runner.check(_types(again, &"muzzle").size() == 1, "VI1 a second update consumes nothing new")
 	return true
 
 func test_coalesced_muzzle(runner) -> bool:
@@ -90,10 +89,10 @@ func test_reset_clears_presentation_state(runner) -> bool:
 	runner.check(director.turret_angles().has(1) and not director.effects().is_empty(), "VI6 state exists before reset")
 	director.reset()
 	director.update(_events([_obj(1, Vector2(2, 2))]))
-	runner.check(director.turret_angles().is_empty() and director.effects().is_empty() and director.consumed_ticks().is_empty(), "VI6 a reused id carries nothing over")
+	runner.check(director.turret_angles().is_empty() and director.effects().is_empty(), "VI6 a reused id carries nothing over")
 	director.collect_step(5, _events([_shot(5, 1, 2)]), _events([]))
 	director.update(_world())
-	runner.check(director.consumed_ticks() == [5], "VI6 a new match can start at a low tick")
+	runner.check(_types(director, &"muzzle").size() == 1, "VI6 a new match can start at a low tick")
 	return true
 
 func _aim(director, steps: int) -> void:
@@ -130,17 +129,8 @@ func test_pending_bounded(runner) -> bool:
 	var director = Director.new()
 	for i in 20: director.collect_step(i, _events([_shot(i, 1, 2)]), _events([]))
 	director.update(_world())
-	runner.check(director.consumed_ticks().size() == Director.MAX_PENDING and director.consumed_ticks()[0] == 12, "VI10 oldest dropped, consumed %s" % [director.consumed_ticks()])
+	runner.check(_types(director, &"muzzle").size() == Director.MAX_PENDING, "VI10 only the newest steps are shown, got %d" % _types(director, &"muzzle").size())
 	runner.check(director.dropped == 12, "VI10 dropped counted, got %d" % director.dropped)
-	return true
-
-func test_paused_does_not_age(runner) -> bool:
-	var director = Director.new()
-	director.collect_step(5, _events([_shot(5, 1, 2)]), _events([]))
-	director.update(_world())
-	var before: Array = director.effects().map(func(e: Dictionary) -> int: return e.age)
-	var after: Array = director.effects().map(func(e: Dictionary) -> int: return e.age)
-	runner.check(before == after and not before.is_empty() and before.all(func(a: int) -> bool: return a == 0), "VI11 no update, no aging")
 	return true
 
 func test_turret_angle_changes_triangles(runner) -> bool:

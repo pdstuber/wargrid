@@ -30,6 +30,7 @@ var _sequence: Array[String] = _layouts_to_run()
 var _layout_index: int = 0
 var _lines := PackedStringArray()
 var _script_usec: int = 0
+var _carried_tick_usec: int = 0
 var _cpu_script := PackedFloat64Array()
 var _cpu_render := PackedFloat64Array()
 var _cpu_setup := PackedFloat64Array()
@@ -63,13 +64,14 @@ func _ready() -> void:
 	var zoom: float = _zoom()
 	$Camera2D.position = Iso.world_to_plane(Vector2(32, 32))
 	$Camera2D.zoom = Vector2(zoom, zoom)
+	_view.time_draws = true
 	_view.set_quality(_quality())
 	_view.set_zoom(zoom)
 	RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
 	_emit("M2 RENDERED engine=" + Engine.get_version_info().string + " os=" + OS.get_name()
 		+ " cpu=" + OS.get_processor_name() + " resolution=" + str(get_viewport().get_visible_rect().size)
 		+ " zoom=" + str(zoom) + " quality=" + ("high" if _quality() == GraphicsSettings.HIGH else "low")
-		+ " layouts=" + ",".join(_sequence) + " map=64x64 (ashfall layout 194x187) units=" + str(_units())
+		+ " layouts=" + ",".join(_sequence) + " map=64x64 (ashfall layout 194x187) units=" + str(units_run(_units(), _sequence))
 		+ " seed=none vsync=" + ("browser" if _web else "off") + " warmup_wall_seconds=10 sample_wall_seconds=60")
 	_begin_layout()
 
@@ -103,6 +105,7 @@ func _emit(line: String) -> void:
 
 func _begin_layout() -> void:
 	_script_usec = 0
+	_carried_tick_usec = 0
 	_view.draw_usec = 0
 	_cpu_script.clear()
 	_cpu_render.clear()
@@ -198,6 +201,9 @@ func _process(_delta: float) -> void:
 		_sample_started = now
 		_window_started = now
 		_last_frame = now
+		_script_usec = 0
+		_carried_tick_usec = 0
+		_view.draw_usec = 0
 		Profiler.reset()
 		Profiler.enabled = _profile
 	elif _sample_started > 0 and not _sampling_done:
@@ -230,15 +236,28 @@ func _process(_delta: float) -> void:
 				get_tree().quit(0)
 
 func _record_cpu_frame() -> void:
-	var script_ms: float = (_script_usec + _view.draw_usec) / 1000.0
-	_script_usec = 0
-	_view.draw_usec = 0
+	var script_ms: float = _script_ms()
 	var render_ms: float = RenderingServer.viewport_get_measured_render_time_cpu(get_viewport().get_viewport_rid())
 	var setup_ms: float = RenderingServer.get_frame_setup_time_cpu()
 	_cpu_script.append(script_ms)
 	_cpu_render.append(render_ms)
 	_cpu_setup.append(setup_ms)
 	_cpu_total.append(script_ms + render_ms + setup_ms)
+
+# Godot draws after _process, so the draw counted here belongs to the previous frame's tick.
+func _script_ms() -> float:
+	var script_ms: float = (_carried_tick_usec + _view.draw_usec) / 1000.0
+	_carried_tick_usec = _script_usec
+	_script_usec = 0
+	_view.draw_usec = 0
+	return script_ms
+
+func _draw_call_gate(layout: String) -> String:
+	return draw_call_gate(layout, Stats.summary(_draw_calls).max, _report_only())
+
+# The horde_render_500 workload exists only for the horde layout.
+static func units_run(requested: int, layouts: Array[String]) -> int:
+	return 500 if requested == 500 and layouts.has("horde") else 300
 
 static func draw_call_failure(layout: String, max_calls: float) -> String:
 	if not DRAW_CALL_CEILINGS.has(layout):
@@ -261,7 +280,7 @@ func _report_draw_calls(layout: String) -> bool:
 	var max_calls: float = Stats.summary(_draw_calls).max
 	var failure: String = draw_call_failure(layout, max_calls)
 	_emit("DRAW_CALLS " + layout + " max=" + str(int(max_calls)) + " p50=" + str(int(Stats.summary(_draw_calls).p50)) + " ceiling=" + str(DRAW_CALL_CEILINGS.get(layout, -1)) + " over=" + str(failure != ""))
-	var gate: String = draw_call_gate(layout, max_calls, _report_only())
+	var gate: String = _draw_call_gate(layout)
 	if gate != "":
 		_fail(gate)
 		return false
