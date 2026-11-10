@@ -6,6 +6,9 @@ const SoundPlayer = preload("res://scripts/presentation/sound_player.gd")
 const VisualDirector = preload("res://scripts/presentation/visual_director.gd")
 const MusicPlayer = preload("res://scripts/presentation/music_player.gd")
 var _sound: SoundPlayer = null
+var _auto_samples := PackedFloat32Array()
+var _auto_pending: bool = false
+const AUTO_FRAMES: int = 120
 var _visuals := VisualDirector.new()
 var _attack_move_mode: bool = false
 var inspected_id: int = -1
@@ -17,6 +20,7 @@ static var match_seed: int = 0
 func _ready() -> void:
 	super._ready()
 	_view.set_visuals(_visuals)
+	_auto_pending = GraphicsSettings.load_quality() == -1 and DisplayServer.get_name() != "headless"
 	$HUD/Restart.pressed.connect(_restart)
 	var music := MusicPlayer.new()
 	add_child(music)
@@ -53,6 +57,17 @@ func _production_kind(building: Dictionary, state: Dictionary) -> String:
 
 func _process(delta: float) -> void:
 	pan_camera(Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down"), delta)
+	if _auto_pending: _sample_auto_pick()
+
+# shortcut: measured at match start on a nearly empty map, so it only catches very slow machines; re-check under load if playtesters report a slow High.
+func _sample_auto_pick() -> void:
+	_auto_samples.append((Performance.get_monitor(Performance.TIME_PROCESS) + Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS)) * 1000.0)
+	if _auto_samples.size() < AUTO_FRAMES: return
+	_auto_pending = false
+	_auto_samples.sort()
+	var quality: int = GraphicsSettings.pick(_auto_samples[int(AUTO_FRAMES * 0.95)])
+	GraphicsSettings.save_quality(quality)
+	_view.set_quality(quality)
 
 func _enter_placement(kind: String) -> void:
 	_attack_move_mode = false
@@ -76,6 +91,7 @@ func _restart() -> void:
 	_last_result_sequence = -1
 	_selection_box.hide()
 	_camera.zoom = Vector2.ONE
+	_view.set_zoom(1.0)
 	_reset_camera()
 	var empty: Array[Vector2i] = []
 	_view.set_build_preview(empty, false)

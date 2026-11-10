@@ -12,7 +12,7 @@ const Terrain = preload("res://scripts/presentation/terrain_view.gd")
 const StructureLayer = preload("res://scripts/presentation/structure_layer.gd")
 const WorldBatch = preload("res://scripts/presentation/world_batch.gd")
 const BodyLayer = preload("res://scripts/presentation/body_layer.gd")
-const BODY_DETAIL := 1
+const GraphicsSettings = preload("res://scripts/presentation/graphics_settings.gd")
 const Director = preload("res://scripts/presentation/visual_director.gd")
 const Palette = preload("res://scripts/presentation/palette.gd")
 var _preview_cells: Array[Vector2i] = []
@@ -35,6 +35,8 @@ var _visuals: Director
 var _visual_tick: int = -1
 var _waiting: Dictionary = {}
 var _canvas: CanvasItem
+var _quality: int = GraphicsSettings.HIGH
+var _zoom: float = 1.0
 const HINT_TICKS: int = 40
 const SHOT_TICKS: int = 6
 const MUZZLE_LIFT: float = 20.0
@@ -67,6 +69,18 @@ static func health_color(fraction: float) -> Color:
 
 static func shows_health(selected: bool, hp: int, max_hp: int, hovered: bool) -> bool:
 	return selected or hovered or hp < max_hp
+
+func set_quality(quality: int) -> void:
+	_quality = quality
+
+func set_zoom(zoom: float) -> void:
+	_zoom = zoom
+
+func detail() -> int:
+	return GraphicsSettings.detail(_quality, _zoom)
+
+func flags() -> int:
+	return GraphicsSettings.flags(_quality)
 
 func set_visuals(director: Director) -> void:
 	_visuals = director
@@ -143,8 +157,8 @@ func set_state(state: Dictionary, selected_ids: Array[int]) -> void:
 			_visual_tick = _state.get("tick", 0)
 			_visuals.update(items)
 		angles = _visuals.turret_angles()
-		effects = _visuals.effects()
-	_batch.build(items, angles, BODY_DETAIL, WorldBatch.FLAG_SHADOWS, horde_marks(), effects)
+		effects = _visuals.effects() if flags() & WorldBatch.FLAG_EFFECTS else effects
+	_batch.build(items, angles, detail(), flags(), horde_marks(), effects)
 	_bodies.queue_redraw()
 	Profiler.end(&"view.batch", zone)
 	queue_redraw()

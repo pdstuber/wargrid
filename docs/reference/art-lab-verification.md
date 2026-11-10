@@ -1,12 +1,12 @@
-Resume record (updated 2026-11-10, Task 6 green)
-Branch / base commit / working-tree state: spike-art-lab / 1cc5de4 / Task 6 changes uncommitted (coordinator commits)
-Last green task / next incomplete task: Task 6 / Task 7 (quality Low/High and zoom detail)
-Changed paths since last commit: game/scripts/presentation/{visual_director.gd (+.gd.uid),world_batch,world_view}.gd, game/scripts/{skirmish_main,debug/movement_benchmark}.gd, game/tests/{test_visual.gd (+.gd.uid),run_tests.gd}, docs/reference/art-lab-verification.md
-Last command / cases / checks / failures / exit / marker: `sh tools/run_tests.sh` / 657 cases / 138262 checks / 0 failures / exit 0 / TESTS PASSED 138262
+Resume record (updated 2026-11-10, Task 7 green)
+Branch / base commit / working-tree state: spike-art-lab / 6443bf1 / Task 7 changes uncommitted (coordinator commits)
+Last green task / next incomplete task: Task 7 / Task 8 (numbers, stop gate 2)
+Changed paths since last commit: game/scripts/presentation/{graphics_settings.gd (+.gd.uid),pause_menu,world_batch,world_view}.gd, game/scripts/{main,skirmish_main}.gd, game/tests/{test_graphics_settings.gd (+.gd.uid),test_pause_menu,run_tests}.gd, docs/reference/art-lab-verification.md
+Last command / cases / checks / failures / exit / marker: `sh tools/run_tests.sh` / 665 cases / 138312 checks / 0 failures / exit 0 / TESTS PASSED 138312
 Known red case or blocker: none. Watch: per-tick presentation about 1.55 ms plus director 0.22 ms in a stress case (see Task 6 row); Ashfall frame p95 guard 3.3 (Task 8)
 Approved decisions, pre-authorizations used, deferred gates: plan approval 2026-11-10 covers rendered windows of Tasks 1, 3, 8 only; ceilings fixed 50/50/50/60
 Usage so far (python3 tools/session_usage.py <session files>): not measured
-Next exact action: dispatch Task 7 of docs/superpowers/plans/2026-11-10-art-lab-spike.md
+Next exact action: dispatch Task 8 of docs/superpowers/plans/2026-11-10-art-lab-spike.md
 
 ## Evidence rows (append-only)
 
@@ -92,3 +92,11 @@ Functions reading `_state` directly: `set_state`, `_prune_hints`, `_refresh_stru
 - Removed from `_draw_cues`: unit shot line and death cross. Kept: `battery_target_lines`, `building_shot_lines` and their tests (unchanged, green).
 - Per-tick cost (headless scratch `~/projects/wargrid-art-work/t6_time.gd`: 300 mixed units, 6 factories, detail 1, shadows on, 200 reps, worst-case stress: every tank has a moving target, 20 shot events per tick): objects() 0.50 ms, director collect+update 0.22 ms, build 1.05 ms (with 200 live effects and 200 turret angles); same-tick base objects()+build() without visuals 1.38 ms. So +0.39 ms in the stress case (director 0.22, effects and turret buckets 0.17); idle cost is one dictionary insert per object. Above the ledger's 0.91 ms plumbing budget as before; not loosened. Rendered window not opened (not pre-approved for Task 6).
 - Deviations / not checked: effect shapes are placeholder diamonds (muzzle yellow, hit orange expanding, fade dark smudge) at cell anchors; how they look is not rendered. Muzzle lasts 4 updates, hit 6, fade 60. Turret cosmetic rate 0.15 rad per tick as confirmed. Review-focus tests 2 and 5 are `test_visual_catch_up_and_stall` and `test_reset_clears_presentation_state`; the online scene's two-step frame is covered by the existing `test_catch_up_collects_every_step` plus the director test, no new scene test.
+
+### 2026-11-10 Task 7: Quality Low/High and zoom detail (tree: worktree, 6443bf1 plus Task 7 diff)
+
+- Red: `WARGRID_TEST_ONLY=test_low_drops` with `flags(LOW)` stubbed to return 1 fails on the assertion "Q1 Low has no flags" (1 failure). First all-suite run of the new file was a parse error (duplicate const), fixed; red done by stub afterwards, not before.
+- Green: `test_graphics_settings` 8 cases / 20 checks; layout check added to `test_menu_layout` (quality toggle visible, enclosed, clear of HUD text and other buttons at 1280x720 and 1920x1080). Full suite 665 cases, 138312 checks, 0 failures, exit 0, TESTS PASSED 138312. Lint and warnings (129 files) pass.
+- Design: `GraphicsSettings` owns the flag constants (`WorldBatch.FLAG_*` alias them); a first version preloaded `WorldBatch` from it, which made `run_warnings.sh` report "26 resources still in use at exit" for test_pause_menu/test_perf_overlay through the pause menu's preload chain. Low drops shadows and effects (outlines flag is defined but nothing draws outlines yet). Stored quality read at `_ready` (unset = High); `set_zoom` from `change_zoom` and from restart.
+- Auto-pick: `skirmish_main` samples `TIME_PROCESS + TIME_PHYSICS_PROCESS` for 120 frames when unset and not headless, saves `pick(p95)`. Not exercised for real (headless only; rendered window not pre-approved for Task 7); `movement_benchmark.gd` does not auto-pick and keeps the View defaults (High, zoom 1.0 -> same as before, plus the unused outlines flag). Online skirmish does not auto-pick (only the offline skirmish scene), noted for the coordinator.
+- Per-tick cost (headless `WorldBatch.objects` + `build`, 300 mixed units + 6 factories, zoom 1.0, 200 reps, `~/projects/wargrid-art-work/t7_time.gd`, 3 runs): Low (detail 0, flags 0) 1.13 ms, 3156 triangles; High (detail 1, all flags) 1.37-1.39 ms, 6400 triangles. Task 4 was 1.318 ms for High; the +0.06 ms is run noise, no new per-tick work. Both above the 0.91 ms plumbing budget, as before; reported, not loosened.

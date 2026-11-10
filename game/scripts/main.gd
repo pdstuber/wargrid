@@ -5,6 +5,7 @@ const Iso = preload("res://scripts/presentation/isometric.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
 const PerfOverlay = preload("res://scripts/presentation/perf_overlay.gd")
 const PauseMenu = preload("res://scripts/presentation/pause_menu.gd")
+const GraphicsSettings = preload("res://scripts/presentation/graphics_settings.gd")
 const LAUNCHER_SCENE: String = "res://scenes/launcher.tscn"
 const MapData = preload("res://scripts/simulation/map_data.gd")
 const ZOOMS: Array[float] = [0.5, 1.0, 2.0]
@@ -40,11 +41,17 @@ func _ready() -> void:
 	_pause.resume_requested.connect(_pause.close)
 	_pause.leave_requested.connect(_leave)
 	_pause.quit_requested.connect(func() -> void: get_tree().quit())
+	_pause.quality_changed.connect(_view.set_quality)
 	$HUD.add_child(_pause)
+	_view.set_quality(stored_quality())
 	_view.local_player = local_player
 	simulation = _create_simulation()
 	_reset_camera()
 	_refresh()
+
+func stored_quality() -> int:
+	var stored: int = GraphicsSettings.load_quality()
+	return stored if stored != -1 else GraphicsSettings.HIGH
 
 func _reset_camera() -> void:
 	var size: Array = simulation.snapshot().map.size
@@ -109,6 +116,7 @@ func change_zoom(direction: int) -> void:
 	var index: int = ZOOMS.find(_camera.zoom.x)
 	index = clampi(index + signi(direction), 0, ZOOMS.size() - 1)
 	_camera.zoom = Vector2.ONE * ZOOMS[index]
+	_view.set_zoom(ZOOMS[index])
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_F3:

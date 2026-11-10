@@ -1,14 +1,18 @@
 extends Control
 
 const UiStyle = preload("res://scripts/presentation/ui_style.gd")
+const GraphicsSettings = preload("res://scripts/presentation/graphics_settings.gd")
 const VolumeSliders = preload("res://scripts/presentation/volume_sliders.gd")
 signal resume_requested
 signal leave_requested
 signal quit_requested
+signal quality_changed(quality: int)
 var confirm_leave: bool = false
 var _confirming: bool = false
 var _main_box: VBoxContainer
 var _confirm_box: VBoxContainer
+var _quality_button: Button
+var _quality: int = GraphicsSettings.HIGH
 
 func _init(web: bool = OS.has_feature("web")) -> void:
 	name = "PauseMenu"
@@ -30,6 +34,9 @@ func _init(web: bool = OS.has_feature("web")) -> void:
 	_button(_main_box, "Back to main menu", _leave_pressed)
 	# The browser tab cannot be closed by the game.
 	if not web: _button(_main_box, "Quit", quit_requested.emit)
+	_quality_button = _button(_main_box, "", _toggle_quality)
+	_quality_button.name = "Quality"
+	_show_quality(GraphicsSettings.load_quality())
 	_main_box.add_child(VolumeSliders.new())
 	_confirm_box = _box(center)
 	_confirm_box.visible = false
@@ -60,11 +67,12 @@ func _box(parent: Control) -> VBoxContainer:
 	parent.add_child(box)
 	return box
 
-func _button(parent: Control, text: String, action: Callable) -> void:
+func _button(parent: Control, text: String, action: Callable) -> Button:
 	var button := Button.new()
 	button.text = text
 	button.pressed.connect(action)
 	parent.add_child(button)
+	return button
 
 func _leave_pressed() -> void:
 	if not confirm_leave:
@@ -80,3 +88,12 @@ func _show_main() -> void:
 	_confirm_box.visible = false
 	_main_box.visible = true
 	_main_box.get_child(0).grab_focus()
+
+func _toggle_quality() -> void:
+	_show_quality(GraphicsSettings.HIGH if _quality == GraphicsSettings.LOW else GraphicsSettings.LOW)
+	GraphicsSettings.save_quality(_quality)
+	quality_changed.emit(_quality)
+
+func _show_quality(stored: int) -> void:
+	_quality = stored if stored != -1 else GraphicsSettings.HIGH
+	_quality_button.text = "Quality: " + ("Low" if _quality == GraphicsSettings.LOW else "High")

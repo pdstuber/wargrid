@@ -6,6 +6,7 @@ const Iso = preload("res://scripts/presentation/isometric.gd")
 const Shapes = preload("res://scripts/presentation/shapes.gd")
 const Bake = preload("res://scripts/presentation/shape_bake.gd")
 const Palette = preload("res://scripts/presentation/palette.gd")
+const GraphicsSettings = preload("res://scripts/presentation/graphics_settings.gd")
 const Director = preload("res://scripts/presentation/visual_director.gd")
 
 const LAYER_DECAL := 0
@@ -22,9 +23,9 @@ const MUZZLE_LIFT := 12.0
 const MUZZLE_COLOR := Color("ffe680")
 const HIT_COLOR := Color("ff8a3c")
 const FADE_COLOR := Color("1c1a18")
-const FLAG_SHADOWS := 1
-const FLAG_OUTLINES := 2
-const FLAG_EFFECTS := 4
+const FLAG_SHADOWS := GraphicsSettings.FLAG_SHADOWS
+const FLAG_OUTLINES := GraphicsSettings.FLAG_OUTLINES
+const FLAG_EFFECTS := GraphicsSettings.FLAG_EFFECTS
 
 var points := PackedVector2Array()
 var colors := PackedColorArray()
