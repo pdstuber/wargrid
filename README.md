@@ -19,6 +19,29 @@ Wargrid is an isometric real-time strategy game written in Godot 4 and typed GDS
 
 Early development. Three factions (USA, China, FRC), skirmish against a bot and online 1v1 on Dry Wells, Broken Crown or Ashfall (map choice in the launcher, since 0.10.0). Latest release: see [Releases](https://github.com/pdstuber/wargrid/releases).
 
+<!-- perf-table:begin -->
+Performance against the low-end budget (generated):
+
+**2 of 10 areas over budget**
+
+| Area | Status | Budget used | vs last run | As of |
+| --- | --- | --- | --- | --- |
+| **Combat, huge battles** | 🔴 Over | ██████████▶ 155% | 🔻 1% better | 2026-11-10 |
+| **Background upkeep, huge crowds** | 🔴 Over | ██████████▶ 144% | 🆕 first run | 2026-11-08 |
+| Background upkeep, armies on the move | 🟡 Close | █████████░ 98% | 🆕 first run | 2026-11-08 |
+| Drawing the screen, big map (Ashfall) | 🟡 Close | █████████░ 96% | 🔺 8% worse | 2026-11-09 |
+| Drawing the screen | 🟢 OK | ███████░░░ 71% | 🔺 12% worse | 2026-11-09 |
+| Combat, normal fights | 🟢 OK | ███████░░░ 70% | ➖ same | 2026-11-10 |
+| Combat, normal fights, slowest moments | 🟢 OK | █████░░░░░ 56% | 🔻 1% better | 2026-11-10 |
+| Unit movement | 🟢 OK | ███░░░░░░░ 37% | 🔺 1% worse | 2026-11-10 |
+| Unit movement, slowest moments | 🟢 OK | ██░░░░░░░░ 24% | 🔻 1% better | 2026-11-10 |
+| Online play overhead | 🟢 OK | █░░░░░░░░░ 11% | 🔻 1% better | 2026-11-10 |
+
+Percent of the limit for a low-end device, estimated from this Mac (see the ledger for how). 🔺 = used more of the limit than last run. Small changes can be run-to-run noise. As of = when that area was last measured; areas drawn from rendered runs update only at milestone gates.
+
+Details: [performance ledger](docs/reference/performance.md).
+<!-- perf-table:end -->
+
 ## How it's built
 
 A deterministic, tick-based simulation kept apart from rendering, so builds on different platforms produce identical replay traces (Linux and Windows compared in CI, macOS locally). Online play is lockstep through a small Go relay that only forwards commands; every client runs the full simulation. Several hundred headless test cases cover simulation, replays and HUD layout; CI also runs the exported builds and netplay scenarios through a local relay.

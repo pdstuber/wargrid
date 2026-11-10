@@ -1,0 +1,274 @@
+date,commit,label,machine,metric,scenario,run,p95_ms,p99_ms,mean_ms,method,load,source
+2026-11-03,,M3 final,dev,movement_tick,open,1,1.452,1.495,,pre-P1,,performance.md@6e0a9f5:60
+2026-11-03,,M3 final,dev,movement_tick,dense,1,1.487,1.548,,pre-P1,,performance.md@6e0a9f5:60
+2026-11-03,,terrain fix,dev,movement_tick,open,1,1.5,1.573,,pre-P1,,performance.md@6e0a9f5:64
+2026-11-03,,terrain fix,dev,movement_tick,dense,1,1.526,1.601,,pre-P1,,performance.md@6e0a9f5:64
+2026-11-03,,terrain fix,dev,frame_interval,open,1,4.1,6.4,,pre-P1,,performance.md@6e0a9f5:63
+2026-11-03,,terrain fix,dev,frame_interval,dense,1,6.5,10.2,,pre-P1,,performance.md@6e0a9f5:63
+2026-11-03,,M4 T1-4,dev,movement_tick,open,1,1.559,1.627,,pre-P1,,performance.md@6e0a9f5:73
+2026-11-03,,M4 T1-4,dev,movement_tick,dense,1,1.592,1.652,,pre-P1,,performance.md@6e0a9f5:73
+2026-11-03,,M4 placement fix,dev,movement_tick,open,1,1.573,,,pre-P1,,performance.md@6e0a9f5:86
+2026-11-03,,M4 placement fix,dev,movement_tick,dense,1,1.611,,,pre-P1,,performance.md@6e0a9f5:86
+2026-11-03,e8e5401,M4 T9a,dev,combat_tick,open,1,1.6,1.813,,pre-P1,,performance.md@6e0a9f5:76
+2026-11-03,e8e5401,M4 T9a,dev,combat_tick,dense,1,1.638,2.332,,pre-P1,,performance.md@6e0a9f5:76
+2026-11-03,e8e5401,M4 T9a,dev,combat_tick,contact,1,0.54,0.785,,pre-P1,,performance.md@6e0a9f5:76
+2026-11-03,,M4 rendered,dev,frame_interval,open,1,3.979,6.615,,pre-P1,,performance.md@6e0a9f5:81
+2026-11-03,,M4 rendered,dev,frame_interval,dense,1,5.162,7.945,,pre-P1,,performance.md@6e0a9f5:81
+2026-11-04,,M4.1,dev,combat_tick,contact,1,0.454,0.63,,pre-P1,,performance.md@6e0a9f5:96
+2026-11-04,,M4.1,dev,combat_tick,skirmish3v3,1,0.754,0.996,,pre-P1,,performance.md@6e0a9f5:97
+2026-11-04,,M4.1,dev,combat_tick,open,1,1.891,3.383,,pre-P1,,performance.md@6e0a9f5:98
+2026-11-04,,M4.1,dev,combat_tick,dense,1,2.243,3.684,,pre-P1,,performance.md@6e0a9f5:99
+2026-11-04,ee9e63c,M4.1 rendered,dev,frame_interval,open,1,3.649,6.262,,pre-P1,,performance.md@6e0a9f5:82
+2026-11-04,ee9e63c,M4.1 rendered,dev,frame_interval,dense,1,5.195,8.562,,pre-P1,,performance.md@6e0a9f5:82
+2026-11-04,,M5 T8,dev,lockstep_overhead,contact,1,0.014,0.06,,pre-P1,,performance.md@6e0a9f5:142
+2026-11-04,fd1c914,M5 gate,dev,lockstep_overhead,contact,1,0.014,0.06,,pre-P1,,performance.md@6e0a9f5:143
+2026-11-04,bba5482,M5 rendered,dev,frame_interval,open,1,4.26,6.88,,pre-P1,,performance.md@6e0a9f5:144
+2026-11-04,bba5482,M5 rendered,dev,frame_interval,dense,1,5.94,8.3,,pre-P1,,performance.md@6e0a9f5:144
+2026-11-05,61af07b,M5.1 T8,dev,combat_tick,contact,1,0.73,2.83,,pre-P1,,performance.md@6e0a9f5:145
+2026-11-05,61af07b,M5.1 T8,dev,combat_tick,skirmish3v3,1,0.828,1.023,,pre-P1,,performance.md@6e0a9f5:145
+2026-11-05,61af07b,M5.1 T8,dev,combat_tick,open,1,1.875,3.314,,pre-P1,,performance.md@6e0a9f5:145
+2026-11-05,61af07b,M5.1 T8,dev,combat_tick,dense,1,2.136,3.443,,pre-P1,,performance.md@6e0a9f5:145
+2026-11-05,781ab5a,perf spike zones,dev,movement_tick,open,1,1.587,,,pre-P1,,performance.md@6e0a9f5:146
+2026-11-05,781ab5a,perf spike zones,dev,movement_tick,dense,1,1.615,,,pre-P1,,performance.md@6e0a9f5:146
+2026-11-05,781ab5a,perf spike zones,dev,combat_tick,open,1,1.634,,,pre-P1,,performance.md@6e0a9f5:146
+2026-11-05,781ab5a,perf spike zones,dev,combat_tick,dense,1,2.155,,,pre-P1,,performance.md@6e0a9f5:146
+2026-11-05,781ab5a,perf spike zones,dev,combat_tick,contact,1,0.739,,,pre-P1,,performance.md@6e0a9f5:146
+2026-11-05,781ab5a,perf spike zones,dev,combat_tick,skirmish3v3,1,0.856,,,pre-P1,,performance.md@6e0a9f5:146
+2026-11-05,781ab5a,perf spike zones,dev,lockstep_overhead,contact,1,,0.069,,pre-P1,,performance.md@6e0a9f5:146
+2026-11-05,781ab5a,perf spike zones,dev,frame_interval,open,1,4.71,,,pre-P1,,performance.md@6e0a9f5:146 (profiled run)
+2026-11-05,781ab5a,perf spike zones,dev,frame_interval,dense,1,5.75,,,pre-P1,,performance.md@6e0a9f5:146 (profiled run)
+2026-11-05,9310a2f,M6 T13,dev,movement_tick,open,1,1.514,1.637,,pre-P1,,performance.md@6e0a9f5:147
+2026-11-05,9310a2f,M6 T13,dev,movement_tick,dense,1,1.506,1.686,,pre-P1,,performance.md@6e0a9f5:147
+2026-11-05,9310a2f,M6 T13,dev,combat_tick,open,1,2.404,3.395,,pre-P1,,performance.md@6e0a9f5:147
+2026-11-05,9310a2f,M6 T13,dev,frame_interval,open,1,5.363,7.157,,pre-P1,,performance.md@6e0a9f5:148
+2026-11-05,9310a2f,M6 T13,dev,frame_interval,dense,1,6.674,8.641,,pre-P1,,performance.md@6e0a9f5:148
+2026-11-06,63f5a9a,target factor,dev,movement_tick,open,1,1.588,1.779,,pre-P1,1.7,performance.md@6e0a9f5:205
+2026-11-06,63f5a9a,target factor,dev,movement_tick,dense,1,1.575,1.83,,pre-P1,1.7,performance.md@6e0a9f5:206
+2026-11-06,63f5a9a,target factor,dev,combat_tick,open,1,2.38,3.342,,pre-P1,1.7,performance.md@6e0a9f5:207
+2026-11-06,63f5a9a,target factor,dev,combat_tick,dense,1,2.665,4.228,,pre-P1,1.7,performance.md@6e0a9f5:208
+2026-11-06,63f5a9a,target factor,dev,combat_tick,contact,1,1.006,1.401,,pre-P1,1.7,performance.md@6e0a9f5:209
+2026-11-06,63f5a9a,target factor,dev,combat_tick,skirmish3v3,1,1.209,1.369,,pre-P1,1.7,performance.md@6e0a9f5:210
+2026-11-06,63f5a9a,target factor,dev,lockstep_overhead,contact,1,,0.067,,pre-P1,1.7,performance.md@6e0a9f5:212
+2026-11-06,7293c91,M7 gate 1,dev,movement_tick,open,1,1.691,1.889,,pre-P1,,performance.md@6e0a9f5:150
+2026-11-06,7293c91,M7 gate 1,dev,movement_tick,dense,1,1.738,2.06,,pre-P1,,performance.md@6e0a9f5:150
+2026-11-06,7293c91,M7 gate 1,dev,combat_tick,open,1,2.798,3.716,,pre-P1,,performance.md@6e0a9f5:150
+2026-11-06,7293c91,M7 gate 1,dev,combat_tick,dense,1,3.152,4.75,,pre-P1,,performance.md@6e0a9f5:150
+2026-11-06,7293c91,M7 gate 1,dev,combat_tick,contact,1,1.191,1.665,,pre-P1,,performance.md@6e0a9f5:150
+2026-11-06,7293c91,M7 gate 1,dev,combat_tick,skirmish3v3,1,1.406,1.588,,pre-P1,,performance.md@6e0a9f5:150
+2026-11-06,7293c91,M7 gate 1,dev,combat_tick,transports,1,1.504,1.802,,pre-P1,,performance.md@6e0a9f5:150
+2026-11-06,7293c91,M7 gate 1,dev,combat_tick,defences,1,2.87,3.251,,pre-P1,,performance.md@6e0a9f5:150
+2026-11-06,7293c91,M7 gate 1,dev,lockstep_overhead,contact,1,,0.071,,pre-P1,,performance.md@6e0a9f5:150
+2026-11-06,8f9b3cb,M7 gate 1 fixes,dev,movement_tick,open,1,1.584,1.751,,pre-P1,,performance.md@6e0a9f5:151
+2026-11-06,8f9b3cb,M7 gate 1 fixes,dev,movement_tick,dense,1,1.57,1.788,,pre-P1,,performance.md@6e0a9f5:151
+2026-11-06,8f9b3cb,M7 gate 1 fixes,dev,combat_tick,open,1,2.72,3.619,,pre-P1,,performance.md@6e0a9f5:151
+2026-11-06,8f9b3cb,M7 gate 1 fixes,dev,combat_tick,dense,1,3.066,4.586,,pre-P1,,performance.md@6e0a9f5:151
+2026-11-06,8f9b3cb,M7 gate 1 fixes,dev,combat_tick,contact,1,1.166,1.618,,pre-P1,,performance.md@6e0a9f5:151
+2026-11-06,8f9b3cb,M7 gate 1 fixes,dev,combat_tick,skirmish3v3,1,1.393,1.577,,pre-P1,,performance.md@6e0a9f5:151
+2026-11-06,8f9b3cb,M7 gate 1 fixes,dev,combat_tick,transports,1,1.439,1.764,,pre-P1,,performance.md@6e0a9f5:151
+2026-11-06,8f9b3cb,M7 gate 1 fixes,dev,combat_tick,defences,1,0.936,2.489,,pre-P1,,performance.md@6e0a9f5:151
+2026-11-06,067bf58,M7 bot wave,dev,movement_tick,open,1,1.594,1.757,,pre-P1,,performance.md@6e0a9f5:152
+2026-11-06,067bf58,M7 bot wave,dev,movement_tick,dense,1,1.589,1.81,,pre-P1,,performance.md@6e0a9f5:152
+2026-11-06,067bf58,M7 bot wave,dev,combat_tick,open,1,2.753,3.616,,pre-P1,,performance.md@6e0a9f5:152
+2026-11-06,067bf58,M7 bot wave,dev,combat_tick,dense,1,3.1,4.63,,pre-P1,,performance.md@6e0a9f5:152
+2026-11-06,067bf58,M7 bot wave,dev,combat_tick,contact,1,1.172,1.621,,pre-P1,,performance.md@6e0a9f5:152
+2026-11-06,067bf58,M7 bot wave,dev,combat_tick,skirmish3v3,1,1.392,1.58,,pre-P1,,performance.md@6e0a9f5:152
+2026-11-06,067bf58,M7 bot wave,dev,combat_tick,transports,1,1.452,1.772,,pre-P1,,performance.md@6e0a9f5:152
+2026-11-06,067bf58,M7 bot wave,dev,combat_tick,defences,1,0.934,2.446,,pre-P1,,performance.md@6e0a9f5:152
+2026-11-06,067bf58,M7 bot wave,dev,lockstep_overhead,contact,1,,0.069,,pre-P1,,performance.md@6e0a9f5:152
+2026-11-06,067bf58,M7 bot wave,dev,frame_interval,open,1,0.698,4.304,,pre-P1,,performance.md@6e0a9f5:152
+2026-11-06,067bf58,M7 bot wave,dev,frame_interval,dense,1,3.796,6.643,,pre-P1,,performance.md@6e0a9f5:152
+2026-11-07,e2d48fc,M7 gate 2,dev,movement_tick,open,1,1.59,1.759,,pre-P1,,performance.md@6e0a9f5:153
+2026-11-07,e2d48fc,M7 gate 2,dev,movement_tick,dense,1,1.575,1.807,,pre-P1,,performance.md@6e0a9f5:153
+2026-11-07,e2d48fc,M7 gate 2,dev,combat_tick,open,1,2.764,3.656,,pre-P1,,performance.md@6e0a9f5:153
+2026-11-07,e2d48fc,M7 gate 2,dev,combat_tick,dense,1,3.099,4.67,,pre-P1,,performance.md@6e0a9f5:153
+2026-11-07,e2d48fc,M7 gate 2,dev,combat_tick,contact,1,1.197,1.67,,pre-P1,,performance.md@6e0a9f5:153
+2026-11-07,e2d48fc,M7 gate 2,dev,combat_tick,skirmish3v3,1,1.415,1.61,,pre-P1,,performance.md@6e0a9f5:153
+2026-11-07,e2d48fc,M7 gate 2,dev,combat_tick,transports,1,1.461,1.777,,pre-P1,,performance.md@6e0a9f5:153
+2026-11-07,e2d48fc,M7 gate 2,dev,combat_tick,defences,1,0.944,2.43,,pre-P1,,performance.md@6e0a9f5:153
+2026-11-07,e2d48fc,M7 gate 2,dev,combat_tick,docks,1,0.061,0.085,,pre-P1,,performance.md@6e0a9f5:153
+2026-11-07,e2d48fc,M7 gate 2,dev,combat_tick,ramp,1,0.769,1.424,,pre-P1,,performance.md@6e0a9f5:153
+2026-11-07,e2d48fc,M7 gate 2,dev,lockstep_overhead,contact,1,,0.066,,pre-P1,,performance.md@6e0a9f5:153
+2026-11-07,eb3fbed,M7 gate 2 fixes,dev,combat_tick,hordes300,1,5.626,7.074,,pre-P1,,performance.md@6e0a9f5:155
+2026-11-07,eb3fbed,M7 gate 2 fixes,dev,combat_tick,open,1,2.747,3.652,,pre-P1,,performance.md@6e0a9f5:155
+2026-11-07,eb3fbed,M7 gate 2 fixes,dev,combat_tick,dense,1,3.111,4.649,,pre-P1,,performance.md@6e0a9f5:155
+2026-11-07,eb3fbed,M7 gate 2 fixes,dev,combat_tick,contact,1,1.196,1.657,,pre-P1,,performance.md@6e0a9f5:155
+2026-11-07,eb3fbed,M7 gate 2 fixes,dev,combat_tick,skirmish3v3,1,1.414,1.619,,pre-P1,,performance.md@6e0a9f5:155
+2026-11-07,eb3fbed,M7 gate 2 fixes,dev,combat_tick,transports,1,1.459,1.784,,pre-P1,,performance.md@6e0a9f5:155
+2026-11-07,eb3fbed,M7 gate 2 fixes,dev,combat_tick,defences,1,0.947,2.442,,pre-P1,,performance.md@6e0a9f5:155
+2026-11-07,eb3fbed,M7 gate 2 fixes,dev,combat_tick,docks,1,0.062,0.086,,pre-P1,,performance.md@6e0a9f5:155
+2026-11-07,eb3fbed,M7 gate 2 fixes,dev,combat_tick,ramp,1,0.755,1.414,,pre-P1,,performance.md@6e0a9f5:155
+2026-11-07,eb3fbed,M7 gate 2 fixes,dev,lockstep_overhead,contact,1,,0.071,,pre-P1,,performance.md@6e0a9f5:155
+2026-11-07,,M7 gate 2 lean cuts,dev,combat_tick,hordes300,1,5.588,7.098,,pre-P1,,performance.md@6e0a9f5:156
+2026-11-07,,M7 docks idle,dev,combat_tick,docks,1,0.864,0.899,,pre-P1,,performance.md@6e0a9f5:157
+2026-11-07,5736f56,M7 gate 3,dev,movement_tick,open,1,2.555,3.022,,pre-P1,3.5,performance.md@6e0a9f5:158
+2026-11-07,5736f56,M7 gate 3,dev,movement_tick,dense,1,2.709,3.108,,pre-P1,3.5,performance.md@6e0a9f5:158
+2026-11-07,5736f56,M7 gate 3,dev,combat_tick,open,1,3.59,4.455,,pre-P1,3.5,performance.md@6e0a9f5:158
+2026-11-07,5736f56,M7 gate 3,dev,combat_tick,dense,1,4.05,5.497,,pre-P1,3.5,performance.md@6e0a9f5:158
+2026-11-07,5736f56,M7 gate 3,dev,combat_tick,contact,1,1.44,2.385,,pre-P1,3.5,performance.md@6e0a9f5:158
+2026-11-07,5736f56,M7 gate 3,dev,combat_tick,skirmish3v3,1,1.795,2.246,,pre-P1,3.5,performance.md@6e0a9f5:158
+2026-11-07,5736f56,M7 gate 3,dev,combat_tick,transports,1,1.998,2.575,,pre-P1,3.5,performance.md@6e0a9f5:158
+2026-11-07,5736f56,M7 gate 3,dev,combat_tick,defences,1,1.313,3.062,,pre-P1,3.5,performance.md@6e0a9f5:158
+2026-11-07,5736f56,M7 gate 3,dev,combat_tick,docks,1,1.336,1.692,,pre-P1,3.5,performance.md@6e0a9f5:158
+2026-11-07,5736f56,M7 gate 3,dev,combat_tick,hordes300,1,6.895,8.23,,pre-P1,3.5,performance.md@6e0a9f5:158
+2026-11-07,5736f56,M7 gate 3,dev,combat_tick,ramp,1,0.879,1.646,,pre-P1,3.5,performance.md@6e0a9f5:158
+2026-11-07,5736f56,M7 gate 3,dev,combat_tick,frc,1,1.048,1.43,,pre-P1,3.5,performance.md@6e0a9f5:158
+2026-11-07,98bf150,M7 exit,dev,movement_tick,open,1,1.585,1.758,,pre-P1,2.2,performance.md@6e0a9f5:159
+2026-11-07,98bf150,M7 exit,dev,movement_tick,dense,1,1.583,1.791,,pre-P1,2.2,performance.md@6e0a9f5:159
+2026-11-07,98bf150,M7 exit,dev,combat_tick,open,1,2.961,3.93,,pre-P1,2.2,performance.md@6e0a9f5:159
+2026-11-07,98bf150,M7 exit,dev,combat_tick,dense,1,3.335,4.919,,pre-P1,2.2,performance.md@6e0a9f5:159
+2026-11-07,98bf150,M7 exit,dev,combat_tick,contact,1,1.226,1.763,,pre-P1,2.2,performance.md@6e0a9f5:159
+2026-11-07,98bf150,M7 exit,dev,combat_tick,skirmish3v3,1,1.452,1.672,,pre-P1,2.2,performance.md@6e0a9f5:159
+2026-11-07,98bf150,M7 exit,dev,combat_tick,transports,1,1.488,1.828,,pre-P1,2.2,performance.md@6e0a9f5:159
+2026-11-07,98bf150,M7 exit,dev,combat_tick,defences,1,0.961,2.492,,pre-P1,2.2,performance.md@6e0a9f5:159
+2026-11-07,98bf150,M7 exit,dev,combat_tick,docks,1,0.873,0.929,,pre-P1,2.2,performance.md@6e0a9f5:159
+2026-11-07,98bf150,M7 exit,dev,combat_tick,ramp,1,0.767,1.423,,pre-P1,2.2,performance.md@6e0a9f5:159
+2026-11-07,98bf150,M7 exit,dev,combat_tick,frc,1,0.948,1.279,,pre-P1,2.2,performance.md@6e0a9f5:159
+2026-11-07,98bf150,M7 exit,dev,combat_tick,hordes300,1,5.567,7.103,,pre-P1,2.2,performance.md@6e0a9f5:159
+2026-11-07,,Dry Wells play map,dev,frame_interval,open,1,1.898,4.475,,pre-P1,,performance.md@6e0a9f5:160
+2026-11-07,,Dry Wells play map,dev,frame_interval,dense,1,3.76,7.035,,pre-P1,,performance.md@6e0a9f5:160
+2026-11-07,b7c9ae3,M7 economy T3-4,dev,movement_tick,open,1,2.159,2.656,,pre-P1,3.18,performance.md@6e0a9f5:161
+2026-11-07,b7c9ae3,M7 economy T3-4,dev,movement_tick,dense,1,2.101,2.55,,pre-P1,3.18,performance.md@6e0a9f5:161
+2026-11-07,b7c9ae3,M7 economy T3-4,dev,combat_tick,open,1,3.228,4.313,,pre-P1,3.18,performance.md@6e0a9f5:161
+2026-11-07,b7c9ae3,M7 economy T3-4,dev,combat_tick,dense,1,3.778,5.294,,pre-P1,3.18,performance.md@6e0a9f5:161
+2026-11-07,b7c9ae3,M7 economy T3-4,dev,combat_tick,contact,1,1.37,2.294,,pre-P1,3.18,performance.md@6e0a9f5:161
+2026-11-07,b7c9ae3,M7 economy T3-4,dev,combat_tick,skirmish3v3,1,1.673,1.971,,pre-P1,3.18,performance.md@6e0a9f5:161
+2026-11-07,b7c9ae3,M7 economy T3-4,dev,combat_tick,transports,1,1.85,2.342,,pre-P1,3.18,performance.md@6e0a9f5:161
+2026-11-07,b7c9ae3,M7 economy T3-4,dev,combat_tick,defences,1,1.267,2.95,,pre-P1,3.18,performance.md@6e0a9f5:161
+2026-11-07,b7c9ae3,M7 economy T3-4,dev,combat_tick,docks,1,1.14,1.418,,pre-P1,3.18,performance.md@6e0a9f5:161
+2026-11-07,b7c9ae3,M7 economy T3-4,dev,combat_tick,hordes300,1,6.657,8.405,,pre-P1,3.18,performance.md@6e0a9f5:161
+2026-11-07,32e3471,M7 horde rendered,dev,frame_interval,open,1,0.591,4.17,,pre-P1,,performance.md@6e0a9f5:154
+2026-11-07,32e3471,M7 horde rendered,dev,frame_interval,dense,1,2.584,5.288,,pre-P1,,performance.md@6e0a9f5:154
+2026-11-07,741bfda,M7 exit rendered 741bfda,dev,frame_interval,open,1,0.402,4.197,,pre-P1,4.7,performance.md@6e0a9f5:162
+2026-11-07,741bfda,M7 exit rendered 741bfda,dev,frame_interval,dense,1,2.567,5.347,,pre-P1,4.7,performance.md@6e0a9f5:162
+2026-11-07,b7c9ae3,M7 exit rendered b7c9ae3,dev,frame_interval,open,1,2.118,4.399,,pre-P1,4.7,performance.md@6e0a9f5:162
+2026-11-07,b7c9ae3,M7 exit rendered b7c9ae3,dev,frame_interval,dense,1,6.852,18.952,,pre-P1,4.7,performance.md@6e0a9f5:162
+2026-11-07,3b6b9f1,M7 exit rendered HEAD,dev,frame_interval,open,1,3.754,7.765,,pre-P1,4.7,performance.md@6e0a9f5:162
+2026-11-07,3b6b9f1,M7 exit rendered HEAD,dev,frame_interval,dense,1,2.889,7.697,,pre-P1,4.7,performance.md@6e0a9f5:162
+2026-11-07,bba985c,perf spike W1,dev,movement_tick,open,1,1.587,1.766,,pre-P1,1.3,performance.md@6e0a9f5:163
+2026-11-07,bba985c,perf spike W1,dev,movement_tick,dense,1,1.577,1.788,,pre-P1,1.3,performance.md@6e0a9f5:163
+2026-11-07,bba985c,perf spike W1,dev,combat_tick,open,1,2.763,3.661,,pre-P1,1.3,performance.md@6e0a9f5:163
+2026-11-07,bba985c,perf spike W1,dev,combat_tick,dense,1,3.106,4.659,,pre-P1,1.3,performance.md@6e0a9f5:163
+2026-11-07,bba985c,perf spike W1,dev,combat_tick,hordes300,1,5.563,7.05,,pre-P1,1.3,performance.md@6e0a9f5:163
+2026-11-07,bba985c,perf spike W1,dev,lockstep_overhead,contact,1,,0.067,,pre-P1,1.3,performance.md@6e0a9f5:163
+2026-11-07,5d5c52c,perf spike T2b,dev,combat_tick,open,1,2.203,2.598,,pre-P1,1.82,performance.md@6e0a9f5:164
+2026-11-07,5d5c52c,perf spike T2b,dev,combat_tick,dense,1,2.39,2.945,,pre-P1,1.82,performance.md@6e0a9f5:164
+2026-11-07,5d5c52c,perf spike T2b,dev,combat_tick,hordes300,1,4.107,4.754,,pre-P1,1.82,performance.md@6e0a9f5:164
+2026-11-07,624ccb7,perf spike T2c,dev,combat_tick,open,1,2.111,2.525,,pre-P1,1.93,performance.md@6e0a9f5:165
+2026-11-07,624ccb7,perf spike T2c,dev,combat_tick,dense,1,2.284,2.845,,pre-P1,1.93,performance.md@6e0a9f5:165
+2026-11-07,624ccb7,perf spike T2c,dev,combat_tick,hordes300,1,3.921,4.569,,pre-P1,1.93,performance.md@6e0a9f5:165
+2026-11-08,89cd342,perf spike T2h,dev,combat_tick,open,1,1.906,2.252,,pre-P1,1.6,performance.md@6e0a9f5:167
+2026-11-08,89cd342,perf spike T2h,dev,combat_tick,dense,1,1.836,2.147,,pre-P1,1.6,performance.md@6e0a9f5:167
+2026-11-08,89cd342,perf spike T2h,dev,combat_tick,hordes300,1,3.604,4.147,,pre-P1,1.6,performance.md@6e0a9f5:167
+2026-11-08,4c0b2db,perf spike T2d,dev,combat_tick,hordes300,1,2.957,3.445,,pre-P1,1.5,performance.md@6e0a9f5:168
+2026-11-08,1d5200d,perf spike T2j,dev,combat_tick,open,1,1.903,,,pre-P1,2.3,performance.md@6e0a9f5:169
+2026-11-08,1d5200d,perf spike T2j,dev,combat_tick,dense,1,1.84,,,pre-P1,2.3,performance.md@6e0a9f5:169
+2026-11-08,1d5200d,perf spike T2j,dev,combat_tick,hordes300,1,2.962,,,pre-P1,2.3,performance.md@6e0a9f5:169
+2026-11-08,3175b2e,perf spike R2,dev,frame_interval,ashfall,1,2.93,4.7,,pre-P1,3.3,performance.md@6e0a9f5:171 (top of tree B range; tree A reached 3.02)
+2026-11-08,ea365b5,perf spike W4,dev,movement_tick,open,1,1.501,,,pre-P1,1.5,performance.md@6e0a9f5:172
+2026-11-08,ea365b5,perf spike W4,dev,movement_tick,dense,1,1.487,,,pre-P1,1.5,performance.md@6e0a9f5:172
+2026-11-08,ea365b5,perf spike W4,dev,combat_tick,open,1,1.865,,,pre-P1,1.5,performance.md@6e0a9f5:172
+2026-11-08,ea365b5,perf spike W4,dev,combat_tick,dense,1,1.796,,,pre-P1,1.5,performance.md@6e0a9f5:172
+2026-11-08,ea365b5,perf spike W4,dev,combat_tick,hordes300,1,2.821,,,pre-P1,1.5,performance.md@6e0a9f5:172
+2026-11-08,89af5a8,perf spike Ashfall guard,dev,frame_interval,ashfall,1,0.506,3.997,,pre-P1,2.1,performance.md@6e0a9f5:178 (not reproduced per ledger)
+2026-11-08,dd10c8f,perf spike T6,dev,movement_tick,open,1,1.519,,,pre-P1,1.6,performance.md@6e0a9f5:182
+2026-11-08,dd10c8f,perf spike T6,dev,movement_tick,dense,1,1.507,,,pre-P1,1.6,performance.md@6e0a9f5:182
+2026-11-08,dd10c8f,perf spike T6,dev,combat_tick,open,1,1.868,2.204,,pre-P1,1.6,performance.md@6e0a9f5:182
+2026-11-08,dd10c8f,perf spike T6,dev,combat_tick,dense,1,1.808,2.107,,pre-P1,1.6,performance.md@6e0a9f5:182
+2026-11-08,dd10c8f,perf spike T6,dev,combat_tick,hordes300,1,2.838,3.371,,pre-P1,1.6,performance.md@6e0a9f5:182
+2026-11-08,7827b8d,perf spike P1 old,dev,movement_tick,open,1,1.696,2.061,,pre-P1,,performance.md@6e0a9f5:184
+2026-11-08,7827b8d,perf spike P1 old,dev,movement_tick,dense,1,1.512,1.739,,pre-P1,,performance.md@6e0a9f5:184
+2026-11-08,bcaf65b,F re-check,deck-native,movement_tick,open,1,6.57,7.21,,pre-P1,1.9,performance.md@6e0a9f5:179
+2026-11-08,bcaf65b,F re-check,deck-native,movement_tick,dense,1,6.54,7.4,,pre-P1,1.9,performance.md@6e0a9f5:179
+2026-11-08,bcaf65b,F re-check,deck-native,combat_tick,open,1,6.87,8.13,,pre-P1,1.9,performance.md@6e0a9f5:179
+2026-11-08,bcaf65b,F re-check,deck-native,combat_tick,dense,1,6.61,7.65,,pre-P1,1.9,performance.md@6e0a9f5:179
+2026-11-08,bcaf65b,F re-check,deck-native,combat_tick,contact,1,4.03,5.69,,pre-P1,1.9,performance.md@6e0a9f5:179
+2026-11-08,bcaf65b,F re-check,deck-native,combat_tick,skirmish3v3,1,4.58,5.11,,pre-P1,1.9,performance.md@6e0a9f5:179
+2026-11-08,bcaf65b,F re-check,deck-native,combat_tick,hordes300,1,10.66,12.5,,pre-P1,1.9,performance.md@6e0a9f5:179
+2026-11-08,bcaf65b,F re-check,deck-native,lockstep_overhead,contact,1,,0.229,,pre-P1,1.9,performance.md@6e0a9f5:179
+2026-11-08,7827b8d,F re-check,deck-firefox,movement_tick,open,1,9.96,11.26,,pre-P1,1.5,performance.md@6e0a9f5:180
+2026-11-08,7827b8d,F re-check,deck-firefox,movement_tick,dense,1,9.3,9.94,,pre-P1,1.5,performance.md@6e0a9f5:180
+2026-11-08,7827b8d,F re-check,deck-firefox,combat_tick,open,1,9.7,11.4,,pre-P1,1.5,performance.md@6e0a9f5:180
+2026-11-08,7827b8d,F re-check,deck-firefox,combat_tick,dense,1,9.26,10.72,,pre-P1,1.5,performance.md@6e0a9f5:180
+2026-11-08,7827b8d,F re-check,deck-firefox,combat_tick,contact,1,5.78,8.04,,pre-P1,1.5,performance.md@6e0a9f5:180
+2026-11-08,7827b8d,F re-check,deck-firefox,combat_tick,skirmish3v3,1,6.64,7.46,,pre-P1,1.5,performance.md@6e0a9f5:180
+2026-11-08,7827b8d,F re-check,deck-firefox,combat_tick,hordes300,1,14.54,17.04,,pre-P1,1.5,performance.md@6e0a9f5:180
+2026-11-08,,perf spike P1,dev,movement_tick,open,1,0.709,0.858,,P1,,performance.md@6e0a9f5:184
+2026-11-08,,perf spike P1,dev,movement_tick,dense,1,0.685,0.905,,P1,,performance.md@6e0a9f5:184
+2026-11-08,46020ab,perf spike T2,dev,movement_tick,open,1,0.708,0.856,,P1,,perf-spike-verification.md#12-results-2026-11-08-head-46020ab-apple-m6-quiet-batch
+2026-11-08,46020ab,perf spike T2,dev,movement_tick,open,2,0.932,1.858,,P1,,"perf-spike-verification.md#12-results-2026-11-08-head-46020ab-apple-m6-quiet-batch (run 1 = median, run 2 = worst of 13; not separate runs)"
+2026-11-08,46020ab,perf spike T2,dev,movement_tick,dense,1,0.686,0.89,,P1,,perf-spike-verification.md#12-results-2026-11-08-head-46020ab-apple-m6-quiet-batch
+2026-11-08,46020ab,perf spike T2,dev,movement_tick,dense,2,1.021,1.209,,P1,,"perf-spike-verification.md#12-results-2026-11-08-head-46020ab-apple-m6-quiet-batch (run 1 = median, run 2 = worst of 13; not separate runs)"
+2026-11-08,46020ab,perf spike T2,dev,combat_tick,contact,1,1.153,1.616,,P1,,perf-spike-verification.md#12-results-2026-11-08-head-46020ab-apple-m6-quiet-batch
+2026-11-08,46020ab,perf spike T2,dev,combat_tick,contact,2,1.332,2.222,,P1,,"perf-spike-verification.md#12-results-2026-11-08-head-46020ab-apple-m6-quiet-batch (run 1 = median, run 2 = worst of 13; not separate runs)"
+2026-11-08,46020ab,perf spike T2,dev,combat_tick,defences,1,0.796,2.076,,P1,,perf-spike-verification.md#12-results-2026-11-08-head-46020ab-apple-m6-quiet-batch
+2026-11-08,46020ab,perf spike T2,dev,combat_tick,defences,2,0.817,2.247,,P1,,"perf-spike-verification.md#12-results-2026-11-08-head-46020ab-apple-m6-quiet-batch (run 1 = median, run 2 = worst of 13; not separate runs)"
+2026-11-08,46020ab,perf spike T2,dev,combat_tick,dense,1,1.811,2.136,,P1,,perf-spike-verification.md#12-results-2026-11-08-head-46020ab-apple-m6-quiet-batch
+2026-11-08,46020ab,perf spike T2,dev,combat_tick,dense,2,2.509,3.756,,P1,,"perf-spike-verification.md#12-results-2026-11-08-head-46020ab-apple-m6-quiet-batch (run 1 = median, run 2 = worst of 13; not separate runs)"
+2026-11-08,46020ab,perf spike T2,dev,combat_tick,docks,1,0.558,0.58,,P1,,perf-spike-verification.md#12-results-2026-11-08-head-46020ab-apple-m6-quiet-batch
+2026-11-08,46020ab,perf spike T2,dev,combat_tick,docks,2,0.873,1.424,,P1,,"perf-spike-verification.md#12-results-2026-11-08-head-46020ab-apple-m6-quiet-batch (run 1 = median, run 2 = worst of 13; not separate runs)"
+2026-11-08,46020ab,perf spike T2,dev,combat_tick,frc,1,0.826,1.149,,P1,,perf-spike-verification.md#12-results-2026-11-08-head-46020ab-apple-m6-quiet-batch
+2026-11-08,46020ab,perf spike T2,dev,combat_tick,frc,2,0.89,1.393,,P1,,"perf-spike-verification.md#12-results-2026-11-08-head-46020ab-apple-m6-quiet-batch (run 1 = median, run 2 = worst of 13; not separate runs)"
+2026-11-08,46020ab,perf spike T2,dev,combat_tick,hordes300,1,2.852,3.365,,P1,,perf-spike-verification.md#12-results-2026-11-08-head-46020ab-apple-m6-quiet-batch
+2026-11-08,46020ab,perf spike T2,dev,combat_tick,hordes300,2,2.918,3.857,,P1,,"perf-spike-verification.md#12-results-2026-11-08-head-46020ab-apple-m6-quiet-batch (run 1 = median, run 2 = worst of 13; not separate runs)"
+2026-11-08,46020ab,perf spike T2,dev,combat_tick,open,1,1.889,2.24,,P1,,perf-spike-verification.md#12-results-2026-11-08-head-46020ab-apple-m6-quiet-batch
+2026-11-08,46020ab,perf spike T2,dev,combat_tick,open,2,1.999,2.458,,P1,,"perf-spike-verification.md#12-results-2026-11-08-head-46020ab-apple-m6-quiet-batch (run 1 = median, run 2 = worst of 13; not separate runs)"
+2026-11-08,46020ab,perf spike T2,dev,combat_tick,ramp,1,0.653,1.207,,P1,,perf-spike-verification.md#12-results-2026-11-08-head-46020ab-apple-m6-quiet-batch
+2026-11-08,46020ab,perf spike T2,dev,combat_tick,ramp,2,0.703,1.264,,P1,,"perf-spike-verification.md#12-results-2026-11-08-head-46020ab-apple-m6-quiet-batch (run 1 = median, run 2 = worst of 13; not separate runs)"
+2026-11-08,46020ab,perf spike T2,dev,combat_tick,skirmish3v3,1,1.304,1.461,,P1,,perf-spike-verification.md#12-results-2026-11-08-head-46020ab-apple-m6-quiet-batch
+2026-11-08,46020ab,perf spike T2,dev,combat_tick,skirmish3v3,2,1.324,1.499,,P1,,"perf-spike-verification.md#12-results-2026-11-08-head-46020ab-apple-m6-quiet-batch (run 1 = median, run 2 = worst of 13; not separate runs)"
+2026-11-08,46020ab,perf spike T2,dev,combat_tick,transports,1,1.075,1.176,,P1,,perf-spike-verification.md#12-results-2026-11-08-head-46020ab-apple-m6-quiet-batch
+2026-11-08,46020ab,perf spike T2,dev,combat_tick,transports,2,1.113,1.373,,P1,,"perf-spike-verification.md#12-results-2026-11-08-head-46020ab-apple-m6-quiet-batch (run 1 = median, run 2 = worst of 13; not separate runs)"
+2026-11-08,46020ab,perf spike T2,dev,lockstep_overhead,contact,1,,0.072,,P1,,performance.md@6e0a9f5:187
+2026-11-08,46020ab,perf spike T2,dev,frame_interval,ashfall,1,2.833,,,P1,,performance.md@6e0a9f5:188
+2026-11-08,46020ab,perf spike T2,dev,frame_interval,open,1,1.999,,,P1,,performance.md@6e0a9f5:188
+2026-11-08,46020ab,perf spike T2,dev,frame_interval,dense,1,1.936,,,P1,,performance.md@6e0a9f5:188
+2026-11-08,46020ab,perf spike T2,dev,plumbing,ashfall:profile,1,,,0.871,P1,,perf-spike-verification.md#12-results-2026-11-08-head-46020ab-apple-m6-quiet-batch
+2026-11-08,46020ab,perf spike T2,dev,plumbing,open:profile,1,,,0.891,P1,,perf-spike-verification.md#12-results-2026-11-08-head-46020ab-apple-m6-quiet-batch
+2026-11-08,46020ab,perf spike T2,dev,plumbing,dense:profile,1,,,0.896,P1,,perf-spike-verification.md#12-results-2026-11-08-head-46020ab-apple-m6-quiet-batch
+2026-11-08,46020ab,perf spike T2,dev,plumbing,horde:profile,1,,,1.226,P1,,perf-spike-verification.md#12-results-2026-11-08-head-46020ab-apple-m6-quiet-batch
+2026-11-08,46020ab,perf spike T2,dev,plumbing,large_196:profile,1,,,1.314,P1,,perf-spike-verification.md#12-results-2026-11-08-head-46020ab-apple-m6-quiet-batch
+2026-11-08,c364e90,perf spike T15,dev,movement_tick,open,1,0.688,0.841,,P1,0.9,performance.md@6e0a9f5:189
+2026-11-08,c364e90,perf spike T15,dev,movement_tick,dense,1,0.679,0.899,,P1,0.9,performance.md@6e0a9f5:189
+2026-11-08,c364e90,perf spike T15,dev,combat_tick,open,1,1.842,2.203,,P1,0.9,performance.md@6e0a9f5:189
+2026-11-08,c364e90,perf spike T15,dev,combat_tick,dense,1,1.778,2.105,,P1,0.9,performance.md@6e0a9f5:189
+2026-11-08,c364e90,perf spike T15,dev,combat_tick,contact,1,1.151,1.602,,P1,0.9,performance.md@6e0a9f5:189
+2026-11-08,c364e90,perf spike T15,dev,combat_tick,skirmish3v3,1,1.287,1.435,,P1,0.9,performance.md@6e0a9f5:189
+2026-11-08,c364e90,perf spike T15,dev,combat_tick,transports,1,1.067,1.159,,P1,0.9,performance.md@6e0a9f5:189
+2026-11-08,c364e90,perf spike T15,dev,combat_tick,defences,1,0.774,2.079,,P1,0.9,performance.md@6e0a9f5:189
+2026-11-08,c364e90,perf spike T15,dev,combat_tick,docks,1,0.555,0.574,,P1,0.9,performance.md@6e0a9f5:189
+2026-11-08,c364e90,perf spike T15,dev,combat_tick,hordes300,1,2.81,3.268,,P1,0.9,performance.md@6e0a9f5:189
+2026-11-08,c364e90,perf spike T15,dev,combat_tick,ramp,1,0.644,1.19,,P1,0.9,performance.md@6e0a9f5:189
+2026-11-08,c364e90,perf spike T15,dev,combat_tick,frc,1,0.822,1.134,,P1,0.9,performance.md@6e0a9f5:189
+2026-11-08,b6ac15a,perf spike T16,dev,lockstep_overhead,contact,1,,0.066,,P1,1.8,performance.md@6e0a9f5:190
+2026-11-08,11841c5,sound spike T7,dev,movement_tick,open,1,0.682,0.84,,P1,1.46,performance.md@6e0a9f5:192
+2026-11-08,11841c5,sound spike T7,dev,movement_tick,dense,1,0.671,0.88,,P1,1.46,performance.md@6e0a9f5:192
+2026-11-08,11841c5,sound spike T7,dev,lockstep_overhead,contact,1,,0.066,,P1,1.46,performance.md@6e0a9f5:192
+2026-11-08,11841c5,sound spike T7,dev,frame_interval,open,1,0.635,3.254,,P1,2.35,performance.md@6e0a9f5:192
+2026-11-08,11841c5,sound spike T7,dev,frame_interval,dense,1,1.929,3.645,,P1,2.35,performance.md@6e0a9f5:192
+2026-11-08,11841c5,sound spike T7,dev,frame_interval,ashfall,1,2.725,3.893,,P1,2.35,performance.md@6e0a9f5:192
+2026-11-09,15c38bf,converted maps T10,dev,combat_tick,open,1,1.847,2.181,,P1,2.19,performance.md@6e0a9f5:194
+2026-11-09,15c38bf,converted maps T10,dev,combat_tick,dense,1,1.779,2.095,,P1,2.19,performance.md@6e0a9f5:194
+2026-11-09,15c38bf,converted maps T10,dev,combat_tick,hordes300,1,2.819,3.3,,P1,2.19,performance.md@6e0a9f5:194
+2026-11-09,15c38bf,converted maps T10,dev,lockstep_overhead,contact,1,,0.069,,P1,2.19,performance.md@6e0a9f5:194
+2026-11-09,9ed2331,converted maps final,dev,movement_tick,open,1,0.68,,,P1,1.17,performance.md@6e0a9f5:195
+2026-11-09,9ed2331,converted maps final,dev,movement_tick,dense,1,0.672,,,P1,1.17,performance.md@6e0a9f5:195
+2026-11-09,9ed2331,converted maps final,dev,combat_tick,open,1,1.857,2.2,,P1,1.17,performance.md@6e0a9f5:195
+2026-11-09,9ed2331,converted maps final,dev,combat_tick,dense,1,1.8,2.102,,P1,1.17,performance.md@6e0a9f5:195
+2026-11-09,9ed2331,converted maps final,dev,combat_tick,hordes300,1,2.855,3.532,,P1,1.17,performance.md@6e0a9f5:195
+2026-11-09,9ed2331,converted maps final,dev,lockstep_overhead,contact,1,,0.068,,P1,1.17,performance.md@6e0a9f5:195
+2026-11-09,2354087,converted maps T9,dev,frame_interval,open,1,0.387,,,P1,2.0,performance.md@6e0a9f5:358
+2026-11-09,2354087,converted maps T9,dev,frame_interval,dense,1,2.159,,,P1,2.0,performance.md@6e0a9f5:358
+2026-11-09,2354087,converted maps T9,dev,frame_interval,ashfall,1,2.936,,,P1,2.0,performance.md@6e0a9f5:358
+2026-11-10,6e0a9f5+dirty,perf charts T7,dev,movement_tick,open,1,0.69,0.847,,P1,1.56,log sha256:da6e8321f406
+2026-11-10,6e0a9f5+dirty,perf charts T7,dev,movement_tick,dense,1,0.686,0.875,,P1,1.56,log sha256:da6e8321f406
+2026-11-10,6e0a9f5+dirty,perf charts T7,dev,combat_tick,open,1,1.854,2.161,,P1,1.56,log sha256:da6e8321f406
+2026-11-10,6e0a9f5+dirty,perf charts T7,dev,combat_tick,dense,1,1.768,2.078,,P1,1.56,log sha256:da6e8321f406
+2026-11-10,6e0a9f5+dirty,perf charts T7,dev,combat_tick,contact,1,1.134,1.591,,P1,1.56,log sha256:da6e8321f406
+2026-11-10,6e0a9f5+dirty,perf charts T7,dev,combat_tick,skirmish3v3,1,1.285,1.429,,P1,1.56,log sha256:da6e8321f406
+2026-11-10,6e0a9f5+dirty,perf charts T7,dev,combat_tick,transports,1,1.087,1.204,,P1,1.56,log sha256:da6e8321f406
+2026-11-10,6e0a9f5+dirty,perf charts T7,dev,combat_tick,defences,1,0.783,2.062,,P1,1.56,log sha256:da6e8321f406
+2026-11-10,6e0a9f5+dirty,perf charts T7,dev,combat_tick,docks,1,0.556,0.579,,P1,1.56,log sha256:da6e8321f406
+2026-11-10,6e0a9f5+dirty,perf charts T7,dev,combat_tick,hordes300,1,2.821,3.313,,P1,1.56,log sha256:da6e8321f406
+2026-11-10,6e0a9f5+dirty,perf charts T7,dev,combat_tick,ramp,1,0.681,1.237,,P1,1.56,log sha256:da6e8321f406
+2026-11-10,6e0a9f5+dirty,perf charts T7,dev,combat_tick,frc,1,0.839,1.173,,P1,1.56,log sha256:da6e8321f406
+2026-11-10,6e0a9f5+dirty,perf charts T7,dev,lockstep_overhead,contact,1,0.016,0.067,,P1,1.56,log sha256:da6e8321f406
