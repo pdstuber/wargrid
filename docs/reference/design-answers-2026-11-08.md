@@ -248,7 +248,7 @@ Questions from [sim core options](sim-core-options.md) (Q1-Q15) and [state diges
 - The CI replay traces switch to the same digest (today a Godot-only SHA-256 over `var_to_bytes`, `test_replay.gd:56`).
 - The simulation performance spike starts with a one-day check that a tiny Rust extension (godot-rust) runs in Firefox on the Steam Deck.
 - If native code wins: Rust, with C++ only if Rust fails in the browser.
-- Pass line: Rust must show at least 5x after the data hand-off cost.
+- Pass line: Rust must show at least 5x after the data hand-off cost. **Superseded 2026-11-10** by the ratio rule in "Native simulation core spike" below (the user called the 5 arbitrary on 2026-11-09).
 - If native wins, production also sends the cross-origin isolation headers (needed for any extension in the browser; refines the earlier "test app only").
 - Whole simulation port or hot loops first: decided after the spike (the data hand-off cost decides).
 - During any port the GDScript simulation stays the reference until the golden scenarios match (the rollback).
@@ -259,6 +259,27 @@ Questions from [sim core options](sim-core-options.md) (Q1-Q15) and [state diges
 - No reduced update rate for far-away or idle units until measured (it changes fights).
 - Per-match switches travel with the host's match settings in the start message; only the code fingerprint (R1.1) gates rooms.
 - Golden scenarios get a horde-style case only when a horde mode is planned.
+
+## Native simulation core spike (user, 2026-11-10 evening)
+
+Interview before the overnight run of the [handoff](../native-sim-spike-prompt.txt); evidence in [its verification file](native-sim-spike-verification.md).
+
+- Verdict by the ratio rule (language gain K, hand-off H, effective gain E, template tax T against the need Q), not by "5x"; the old quantity is still reported as E.
+- Headroom factor 1.5: the projected gain must reach Q x 1.5 (today 1.45 x 1.5 = 2.18).
+- The Rust core is engine-independent as a requirement: it builds and passes its tests with no Godot installed.
+- Slices: the horde step and the movement of moving units, ported in parallel (movement is rewritten by the next milestone, which does not matter for ratios).
+- Added probe: what it costs to hand 400 unit records from Rust to Godot as today's Dictionary-shaped snapshot against packed number arrays.
+- Template tax measured on the simulation benchmark and on the rendered web benchmark.
+- Emscripten 3.1.74 is the main version (documented by godot-rust); 4.0.20, the engine's own, gets a comparison row.
+- Linux x86-64 binaries are built in a container on the Mac; nothing is installed on the Deck beyond one folder.
+- The user sets up the Deck (Desktop Mode, mains power, no sleep) before starting; without it the run continues on the Mac and the outcome is at most CONDITIONAL GO.
+- Overnight a stop condition takes its written default and the run continues; only push, deploy and loosening a budget or pin are never defaulted.
+- Local commits on `spike-native-sim` are pre-authorized; no push, PR or merge.
+- Models: Sonnet coordinator; Opus 5.5 and Sonnet 5.5 subagents by difficulty (the plan names one per task).
+- If the run is not finished in the morning it keeps going; the user checks in.
+- One phone notification, when the report is done or nothing can continue.
+- Browser windows on the Mac and on the Deck are allowed during this run (user: "fine to spawn windows, play sounds, run benchmarks, launch browsers").
+- Coordinator calls (not the user's, change if wanted): Vivaldi is the Chromium browser on the Mac; no C++ fallback is built at night (a morning decision if Rust fails in a browser); parallel code tasks get their own task worktree and branch, and their commits reach `spike-native-sim` by `git cherry-pick`, because `git merge` asks for approval and a night session denies what asks.
 
 
 ## Turret aiming (user, 2026-11-10; [impact note](turret-aiming.md))
