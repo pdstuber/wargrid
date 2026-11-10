@@ -8,7 +8,7 @@ const CLIFF_HEIGHT: float = 8.0
 var draws: int = 0
 var ground_builds: int = 0
 var _map: Dictionary = {}
-var _colors: Dictionary = Palette.ground(0)
+var _colors: Dictionary = Palette.ground(Palette.DEFAULT_BIOME)
 var _ground: Dictionary = {}
 
 func set_palette(colors: Dictionary) -> void:

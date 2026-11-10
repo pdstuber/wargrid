@@ -2,6 +2,7 @@
 extends RefCounted
 
 const WorldBatch = preload("res://scripts/presentation/world_batch.gd")
+const Director = preload("res://scripts/presentation/visual_director.gd")
 const Shapes = preload("res://scripts/presentation/shapes.gd")
 const Bake = preload("res://scripts/presentation/shape_bake.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
@@ -9,7 +10,7 @@ const Fixture = preload("res://tests/economy_fixture.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 
 func cases() -> Array[Callable]:
-	return [test_sort_key_orders_layers_then_depth, test_unit_in_front_of_factory_draws_later, test_unit_behind_factory_draws_earlier, test_air_kind_draws_above_ground, test_build_one_submission, test_empty_state, test_rise_from_work, test_damage_stage_edges, test_building_rises_with_work, test_supply_stack_shrinks, test_small_pile_inside_footprint, test_shadow_only_with_flag, test_lab_roles_mapped, test_back_to_front_across_objects, test_lifts_clear_unit_height, test_top_lift_by_role, test_golden_output]
+	return [test_sort_key_orders_layers_then_depth, test_unit_in_front_of_factory_draws_later, test_unit_behind_factory_draws_earlier, test_air_kind_draws_above_ground, test_build_one_submission, test_empty_state, test_rise_from_work, test_damage_stage_edges, test_building_rises_with_work, test_supply_stack_shrinks, test_small_pile_inside_footprint, test_shadow_only_with_flag, test_lab_roles_mapped, test_back_to_front_across_objects, test_lifts_clear_unit_height, test_top_lift_by_role, test_golden_output, test_shot_dash]
 
 func _find(items: Array[Dictionary], id: int) -> Dictionary:
 	for item in items:
@@ -59,7 +60,7 @@ func test_build_one_submission(runner) -> bool:
 	var sim = Fixture.make_world()
 	for i in 300: sim.spawn(1, Vector2(2.0 + i % 20, 2.0 + floorf(i / 20.0)), "usa_tank")
 	var batch = WorldBatch.new()
-	batch.build(WorldBatch.objects(sim.snapshot()), {}, 1, 0)
+	batch.build(WorldBatch.objects(sim.snapshot()), {}, 1, false)
 	runner.check(batch.points.size() % 3 == 0 and batch.points.size() > 0, "WB5 whole triangles")
 	runner.check(batch.colors.size() == batch.points.size(), "WB5 one colour per vertex")
 	runner.check(float(batch.triangle_count) == batch.points.size() / 3.0, "WB5 triangle count")
@@ -67,7 +68,7 @@ func test_build_one_submission(runner) -> bool:
 
 func test_empty_state(runner) -> bool:
 	var batch = WorldBatch.new()
-	batch.build(WorldBatch.objects({}), {}, 1, 0)
+	batch.build(WorldBatch.objects({}), {}, 1, false)
 	runner.check(batch.points.is_empty() and batch.colors.is_empty() and batch.triangle_count == 0, "WB6 empty arrays")
 	batch.submit(RID())
 	return true
@@ -103,9 +104,9 @@ func test_damage_stage_edges(runner) -> bool:
 	runner.check(WorldBatch.damage_stage(0, 0) == 0, "WB10 no max hp is stage 0")
 	return true
 
-func _single(item: Dictionary, flags: int = 0) -> Object:
+func _single(item: Dictionary, shadows: bool = false) -> Object:
 	var batch = WorldBatch.new()
-	batch.build([item] as Array[Dictionary], {}, 2, flags)
+	batch.build([item] as Array[Dictionary], {}, 2, shadows)
 	return batch
 
 func _top(batch: Object) -> float:
@@ -174,15 +175,15 @@ func test_shadow_only_with_flag(runner) -> bool:
 	var tank: int = sim.spawn(1, Vector2(5.5, 5.5), "usa_tank")
 	var item: Dictionary = _find(WorldBatch.objects(sim.snapshot()), tank)
 	var plain = _single(item)
-	var shadowed = _single(item, WorldBatch.FLAG_SHADOWS)
+	var shadowed = _single(item, true)
 	runner.check(shadowed.triangle_count == plain.triangle_count + 2, "WB14 shadow adds two triangles only with the flag")
 	return true
 
 func test_back_to_front_across_objects(runner) -> bool:
 	var pair := _factory_world(Vector2(11.5, 13.5))
-	var factory_only = _single(pair[0], 0)
+	var factory_only = _single(pair[0])
 	var both = WorldBatch.new()
-	both.build([pair[1], pair[0]] as Array[Dictionary], {}, 2, 0)
+	both.build([pair[1], pair[0]] as Array[Dictionary], {}, 2, false)
 	runner.check(factory_only.points.size() > 0 and both.points.slice(0, factory_only.points.size()) == factory_only.points, "WB15 the factory behind the tank is painted first")
 	runner.check(both.points.size() > factory_only.points.size(), "WB15 the tank follows")
 	return true
@@ -242,23 +243,53 @@ func test_golden_output(runner) -> bool:
 	hasher.start(HashingContext.HASH_SHA256)
 	var triangles: int = 0
 	for detail in 3:
-		for flags in [0, WorldBatch.FLAG_SHADOWS]:
+		for shadows in [false, true]:
 			for with_extras in [false, true]:
 				var batch = WorldBatch.new()
-				if with_extras: batch.build(items, angles, detail, flags, effects)
-				else: batch.build(items, {}, detail, flags)
+				if with_extras: batch.build(items, angles, detail, shadows, effects)
+				else: batch.build(items, {}, detail, shadows)
 				hasher.update(batch.points.to_byte_array())
 				hasher.update(batch.colors.to_byte_array())
 				triangles += batch.triangle_count
 	var warm = WorldBatch.new()
-	warm.build(items, angles, 1, WorldBatch.FLAG_SHADOWS)
+	warm.build(items, angles, 1, true)
 	WorldBatch._bodies.clear()
 	WorldBatch._body_count = WorldBatch.BODY_CACHE_CAP
 	var cold = WorldBatch.new()
-	cold.build(items, angles, 1, WorldBatch.FLAG_SHADOWS)
+	cold.build(items, angles, 1, true)
 	runner.check(cold.points == warm.points and cold.colors == warm.colors and WorldBatch._body_count < WorldBatch.BODY_CACHE_CAP, "WB19 a full body cache clears and output is unchanged")
 	var digest: String = hasher.finish().hex_encode()
 	print("GOLDEN %s %d" % [digest, triangles])
 	runner.check(triangles > 20000, "WB18 fixture is big (%d triangles)" % triangles)
 	runner.check(digest == GOLDEN_DIGEST, "WB18 output equals the digest re-recorded for the winners task (intended look change: sand-independent; infantry colour B, horde rings in the batch, no marks; was 598c4b03 at 52556 triangles)")
+	return true
+
+func _shot(attacker: int, target: int) -> Array[Dictionary]:
+	return [{"type": "shot", "tick": 1, "attacker_id": attacker, "target_id": target, "damage": 1, "splash": false}]
+
+func _objects() -> Array[Dictionary]:
+	return [{"id": 1, "role": &"tank_usa", "anchor": Vector2(2, 2), "heading": 0.0, "target_id": -1}, {"id": 2, "role": &"tank_usa", "anchor": Vector2(6, 2), "heading": 0.0, "target_id": -1}]
+
+func test_shot_dash(runner) -> bool:
+	var director = Director.new()
+	var none: Array[Dictionary] = []
+	director.collect_step(1, _shot(1, 2), none)
+	director.collect_step(1, _shot(1, 2), none)
+	director.update(_objects())
+	var dashes: Array = director.effects().filter(func(effect: Dictionary) -> bool: return effect.type == &"dash")
+	runner.check(dashes.size() == 1 and dashes[0].anchor == Vector2(2, 2) and dashes[0].to == Vector2(6, 2), "W7 a shot makes one dash from attacker to target, got %s" % [dashes])
+	for i in Director.DASH_TICKS - 1: director.update(_objects())
+	runner.check(director.effects().any(func(effect: Dictionary) -> bool: return effect.type == &"dash"), "W7 the dash lasts several ticks")
+	director.update(_objects())
+	runner.check(not director.effects().any(func(effect: Dictionary) -> bool: return effect.type == &"dash"), "W7 the dash is gone after %d ticks" % Director.DASH_TICKS)
+	var first := WorldBatch.new()
+	var later := WorldBatch.new()
+	first.build([], {}, 0, false, [{"type": &"dash", "anchor": Vector2(2, 2), "to": Vector2(6, 2), "age": 0, "id": 1}])
+	later.build([], {}, 0, false, [{"type": &"dash", "anchor": Vector2(2, 2), "to": Vector2(6, 2), "age": 4, "id": 1}])
+	runner.check(first.triangle_count == 2 and later.triangle_count == 2, "W7 a dash is one quad (2 triangles), got %d" % first.triangle_count)
+	var reach: float = 0.0
+	for a: Vector2 in first.points:
+		for b: Vector2 in first.points: reach = maxf(reach, a.distance_to(b))
+	runner.check(reach > 11.0 and reach < 14.0, "W7 the dash is about 12 px long, got %f" % reach)
+	runner.check(first.points != later.points and (later.points[0].x - first.points[0].x) > 0.0, "W7 the dash flies toward the target")
 	return true

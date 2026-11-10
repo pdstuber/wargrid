@@ -5,6 +5,8 @@ const View = preload("res://scripts/presentation/world_view.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Fixture = preload("res://tests/economy_fixture.gd")
 const Palette = preload("res://scripts/presentation/palette.gd")
+const Terrain = preload("res://scripts/presentation/terrain_view.gd")
+const TICK_USEC: int = 33333
 const WorldBatch = preload("res://scripts/presentation/world_batch.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 const Shapes = preload("res://scripts/presentation/shapes.gd")
@@ -16,7 +18,7 @@ const CombatFixture = preload("res://tests/combat_fixture.gd")
 const MovementWorkload = preload("res://scripts/debug/movement_workload.gd")
 
 func cases() -> Array[Callable]:
-	return [test_pick, test_pile_label_drawn_over_buildings, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_depth_order_matches_comparator,test_battery_shot_line,test_battery_target_line,test_building_label_has_no_kind_id,test_horde_count,test_rebuild_laborer_unselectable, test_crate_marks_frc_only, test_passengers_not_pickable, test_terrain_redraws_only_when_map_changes, test_structures_redraw_only_when_they_change, test_small_pile_view, test_structures_redraw_when_a_pile_vanishes, test_pick_under_roof, test_structure_bodies_in_shared_list, test_building_health_bar_in_overlay_pass, test_health_bar_rule, test_health_color_ends, test_selection_is_ground_diamond, test_biome_change_redraws_terrain, test_grid_only_while_placing, test_chevron_placeholder, test_cues_draw_on_low_in_the_view, test_effects_age_per_tick_not_per_refresh, test_bodies_submitted_each_frame, test_quality_change_rebuilds, test_draw_timing_only_on_request, test_air_pick_box_follows_lift, test_pick_covers_drawn_body, test_death_point_falls_back_to_previous_tick, test_selected_battery_line_without_a_shot, test_kind_info_follows_air_kinds, test_custom_ground_colors_rearm_the_biome]
+	return [test_pick, test_pile_label_drawn_over_buildings, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_depth_order_matches_comparator,test_battery_target_line,test_building_label_has_no_kind_id,test_horde_count,test_rebuild_laborer_unselectable, test_crate_marks_frc_only, test_passengers_not_pickable, test_terrain_redraws_only_when_map_changes, test_structures_redraw_only_when_they_change, test_small_pile_view, test_structures_redraw_when_a_pile_vanishes, test_pick_under_roof, test_structure_bodies_in_shared_list, test_building_health_bar_in_overlay_pass, test_health_bar_rule, test_health_color_ends, test_selection_is_ground_diamond, test_biome_change_redraws_terrain, test_grid_only_while_placing, test_chevron_placeholder, test_cues_draw_on_low_in_the_view, test_effects_age_per_tick_not_per_refresh, test_bodies_submitted_each_frame, test_quality_change_rebuilds, test_draw_timing_only_on_request, test_air_pick_box_follows_lift, test_pick_covers_drawn_body, test_selected_battery_line_without_a_shot, test_kind_info_follows_air_kinds, test_custom_ground_colors_rearm_the_biome, test_default_biome_is_sand, test_ground_is_built_once, test_blend_between_ticks, test_overlays_and_picks_follow_the_drawn_pose, test_stall_holds_and_does_not_rebuild, test_catch_up_and_restart_snap, test_same_tick_refresh_keeps_the_pose, test_heading_wraps, test_low_never_blends, test_blend_leaves_effects_alone, test_wide_infantry_pick_default, test_pivot_roles_pick_extent_covers_every_pose, test_horde_ring_in_the_batch, test_neon_reaches_structures_and_rings, test_selection_is_a_set_for_per_frame_loops]
 
 func test_pick(runner) -> bool:
 	var view = View.new()
@@ -48,7 +50,7 @@ func test_box_and_order(runner) -> bool:
 	var selected: Array[int] = [1]
 	view.set_state(state, selected)
 	selected.clear()
-	runner.check(view._selected_ids == [1], "V2 selection array copied")
+	runner.check(view._selection.keys() == [1], "V2 selection copied")
 	var a := Iso.world_to_plane(Vector2(2.5, 2.5))
 	var b := Iso.world_to_plane(Vector2(2.5, 3.5))
 	runner.check(view.pick_entities(Rect2(a, b - a)) == [1, 2], "V2 normalized inclusive anchor rectangle")
@@ -175,28 +177,6 @@ func _battery_world(with_tank: bool = true) -> Array:
 	var battery: int = Fixture.add_completed(sim, 1, "usa_defence", Vector2i(10, 10))
 	var tank: int = sim.spawn(2, Vector2(16.5, 10.5), "usa_tank") if with_tank else -1
 	return [sim, battery, tank]
-
-func test_battery_shot_line(runner) -> bool:
-	var view = View.new()
-	var world: Array = _battery_world()
-	var sim = world[0]
-	sim.step()
-	var state: Dictionary = sim.snapshot()
-	view.set_state(state, [])
-	var lines: Array = view.building_shot_lines()
-	var centre: Vector2 = view._last_points[world[1]]
-	runner.check(lines.size() == 1 and lines[0].from == centre + Vector2(0, -View.MUZZLE_LIFT), "V5 battery shot starts at the lifted muzzle")
-	runner.check(lines.size() == 1 and lines[0].to == view._last_points[world[2]], "V5 battery shot ends at the target")
-	view.set_state(state, [])
-	runner.check(view.building_shot_lines().size() == 1, "V5 a stalled tick keeps one line")
-	var shot_tick: int = lines[0].tick
-	var alive := 0
-	for i in 8:
-		view.set_state(_tick_state(sim, 1), [])
-		if view.building_shot_lines().any(func(l: Dictionary) -> bool: return l.tick == shot_tick): alive += 1
-	runner.check(alive == View.SHOT_TICKS - 1, "V5 line lives SHOT_TICKS ticks, got " + str(alive + 1))
-	view.free()
-	return true
 
 func test_battery_target_line(runner) -> bool:
 	var view = View.new()
@@ -516,10 +496,10 @@ func test_biome_change_redraws_terrain(runner) -> bool:
 	view.set_state(sim.snapshot(), [])
 	await runner.process_frame
 	var first: int = terrain.draws
-	view.set_biome(1)
+	view.set_biome(0)
 	await runner.process_frame
 	runner.check(terrain.draws == first + 1, "V21 a biome change on the same map redraws the terrain once")
-	view.set_biome(1)
+	view.set_biome(0)
 	await runner.process_frame
 	runner.check(terrain.draws == first + 1, "V21 the same biome again keeps the cached terrain")
 	terrain.set_palette(Palette.ground(0))
@@ -670,7 +650,7 @@ func test_pick_covers_drawn_body(runner) -> bool:
 			unit.heading = [cos(quarter * PI / 2.0), sin(quarter * PI / 2.0)]
 			view.set_state(state, [])
 			var batch = WorldBatch.new()
-			batch.build(WorldBatch.objects(state).filter(func(item: Dictionary) -> bool: return item.id == id) as Array[Dictionary], {}, 1, 0)
+			batch.build(WorldBatch.objects(state).filter(func(item: Dictionary) -> bool: return item.id == id) as Array[Dictionary], {}, 1, false)
 			var top := Vector2(0, 1e9)
 			var bottom := Vector2(0, -1e9)
 			for point in batch.points:
@@ -679,20 +659,6 @@ func test_pick_covers_drawn_body(runner) -> bool:
 			runner.check(view.pick_entity(top + Vector2(0, 1)) == id, "V16 %s heading %d: the top of the drawn body picks it (%s)" % [kind, quarter, top])
 			runner.check(view.pick_entity(bottom + Vector2(0, -1)) == id, "V16 %s heading %d: the bottom of the drawn body picks it (%s)" % [kind, quarter, bottom])
 		sim.remove_object(id)
-	view.free()
-	return true
-
-func test_death_point_falls_back_to_previous_tick(runner) -> bool:
-	var sim = Fixture.make_world()
-	var id: int = sim.spawn(1, Vector2(6.5, 6.5), "usa_tank")
-	var view = View.new()
-	view.set_state(sim.snapshot(), [])
-	runner.check(not view._last_points.has(id), "V30 an unshot unit has no remembered point")
-	sim.remove_object(id)
-	var gone: Dictionary = sim.snapshot()
-	gone.combat_events = [{"type": "death", "tick": 1, "object_id": id}]
-	view.set_state(gone, [])
-	runner.check(view._last_points.get(id) == Iso.world_to_plane(Vector2(6.5, 6.5)) + Vector2(0, -8), "V30 a death keeps the point from the previous tick")
 	view.free()
 	return true
 
@@ -719,9 +685,278 @@ func test_kind_info_follows_air_kinds(runner) -> bool:
 
 func test_custom_ground_colors_rearm_the_biome(runner) -> bool:
 	var view = View.new()
-	view.set_biome(1)
-	view.set_ground_colors({"ground": Color.RED, "cliff_top": Color.RED, "cliff_side": Color.RED, "water": Color.RED})
+	view.set_ground_colors({"ground": Color.RED, "cliff_top": Color.RED, "cliff_side": Color.RED})
 	view.set_biome(1)
 	runner.check(view._terrain._colors.ground == Palette.ground(1).ground, "V33 set_biome applies again after custom ground colours")
+	view.free()
+	return true
+
+func test_ground_is_built_once(runner) -> bool:
+	var terrain = Terrain.new()
+	terrain.set_map({"size": [40, 40], "blocked_cells": []})
+	terrain._draw()
+	runner.check(terrain.ground_builds == 1, "W2 first draw builds the ground, got %d" % terrain.ground_builds)
+	terrain.set_map({"size": [40, 40], "blocked_cells": [[3, 3]]})
+	terrain._draw()
+	terrain.set_map({"size": [40, 40], "blocked_cells": [[3, 3], [4, 3]]})
+	terrain._draw()
+	runner.check(terrain.draws == 3 and terrain.ground_builds == 1, "W2 a placement redraws the terrain but reuses the ground, got %d builds" % terrain.ground_builds)
+	terrain.set_palette(Palette.ground(0))
+	terrain._draw()
+	runner.check(terrain.ground_builds == 2, "W2 a palette change rebuilds the ground once")
+	terrain.set_map({"size": [41, 40], "blocked_cells": []})
+	terrain._draw()
+	runner.check(terrain.ground_builds == 3, "W2 a new map size rebuilds the ground")
+	terrain.free()
+	return true
+
+func _pair(from: Vector2 = Vector2(10.5, 10.5), to: Vector2 = Vector2(13.5, 10.5), turn: Array = [0.0, 0.0]) -> Dictionary:
+	var sim = Fixture.make_world()
+	var id: int = sim.spawn(1, from, "usa_rifle_infantry")
+	var first: Dictionary = sim.snapshot().duplicate(true)
+	var second: Dictionary = first.duplicate(true)
+	second.tick = first.tick + 1
+	for state: Dictionary in [first, second]:
+		for unit: Dictionary in state.entities:
+			if unit.id == id:
+				unit.position = [from.x, from.y] if state == first else [to.x, to.y]
+				if turn[0] != 0.0 or turn[1] != 0.0: unit.heading = [cos(turn[0 if state == first else 1]), sin(turn[0 if state == first else 1])]
+	var third: Dictionary = second.duplicate(true)
+	third.tick = first.tick + 2
+	return {"id": id, "a": first, "b": second, "c": third}
+
+func _anchor(view, id: int) -> Vector2:
+	for item: Dictionary in view._items:
+		if item.id == id: return item.anchor
+	return Vector2(-999, -999)
+
+func _item(view, id: int) -> Dictionary:
+	for item: Dictionary in view._items:
+		if item.id == id: return item
+	return {}
+
+func test_blend_between_ticks(runner) -> bool:
+	var f := _pair()
+	var view = View.new()
+	view.set_state(f.a, [])
+	view.set_state(f.b, [])
+	runner.check(_anchor(view, f.id).is_equal_approx(Vector2(10.5, 10.5)), "W3 right after a tick the unit is drawn where it was, got %s" % _anchor(view, f.id))
+	view.blend(0.5)
+	runner.check(_anchor(view, f.id).is_equal_approx(Vector2(12.0, 10.5)), "W3 halfway at alpha 0.5, got %s" % _anchor(view, f.id))
+	var hash_half: int = hash(view._batch.points)
+	view.blend(1.0)
+	runner.check(_anchor(view, f.id).is_equal_approx(Vector2(13.5, 10.5)) and hash(view._batch.points) != hash_half, "W3 alpha 1 reaches the new tick and the batch follows")
+	view.blend(7.0)
+	runner.check(_anchor(view, f.id).is_equal_approx(Vector2(13.5, 10.5)), "W3 alpha is clamped to 1")
+	view.free()
+	return true
+
+func test_overlays_and_picks_follow_the_drawn_pose(runner) -> bool:
+	var f := _pair()
+	var view = View.new()
+	view.set_state(f.a, [f.id])
+	view.set_state(f.b, [f.id])
+	var extent: Rect2 = WorldBatch.pick_extent("usa_rifle_infantry")
+	var old_point: Vector2 = Iso.world_to_plane(Vector2(10.5, 10.5)) + extent.get_center()
+	var new_point: Vector2 = Iso.world_to_plane(Vector2(13.5, 10.5)) + extent.get_center()
+	runner.check(view.pick_entity(old_point) == f.id and view.pick_entity(new_point) == -1, "W3 a click hits where the unit is drawn at alpha 0")
+	var lines: PackedVector2Array = view.selected_unit_lines()
+	runner.check(((lines[0] + lines[3]) / 2.0).is_equal_approx(Iso.world_to_plane(Vector2(10.5, 10.5))), "W3 the selection diamond sits on the drawn unit at alpha 0")
+	view.blend(1.0)
+	runner.check(view.pick_entity(new_point) == f.id and view.pick_entity(old_point) == -1, "W3 a click hits the new pose at alpha 1")
+	lines = view.selected_unit_lines()
+	runner.check(((lines[0] + lines[3]) / 2.0).is_equal_approx(Iso.world_to_plane(Vector2(13.5, 10.5))), "W3 the selection diamond follows")
+	view.free()
+	return true
+
+func test_stall_holds_and_does_not_rebuild(runner) -> bool:
+	var f := _pair()
+	var view = View.new()
+	view.set_state(f.a, [])
+	view.set_state(f.b, [])
+	var start: int = view._tick_usec
+	view.advance_frame(start + 5)
+	runner.check(_anchor(view, f.id).is_equal_approx(Vector2(10.5, 10.5)), "W3 the frame of a tick keeps the tick pose, got %s" % _anchor(view, f.id))
+	view.advance_frame(start + 16666)
+	runner.check(_anchor(view, f.id).x > 11.0 and _anchor(view, f.id).x < 13.0, "W3 a later frame is between, got %s" % _anchor(view, f.id))
+	view.advance_frame(start + TICK_USEC * 10)
+	var settled: int = hash(view._batch.points)
+	runner.check(_anchor(view, f.id).is_equal_approx(Vector2(13.5, 10.5)), "W3 a stalled lockstep parks the unit at the new tick, got %s" % _anchor(view, f.id))
+	for i in 5: view.advance_frame(start + TICK_USEC * (11 + i))
+	runner.check(hash(view._batch.points) == settled and _anchor(view, f.id).is_equal_approx(Vector2(13.5, 10.5)), "W3 no rubber band while the stall lasts")
+	var builds: int = view.batch_builds
+	view.advance_frame(start + TICK_USEC * 30)
+	runner.check(view.batch_builds == builds, "W3 a stalled frame does not rebuild the batch")
+	view.free()
+	return true
+
+func test_catch_up_and_restart_snap(runner) -> bool:
+	var f := _pair()
+	var view = View.new()
+	view.set_state(f.a, [])
+	view.set_state(f.c, [])
+	runner.check(_anchor(view, f.id).is_equal_approx(Vector2(13.5, 10.5)), "W3 two ticks at once snap to the new pose, got %s" % _anchor(view, f.id))
+	view.blend(0.5)
+	runner.check(_anchor(view, f.id).is_equal_approx(Vector2(13.5, 10.5)), "W3 nothing blends after a catch-up")
+	view.set_state(f.a, [])
+	runner.check(_anchor(view, f.id).is_equal_approx(Vector2(10.5, 10.5)), "W3 a restart to an older tick snaps")
+	view.blend(0.5)
+	runner.check(_anchor(view, f.id).is_equal_approx(Vector2(10.5, 10.5)), "W3 nothing blends backwards")
+	view.free()
+	return true
+
+func test_same_tick_refresh_keeps_the_pose(runner) -> bool:
+	var f := _pair()
+	var view = View.new()
+	view.set_state(f.a, [])
+	view.set_state(f.b, [])
+	view.blend(0.5)
+	view.set_state(f.b, [f.id])
+	runner.check(_anchor(view, f.id).is_equal_approx(Vector2(12.0, 10.5)), "W3 a selection refresh in the same tick keeps the drawn pose, got %s" % _anchor(view, f.id))
+	view.blend(0.75)
+	runner.check(_anchor(view, f.id).is_equal_approx(Vector2(12.75, 10.5)), "W3 the blend still runs from the previous tick")
+	view.free()
+	return true
+
+func test_heading_wraps(runner) -> bool:
+	var f := _pair(Vector2(10.5, 10.5), Vector2(11.5, 10.5), [deg_to_rad(170.0), deg_to_rad(-170.0)])
+	var view = View.new()
+	view.set_state(f.a, [])
+	view.set_state(f.b, [])
+	view.blend(0.5)
+	var angle: float = _item(view, f.id).heading
+	runner.check(cos(angle) < -0.99, "W3 a heading crossing 180 degrees turns the short way, got %f" % rad_to_deg(angle))
+	view.blend(1.0)
+	runner.check(is_equal_approx(wrapf(_item(view, f.id).heading - deg_to_rad(-170.0), -PI, PI), 0.0), "W3 alpha 1 ends on the new heading")
+	view.free()
+	return true
+
+func test_low_never_blends(runner) -> bool:
+	var f := _pair()
+	var view = View.new()
+	view.set_quality(GraphicsSettings.LOW)
+	view.set_state(f.a, [])
+	view.set_state(f.b, [])
+	view.blend(0.5)
+	runner.check(_anchor(view, f.id).is_equal_approx(Vector2(13.5, 10.5)), "W3 Low keeps the tick position, got %s" % _anchor(view, f.id))
+	view.set_quality(GraphicsSettings.HIGH)
+	view.set_state(f.a, [])
+	view.set_state(f.b, [])
+	view.blend(0.5)
+	view.set_quality(GraphicsSettings.LOW)
+	runner.check(_anchor(view, f.id).is_equal_approx(Vector2(13.5, 10.5)), "W3 switching to Low mid-blend returns to the tick pose")
+	view.free()
+	return true
+
+func test_blend_leaves_effects_alone(runner) -> bool:
+	var sim = Fixture.make_world()
+	var attacker: int = sim.spawn(1, Vector2(5.5, 5.5), "usa_tank")
+	var target: int = sim.spawn(2, Vector2(9.5, 5.5), "usa_tank")
+	var director := Director.new()
+	var events: Array[Dictionary] = [{"type": "shot", "tick": 1, "attacker_id": attacker, "target_id": target, "damage": 1, "splash": false}]
+	var none: Array[Dictionary] = []
+	director.collect_step(1, events, none)
+	var view = View.new()
+	view.set_visuals(director)
+	var first: Dictionary = sim.snapshot()
+	view.set_state(first, [])
+	var second: Dictionary = first.duplicate(true)
+	second.tick = first.tick + 1
+	second.entities[1].position = [6.5, 5.5]
+	view.set_state(second, [])
+	var ages: Array = director.effects().map(func(effect: Dictionary) -> int: return effect.age)
+	for i in 4:
+		view.blend(0.2 * i)
+		view.advance_frame(view._tick_usec + TICK_USEC * i)
+	runner.check(not ages.is_empty() and director.effects().map(func(effect: Dictionary) -> int: return effect.age) == ages, "W3 frames between ticks do not age effects")
+	view.free()
+	return true
+
+func test_wide_infantry_pick_default(runner) -> bool:
+	var sim = Fixture.make_world()
+	var id: int = sim.spawn(1, Vector2(10.5, 10.5), "usa_rifle_infantry")
+	var view = View.new()
+	view.set_state(sim.snapshot(), [])
+	var extent: Rect2 = WorldBatch.pick_extent("usa_rifle_infantry")
+	var point: Vector2 = Iso.world_to_plane(Vector2(10.5, 10.5)) + extent.get_center() + Vector2(16.0, 0)
+	runner.check(view.pick_entity(point) == id, "W6 the wide box catches a click 16 px beside the body by default")
+	runner.check(view.pick_entity(point + Vector2(5.0, 0)) != id, "W6 the box is 36 px, not unlimited")
+	var tank: int = sim.spawn(1, Vector2(16.5, 10.5), "usa_tank")
+	view.set_state(sim.snapshot(), [])
+	var tank_box: Rect2 = WorldBatch.pick_extent("usa_tank")
+	var beside: Vector2 = Iso.world_to_plane(Vector2(16.5, 10.5)) + Vector2(tank_box.end.x + 4.0, tank_box.get_center().y)
+	runner.check(view.pick_entity(beside) != tank, "W6 vehicles keep the drawn-body box")
+	view.free()
+	return true
+
+func test_pivot_roles_pick_extent_covers_every_pose(runner) -> bool:
+	var extent: Rect2 = WorldBatch.pick_extent("frc_tank")
+	var lo := Vector2(1e9, 1e9)
+	var hi := Vector2(-1e9, -1e9)
+	for hull in range(0, Shapes.HEADING_BUCKETS, 4):
+		for turret in range(0, Shapes.HEADING_BUCKETS, 4):
+			for point: Vector2 in WorldBatch._body(&"tank_frc", 1, 0, hull, turret).points:
+				lo = lo.min(point)
+				hi = hi.max(point)
+	runner.check(extent.encloses(Rect2(lo, hi - lo)), "W6 the FRC tank click box covers every hull and turret pose, box %s drawn %s" % [extent, Rect2(lo, hi - lo)])
+	return true
+
+func _horde_states() -> Array:
+	var sim = Simulation.new([], Vector2i(32, 32))
+	sim.add_player(1, 1000)
+	var id: int = sim.spawn(1, Vector2(8.5, 8.5), "china_rifle_infantry")
+	var plain: Dictionary = sim.snapshot()
+	sim._entities[id].combat.horde = 2
+	return [plain, sim.snapshot(), id]
+
+func test_horde_ring_in_the_batch(runner) -> bool:
+	var states := _horde_states()
+	var plain = View.new()
+	var horde = View.new()
+	for view in [plain, horde]: view.set_quality(GraphicsSettings.LOW)
+	plain.set_state(states[0], [])
+	horde.set_state(states[1], [])
+	var extra: int = horde._batch.triangle_count - plain._batch.triangle_count
+	runner.check(extra > 0 and extra <= 64, "W5 a horde unit adds a cheap ring to the one array, got %d triangles" % extra)
+	runner.check(horde.horde_count() == 1 and plain.horde_count() == 0, "W5 the view counts horde units")
+	var owner: Color = Palette.owner_colors(1)[0]
+	runner.check(is_equal_approx(horde._batch.colors[0].a, 0.25) and Color(horde._batch.colors[0], 1.0).is_equal_approx(owner), "W5 the ring is drawn first, in the owner colour, got %s" % horde._batch.colors[0])
+	var anchor: Vector2 = Iso.world_to_plane(Vector2(8.5, 8.5))
+	runner.check(absf(horde._batch.points[0].x - anchor.x) <= 11.5 and absf(horde._batch.points[0].y - anchor.y) <= 6.0, "W5 the ring lies on the ground under the unit")
+	runner.check(not horde._batch.points.has(Vector2.ZERO) and horde._batch.points.size() == horde._batch.colors.size(), "W5 no white diamond")
+	plain.free()
+	horde.free()
+	return true
+
+func test_neon_reaches_structures_and_rings(runner) -> bool:
+	runner.check(View.owner_color(1, true) == Palette.OWNER_BRIGHT[0] and View.owner_color(1) == Palette.OWNER_BASE[0], "W8 the structure tint takes the Neon hues")
+	var states := _horde_states()
+	var view = View.new()
+	view.set_quality(GraphicsSettings.LOW)
+	view.set_state(states[1], [])
+	view._structure_key = [1, 2]
+	view.set_bright_owners(true)
+	runner.check(view._tint(1) == Palette.OWNER_BRIGHT[0], "W8 the view tints footprints with Neon hues")
+	runner.check(view._structure_key.is_empty(), "W8 the structure layer is told to redraw")
+	runner.check(Color(view._batch.colors[0], 1.0).is_equal_approx(Palette.OWNER_BRIGHT[0]), "W8 the horde ring follows Neon")
+	view.free()
+	return true
+
+func test_default_biome_is_sand(runner) -> bool:
+	var view = View.new()
+	runner.check(view._terrain._colors.ground == Palette.ground(Palette.DEFAULT_BIOME).ground, "W1 a view starts on sand")
+	view.free()
+	return true
+
+func test_selection_is_a_set_for_per_frame_loops(runner) -> bool:
+	var sim = Fixture.make_world()
+	var ids: Array[int] = []
+	for i in 400: ids.append(sim.spawn(1, Vector2(2.5 + i % 28, 2.5 + floori(i / 28.0)), "usa_rifle_infantry"))
+	var view = View.new()
+	view.set_state(sim.snapshot(), [])
+	runner.check(view.selected_unit_lines().is_empty() and view.focus_targets().is_empty() and view.resume_candidate() == -1, "V34 nothing selected means no overlay work")
+	view.set_state(sim.snapshot(), ids.slice(0, 150))
+	runner.check(view._selection is Dictionary and view._selection.size() == 150 and view.selected_unit_lines().size() == 8 * view.pick_entities(Rect2(-1e6, -1e6, 2e6, 2e6)).filter(func(id: int) -> bool: return view._selection.has(id)).size(), "V34 each selected unit gets one diamond, looked up in a set")
+	runner.check(view.resume_candidate() == -1, "V34 more than one selected never resumes")
 	view.free()
 	return true

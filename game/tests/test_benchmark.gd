@@ -14,7 +14,7 @@ const Probe = preload("res://scenes/movement_benchmark.tscn")
 const MovementBenchmark = preload("res://scripts/debug/movement_benchmark.gd")
 
 func cases() -> Array[Callable]:
-	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_transports_fixture, test_defences_fixture, test_skirmish3v3_fixture, test_combat_work_ceiling, test_volley_retaliation_work, test_horde_render_layout, test_horde_render_500_counts, test_workload_asserts_pure, test_settled_matches_snapshot_predicate, test_gate_values, test_draw_call_ceiling, test_gate_fails_over_ceiling, test_cpu_frame_pairs_draw_with_its_tick, test_gate_is_wired_to_the_ceiling, test_units_reported_are_units_run, test_horde_camera_follows_army_when_zoomed]
+	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_transports_fixture, test_defences_fixture, test_skirmish3v3_fixture, test_combat_work_ceiling, test_volley_retaliation_work, test_horde_render_layout, test_horde_render_500_counts, test_workload_asserts_pure, test_settled_matches_snapshot_predicate, test_gate_values, test_draw_call_ceiling, test_cpu_frame_pairs_draw_with_its_tick, test_web_run_is_report_only, test_units_reported_are_units_run, test_horde_camera_follows_army_when_zoomed]
 
 func test_statistics(runner) -> bool:
 	runner.check(Stats.summary(PackedFloat64Array()) == {"n": 0, "p50": 0.0, "p95": 0.0, "p99": 0.0, "max": 0.0}, "BM1 empty")
@@ -290,13 +290,6 @@ func test_draw_call_ceiling(runner) -> bool:
 	runner.check(bench.draw_call_failure("nope", 1.0) != "", "BM12 layout without ceiling fails loudly")
 	return true
 
-func test_gate_fails_over_ceiling(runner) -> bool:
-	var bench = MovementBenchmark
-	runner.check(bench.draw_call_gate("horde", 51.0, false) != "", "BM13 default run over the ceiling fails")
-	runner.check(bench.draw_call_gate("horde", 50.0, false) == "", "BM13 default run at the ceiling passes")
-	runner.check(bench.draw_call_gate("horde", 500.0, true) == "", "BM13 report-only run never fails")
-	return true
-
 func test_cpu_frame_pairs_draw_with_its_tick(runner) -> bool:
 	var bench = MovementBenchmark.new()
 	bench._view = View.new()
@@ -313,12 +306,10 @@ func test_cpu_frame_pairs_draw_with_its_tick(runner) -> bool:
 	bench.free()
 	return true
 
-func test_gate_is_wired_to_the_ceiling(runner) -> bool:
+func test_web_run_is_report_only(runner) -> bool:
 	var bench = MovementBenchmark.new()
-	bench._draw_calls = PackedFloat64Array([120.0])
-	runner.check(bench._draw_call_gate("open") != "", "BM15 a default run over the ceiling reaches the failure path")
 	bench._web = true
-	runner.check(bench._draw_call_gate("open") == "", "BM15 the web run is report-only")
+	runner.check(bench._report_only(), "BM15 the web run is report-only")
 	bench.free()
 	return true
 

@@ -6,10 +6,8 @@ const Fight = preload("res://scripts/lab/lab_fight.gd")
 const AbVariants = preload("res://scripts/lab/ab_variants.gd")
 const AbOverlay = preload("res://scripts/lab/ab_overlay.gd")
 const WorldBatch = preload("res://scripts/presentation/world_batch.gd")
-const Shapes = preload("res://scripts/presentation/shapes.gd")
 const Palette = preload("res://scripts/presentation/palette.gd")
 const GraphicsSettings = preload("res://scripts/presentation/graphics_settings.gd")
-const Iso = preload("res://scripts/presentation/isometric.gd")
 const Fixture = preload("res://tests/economy_fixture.gd")
 const SCENE = preload("res://scenes/art_lab.tscn")
 
@@ -20,7 +18,7 @@ static func _events() -> Array[Dictionary]:
 	return []
 
 func cases() -> Array[Callable]:
-	return [test_lab_fight_shows_every_state, test_every_variant_draws, test_b_variants_change_the_picture, test_events_drive_the_effects, test_lab_keys_and_no_match_keys, test_palette_and_shape_choices, test_rejected_variants_leave_no_shape_hooks]
+	return [test_lab_fight_shows_every_state, test_every_variant_draws, test_b_variants_change_the_picture, test_events_drive_the_effects, test_lab_keys_and_no_match_keys]
 
 class BodySpyView extends View:
 	var body_draws: int = 0
@@ -145,17 +143,16 @@ func test_events_drive_the_effects(runner) -> bool:
 	var none: Array[Dictionary] = []
 	for choice in 2:
 		var variants = AbVariants.new()
-		for question in [&"hit_flash", &"signature", &"shake", &"wrecks"]: variants.set_variant(question, choice)
+		for question in [&"signature", &"shake"]: variants.set_variant(question, choice)
 		_duel_tick(variants, sim, shot)
 		_duel_tick(variants, sim, death)
-		runner.check(variants.active_flashes().size() == choice, "AB6 flashes only in B (%d)" % choice)
 		runner.check(variants.active_signatures().size() == choice, "AB6 the signature effect only in B")
 		runner.check((variants.shake_offset() != Vector2.ZERO) == (choice == 1), "AB6 shake only in B")
-		runner.check(variants.active_wrecks().size() == 1, "AB6 a dead tank leaves a wreck in both")
+		runner.check(variants.active_wrecks().size() == 1, "AB6 a dead tank leaves a wreck")
 		for i in 12: _duel_tick(variants, sim, none)
 		runner.check(variants.shake_offset() == Vector2.ZERO, "AB6 shake ends within 12 ticks")
 		for i in 100: _duel_tick(variants, sim, none)
-		runner.check(variants.active_wrecks().size() == 1 - choice, "AB6 the B wreck is gone after 3 s, the A wreck stays (%d)" % choice)
+		runner.check(variants.active_wrecks().size() == 1, "AB6 the wreck stays after 3 s")
 	return true
 
 func _key(code: Key) -> InputEventKey:
@@ -175,7 +172,7 @@ func test_lab_keys_and_no_match_keys(runner) -> bool:
 	lab._unhandled_input(_key(KEY_TAB))
 	runner.check(lab.variants.is_b(&"biome"), "AB7 Tab switches to B")
 	lab._unhandled_input(_key(KEY_PAGEDOWN))
-	runner.check(lab.current_question() == &"fog", "AB7 PageDown steps to the next question")
+	runner.check(lab.current_question() == &"signature", "AB7 PageDown steps to the next question")
 	lab._unhandled_input(_key(KEY_PAGEUP))
 	lab._unhandled_input(_key(KEY_PAGEUP))
 	runner.check(lab.current_question() == AbVariants.QUESTIONS[-1], "AB7 PageUp wraps to the last question")
@@ -194,22 +191,3 @@ func test_lab_keys_and_no_match_keys(runner) -> bool:
 	runner.check(lab.paused, "AB7 Space pauses")
 	lab.free()
 	return true
-
-func test_palette_and_shape_choices(runner) -> bool:
-	var warm: Dictionary = Palette.ground(0)
-	runner.check(_distance(warm.ground, warm.cliff_top) > 0.1 and _distance(warm.ground, warm.cliff_side) > 0.25, "AB8 the dark ground keeps its cliffs readable")
-	for i in Palette.OWNER_BRIGHT.size():
-		for j in range(i + 1, Palette.OWNER_BRIGHT.size()):
-			runner.check(_distance(Palette.OWNER_BRIGHT[i], Palette.OWNER_BRIGHT[j]) > 0.25, "AB8 bright owners %d and %d are distinguishable" % [i + 1, j + 1])
-		for other: Color in [Palette.HEALTH_GREEN, Palette.HEALTH_YELLOW, Palette.HEALTH_RED, Palette.NEUTRAL]:
-			runner.check(_distance(Palette.OWNER_BRIGHT[i], other) > 0.12, "AB8 bright owner %d stays apart from %s" % [i + 1, other.to_html(false)])
-	return true
-
-func test_rejected_variants_leave_no_shape_hooks(runner) -> bool:
-	for role in [&"tank_usa", &"light_vehicle"]:
-		for bit in [1, 8]:
-			runner.check(Shapes.parts(role, 1, bit)[0].prims == Shapes.parts(role, 1)[0].prims and Shapes.parts(role, 1, bit).size() == Shapes.parts(role, 1).size() and Shapes.parts(role, 1, bit)[-1].prims == Shapes.parts(role, 1)[-1].prims, "AB10 variant bit %d does nothing to %s" % [bit, role])
-	return true
-
-func _distance(a: Color, b: Color) -> float:
-	return Vector3(a.r - b.r, a.g - b.g, a.b - b.b).length()

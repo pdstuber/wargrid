@@ -9,7 +9,7 @@ const Skirmish = preload("res://scenes/skirmish.tscn")
 var scratch: String = "user://test-graphics-%d.cfg" % OS.get_process_id()
 
 func cases() -> Array[Callable]:
-	return [test_low_drops_flags, test_detail_by_zoom, test_pick_threshold, test_settings_round_trip_keeps_audio, test_corrupt_file_gives_unset, test_auto_pick_skipped_headless, test_menu_toggle_saves_and_emits, test_view_follows_quality_and_zoom, test_auto_pick_ignores_cold_frames, test_menu_label_follows_stored_quality, test_auto_pick_samples_tick_and_draw_time]
+	return [test_detail_by_zoom, test_pick_threshold, test_settings_round_trip_keeps_audio, test_corrupt_file_gives_unset, test_auto_pick_skipped_headless, test_menu_toggle_saves_and_emits, test_view_follows_quality_and_zoom, test_auto_pick_ignores_cold_frames, test_menu_label_follows_stored_quality, test_auto_pick_samples_tick_and_draw_time, test_neon_setting, test_neon_menu_and_wiring]
 
 func _begin() -> String:
 	var saved: String = AudioSettings.path
@@ -20,11 +20,6 @@ func _begin() -> String:
 func _end(saved: String) -> void:
 	DirAccess.remove_absolute(scratch)
 	AudioSettings.path = saved
-
-func test_low_drops_flags(runner) -> bool:
-	runner.check(GraphicsSettings.flags(GraphicsSettings.LOW) == 0, "Q1 Low has no flags")
-	runner.check(GraphicsSettings.flags(GraphicsSettings.HIGH) == WorldBatch.FLAG_SHADOWS, "Q1 High adds shadows")
-	return true
 
 func test_detail_by_zoom(runner) -> bool:
 	runner.check(GraphicsSettings.detail(GraphicsSettings.LOW, 2.0) == 0, "Q2 Low stays at detail 0 when zoomed in")
@@ -94,10 +89,10 @@ func test_view_follows_quality_and_zoom(runner) -> bool:
 	var main = Skirmish.instantiate()
 	runner.root.add_child(main)
 	await runner.process_frame
-	runner.check(main._view.detail() == 0 and main._view.flags() == 0, "Q8 stored Low applied at start")
+	runner.check(main._view.detail() == 0 and main._view._quality == GraphicsSettings.LOW, "Q8 stored Low applied at start")
 	main._pause.quality_changed.emit(GraphicsSettings.HIGH)
 	main.change_zoom(1)
-	runner.check(main._view.detail() == 2 and main._view.flags() != 0, "Q8 High and zoom 2.0 give detail 2")
+	runner.check(main._view.detail() == 2 and main._view._quality == GraphicsSettings.HIGH, "Q8 High and zoom 2.0 give detail 2")
 	main.change_zoom(-1)
 	main.change_zoom(-1)
 	runner.check(main._view.detail() == 0, "Q8 zoom 0.5 gives detail 0")
@@ -154,6 +149,48 @@ func test_auto_pick_samples_tick_and_draw_time(runner) -> bool:
 	main._view.draw_usec = 2000
 	main._process(0.016)
 	runner.check(main._auto_samples == PackedFloat32Array([5.0]) and main._auto_tick_usec == 0 and main._view.draw_usec == 0, "Q12 a frame samples tick plus draw time, then resets both, got %s" % [main._auto_samples])
+	main.free()
+	_end(saved)
+	return true
+
+func test_neon_setting(runner) -> bool:
+	var saved := _begin()
+	runner.check(not GraphicsSettings.load_neon(), "W8 Neon is off without a file")
+	AudioSettings.save_volumes({"music": 0.25, "effects": 0.5, "voice": 0.75})
+	GraphicsSettings.save_quality(GraphicsSettings.LOW)
+	GraphicsSettings.save_neon(true)
+	runner.check(GraphicsSettings.load_neon() and GraphicsSettings.load_quality() == GraphicsSettings.LOW, "W8 Neon round trip keeps quality")
+	runner.check(AudioSettings.load_volumes() == {"music": 0.25, "effects": 0.5, "voice": 0.75}, "W8 Neon keeps the audio volumes")
+	GraphicsSettings.save_quality(GraphicsSettings.HIGH)
+	runner.check(GraphicsSettings.load_neon(), "W8 saving quality keeps Neon")
+	var config := ConfigFile.new()
+	config.set_value("graphics", "neon", "yes")
+	config.save(scratch)
+	runner.check(not GraphicsSettings.load_neon(), "W8 a wrong type reads as off")
+	_end(saved)
+	return true
+
+func test_neon_menu_and_wiring(runner) -> bool:
+	var saved := _begin()
+	var menu = PauseMenu.new(false)
+	runner.root.add_child(menu)
+	var seen: Array[bool] = []
+	menu.neon_changed.connect(func(neon: bool) -> void: seen.append(neon))
+	var button: Button = menu.find_child("Neon", true, false)
+	runner.check(button != null and button.text == "Neon colours: Off", "W8 the menu starts with Neon off")
+	button.pressed.emit()
+	runner.check(seen == [true] and GraphicsSettings.load_neon() and button.text == "Neon colours: On", "W8 the toggle saves and emits")
+	GraphicsSettings.save_neon(false)
+	menu.open()
+	runner.check(button.text == "Neon colours: Off", "W8 opening the menu re-reads the stored setting")
+	menu.free()
+	GraphicsSettings.save_neon(true)
+	var main = Skirmish.instantiate()
+	runner.root.add_child(main)
+	await runner.process_frame
+	runner.check(main._view._batch.bright_owners, "W8 a stored Neon setting applies at start")
+	main._pause.neon_changed.emit(false)
+	runner.check(not main._view._batch.bright_owners, "W8 the menu signal reaches the view")
 	main.free()
 	_end(saved)
 	return true

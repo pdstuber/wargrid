@@ -39,7 +39,7 @@ func _init(web: bool = OS.has_feature("web")) -> void:
 	if not web: _button(_main_box, "Quit", quit_requested.emit)
 	_quality_button = _button(_main_box, "", _toggle_quality)
 	_quality_button.name = "Quality"
-	_show_quality(GraphicsSettings.load_quality())
+	_show_quality(GraphicsSettings.stored_quality())
 	_neon_button = _button(_main_box, "", _toggle_neon)
 	_neon_button.name = "Neon"
 	_show_neon(GraphicsSettings.load_neon())
@@ -57,7 +57,7 @@ func is_confirming() -> bool:
 	return _confirming
 
 func open() -> void:
-	_show_quality(GraphicsSettings.load_quality())
+	_show_quality(GraphicsSettings.stored_quality())
 	_show_neon(GraphicsSettings.load_neon())
 	visible = true
 	_show_main()
@@ -102,8 +102,8 @@ func _toggle_quality() -> void:
 	GraphicsSettings.save_quality(_quality)
 	quality_changed.emit(_quality)
 
-func _show_quality(stored: int) -> void:
-	_quality = stored if stored != -1 else GraphicsSettings.HIGH
+func _show_quality(quality: int) -> void:
+	_quality = quality
 	_quality_button.text = "Quality: " + ("Low" if _quality == GraphicsSettings.LOW else "High")
 
 func _toggle_neon() -> void:

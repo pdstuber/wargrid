@@ -8,17 +8,16 @@ const SLOT_ROOF_DARK: int = 1
 const SLOT_SIDE: int = 2
 const SLOT_SIDE_DARK: int = 3
 const SLOT_MACHINE: int = 4
-const SLOT_GLOW: int = 5
-const SLOT_SMOKE: int = 6
-const SLOT_SHADOW: int = 7
-const SLOT_OWNER_FLAT: int = 8
-const SLOT_SKIN: int = 9
+const SLOT_SMOKE: int = 5
+const SLOT_OWNER_FLAT: int = 6
+const SLOT_SKIN: int = 7
 
 const TANK_ROLES := {"usa_tank": &"tank_usa", "china_tank": &"tank_china_gatling", "frc_tank": &"tank_frc", "china_light_vehicle": &"tank_china"}
 const BUILDING_SUFFIXES := {"power_plant": &"power_plant", "factory": &"war_factory", "supply_center": &"supply_depot", "command_center": &"command_center", "barracks": &"barracks"}
 const SUPPLY_STEPS: Array[int] = [1, 5, 15, 40]
 
 static var _parts_cache: Dictionary = {}
+static var _turreted: Dictionary = {}
 
 static func role(kind: String) -> StringName:
 	var row: Dictionary = Definitions.kind(kind)
@@ -68,6 +67,11 @@ static func parts(role_name: StringName, detail: int, variant: int = 0) -> Array
 	if not by_role.has(key):
 		by_role[key] = _build_parts(role_name, detail, variant)
 	return by_role[key]
+
+static func has_turret(role_name: StringName) -> bool:
+	if not _turreted.has(role_name):
+		_turreted[role_name] = parts(role_name, 0).any(func(part: Dictionary) -> bool: return part.angle == &"turret")
+	return _turreted[role_name]
 
 static func _build_parts(role_name: StringName, detail: int, variant: int) -> Array[Dictionary]:
 	var found: Array[Dictionary] = []

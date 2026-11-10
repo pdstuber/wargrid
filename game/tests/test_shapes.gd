@@ -9,10 +9,10 @@ const Definitions = preload("res://scripts/simulation/definitions/definitions.gd
 const TURRET_OFFSET := {&"tank_frc": 0.055}
 const TANK_ROLES: Array[StringName] = [&"tank_usa", &"tank_china", &"tank_china_gatling", &"tank_frc"]
 const Z: float = 3.5
-const PRIM_SLOTS: Array[int] = [Shapes.SLOT_ROOF, Shapes.SLOT_ROOF_DARK, Shapes.SLOT_SIDE, Shapes.SLOT_SIDE_DARK, Shapes.SLOT_MACHINE, Shapes.SLOT_GLOW, Shapes.SLOT_SMOKE, Shapes.SLOT_OWNER_FLAT, Shapes.SLOT_SKIN]
+const PRIM_SLOTS: Array[int] = [Shapes.SLOT_ROOF, Shapes.SLOT_ROOF_DARK, Shapes.SLOT_SIDE, Shapes.SLOT_SIDE_DARK, Shapes.SLOT_MACHINE, Shapes.SLOT_SMOKE, Shapes.SLOT_OWNER_FLAT, Shapes.SLOT_SKIN]
 
 func cases() -> Array[Callable]:
-	return [test_bucket_wraps, test_box_top_face_on_top, test_bake_is_cached, test_unknown_kind_gets_default_role, test_owner_palette_eight, test_lab_roles_mapped, test_damage_stage_changes_geometry, test_turret_pivot_on_hull_top, test_offset_turret_pivot_follows_hull, test_no_kind_uses_default_role, test_roster_shares_slots, test_unit_heights, test_hulls_fit_one_cell, test_tracks_deck_and_cannon, test_neutral_faces, test_infantry_narrow_with_head, test_prims_sorted_per_heading, test_cylinder_segments_by_detail, test_back_faces_not_baked]
+	return [test_bucket_wraps, test_box_top_face_on_top, test_bake_is_cached, test_unknown_kind_gets_default_role, test_owner_palette_eight, test_lab_roles_mapped, test_damage_stage_changes_geometry, test_turret_pivot_on_hull_top, test_offset_turret_pivot_follows_hull, test_no_kind_uses_default_role, test_roster_shares_slots, test_unit_heights, test_hulls_fit_one_cell, test_tracks_deck_and_cannon, test_neutral_faces, test_infantry_narrow_with_head, test_prims_sorted_per_heading, test_cylinder_segments_by_detail, test_back_faces_not_baked, test_palette_choices, test_sand_and_dark_palettes, test_infantry_colour_default]
 
 func test_bucket_wraps(runner) -> bool:
 	runner.check(Bake.bucket(0.0) == 0, "SH1 zero")
@@ -52,7 +52,7 @@ func test_owner_palette_eight(runner) -> bool:
 	var seen: Dictionary = {}
 	for owner in range(1, 9):
 		var colors: PackedColorArray = Palette.owner_colors(owner)
-		runner.check(colors.size() == 10, "SH6 ten slots owner %d" % owner)
+		runner.check(colors.size() == 8, "SH6 eight slots owner %d" % owner)
 		seen[colors[Shapes.SLOT_ROOF]] = true
 	runner.check(seen.size() == 8, "SH6 distinct roofs")
 	runner.check(Palette.owner_colors(9)[Shapes.SLOT_ROOF] == Palette.FALLBACK, "SH6 grey fallback")
@@ -203,7 +203,7 @@ func test_neutral_faces(runner) -> bool:
 	for owner in range(0, 9):
 		var colors: PackedColorArray = Palette.owner_colors(owner)
 		runner.check(colors[Shapes.SLOT_SIDE] == Color("3D515F") and colors[Shapes.SLOT_SIDE_DARK] == Color("263842") and colors[Shapes.SLOT_MACHINE] == Color("8098A5"), "SH15 owner %d has neutral sides and machinery" % owner)
-		runner.check(colors[Shapes.SLOT_SMOKE] != colors[Shapes.SLOT_GLOW] and colors[Shapes.SLOT_SMOKE].v < 0.3, "SH15 owner %d smoke is a dark neutral" % owner)
+		runner.check(colors[Shapes.SLOT_SMOKE].v < 0.3, "SH15 owner %d smoke is a dark neutral" % owner)
 	return true
 
 func test_infantry_narrow_with_head(runner) -> bool:
@@ -241,4 +241,34 @@ func test_back_faces_not_baked(runner) -> bool:
 	var out := {"points": PackedVector2Array(), "slots": PackedByteArray(), "lifts": PackedFloat32Array()}
 	Bake._append_prim(out, PackedVector2Array([Vector2(-0.5, -0.5), Vector2(0.5, -0.5), Vector2(0.5, 0.5), Vector2(-0.5, 0.5)]), 0.0, 1.0, Shapes.SLOT_ROOF)
 	runner.check(out.points.size() == 18, "SH19 a unit box has six triangles (top plus two visible sides), got %d" % [out.points.size() / 3])
+	return true
+
+func _distance(a: Color, b: Color) -> float:
+	return Vector3(a.r - b.r, a.g - b.g, a.b - b.b).length()
+
+func test_palette_choices(runner) -> bool:
+	var dark: Dictionary = Palette.ground(0)
+	runner.check(_distance(dark.ground, dark.cliff_top) > 0.1 and _distance(dark.ground, dark.cliff_side) > 0.25, "AB8 the dark ground keeps its cliffs readable")
+	for i in Palette.OWNER_BRIGHT.size():
+		for j in range(i + 1, Palette.OWNER_BRIGHT.size()):
+			runner.check(_distance(Palette.OWNER_BRIGHT[i], Palette.OWNER_BRIGHT[j]) > 0.25, "AB8 bright owners %d and %d are distinguishable" % [i + 1, j + 1])
+		for other: Color in [Palette.HEALTH_GREEN, Palette.HEALTH_YELLOW, Palette.HEALTH_RED, Palette.NEUTRAL]:
+			runner.check(_distance(Palette.OWNER_BRIGHT[i], other) > 0.12, "AB8 bright owner %d stays apart from %s" % [i + 1, other.to_html(false)])
+	return true
+
+func test_sand_and_dark_palettes(runner) -> bool:
+	var sand: Dictionary = Palette.ground(Palette.DEFAULT_BIOME)
+	runner.check(Palette.DEFAULT_BIOME != 0, "W1 the default biome is not the dark one")
+	runner.check(sand.ground == Color("a88e5c"), "W1 default ground is sand D, got %s" % sand.ground.to_html(false))
+	runner.check(sand.cliff_top == sand.ground.lightened(0.15) and sand.cliff_side == sand.ground.darkened(0.4), "W1 cliffs derived like the lab's sand ladder")
+	runner.check(_distance(sand.ground, sand.cliff_top) > 0.1 and _distance(sand.ground, sand.cliff_side) > 0.25, "W1 sand cliffs stay readable")
+	runner.check(Palette.ground(0).ground == Color("7b7566"), "W1 the dark biome is 17B #7B7566")
+	return true
+
+func test_infantry_colour_default(runner) -> bool:
+	for role in [&"infantry", &"rocket_infantry", &"laborer"]:
+		var prims: Array = Shapes.parts(role, 1)[0].prims
+		runner.check(prims[0].slot == Shapes.SLOT_SIDE_DARK and prims[1].slot == Shapes.SLOT_OWNER_FLAT and prims[2].slot == Shapes.SLOT_SKIN, "W4 %s: dark legs, full owner colour torso, light head" % role)
+	var colors: PackedColorArray = Palette.owner_colors(1)
+	runner.check(colors.size() == 8 and colors[Shapes.SLOT_OWNER_FLAT] == colors[0] and colors[Shapes.SLOT_SKIN] == Palette.SKIN, "W4 every owner palette carries the flat owner and skin slots")
 	return true

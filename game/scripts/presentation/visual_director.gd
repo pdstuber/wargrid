@@ -16,7 +16,6 @@ var _angles: Dictionary = {}
 var _anchors: Dictionary = {}
 var _previous: Dictionary = {}
 var _last_collected: int = -1
-var _has_turret: Dictionary = {}
 
 func collect_step(tick: int, events: Array[Dictionary], _results: Array[Dictionary]) -> void:
 	if tick <= _last_collected: return
@@ -97,7 +96,7 @@ func _aim(objects: Array[Dictionary]) -> void:
 	for object: Dictionary in objects:
 		var id: int = object.id
 		if object.target_id < 0 and not _angles.has(id): continue
-		if not _turreted(object.role): continue
+		if not Shapes.has_turret(object.role): continue
 		var current: float = _angles.get(id, object.heading)
 		var goal: float = object.heading
 		if object.target_id >= 0:
@@ -107,8 +106,3 @@ func _aim(objects: Array[Dictionary]) -> void:
 		var step: float = clampf(wrapf(goal - current, -PI, PI), -TURRET_RATE, TURRET_RATE)
 		if object.target_id < 0 and is_equal_approx(wrapf(goal - current, -PI, PI), step): _angles.erase(id)
 		else: _angles[id] = wrapf(current + step, -PI, PI)
-
-func _turreted(role: StringName) -> bool:
-	if not _has_turret.has(role):
-		_has_turret[role] = Shapes.parts(role, 0).any(func(part: Dictionary) -> bool: return part.name == &"turret")
-	return _has_turret[role]

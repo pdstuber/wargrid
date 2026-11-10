@@ -16,7 +16,6 @@ var variants := AbVariants.new()
 var question_index: int = 0
 var quality: int = GraphicsSettings.HIGH
 var zoom_index: int = 1
-var picked_text: String = "none yet"
 var paused: bool = false
 var _current: Dictionary = {}
 var _selected: Array[int] = []
@@ -119,11 +118,7 @@ func _apply_view() -> void:
 func click(plane_point: Vector2) -> void:
 	var id: int = _view.pick_entity(plane_point, true)
 	_selected.clear()
-	picked_text = "nothing"
-	if id != -1:
-		_selected.append(id)
-		for unit: Dictionary in _current.entities:
-			if unit.id == id: picked_text = "%s #%d" % [unit.kind, id]
+	if id != -1: _selected.append(id)
 	_show(_current)
 
 func _unhandled_input(event: InputEvent) -> void:

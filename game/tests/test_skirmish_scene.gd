@@ -164,7 +164,7 @@ func test_combat_view(runner) -> bool:
 	var main = await _setup(runner)
 	var view = main.get_node("WorldView")
 	var sim = Skirmish.create(false)
-	var shooter: int = sim.spawn(1, Vector2(10.5, 10.5), "usa_tank")
+	sim.spawn(1, Vector2(10.5, 10.5), "usa_tank")
 	var victim: int = sim.spawn(2, Vector2(14.5, 10.5), "usa_tank")
 	var historical: Dictionary = sim.snapshot()
 	for unit in historical.entities:
@@ -182,13 +182,7 @@ func test_combat_view(runner) -> bool:
 	var copy: Dictionary = live.duplicate(true)
 	view.set_state(live, none)
 	await runner.process_frame
-	runner.check(live == copy and view._last_points.has(shooter) and view._last_points.has(victim), "V1 cues are read-only and use last events")
-	sim.remove_object(victim)
-	var gone: Dictionary = sim.snapshot()
-	gone.combat_events = [{"type": "death", "tick": 1, "object_id": victim}]
-	view.set_state(gone, none)
-	await runner.process_frame
-	runner.check(view._last_points.has(victim), "V1 death cue keeps the last known point")
+	runner.check(live == copy, "V1 cues are read-only")
 	runner.check(View.hp_fraction(-5, 100) == 0.0 and View.hp_fraction(500, 100) == 1.0 and View.hp_fraction(50, 100) == 0.5 and View.hp_fraction(1, 0) == 1.0, "V1 HP fill clamped 0..1")
 	main.free()
 	return true

@@ -6,7 +6,6 @@ const Iso = preload("res://scripts/presentation/isometric.gd")
 const Shapes = preload("res://scripts/presentation/shapes.gd")
 const Bake = preload("res://scripts/presentation/shape_bake.gd")
 const Palette = preload("res://scripts/presentation/palette.gd")
-const GraphicsSettings = preload("res://scripts/presentation/graphics_settings.gd")
 const Director = preload("res://scripts/presentation/visual_director.gd")
 
 const LAYER_GROUND := 1
@@ -34,7 +33,6 @@ const MUZZLE_LIFT := 16.0
 const MUZZLE_COLOR := Color("ffe680")
 const HIT_COLOR := Color("ff8a3c")
 const FADE_COLOR := Color("1c1a18")
-const FLAG_SHADOWS := GraphicsSettings.FLAG_SHADOWS
 const INFANTRY_ROLES := [&"infantry", &"rocket_infantry", &"laborer"]
 
 var points := PackedVector2Array()
@@ -51,7 +49,6 @@ static var _bodies: Dictionary = {}
 static var _body_count: int = 0
 static var _quads: Dictionary = {}
 static var _quad_colors: Dictionary = {}
-static var _turreted: Dictionary = {}
 static var _ring_mesh := PackedVector2Array()
 static var _ring_colors: Dictionary = {}
 
@@ -146,7 +143,7 @@ static func depth_sorted(entities: Array) -> Array:
 		sorted[i] = entities[keys[i] & ((1 << INDEX_BITS) - 1)]
 	return sorted
 
-func build(items: Array[Dictionary], turret_angles: Dictionary, detail: int, flags: int, effects: Array[Dictionary] = []) -> void:
+func build(items: Array[Dictionary], turret_angles: Dictionary, detail: int, shadows: bool, effects: Array[Dictionary] = []) -> void:
 	points.clear()
 	colors.clear()
 	assert(items.size() < (1 << INDEX_BITS))
@@ -157,8 +154,7 @@ func build(items: Array[Dictionary], turret_angles: Dictionary, detail: int, fla
 		keys[i] = (sort_key(item.layer, item.anchor, item.id) << INDEX_BITS) | i
 	keys.sort()
 	var mask: int = (1 << INDEX_BITS) - 1
-	var shadow_colors: PackedColorArray = _quad_colors_for(Palette.owner_colors(0)[Shapes.SLOT_SHADOW])
-	var shadows: bool = flags & FLAG_SHADOWS != 0
+	var shadow_colors: PackedColorArray = _quad_colors_for(Palette.SHADOW)
 	for key in keys:
 		var item: Dictionary = items[key & mask]
 		if shadows and item.shadow > 0.0: _append_quad(Iso.world_to_plane(item.anchor), item.shadow, shadow_colors)
@@ -177,7 +173,7 @@ func _append_body(item: Dictionary, detail: int, turret_angles: Dictionary) -> v
 	var move := Transform2D(0.0, Iso.world_to_plane(item.anchor) + Vector2(0, -AIR_LIFT if item.layer == LAYER_AIR else 0.0))
 	var bucket: int = Bake.bucket(item.heading)
 	var variant: int = item.variant
-	var turret_bucket: int = Bake.bucket(turret_angles[item.id]) if turret_angles.has(item.id) and _has_turret(item.role, detail, variant) else bucket
+	var turret_bucket: int = Bake.bucket(turret_angles[item.id]) if turret_angles.has(item.id) and Shapes.has_turret(item.role) else bucket
 	var body: Dictionary = _body(item.role, detail, variant, bucket, turret_bucket)
 	var mesh_points: PackedVector2Array = body.points
 	var rise: float = item.rise
@@ -188,13 +184,6 @@ func _append_body(item: Dictionary, detail: int, turret_angles: Dictionary) -> v
 		mesh_points = lowered
 	points.append_array(move * mesh_points)
 	colors.append_array(_mesh_colors(body, item.owner))
-
-static func _has_turret(role: StringName, detail: int, variant: int) -> bool:
-	var by_role: Dictionary = _turreted.get_or_add(role, {})
-	var key: int = detail | (variant << 2)
-	if not by_role.has(key):
-		by_role[key] = Shapes.parts(role, detail, variant).any(func(part: Dictionary) -> bool: return part.angle == &"turret")
-	return by_role[key]
 
 # All parts of one object at one heading, concatenated in draw order.
 static func _body(role: StringName, detail: int, variant: int, bucket: int, turret_bucket: int) -> Dictionary:

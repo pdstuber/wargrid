@@ -6,7 +6,6 @@ const Profiler = preload("res://scripts/debug/profiler.gd")
 const PerfOverlay = preload("res://scripts/presentation/perf_overlay.gd")
 const PauseMenu = preload("res://scripts/presentation/pause_menu.gd")
 const GraphicsSettings = preload("res://scripts/presentation/graphics_settings.gd")
-const Palette = preload("res://scripts/presentation/palette.gd")
 const LAUNCHER_SCENE: String = "res://scenes/launcher.tscn"
 const MapData = preload("res://scripts/simulation/map_data.gd")
 const ZOOMS: Array[float] = [0.5, 1.0, 2.0]
@@ -45,17 +44,12 @@ func _ready() -> void:
 	_pause.quality_changed.connect(_view.set_quality)
 	_pause.neon_changed.connect(_view.set_bright_owners)
 	$HUD.add_child(_pause)
-	_view.set_quality(stored_quality())
+	_view.set_quality(GraphicsSettings.stored_quality())
 	_view.set_bright_owners(GraphicsSettings.load_neon())
-	_view.set_biome(Palette.DEFAULT_BIOME)
 	_view.local_player = local_player
 	simulation = _create_simulation()
 	_reset_camera()
 	_refresh()
-
-func stored_quality() -> int:
-	var stored: int = GraphicsSettings.load_quality()
-	return stored if stored != -1 else GraphicsSettings.HIGH
 
 func _reset_camera() -> void:
 	var size: Array = simulation.snapshot().map.size

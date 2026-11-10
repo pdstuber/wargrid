@@ -14,7 +14,6 @@ const ASHFALL_FRAME_P95_MS: float = 3.3
 const DRAW_CALL_CEILINGS: Dictionary = {"open": 50, "dense": 50, "horde": 50, "ashfall": 60}
 const LAYOUTS: Array[String] = ["open", "dense", "ashfall", "horde"]
 const GraphicsSettings = preload("res://scripts/presentation/graphics_settings.gd")
-const Palette = preload("res://scripts/presentation/palette.gd")
 # `-- --profile` adds profiling zones and a third, 196x196 combat leg (spike-performance only).
 var _profile: bool = OS.get_cmdline_user_args().has("--profile")
 # `-- --sound` runs only the horde layout with a SoundPlayer and reports its cost.
@@ -67,7 +66,6 @@ func _ready() -> void:
 	$Camera2D.zoom = Vector2(zoom, zoom)
 	_view.time_draws = true
 	_view.set_quality(_quality())
-	_view.set_biome(Palette.DEFAULT_BIOME)
 	_view.set_zoom(zoom)
 	RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
 	_emit("M2 RENDERED engine=" + Engine.get_version_info().string + " os=" + OS.get_name()
@@ -255,9 +253,6 @@ func _script_ms() -> float:
 	_view.draw_usec = 0
 	return script_ms
 
-func _draw_call_gate(layout: String) -> String:
-	return draw_call_gate(layout, Stats.summary(_draw_calls).max, _report_only())
-
 # The horde_render_500 workload exists only for the horde layout.
 static func units_run(requested: int, layouts: Array[String]) -> int:
 	return 500 if requested == 500 and layouts.has("horde") else 300
@@ -268,9 +263,6 @@ static func draw_call_failure(layout: String, max_calls: float) -> String:
 	if max_calls > DRAW_CALL_CEILINGS[layout]:
 		return "Layout %s draws %d calls, ceiling %d" % [layout, int(max_calls), DRAW_CALL_CEILINGS[layout]]
 	return ""
-
-static func draw_call_gate(layout: String, max_calls: float, report_only: bool) -> String:
-	return "" if report_only else draw_call_failure(layout, max_calls)
 
 func _report_only() -> bool:
 	if _web: return true
@@ -283,7 +275,7 @@ func _report_draw_calls(layout: String) -> bool:
 	var max_calls: float = Stats.summary(_draw_calls).max
 	var failure: String = draw_call_failure(layout, max_calls)
 	_emit("DRAW_CALLS " + layout + " max=" + str(int(max_calls)) + " p50=" + str(int(Stats.summary(_draw_calls).p50)) + " ceiling=" + str(DRAW_CALL_CEILINGS.get(layout, -1)) + " over=" + str(failure != ""))
-	var gate: String = _draw_call_gate(layout)
+	var gate: String = "" if _report_only() else failure
 	if gate != "":
 		_fail(gate)
 		return false

@@ -6,28 +6,23 @@ const Palette = preload("res://scripts/presentation/palette.gd")
 const Fight = preload("res://scripts/lab/lab_fight.gd")
 
 const QUESTIONS: Array[StringName] = [
-	&"biome", &"fog", &"signature", &"shake", &"hit_flash", &"wrecks", &"owner_palette", &"sand_tone",
+	&"biome", &"signature", &"shake", &"owner_palette", &"sand_tone",
 ]
 const LABELS := {
 	&"biome": ["sand ground (the game default)", "dark ground #7B7566"],
-	&"fog": ["fog darkened to half brightness", "fog as a grey veil, colour drained"],
 	&"signature": ["no signature effect (no special weapon in the fight)", "big core and rings on building and vehicle deaths"],
 	&"shake": ["no camera shake (today)", "small shake on building and vehicle deaths"],
-	&"hit_flash": ["no hit flash (today)", "a light flash on the unit that is hit"],
-	&"wrecks": ["wreck stays: tanks 20 s, light vehicles 8 s", "short wreck, 3 s"],
 	&"owner_palette": ["today's owner colours (the game default)", "brighter, more saturated owner colours (Neon mode)"],
 	&"sand_tone": ["#7B7566", "#8A7D62", "#998559", "#A88E5C", "#B29763", "#C4A568"],
 }
 const SAND_STEPS: Array[Color] = [Color("7b7566"), Color("8a7d62"), Color("998559"), Color("a88e5c"), Color("b29763"), Color("c4a568")]
 const FOG_CLEAR := 12.0
 const FOG_FULL := 17.0
-const FLASH_TICKS: int = 2
 const SIGNATURE_TICKS: int = 24
 const SHAKE_TICKS: int = 12
 const SHAKE_PIXELS: float = 6.0
 const WRECK_TICKS_A: int = 600
 const WRECK_TICKS_A_LIGHT: int = 240
-const WRECK_TICKS_B: int = 90
 const WRECK_SINK_TICKS: int = 45
 const WRECK_COLOR := Color("2b2d2f")
 
@@ -38,7 +33,6 @@ var _applied := []
 var _tick: int = 0
 var _items := {}
 var _map_size := Vector2i.ZERO
-var _hits: Array[Dictionary] = []
 var _deaths: Array[Dictionary] = []
 var _fog := {}
 
@@ -60,7 +54,6 @@ func set_variant(question: StringName, value: int) -> void:
 
 func reset() -> void:
 	_items = {}
-	_hits = []
 	_deaths = []
 	_tick = 0
 
@@ -82,17 +75,8 @@ func observe(state: Dictionary, items: Array[Dictionary], events: Array[Dictiona
 	for item in items: _items[item.id] = item
 	_map_size = Vector2i(state.map.size[0], state.map.size[1])
 	for event in events:
-		if event.type == "shot": _record_hit(event, previous)
-		elif event.type == "death": _record_death(event.object_id, previous)
+		if event.type == "death": _record_death(event.object_id, previous)
 	_prune()
-
-func _anchor_of(id: int, previous: Dictionary) -> Variant:
-	var item: Variant = _items.get(id, previous.get(id))
-	return null if item == null else item.anchor
-
-func _record_hit(event: Dictionary, previous: Dictionary) -> void:
-	var to: Variant = _anchor_of(event.target_id, previous)
-	if to != null: _hits.append({"anchor": to, "tick": _tick})
 
 func _record_death(id: int, previous: Dictionary) -> void:
 	var item: Variant = _items.get(id, previous.get(id))
@@ -104,12 +88,8 @@ func _record_death(id: int, previous: Dictionary) -> void:
 	_deaths.append({"anchor": item.anchor, "tick": _tick, "building": building, "light": item.kind.ends_with("light_vehicle")})
 
 func _prune() -> void:
-	_hits = _hits.filter(func(hit: Dictionary) -> bool: return _tick - hit.tick < FLASH_TICKS)
 	var keep: int = maxi(WRECK_TICKS_A, SIGNATURE_TICKS)
 	_deaths = _deaths.filter(func(death: Dictionary) -> bool: return _tick - death.tick < keep)
-
-func active_flashes() -> Array[Dictionary]:
-	return _hits if is_b(&"hit_flash") else []
 
 func active_signatures() -> Array[Dictionary]:
 	if not is_b(&"signature"): return []
@@ -119,7 +99,6 @@ func active_wrecks() -> Array[Dictionary]:
 	return _deaths.filter(func(death: Dictionary) -> bool: return not death.building and _tick - death.tick < _wreck_life(death))
 
 func _wreck_life(death: Dictionary) -> int:
-	if is_b(&"wrecks"): return WRECK_TICKS_B
 	return WRECK_TICKS_A_LIGHT if death.light else WRECK_TICKS_A
 
 func shake_offset() -> Vector2:
@@ -148,9 +127,8 @@ static func recolored(state: Dictionary, opponent: int) -> Dictionary:
 func draw_ground(canvas: CanvasItem) -> void:
 	for wreck in active_wrecks(): _draw_wreck(canvas, wreck)
 
-# Over the bodies: flashes, signature rings and the fog mask.
+# Over the bodies: signature rings and the fog mask.
 func draw_top(canvas: CanvasItem) -> void:
-	for flash in active_flashes(): canvas.draw_colored_polygon(_diamond(Iso.world_to_plane(flash.anchor) + Vector2(0, -8), 11.0), Color(1, 1, 1, 0.55))
 	for death in active_signatures(): _draw_signature(canvas, death)
 	var fog: Dictionary = _fog_mesh()
 	if not fog.indices.is_empty(): RenderingServer.canvas_item_add_triangle_array(canvas.get_canvas_item(), fog.indices, fog.points, fog.colors)
@@ -174,16 +152,15 @@ func _draw_signature(canvas: CanvasItem, death: Dictionary) -> void:
 static func _diamond(centre: Vector2, radius: float) -> PackedVector2Array:
 	return PackedVector2Array([centre + Vector2(0, -radius * 0.5), centre + Vector2(radius, 0), centre + Vector2(0, radius * 0.5), centre + Vector2(-radius, 0)])
 
-# Static mask, built once per variant and map size: full strength beyond FOG_FULL cells from the fight, none inside FOG_CLEAR.
+# Static mask, built once per map size: full strength beyond FOG_FULL cells from the fight, none inside FOG_CLEAR.
 func _fog_mesh() -> Dictionary:
 	if _map_size == Vector2i.ZERO: return {"indices": PackedInt32Array()}
-	var key := [variant(&"fog"), _map_size]
-	if not _fog.has(key): _fog[key] = _build_fog(variant(&"fog"))
-	return _fog[key]
+	if not _fog.has(_map_size): _fog[_map_size] = _build_fog()
+	return _fog[_map_size]
 
-func _build_fog(fog_variant: int) -> Dictionary:
+func _build_fog() -> Dictionary:
 	var mesh := {"points": PackedVector2Array(), "colors": PackedColorArray(), "indices": PackedInt32Array()}
-	var base: Color = Color(0, 0, 0, 0.5) if fog_variant == 0 else Color(0.55, 0.58, 0.62, 0.6)
+	var base := Color(0, 0, 0, 0.5)
 	for y in _map_size.y:
 		for x in _map_size.x:
 			var strength: float = smoothstep(FOG_CLEAR, FOG_FULL, (Vector2(x + 0.5, y + 0.5) - Fight.FOCUS).length())

@@ -18,18 +18,13 @@ const Palette = preload("res://scripts/presentation/palette.gd")
 var _preview_cells: Array[Vector2i] = []
 var _preview_valid: bool = false
 var _state: Dictionary = {}
-var _selected_ids: Array[int] = []
 var _last_points: Dictionary = {}
-var _prev_entities: Array = []
-var _prev_buildings: Array = []
-var _widths: Dictionary = {}
-var _width_air: Dictionary = {}
+var _selection := {}
 var _inspected_id: int = -1
 var local_player: int = 1
 var _hints: Array[Dictionary] = []
 var _hovered_id: int = -1
-var _biome: int = 0
-var _building_shots: Dictionary = {}
+var _biome: int = Palette.DEFAULT_BIOME
 var _terrain: Node2D = Terrain.new()
 var _structures: Node2D = StructureLayer.new()
 var _bodies: Node2D = BodyLayer.new()
@@ -56,7 +51,6 @@ var _moves: Array = []
 var _drawn := {}
 const WIDE_PICK_WIDTH: float = 36.0
 const HINT_TICKS: int = 40
-const SHOT_TICKS: int = 6
 const MUZZLE_LIFT: float = 20.0
 const HEALTH_BAR := Vector2(24, 3)
 const SELECT_COLOR := Color("8cff87")
@@ -106,9 +100,6 @@ func set_zoom(zoom: float) -> void:
 func detail() -> int:
 	return GraphicsSettings.detail(_quality, _zoom)
 
-func flags() -> int:
-	return GraphicsSettings.flags(_quality)
-
 func set_visuals(director: Director) -> void:
 	_visuals = director
 
@@ -132,8 +123,9 @@ func set_biome(biome: int) -> void:
 
 func selected_unit_lines() -> PackedVector2Array:
 	var lines := PackedVector2Array()
+	if _selection.is_empty(): return lines
 	for unit: Dictionary in _state.get("entities", []):
-		if _selected_ids.has(unit.id): lines.append_array(_ground_diamond(unit))
+		if _selection.has(unit.id): lines.append_array(_ground_diamond(unit))
 	return lines
 
 func _ground_diamond(unit: Dictionary) -> PackedVector2Array:
@@ -175,7 +167,8 @@ func set_state(state: Dictionary, selected_ids: Array[int]) -> void:
 	var zone: int = Profiler.begin()
 	_state = state.duplicate()
 	Profiler.end(&"view.copy", zone)
-	_selected_ids = selected_ids.duplicate()
+	_selection = {}
+	for id in selected_ids: _selection[id] = true
 	_terrain.set_map(_state.get("map", {}))
 	_prune_hints()
 	zone = Profiler.begin()
@@ -183,7 +176,6 @@ func set_state(state: Dictionary, selected_ids: Array[int]) -> void:
 	Profiler.end(&"view.sort", zone)
 	zone = Profiler.begin()
 	_remember_points()
-	_remember_building_shots()
 	Profiler.end(&"view.points", zone)
 	zone = Profiler.begin()
 	_refresh_structures()
@@ -205,7 +197,8 @@ func _track_poses(entity_count: int) -> void:
 	if tick != _blend_tick:
 		_prev_pose = _pose if tick == _blend_tick + 1 else {}
 		_pose = {}
-		for i in entity_count: _pose[_items[i].id] = _pose_of(_items[i])
+		if _quality == GraphicsSettings.HIGH:
+			for i in entity_count: _pose[_items[i].id] = _pose_of(_items[i])
 		_blend_tick = tick
 		_alpha = 0.0
 		_tick_usec = Time.get_ticks_usec()
@@ -262,7 +255,7 @@ func _rebuild_batch() -> void:
 	if _visuals != null:
 		angles = _visuals.turret_angles()
 		effects = _visuals.effects()
-	_batch.build(_items, angles, detail(), flags(), effects)
+	_batch.build(_items, angles, detail(), _quality == GraphicsSettings.HIGH, effects)
 	_bodies.queue_redraw()
 	queue_redraw()
 
@@ -298,22 +291,16 @@ func pile_text_points(source: Dictionary) -> PackedVector2Array:
 	return PackedVector2Array([top - Vector2(0, text_height()), top])
 
 func resume_candidate() -> int:
+	if _selection.size() != 1: return -1
 	var builders: int = 0
 	for unit: Dictionary in _state.get("entities", []):
-		if _selected_ids.has(unit.id) and unit.owner == local_player and Registry.is_builder(unit.kind): builders += 1
-	if builders != 1 or _selected_ids.size() != 1: return -1
+		if _selection.has(unit.id) and unit.owner == local_player and Registry.is_builder(unit.kind): builders += 1
+	if builders != 1: return -1
 	for building: Dictionary in _state.get("buildings", []):
 		if building.id == _hovered_id and building.owner == local_player and not building.completed and building.builder_id == null: return building.id
 	return -1
 
 func _half_width(kind: String) -> float:
-	if not is_same(Registry.air_kinds, _width_air):
-		_widths.clear()
-		_width_air = Registry.air_kinds
-	if not _widths.has(kind): _widths[kind] = _compute_half_width(kind)
-	return _widths[kind]
-
-func _compute_half_width(kind: String) -> float:
 	var row: Dictionary = Registry.kind(kind)
 	if row.get("class", "") == "infantry": return 6.0
 	var weapon: Dictionary = CombatDefinitions.weapon(row.get("weapon", ""))
@@ -396,12 +383,12 @@ func _draw() -> void:
 func _draw_rects() -> void:
 	for mark in crate_marks(): draw_rect(Rect2(mark - Vector2(2, 2), Vector2(4, 4)), Color("e8c547"))
 	for unit: Dictionary in _state.get("entities", []):
-		var selected: bool = _selected_ids.has(unit.id)
+		var selected: bool = _selection.has(unit.id)
 		if _wants_bar(unit, selected): _draw_health(health_rect(_vehicle_bounds(unit)).position, unit, selected)
 	for building: Dictionary in _state.get("buildings", []):
 		var definition: Dictionary = Definitions.building(building.kind)
 		if definition.is_empty(): continue
-		_draw_health(Iso.world_to_plane(Vector2(building.origin[0], building.origin[1]) + Vector2(definition.footprint) / 2.0) + Vector2(-HEALTH_BAR.x / 2.0, -WorldBatch.top_lift(building.kind) - 10.0), building, _selected_ids.has(building.id))
+		_draw_health(Iso.world_to_plane(Vector2(building.origin[0], building.origin[1]) + Vector2(definition.footprint) / 2.0) + Vector2(-HEALTH_BAR.x / 2.0, -WorldBatch.top_lift(building.kind) - 10.0), building, _selection.has(building.id))
 
 func _draw_lines() -> void:
 	var grid: PackedVector2Array = grid_lines()
@@ -411,7 +398,8 @@ func _draw_lines() -> void:
 		green.append_array([point - Vector2(6, 0), point + Vector2(6, 0), point - Vector2(0, 6), point + Vector2(0, 6)])
 	if not green.is_empty(): draw_multiline(green, SELECT_COLOR, 2.0)
 	var chevrons := PackedVector2Array()
-	for unit: Dictionary in _state.get("entities", []): chevrons.append_array(veterancy_lines(unit))
+	for unit: Dictionary in _state.get("entities", []):
+		if unit.has("veterancy"): chevrons.append_array(veterancy_lines(unit))
 	if not chevrons.is_empty(): draw_multiline(chevrons, CHEVRON_COLOR, 2.0)
 
 func _draw_labels() -> void:
@@ -434,12 +422,12 @@ func draw_structures() -> void:
 	_canvas = _structures
 	var zone: int = Profiler.begin()
 	for source: Dictionary in _state.get("sources",[]):
-		_draw_footprint(source.origin,Registry.source_footprint(source),Color("9f8045"),_selected_ids.has(source.id))
+		_draw_footprint(source.origin,Registry.source_footprint(source),Color("9f8045"),_selection.has(source.id))
 	for building: Dictionary in _state.get("buildings",[]):
 		var definition: Dictionary = Definitions.building(building.kind)
 		if definition.is_empty(): continue
 		var tint: Color = _tint(building.owner)
-		_draw_footprint(building.origin,definition.footprint,tint.lerp(Color("687b8c"),0.4) if building.completed else tint.lerp(Color("887966"),0.6),_selected_ids.has(building.id))
+		_draw_footprint(building.origin,definition.footprint,tint.lerp(Color("687b8c"),0.4) if building.completed else tint.lerp(Color("887966"),0.6),_selection.has(building.id))
 	Profiler.end(&"draw.structures", zone)
 	_canvas = self
 
@@ -447,9 +435,9 @@ func _refresh_structures() -> void:
 	_waiting = _waiting_counts()
 	var key: Array = []
 	for source: Dictionary in _state.get("sources", []):
-		key.append_array([source.id, source.origin[0], source.origin[1], _selected_ids.has(source.id)])
+		key.append_array([source.id, source.origin[0], source.origin[1], _selection.has(source.id)])
 	for building: Dictionary in _state.get("buildings", []):
-		key.append_array([building.id, building.owner, building.kind, building.origin[0], building.origin[1], building.completed, _selected_ids.has(building.id)])
+		key.append_array([building.id, building.owner, building.kind, building.origin[0], building.origin[1], building.completed, _selection.has(building.id)])
 	if key == _structure_key: return
 	_structure_key = key
 	_structures.queue_redraw()
@@ -465,9 +453,10 @@ func _draw_health(top_left: Vector2, object: Dictionary, selected: bool) -> void
 
 func focus_targets() -> Dictionary:
 	var targets := {}
+	if _selection.is_empty(): return targets
 	for unit: Dictionary in _state.get("entities", []):
 		var combat: Variant = unit.get("combat")
-		if not _selected_ids.has(unit.id) or combat == null or combat.target_id == null: continue
+		if not _selection.has(unit.id) or combat == null or combat.target_id == null: continue
 		targets[combat.target_id] = targets.get(combat.target_id, false) or combat.mode == "attack"
 	return targets
 
@@ -488,6 +477,7 @@ func set_inspected(id: int) -> void:
 	queue_redraw()
 
 func _draw_inspected() -> void:
+	if _inspected_id == -1: return
 	for unit: Dictionary in _state.get("entities", []):
 		if unit.id == _inspected_id: draw_rect(_vehicle_bounds(unit).grow(2.0), Color("ff3b30"), false, 2.0)
 	for building: Dictionary in _state.get("buildings", []):
@@ -514,7 +504,7 @@ func _draw_hints() -> void:
 
 func rally_marker() -> Array:
 	for building: Dictionary in _state.get("buildings", []):
-		if _selected_ids.has(building.id) and building.owner == local_player and Registry.can_rally(building.kind) and building.has("rally"): return building.rally
+		if _selection.has(building.id) and building.owner == local_player and Registry.can_rally(building.kind) and building.has("rally"): return building.rally
 	return []
 
 func _draw_rally() -> void:
@@ -545,55 +535,24 @@ static func line_position(entities: Array, unit: Dictionary) -> int:
 
 func _draw_cues() -> void:
 	for line: Dictionary in battery_target_lines(): draw_line(line.from, line.to, Color("ff3b30"), 1.5)
-	for line: Dictionary in _building_shots.values(): draw_line(line.from, line.to, Color("ffe680"), 2.0)
-
-# Keyed by attacker so a stalled tick re-seeing the same event stays one line.
-func _remember_building_shots() -> void:
-	var tick: int = _state.get("tick", 0)
-	for id: int in _building_shots.keys():
-		if tick > _building_shots[id].tick + SHOT_TICKS: _building_shots.erase(id)
-	var building_ids := {}
-	for building: Dictionary in _state.get("buildings", []): building_ids[building.id] = true
-	for event: Dictionary in _state.get("combat_events", []):
-		if event.type == "shot" and building_ids.has(event.attacker_id) and _last_points.has(event.attacker_id) and _last_points.has(event.target_id):
-			_building_shots[event.attacker_id] = {"from": _last_points[event.attacker_id] + Vector2(0, -MUZZLE_LIFT), "to": _last_points[event.target_id], "tick": event.tick}
-
-func building_shot_lines() -> Array:
-	return _building_shots.values()
 
 func battery_target_lines() -> Array[Dictionary]:
 	var lines: Array[Dictionary] = []
 	for building: Dictionary in _state.get("buildings", []):
 		var combat: Variant = building.get("combat")
-		if not _selected_ids.has(building.id) or combat == null or combat.target_id == null or not _last_points.has(combat.target_id): continue
+		if not _selection.has(building.id) or combat == null or combat.target_id == null or not _last_points.has(combat.target_id): continue
 		lines.append({"from": _last_points[building.id] + Vector2(0, -MUZZLE_LIFT), "to": _last_points[combat.target_id]})
 	return lines
 
-# Points only for ids the cues read: shot and death events, selected batteries and their targets.
+# Points only for selected batteries and their targets.
 func _remember_points() -> void:
 	var wanted := {}
-	var deaths: Array[int] = []
-	for event: Dictionary in _state.get("combat_events", []):
-		if event.type == "shot":
-			wanted[event.attacker_id] = true
-			wanted[event.target_id] = true
-		elif event.type == "death": deaths.append(event.object_id)
 	for building: Dictionary in _state.get("buildings", []):
 		var combat: Variant = building.get("combat")
-		if _selected_ids.has(building.id) and combat != null and combat.target_id != null:
+		if _selection.has(building.id) and combat != null and combat.target_id != null:
 			wanted[building.id] = true
 			wanted[combat.target_id] = true
-	var entities: Array = _state.get("entities", [])
-	var buildings: Array = _state.get("buildings", [])
-	var points := _points_of(wanted, entities, buildings)
-	var gone := {}
-	for id in deaths:
-		if _last_points.has(id): points[id] = _last_points[id]
-		else: gone[id] = true
-	if not gone.is_empty(): points.merge(_points_of(gone, _prev_entities, _prev_buildings))
-	_last_points = points
-	_prev_entities = entities
-	_prev_buildings = buildings
+	_last_points = _points_of(wanted, _state.get("entities", []), _state.get("buildings", []))
 
 func _points_of(wanted: Dictionary, entities: Array, buildings: Array) -> Dictionary:
 	var points := {}
