@@ -32,9 +32,11 @@ Current setup and milestone status live in the [development notes](docs/developm
 - Terminal-first: author, import and test through files and documented commands; no routine editor clicking.
 - Keep Godot project under `game/`, repository tools outside it. `res://` resolves to `game/`. Follow the active milestone execution plan for exact paths and contracts.
 - Use typed GDScript. Keep authoritative simulation separate from scenes, rendering, wall-clock time and networking callbacks. Advance it explicitly by ticks; inject randomness when needed.
+- Simulation code follows the [determinism rules](docs/reference/determinism-rules.md).
 - Adapt Hell's Verdict's wrappers and CI patterns without modifying that project. Keep Wargrid's planned renderer and tick rate; do not inherit FPS settings or server assumptions.
 - Follow personal code-style, Superpowers, review and model-routing instructions. Do not import another project's agent models or workflow exceptions.
 - Milestone runs follow [milestone prompt](docs/milestone-prompt.md): run as a coordinator with one fresh subagent per task, each starting from the verification file's resume record; stop at every stop gate.
+- New tests use only the [simulation interface](docs/reference/sim-interface.md); `tools/test_sim_boundary.py` enforces it.
 - Edit files with the Edit tool or asserted replacements only; an unasserted replacement once dropped a cleanup call silently. Agent shells use BSD `sed` (`sed -i ''`). Scratch Godot scripts must `quit()` on every path, or a script error hangs until the shell timeout.
 
 ## Verification and desktop use

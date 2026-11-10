@@ -160,12 +160,14 @@ Headless test runner ───► same simulation API
 Replay runner ──────────► same command queue
 ```
 
+The public surface is listed in the [simulation interface](reference/sim-interface.md).
+
 ### Simulation constraints
 
 1. **Fixed simulation timestep: start at 30 Hz.** The checked-out Zero Hour source defines `LOGICFRAMES_PER_SECOND = 30` (§4). Matching this time grid simplifies comparisons; it does not require copying engine scheduling or bugs. Store deadlines as integer ticks; document rounding for each mechanic.
 2. **Stable entity IDs**, explicit ownership/team, and serializable commands (e.g. `move`, `attack`, `build`, `train`, `cancel`).
 3. **Seeded randomness** and state capture of RNG seed/state where relevant.
-4. **Deterministic command processing within the same environment** as an immediate requirement. Cross-platform deterministic lockstep is **not** assumed automatically; floats, physics, ordering and runtime differences require explicit verification or different numerical representations later. Evidence so far: movement, economy and combat traces match exactly across Linux x86, Windows x86 and macOS ARM (CI run 41713005327 plus the local macOS comparison). From M5 cross-platform determinism becomes a requirement, checked by trace comparison and in-match hash exchange.
+4. **Deterministic command processing within the same environment** as an immediate requirement. Cross-platform deterministic lockstep is **not** assumed automatically; floats, physics, ordering and runtime differences require explicit verification or different numerical representations later. Evidence so far: movement, economy and combat traces match exactly across Linux x86, Windows x86 and macOS ARM (CI run 41713005327 plus the local macOS comparison). From M5 cross-platform determinism becomes a requirement, checked by trace comparison and in-match hash exchange. Rules: [determinism rules](reference/determinism-rules.md).
 5. **Authoritative simulation state.** Sprites and scene effects should represent state, not own the rules.
 6. **Save/replay-friendly state model.** A test should be able to set up a world, issue commands over ticks, then inspect a canonical state snapshot.
 7. **No dependence on render frame rate for rule outcomes.** Rendering can interpolate between ticks.
