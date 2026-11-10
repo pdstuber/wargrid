@@ -1,11 +1,11 @@
-Resume record (updated 2026-11-10, lean-review cuts applied, timed runs pending)
-Branch / base commit / working-tree state: spike-art-lab / 6024e7b / lean cuts uncommitted (coordinator commits); docs/session-notes.md untouched
-Last green task / next incomplete task: ponytail lean findings 1-13 / timed runs blocked: WoW running
-Changed paths since last commit: game/scripts/{main}.gd, game/scripts/presentation/{palette,terrain_view,world_view,world_batch,shapes,visual_director,graphics_settings,pause_menu}.gd, game/scripts/lab/{ab_variants,art_lab}.gd, game/scripts/debug/movement_benchmark.gd, game/tests/{test_winners (deleted, cases moved),test_art_lab,test_view,test_visual,test_world_batch,test_shapes,test_shape_audit,test_benchmark,test_graphics_settings,test_skirmish_scene,test_base_scene,run_tests}.gd
-Last command / cases / checks / failures / exit / marker: `sh tools/run_tests.sh` / 721 cases / 139464 checks / 0 failures / exit 0 / TESTS PASSED 139464; golden WB18 unchanged (412a2fbb..., 52520); `sh tools/run_lint.sh` exit 0; `sh tools/run_warnings.sh` 137 files exit 0
-Known red case or blocker: none in tests; timed runs not done (WoW running)
-Approved decisions, pre-authorizations used, deferred gates: as before plus the winners task (gate2-review.md scope extension); one rendered row set pre-approved but not run
-Next exact action: when WoW is closed: run `sh tools/run_benchmark.sh` alone, the headless per-frame timing with interpolation on (300 and 400 units; also overlay `_draw` per frame with 400 units / 150 selected, finding 2 before -> after), the rendered row set (four layouts zoom 0.5 High and Low, zoom 1.0 High, n=3); record in performance.md "Art lab winners" and a ledger row; then push spike-art-lab and test deploy (approval needed)
+Resume record (updated 2026-11-10, timed runs for the winners done)
+Branch / base commit / working-tree state: spike-art-lab / ab698df / docs only (performance.md, art-lab-verification.md) plus the coordinator's own uncommitted edits
+Last green task / next incomplete task: winners timed runs / none in the lab; integration steps
+Changed paths since last commit: docs/reference/performance.md, docs/reference/art-lab-verification.md
+Last command / cases / checks / failures / exit / marker: `sh tools/run_benchmark.sh` / exit 0 / 10 BUDGET PASS; rendered rows w-a/b/z n 3 (a rows exit 1 at the 3.3 ashfall guard, b and z exit 0); web row posted RENDERED BENCHMARK PASSED 2
+Known red case or blocker: none in tests; perf rows EXCEEDED (not loosened); High 0.5 ashfall frame p95 3.56-4.76 breaks its 3.3 guard
+Approved decisions, pre-authorizations used, deferred gates: as before; no window beyond the pre-approved rendered row set and the web row
+Next exact action: coordinator: push spike-art-lab, test deploy, local merge into main, then the sim interface and determinism notes (approval needed for push and deploy)
 
 ## Evidence rows (append-only)
 
@@ -228,3 +228,10 @@ A/B click results (`~/projects/wargrid-art-work/ab-results/web-20261110-155052.l
 - 13: `test_winners.gd` cases moved to test_view (W1b, W2, W3, W5 ring and Neon rings, W6), test_shapes (W1 palettes, W4, AB8), test_world_batch (W7 dash), test_graphics_settings (W8 Neon); copied helpers dropped; AB10 deleted.
 - Suite 721 cases / 139464 checks / 0 failures (was 725 / 139508: V5, V30, AB10, BM13 removed, W cases merged, V34 added).
 - NOT RUN: `run_benchmark.sh`, headless per-frame timing, rendered rows (WoW running).
+
+### 2026-11-10 Winners timed runs (tree ab698df)
+
+- Load/WoW: benchmark start `uptime` 18:31 1.99 2.31 2.41, end 18:32 1.42 2.08 2.32; rows 1.8-2.8 (`w-progress.log`); web 19:17 1.96 2.43 2.44 / 19:20 1.04 1.92 2.23; `pgrep -fl -i 'world of warcraft'` empty (`w-pgrep-wow.txt`, `w-bench-start.txt`).
+- `run_benchmark.sh` exit 0, 10 BUDGET PASS. Headless per tick Low 0.913-0.921, High 1.044-1.049 ms (0.91 budget, EXCEEDED). Per frame blend 300u mean 0.87 / 400u 0.91-0.94; blend+overlay+submit p95 3.04-3.16 / 3.22-3.26 (EXCEEDED vs 3.04).
+- Rendered rows and web row, medians and worst runs: see performance.md "Art lab winners" and its ledger row. Draw calls 4 / 5 / 24 / 5 under ceilings 50 / 50 / 60 / 50 (PASS). High 0.5 runs exit 1 at the ashfall frame guard (4.315 / 4.764 / 3.562 > 3.3), so no High 0.5 horde row. Web horde 11.40, ashfall 10.28 ms (EXCEEDED about 2.1-2.6x per C2).
+- Nothing loosened. Logs in ~/projects/wargrid-art-work: w-bench.log, w-tick.log, w-frame.log, w-{a,b,z}{1,2,3}.log, web-results4/. Server on 8062 stopped; Firefox left running.
