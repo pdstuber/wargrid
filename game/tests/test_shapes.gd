@@ -7,7 +7,7 @@ const Palette = preload("res://scripts/presentation/palette.gd")
 const Definitions = preload("res://scripts/simulation/definitions/definitions.gd")
 
 func cases() -> Array[Callable]:
-	return [test_bucket_wraps, test_box_top_face_on_top, test_bake_is_cached, test_unknown_kind_gets_default_role, test_every_registry_kind_has_parts, test_owner_palette_eight, test_lab_roles_mapped, test_damage_stage_changes_geometry, test_turret_pivot_on_hull_top]
+	return [test_bucket_wraps, test_box_top_face_on_top, test_bake_is_cached, test_unknown_kind_gets_default_role, test_every_registry_kind_has_parts, test_owner_palette_eight, test_lab_roles_mapped, test_damage_stage_changes_geometry, test_turret_pivot_on_hull_top, test_no_kind_uses_default_role, test_roster_shares_slots]
 
 func test_bucket_wraps(runner) -> bool:
 	runner.check(Bake.bucket(0.0) == 0, "SH1 zero")
@@ -66,7 +66,7 @@ func test_lab_roles_mapped(runner) -> bool:
 		"usa_tank": &"tank_usa", "china_tank": &"tank_china", "frc_tank": &"tank_frc",
 		"usa_builder": &"bulldozer", "china_builder": &"bulldozer",
 		"usa_rifle_infantry": &"infantry", "china_rifle_infantry": &"infantry", "frc_rifle_infantry": &"infantry",
-		"usa_rocket_infantry": &"infantry", "china_rocket_infantry": &"infantry", "frc_rocket_infantry": &"infantry", "frc_builder": &"infantry",
+		"usa_rocket_infantry": &"rocket_infantry", "china_rocket_infantry": &"rocket_infantry", "frc_rocket_infantry": &"rocket_infantry", "frc_builder": &"infantry",
 		"usa_power_plant": &"power_plant", "china_power_plant": &"power_plant",
 		"usa_factory": &"war_factory", "china_factory": &"war_factory", "frc_factory": &"war_factory",
 		"usa_supply_center": &"supply_depot", "china_supply_center": &"supply_depot", "frc_supply_center": &"supply_depot",
@@ -112,4 +112,25 @@ func test_turret_pivot_on_hull_top(runner) -> bool:
 				sum += Vector2(mesh.points[i].x, mesh.points[i].y + mesh.lifts[i])
 				n += 1
 			runner.check(n > 0 and (sum / maxf(n, 1)).length() <= 1.0, "SH9 %s bucket %d turret centred on pivot" % [role, bucket])
+	return true
+
+func test_no_kind_uses_default_role(runner) -> bool:
+	for kind in Definitions.units() + Definitions.buildings():
+		var role: StringName = Shapes.role(kind)
+		runner.check(role != &"default_vehicle" and role != &"default_building", "SH10 %s has a class role (%s)" % [kind, role])
+	runner.check(Shapes.role("usa_collector") == &"helicopter", "SH10 helicopter role")
+	runner.check(Shapes.parts(&"helicopter", 1)[1].angle == &"fixed", "SH10 rotor is a fixed-angle part")
+	runner.check(Shapes.parts(&"defence", 1)[1].name == &"turret", "SH10 defence turret")
+	return true
+
+func test_roster_shares_slots(runner) -> bool:
+	var roles: Dictionary = {}
+	for kind in Definitions.units() + Definitions.buildings():
+		roles[Shapes.role(kind)] = true
+	for role: StringName in roles:
+		for detail in 3:
+			for variant in 3:
+				for part: Dictionary in Shapes.parts(role, detail, variant):
+					for prim: Dictionary in part.prims:
+						runner.check(prim.slot is int and prim.slot >= Shapes.SLOT_ROOF and prim.slot <= Shapes.SLOT_SHADOW, "SH11 %s uses a slot constant" % role)
 	return true

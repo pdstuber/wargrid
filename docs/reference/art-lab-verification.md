@@ -1,12 +1,12 @@
-Resume record (updated 2026-11-10, Task 4 green)
+Resume record (updated 2026-11-10, Task 4b green)
 Branch / base commit / working-tree state: spike-art-lab / 7d56851 / Task 4 changes uncommitted on top of d7693d5 (coordinator commits)
-Last green task / next incomplete task: Task 4 / Task 4b (whole roster in the same vocabulary)
-Changed paths since last commit: game/scripts/presentation/{shapes,shape_bake,world_batch,world_view}.gd, game/tests/{test_shapes,test_world_batch}.gd, docs/reference/art-lab-verification.md (no new scripts, no new .uid)
-Last command / cases / checks / failures / exit / marker: `sh tools/run_tests.sh` / 638 cases / 137718 checks / 0 failures / exit 0 / TESTS PASSED 137718
+Last green task / next incomplete task: Task 4b / Task 5 (overlays and terrain look)
+Changed paths since last commit: game/scripts/presentation/shapes.gd, game/tests/test_shapes.gd, docs/reference/art-lab-verification.md (no new scripts, no new .uid)
+Last command / cases / checks / failures / exit / marker: `sh tools/run_tests.sh` / 640 cases / 138250 checks / 0 failures / exit 0 / TESTS PASSED 138250
 Known red case or blocker: none. Draw-call gate is on and passes. Watch: view build adds about 1.3 ms to a 300-unit tick (tick_ms p50 1.57 -> 2.85), Ashfall frame p95 1.15 -> 2.49 (guard 3.3)
 Approved decisions, pre-authorizations used, deferred gates: plan approval 2026-11-10 covers Task 3 rendered window (used twice: first run exposed a per-vertex GDScript cost, second run after the Transform2D/cached-colour fix is the recorded one); ceilings fixed 50/50/50/60
 Usage so far (python3 tools/session_usage.py <session files>): not measured
-Next exact action: dispatch Task 4b of docs/superpowers/plans/2026-11-10-art-lab-spike.md
+Next exact action: dispatch Task 5 of docs/superpowers/plans/2026-11-10-art-lab-spike.md
 
 ## Evidence rows (append-only)
 
@@ -64,3 +64,10 @@ Functions reading `_state` directly: `set_state`, `_prune_hints`, `_refresh_stru
 - Deviations: `test_turret_pivot_on_hull_top` checks the turret's `SLOT_ROOF` (top face) triangles with lift added back (ground projection) against the pivot, since the raw projection differs from the pivot by the lift and barrel triangles would bias the centroid. `test_building_rises_with_work` would pass on the old default box for height alone, so it also asserts the role is `war_factory`. Non-tank vehicles (scout car, collectors, `china_light_vehicle`) stay `default_vehicle` until Task 4b.
 - Per-tick cost (headless scratch timing of `WorldBatch.objects` + `build`, 300 mixed units + 6 factories, detail 1, shadows on, 200 reps; script `~/projects/wargrid-art-work/t4_time.gd`, run as a temporary test script): 1.138 ms before, 1.318 ms after (+0.18 ms; triangles 3448 -> 6400). Still above the ledger's 0.91 ms presentation-plumbing budget, as at Task 3; no new per-vertex GDScript, only cached-array transforms. Rendered window not opened (not pre-approved for Task 4).
 - Not checked: how the shapes look (no render), Ashfall frame p95 with the richer shapes (Task 8).
+
+### 2026-11-10 Task 4b: whole roster in the same vocabulary (tree: worktree, f033cef plus Task 4b diff)
+
+- Red: shapes.gd was written first, then reverted to HEAD for the red run (`t4b-red.log`): `WARGRID_TEST_ONLY=test_shapes` exit 1 on assertions, e.g. "SH10 china_collector has a class role (default_vehicle)", "SH10 china_light_vehicle ...", "SH7 usa_rocket_infantry maps to rocket_infantry". Green: `test_shapes` 11 cases / 884 checks; full suite 640 cases, 138250 checks, 0 failures, exit 0, TESTS PASSED 138250. Lint and warnings (127 files) pass.
+- New roles: `light_vehicle`, `collector_truck` (`*_collector` wheels), `helicopter` (`usa_collector`; body plus fixed-angle `rotor` part; air layer already comes from `Registry.air_kinds`), `rocket_infantry`, `command_center`, `barracks`, `defence` (fixed base plus `turret` part pivoting on its top), `rubble_1/2/3` (`*_hole_N`, sized from footprint). Every registry kind now maps to a non-default role; defaults stay only as fallback.
+- Deviations: `*_rocket_infantry` moved from `infantry` to the new `rocket_infantry` role (Task 4's `test_lab_roles_mapped` expectation updated; `frc_builder` stays `infantry`). `china_light_vehicle` is a treaded Medium Tank with a cannon, so it uses `tank_china` instead of `light_vehicle`. Damage variants apply to command center and barracks (shared slab); defence and rubble ignore them. Defence turret has no aim until Task 6 (heading 0 for buildings).
+- Per-tick path untouched (only baked part data changed); timing not re-run. Not checked: how the new shapes look (no render).
