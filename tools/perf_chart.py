@@ -253,7 +253,7 @@ def _readme_block(rows: list[dict[str, str]]) -> str:
     )
 
 
-def _write_all(files: list[tuple[Path, str]]) -> None:
+def write_all(files: list[tuple[Path, str]]) -> None:
     temps = []
     try:
         for path, text in files:
@@ -281,7 +281,7 @@ def main(argv: list[str] | None = None) -> int:
     except ValueError as err:
         print(err, file=sys.stderr)
         return 1
-    _write_all([(args.ledger, ledger), (args.readme, readme)])
+    write_all([(args.ledger, ledger), (args.readme, readme)])
     return 0
 
 

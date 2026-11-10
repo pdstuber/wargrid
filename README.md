@@ -19,6 +19,30 @@ Wargrid is an isometric real-time strategy game written in Godot 4 and typed GDS
 
 Early development. Three factions (USA, China, FRC), skirmish against a bot and online 1v1 on Dry Wells, Broken Crown or Ashfall (map choice in the launcher, since 0.10.0). Latest release: see [Releases](https://github.com/pdstuber/wargrid/releases).
 
+What is done, what comes next and what is only an idea (generated from `docs/roadmap.toml`):
+
+<!-- roadmap:begin -->
+**7 of 15 parts done**
+
+| | What | State |
+| --- | --- | --- |
+| ✅ | Move and select units | Done |
+| ✅ | Build a base and mine supplies | Done |
+| ✅ | Fight with infantry and tanks | Done |
+| ✅ | Play online with a friend | Done |
+| ✅ | Teams and big maps | Done |
+| ✅ | Choose your faction | Done |
+| ✅ | Releases and sound | Done |
+| ⏭ | Better graphics and art style | Next |
+| 📋 | A faster, steadier engine core | Planned |
+| 📋 | Smarter unit movement | Planned |
+| 📋 | Better controls | Planned |
+| 💡 | A Generals-style HUD and fog of war | Idea |
+| 💡 | More units, aircraft and superweapons | Idea |
+| 💡 | Bots worth playing, with difficulty levels | Idea |
+| 💡 | 3v3 online matches | Idea |
+<!-- roadmap:end -->
+
 <!-- perf-table:begin -->
 Performance against the low-end budget (generated):
 

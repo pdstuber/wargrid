@@ -66,6 +66,7 @@ sh tools/run_warnings.sh   # typing, shadowing, unused-parameter and integer-div
 python3 -m unittest discover -s tools -p 'test_*.py'
 python3 tools/zh_ini.py dump   # Zero Hour INI blocks to build/zh_ini/inizh.jsonl (gitignored, never committed); needs the local retail archive
 sh tools/run_python_checks.sh   # ruff format + lint, mypy, Python tests; needs: uv venv tools/.venv && uv pip install --python tools/.venv/bin/python -r tools/requirements-dev.txt
+python3 tools/roadmap.py   # regenerate the README roadmap from docs/roadmap.toml (--check only verifies; the Python tests do the same)
 actionlint   # GitHub workflows, with shellcheck on run: blocks; needs: brew install actionlint shellcheck
 sh tools/run_benchmark.sh
 mkdir -p build && sh tools/run_benchmark.sh > build/bench.log 2>&1   # on a clean main it records itself in docs/reference/perf-history.csv (PERF_LABEL="…" forces a record on any branch, PERF_RECORD=0 disables); the status table in the ledger and README is regenerated after every passing benchmark run unless PERF_RECORD=0
