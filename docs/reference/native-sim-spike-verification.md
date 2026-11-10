@@ -607,3 +607,47 @@ Gate passed (T11). Stage 5 green except Windows (T9, T11). G_inc 1.09 < 2.20 and
 - docs/reference/native-sim-spike.md (new).
 - docs/reference/native-sim-spike-verification.md: T8, T10, T11 and these T12 rows appended verbatim, headings demoted.
 - docs/reference/performance.md: one History row (Deck Firefox runs of T8 and T11, ledger protocol: web export, isolated server on the Deck, Firefox via systemd-run, mains power, 3 interleaved runs).
+
+### T14 rows (gate-review fixes and lean review), 2026-11-10
+
+Tree /Users/pdstuber/projects/wargrid-wt-native, `spike-native-sim` a517e5b plus uncommitted doc edits. No new measurement. Arithmetic: inline `python3 -I` on the T11 and T12 rows (label inferred). Raw per-run call sums re-read from `WORK/results/t11-{native,pass}-hordes300-{1,2,3}/web-*.log`.
+
+#### Rulings on the T13 findings (`WORK/rows/t13.md`)
+| # | Severity | Ruling | Where |
+|---|---|---|---|
+| 1 | important | Fixed. Headline G_port is now 3.3-4.6 (estimate): p = (0.189 ms + 400 × 4.66-6.96 µs) / 11.32 ms = 0.181-0.263, K 27.7 → 4.61 / 3.35 (K 44.5 → 4.91 / 3.51). Downside: read side at today's `snapshot()` per entity (7.89 ms / 400 = 19.7 µs) gives p 0.713, G_port 1.34. The p definition is written under the table. The p-clamped-to-0 column is labelled as holding only if the read side costs no more than today's snapshot. Correction to the review: the packed probe covers 9 of the 16 real keys and omits **7**, not 6 (`order`, `combat`, `destination`, `heading`, `max_hp`, `construction_id`, `collection`; `PROBE keys real=` in `WORK/results/t11-probe-1/web-20261110-233206.log`, `probe.rs` `snapshot_packed`). | report §1 outcome, table, reading bullets, performance case, §3, §4 probe |
+| 2 | important | Fixed. Restated as the (s, E) pair that solves 1/((1+T)(1-s)+s/E) = 2.20. At T 0: s 0.56 needs E ≥ 41, s 0.70 needs E ≥ 4.5, s 0.80 needs E ≥ 3.1. At T 0.060: s 0.56 impossible, 0.70 needs 5.1, 0.80 needs 3.3. Correction to the review: E ≈ 3.1 goes with s ≈ 0.80, not 0.75 (s 0.75 needs 3.7). | report §1 "Evidence that would change this" |
+| 3 | important | Fixed. One joint pass condition 1/K_lower + p ≤ 0.455 (0.442 for 2.26) for open items 2 and 3. Check: K 4 with p 0.42 gives 1.49 (fails); at p 0.263, K ≥ 5.22. Items 5 and 6 now have pass values. | report §1 open items, reading bullets, §6 item 3 |
+| 4 | important | Fixed. Blockers now lead with the measured T8 overrun: dlink template alone moves `combat_open` p95 9.76 → 10.34 ms (EXCEEDED) and `combat_dense` 9.24 → 9.88. Same sentence added to the ledger row and to the matrix's maintenance cell. | report §1 Blockers, §3; `performance.md` spike row |
+| 5 | minor | Fixed. Per-run kernels (call - call_pass, paired by run): horde 61.26 / 55.90 / 54.58 ms (12 %), move 21.78 / 23.64 / 19.78 ms (17 %), confirming the review. Horde lower K 25.3-28.4, move 81-97, now in the table. Using the horde lower K 25.3 leaves G_port at 3.3-4.5, so the headline is unchanged. | report §1 table |
+| 6 | minor | Fixed. Q × 1.5 is shown as 2.20-2.26. G_inc is shown at both taxes: 1.09 at p95 (T 0.060), 1.08 at p50 (T 0.069). | report §1 outcome, table |
+| 7 | minor | Fixed. `test_map.gd` is now "caused by this branch (T3, 1d43859), fixed in T9". Linux compatibility is now "core and runner only; Godot loading the `.so` unverified". Baseline determinism is now "source". Single-slice and "both" K/H/E now have the same label, "inferred from measured sums". | report §1 table, §3, §8 |
+| 8 | minor | Fixed as an open item, since it needs a measurement. G_port is capped at 1 / (share of already-compiled work: `AStarGrid2D` path search, built-ins). That share on hordes300 is **unverified**, because the profile has no zone for it. A share above about 45 % puts the cap below 2.20. It is listed under "Evidence that would change this" and is to be measured with open item 2. | report §1 reading bullets, open items, evidence bullets |
+
+The outcome is unchanged: CONDITIONAL GO, whole-port branch only. The margin is now about 1.5-2× (G_port 3.3-4.6 against 2.20-2.26), not 8×.
+
+Not covered (T13's "not checked", outside this brief): shadow field lists against the GDScript code, and the production change that would make each new test fail.
+
+#### Lean review (ponytail-review style, over-engineering only), `git diff main...spike-native-sim`, 49 files
+- Shared files (`simulation.gd`: 2 hooks plus 1 static; `run_tests.gd`, `test_map.gd`, `.gitignore`, `serve_web_bench.py` `--no-isolation`; two appended presets): minimal. No cut.
+- `native_bridge.gd`, `native_horde.gd`, `native_move.gd`, `bench_runner.gd` additions, `native/tools/*.sh`: each piece is required by the plan's Conventions (modes, timers, options, row ids, fixture format, run scripts). No speculative option or abstraction found. No cut.
+- Rust: `wargrid_core` has no dependencies. The `Buffer` enum with the `Slice` trait is the runner's one generic path, and the features are plan-mandated. Two small findings, **not applied**:
+  - (a) `native/godot/src/horde.rs` `pass()` repeats `run_generic` (about 8 lines). Making `run_generic` take a closure would remove it.
+  - (b) `native/core/src/fixture.rs` `write` is `pub` but only tests use it; it could be `#[cfg(test)]`.
+
+  Reason: both are behaviour-neutral, live in spike code that will not survive (handoff, "Moving ground"), and sit in the adapter whose measured binaries (W3 from e2693e7 plus the T9 fixes) the evidence rows cite. A post-measurement edit adds a rebuild and a re-placed native run for no gain.
+- Verdict: no over-engineering worth a cut. The only edits are docs.
+
+#### Checks (tree a517e5b plus these doc edits; logs `WORK/logs/t14/`)
+- `cargo test --workspace`: exit 0, 24 passed.
+- `cargo +stable clippy --workspace -- -D warnings`: exit 0.
+- `sh tools/run_lint.sh`: exit 0, "no problems found".
+- `sh tools/run_warnings.sh`: exit 0, 144 files checked.
+- `run_python_checks.sh` (main's venv): exit 0, PYTHON TESTS PASSED.
+- Suite not re-run: no GDScript changed since T9's green suite.
+- Links: no link added. Edited anchors and paths were checked by hand.
+
+#### Changed paths (uncommitted)
+- docs/reference/native-sim-spike.md
+- docs/reference/native-sim-spike-verification.md (these rows appended)
+- docs/reference/performance.md (spike row: combat open overrun)
