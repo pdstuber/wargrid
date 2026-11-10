@@ -3,15 +3,16 @@
 Resume record and dated evidence for [the handoff](../native-sim-spike-prompt.txt) and [its plan](../superpowers/plans/2026-11-10-native-sim-spike.md). Labels: **measured** (run here), **source** (quoted file or fetched page), **inferred**, **unverified**. Rows below the resume record are append-only.
 
 ```text
-Resume record (updated 2026-11-10 21:00, refinement session; the spike is NOT started)
-Branch / base commit / working-tree state: none yet; worktree ~/projects/wargrid-wt-native and branch spike-native-sim do not exist
-Last green task / next incomplete task: none / T0
+Resume record (updated 2026-11-10 run start, coordinator)
+Branch / base commit / working-tree state: spike-native-sim in ~/projects/wargrid-wt-native, base dde868e (main), clean
+Last green task / next incomplete task: T0, T1 / phase 1 (T2, T3, T4)
 Changed paths since last commit: none
-Last command / cases / checks / failures / exit / marker: none
+Last command / cases / checks / failures / exit / marker: baseline on dde868e: import 0; suite CASES 728 CHECKS 139569 FAILURES 0 "TESTS PASSED"; lint 0; warnings 0 (137 files); python checks 0
 Known red case or blocker: none
-Approved decisions, pre-authorizations used, deferred gates: see design answers, "Native simulation core spike (user, 2026-11-10 evening)"; local commits on spike-native-sim pre-authorized; browser windows on the Mac and the Deck pre-authorized for this run
-Usage so far (python3 tools/session_usage.py <session files>): not recorded
-Next exact action: T0 of the plan
+Environment: macOS 27.2.1, Godot 4.7.2.stable, rustc nightly-2026-03-15 installed, container service running, Safari and Vivaldi not running; Deck preflight RESULT: OK (172.16.0.63, Firefox flatpak 159.0.1)
+Approved decisions, pre-authorizations used, deferred gates: see handoff "Authorized for this run"; local commits on spike-native-sim and task branches
+Usage so far: not recorded
+Next exact action: dispatch phase 1 (T2 opus own tree, T3 sonnet own tree, T4 sonnet WT)
 ```
 
 ## Stage 1 record (done 2026-11-10 with the user, before invocation)
