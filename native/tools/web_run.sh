@@ -34,7 +34,7 @@ trap 'exit 130' INT TERM
 verdict() { # classify the logs in $results
 	if grep -qs '^JSERR' "$results"/*.log; then echo "PAGE ERROR"; return 7; fi
 	if grep -qs 'BENCH FAILED' "$results"/*.log; then echo "BENCH FAILED"; return 8; fi
-	if grep -qs 'BENCH DONE' "$results"/*.log; then echo "OK"; return 0; fi
+	if grep -qsE 'BENCH DONE|RENDERED BENCHMARK PASSED' "$results"/*.log; then echo "OK"; return 0; fi
 	echo "NO RESULT"; return 4
 }
 
@@ -90,7 +90,7 @@ case $browser in
 esac
 t=0
 while [ $t -lt "$limit" ]; do
-	if grep -qsE 'BENCH DONE|BENCH FAILED|^JSERR' "$results"/web-*.log; then break; fi
+	if grep -qsE 'BENCH DONE|RENDERED BENCHMARK PASSED|BENCH FAILED|^JSERR' "$results"/web-*.log; then break; fi
 	sleep 2; t=$((t+2))
 done
 { date; uptime; } >> "$results/run.txt"

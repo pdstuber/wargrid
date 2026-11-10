@@ -51,7 +51,7 @@ inhibit=; command -v kde-inhibit >/dev/null && inhibit="kde-inhibit --power --sc
 systemd-run --user --quiet --unit="$unit-ff" $inhibit flatpak run org.mozilla.firefox -no-remote -new-instance -profile "$profile" "http://127.0.0.1:$port/index.html?$query"
 t=0
 while [ $t -lt "$limit" ]; do
-	if grep -qsE 'BENCH DONE|BENCH FAILED|^JSERR' "$root"/results/*.log; then
+	if grep -qsE 'BENCH DONE|RENDERED BENCHMARK PASSED|BENCH FAILED|^JSERR' "$root"/results/*.log; then
 		echo "END $(date +%s) load=$(cut -d' ' -f1-3 /proc/loadavg)"; exit 0
 	fi
 	sleep 2; t=$((t+2))
