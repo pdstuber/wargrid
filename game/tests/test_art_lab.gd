@@ -20,7 +20,7 @@ static func _events() -> Array[Dictionary]:
 	return []
 
 func cases() -> Array[Callable]:
-	return [test_lab_fight_shows_every_state, test_every_variant_draws, test_b_variants_change_the_picture, test_infantry_pick_box, test_interpolation_blends, test_events_drive_the_effects, test_lab_keys_and_no_match_keys, test_palette_and_shape_choices]
+	return [test_lab_fight_shows_every_state, test_every_variant_draws, test_b_variants_change_the_picture, test_infantry_pick_box, test_interpolation_blends, test_events_drive_the_effects, test_lab_keys_and_no_match_keys, test_palette_and_shape_choices, test_rejected_variants_leave_no_shape_hooks]
 
 class BodySpyView extends View:
 	var body_draws: int = 0
@@ -128,14 +128,12 @@ func test_b_variants_change_the_picture(runner) -> bool:
 			runner.check(a[4] == Color("7b7566") and b[4] == Color("8a7d62") and last[4] == Color("c4a568"), "AB3 sand_tone steps 1, 2 and 6 set their ground")
 			continue
 		match question:
-			&"body_size", &"light_vehicle_gun": runner.check(a[0] != b[0], "AB3 %s B changes the shapes" % question)
 			&"infantry_colour", &"owner_palette": runner.check(a[1] != b[1], "AB3 %s B changes the colours" % question)
-			&"owner_contrast": runner.check(a[1] != b[1] and b[2] > a[2], "AB3 owner_contrast B changes colours and adds the band (%d -> %d triangles)" % [a[2], b[2]])
 			&"horde_mark": runner.check(b[2] < a[2], "AB3 horde_mark B drops the diamonds (%d -> %d triangles)" % [a[2], b[2]])
 			&"ground": runner.check(not a[3] and b[3], "AB3 ground B turns on the per-cell variation")
 			&"ground_tone": runner.check(a[4] == Color("575c55") and b[4].get_luminance() > a[4].get_luminance(), "AB3 ground_tone B is lighter")
 			&"biome": runner.check(a[4] != b[4], "AB3 biome B changes the ground")
-			_: runner.check(a.size() == 5, "AB3 %s changes nothing in the batch itself" % question)
+			_: runner.check(a.slice(0, 3) == b.slice(0, 3), "AB3 %s changes nothing in the batch itself" % question)
 	return true
 
 func test_infantry_pick_box(runner) -> bool:
@@ -161,6 +159,10 @@ func test_interpolation_blends(runner) -> bool:
 	runner.check(half.entities[1] == after.entities[1] and half.entities[2] == after.entities[2], "AB5 still and new units pass through")
 	runner.check(after.entities[0].position == [3.0, 1.0], "AB5 the source snapshot is not changed")
 	runner.check(AbVariants.interpolate({}, after, 0.5) == after, "AB5 no previous snapshot draws the current one")
+	var west := deg_to_rad(170.0)
+	var east := deg_to_rad(-170.0)
+	var turn: Dictionary = AbVariants.interpolate({"entities": [{"id": 1, "position": [1.0, 1.0], "heading": [cos(west), sin(west)]}]}, {"entities": [{"id": 1, "position": [2.0, 1.0], "heading": [cos(east), sin(east)]}]}, 0.5)
+	runner.check(turn.entities[0].heading[0] < -0.99, "AB5 a heading crossing 180 degrees turns the short way, got %s" % [turn.entities[0].heading])
 	return true
 
 func _duel_tick(variants, sim, events: Array[Dictionary]) -> void:
@@ -230,11 +232,6 @@ func test_lab_keys_and_no_match_keys(runner) -> bool:
 	return true
 
 func test_palette_and_shape_choices(runner) -> bool:
-	for grey: Color in [Palette.NEUTRAL_SIDE, Palette.NEUTRAL_SIDE_DARK, Palette.NEUTRAL_MACHINE]:
-		runner.check(maxf(grey.r, maxf(grey.g, grey.b)) - minf(grey.r, minf(grey.g, grey.b)) < 0.03, "AB8 %s is a true grey" % grey.to_html(false))
-	for base: Color in Palette.OWNER_BASE + Palette.OWNER_BRIGHT:
-		for grey: Color in [Palette.NEUTRAL_SIDE, Palette.NEUTRAL_SIDE_DARK]:
-			runner.check(_distance(base, grey) > 0.15, "AB8 owner %s stays apart from side grey %s" % [base.to_html(false), grey.to_html(false)])
 	for i in Palette.OWNER_BRIGHT.size():
 		for j in range(i + 1, Palette.OWNER_BRIGHT.size()):
 			runner.check(_distance(Palette.OWNER_BRIGHT[i], Palette.OWNER_BRIGHT[j]) > 0.25, "AB8 bright owners %d and %d are distinguishable" % [i + 1, j + 1])
@@ -244,11 +241,12 @@ func test_palette_and_shape_choices(runner) -> bool:
 	runner.check(_distance(warm.ground, warm.cliff_top) > 0.1 and _distance(warm.ground, warm.cliff_side) > 0.25, "AB8 the warm ground keeps its cliffs readable")
 	var soldier: Array = Shapes.parts(&"infantry", 2, Shapes.VARIANT_STRONG_COLOUR)[0].prims
 	runner.check(soldier[1].slot == Shapes.SLOT_OWNER_FLAT and soldier[2].slot == Shapes.SLOT_SKIN and soldier[0].slot == Shapes.SLOT_SIDE_DARK, "AB9 strong infantry: owner torso, light head, dark legs")
-	var plain: Array = Shapes.parts(&"tank_usa", 1)[0].prims
-	var banded: Array = Shapes.parts(&"tank_usa", 1, Shapes.VARIANT_BAND)[0].prims
-	runner.check(banded.size() > plain.size() and banded.any(func(prim: Dictionary) -> bool: return prim.slot == Shapes.SLOT_OWNER_FLAT) and not plain.any(func(prim: Dictionary) -> bool: return prim.slot == Shapes.SLOT_OWNER_FLAT), "AB9 the band adds owner-slot stripes only when asked")
-	var damaged: Array = Shapes.parts(&"war_factory", 1, 1 | Shapes.VARIANT_BAND)[0].prims
-	runner.check(damaged.size() == Shapes.parts(&"war_factory", 1, 1)[0].prims.size() + 3, "AB9 a damaged factory keeps its damage shape and gets a band on each remaining quadrant")
+	return true
+
+func test_rejected_variants_leave_no_shape_hooks(runner) -> bool:
+	for role in [&"tank_usa", &"light_vehicle"]:
+		for bit in [1, 8]:
+			runner.check(Shapes.parts(role, 1, bit)[0].prims == Shapes.parts(role, 1)[0].prims and Shapes.parts(role, 1, bit).size() == Shapes.parts(role, 1).size() and Shapes.parts(role, 1, bit)[-1].prims == Shapes.parts(role, 1)[-1].prims, "AB10 variant bit %d does nothing to %s" % [bit, role])
 	return true
 
 func _distance(a: Color, b: Color) -> float:

@@ -9,7 +9,7 @@ const Skirmish = preload("res://scenes/skirmish.tscn")
 var scratch: String = "user://test-graphics-%d.cfg" % OS.get_process_id()
 
 func cases() -> Array[Callable]:
-	return [test_low_drops_flags, test_detail_by_zoom, test_pick_threshold, test_settings_round_trip_keeps_audio, test_corrupt_file_gives_unset, test_auto_pick_skipped_headless, test_menu_toggle_saves_and_emits, test_view_follows_quality_and_zoom, test_auto_pick_ignores_cold_frames, test_menu_label_follows_stored_quality, test_no_unused_outline_flag]
+	return [test_low_drops_flags, test_detail_by_zoom, test_pick_threshold, test_settings_round_trip_keeps_audio, test_corrupt_file_gives_unset, test_auto_pick_skipped_headless, test_menu_toggle_saves_and_emits, test_view_follows_quality_and_zoom, test_auto_pick_ignores_cold_frames, test_menu_label_follows_stored_quality, test_auto_pick_samples_tick_and_draw_time]
 
 func _begin() -> String:
 	var saved: String = AudioSettings.path
@@ -115,6 +115,8 @@ func test_auto_pick_ignores_cold_frames(runner) -> bool:
 	runner.check(main._auto_pending and GraphicsSettings.load_quality() == -1, "Q9 cold frames alone decide nothing")
 	for i in main.AUTO_FRAMES: main._auto_sample(2.0)
 	runner.check(not main._auto_pending and GraphicsSettings.load_quality() == GraphicsSettings.HIGH, "Q9 a fast machine keeps High despite slow cold frames")
+	for i in 20: main._auto_sample(20.0)
+	runner.check(main._auto_samples.size() == main.AUTO_FRAMES and GraphicsSettings.load_quality() == GraphicsSettings.HIGH, "Q9 a decided pick is not revisited by later frames")
 	main._auto_pending = true
 	main._auto_samples.clear()
 	main._auto_frame = 0
@@ -137,7 +139,21 @@ func test_menu_label_follows_stored_quality(runner) -> bool:
 	_end(saved)
 	return true
 
-func test_no_unused_outline_flag(runner) -> bool:
-	var flags: Dictionary = GraphicsSettings.new().get_script().get_script_constant_map()
-	runner.check(not flags.has("FLAG_OUTLINES") and not flags.has("FLAG_EFFECTS"), "Q11 no flag that nothing reads")
+func test_auto_pick_samples_tick_and_draw_time(runner) -> bool:
+	var saved := _begin()
+	var main = Skirmish.instantiate()
+	runner.root.add_child(main)
+	await runner.process_frame
+	runner.check(not main._view.time_draws, "Q12 no draw timing while nothing is being picked")
+	main._start_auto_pick(true)
+	runner.check(main._auto_pending and main._view.time_draws, "Q12 picking turns the draw timer on")
+	main._physics_process(0.016)
+	runner.check(main._auto_tick_usec > 0, "Q12 the tick time is accumulated")
+	main._auto_frame = main.AUTO_SKIP_FRAMES
+	main._auto_tick_usec = 3000
+	main._view.draw_usec = 2000
+	main._process(0.016)
+	runner.check(main._auto_samples == PackedFloat32Array([5.0]) and main._auto_tick_usec == 0 and main._view.draw_usec == 0, "Q12 a frame samples tick plus draw time, then resets both, got %s" % [main._auto_samples])
+	main.free()
+	_end(saved)
 	return true

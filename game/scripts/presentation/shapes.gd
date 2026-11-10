@@ -16,13 +16,8 @@ const SLOT_SKIN: int = 9
 
 const TANK_ROLES := {"usa_tank": &"tank_usa", "china_tank": &"tank_china_gatling", "frc_tank": &"tank_frc", "china_light_vehicle": &"tank_china"}
 const BUILDING_SUFFIXES := {"power_plant": &"power_plant", "factory": &"war_factory", "supply_center": &"supply_depot", "command_center": &"command_center", "barracks": &"barracks"}
-# Unit roles use variant 1 only when the A/B lab asks for it through WorldBatch.role_variants: longer tank hulls, a bigger scout gun, stronger infantry colour.
-const VARIANT_LAB_B := 1
-# Bit 3 is free in every role that uses it: pile variants use bits 0-2 and 4-11, damage stages bits 0-1.
-const VARIANT_BAND := 8
+# Infantry roles use this bit only when the A/B lab asks for it through WorldBatch.role_variants.
 const VARIANT_STRONG_COLOUR := 8
-const BAND_ROLES: Array[StringName] = [&"tank_usa", &"tank_china", &"tank_china_gatling", &"tank_frc", &"light_vehicle", &"collector_truck", &"bulldozer", &"default_vehicle", &"power_plant", &"war_factory", &"supply_depot", &"command_center", &"barracks", &"defence_usa", &"defence_china"]
-const LONG_HULL := Vector2(1.6, 1.3)
 const SUPPLY_STEPS: Array[int] = [1, 5, 15, 40]
 
 static var _parts_cache: Dictionary = {}
@@ -73,22 +68,8 @@ static func parts(role_name: StringName, detail: int, variant: int = 0) -> Array
 	var by_role: Dictionary = _parts_cache.get_or_add(role_name, {})
 	var key: int = detail | (variant << 2)
 	if not by_role.has(key):
-		var banded: bool = variant & VARIANT_BAND != 0 and BAND_ROLES.has(role_name)
-		var built: Array[Dictionary] = _build_parts(role_name, detail, variant & ~VARIANT_BAND if banded else variant)
-		by_role[key] = _with_band(built) if banded else built
+		by_role[key] = _build_parts(role_name, detail, variant)
 	return by_role[key]
-
-# Lab: a thin owner-coloured stripe around every body box, so the owner reads on walls and hull sides.
-static func _with_band(found: Array[Dictionary]) -> Array[Dictionary]:
-	if found.is_empty(): return found
-	var prims: Array = found[0].prims.duplicate()
-	for prim: Dictionary in found[0].prims:
-		var size: Vector3 = prim.size
-		if prim.type == &"box" and [SLOT_ROOF, SLOT_ROOF_DARK, SLOT_SIDE].has(prim.slot) and size.z >= 1.0:
-			var offset: Vector3 = prim.offset
-			prims.append(_prim(&"box", Vector3(offset.x, offset.y, offset.z + 0.4 * size.z), Vector3(size.x + 0.03, size.y + 0.03, maxf(0.5, 0.12 * size.z)), SLOT_OWNER_FLAT))
-	found[0] = _part(found[0].name, found[0].angle, prims)
-	return found
 
 static func _build_parts(role_name: StringName, detail: int, variant: int) -> Array[Dictionary]:
 	var found: Array[Dictionary] = []
@@ -103,13 +84,13 @@ static func _build_parts(role_name: StringName, detail: int, variant: int) -> Ar
 			found.append(_part(&"body", &"heading", [_prim(&"box", Vector3(-0.04, 0, 0), Vector3(0.56, 0.44, 2.5), SLOT_ROOF), _prim(&"box", Vector3(0.29, 0, 0), Vector3(0.1, 0.6, 2.5), SLOT_MACHINE)]))
 			found.append(_part(&"cab", &"heading", [_prim(&"box", Vector3(-0.1, 0, 2.5), Vector3(0.28, 0.32, 2), SLOT_ROOF_DARK)]))
 		&"tank_usa":
-			_append_tank(found, Vector2(0.75, 0.5), Vector3(0.4, 0.34, 1), 0.4, 0.0, false, variant)
+			_append_tank(found, Vector2(0.75, 0.5), Vector3(0.4, 0.34, 1), 0.4, 0.0, false)
 		&"tank_china":
-			_append_tank(found, Vector2(0.8, 0.6), Vector3(0.5, 0.4, 1), 0.45, 0.0, false, variant)
+			_append_tank(found, Vector2(0.8, 0.6), Vector3(0.5, 0.4, 1), 0.45, 0.0, false)
 		&"tank_china_gatling":
-			_append_tank(found, Vector2(0.8, 0.6), Vector3(0.45, 0.45, 1), 0.35, 0.0, true, variant)
+			_append_tank(found, Vector2(0.8, 0.6), Vector3(0.45, 0.45, 1), 0.35, 0.0, true)
 		&"tank_frc":
-			_append_tank(found, Vector2(0.7, 0.45), Vector3(0.34, 0.34, 1), 0.36, 0.055, false, variant)
+			_append_tank(found, Vector2(0.7, 0.45), Vector3(0.34, 0.34, 1), 0.36, 0.055, false)
 		&"power_plant":
 			found.append(_part(&"body", &"fixed", _slab(1.7, 3, variant) + _drums(variant)))
 		&"war_factory":
@@ -126,7 +107,7 @@ static func _build_parts(role_name: StringName, detail: int, variant: int) -> Ar
 		&"light_vehicle":
 			found.append(_part(&"body", &"heading", [_prim(&"box", Vector3.ZERO, Vector3(0.78, 0.42, 2.5), SLOT_ROOF)]))
 			found.append(_part(&"cab", &"heading", [_prim(&"box", Vector3(-0.08, 0, 2.5), Vector3(0.36, 0.36, 1.5), SLOT_ROOF_DARK)]))
-			found.append(_part(&"turret", &"turret", _light_gun(variant)))
+			found.append(_part(&"turret", &"turret", [_prim(&"box", Vector3(0, 0, 4), Vector3(0.12, 0.12, 0.5), SLOT_MACHINE), _prim(&"box", Vector3(0.17, 0, 4.1), Vector3(0.22, 0.06, 0.3), SLOT_MACHINE)]))
 		&"collector_truck":
 			found.append(_part(&"body", &"heading", [_prim(&"box", Vector3.ZERO, Vector3(0.84, 0.44, 2), SLOT_ROOF)]))
 			found.append(_part(&"cargo", &"heading", [_prim(&"box", Vector3(-0.12, 0, 2), Vector3(0.4, 0.32, 1.5), SLOT_MACHINE), _prim(&"box", Vector3(0.3, 0, 2), Vector3(0.22, 0.4, 2.5), SLOT_ROOF_DARK)]))
@@ -162,8 +143,7 @@ static func _build_parts(role_name: StringName, detail: int, variant: int) -> Ar
 	return found
 
 # Ground at Zero Hour's height to length ratio: tracks 1.5, deck 2 and turret 1 unit (10.5 px).
-static func _append_tank(found: Array[Dictionary], hull_size: Vector2, dome: Vector3, barrel: float, sideways: float, twin: bool, variant: int = 0) -> void:
-	var hull: Vector2 = hull_size * LONG_HULL if variant == VARIANT_LAB_B else hull_size
+static func _append_tank(found: Array[Dictionary], hull: Vector2, dome: Vector3, barrel: float, sideways: float, twin: bool) -> void:
 	var prims: Array = [_prim(&"box", Vector3.ZERO, Vector3(hull.x, hull.y - 0.2, 2), SLOT_ROOF_DARK)]
 	for lateral: float in [-1.0, 1.0]:
 		prims.append(_prim(&"box", Vector3(0, lateral * (hull.y / 2.0 - 0.05), 0), Vector3(hull.x - 0.04, 0.1, 1.5), SLOT_SIDE))
@@ -182,11 +162,6 @@ static func _soldier(variant: int = 0) -> Array:
 	if variant == VARIANT_STRONG_COLOUR:
 		return [_prim(&"cylinder", Vector3.ZERO, Vector3(0.13, 0.13, 1.8), SLOT_SIDE_DARK), _prim(&"cylinder", Vector3(0, 0, 1.8), Vector3(0.16, 0.16, 1.4), SLOT_OWNER_FLAT), _prim(&"cylinder", Vector3(0, 0, 3.2), Vector3(0.11, 0.11, 1.3), SLOT_SKIN)]
 	return [_prim(&"cylinder", Vector3.ZERO, Vector3(0.13, 0.13, 1.8), SLOT_ROOF_DARK), _prim(&"cylinder", Vector3(0, 0, 1.8), Vector3(0.16, 0.16, 1.4), SLOT_GLOW), _prim(&"cylinder", Vector3(0, 0, 3.2), Vector3(0.11, 0.11, 1.3), SLOT_MACHINE)]
-
-static func _light_gun(variant: int) -> Array:
-	if variant == VARIANT_LAB_B:
-		return [_prim(&"box", Vector3(0, 0, 4), Vector3(0.26, 0.26, 0.9), SLOT_MACHINE), _prim(&"box", Vector3(0.3, 0, 4.2), Vector3(0.45, 0.1, 0.5), SLOT_MACHINE)]
-	return [_prim(&"box", Vector3(0, 0, 4), Vector3(0.12, 0.12, 0.5), SLOT_MACHINE), _prim(&"box", Vector3(0.17, 0, 4.1), Vector3(0.22, 0.06, 0.3), SLOT_MACHINE)]
 
 # Four quadrants, so damage can knock one out and the roof gets fewer triangles.
 static func _slab(side: float, height: float, variant: int) -> Array:

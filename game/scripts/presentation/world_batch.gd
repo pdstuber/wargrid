@@ -32,8 +32,7 @@ var colors := PackedColorArray()
 var triangle_count: int = 0
 # Role -> variant bits OR-ed into the item's own; the A/B lab fills it, empty keeps every shape as it is.
 var role_variants: Dictionary = {}
-# Lab: true greys for vertical faces, and a brighter set of owner hues.
-var neutral_sides: bool = false
+# Lab: a brighter set of owner hues.
 var bright_owners: bool = false
 
 static var _top_lifts: Dictionary = {}
@@ -208,9 +207,9 @@ static func _body(role: StringName, detail: int, variant: int, bucket: int, turr
 # Cached on the merged body itself, so a dropped body drops its colours with it.
 func _mesh_colors(mesh: Dictionary, owner: int) -> PackedColorArray:
 	var by_owner: Dictionary = mesh.get_or_add("colors", {})
-	var key: int = owner + (1000 if neutral_sides else 0) + (2000 if bright_owners else 0)
+	var key: int = owner + (1000 if bright_owners else 0)
 	if not by_owner.has(key):
-		var palette: PackedColorArray = Palette.extended_colors(owner, neutral_sides, bright_owners)
+		var palette: PackedColorArray = Palette.extended_colors(owner, bright_owners)
 		var slots: PackedByteArray = mesh.slots
 		var built := PackedColorArray()
 		built.resize(slots.size())

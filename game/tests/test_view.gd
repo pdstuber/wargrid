@@ -16,7 +16,7 @@ const CombatFixture = preload("res://tests/combat_fixture.gd")
 const MovementWorkload = preload("res://scripts/debug/movement_workload.gd")
 
 func cases() -> Array[Callable]:
-	return [test_pick, test_pile_label_drawn_over_buildings, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_depth_order_matches_comparator,test_battery_shot_line,test_battery_target_line,test_building_label_has_no_kind_id,test_horde_marks,test_rebuild_laborer_unselectable, test_crate_marks_frc_only, test_passengers_not_pickable, test_terrain_redraws_only_when_map_changes, test_structures_redraw_only_when_they_change, test_small_pile_view, test_structures_redraw_when_a_pile_vanishes, test_pick_under_roof, test_structure_bodies_in_shared_list, test_building_health_bar_in_overlay_pass, test_health_bar_rule, test_health_color_ends, test_selection_is_ground_diamond, test_biome_change_redraws_terrain, test_grid_only_while_placing, test_chevron_placeholder, test_cues_draw_on_low_in_the_view, test_effects_age_per_tick_not_per_refresh, test_bodies_submitted_each_frame, test_quality_change_rebuilds, test_draw_timing_only_on_request, test_air_pick_box_follows_lift, test_pick_covers_drawn_body]
+	return [test_pick, test_pile_label_drawn_over_buildings, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_depth_order_matches_comparator,test_battery_shot_line,test_battery_target_line,test_building_label_has_no_kind_id,test_horde_marks,test_rebuild_laborer_unselectable, test_crate_marks_frc_only, test_passengers_not_pickable, test_terrain_redraws_only_when_map_changes, test_structures_redraw_only_when_they_change, test_small_pile_view, test_structures_redraw_when_a_pile_vanishes, test_pick_under_roof, test_structure_bodies_in_shared_list, test_building_health_bar_in_overlay_pass, test_health_bar_rule, test_health_color_ends, test_selection_is_ground_diamond, test_biome_change_redraws_terrain, test_grid_only_while_placing, test_chevron_placeholder, test_cues_draw_on_low_in_the_view, test_effects_age_per_tick_not_per_refresh, test_bodies_submitted_each_frame, test_quality_change_rebuilds, test_draw_timing_only_on_request, test_air_pick_box_follows_lift, test_pick_covers_drawn_body, test_death_point_falls_back_to_previous_tick, test_selected_battery_line_without_a_shot, test_kind_info_follows_air_kinds, test_custom_ground_colors_rearm_the_biome]
 
 func test_pick(runner) -> bool:
 	var view = View.new()
@@ -684,5 +684,49 @@ func test_pick_covers_drawn_body(runner) -> bool:
 			runner.check(view.pick_entity(top + Vector2(0, 1)) == id, "V16 %s heading %d: the top of the drawn body picks it (%s)" % [kind, quarter, top])
 			runner.check(view.pick_entity(bottom + Vector2(0, -1)) == id, "V16 %s heading %d: the bottom of the drawn body picks it (%s)" % [kind, quarter, bottom])
 		sim.remove_object(id)
+	view.free()
+	return true
+
+func test_death_point_falls_back_to_previous_tick(runner) -> bool:
+	var sim = Fixture.make_world()
+	var id: int = sim.spawn(1, Vector2(6.5, 6.5), "usa_tank")
+	var view = View.new()
+	view.set_state(sim.snapshot(), [])
+	runner.check(not view._last_points.has(id), "V30 an unshot unit has no remembered point")
+	sim.remove_object(id)
+	var gone: Dictionary = sim.snapshot()
+	gone.combat_events = [{"type": "death", "tick": 1, "object_id": id}]
+	view.set_state(gone, [])
+	runner.check(view._last_points.get(id) == Iso.world_to_plane(Vector2(6.5, 6.5)) + Vector2(0, -8), "V30 a death keeps the point from the previous tick")
+	view.free()
+	return true
+
+func test_selected_battery_line_without_a_shot(runner) -> bool:
+	var view = View.new()
+	var world: Array = _battery_world()
+	world[0].step()
+	var state: Dictionary = world[0].snapshot()
+	state.combat_events = []
+	view.set_state(state, [world[1]])
+	var lines: Array = view.battery_target_lines()
+	runner.check(lines.size() == 1 and view._last_points.has(world[2]), "V31 a selected battery with a target draws its line on a tick without a shot")
+	view.free()
+	return true
+
+func test_kind_info_follows_air_kinds(runner) -> bool:
+	var saved: Dictionary = Registry.air_kinds
+	runner.check(WorldBatch.kind_info("usa_tank")[1] == WorldBatch.LAYER_GROUND, "V32 a tank is ground")
+	Registry.air_kinds = {"usa_tank": true}
+	runner.check(WorldBatch.kind_info("usa_tank")[1] == WorldBatch.LAYER_AIR, "V32 swapping air_kinds drops the cached layer")
+	Registry.air_kinds = saved
+	runner.check(WorldBatch.kind_info("usa_tank")[1] == WorldBatch.LAYER_GROUND, "V32 swapping back restores it")
+	return true
+
+func test_custom_ground_colors_rearm_the_biome(runner) -> bool:
+	var view = View.new()
+	view.set_biome(1)
+	view.set_ground_colors({"ground": Color.RED, "cliff_top": Color.RED, "cliff_side": Color.RED, "water": Color.RED})
+	view.set_biome(1)
+	runner.check(view._terrain._colors.ground == Palette.ground(1).ground, "V33 set_biome applies again after custom ground colours")
 	view.free()
 	return true

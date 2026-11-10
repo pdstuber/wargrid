@@ -101,10 +101,6 @@ func set_role_variants(variants: Dictionary) -> void:
 	_batch.role_variants = variants
 	_rebuild_batch()
 
-func set_neutral_sides(neutral: bool) -> void:
-	_batch.neutral_sides = neutral
-	_rebuild_batch()
-
 func set_bright_owners(bright: bool) -> void:
 	_batch.bright_owners = bright
 	_rebuild_batch()

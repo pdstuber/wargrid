@@ -9,7 +9,7 @@ const Fight = preload("res://scripts/lab/lab_fight.gd")
 
 const QUESTIONS: Array[StringName] = [
 	&"biome", &"fog", &"shots", &"signature", &"shake", &"hit_flash", &"wrecks",
-	&"ground", &"body_size", &"infantry_pick", &"horde_mark", &"interpolation", &"light_vehicle_gun", &"infantry_colour", &"owner_contrast", &"owner_palette", &"ground_tone", &"sand_tone",
+	&"ground", &"infantry_pick", &"horde_mark", &"interpolation", &"infantry_colour", &"owner_palette", &"ground_tone", &"sand_tone",
 ]
 const LABELS := {
 	&"biome": ["dark ground (today)", "sand ground"],
@@ -20,13 +20,10 @@ const LABELS := {
 	&"hit_flash": ["no hit flash (today)", "a light flash on the unit that is hit"],
 	&"wrecks": ["wreck stays: tanks 20 s, light vehicles 8 s", "short wreck, 3 s"],
 	&"ground": ["flat ground (today)", "slight per-cell variation"],
-	&"body_size": ["one-cell hulls (today)", "Zero Hour length tanks, about 1.2 cells (overlap at one-cell spacing)"],
 	&"infantry_pick": ["click box fits the body (today)", "click box 36 px wide (0.56 cell, Zero Hour selection cylinder; today 23 px), body unchanged; click soldiers to test"],
 	&"horde_mark": ["white diamond (today)", "flat ground ring under the unit"],
 	&"interpolation": ["positions jump per tick (today)", "drawn between the last two ticks"],
-	&"light_vehicle_gun": ["small gun (today)", "bigger, more visible gun"],
 	&"infantry_colour": ["pale owner colour (today)", "torso in the full owner colour, light head, dark legs"],
-	&"owner_contrast": ["blue-grey side faces (today)", "neutral grey sides plus an owner-coloured band on hulls and walls"],
 	&"owner_palette": ["today's owner colours", "brighter, more saturated owner colours"],
 	&"ground_tone": ["dark ground #575C55 (today)", "lighter, warmer ground #7B7566 (dark biome only)"],
 	&"sand_tone": ["#7B7566", "#8A7D62", "#998559", "#A88E5C", "#B29763", "#C4A568"],
@@ -92,7 +89,6 @@ func apply(view: Node2D, camera: Camera2D) -> void:
 		_applied = [_variants.duplicate(), focus]
 		if focus == &"sand_tone": view.set_ground_colors(sand_colors())
 		else: view.set_biome(1 if is_b(&"biome") else (2 if is_b(&"ground_tone") else 0))
-		view.set_neutral_sides(is_b(&"owner_contrast"))
 		view.set_bright_owners(is_b(&"owner_palette"))
 		view.set_ground_variation(is_b(&"ground"))
 		view.set_wide_infantry_pick(is_b(&"infantry_pick"))
@@ -102,13 +98,8 @@ func apply(view: Node2D, camera: Camera2D) -> void:
 
 func _role_variants() -> Dictionary:
 	var roles := {}
-	if is_b(&"body_size"):
-		for role: StringName in Shapes.TANK_ROLES.values(): roles[role] = Shapes.VARIANT_LAB_B
-	if is_b(&"light_vehicle_gun"): roles[&"light_vehicle"] = Shapes.VARIANT_LAB_B
 	if is_b(&"infantry_colour"):
 		for role: StringName in WorldBatch.INFANTRY_ROLES: roles[role] = Shapes.VARIANT_STRONG_COLOUR
-	if is_b(&"owner_contrast"):
-		for role: StringName in Shapes.BAND_ROLES: roles[role] = roles.get(role, 0) | Shapes.VARIANT_BAND
 	return roles
 
 # One call per simulation tick with that tick's events; events carry no positions, so anchors come from the objects.
@@ -235,7 +226,7 @@ func _draw_wreck(canvas: CanvasItem, wreck: Dictionary) -> void:
 	canvas.draw_colored_polygon(_diamond(at + Vector2(0, -4.0 * sink), 7.0 * sink), Color(WRECK_COLOR.lightened(0.15), 0.9 * sink))
 
 func _draw_ring(canvas: CanvasItem, ring: Dictionary) -> void:
-	var colour: Color = Palette.extended_colors(opponent_owner if ring.owner == 2 else ring.owner, false, is_b(&"owner_palette"))[0]
+	var colour: Color = Palette.extended_colors(opponent_owner if ring.owner == 2 else ring.owner, is_b(&"owner_palette"))[0]
 	var at: Vector2 = Iso.world_to_plane(ring.anchor)
 	var outline := PackedVector2Array()
 	for i in 17: outline.append(at + Vector2(cos(TAU * i / 16.0) * RING_RADIUS.x, sin(TAU * i / 16.0) * RING_RADIUS.y))

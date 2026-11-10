@@ -24,8 +24,7 @@ static var match_seed: int = 0
 func _ready() -> void:
 	super._ready()
 	_view.set_visuals(_visuals)
-	_auto_pending = GraphicsSettings.load_quality() == -1 and DisplayServer.get_name() != "headless"
-	_view.time_draws = _auto_pending
+	_start_auto_pick(GraphicsSettings.load_quality() == -1 and DisplayServer.get_name() != "headless")
 	$HUD/Restart.pressed.connect(_restart)
 	var music := MusicPlayer.new()
 	add_child(music)
@@ -74,13 +73,17 @@ func _process(delta: float) -> void:
 
 # shortcut: measured at match start on a nearly empty map, so it only catches very slow machines; re-check under load if playtesters report a slow High.
 # The first frames hold scene load and lazy bakes, so they are skipped.
+func _start_auto_pick(enabled: bool) -> void:
+	_auto_pending = enabled
+	_view.time_draws = enabled
+
 func _auto_sample(frame_ms: float) -> void:
+	if not _auto_pending: return
 	_auto_frame += 1
 	if _auto_frame <= AUTO_SKIP_FRAMES: return
 	_auto_samples.append(frame_ms)
 	if _auto_samples.size() < AUTO_FRAMES: return
-	_auto_pending = false
-	_view.time_draws = false
+	_start_auto_pick(false)
 	_auto_samples.sort()
 	var quality: int = GraphicsSettings.pick(_auto_samples[int(AUTO_FRAMES * 0.95)])
 	GraphicsSettings.save_quality(quality)
