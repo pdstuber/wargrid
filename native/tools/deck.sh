@@ -18,7 +18,7 @@ push)
 	;;
 run)
 	[ "$#" -ge 3 ] || { echo "usage: deck.sh run LABEL QUERY TIMEOUT [noiso]" >&2; exit 2; }
-	deck sh -s -- "$dir" "$1" "$2" "$3" "$4" <<'REMOTE'
+	deck sh -s -- "$dir" "$1" "'$2'" "$3" "$4" <<'REMOTE'
 dir=$1; label=$2; query=$3; limit=$4; noiso=$5
 root=$HOME/$dir/$label
 port=8061
