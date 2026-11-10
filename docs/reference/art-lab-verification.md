@@ -1,12 +1,12 @@
-Resume record (updated 2026-11-10, Task 9 A/B lab built)
-Branch / base commit / working-tree state: spike-art-lab / 4d6b764 / gate 2 fix changes uncommitted (coordinator commits)
-Last green task / next incomplete task: Task 9 (lab, 17 questions, click page) / Task 9 Step 5 (A/B window session, coordinator) then Task 10
+Resume record (updated 2026-11-10, Task 10 Steps 1-2 headless done)
+Branch / base commit / working-tree state: spike-art-lab / 8f8a80e / Task 10 changes uncommitted (coordinator commits)
+Last green task / next incomplete task: Task 10 Steps 1-2 headless / Task 10 rendered rerun (coordinator, needs the user's OK), then Step 3 reviews
 Changed paths since last commit: game/scripts/presentation/{shapes,shape_bake,palette,world_batch,world_view,visual_director,graphics_settings,pause_menu}.gd, game/scripts/{skirmish_main,debug/movement_benchmark}.gd, game/tests/test_{shapes,world_batch,view,visual,graphics_settings,benchmark}.gd, docs/reference/{art-lab-verification,performance}.md, art-lab design and plan (wording correction), game/scripts/presentation/{world_batch,world_view}.gd, game/tests/test_world_batch.gd (speed-ups), game/scripts/presentation/{shapes,shape_bake,palette,world_batch,world_view}.gd, game/tests/test_{shapes,shape_audit,view,world_batch}.gd (shape audit fixes)
-Last command / cases / checks / failures / exit / marker: `sh tools/run_tests.sh` / 703 cases / 139492 checks / 0 failures / exit 0 / TESTS PASSED 139492; `sh tools/run_lint.sh` exit 0; `sh tools/run_warnings.sh` 132 files exit 0
-Known red case or blocker: none. Watch: headless presentation Low 0.857-0.901 / High 0.988-1.008 ms (9234 / 11036 triangles) vs 0.91 plumbing dev budget; horde tick-frame and worst High runs of open/dense still EXCEEDED (performance spike)
+Last command / cases / checks / failures / exit / marker: `sh tools/run_tests.sh` / 704 cases / 139534 checks / 0 failures / exit 0 / TESTS PASSED 139534 (worktree, uncommitted over 8f8a80e); `sh tools/run_lint.sh` exit 0; `sh tools/run_warnings.sh` 137 files exit 0; `sh tools/run_benchmark.sh` exit 0
+Known red case or blocker: none. Pending: rendered rerun on this final tree (FRC turret fix and everything since Task 8 changed presentation); headline numbers in performance.md are still the Task 8 / shape-audit rows; budgets still EXCEEDED where recorded
 Approved decisions, pre-authorizations used, deferred gates: plan approval 2026-11-10 covers rendered windows of Tasks 1, 3, 8 only; ceilings fixed 50/50/50/60; user rulings at stop gate 2 in ~/projects/wargrid-art-work/gate2-review.md (budget option 1; infantry 16 px cap; 0.8-cell hulls a compromise; infantry narrower, 2026-11-10)
 Usage so far (python3 tools/session_usage.py <session files>): not measured
-Next exact action: coordinator asks the user for the A/B window session (`sh tools/run_game.sh res://scenes/art_lab.tscn`, click page served from ~/projects/wargrid-art-work/ab on port 8071, results in ab-results)
+Next exact action: coordinator asks the user for a quiet machine and the OK for a rendered rerun (`sh tools/run_game.sh res://scenes/movement_benchmark.tscn`, four layouts plus zoom 1.0, n >= 3), then the Opus gate review (fresh context) and `/ponytail-review` on `main..spike-art-lab`; then STOP (merge, push, deploy are the user's)
 
 ## Evidence rows (append-only)
 
@@ -162,3 +162,36 @@ Inputs: ~/projects/wargrid-art-work/shape-audit.md and its rulings in gate2-revi
 - Colour values (stated for the user): owner_contrast B sides #4A4D50 / #333538, machinery #8F9296 (true greys; test AB8 checks each is more than 0.15 RGB distance from all 16 owner colours, red #B04A3A included) plus an owner-flat stripe 0.5 units tall at 40 % wall height; infantry_colour B torso owner colour on all faces, head #D8C8AE, legs #263842; owner_palette B #2F7BFF #FF2F45 #14D45A #FFE100 #FF7A00 #A040FF #00D8E8 #FF4FB0 (pairwise RGB distance above 0.25, above 0.12 from health green/yellow/red and neutral #F7C871 per AB8; green #14D45A and yellow #FFE100 are the closest to the health bar colours, judge them on screen); ground_tone B ground #7B7566, cliff top #968F7C, cliff side #4A463C (A is #575C55).
 - Per-tick cost (t7_time.gd, 3 runs, load 2.4-2.8, no WoW): Low 0.866-0.875 ms (9234 triangles), High 0.991-1.004 ms (11036 triangles): same as before the task (0.857-0.901 / 0.988-1.008), the new per-object work is one empty-dictionary test and an integer key. Still over the 0.91 ms plumbing dev budget at High (EXCEEDED, unchanged).
 - Not checked: any window or Firefox (Step 5 is the coordinator's); how any variant looks; draw errors are only caught as crashes or test failures (headless frames ran every question x variant x quality: 68 combinations, one body submission each).
+
+### 2026-11-10 Task 10 Steps 1-2 (headless): answers recorded, FRC turret pivot fix (tree: worktree, uncommitted over 8f8a80e)
+
+A/B click results (`~/projects/wargrid-art-work/ab-results/web-20261110-155052.log`, 17 answers, plus sand tone in session; full wording in [world questions](../questions/next-m75-art-world.md), blueprint §7 M7.5):
+
+| # | Question | Answer |
+|---|---|---|
+| 1 | biome (world Q1) | B sand ground; tone D `#A88E5C` (C, D, E fine) |
+| 2 | fog (Q6) | A half-brightness darkening |
+| 3 | shots (Q7) | B bright dash |
+| 4 | signature (Q9) | A none on building/vehicle deaths (special weapons still open) |
+| 5 | shake (Q10) | A none (special-weapon shake still open) |
+| 6 | hit_flash (Q11) | A none |
+| 7 | wrecks (Q13) | A stay 20 s / 8 s |
+| 8 | ground | B slight variation |
+| 9 | body_size | A one-cell hulls |
+| 10 | infantry_pick | B wider click box |
+| 11 | horde_mark | B ground ring |
+| 12 | interpolation | B ("way smoother") |
+| 13 | light_vehicle_gun | A small |
+| 14 | infantry_colour | B full-colour torso |
+| 15 | owner_contrast | A blue-grey sides |
+| 16 | owner_palette | click A; both liked; today's default, bright set as opt-in "Neon mode" |
+| 17 | ground_tone | B `#7B7566` |
+| 18 | sand_tone | C, D, E fine; default D |
+
+- Not recorded as answers: colour harmony proposals (warm ground/cool units, yellow owner vs sand, warm shadows) stay open.
+- Rejected lab variants not deleted: the A side of most questions is today's production behaviour, the setters stay by rule, and the lab files (`game/scripts/lab/`, `art_lab.tscn`, `test_art_lab.gd`) are dropped wholesale if the user merges the foundation without them; deleting would only churn `test_art_lab.gd`. Production defaults unchanged (rest of M7.5).
+- FRC tank turret fix. Red (assertions, `~/projects/wargrid-art-work/t10-red.log`): new `SH9b` (turret centre sits at the hull-frame offset point for 4 hull x 4 turret buckets) failed 15 checks with `Bake.mesh` taking but ignoring the new hull bucket; SH9 expected offset changed 0.075 -> 0.055 and failed too. Green: parts get a `pivot` (hull frame), turret prims are relative to it, `Bake.mesh(..., hull_bucket)` rotates the pivot by the hull heading and the prims by the turret heading (hull bucket only enters the cache key for parts with a pivot, so other turrets bake as before); `WorldBatch._body` and the audit test pass the hull bucket. FRC dome 0.3 -> 0.34, barrel 0.3 -> 0.36, sideways offset 0.075 -> 0.055 so the dome stays on the 0.45-wide hull (0.055 + 0.17 = 0.225); SA1 turret reach rule passes unchanged.
+- **WB18 golden re-recorded, intended look change, not a loosening:** `d0067244...` -> `598c4b03...` (52556 triangles, unchanged count).
+- Final-tree headless (worktree, uncommitted over 8f8a80e): full suite 704 cases, 139534 checks, 0 failures, exit 0, TESTS PASSED 139534; lint exit 0 ("no problems found"); warnings 137 files exit 0; `sh tools/run_benchmark.sh` exit 0 (all BUDGET/COMBAT/LOCKSTEP PASS lines, including the accepted open/dense/hordes300 simulation ceilings; load 2.2-2.8, no WoW). Isolation command prints only `game/tests/run_tests.gd:6`; `git diff main -- game/scripts/simulation game/scripts/net` is empty. Link check of changed docs (blueprint, world questions, verification, session notes, performance): 0 missing local targets.
+- Per-tick cost not re-timed: only the baking path changed (per body-cache miss, one `Shapes.parts` lookup for the pivot check); the per-tick transform path is unchanged.
+- Pending (coordinator): rendered rerun on this tree; Opus gate review; `/ponytail-review`.

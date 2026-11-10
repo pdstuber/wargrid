@@ -6,13 +6,13 @@ const Bake = preload("res://scripts/presentation/shape_bake.gd")
 const Palette = preload("res://scripts/presentation/palette.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 const Definitions = preload("res://scripts/simulation/definitions/definitions.gd")
-const TURRET_OFFSET := {&"tank_frc": 0.075}
+const TURRET_OFFSET := {&"tank_frc": 0.055}
 const TANK_ROLES: Array[StringName] = [&"tank_usa", &"tank_china", &"tank_china_gatling", &"tank_frc"]
 const Z: float = 3.5
 const PRIM_SLOTS: Array[int] = [Shapes.SLOT_ROOF, Shapes.SLOT_ROOF_DARK, Shapes.SLOT_SIDE, Shapes.SLOT_SIDE_DARK, Shapes.SLOT_MACHINE, Shapes.SLOT_GLOW, Shapes.SLOT_SMOKE]
 
 func cases() -> Array[Callable]:
-	return [test_bucket_wraps, test_box_top_face_on_top, test_bake_is_cached, test_unknown_kind_gets_default_role, test_owner_palette_eight, test_lab_roles_mapped, test_damage_stage_changes_geometry, test_turret_pivot_on_hull_top, test_no_kind_uses_default_role, test_roster_shares_slots, test_unit_heights, test_hulls_fit_one_cell, test_tracks_deck_and_cannon, test_neutral_faces, test_infantry_narrow_with_head, test_prims_sorted_per_heading, test_cylinder_segments_by_detail, test_back_faces_not_baked]
+	return [test_bucket_wraps, test_box_top_face_on_top, test_bake_is_cached, test_unknown_kind_gets_default_role, test_owner_palette_eight, test_lab_roles_mapped, test_damage_stage_changes_geometry, test_turret_pivot_on_hull_top, test_offset_turret_pivot_follows_hull, test_no_kind_uses_default_role, test_roster_shares_slots, test_unit_heights, test_hulls_fit_one_cell, test_tracks_deck_and_cannon, test_neutral_faces, test_infantry_narrow_with_head, test_prims_sorted_per_heading, test_cylinder_segments_by_detail, test_back_faces_not_baked]
 
 func test_bucket_wraps(runner) -> bool:
 	runner.check(Bake.bucket(0.0) == 0, "SH1 zero")
@@ -112,6 +112,21 @@ func test_turret_pivot_on_hull_top(runner) -> bool:
 			var centre: Vector2 = Iso.plane_to_world(sum / maxf(n, 1))
 			var expected: float = TURRET_OFFSET.get(role, 0.0)
 			runner.check(n > 0 and absf(centre.length() - expected) <= 0.02, "SH9 %s bucket %d turret turns about the hull centre (offset %.2f)" % [role, bucket, expected])
+	return true
+
+func test_offset_turret_pivot_follows_hull(runner) -> bool:
+	for hull_bucket in [0, 9, 16, 40]:
+		for bucket in [0, 5, 21, 50]:
+			var mesh: Dictionary = Bake.mesh(&"tank_frc", 1, bucket, 2, 0, hull_bucket)
+			var sum := Vector2.ZERO
+			var n: int = 0
+			for i in mesh.points.size():
+				if mesh.slots[i] != Shapes.SLOT_ROOF: continue
+				sum += Vector2(mesh.points[i].x, mesh.points[i].y + mesh.lifts[i])
+				n += 1
+			var centre: Vector2 = Iso.plane_to_world(sum / maxf(n, 1))
+			var expected: Vector2 = Vector2(0, 0.055).rotated(hull_bucket * TAU / Shapes.HEADING_BUCKETS)
+			runner.check(n > 0 and centre.distance_to(expected) <= 0.02, "SH9b frc turret at hull %d aims %d sits on the hull's offset point (got %s want %s)" % [hull_bucket, bucket, centre, expected])
 	return true
 
 func test_no_kind_uses_default_role(runner) -> bool:

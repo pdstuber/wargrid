@@ -421,3 +421,7 @@ Rendered: `sh tools/run_game.sh res://scenes/movement_benchmark.tscn [-- args]`,
 ### Correction to the design and plan wording
 
 The design (web-measurement bullet) and plan Task 8 Step 4 said to compare the web row with "budget x F" / "3.04 x 5.5". F is the ratio target / Mac editor, so the 16.7 ms target budget is compared with Deck numbers, and a Mac number is compared with the 3.04 ms dev budget after dividing by the Mac Firefox / editor ratio (corrected 2026-11-10 in both documents).
+
+### Art lab final tree, headless (2026-11-10, worktree uncommitted over 8f8a80e)
+
+`sh tools/run_benchmark.sh` exit 0, all budget lines PASS as before (simulation only; presentation is not in it). Rendered rerun on the final tree: **pending** (coordinator, needs a quiet machine); the EXCEEDED rows above stand until it. No budget, ceiling or label changed.

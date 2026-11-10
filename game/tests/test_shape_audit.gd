@@ -80,7 +80,7 @@ func _triangles(role: StringName, detail: int, variant: int, bucket: int, turret
 	var found: Array[Dictionary] = []
 	var specs: Array[Dictionary] = Shapes.parts(role, detail, variant)
 	for part in specs.size():
-		var mesh: Dictionary = Bake.mesh(role, part, turret_bucket if specs[part].angle == &"turret" else bucket, detail, variant)
+		var mesh: Dictionary = Bake.mesh(role, part, turret_bucket if specs[part].angle == &"turret" else bucket, detail, variant, bucket)
 		var world: PackedVector2Array = _world(mesh)
 		for i in range(0, mesh.points.size(), 3):
 			found.append({"part": part, "slot": mesh.slots[i], "p": [mesh.points[i], mesh.points[i + 1], mesh.points[i + 2]], "d": [world[i].x + world[i].y, world[i + 1].x + world[i + 1].y, world[i + 2].x + world[i + 2].y]})

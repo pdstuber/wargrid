@@ -13,19 +13,21 @@ static var _cache: Dictionary = {}
 static func bucket(angle: float) -> int:
 	return posmod(roundi(angle / TAU * Shapes.HEADING_BUCKETS), Shapes.HEADING_BUCKETS)
 
-static func mesh(role: StringName, part: int, bucket_index: int, detail: int, variant: int = 0) -> Dictionary:
+static func mesh(role: StringName, part: int, bucket_index: int, detail: int, variant: int = 0, hull_bucket: int = -1) -> Dictionary:
 	assert(variant < MAX_VARIANT)
 	var by_role: Dictionary = _cache.get_or_add(role, {})
-	var key: int = variant | (detail << 12) | (bucket_index << 14) | (part << 20)
+	var hull: int = hull_bucket if hull_bucket >= 0 and Shapes.parts(role, detail, variant)[part].pivot != Vector2.ZERO else bucket_index
+	var key: int = variant | (detail << 12) | (bucket_index << 14) | (part << 20) | (hull << 26)
 	if not by_role.has(key):
-		by_role[key] = _bake(role, part, bucket_index, detail, variant)
+		by_role[key] = _bake(role, part, bucket_index, detail, variant, hull)
 		bake_count += 1
 	return by_role[key]
 
-static func _bake(role: StringName, part: int, bucket_index: int, detail: int, variant: int) -> Dictionary:
+static func _bake(role: StringName, part: int, bucket_index: int, detail: int, variant: int, hull_bucket: int) -> Dictionary:
 	var out := {"points": PackedVector2Array(), "slots": PackedByteArray(), "lifts": PackedFloat32Array()}
 	var spec: Dictionary = Shapes.parts(role, detail, variant)[part]
 	var angle: float = 0.0 if spec.angle == &"fixed" else bucket_index * TAU / Shapes.HEADING_BUCKETS
+	var centre: Vector2 = spec.pivot.rotated(hull_bucket * TAU / Shapes.HEADING_BUCKETS)
 	for prim: Dictionary in _back_to_front(spec.prims, angle):
 		var size: Vector3 = prim.size
 		var corners := PackedVector2Array()
@@ -40,7 +42,7 @@ static func _bake(role: StringName, part: int, bucket_index: int, detail: int, v
 		var offset: Vector3 = prim.offset
 		var ring := PackedVector2Array()
 		for corner in corners:
-			ring.append((Vector2(offset.x, offset.y) + corner).rotated(angle))
+			ring.append(centre + (Vector2(offset.x, offset.y) + corner).rotated(angle))
 		_append_prim(out, ring, offset.z * Z_SCALE, size.z * Z_SCALE, prim.slot)
 	return out
 

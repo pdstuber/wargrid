@@ -109,7 +109,7 @@ static func _build_parts(role_name: StringName, detail: int, variant: int) -> Ar
 		&"tank_china_gatling":
 			_append_tank(found, Vector2(0.8, 0.6), Vector3(0.45, 0.45, 1), 0.35, 0.0, true, variant)
 		&"tank_frc":
-			_append_tank(found, Vector2(0.7, 0.45), Vector3(0.3, 0.3, 1), 0.3, 0.075, false, variant)
+			_append_tank(found, Vector2(0.7, 0.45), Vector3(0.34, 0.34, 1), 0.36, 0.055, false, variant)
 		&"power_plant":
 			found.append(_part(&"body", &"fixed", _slab(1.7, 3, variant) + _drums(variant)))
 		&"war_factory":
@@ -168,14 +168,14 @@ static func _append_tank(found: Array[Dictionary], hull_size: Vector2, dome: Vec
 	for lateral: float in [-1.0, 1.0]:
 		prims.append(_prim(&"box", Vector3(0, lateral * (hull.y / 2.0 - 0.05), 0), Vector3(hull.x - 0.04, 0.1, 1.5), SLOT_SIDE))
 	found.append(_part(&"body", &"heading", prims))
-	var turret: Array = [_prim(&"box", Vector3(0, sideways, 2), dome, SLOT_ROOF)]
+	var turret: Array = [_prim(&"box", Vector3(0, 0, 2), dome, SLOT_ROOF)]
 	var reach: float = dome.x / 2.0 + barrel / 2.0
 	if twin:
 		for lateral: float in [-1.0, 1.0]:
-			turret.append(_prim(&"box", Vector3(reach, sideways + lateral * 0.08, 2.2), Vector3(barrel, 0.07, 0.6), SLOT_MACHINE))
+			turret.append(_prim(&"box", Vector3(reach, lateral * 0.08, 2.2), Vector3(barrel, 0.07, 0.6), SLOT_MACHINE))
 	else:
-		turret.append(_prim(&"box", Vector3(reach, sideways, 2.2), Vector3(barrel, 0.12, 0.7), SLOT_MACHINE))
-	found.append(_part(&"turret", &"turret", turret))
+		turret.append(_prim(&"box", Vector3(reach, 0, 2.2), Vector3(barrel, 0.12, 0.7), SLOT_MACHINE))
+	found.append(_part(&"turret", &"turret", turret, Vector2(0, sideways)))
 
 # 0.16 cell wide, 4.5 units tall: owner legs and torso, light head.
 static func _soldier(variant: int = 0) -> Array:
@@ -225,8 +225,9 @@ static func _pile(variant: int) -> Array:
 			prims.append(_prim(&"box", Vector3(at.x * footprint.x, at.y * footprint.y, 0.5 + spot[1]), Vector3(crate, crate, rise), SLOT_ROOF))
 	return prims
 
-static func _part(part_name: StringName, angle: StringName, prims: Array) -> Dictionary:
-	return {"name": part_name, "angle": angle, "prims": prims}
+# pivot: where a turret part turns, in the hull frame; its prims are relative to it.
+static func _part(part_name: StringName, angle: StringName, prims: Array, pivot := Vector2.ZERO) -> Dictionary:
+	return {"name": part_name, "angle": angle, "prims": prims, "pivot": pivot}
 
 static func _prim(type: StringName, offset: Vector3, size: Vector3, slot: int) -> Dictionary:
 	return {"type": type, "offset": offset, "size": size, "slot": slot}

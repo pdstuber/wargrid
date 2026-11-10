@@ -15,6 +15,7 @@ Sources as in [next-m75-art-look.md](next-m75-art-look.md). Starting point, not 
 Q1. Which ground look does each map get? **A/B**
    a) Desert for all three maps for now (blueprint §2 "desert maps initially")   b) One biome per map, written into the map file (for example Ashfall ash, Dry Wells desert)   c) Read the biome from the source map's textures in the converter
    Recommendation: b, because it is one field per map, the simulation ignores it, and three maps already give three moods. Why it matters: decides if map files gain a presentation field.
+   **Answered 2026-11-10 (in-game A/B): B, sand ground; tone D `#A88E5C` (steps C `#998559`, D, E `#B29763` all fine; A, B, F not).** The lab compared dark ground against sand, not the map-by-map options a-c, so how the biome reaches map files stays open; the dark biome's lighter, warmer tone (#7B7566) also won its own A/B (question 17).
 
 Q2. How should cliffs look? **A/B**
    a) Raised blocks at the map's real heights   b) A low raised step with a lit top and dark side, low enough never to hide a unit   c) Flat, darker cells (today)
@@ -39,10 +40,12 @@ Q5. When is the cell grid shown?
 Q6. How should fogged areas look (M7.9)? **A/B**
    a) Darkened to about half brightness — ZH default (gamedata.ini:444-447)   b) A grey veil: colour drained, brightness kept   c) Slightly darker and colour drained
    Recommendation: c, because half brightness on muted ground nearly hides the map you were promised as revealed, while drained colour still says "not seen now". Why it matters: owner colours of frozen enemy buildings must still read.
+   **Answered 2026-11-10 (in-game A/B): A, darkened to half brightness (the Zero Hour default).** Re-check once the ground is sand; the lab fog sat on dark and sand ground alike.
 
 Q7. How should a travelling shell or rocket look? **A/B**
    a) A short bright dash flying to the target   b) A small dot with a fading trail   c) No visible shell, only muzzle flash and impact
    Recommendation: a, because a dash shows direction at a glance and costs one triangle pair; rifles stay an instant streak, as in ZH (weapon.ini:729-736). Why it matters: an art lab run before batch A shows today's instant shots only.
+   **Answered 2026-11-10 (in-game A/B): B, a short bright dash flies to the target (option a here).**
 
 Q8. What happens when an infantry soldier dies?
    a) The body lies about 3 s, then fades, gone at 8 s — ZH default (americainfantry.ini:960-966)   b) Falls and fades within about 2 s   c) Vanishes at once with a small flash
@@ -52,14 +55,17 @@ Q8. What happens when an infantry soldier dies?
 Q9. Which events get the big "signature" effect (larger core and expanding rings)? **A/B**
    a) Only special weapons (Nuke Cannon, Scud and later superweapons)   b) Special weapons and building deaths   c) Also every vehicle death
    Recommendation: b, because losing a building is a big moment and rare; vehicle deaths are routine. Why it matters: interview Q7 keeps big effects rare.
+   **Answered 2026-11-10 (in-game A/B): A, no signature effect on building and vehicle deaths (option a: only special weapons).** The lab fight had no special weapon, so how a special-weapon signature looks stays open.
 
 Q10. Should the camera shake? **A/B**
    a) Yes, graded by explosion size, often — ZH default (fxlist.ini, 145 shakes)   b) Only for signature explosions on screen, small   c) Never (art bible)
    Recommendation: b, because a little shake sells the rare big hits while constant shaking in a 3v3 fight tires the eyes. Why it matters: decides how "punchy" (interview Q4) applies to the camera.
+   **Answered 2026-11-10 (in-game A/B): A, no shake (option c here). Open: shake for special-weapon explosions was not shown.**
 
 Q11. Should a unit flash briefly when it is hit? **A/B**
    a) Yes, a one-tick light flash on the hull   b) No, the hit effect at the target is enough
    Recommendation: a, because it shows which unit in a crowd is taking damage. Why it matters: one extra state per unit.
+   **Answered 2026-11-10 (in-game A/B): A, no hit flash (option b here).**
 
 Q12. Should players get an option to show allies in one colour and enemies in another?
    a) No, always each player's own colour — ZH default (no such mode found in its options or radar code)   b) Yes, as an option, off by default
@@ -69,3 +75,25 @@ Q12. Should players get an option to show allies in one colour and enemies in an
 Q13. What happens to a destroyed vehicle? **A/B**
    a) A neutral wreck stays, then sinks: tanks about 20 s, light vehicles about 8 s; units drive through it — ZH default (hulk.ini:537-577, 820-848)   b) A short wreck, about 3 s   c) No wreck, only an explosion
    Recommendation: b, because wrecks cost drawing time in big fights and a 20 s wreck that does not block looks like an obstacle that is not there. Why it matters: one more drawn object per dead vehicle.
+   **Answered 2026-11-10 (in-game A/B): A, the wreck stays: tanks 20 s, light vehicles 8 s (option a, the Zero Hour default).**
+
+## Added by the art lab A/B (questions 8-18, user, 2026-11-10, in-game; click log `ab-results/web-20261110-155052.log` outside the repo)
+
+Numbers continue the lab's order (the lab's own list, not the Q numbers above). Variant A is today's look, B the candidate, unless noted.
+
+8. Ground: flat or slight per-cell variation? **Answered 2026-11-10 (in-game A/B): B, slight per-cell variation.**
+9. Body size against the cell: one-cell hulls or Zero Hour length tanks (about 1.2 cells)? **Answered 2026-11-10 (in-game A/B): A, one-cell hulls.** Spacing is one unit per cell until the movement milestone; revisit then.
+10. Infantry click box: fits the body, or wider (36 px, Zero Hour selection cylinder)? **Answered 2026-11-10 (in-game A/B): B, wider click box; the visible body stays narrow.**
+11. Horde mark: white diamond or flat ground ring? **Answered 2026-11-10 (in-game A/B): B, ground ring** (user dislikes the diamond; Zero Hour draws a ground decal, `TERRAIN_DECAL_HORDE`, `GeneralsGameCode` @ `afc2a103f` `Drawable.h:264-271`).
+12. Drawing interpolation between the last two ticks? **Answered 2026-11-10 (in-game A/B): B, drawn between ticks ("way smoother").** Presentation only, no simulation change; moving and turning looked fine, remaining nervousness is missing avoidance.
+13. Light vehicle gun: small or bigger? **Answered 2026-11-10 (in-game A/B): A, small gun.**
+14. Infantry colour: pale owner colour, or torso in full owner colour with light head and dark legs? **Answered 2026-11-10 (in-game A/B): B, full-colour torso.**
+15. Owner contrast: blue-grey side faces, or neutral grey sides plus an owner band? **Answered 2026-11-10 (in-game A/B): A, blue-grey sides (today).**
+16. Owner palette: today's colours or brighter, more saturated ones? **Answered 2026-11-10 (in-game A/B): likes both; today's palette is the default, the bright set is an opt-in menu option "Neon mode"** (#2F7BFF #FF2F45 #14D45A #FFE100 #FF7A00 #A040FF #00D8E8 #FF4FB0). The click log says A.
+17. Dark ground tone: #575C55 or lighter, warmer #7B7566? **Answered 2026-11-10 (in-game A/B): B, #7B7566** (dark biome only).
+18. Sand tone, six steps. **Answered 2026-11-10 (in-game): C `#998559`, D `#A88E5C`, E `#B29763` fine; A, B, F not; default D `#A88E5C`.**
+
+Open after the lab (not answers):
+- Colour harmony (coordinator proposals, not decided, not seen in the lab): warm ground with cool units; the yellow owner `#C9A227` is close to sand D (check, or shift to about `#E8D44A`); shadows slightly warm (30 % dark brown) instead of black.
+- Horde ring look beyond "not the diamond" (size, colour, owner tint) is for the rest of M7.5.
+- Signature effect and shake for special weapons (questions 9, 10 above).

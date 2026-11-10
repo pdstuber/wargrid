@@ -197,7 +197,7 @@ static func _body(role: StringName, detail: int, variant: int, bucket: int, turr
 		var merged := {"points": PackedVector2Array(), "lifts": PackedFloat32Array(), "slots": PackedByteArray()}
 		var specs: Array[Dictionary] = Shapes.parts(role, detail, variant)
 		for part in specs.size():
-			var mesh: Dictionary = Bake.mesh(role, part, turret_bucket if specs[part].angle == &"turret" else bucket, detail, variant)
+			var mesh: Dictionary = Bake.mesh(role, part, turret_bucket if specs[part].angle == &"turret" else bucket, detail, variant, bucket)
 			merged.points.append_array(mesh.points)
 			merged.lifts.append_array(mesh.lifts)
 			merged.slots.append_array(mesh.slots)
