@@ -6,6 +6,8 @@ Decisions to build on (do not re-ask): blueprint §2 and §7 M7.5 (scope answers
 
 Setup: branch spike-art-lab from main in a new worktree ~/projects/wargrid-wt-art (`git worktree add`); never switch the branch of the main checkout. Scratch output in ~/projects/wargrid-art-work (outside the repo).
 
+Planning done 2026-11-10, plan approved by the user the same day (run not started): design docs/superpowers/specs/2026-11-10-art-lab-design.md (approved), plan docs/superpowers/plans/2026-11-10-art-lab-spike.md, verification file docs/reference/art-lab-verification.md (created by Task 1). Outcome decided: mergeable foundation, whole roster in one consistent coarse vocabulary (user, 2026-11-10). Run it with docs/milestone-prompt.md once approved.
+
 Planning first (Opus, high): write the design and the execution plan (docs/superpowers/specs and plans, per docs/milestone-prompt.md planning rules), then STOP for the user's approval before any implementation. The plan must cover:
 - Shapes: a short shape list per kind (boxes and cylinders: offset, size, height, colour slot), one shared draw function; triangulated once at load per (kind, heading bucket); all units sent as one triangle array per tick (`RenderingServer.canvas_item_add_triangle_array`), buildings and units in one depth-sorted list, picking unchanged on ground footprints (scope Q7, Q8, Q11).
 - Lab objects: tank, bulldozer, infantry, power plant, war factory, supply source, supply depot (scope Q6), plus the three faction tank variants with exaggerated outline differences (look Q6).
