@@ -6,6 +6,7 @@ const Iso = preload("res://scripts/presentation/isometric.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
 const CombatWorkload = preload("res://scripts/debug/combat_workload.gd")
 const SoundPlayer = preload("res://scripts/presentation/sound_player.gd")
+const VisualDirector = preload("res://scripts/presentation/visual_director.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 # New with the ashfall layout (R2): worst of six rendered runs 3.02 ms plus about 50%. No ceiling exists for the other layouts.
 const ASHFALL_FRAME_P95_MS: float = 3.3
@@ -17,6 +18,7 @@ var _profile: bool = OS.get_cmdline_user_args().has("--profile")
 # `-- --sound` runs only the horde layout with a SoundPlayer and reports its cost.
 var _sound_mode: bool = OS.get_cmdline_user_args().has("--sound")
 var _sound: SoundPlayer
+var _visuals := VisualDirector.new()
 var _sound_state: Dictionary = {}
 var _sound_cues: int = 0
 var _sound_times := PackedFloat64Array()
@@ -58,6 +60,8 @@ func _ready() -> void:
 
 func _begin_layout() -> void:
 	$Camera2D.position = Iso.world_to_plane(Vector2(32, 32)) if _layout_name() != "ashfall" else Iso.world_to_plane(Vector2(26, 118))
+	_visuals.reset()
+	_view.set_visuals(_visuals)
 	_horde_start.clear()
 	_horde_peak = 0
 	_horde_marked_ticks = 0
@@ -222,6 +226,7 @@ func _horde_tick() -> void:
 	var started: int = Time.get_ticks_usec()
 	_simulation.step()
 	var state: Dictionary = _simulation.snapshot()
+	_visuals.collect_step(state.tick, _simulation.combat_events(), _simulation.command_results())
 	if _sound != null:
 		_sound.collect_step(state.tick, _simulation.combat_events(), _simulation.command_results())
 		_sound_state = state

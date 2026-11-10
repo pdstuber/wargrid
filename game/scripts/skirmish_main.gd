@@ -3,8 +3,10 @@ extends "res://scripts/base_main.gd"
 const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 const View = preload("res://scripts/presentation/world_view.gd")
 const SoundPlayer = preload("res://scripts/presentation/sound_player.gd")
+const VisualDirector = preload("res://scripts/presentation/visual_director.gd")
 const MusicPlayer = preload("res://scripts/presentation/music_player.gd")
 var _sound: SoundPlayer = null
+var _visuals := VisualDirector.new()
 var _attack_move_mode: bool = false
 var inspected_id: int = -1
 static var factions: Dictionary = Registry.Factions.DEFAULT_SKIRMISH
@@ -14,6 +16,7 @@ static var match_seed: int = 0
 
 func _ready() -> void:
 	super._ready()
+	_view.set_visuals(_visuals)
 	$HUD/Restart.pressed.connect(_restart)
 	var music := MusicPlayer.new()
 	add_child(music)
@@ -42,6 +45,7 @@ func _submit(payload: Dictionary) -> void:
 func _collect_sound() -> void:
 	_ensure_sound()
 	_sound.collect_step(simulation.tick(), simulation.combat_events(), simulation.command_results())
+	_visuals.collect_step(simulation.tick(), simulation.combat_events(), simulation.command_results())
 
 func _production_kind(building: Dictionary, state: Dictionary) -> String:
 	var kind: String = Skirmish.unit_for(_local_state(state).get("faction", Skirmish.default_faction()), building.kind)
@@ -57,6 +61,7 @@ func _enter_placement(kind: String) -> void:
 func _restart() -> void:
 	simulation = _create_simulation()
 	_sound.director.reset()
+	_visuals.reset()
 	selected_ids.clear()
 	selected_building_id = -1
 	inspected_id = -1

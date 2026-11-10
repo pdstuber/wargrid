@@ -13,6 +13,7 @@ const StructureLayer = preload("res://scripts/presentation/structure_layer.gd")
 const WorldBatch = preload("res://scripts/presentation/world_batch.gd")
 const BodyLayer = preload("res://scripts/presentation/body_layer.gd")
 const BODY_DETAIL := 1
+const Director = preload("res://scripts/presentation/visual_director.gd")
 const Palette = preload("res://scripts/presentation/palette.gd")
 var _preview_cells: Array[Vector2i] = []
 var _preview_valid: bool = false
@@ -30,6 +31,8 @@ var _structures: Node2D = StructureLayer.new()
 var _bodies: Node2D = BodyLayer.new()
 var _batch := WorldBatch.new()
 var _structure_key: Array = []
+var _visuals: Director
+var _visual_tick: int = -1
 var _waiting: Dictionary = {}
 var _canvas: CanvasItem
 const HINT_TICKS: int = 40
@@ -64,6 +67,9 @@ static func health_color(fraction: float) -> Color:
 
 static func shows_health(selected: bool, hp: int, max_hp: int, hovered: bool) -> bool:
 	return selected or hovered or hp < max_hp
+
+func set_visuals(director: Director) -> void:
+	_visuals = director
 
 func set_biome(biome: int) -> void:
 	if biome == _biome: return
@@ -129,7 +135,16 @@ func set_state(state: Dictionary, selected_ids: Array[int]) -> void:
 	_refresh_structures()
 	Profiler.end(&"view.structures_key", zone)
 	zone = Profiler.begin()
-	_batch.build(WorldBatch.objects(_state), {}, BODY_DETAIL, WorldBatch.FLAG_SHADOWS, horde_marks())
+	var items: Array[Dictionary] = WorldBatch.objects(_state)
+	var angles := {}
+	var effects: Array[Dictionary] = []
+	if _visuals != null:
+		if _state.get("tick", 0) != _visual_tick:
+			_visual_tick = _state.get("tick", 0)
+			_visuals.update(items)
+		angles = _visuals.turret_angles()
+		effects = _visuals.effects()
+	_batch.build(items, angles, BODY_DETAIL, WorldBatch.FLAG_SHADOWS, horde_marks(), effects)
 	_bodies.queue_redraw()
 	Profiler.end(&"view.batch", zone)
 	queue_redraw()
@@ -403,13 +418,6 @@ static func line_position(entities: Array, unit: Dictionary) -> int:
 func _draw_cues() -> void:
 	for line: Dictionary in battery_target_lines(): draw_line(line.from, line.to, Color("ff3b30"), 1.5)
 	for line: Dictionary in _building_shots.values(): draw_line(line.from, line.to, Color("ffe680"), 2.0)
-	for event: Dictionary in _state.get("combat_events", []):
-		if event.type == "shot" and not _building_shots.has(event.attacker_id) and _last_points.has(event.attacker_id) and _last_points.has(event.target_id):
-			draw_line(_last_points[event.attacker_id], _last_points[event.target_id], Color("ffe680"), 2.0)
-		elif event.type == "death" and _last_points.has(event.object_id):
-			var at: Vector2 = _last_points[event.object_id]
-			draw_line(at - Vector2(7, 7), at + Vector2(7, 7), Color("ff5030"), 3.0)
-			draw_line(at - Vector2(7, -7), at + Vector2(7, -7), Color("ff5030"), 3.0)
 
 # Keyed by attacker so a stalled tick re-seeing the same event stays one line.
 func _remember_building_shots() -> void:

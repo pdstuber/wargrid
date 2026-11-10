@@ -1,12 +1,12 @@
-Resume record (updated 2026-11-10, Task 5 green)
-Branch / base commit / working-tree state: spike-art-lab / 7d34719 / Task 5 changes uncommitted (coordinator commits)
-Last green task / next incomplete task: Task 5 / Task 6 (visual events and local motion)
-Changed paths since last commit: game/scripts/presentation/{world_view,terrain_view,palette}.gd, game/tests/test_view.gd, docs/reference/art-lab-verification.md (no new scripts, no new .uid)
-Last command / cases / checks / failures / exit / marker: `sh tools/run_tests.sh` / 645 cases / 138236 checks / 0 failures / exit 0 / TESTS PASSED 138236
-Known red case or blocker: none. Watch: view build adds about 1.3 ms to a 300-unit tick (unchanged by Task 5); Ashfall frame p95 guard 3.3 (Task 8)
+Resume record (updated 2026-11-10, Task 6 green)
+Branch / base commit / working-tree state: spike-art-lab / 1cc5de4 / Task 6 changes uncommitted (coordinator commits)
+Last green task / next incomplete task: Task 6 / Task 7 (quality Low/High and zoom detail)
+Changed paths since last commit: game/scripts/presentation/{visual_director.gd (+.gd.uid),world_batch,world_view}.gd, game/scripts/{skirmish_main,debug/movement_benchmark}.gd, game/tests/{test_visual.gd (+.gd.uid),run_tests.gd}, docs/reference/art-lab-verification.md
+Last command / cases / checks / failures / exit / marker: `sh tools/run_tests.sh` / 657 cases / 138262 checks / 0 failures / exit 0 / TESTS PASSED 138262
+Known red case or blocker: none. Watch: per-tick presentation about 1.55 ms plus director 0.22 ms in a stress case (see Task 6 row); Ashfall frame p95 guard 3.3 (Task 8)
 Approved decisions, pre-authorizations used, deferred gates: plan approval 2026-11-10 covers rendered windows of Tasks 1, 3, 8 only; ceilings fixed 50/50/50/60
 Usage so far (python3 tools/session_usage.py <session files>): not measured
-Next exact action: dispatch Task 6 of docs/superpowers/plans/2026-11-10-art-lab-spike.md
+Next exact action: dispatch Task 7 of docs/superpowers/plans/2026-11-10-art-lab-spike.md
 
 ## Evidence rows (append-only)
 
@@ -83,3 +83,12 @@ Functions reading `_state` directly: `set_state`, `_prune_hints`, `_refresh_stru
 ### 2026-11-10 User remark (not a playtest)
 
 - The user watched the Task 3 benchmark window (placeholder default shapes, before the Task 4 lab shapes) and found the new tanks and infantry "pretty good, way better than the current shapes". The Task 4 lab shapes have not been seen on screen yet.
+- Same session, user: "when large numbers moved, e.g. in a column, the distances between them seemed a bit small." Two causes, not separated yet: simulation spacing (one unit per 25-unit cell; Zero Hour blocks 1-5 pathing cells of 10 units by radius, goal layout by radius; belongs to the movement and pathing milestone, size classes) and body size against the cell (art; candidate Task 9 A/B variant). Re-check with the Task 4 shapes at Task 8.
+
+### 2026-11-10 Task 6: visual events and local motion (tree: worktree, 1cc5de4 plus Task 6 diff)
+
+- Red (stub director returning empty values, `t6-red.log`): `WARGRID_TEST_ONLY=test_visual` exit 1 on assertions, e.g. "VI1 both ticks consumed, got []", "VI2 three damage records of one attack give one muzzle, got 0", "VI9 muzzle draws with flags 0" (two cases also hit typed-array errors in my test, fixed). Green: `test_visual` 12 cases / 26 checks; full suite 657 cases, 138262 checks, 0 failures, exit 0, TESTS PASSED 138262. Lint pass, warnings pass (127 files).
+- Built: `VisualDirector` (collect_step, update, effects, turret_angles, consumed_ticks, reset, `dropped`); `WorldBatch.build(..., marks, effects)` draws muzzle, hit and fade as triangles on both qualities and moves the `turret` part to the director's angle (any role with a turret part, incl. the defence); building items now carry `combat.target_id` so defences aim. `WorldView.set_visuals`; `set_state` runs `update` once per tick value (a refresh from input or a paused tick does not age effects). Drivers: `skirmish_main._collect_sound` (online inherits it, catch-up steps each collect), restart resets; `movement_benchmark` collects on every horde tick regardless of `--sound` and attaches the director to the view for all layouts.
+- Removed from `_draw_cues`: unit shot line and death cross. Kept: `battery_target_lines`, `building_shot_lines` and their tests (unchanged, green).
+- Per-tick cost (headless scratch `~/projects/wargrid-art-work/t6_time.gd`: 300 mixed units, 6 factories, detail 1, shadows on, 200 reps, worst-case stress: every tank has a moving target, 20 shot events per tick): objects() 0.50 ms, director collect+update 0.22 ms, build 1.05 ms (with 200 live effects and 200 turret angles); same-tick base objects()+build() without visuals 1.38 ms. So +0.39 ms in the stress case (director 0.22, effects and turret buckets 0.17); idle cost is one dictionary insert per object. Above the ledger's 0.91 ms plumbing budget as before; not loosened. Rendered window not opened (not pre-approved for Task 6).
+- Deviations / not checked: effect shapes are placeholder diamonds (muzzle yellow, hit orange expanding, fade dark smudge) at cell anchors; how they look is not rendered. Muzzle lasts 4 updates, hit 6, fade 60. Turret cosmetic rate 0.15 rad per tick as confirmed. Review-focus tests 2 and 5 are `test_visual_catch_up_and_stall` and `test_reset_clears_presentation_state`; the online scene's two-step frame is covered by the existing `test_catch_up_collects_every_step` plus the director test, no new scene test.

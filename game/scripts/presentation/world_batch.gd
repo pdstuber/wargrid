@@ -6,6 +6,7 @@ const Iso = preload("res://scripts/presentation/isometric.gd")
 const Shapes = preload("res://scripts/presentation/shapes.gd")
 const Bake = preload("res://scripts/presentation/shape_bake.gd")
 const Palette = preload("res://scripts/presentation/palette.gd")
+const Director = preload("res://scripts/presentation/visual_director.gd")
 
 const LAYER_DECAL := 0
 const LAYER_GROUND := 1
@@ -17,6 +18,10 @@ const AIR_LIFT := 18.0
 const SHADOW_RADIUS := 8.0
 const MARK_RADIUS := 3.0
 const GROUND_SHADOW_RADIUS := 6.0
+const MUZZLE_LIFT := 12.0
+const MUZZLE_COLOR := Color("ffe680")
+const HIT_COLOR := Color("ff8a3c")
+const FADE_COLOR := Color("1c1a18")
 const FLAG_SHADOWS := 1
 const FLAG_OUTLINES := 2
 const FLAG_EFFECTS := 4
@@ -40,6 +45,8 @@ static func objects(state: Dictionary) -> Array[Dictionary]:
 		var rise: float = 1.0 if building.completed else float(building.work) / (definition.ticks * 1000)
 		found.append(_item(building, building.kind, Shapes.role(building.kind), LAYER_GROUND, Vector2(building.origin[0], building.origin[1]) + Vector2(size) / 2.0, size, 0.0, rise, -1))
 		found[-1].variant = damage_stage(found[-1].hp, found[-1].max_hp)
+		var battery: Variant = building.get("combat")
+		if battery != null and battery.target_id != null: found[-1].target_id = battery.target_id
 	for source: Dictionary in state.get("sources", []):
 		var size: Vector2i = Registry.source_footprint(source)
 		var item := _item(source, "", &"supply_source", LAYER_GROUND, Vector2(source.origin[0], source.origin[1]) + Vector2(size) / 2.0, size, 0.0, 1.0, -1)
@@ -77,7 +84,7 @@ static func depth_sorted(entities: Array) -> Array:
 		sorted[i] = by_key[keys[i]]
 	return sorted
 
-func build(items: Array[Dictionary], _turret_angles: Dictionary, detail: int, flags: int, marks: Array[Vector2] = []) -> void:
+func build(items: Array[Dictionary], turret_angles: Dictionary, detail: int, flags: int, marks: Array[Vector2] = [], effects: Array[Dictionary] = []) -> void:
 	points.clear()
 	colors.clear()
 	var keys := PackedInt64Array()
@@ -91,7 +98,8 @@ func build(items: Array[Dictionary], _turret_angles: Dictionary, detail: int, fl
 		for key in keys:
 			if by_key[key].shadow > 0.0: _append_shadow(by_key[key])
 	for key in keys:
-		_append_body(by_key[key], detail)
+		_append_body(by_key[key], detail, turret_angles)
+	for effect in effects: _append_effect(effect)
 	for mark in marks:
 		_append_quad(mark, MARK_RADIUS, Color.WHITE)
 	@warning_ignore("integer_division")
@@ -101,13 +109,15 @@ func submit(item: RID) -> void:
 	if points.is_empty(): return
 	RenderingServer.canvas_item_add_triangle_array(item, PackedInt32Array(), points, colors)
 
-func _append_body(item: Dictionary, detail: int) -> void:
+func _append_body(item: Dictionary, detail: int, turret_angles: Dictionary) -> void:
 	var owner: int = item.owner
 	var move := Transform2D(0.0, Iso.world_to_plane(item.anchor) + Vector2(0, -AIR_LIFT if item.layer == LAYER_AIR else 0.0))
 	var bucket: int = Bake.bucket(item.heading)
 	var rise: float = item.rise
-	for part in Shapes.parts(item.role, detail, item.variant).size():
-		var mesh: Dictionary = Bake.mesh(item.role, part, bucket, detail, item.variant)
+	var specs: Array[Dictionary] = Shapes.parts(item.role, detail, item.variant)
+	var turret_bucket: int = Bake.bucket(turret_angles[item.id]) if turret_angles.has(item.id) else bucket
+	for part in specs.size():
+		var mesh: Dictionary = Bake.mesh(item.role, part, turret_bucket if specs[part].name == &"turret" else bucket, detail, item.variant)
 		var mesh_points: PackedVector2Array = mesh.points
 		if rise < 1.0:
 			var lifts: PackedFloat32Array = mesh.lifts
@@ -128,6 +138,14 @@ func _mesh_colors(mesh: Dictionary, owner: int) -> PackedColorArray:
 		for i in slots.size(): built[i] = palette[slots[i]]
 		by_owner[owner] = built
 	return by_owner[owner]
+
+func _append_effect(effect: Dictionary) -> void:
+	var at: Vector2 = Iso.world_to_plane(effect.anchor)
+	var age: float = effect.age
+	match effect.type:
+		&"muzzle": _append_quad(at + Vector2(0, -MUZZLE_LIFT), maxf(6.0 - age, 2.0), MUZZLE_COLOR)
+		&"hit": _append_quad(at + Vector2(0, -8), 3.0 + age, Color(HIT_COLOR, 1.0 - age / 6.0))
+		&"fade": _append_quad(at, 9.0, Color(FADE_COLOR, 0.6 * (1.0 - age / Director.FADE_TICKS)))
 
 func _append_shadow(item: Dictionary) -> void:
 	_append_quad(Iso.world_to_plane(item.anchor), item.shadow, Palette.owner_colors(0)[Shapes.SLOT_SHADOW])
