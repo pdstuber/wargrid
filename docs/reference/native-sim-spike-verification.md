@@ -3,16 +3,16 @@
 Resume record and dated evidence for [the handoff](../native-sim-spike-prompt.txt) and [its plan](../superpowers/plans/2026-11-10-native-sim-spike.md). Labels: **measured** (run here), **source** (quoted file or fetched page), **inferred**, **unverified**. Rows below the resume record are append-only.
 
 ```text
-Resume record (updated 2026-11-10 run start, coordinator)
-Branch / base commit / working-tree state: spike-native-sim in ~/projects/wargrid-wt-native, base dde868e (main), clean
-Last green task / next incomplete task: T0, T1 / phase 1 (T2, T3, T4)
+Resume record (updated 2026-11-10 phase 2 done, coordinator)
+Branch / base commit / working-tree state: spike-native-sim in ~/projects/wargrid-wt-native, head 298c313 (base dde868e); T8 may leave uncommitted rows/exports only outside the repo
+Last green task / next incomplete task: T0-T7 green and integrated (T2 96000ae, T3 1d43859, T4 296b943, T5 0ccdcc0, T6 a8d6a67, T7 298c313); T8 (Deck baselines) running / T9
 Changed paths since last commit: none
-Last command / cases / checks / failures / exit / marker: baseline on dde868e: import 0; suite CASES 728 CHECKS 139569 FAILURES 0 "TESTS PASSED"; lint 0; warnings 0 (137 files); python checks 0
-Known red case or blocker: none
-Environment: macOS 27.2.1, Godot 4.7.2.stable, rustc nightly-2026-03-15 installed, container service running, Safari and Vivaldi not running; Deck preflight RESULT: OK (172.16.0.63, Firefox flatpak 159.0.1)
-Approved decisions, pre-authorizations used, deferred gates: see handoff "Authorized for this run"; local commits on spike-native-sim and task branches
+Last command / cases / checks / failures / exit / marker: per-task rows in ~/projects/wargrid-native-work/rows/
+Known red case or blocker: suite red on spike-native-sim: test_map.gd:59,72 expects 11 presets, now 13 (T3); lib.rs test stubs_report_not_implemented stale. T9 fixes both. Deck W3 probe not yet run.
+Environment: see previous record; Deck preflight OK
+Approved decisions, pre-authorizations used, deferred gates: see handoff "Authorized for this run"
 Usage so far: not recorded
-Next exact action: dispatch phase 1 (T2 opus own tree, T3 sonnet own tree, T4 sonnet WT)
+Next exact action: dispatch T9 (opus, WT); retry Deck W3 probe when T8 frees the lock
 ```
 
 ## Stage 1 record (done 2026-11-10 with the user, before invocation)
