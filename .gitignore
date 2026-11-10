@@ -9,3 +9,7 @@ relay/relay
 relay/relay.exe
 web/site/
 tools/.venv/
+native/target/
+game/wargrid_native.gdextension
+game/wargrid_native.gdextension.uid
+game/native_bin/

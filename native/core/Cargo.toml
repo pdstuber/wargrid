@@ -1,0 +1,10 @@
+[package]
+name = "wargrid_core"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[features]
+default = ["horde", "movement"]
+horde = []
+movement = []
