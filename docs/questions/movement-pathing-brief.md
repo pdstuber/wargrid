@@ -60,7 +60,7 @@ Answers are recorded in the [design answers](../reference/design-answers-2026-11
 1. Base method (A, B or C): **not chosen; measure all three first** (user).
 2. Grid size: **2x2 per building cell** (user).
 3. Look while driving: no decision needed; per-kind turn rates and rolling turns already exist (`locomotion.gd`). Feel: **Zero Hour's weight, not snappier** (user).
-4. Unit size decides where it fits: **yes, per unit kind, as Zero Hour** (user; costs one pathing clearance per distinct width).
+4. Unit size decides where it fits: **a few size classes, Recoil-style** (user, revised the same day from "per unit kind"; one pathing layer per class).
 5. Group moves, flow field or shared route: open; waits for the round 4 column feel session and the timing spike.
 6. Order of work: **movement first, as its own milestone before avoidance** (user).
 7. Path budget in searched cells per tick: proposed, measured in the spike.

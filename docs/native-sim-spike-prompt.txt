@@ -101,7 +101,7 @@ Deliverables: docs/reference/native-sim-spike.md (the report) and docs/reference
 3. Decision matrix: A-D and baseline against browser performance, native and web compatibility, determinism, safety, effort, maintenance, portability; every cell labelled measured, source, inferred or unverified.
 4. Evidence: revisions, toolchains, exact commands, raw-result paths, builds that worked and failed, the Stage 5 rows, platform coverage with the untested cells visible.
 5. Boundary sketch and the standalone example.
-6. Migration recommendation, not implemented: next steps ordered by measured benefit and risk, what stays in GDScript, which tests need the public interface first, rollback, where it fits in blueprint §7.
+6. Migration recommendation, not implemented: next steps ordered by measured benefit and risk, what stays in GDScript, which tests need the public interface first, rollback, where it fits in blueprint §7. If the recommendation is Rust or C++, name as a follow-up the evaluation of Permafrost Engine's chunk flow fields for pathing (deferred by the user 2026-11-10; design answers, "Movement and pathing").
 7. Another frontend later: what it could reuse unchanged, what would still be Godot's (rendering, HUD, audio, input, export, tools), direct Rust reuse against a C ABI. No engine design.
 8. Working tree: files changed, how to build, run and remove the spike, checks run with their tree, pre-existing failures, checks not performed.
 Add a ledger row to docs/reference/performance.md only for runs that follow the ledger's protocol; new answers from the user go into the design answers at once.
