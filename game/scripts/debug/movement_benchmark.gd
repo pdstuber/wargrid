@@ -177,10 +177,24 @@ static func draw_call_failure(layout: String, max_calls: float) -> String:
 		return "Layout %s draws %d calls, ceiling %d" % [layout, int(max_calls), DRAW_CALL_CEILINGS[layout]]
 	return ""
 
-# Report only until the look task turns this into a failure.
-func _report_draw_calls(layout: String) -> void:
+static func draw_call_gate(layout: String, max_calls: float, report_only: bool) -> String:
+	return "" if report_only else draw_call_failure(layout, max_calls)
+
+func _report_only() -> bool:
+	for arg: String in OS.get_cmdline_user_args():
+		for flag: String in ["--quality", "--zoom", "--units", "--layout"]:
+			if arg.begins_with(flag): return true
+	return false
+
+func _report_draw_calls(layout: String) -> bool:
 	var max_calls: float = Stats.summary(_draw_calls).max
-	print("DRAW_CALLS ", layout, " max=", int(max_calls), " ceiling=", DRAW_CALL_CEILINGS.get(layout, -1), " over=", draw_call_failure(layout, max_calls) != "")
+	var failure: String = draw_call_failure(layout, max_calls)
+	print("DRAW_CALLS ", layout, " max=", int(max_calls), " p50=", int(Stats.summary(_draw_calls).p50), " ceiling=", DRAW_CALL_CEILINGS.get(layout, -1), " over=", failure != "")
+	var gate: String = draw_call_gate(layout, max_calls, _report_only())
+	if gate != "":
+		_fail(gate)
+		return false
+	return true
 
 func _finish_layout(state: Dictionary) -> void:
 	var goals: Dictionary = {}
@@ -198,7 +212,7 @@ func _finish_layout(state: Dictionary) -> void:
 		if frame_p95 > ASHFALL_FRAME_P95_MS:
 			_fail("Rendered ashfall frame p95 %.3f ms exceeds %.1f ms" % [frame_p95, ASHFALL_FRAME_P95_MS])
 			return
-	_report_draw_calls(_layout_name())
+	if not _report_draw_calls(_layout_name()): return
 	print("RENDERED COMPLETE ", LAYOUTS[_layout_index], " completed_legs=", _completed_legs + 1,
 		" queue_peak=", _queue_peak, " queue_drain_ticks=", _queue_drain, " arrived=300 unique_destinations=", goals.size())
 	_layout_index += 1
@@ -232,7 +246,7 @@ func _finish_horde(state: Dictionary) -> void:
 	if _horde_peak == 0 or _horde_marked_ticks == 0 or moved == 0 or _tick_times.is_empty() or _frame_times.is_empty():
 		_fail("Rendered horde workload drew no horde marks or no unit moved")
 		return
-	_report_draw_calls("horde")
+	if not _report_draw_calls("horde"): return
 	print("RENDERED COMPLETE horde horde_mark_peak=", _horde_peak, " marked_ticks=", _horde_marked_ticks, " of ", _sample_ticks, " units_moved=", moved)
 	if _sound != null:
 		if _sound_cues == 0:

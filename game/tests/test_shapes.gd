@@ -32,8 +32,8 @@ func test_box_top_face_on_top(runner) -> bool:
 
 func test_bake_is_cached(runner) -> bool:
 	var before: int = Bake.bake_count
-	var first: Dictionary = Bake.mesh(&"default_vehicle", 0, 7, 1)
-	var second: Dictionary = Bake.mesh(&"default_vehicle", 0, 7, 1)
+	var first: Dictionary = Bake.mesh(&"default_vehicle", 0, 7, 1, 9001)
+	var second: Dictionary = Bake.mesh(&"default_vehicle", 0, 7, 1, 9001)
 	runner.check(first.points == second.points and first.slots == second.slots, "SH3 equal content")
 	runner.check(Bake.bake_count == before + 1, "SH3 baked once")
 	return true

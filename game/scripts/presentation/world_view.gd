@@ -11,9 +11,9 @@ const ICONS: Array[String] = ["command", "power", "supply", "barracks", "factory
 const LABEL_WIDTH: float = 160.0
 const Terrain = preload("res://scripts/presentation/terrain_view.gd")
 const StructureLayer = preload("res://scripts/presentation/structure_layer.gd")
-const DEPTH_SCALE := 1024.0
-const INDEX_BITS := 20
-const INDEX_MASK := (1 << 20) - 1
+const WorldBatch = preload("res://scripts/presentation/world_batch.gd")
+const BodyLayer = preload("res://scripts/presentation/body_layer.gd")
+const BODY_DETAIL := 1
 var _preview_cells: Array[Vector2i] = []
 var _preview_valid: bool = false
 var _state: Dictionary = {}
@@ -26,6 +26,8 @@ var _hovered_id: int = -1
 var _building_shots: Dictionary = {}
 var _terrain: Node2D = Terrain.new()
 var _structures: Node2D = StructureLayer.new()
+var _bodies: Node2D = BodyLayer.new()
+var _batch := WorldBatch.new()
 var _structure_key: Array = []
 var _waiting: Dictionary = {}
 var _canvas: CanvasItem
@@ -42,6 +44,9 @@ func _init() -> void:
 	_structures.name = "Structures"
 	_structures.show_behind_parent = true
 	add_child(_structures)
+	_bodies.name = "Bodies"
+	_bodies.show_behind_parent = true
+	add_child(_bodies)
 	_canvas = self
 
 static func owner_color(owner_id: int) -> Color:
@@ -58,7 +63,7 @@ func set_state(state: Dictionary, selected_ids: Array[int]) -> void:
 	_terrain.set_map(_state.get("map", {}))
 	_prune_hints()
 	zone = Profiler.begin()
-	if _state.has("entities"): _state.entities = _depth_sorted(state.entities)
+	if _state.has("entities"): _state.entities = WorldBatch.depth_sorted(state.entities)
 	Profiler.end(&"view.sort", zone)
 	zone = Profiler.begin()
 	_remember_points()
@@ -67,6 +72,10 @@ func set_state(state: Dictionary, selected_ids: Array[int]) -> void:
 	zone = Profiler.begin()
 	_refresh_structures()
 	Profiler.end(&"view.structures_key", zone)
+	zone = Profiler.begin()
+	_batch.build(WorldBatch.objects(_state), {}, BODY_DETAIL, 0, horde_marks())
+	_bodies.queue_redraw()
+	Profiler.end(&"view.batch", zone)
 	queue_redraw()
 
 func add_hint(point: Vector2, tick: int) -> void:
@@ -194,9 +203,7 @@ func _draw() -> void:
 	for cell in _preview_cells:
 		_draw_footprint([cell.x,cell.y],Vector2i.ONE,Color(0.2,0.9,0.3,0.55) if _preview_valid else Color(0.9,0.2,0.2,0.55),false)
 	for unit: Dictionary in _state.get("entities",[]):
-		if Registry.air_kinds.has(unit.get("kind")): draw_circle(Iso.world_to_plane(Vector2(unit.position[0],unit.position[1])),8,Color(0,0,0,.35))
 		var bounds: Rect2 = _vehicle_bounds(unit)
-		draw_rect(bounds, owner_color(unit.owner))
 		_draw_health(health_rect(bounds).position, unit, _selected_ids.has(unit.id))
 		if _selected_ids.has(unit.id):
 			draw_rect(bounds, Color("8cff87"), false, 2.0)
@@ -204,8 +211,10 @@ func _draw() -> void:
 	for point in order_marks():
 		draw_line(point - Vector2(6, 0), point + Vector2(6, 0), Color("8cff87"), 2.0)
 		draw_line(point - Vector2(0, 6), point + Vector2(0, 6), Color("8cff87"), 2.0)
-	for mark in heading_marks(): draw_line(mark.from, mark.to, Color.WHITE, 2.0)
-	for mark in horde_marks(): draw_colored_polygon(PackedVector2Array([mark + Vector2(0, -3), mark + Vector2(3, 0), mark + Vector2(0, 3), mark + Vector2(-3, 0)]), Color.WHITE)
+	for building: Dictionary in _state.get("buildings", []):
+		var definition: Dictionary = Definitions.building(building.kind)
+		if definition.is_empty(): continue
+		_draw_health(Iso.world_to_plane(Vector2(building.origin[0],building.origin[1]) + Vector2(definition.footprint) / 2.0) + Vector2(-16,-26),building,_selected_ids.has(building.id))
 	Profiler.end(&"draw.units", zone)
 	zone = Profiler.begin()
 	_draw_focus()
@@ -216,6 +225,9 @@ func _draw() -> void:
 	_draw_cues()
 	Profiler.end(&"draw.overlays", zone)
 	Profiler.end(&"draw", total)
+
+func draw_bodies() -> void:
+	_batch.submit(_bodies.get_canvas_item())
 
 # Drawn into the child layer, which redraws only when `_structure_key` changes.
 func draw_structures() -> void:
@@ -229,7 +241,6 @@ func draw_structures() -> void:
 		var tint: Color = owner_color(building.owner)
 		_draw_footprint(building.origin,definition.footprint,tint.lerp(Color("687b8c"),0.4) if building.completed else tint.lerp(Color("887966"),0.6),_selected_ids.has(building.id))
 		_draw_building_mark(building,definition)
-		_draw_health(Iso.world_to_plane(Vector2(building.origin[0],building.origin[1]) + Vector2(definition.footprint) / 2.0) + Vector2(-16,-26),building,_selected_ids.has(building.id))
 	for source: Dictionary in _state.get("sources",[]):
 		var lines: PackedStringArray = _pile_lines(source, _waiting.get(source.id, 0))
 		var points: PackedVector2Array = pile_text_points(source)
@@ -243,7 +254,7 @@ func _refresh_structures() -> void:
 	for source: Dictionary in _state.get("sources", []):
 		key.append_array([source.id, source.origin[0], source.origin[1], source.boxes, source.active_collector_id, _waiting.get(source.id, 0), _selected_ids.has(source.id)])
 	for building: Dictionary in _state.get("buildings", []):
-		key.append_array([building.id, building.owner, building.kind, building.origin[0], building.origin[1], building.completed, building.work, building.builder_id, building.get("hp"), building.get("max_hp"), _selected_ids.has(building.id)])
+		key.append_array([building.id, building.owner, building.kind, building.origin[0], building.origin[1], building.completed, building.work, building.builder_id, _selected_ids.has(building.id)])
 	if key == _structure_key: return
 	_structure_key = key
 	_structures.queue_redraw()
@@ -379,21 +390,6 @@ func _remember_points() -> void:
 func _cell_polygon(origin: Vector2, size: Vector2) -> PackedVector2Array:
 	return PackedVector2Array([Iso.world_to_plane(origin), Iso.world_to_plane(origin + Vector2(size.x, 0)),
 		Iso.world_to_plane(origin + size), Iso.world_to_plane(origin + Vector2(0, size.y))])
-
-# Input is in id order (snapshot order), so equal depths keep id order like the old comparator.
-func _depth_sorted(entities: Array) -> Array:
-	assert(entities.size() <= INDEX_MASK)
-	var keys := PackedInt64Array()
-	keys.resize(entities.size())
-	for i in range(entities.size()):
-		var unit: Dictionary = entities[i]
-		keys[i] = (int(floor((float(unit.position[0]) + float(unit.position[1])) * DEPTH_SCALE)) << INDEX_BITS) | i
-	keys.sort()
-	var sorted: Array = []
-	sorted.resize(entities.size())
-	for i in range(keys.size()):
-		sorted[i] = entities[keys[i] & INDEX_MASK]
-	return sorted
 
 func pick_entities(plane_rect: Rect2) -> Array[int]:
 	var rect := plane_rect.abs()

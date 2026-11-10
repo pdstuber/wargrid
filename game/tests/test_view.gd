@@ -4,13 +4,14 @@ extends RefCounted
 const View = preload("res://scripts/presentation/world_view.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Fixture = preload("res://tests/economy_fixture.gd")
+const WorldBatch = preload("res://scripts/presentation/world_batch.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const CombatFixture = preload("res://tests/combat_fixture.gd")
 const MovementWorkload = preload("res://scripts/debug/movement_workload.gd")
 
 func cases() -> Array[Callable]:
-	return [test_pick, test_pile_label_drawn_over_buildings, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_heading_mark_layout,test_depth_order_matches_comparator,test_battery_shot_line,test_battery_target_line,test_building_icons,test_building_label_has_no_kind_id,test_horde_marks,test_rebuild_laborer_unselectable, test_crate_marks_frc_only, test_passengers_not_pickable, test_terrain_redraws_only_when_map_changes, test_structures_redraw_only_when_they_change, test_small_pile_view, test_structures_redraw_when_a_pile_vanishes]
+	return [test_pick, test_pile_label_drawn_over_buildings, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_heading_mark_layout,test_depth_order_matches_comparator,test_battery_shot_line,test_battery_target_line,test_building_icons,test_building_label_has_no_kind_id,test_horde_marks,test_rebuild_laborer_unselectable, test_crate_marks_frc_only, test_passengers_not_pickable, test_terrain_redraws_only_when_map_changes, test_structures_redraw_only_when_they_change, test_small_pile_view, test_structures_redraw_when_a_pile_vanishes, test_pick_under_roof, test_structure_bodies_in_shared_list, test_building_health_bar_in_overlay_pass]
 
 func test_pick(runner) -> bool:
 	var view = View.new()
@@ -370,6 +371,7 @@ func test_structures_redraw_only_when_they_change(runner) -> bool:
 	runner.root.add_child(view)
 	var layer = view.get_node("Structures")
 	runner.check(layer.show_behind_parent, "V12 structures draw behind the parent's units")
+	runner.check(view.get_node("Bodies").show_behind_parent and view.get_node("Bodies").get_index() > layer.get_index(), "V12 bodies draw over the footprints")
 	view.set_state(sim.snapshot(), [])
 	await runner.process_frame
 	var first: int = layer.draws
@@ -458,5 +460,43 @@ func test_structures_redraw_when_a_pile_vanishes(runner) -> bool:
 	view.set_state(sim.snapshot(),[])
 	await runner.process_frame
 	runner.check(layer.draws == first + 1,"V14 the structure layer redraws when a pile disappears")
+	view.free()
+	return true
+
+func test_pick_under_roof(runner) -> bool:
+	var sim = Fixture.make_world()
+	Fixture.add_completed(sim, 1, "usa_factory", Vector2i(10, 10))
+	var tank: int = sim.spawn(1, Vector2(11.5, 9.5), "usa_tank")
+	var view = View.new()
+	view.set_state(sim.snapshot(), [])
+	runner.check(view.pick_entity(Iso.world_to_plane(Vector2(11.5, 9.5)) + Vector2(0, -8)) == tank, "V15 tank north of the factory is picked at its ground anchor")
+	var roof: Vector2 = Iso.world_to_plane(Vector2(11.5, 11.5)) + Vector2(0, -80)
+	runner.check(view.pick_object(roof) == -1, "V15 a click on the drawn roof outside the ground footprint picks nothing")
+	view.free()
+	return true
+
+func test_structure_bodies_in_shared_list(runner) -> bool:
+	var sim = Fixture.make_world()
+	var factory: int = Fixture.add_completed(sim, 1, "usa_factory", Vector2i(10, 10))
+	var ids: Array = WorldBatch.objects(sim.snapshot()).map(func(item: Dictionary) -> int: return item.id)
+	runner.check(ids.has(factory), "V16 the factory is in the shared object list")
+	return true
+
+class HealthView extends View:
+	var canvases: Array = []
+
+	func _draw_health(_top_left: Vector2, object: Dictionary, _selected: bool) -> void:
+		if object.has("origin"): canvases.append(_canvas)
+
+func test_building_health_bar_in_overlay_pass(runner) -> bool:
+	var sim = Fixture.make_world()
+	var factory: int = Fixture.add_completed(sim, 1, "usa_factory", Vector2i(10, 10))
+	sim._buildings[factory].hp = 1000
+	var view = HealthView.new()
+	runner.root.add_child(view)
+	view.set_state(sim.snapshot(), [])
+	await runner.process_frame
+	await runner.process_frame
+	runner.check(not view.canvases.is_empty() and view.canvases.all(func(canvas) -> bool: return canvas == view), "V17 the building bar is drawn by the parent, got %d on other canvases" % view.canvases.filter(func(canvas) -> bool: return canvas != view).size())
 	view.free()
 	return true
