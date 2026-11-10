@@ -1,5 +1,5 @@
 use godot::prelude::*;
-use wargrid_core::movement::Movement;
+use wargrid_core::movement::{Movement, Pass};
 
 #[derive(GodotClass)]
 #[class(init, base=RefCounted)]
@@ -17,8 +17,9 @@ impl WargridMovement {
     }
 
     #[func]
-    fn run_pass(&mut self, _inputs: VarArray) -> VarArray {
-        crate::answer(&mut self.error, Err("move: pass not implemented".into()))
+    fn run_pass(&mut self, inputs: VarArray) -> VarArray {
+        let result = crate::run_generic(&mut Pass, &inputs);
+        crate::answer(&mut self.error, result)
     }
 
     #[func]
