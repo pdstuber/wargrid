@@ -9,6 +9,8 @@ const SoundPlayer = preload("res://scripts/presentation/sound_player.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 # New with the ashfall layout (R2): worst of six rendered runs 3.02 ms plus about 50%. No ceiling exists for the other layouts.
 const ASHFALL_FRAME_P95_MS: float = 3.3
+# Fixed ceilings on max draw calls per frame in the sample window; never raised to pass.
+const DRAW_CALL_CEILINGS: Dictionary = {"open": 50, "dense": 50, "horde": 50, "ashfall": 60}
 const LAYOUTS: Array[String] = ["open", "dense", "ashfall", "horde"]
 # `-- --profile` adds profiling zones and a third, 196x196 combat leg (spike-performance only).
 var _profile: bool = OS.get_cmdline_user_args().has("--profile")
@@ -168,6 +170,18 @@ func _process(_delta: float) -> void:
 				print("RENDERED PROFILE COMPLETE")
 				get_tree().quit(0)
 
+static func draw_call_failure(layout: String, max_calls: float) -> String:
+	if not DRAW_CALL_CEILINGS.has(layout):
+		return "No draw-call ceiling for layout %s" % layout
+	if max_calls > DRAW_CALL_CEILINGS[layout]:
+		return "Layout %s draws %d calls, ceiling %d" % [layout, int(max_calls), DRAW_CALL_CEILINGS[layout]]
+	return ""
+
+# Report only until the look task turns this into a failure.
+func _report_draw_calls(layout: String) -> void:
+	var max_calls: float = Stats.summary(_draw_calls).max
+	print("DRAW_CALLS ", layout, " max=", int(max_calls), " ceiling=", DRAW_CALL_CEILINGS.get(layout, -1), " over=", draw_call_failure(layout, max_calls) != "")
+
 func _finish_layout(state: Dictionary) -> void:
 	var goals: Dictionary = {}
 	for unit: Dictionary in state.entities:
@@ -184,6 +198,7 @@ func _finish_layout(state: Dictionary) -> void:
 		if frame_p95 > ASHFALL_FRAME_P95_MS:
 			_fail("Rendered ashfall frame p95 %.3f ms exceeds %.1f ms" % [frame_p95, ASHFALL_FRAME_P95_MS])
 			return
+	_report_draw_calls(_layout_name())
 	print("RENDERED COMPLETE ", LAYOUTS[_layout_index], " completed_legs=", _completed_legs + 1,
 		" queue_peak=", _queue_peak, " queue_drain_ticks=", _queue_drain, " arrived=300 unique_destinations=", goals.size())
 	_layout_index += 1
@@ -217,6 +232,7 @@ func _finish_horde(state: Dictionary) -> void:
 	if _horde_peak == 0 or _horde_marked_ticks == 0 or moved == 0 or _tick_times.is_empty() or _frame_times.is_empty():
 		_fail("Rendered horde workload drew no horde marks or no unit moved")
 		return
+	_report_draw_calls("horde")
 	print("RENDERED COMPLETE horde horde_mark_peak=", _horde_peak, " marked_ticks=", _horde_marked_ticks, " of ", _sample_ticks, " units_moved=", moved)
 	if _sound != null:
 		if _sound_cues == 0:

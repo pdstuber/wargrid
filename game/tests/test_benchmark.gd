@@ -11,7 +11,7 @@ const View = preload("res://scripts/presentation/world_view.gd")
 const Probe = preload("res://scenes/movement_benchmark.tscn")
 
 func cases() -> Array[Callable]:
-	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_transports_fixture, test_defences_fixture, test_skirmish3v3_fixture, test_combat_work_ceiling, test_volley_retaliation_work, test_horde_render_layout, test_workload_asserts_pure, test_settled_matches_snapshot_predicate, test_gate_values]
+	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_transports_fixture, test_defences_fixture, test_skirmish3v3_fixture, test_combat_work_ceiling, test_volley_retaliation_work, test_horde_render_layout, test_workload_asserts_pure, test_settled_matches_snapshot_predicate, test_gate_values, test_draw_call_ceiling]
 
 func test_statistics(runner) -> bool:
 	runner.check(Stats.summary(PackedFloat64Array()) == {"n": 0, "p50": 0.0, "p95": 0.0, "p99": 0.0, "max": 0.0}, "BM1 empty")
@@ -266,4 +266,13 @@ func test_gate_values(runner) -> bool:
 	runner.check(Stats.within({"p95": 1.82, "p99": 3.64}, 1.82, 3.64), "BM11 limits are inclusive")
 	runner.check(not Stats.within({"p95": 1.83, "p99": 1.0}, 1.82, 3.64), "BM11 p95 over the limit fails")
 	runner.check(not Stats.within({"p95": 1.0, "p99": 3.65}, 1.82, 3.64), "BM11 p99 over the limit fails")
+	return true
+
+func test_draw_call_ceiling(runner) -> bool:
+	var bench = load("res://scripts/debug/movement_benchmark.gd")
+	runner.check(bench.draw_call_failure("open", 50.0) == "", "BM12 open at ceiling passes")
+	runner.check(bench.draw_call_failure("open", 51.0) != "", "BM12 open over ceiling fails")
+	runner.check(bench.draw_call_failure("ashfall", 60.0) == "", "BM12 ashfall at ceiling passes")
+	runner.check(bench.draw_call_failure("ashfall", 61.0) != "", "BM12 ashfall over ceiling fails")
+	runner.check(bench.draw_call_failure("nope", 1.0) != "", "BM12 layout without ceiling fails loudly")
 	return true
