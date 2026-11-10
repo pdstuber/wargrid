@@ -4,17 +4,20 @@ import sys
 import time
 from pathlib import Path
 
-if len(sys.argv) < 3:
-    sys.exit("usage: python3 -I tools/serve_web_bench.py EXPORT_DIR RESULTS_DIR [PORT]")
-root, results = Path(sys.argv[1]), Path(sys.argv[2])
-port = int(sys.argv[3]) if len(sys.argv) > 3 else 8060
+args = [a for a in sys.argv[1:] if a != "--no-isolation"]
+isolated = len(args) == len(sys.argv) - 1
+if len(args) < 2:
+    sys.exit("usage: python3 -I tools/serve_web_bench.py EXPORT_DIR RESULTS_DIR [PORT] [--no-isolation]")
+root, results = Path(args[0]), Path(args[1])
+port = int(args[2]) if len(args) > 2 else 8060
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     # Cross-origin isolation lifts the browsers' 1 ms timer rounding.
     def end_headers(self) -> None:
-        self.send_header("Cross-Origin-Opener-Policy", "same-origin")
-        self.send_header("Cross-Origin-Embedder-Policy", "require-corp")
+        if isolated:
+            self.send_header("Cross-Origin-Opener-Policy", "same-origin")
+            self.send_header("Cross-Origin-Embedder-Policy", "require-corp")
         self.send_header("Cache-Control", "no-store")
         super().end_headers()
 
