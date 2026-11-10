@@ -131,7 +131,7 @@ Authorized for this run (user, 2026-11-10): local commits on spike-native-sim an
 Stop conditions and their night defaults:
 - A trace or pin moves with the native path off: the task that caused it returns BLOCKED and its task tree is not brought onto spike-native-sim; other tasks continue.
 - A slice cannot be made to match GDScript within its time box: keep the first mismatch (tick, entity, field, both values) as a finding, leave that slice out of every GO argument, still measure its K and H and label them "not behaviour-equal".
-- The Deck is down or drops out: Deck tasks are skipped and stay rerunnable on their own; the outcome is at most CONDITIONAL GO.
+- The Deck is down or drops out: Deck tasks are skipped and stay rerunnable on their own, and the Mac carries the evidence instead (user, 2026-11-10 late: "run the stuff on the mac and follow your best judgement"). The coordinator retries the Deck check at the start of each phase, and may give T10 the freed time for full three-run sets in Safari and Vivaldi. The outcome is at most CONDITIONAL GO, because the gate device was not measured; the report evaluates the decision rule on Mac Firefox, labelled "not the gate", and names the Deck reruns that would close it.
 - Rust fails to load in a browser: record the cause class and the browser, continue with the others.
 - A row the user already accepted as exceeded (hordes300, combat open against 1.82 ms) is recorded with its numbers, not treated as a stop.
 - A usage limit or a compaction: write the resume record; the run continues from it when it can.

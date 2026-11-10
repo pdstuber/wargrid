@@ -273,6 +273,7 @@ Interview before the overnight run of the [handoff](../native-sim-spike-prompt.t
 - Emscripten 3.1.74 is the main version (documented by godot-rust); 4.0.20, the engine's own, gets a comparison row.
 - Linux x86-64 binaries are built in a container on the Mac; nothing is installed on the Deck beyond one folder.
 - The user sets up the Deck (Desktop Mode, mains power, no sleep) before starting; without it the run continues on the Mac and the outcome is at most CONDITIONAL GO.
+- If the Deck does not work during the night: "run the stuff on the mac and follow your best judgement" (late evening, after the Deck preflight passed: Desktop Mode, mains, no screen-off, no lock, "when inactive: do nothing").
 - Overnight a stop condition takes its written default and the run continues; only push, deploy and loosening a budget or pin are never defaulted.
 - Local commits on `spike-native-sim` are pre-authorized; no push, PR or merge.
 - Models: Sonnet coordinator; Opus 5.5 and Sonnet 5.5 subagents by difficulty (the plan names one per task).
