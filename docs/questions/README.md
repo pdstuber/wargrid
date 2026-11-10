@@ -23,5 +23,6 @@ Researched questions for the user's design wizard: one short question at a time,
 | [playtest-repair-bots.md](playtest-repair-bots.md) | Playtest: repair, bots | Q13 open |
 | [playtest-controls.md](playtest-controls.md), [playtest-placement.md](playtest-placement.md) | Playtest follow-ups | answers in the design answers (friend's playtest, controls, repair); not checked question by question |
 | [avoidance-zh.md](avoidance-zh.md), [avoidance-other-engines.md](avoidance-other-engines.md), [avoidance-wargrid.md](avoidance-wargrid.md) | Unit avoidance research | answers in the design answers (unit avoidance scope and behaviour); spike on branch `spike-avoidance` |
+| [movement-pathing-brief.md](movement-pathing-brief.md) | Movement and pathing (finer grid, any angle, navmesh, flow fields) | wizard run 2026-11-10: grid size, unit size, order and feel answered; base method waits for the timing spike |
 
 Next by milestone order: `next-batch-b.md` (M7.9 fog is answered); the remaining world questions wait for the in-game art lab.
