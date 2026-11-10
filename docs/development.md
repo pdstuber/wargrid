@@ -68,6 +68,7 @@ python3 tools/zh_ini.py dump   # Zero Hour INI blocks to build/zh_ini/inizh.json
 sh tools/run_python_checks.sh   # ruff format + lint, mypy, Python tests; needs: uv venv tools/.venv && uv pip install --python tools/.venv/bin/python -r tools/requirements-dev.txt
 actionlint   # GitHub workflows, with shellcheck on run: blocks; needs: brew install actionlint shellcheck
 sh tools/run_benchmark.sh
+mkdir -p build && sh tools/run_benchmark.sh > build/bench.log 2>&1   # on a clean main it records itself in docs/reference/perf-history.csv (PERF_LABEL="…" forces a record on any branch, PERF_RECORD=0 disables); the status table in the ledger and README is regenerated after every passing benchmark run unless PERF_RECORD=0
 sh tools/run_team_match.sh   # three-faction 3v3 bots-only match on Ashfall, pinned cap line at tick 45000, about 2 min
 ```
 

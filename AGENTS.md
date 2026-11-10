@@ -39,6 +39,7 @@ Current setup and milestone status live in the [development notes](docs/developm
 
 ## Verification and desktop use
 
+- After a merge to `main`, run `sh tools/run_benchmark.sh` on `main`, it records itself on a clean `main` (`PERF_LABEL="…"` forces a record elsewhere, `PERF_RECORD=0` off) and regenerates the status table in the ledger and README after every passing benchmark run unless `PERF_RECORD=0` ([performance ledger](docs/reference/performance.md)); if the load average is above 2.5, say so and run it later.
 - Test output (Wargrid override of the global delegate-to-subagent rule): redirect suite and benchmark output to a file and read only the summary lines; on failure read only the failing lines. Use subagents for reviews, not for running tests.
 - Plans list same-tick interaction cases for every new command (against every existing command and against removal) and a spec-worded test for every AI rule. Benchmarks assert that their mechanics run inside the timed window. HUD changes get a headless layout test. Report every check with the tree it ran on.
 - Before reporting GDScript changes done, `sh tools/run_lint.sh` and `sh tools/run_warnings.sh` pass (new code is typed; tests are exempt from `untyped_declaration` only).
