@@ -332,6 +332,18 @@ func _post() -> void:
 	if http.request(origin + "/result", ["Content-Type: text/plain"], HTTPClient.METHOD_POST, body) != OK:
 		_status.text = "post failed"
 
+# Zoom 0.5 shows the whole fight from a fixed camera; closer zooms follow the owner-1 army so they do not render empty ground.
+static func horde_camera(entities: Array, level: float) -> Vector2:
+	var fixed: Vector2 = Iso.world_to_plane(Vector2(32, 32))
+	if level <= 0.5: return fixed
+	var sum := Vector2.ZERO
+	var count: int = 0
+	for unit: Dictionary in entities:
+		if unit.owner == 1:
+			sum += Vector2(unit.position[0], unit.position[1])
+			count += 1
+	return Iso.world_to_plane(sum / count) if count > 0 else fixed
+
 func _horde_tick() -> void:
 	var started: int = Time.get_ticks_usec()
 	_simulation.step()
@@ -341,6 +353,7 @@ func _horde_tick() -> void:
 		_sound.collect_step(state.tick, _simulation.combat_events(), _simulation.command_results())
 		_sound_state = state
 	var no_selection: Array[int] = []
+	$Camera2D.position = horde_camera(state.entities, $Camera2D.zoom.x)
 	_view.set_state(state, no_selection)
 	_status.text = "horde | %s | tick %d | Esc: quit" % ["draining" if _sampling_done else ("sampling" if _sample_started > 0 else "warmup"), state.tick]
 	if _sample_started > 0 and not _sampling_done:

@@ -4,6 +4,7 @@ extends RefCounted
 const Stats = preload("res://scripts/debug/timing_stats.gd")
 const Workload = preload("res://scripts/debug/movement_workload.gd")
 const CombatWorkload = preload("res://scripts/debug/combat_workload.gd")
+const Iso = preload("res://scripts/presentation/isometric.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Navigation = preload("res://scripts/simulation/grid_navigation.gd")
 const Economy = preload("res://tests/economy_fixture.gd")
@@ -13,7 +14,7 @@ const Probe = preload("res://scenes/movement_benchmark.tscn")
 const MovementBenchmark = preload("res://scripts/debug/movement_benchmark.gd")
 
 func cases() -> Array[Callable]:
-	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_transports_fixture, test_defences_fixture, test_skirmish3v3_fixture, test_combat_work_ceiling, test_volley_retaliation_work, test_horde_render_layout, test_horde_render_500_counts, test_workload_asserts_pure, test_settled_matches_snapshot_predicate, test_gate_values, test_draw_call_ceiling, test_gate_fails_over_ceiling, test_cpu_frame_pairs_draw_with_its_tick, test_gate_is_wired_to_the_ceiling, test_units_reported_are_units_run]
+	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_transports_fixture, test_defences_fixture, test_skirmish3v3_fixture, test_combat_work_ceiling, test_volley_retaliation_work, test_horde_render_layout, test_horde_render_500_counts, test_workload_asserts_pure, test_settled_matches_snapshot_predicate, test_gate_values, test_draw_call_ceiling, test_gate_fails_over_ceiling, test_cpu_frame_pairs_draw_with_its_tick, test_gate_is_wired_to_the_ceiling, test_units_reported_are_units_run, test_horde_camera_follows_army_when_zoomed]
 
 func test_statistics(runner) -> bool:
 	runner.check(Stats.summary(PackedFloat64Array()) == {"n": 0, "p50": 0.0, "p95": 0.0, "p99": 0.0, "max": 0.0}, "BM1 empty")
@@ -325,4 +326,21 @@ func test_units_reported_are_units_run(runner) -> bool:
 	runner.check(MovementBenchmark.units_run(500, ["open"] as Array[String]) == 300, "BM16 500 on the open layout still runs 300")
 	runner.check(MovementBenchmark.units_run(500, ["horde"] as Array[String]) == 500, "BM16 500 on horde runs 500")
 	runner.check(MovementBenchmark.units_run(300, ["horde"] as Array[String]) == 300, "BM16 default horde runs 300")
+	return true
+
+func test_horde_camera_follows_army_when_zoomed(runner) -> bool:
+	var sim: RefCounted = CombatWorkload.create("horde_render")
+	for i in range(300):
+		sim.step()
+	var entities: Array = sim.snapshot().entities
+	var sum := Vector2.ZERO
+	var count: int = 0
+	for unit: Dictionary in entities:
+		if unit.owner == 1:
+			sum += Vector2(unit.position[0], unit.position[1])
+			count += 1
+	var centroid: Vector2 = sum / count
+	var camera: Vector2 = MovementBenchmark.horde_camera(entities, 2.0)
+	runner.check(camera.distance_to(Iso.world_to_plane(centroid)) < 1.0 * Iso.world_to_plane(Vector2(1, 0)).length(), "BM17 zoom 2 camera is within a cell of the owner-1 centroid, got %s vs %s" % [camera, Iso.world_to_plane(centroid)])
+	runner.check(MovementBenchmark.horde_camera(entities, 0.5) == Iso.world_to_plane(Vector2(32, 32)), "BM17 zoom 0.5 keeps the fixed camera")
 	return true

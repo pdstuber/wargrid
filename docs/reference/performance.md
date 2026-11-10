@@ -372,6 +372,7 @@ Load 1.9-2.9 (1-min avg 2.0-2.5), no WoW process. Rows a-d: `sh tools/run_game.s
 | c | `--zoom=2 --layout=horde` | | | | 0.304 / 3 (p99 5.283) |
 | d | `--units=500` (horde, 500 units) | | | | 0.766 / 5 (tick p95 8.33) |
 
+- Correction 2026-11-10: row c (zoom 2, horde) used the fixed camera on cell (32,32), so the army was mostly off screen and its frame p95 rendered mostly empty ground; tick-frame numbers stay valid. The benchmark now follows the owner-1 centroid at zoom above 0.5 (the centroid loop runs inside the timed horde tick, 400 entities, cost not measured); zoom 0.5 rows keep the fixed camera. Row c needs a rerun.
 - All draw calls far under ceilings (horde 239 -> 5 since Task 1; 45 -> 24 on Ashfall comes from removing glyphs, labels and the grid in Task 5, not from batching). The frame-interval p95 above is of non-tick frames and is **not** the verdict; see the tick-frame table.
 - `sh tools/run_benchmark.sh`: exit 0, all BUDGET PASS (2 + 7 + 1), no failing line (sim budgets only; it does not time the view).
 - Headless presentation per tick (`WorldBatch.objects` + `build`, 300 mixed units + 6 factories, zoom 1.0, 200 reps, 3 runs): Low 1.143-1.152 ms, High 1.401-1.405 ms, against the 0.91 ms plumbing dev budget: **EXCEEDED** (as since Task 4), not a rendered gate.
