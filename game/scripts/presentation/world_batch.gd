@@ -25,10 +25,16 @@ const MUZZLE_COLOR := Color("ffe680")
 const HIT_COLOR := Color("ff8a3c")
 const FADE_COLOR := Color("1c1a18")
 const FLAG_SHADOWS := GraphicsSettings.FLAG_SHADOWS
+const INFANTRY_ROLES := [&"infantry", &"rocket_infantry", &"laborer"]
 
 var points := PackedVector2Array()
 var colors := PackedColorArray()
 var triangle_count: int = 0
+# Role -> variant bits OR-ed into the item's own; the A/B lab fills it, empty keeps every shape as it is.
+var role_variants: Dictionary = {}
+# Lab: true greys for vertical faces, and a brighter set of owner hues.
+var neutral_sides: bool = false
+var bright_owners: bool = false
 
 static var _top_lifts: Dictionary = {}
 static var _pick_extents: Dictionary = {}
@@ -159,8 +165,9 @@ func submit(item: RID) -> void:
 func _append_body(item: Dictionary, detail: int, turret_angles: Dictionary) -> void:
 	var move := Transform2D(0.0, Iso.world_to_plane(item.anchor) + Vector2(0, -AIR_LIFT if item.layer == LAYER_AIR else 0.0))
 	var bucket: int = Bake.bucket(item.heading)
-	var turret_bucket: int = Bake.bucket(turret_angles[item.id]) if turret_angles.has(item.id) and _has_turret(item.role, detail, item.variant) else bucket
-	var body: Dictionary = _body(item.role, detail, item.variant, bucket, turret_bucket)
+	var variant: int = item.variant if role_variants.is_empty() else item.variant | role_variants.get(item.role, 0)
+	var turret_bucket: int = Bake.bucket(turret_angles[item.id]) if turret_angles.has(item.id) and _has_turret(item.role, detail, variant) else bucket
+	var body: Dictionary = _body(item.role, detail, variant, bucket, turret_bucket)
 	var mesh_points: PackedVector2Array = body.points
 	var rise: float = item.rise
 	if rise < 1.0:
@@ -201,14 +208,15 @@ static func _body(role: StringName, detail: int, variant: int, bucket: int, turr
 # Cached on the merged body itself, so a dropped body drops its colours with it.
 func _mesh_colors(mesh: Dictionary, owner: int) -> PackedColorArray:
 	var by_owner: Dictionary = mesh.get_or_add("colors", {})
-	if not by_owner.has(owner):
-		var palette: PackedColorArray = Palette.owner_colors(owner)
+	var key: int = owner + (1000 if neutral_sides else 0) + (2000 if bright_owners else 0)
+	if not by_owner.has(key):
+		var palette: PackedColorArray = Palette.extended_colors(owner, neutral_sides, bright_owners)
 		var slots: PackedByteArray = mesh.slots
 		var built := PackedColorArray()
 		built.resize(slots.size())
 		for i in slots.size(): built[i] = palette[slots[i]]
-		by_owner[owner] = built
-	return by_owner[owner]
+		by_owner[key] = built
+	return by_owner[key]
 
 func _append_effect(effect: Dictionary) -> void:
 	var at: Vector2 = Iso.world_to_plane(effect.anchor)

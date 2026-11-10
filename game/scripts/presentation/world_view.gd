@@ -44,6 +44,9 @@ var _items: Array[Dictionary] = []
 var time_draws: bool = false
 var _quality: int = GraphicsSettings.HIGH
 var _zoom: float = 1.0
+var _wide_infantry_pick: bool = false
+var _horde_diamonds: bool = true
+const WIDE_PICK_WIDTH: float = 36.0
 const HINT_TICKS: int = 40
 const SHOT_TICKS: int = 6
 const MUZZLE_LIFT: float = 20.0
@@ -93,6 +96,30 @@ func flags() -> int:
 
 func set_visuals(director: Director) -> void:
 	_visuals = director
+
+func set_role_variants(variants: Dictionary) -> void:
+	_batch.role_variants = variants
+	_rebuild_batch()
+
+func set_neutral_sides(neutral: bool) -> void:
+	_batch.neutral_sides = neutral
+	_rebuild_batch()
+
+func set_bright_owners(bright: bool) -> void:
+	_batch.bright_owners = bright
+	_rebuild_batch()
+
+# Lab: widens the infantry click box; off keeps the drawn-body box.
+func set_wide_infantry_pick(wide: bool) -> void:
+	_wide_infantry_pick = wide
+
+# Lab: false hides the white horde diamonds so a ground ring can replace them.
+func set_horde_diamonds(shown: bool) -> void:
+	_horde_diamonds = shown
+	_rebuild_batch()
+
+func set_ground_variation(varied: bool) -> void:
+	_terrain.set_varied(varied)
 
 func set_biome(biome: int) -> void:
 	if biome == _biome: return
@@ -172,7 +199,9 @@ func _rebuild_batch() -> void:
 	if _visuals != null:
 		angles = _visuals.turret_angles()
 		effects = _visuals.effects()
-	_batch.build(_items, angles, detail(), flags(), horde_marks(), effects)
+	var marks: Array[Vector2] = []
+	if _horde_diamonds: marks = horde_marks()
+	_batch.build(_items, angles, detail(), flags(), marks, effects)
 	_bodies.queue_redraw()
 	queue_redraw()
 
@@ -234,6 +263,12 @@ func _vehicle_bounds(unit: Dictionary) -> Rect2:
 	var extent: Rect2 = WorldBatch.pick_extent(unit.get("kind"))
 	return Rect2(extent.position + Iso.world_to_plane(point), extent.size)
 
+func _pick_bounds(unit: Dictionary) -> Rect2:
+	var bounds: Rect2 = _vehicle_bounds(unit)
+	if not _wide_infantry_pick or not WorldBatch.INFANTRY_ROLES.has(WorldBatch.kind_info(unit.kind)[0]): return bounds
+	var centre: float = bounds.get_center().x
+	return Rect2(centre - WIDE_PICK_WIDTH / 2.0, bounds.position.y, WIDE_PICK_WIDTH, bounds.size.y)
+
 func order_marks() -> Array[Vector2]:
 	var marks: Array[Vector2] = []
 	for unit: Dictionary in _state.get("entities", []):
@@ -264,7 +299,7 @@ func crate_marks() -> Array[Vector2]:
 func pick_target(plane_point: Vector2, own: int) -> int:
 	for i in range(_state.get("entities", []).size() - 1, -1, -1):
 		var unit: Dictionary = _state.entities[i]
-		if unit.owner != own and not unit.has("container_id") and not Registry.air_kinds.has(unit.get("kind")) and _vehicle_bounds(unit).has_point(plane_point): return unit.id
+		if unit.owner != own and not unit.has("container_id") and not Registry.air_kinds.has(unit.get("kind")) and _pick_bounds(unit).has_point(plane_point): return unit.id
 	var point: Vector2 = Iso.plane_to_world(plane_point)
 	for building: Dictionary in _state.get("buildings", []):
 		var definition: Dictionary = Definitions.building(building.kind)
@@ -275,7 +310,7 @@ func pick_target(plane_point: Vector2, own: int) -> int:
 func pick_entity(plane_point: Vector2, any_owner: bool = false) -> int:
 	for i in range(_state.get("entities", []).size() - 1, -1, -1):
 		var unit: Dictionary = _state.entities[i]
-		if (any_owner or unit.owner == local_player) and not unit.has("hole_id") and not unit.has("container_id") and _vehicle_bounds(unit).has_point(plane_point):
+		if (any_owner or unit.owner == local_player) and not unit.has("hole_id") and not unit.has("container_id") and _pick_bounds(unit).has_point(plane_point):
 			return unit.id
 	return -1
 
