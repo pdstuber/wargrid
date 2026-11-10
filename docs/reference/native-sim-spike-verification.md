@@ -3,16 +3,16 @@
 Resume record and dated evidence for [the handoff](../native-sim-spike-prompt.txt) and [its plan](../superpowers/plans/2026-11-10-native-sim-spike.md). Labels: **measured** (run here), **source** (quoted file or fetched page), **inferred**, **unverified**. Rows below the resume record are append-only.
 
 ```text
-Resume record (updated 2026-11-10 phase 2 done, coordinator)
-Branch / base commit / working-tree state: spike-native-sim in ~/projects/wargrid-wt-native, head 298c313 (base dde868e); T8 may leave uncommitted rows/exports only outside the repo
-Last green task / next incomplete task: T0-T7 green and integrated (T2 96000ae, T3 1d43859, T4 296b943, T5 0ccdcc0, T6 a8d6a67, T7 298c313); T8 (Deck baselines) running / T9
+Resume record (updated 2026-11-10 phase 4 done, coordinator)
+Branch / base commit / working-tree state: spike-native-sim in ~/projects/wargrid-wt-native, base dde868e, clean after this commit
+Last green task / next incomplete task: T0-T11 green and integrated (T9 ffc172e, T8 1eb8f89, T11 f3b91ff; T10 wrote rows only) / T12 report (opus, WT)
 Changed paths since last commit: none
-Last command / cases / checks / failures / exit / marker: per-task rows in ~/projects/wargrid-native-work/rows/
-Known red case or blocker: suite red on spike-native-sim: test_map.gd:59,72 expects 11 presets, now 13 (T3); lib.rs test stubs_report_not_implemented stale. T9 fixes both. Deck W3 probe not yet run.
-Environment: see previous record; Deck preflight OK
+Last command / cases / checks / failures / exit / marker: suite 737 cases 139594 checks 0 failures (extension removed, T9); per-task rows in ~/projects/wargrid-native-work/rows/ (t8, t10, t11 not yet copied into this file; T12 copies them)
+Known red case or blocker: none. Open: Windows unverified; Safari, Vivaldi and emcc 4.0.20 single runs; T8 move_dense p95 -7.8% unexplained
+Environment: Mac M6 macOS 27.2.1; Deck Firefox 159 (preflight said 159.0.1)
 Approved decisions, pre-authorizations used, deferred gates: see handoff "Authorized for this run"
 Usage so far: not recorded
-Next exact action: dispatch T9 (opus, WT); retry Deck W3 probe when T8 frees the lock
+Next exact action: dispatch T12, then T13 (fresh opus reviewer), T14
 ```
 
 ## Stage 1 record (done 2026-11-10 with the user, before invocation)
