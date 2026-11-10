@@ -161,6 +161,9 @@ Follow-up after the avoidance spike (user, 2026-11-09 evening; open questions fr
 
 After round 2 (no variant met the cap; user, 2026-11-10):
 - Round 3 is a cost experiment on R1, no rule changes: trim the cheap path, merge the per-class grid fills, skip the grid for all-infantry, re-measure against r0 in the same interleave. Hard stop after one round: if it does not close the gap, the next step is a design brainstorm for a different structure (for example grids only near vehicles), not another experiment.
+- Round 3 verdict (user, 2026-11-10, round 2 open question 2): a row passes only if its median-of-3 delta p95 against r0 is at most +0.500 ms; the spread is reported, there is no noise allowance.
+- Round 3 also changes the movement benchmark legs so packed moves can finish (round 2 open question 8; user, 2026-11-10). Risk raised before the answer: spreading destinations makes `run_benchmark.sh` pass while the in-game "select 300, click one spot" jam remains. So the new legs apply identically to r0 and the variant, the old packed one-anchor move stays in the jam harness as a reported jam row, r0 is measured on old and new legs so the budget shift is visible, and only on the spike branch (main's benchmark is unchanged).
+- Round 3 measures the browser (Firefox Web Bench, a dedicated profile, never the user's own Firefox) only if the native cap passes; otherwise it is skipped and said so (user, 2026-11-10, round 2 open question 13).
 
 ## Friend's playtest (reported by the user, 2026-11-08)
 
