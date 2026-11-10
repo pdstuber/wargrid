@@ -6,13 +6,13 @@ const Bake = preload("res://scripts/presentation/shape_bake.gd")
 const Palette = preload("res://scripts/presentation/palette.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 const Definitions = preload("res://scripts/simulation/definitions/definitions.gd")
-const TURRET_OFFSET := {&"tank_frc": 0.1}
-const TANK_ROLES: Array[StringName] = [&"tank_usa", &"tank_china", &"tank_frc"]
+const TURRET_OFFSET := {&"tank_frc": 0.075}
+const TANK_ROLES: Array[StringName] = [&"tank_usa", &"tank_china", &"tank_china_gatling", &"tank_frc"]
 const Z: float = 3.5
 const PRIM_SLOTS: Array[int] = [Shapes.SLOT_ROOF, Shapes.SLOT_ROOF_DARK, Shapes.SLOT_SIDE, Shapes.SLOT_SIDE_DARK, Shapes.SLOT_MACHINE, Shapes.SLOT_GLOW, Shapes.SLOT_SMOKE]
 
 func cases() -> Array[Callable]:
-	return [test_bucket_wraps, test_box_top_face_on_top, test_bake_is_cached, test_unknown_kind_gets_default_role, test_owner_palette_eight, test_lab_roles_mapped, test_damage_stage_changes_geometry, test_turret_pivot_on_hull_top, test_no_kind_uses_default_role, test_roster_shares_slots, test_unit_heights_fit_pick_box, test_hulls_fit_one_cell, test_tracks_deck_and_cannon, test_neutral_faces, test_infantry_narrow_with_head, test_prims_sorted_per_heading, test_cylinder_segments_by_detail, test_back_faces_not_baked]
+	return [test_bucket_wraps, test_box_top_face_on_top, test_bake_is_cached, test_unknown_kind_gets_default_role, test_owner_palette_eight, test_lab_roles_mapped, test_damage_stage_changes_geometry, test_turret_pivot_on_hull_top, test_no_kind_uses_default_role, test_roster_shares_slots, test_unit_heights, test_hulls_fit_one_cell, test_tracks_deck_and_cannon, test_neutral_faces, test_infantry_narrow_with_head, test_prims_sorted_per_heading, test_cylinder_segments_by_detail, test_back_faces_not_baked]
 
 func test_bucket_wraps(runner) -> bool:
 	runner.check(Bake.bucket(0.0) == 0, "SH1 zero")
@@ -60,13 +60,14 @@ func test_owner_palette_eight(runner) -> bool:
 
 func test_lab_roles_mapped(runner) -> bool:
 	var expected := {
-		"usa_tank": &"tank_usa", "china_tank": &"tank_china", "frc_tank": &"tank_frc",
+		"usa_tank": &"tank_usa", "china_tank": &"tank_china_gatling", "china_light_vehicle": &"tank_china", "frc_tank": &"tank_frc",
 		"usa_builder": &"bulldozer", "china_builder": &"bulldozer",
 		"usa_rifle_infantry": &"infantry", "china_rifle_infantry": &"infantry", "frc_rifle_infantry": &"infantry",
-		"usa_rocket_infantry": &"rocket_infantry", "china_rocket_infantry": &"rocket_infantry", "frc_rocket_infantry": &"rocket_infantry", "frc_builder": &"infantry",
+		"usa_rocket_infantry": &"rocket_infantry", "china_rocket_infantry": &"rocket_infantry", "frc_rocket_infantry": &"rocket_infantry", "frc_builder": &"laborer",
 		"usa_power_plant": &"power_plant", "china_power_plant": &"power_plant",
 		"usa_factory": &"war_factory", "china_factory": &"war_factory", "frc_factory": &"war_factory",
 		"usa_supply_center": &"supply_depot", "china_supply_center": &"supply_depot", "frc_supply_center": &"supply_depot",
+		"usa_defence": &"defence_usa", "china_defence": &"defence_china", "frc_defence": &"defence_frc",
 	}
 	for kind: String in expected:
 		runner.check(Shapes.role(kind) == expected[kind], "SH7 %s maps to %s" % [kind, expected[kind]])
@@ -96,7 +97,7 @@ func test_damage_stage_changes_geometry(runner) -> bool:
 	return true
 
 func test_turret_pivot_on_hull_top(runner) -> bool:
-	for role in [&"tank_usa", &"tank_china", &"tank_frc"]:
+	for role in TANK_ROLES:
 		var parts: Array[Dictionary] = Shapes.parts(role, 2)
 		runner.check(parts.size() == 2 and parts[1].name == &"turret", "SH9 %s has a turret part" % role)
 		if parts.size() < 2: continue
@@ -119,7 +120,7 @@ func test_no_kind_uses_default_role(runner) -> bool:
 		runner.check(role != &"default_vehicle" and role != &"default_building", "SH10 %s has a class role (%s)" % [kind, role])
 	runner.check(Shapes.role("usa_collector") == &"helicopter", "SH10 helicopter role")
 	runner.check(Shapes.parts(&"helicopter", 1)[1].angle == &"fixed", "SH10 rotor is a fixed-angle part")
-	runner.check(Shapes.parts(&"defence", 1)[1].name == &"turret", "SH10 defence turret")
+	runner.check(Shapes.parts(&"defence_china", 1)[1].name == &"turret", "SH10 gatling tower turret")
 	return true
 
 func test_roster_shares_slots(runner) -> bool:
@@ -140,11 +141,14 @@ func _max_lift(role: StringName, detail: int) -> float:
 		top = maxf(top, Array(Bake.mesh(role, part, 0, detail).lifts).max())
 	return top
 
-func test_unit_heights_fit_pick_box(runner) -> bool:
-	var roles: Array[StringName] = [&"tank_usa", &"tank_china", &"tank_frc", &"infantry", &"rocket_infantry"]
+func test_unit_heights(runner) -> bool:
+	for role: StringName in TANK_ROLES:
+		for detail in 3:
+			runner.check(is_equal_approx(_max_lift(role, detail), 3.0 * Z), "SH12 %s detail %d is 10.5 px tall (Zero Hour height to length ratio), got %f" % [role, detail, _max_lift(role, detail)])
+	var roles: Array[StringName] = [&"infantry", &"laborer", &"rocket_infantry", &"light_vehicle", &"bulldozer", &"collector_truck"]
 	for role: StringName in roles:
 		for detail in 3:
-			runner.check(is_equal_approx(_max_lift(role, detail), 4.5 * Z), "SH12 %s detail %d is 15.75 px tall (inside the 16 px pick box), got %f" % [role, detail, _max_lift(role, detail)])
+			runner.check(is_equal_approx(_max_lift(role, detail), 4.5 * Z), "SH12 %s detail %d is 15.75 px tall, got %f" % [role, detail, _max_lift(role, detail)])
 	runner.check(is_equal_approx(_max_lift(&"war_factory", 1), 14.0 * Z), "SH12 factory roof 49 px")
 	runner.check(is_equal_approx(_max_lift(&"barracks", 0), 6.0 * Z), "SH12 barracks 21 px")
 	return true
@@ -160,7 +164,7 @@ func _extent(part: Dictionary) -> Vector2:
 	return hi - lo
 
 func test_hulls_fit_one_cell(runner) -> bool:
-	var expected := {&"tank_usa": Vector2(0.75, 0.5), &"tank_china": Vector2(0.8, 0.6), &"tank_frc": Vector2(0.7, 0.45)}
+	var expected := {&"tank_usa": Vector2(0.75, 0.5), &"tank_china": Vector2(0.8, 0.6), &"tank_china_gatling": Vector2(0.8, 0.6), &"tank_frc": Vector2(0.7, 0.45)}
 	for role: StringName in expected:
 		var got: Vector2 = _extent(Shapes.parts(role, 0)[0])
 		runner.check(got.is_equal_approx(expected[role]), "SH13 %s hull %s, got %s" % [role, expected[role], got])
@@ -170,13 +174,14 @@ func test_tracks_deck_and_cannon(runner) -> bool:
 	for role: StringName in TANK_ROLES:
 		for detail in 3:
 			var parts: Array[Dictionary] = Shapes.parts(role, detail)
-			var tracks: Array = parts[0].prims.filter(func(prim: Dictionary) -> bool: return prim.slot == Shapes.SLOT_MACHINE)
-			runner.check(tracks.size() == 2 and tracks.all(func(prim: Dictionary) -> bool: return is_equal_approx(prim.size.y, 0.15) and prim.size.z == 2.0 and prim.offset.z == 0.0), "SH14 %s detail %d has two 0.15 wide, 2 tall tracks" % [role, detail])
+			var tracks: Array = parts[0].prims.filter(func(prim: Dictionary) -> bool: return prim.slot == Shapes.SLOT_SIDE)
+			runner.check(tracks.size() == 2 and tracks.all(func(prim: Dictionary) -> bool: return is_equal_approx(prim.size.y, 0.1) and prim.size.z == 1.5 and prim.offset.z == 0.0), "SH14 %s detail %d has two dark neutral 0.1 wide, 1.5 tall tracks" % [role, detail])
 			runner.check(tracks.size() == 2 and signf(tracks[0].offset.y) != signf(tracks[1].offset.y), "SH14 %s tracks on opposite sides" % role)
-			runner.check(parts[0].prims.any(func(prim: Dictionary) -> bool: return prim.slot == Shapes.SLOT_ROOF_DARK), "SH14 %s deck is the dark roof slot" % role)
-			runner.check(parts[1].prims[0].slot == Shapes.SLOT_ROOF, "SH14 %s turret top is the roof slot" % role)
+			runner.check(parts[0].prims.any(func(prim: Dictionary) -> bool: return prim.slot == Shapes.SLOT_ROOF_DARK and prim.size.z == 2.0), "SH14 %s deck is the dark roof slot, 2 tall" % role)
+			runner.check(parts[1].prims[0].slot == Shapes.SLOT_ROOF and parts[1].prims[0].offset.z == 2.0, "SH14 %s turret top is the roof slot on the deck" % role)
 			var cannon: Array = parts[1].prims.filter(func(prim: Dictionary) -> bool: return prim.slot == Shapes.SLOT_MACHINE)
-			runner.check(cannon.size() == 1 and is_equal_approx(cannon[0].size.y, 0.12) and cannon[0].size.z == 1.0, "SH14 %s detail %d has a 0.12 wide, 1 tall cannon" % [role, detail])
+			var barrels: int = 2 if role == &"tank_china_gatling" else 1
+			runner.check(cannon.size() == barrels and cannon.all(func(prim: Dictionary) -> bool: return prim.size.z <= 0.8), "SH14 %s detail %d has %d light cannon barrel(s)" % [role, detail, barrels])
 	return true
 
 func test_neutral_faces(runner) -> bool:
@@ -187,20 +192,25 @@ func test_neutral_faces(runner) -> bool:
 	return true
 
 func test_infantry_narrow_with_head(runner) -> bool:
-	for role: StringName in [&"infantry", &"rocket_infantry"]:
+	for role: StringName in [&"infantry", &"laborer", &"rocket_infantry"]:
 		for detail in 3:
-			var prims: Array = Shapes.parts(role, detail)[0].prims
-			var body: Dictionary = prims[0]
-			runner.check(is_equal_approx(body.size.x, 0.15) and body.size.z == 3.0, "SH16 %s body is 0.15 wide, 3 tall" % role)
-			var heads: Array = prims.filter(func(prim: Dictionary) -> bool: return prim.offset.z == 3.0 and prim.size.z == 1.5)
-			runner.check(heads.size() == 1 and heads[0].size.x < body.size.x, "SH16 %s detail %d has a narrower head" % [role, detail])
+			var prims: Array = Shapes.parts(role, detail)[0].prims.filter(func(prim: Dictionary) -> bool: return prim.type == &"cylinder")
+			runner.check(prims.size() == 3 and prims.all(func(prim: Dictionary) -> bool: return prim.size.x <= 0.16), "SH16 %s is three cylinders at most 0.16 wide" % role)
+			runner.check(prims[1].slot == Shapes.SLOT_GLOW and prims[0].slot == Shapes.SLOT_ROOF_DARK, "SH16 %s has an owner torso over owner legs" % role)
+			runner.check(is_equal_approx(prims[2].offset.z, 3.2) and is_equal_approx(prims[2].size.z, 1.3) and prims[2].size.x < prims[1].size.x and prims[2].slot == Shapes.SLOT_MACHINE, "SH16 %s detail %d has a narrower light head" % [role, detail])
 	return true
 
+func _first_and_last(mesh: Dictionary, slot: int) -> Vector2i:
+	var at: Array = []
+	for i in mesh.slots.size():
+		if mesh.slots[i] == slot: at.append(i)
+	return Vector2i(at[0], at[-1])
+
 func test_prims_sorted_per_heading(runner) -> bool:
-	var facing_away: Dictionary = Bake.mesh(&"bulldozer", 0, 32, 0)
-	var facing_front: Dictionary = Bake.mesh(&"bulldozer", 0, 0, 0)
-	runner.check(facing_away.slots[0] == Shapes.SLOT_MACHINE, "SH17 blade behind the body at bucket 32 is drawn first")
-	runner.check(facing_front.slots[facing_front.slots.size() - 1] == Shapes.SLOT_MACHINE, "SH17 blade in front of the body at bucket 0 is drawn last")
+	var away: Dictionary = Bake.mesh(&"bulldozer", 0, 32, 0)
+	var front: Dictionary = Bake.mesh(&"bulldozer", 0, 0, 0)
+	runner.check(_first_and_last(away, Shapes.SLOT_MACHINE).y < _first_and_last(away, Shapes.SLOT_ROOF).x, "SH17 blade behind the body at bucket 32 is drawn first")
+	runner.check(_first_and_last(front, Shapes.SLOT_MACHINE).x > _first_and_last(front, Shapes.SLOT_ROOF).y, "SH17 blade in front of the body at bucket 0 is drawn last")
 	return true
 
 func test_cylinder_segments_by_detail(runner) -> bool:
@@ -208,8 +218,8 @@ func test_cylinder_segments_by_detail(runner) -> bool:
 		var mesh: Dictionary = Bake.mesh(&"infantry", 0, 0, detail)
 		var tops: int = 0
 		for i in range(0, mesh.slots.size(), 3):
-			if mesh.slots[i] == Shapes.SLOT_ROOF and mesh.lifts[i] == 3.0 * Z: tops += 1
-		runner.check(tops == [2, 4, 6][detail], "SH18 detail %d body top fan has %d triangles, got %d" % [detail, [2, 4, 6][detail], tops])
+			if mesh.slots[i] == Shapes.SLOT_MACHINE and is_equal_approx(mesh.lifts[i], 4.5 * Z): tops += 1
+		runner.check(tops == [2, 4, 6][detail], "SH18 detail %d head top fan has %d triangles, got %d" % [detail, [2, 4, 6][detail], tops])
 	return true
 
 func test_back_faces_not_baked(runner) -> bool:

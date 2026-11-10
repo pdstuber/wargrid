@@ -16,7 +16,7 @@ const CombatFixture = preload("res://tests/combat_fixture.gd")
 const MovementWorkload = preload("res://scripts/debug/movement_workload.gd")
 
 func cases() -> Array[Callable]:
-	return [test_pick, test_pile_label_drawn_over_buildings, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_depth_order_matches_comparator,test_battery_shot_line,test_battery_target_line,test_building_label_has_no_kind_id,test_horde_marks,test_rebuild_laborer_unselectable, test_crate_marks_frc_only, test_passengers_not_pickable, test_terrain_redraws_only_when_map_changes, test_structures_redraw_only_when_they_change, test_small_pile_view, test_structures_redraw_when_a_pile_vanishes, test_pick_under_roof, test_structure_bodies_in_shared_list, test_building_health_bar_in_overlay_pass, test_health_bar_rule, test_health_color_ends, test_selection_is_ground_diamond, test_biome_change_redraws_terrain, test_grid_only_while_placing, test_chevron_placeholder, test_cues_draw_on_low_in_the_view, test_effects_age_per_tick_not_per_refresh, test_bodies_submitted_each_frame, test_quality_change_rebuilds, test_draw_timing_only_on_request, test_air_pick_box_follows_lift]
+	return [test_pick, test_pile_label_drawn_over_buildings, test_box_and_order,test_economy_picking,test_build_preview,test_click_hint_lifetime,test_resume_hint,test_depth_order_matches_comparator,test_battery_shot_line,test_battery_target_line,test_building_label_has_no_kind_id,test_horde_marks,test_rebuild_laborer_unselectable, test_crate_marks_frc_only, test_passengers_not_pickable, test_terrain_redraws_only_when_map_changes, test_structures_redraw_only_when_they_change, test_small_pile_view, test_structures_redraw_when_a_pile_vanishes, test_pick_under_roof, test_structure_bodies_in_shared_list, test_building_health_bar_in_overlay_pass, test_health_bar_rule, test_health_color_ends, test_selection_is_ground_diamond, test_biome_change_redraws_terrain, test_grid_only_while_placing, test_chevron_placeholder, test_cues_draw_on_low_in_the_view, test_effects_age_per_tick_not_per_refresh, test_bodies_submitted_each_frame, test_quality_change_rebuilds, test_draw_timing_only_on_request, test_air_pick_box_follows_lift, test_pick_covers_drawn_body]
 
 func test_pick(runner) -> bool:
 	var view = View.new()
@@ -27,10 +27,11 @@ func test_pick(runner) -> bool:
 	var state: Dictionary = sim.snapshot()
 	view.set_state(state, [1])
 	var anchor := Iso.world_to_plane(Vector2(2.5, 2.5))
+	var box: Rect2 = WorldBatch.pick_extent(state.entities[0].kind)
 	runner.check(view.pick_entity(anchor + Vector2(0, -8)) == 1, "V1 interior")
-	runner.check(view.pick_entity(anchor + Vector2(-12, -16)) == 1, "V1 top left bound")
-	for offset in [Vector2(12, -8), Vector2(0, 0), Vector2(-13, -8), Vector2(0, -17)]:
-		runner.check(view.pick_entity(anchor + offset) == -1, "V1 outside " + str(offset))
+	runner.check(view.pick_entity(anchor + box.position + Vector2(0.5, 0.5)) == 1, "V1 top left bound")
+	for offset in [Vector2(-1, box.size.y / 2.0), Vector2(box.size.x + 1, box.size.y / 2.0), Vector2(box.size.x / 2.0, -1), Vector2(box.size.x / 2.0, box.size.y + 1)]:
+		runner.check(view.pick_entity(anchor + box.position + offset) == -1, "V1 outside " + str(offset))
 	runner.check(view.pick_entity(Iso.world_to_plane(Vector2(4.5, 4.5)) + Vector2(0, -8)) == -1, "V1 enemy ignored")
 	state.entities.clear()
 	runner.check(view.pick_entity(anchor + Vector2(0, -8)) == 1, "V1 set_state keeps its own entity list")
@@ -628,6 +629,11 @@ func test_quality_change_rebuilds(runner) -> bool:
 	var high: int = view._batch.triangle_count
 	view.set_quality(GraphicsSettings.LOW)
 	runner.check(view._batch.triangle_count < high, "V27 Low shows fewer triangles without a new tick (%d -> %d)" % [high, view._batch.triangle_count])
+	view.free()
+	var soldiers = Fixture.make_world()
+	soldiers.spawn(1, Vector2(5.5, 5.5), "usa_rifle_infantry")
+	view = View.new()
+	view.set_state(soldiers.snapshot(), [])
 	view.set_quality(GraphicsSettings.HIGH)
 	view.set_zoom(0.5)
 	var far: int = view._batch.triangle_count
@@ -654,5 +660,29 @@ func test_air_pick_box_follows_lift(runner) -> bool:
 	view.set_state(sim.snapshot(), [])
 	var anchor: Vector2 = Iso.world_to_plane(Vector2(9.0, 9.0))
 	runner.check(view.pick_entity(anchor + Vector2(0, -WorldBatch.AIR_LIFT - 8.0)) == heli, "V29 the helicopter is picked where it is drawn")
+	view.free()
+	return true
+
+func test_pick_covers_drawn_body(runner) -> bool:
+	var view = View.new()
+	var sim = CombatFixture.world()
+	sim.add_player(1, 1000)
+	for kind in ["usa_tank", "usa_rifle_infantry", "usa_light_vehicle", "usa_builder", "china_collector"]:
+		var id: int = sim.spawn(1, Vector2(10.5, 10.5), kind)
+		for quarter in 4:
+			var state: Dictionary = sim.snapshot()
+			var unit: Dictionary = state.entities.filter(func(u: Dictionary) -> bool: return u.id == id)[0]
+			unit.heading = [cos(quarter * PI / 2.0), sin(quarter * PI / 2.0)]
+			view.set_state(state, [])
+			var batch = WorldBatch.new()
+			batch.build(WorldBatch.objects(state).filter(func(item: Dictionary) -> bool: return item.id == id) as Array[Dictionary], {}, 1, 0)
+			var top := Vector2(0, 1e9)
+			var bottom := Vector2(0, -1e9)
+			for point in batch.points:
+				if point.y < top.y: top = point
+				if point.y > bottom.y: bottom = point
+			runner.check(view.pick_entity(top + Vector2(0, 1)) == id, "V16 %s heading %d: the top of the drawn body picks it (%s)" % [kind, quarter, top])
+			runner.check(view.pick_entity(bottom + Vector2(0, -1)) == id, "V16 %s heading %d: the bottom of the drawn body picks it (%s)" % [kind, quarter, bottom])
+		sim.remove_object(id)
 	view.free()
 	return true

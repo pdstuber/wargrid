@@ -59,15 +59,13 @@ static func _append_prim(out: Dictionary, ring: PackedVector2Array, base: float,
 	for i in range(1, ring.size() - 1):
 		_tri(out, [ring[0], ring[i], ring[i + 1]], top, slot)
 	var side_slots: Array[int] = [slot, slot]
-	if slot == Shapes.SLOT_ROOF:
+	if slot == Shapes.SLOT_ROOF or slot == Shapes.SLOT_ROOF_DARK or slot == Shapes.SLOT_MACHINE:
 		side_slots = [Shapes.SLOT_SIDE, Shapes.SLOT_SIDE_DARK]
-	elif slot == Shapes.SLOT_ROOF_DARK:
-		side_slots = [Shapes.SLOT_SIDE_DARK, Shapes.SLOT_SIDE_DARK]
 	for i in ring.size():
 		var a: Vector2 = ring[i]
 		var b: Vector2 = ring[(i + 1) % ring.size()]
 		var normal: Vector2 = (b - a).rotated(-PI / 2.0)
-		if normal.x + normal.y <= 0.0:
+		if normal.x + normal.y <= 1e-3 * normal.length():
 			continue
 		var side_slot: int = side_slots[0] if normal.x - normal.y < 0.0 else side_slots[1]
 		_tri(out, [a, b, b], base, side_slot, [top, top, base])

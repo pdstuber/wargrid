@@ -231,8 +231,8 @@ func _compute_half_width(kind: String) -> float:
 
 func _vehicle_bounds(unit: Dictionary) -> Rect2:
 	var point := Vector2(unit.position[0], unit.position[1])
-	var half: float = _half_width(unit.get("kind"))
-	return Rect2(Iso.world_to_plane(point) + Vector2(-half, -(WorldBatch.AIR_LIFT + 16.0) if Registry.air_kinds.has(unit.get("kind")) else -16.0), Vector2(half * 2.0, 16))
+	var extent: Rect2 = WorldBatch.pick_extent(unit.get("kind"))
+	return Rect2(extent.position + Iso.world_to_plane(point), extent.size)
 
 func order_marks() -> Array[Vector2]:
 	var marks: Array[Vector2] = []

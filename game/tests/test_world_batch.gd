@@ -208,7 +208,7 @@ func test_top_lift_by_role(runner) -> bool:
 	runner.check(WorldBatch.top_lift("usa_power_plant") > WorldBatch.top_lift("usa_barracks"), "WB17 the power plant's drums rise above a barracks")
 	return true
 
-const GOLDEN_DIGEST := "75bda4acb47ad5e14751f49aebcb1c8187c52ba8fc7f1255cdae9e6a331dca83"
+const GOLDEN_DIGEST := "d0067244741d4c0cac26164f2ba7fd39e46143f84e5dee4fbca0825add5b33b7"
 
 func _golden_state() -> Dictionary:
 	var sim = Fixture.make_world(10000, Vector2i(96, 96))
@@ -270,5 +270,5 @@ func test_golden_output(runner) -> bool:
 	var digest: String = hasher.finish().hex_encode()
 	print("GOLDEN %s %d" % [digest, triangles])
 	runner.check(triangles > 20000, "WB18 fixture is big (%d triangles)" % triangles)
-	runner.check(digest == GOLDEN_DIGEST, "WB18 output equals the digest recorded at 4d6b764")
+	runner.check(digest == GOLDEN_DIGEST, "WB18 output equals the digest re-recorded after the shape audit fixes (look change, 52556 triangles; was 40012 at 4d6b764)")
 	return true

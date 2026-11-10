@@ -10,12 +10,14 @@ const SIDE_DARK := Color("263842")
 const MACHINE := Color("8098a5")
 const SMOKE := Color("2a2c2e")
 const FALLBACK := Color("808080")
+# Owner 0 is neutral supply: amber crates (palette-proposal.json, impact_heat_resources).
+const NEUTRAL := Color("f7c871")
 const HEALTH_GREEN := Color("5cc85a")
 const HEALTH_YELLOW := Color("e0d060")
 const HEALTH_RED := Color("d8453a")
 
 static func owner_colors(owner: int) -> PackedColorArray:
-	var base: Color = OWNER_BASE[owner - 1] if owner >= 1 and owner <= OWNER_BASE.size() else FALLBACK
+	var base: Color = OWNER_BASE[owner - 1] if owner >= 1 and owner <= OWNER_BASE.size() else (NEUTRAL if owner == 0 else FALLBACK)
 	return PackedColorArray([
 		base, base.darkened(0.25), SIDE, SIDE_DARK,
 		MACHINE, base.lightened(0.5), SMOKE, Color(0, 0, 0, 0.3),

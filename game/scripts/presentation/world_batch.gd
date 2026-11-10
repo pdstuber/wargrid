@@ -31,6 +31,7 @@ var colors := PackedColorArray()
 var triangle_count: int = 0
 
 static var _top_lifts: Dictionary = {}
+static var _pick_extents: Dictionary = {}
 static var _kind_info: Dictionary = {}
 static var _kind_air: Dictionary = {}
 static var _bodies: Dictionary = {}
@@ -56,6 +57,21 @@ static func top_lift(kind: String) -> float:
 		for part in Shapes.parts(role, 0).size(): top = maxf(top, Array(Bake.mesh(role, part, 0, 0).lifts).max())
 		_top_lifts[role] = top
 	return _top_lifts[role]
+
+# Screen box around the anchor that covers the baked body at every heading (detail 1), so a click on any drawn pixel picks the unit.
+static func pick_extent(kind: String) -> Rect2:
+	var role: StringName = kind_info(kind)[0]
+	if not _pick_extents.has(role):
+		var lo := Vector2(1e9, 1e9)
+		var hi := Vector2(-1e9, -1e9)
+		for part in Shapes.parts(role, 1).size():
+			for bucket in Shapes.HEADING_BUCKETS:
+				for point: Vector2 in Bake.mesh(role, part, bucket, 1).points:
+					lo = lo.min(point)
+					hi = hi.max(point)
+		_pick_extents[role] = Rect2(lo, hi - lo)
+	var extent: Rect2 = _pick_extents[role]
+	return Rect2(extent.position + Vector2(0, -AIR_LIFT), extent.size) if kind_info(kind)[1] == LAYER_AIR else extent
 
 static func objects(state: Dictionary) -> Array[Dictionary]:
 	var found: Array[Dictionary] = []
