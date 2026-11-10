@@ -1,12 +1,12 @@
-Resume record (updated 2026-11-10, gate 2 findings and look fixes applied, speed-ups not yet)
-Branch / base commit / working-tree state: spike-art-lab / 1fd7a84 / gate 2 fix changes uncommitted (coordinator commits)
+Resume record (updated 2026-11-10, gate 2 fixes, speed-ups and rerun done)
+Branch / base commit / working-tree state: spike-art-lab / 4d6b764 / gate 2 fix changes uncommitted (coordinator commits)
 Last green task / next incomplete task: Task 8 gate 2 fixes (review findings plus look fix set) / Task 9 (blocked until the speed-ups, the rendered rerun and the user's stop)
-Changed paths since last commit: game/scripts/presentation/{shapes,shape_bake,palette,world_batch,world_view,visual_director,graphics_settings,pause_menu}.gd, game/scripts/{skirmish_main,debug/movement_benchmark}.gd, game/tests/test_{shapes,world_batch,view,visual,graphics_settings,benchmark}.gd, docs/reference/{art-lab-verification,performance}.md, art-lab design and plan (wording correction)
-Last command / cases / checks / failures / exit / marker: `sh tools/run_tests.sh` / 686 cases / 138404 checks / 0 failures / exit 0 / TESTS PASSED 138404
-Known red case or blocker: none. Watch: presentation per tick 1.17 ms Low / 1.42 ms High (dev budget 0.91, EXCEEDED); tick-frame rows EXCEEDED until the speed-ups are measured
+Changed paths since last commit: game/scripts/presentation/{shapes,shape_bake,palette,world_batch,world_view,visual_director,graphics_settings,pause_menu}.gd, game/scripts/{skirmish_main,debug/movement_benchmark}.gd, game/tests/test_{shapes,world_batch,view,visual,graphics_settings,benchmark}.gd, docs/reference/{art-lab-verification,performance}.md, art-lab design and plan (wording correction), game/scripts/presentation/{world_batch,world_view}.gd, game/tests/test_world_batch.gd (speed-ups)
+Last command / cases / checks / failures / exit / marker: `sh tools/run_tests.sh` / 687 cases / 138407 checks / 0 failures / exit 0 / TESTS PASSED 138407
+Known red case or blocker: none. Watch: headless presentation 0.82 Low / 0.94 High (was 1.15 / 1.39) vs 0.91 plumbing dev budget; horde tick-frame ~6 ms and worst High runs of open/dense still EXCEEDED (performance spike)
 Approved decisions, pre-authorizations used, deferred gates: plan approval 2026-11-10 covers rendered windows of Tasks 1, 3, 8 only; ceilings fixed 50/50/50/60; user rulings at stop gate 2 in ~/projects/wargrid-art-work/gate2-review.md (budget option 1; infantry 16 px cap; 0.8-cell hulls a compromise; infantry narrower, 2026-11-10)
 Usage so far (python3 tools/session_usage.py <session files>): not measured
-Next exact action: apply the speed-ups from ~/projects/wargrid-art-work/speedup-research.md (Minor 7), then one rendered rerun with n >= 3, four layouts plus zoom 1.0, tick-frame rows (tick_ms p95 plus draw and render, or CPU_FRAME p99), then stop for the user before Task 9
+Next exact action: stop for the user (look + numbers, performance.md "Rerun after the look fix and speed-ups") before Task 9; speed-ups and rerun done
 
 ## Evidence rows (append-only)
 
@@ -126,3 +126,11 @@ Review and rulings: ~/projects/wargrid-art-work/gate2-review.md. Presentation on
 - Per-tick cost (headless `WorldBatch.objects` + `build`, 300 mixed units + 6 factories, zoom 1.0, 200 reps, `t7_time.gd`, 3 runs): Low 1.161-1.185 ms (7356 triangles; before 1.117-1.122, 3156), High 1.413-1.434 ms (8800 triangles; before 1.365-1.369, 6400): +0.05 ms each, within run noise of Task 8. Still over the 0.91 ms dev budget (EXCEEDED).
 - `sh tools/run_benchmark.sh` (alone, headless): exit 0, `BENCHMARK PASSED 2`, `COMBAT BENCHMARK PASSED 10`, `LOCKSTEP BENCHMARK PASSED 1`, no failing BUDGET line. No rendered run, no window opened in this task.
 - Not checked: how the new look appears on screen (no render); the auto-pick in a real window; rendered tick-frame numbers (rerun after the speed-ups).
+
+### 2026-11-10 Task 8 Step 7: speed-ups and rerun (tree: worktree, 4d6b764 plus speed-up diff)
+
+- Golden test first: `test_golden_output` (WB18, 40012 triangles over 3 details x shadows x extras, every unit kind x 8 headings, owners 1-3, buildings incl. rising, sources, effects, marks) failed on the placeholder digest (red on the assertion), digest recorded on 4d6b764, then green before and after every change. WB19: full body cache clears and output stays equal.
+- Applied levers 1, 2, 4, 5, 6, 7 (see performance.md); not 3. Role/layer and half-width caches reset when `Registry.air_kinds` is replaced (test kinds). Lazy points keep a death point from the last map or from the previous tick's rows.
+- Headless (3 runs each): Low 1.148-1.157 -> 0.820-0.826 ms, High 1.382-1.399 -> 0.942-0.945 ms.
+- Rendered 3 x (a, a at zoom 1.0, b, c, d) in one session, then web; numbers in performance.md. Full suite 687 cases, 138407 checks, 0 failures, exit 0; lint and warnings pass; `run_benchmark.sh` exit 0 (10 BUDGET PASS); netplay match (tick 9024), maps, perturb PASSED (no-arg run is "unknown scenario": scenarios must be named); `git diff main -- game/scripts/simulation game/scripts/net` empty.
+- Process note: a no-argument `tools/run_game.sh` call opened the launcher window twice during a first baseline attempt (killed; baseline redone headless). Web server stopped; Firefox was quit entirely (no tab left, including any of the user's).

@@ -20,6 +20,10 @@ var _preview_valid: bool = false
 var _state: Dictionary = {}
 var _selected_ids: Array[int] = []
 var _last_points: Dictionary = {}
+var _prev_entities: Array = []
+var _prev_buildings: Array = []
+var _widths: Dictionary = {}
+var _width_air: Dictionary = {}
 var _inspected_id: int = -1
 var local_player: int = 1
 var _hints: Array[Dictionary] = []
@@ -213,6 +217,13 @@ func resume_candidate() -> int:
 	return -1
 
 func _half_width(kind: String) -> float:
+	if not is_same(Registry.air_kinds, _width_air):
+		_widths.clear()
+		_width_air = Registry.air_kinds
+	if not _widths.has(kind): _widths[kind] = _compute_half_width(kind)
+	return _widths[kind]
+
+func _compute_half_width(kind: String) -> float:
 	var row: Dictionary = Registry.kind(kind)
 	if row.get("class", "") == "infantry": return 6.0
 	var weapon: Dictionary = CombatDefinitions.weapon(row.get("weapon", ""))
@@ -468,15 +479,42 @@ func battery_target_lines() -> Array[Dictionary]:
 		lines.append({"from": _last_points[building.id] + Vector2(0, -MUZZLE_LIFT), "to": _last_points[combat.target_id]})
 	return lines
 
+# Points only for ids the cues read: shot and death events, selected batteries and their targets.
 func _remember_points() -> void:
-	var points := {}
-	for unit: Dictionary in _state.get("entities", []): points[unit.id] = Iso.world_to_plane(Vector2(unit.position[0], unit.position[1])) + Vector2(0, -8)
+	var wanted := {}
+	var deaths: Array[int] = []
+	for event: Dictionary in _state.get("combat_events", []):
+		if event.type == "shot":
+			wanted[event.attacker_id] = true
+			wanted[event.target_id] = true
+		elif event.type == "death": deaths.append(event.object_id)
 	for building: Dictionary in _state.get("buildings", []):
+		var combat: Variant = building.get("combat")
+		if _selected_ids.has(building.id) and combat != null and combat.target_id != null:
+			wanted[building.id] = true
+			wanted[combat.target_id] = true
+	var entities: Array = _state.get("entities", [])
+	var buildings: Array = _state.get("buildings", [])
+	var points := _points_of(wanted, entities, buildings)
+	var gone := {}
+	for id in deaths:
+		if _last_points.has(id): points[id] = _last_points[id]
+		else: gone[id] = true
+	if not gone.is_empty(): points.merge(_points_of(gone, _prev_entities, _prev_buildings))
+	_last_points = points
+	_prev_entities = entities
+	_prev_buildings = buildings
+
+func _points_of(wanted: Dictionary, entities: Array, buildings: Array) -> Dictionary:
+	var points := {}
+	if wanted.is_empty(): return points
+	for unit: Dictionary in entities:
+		if wanted.has(unit.id): points[unit.id] = Iso.world_to_plane(Vector2(unit.position[0], unit.position[1])) + Vector2(0, -8)
+	for building: Dictionary in buildings:
+		if not wanted.has(building.id): continue
 		var definition: Dictionary = Definitions.building(building.kind)
 		if not definition.is_empty(): points[building.id] = Iso.world_to_plane(Vector2(building.origin[0], building.origin[1]) + Vector2(definition.footprint) / 2.0)
-	for event: Dictionary in _state.get("combat_events", []):
-		if event.type == "death" and _last_points.has(event.object_id): points[event.object_id] = _last_points[event.object_id]
-	_last_points = points
+	return points
 
 func _cell_polygon(origin: Vector2, size: Vector2) -> PackedVector2Array:
 	return PackedVector2Array([Iso.world_to_plane(origin), Iso.world_to_plane(origin + Vector2(size.x, 0)),

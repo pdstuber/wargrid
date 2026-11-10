@@ -386,7 +386,7 @@ Load 1.9-2.9 (1-min avg 2.0-2.5), no WoW process. Rows a-d: `sh tools/run_game.s
 | ashfall | 1.79 | 3.77 | 3.13 | **EXCEEDED** (both qualities) |
 | horde | 4.53 | 6.53 | 6.34 | **EXCEEDED** (already at Task 1, 4.53 vs 3.04) |
 
-These are re-measured after the look fix and the speed-ups (n >= 3, tick-frame p95 plus draw and render, or CPU_FRAME p99); until then they stay EXCEEDED. The look stays; whatever is still over after the speed-ups goes to a performance spike (user ruling 2026-11-10).
+Re-measured after the look fix and the speed-ups: see the rerun section below (these gate 2 numbers are kept as history). The look stays; whatever is still over after the speed-ups goes to a performance spike (user ruling 2026-11-10).
 
 ### Caveats for the Task 8 rows (gate 2 review)
 
@@ -395,6 +395,27 @@ These are re-measured after the look fix and the speed-ups (n >= 3, tick-frame p
 - CPU_FRAME had two faults, fixed in the benchmark after the review: `draw_usec` accumulated through the warm-up (now reset when sampling starts), and frame N's draw was added to frame N+1's sample (now each sample pairs the previous frame's tick with this call's draw and render). Native CPU_FRAME p95 is a non-tick-frame number; read p99/max or the tick-frame rows.
 - Missing: a rendered row at zoom 1.0 (detail 1, the game's start zoom); it comes with the rerun.
 - High and Low differ little (shadows and a higher detail level only; the outline flag was removed because nothing drew it). Tell the user what High adds before Task 9.
+
+### Rerun after the look fix and speed-ups (2026-11-10, tree 4d6b764 plus speed-up diff; n 3 each)
+
+Speed-ups (presentation only, golden-output test `test_golden_output` green throughout): merged cached body mesh per object (cap 4096), precomputed quads and colour arrays for shadows/marks/effects, role/layer cached per kind, one int sort key with index in the low bits (`build`, `depth_sorted`), half width cached per kind, lazy `_remember_points`. Not applied: struct-of-arrays (lever 3), culling, deferred build.
+
+Headless `WorldBatch.objects` + `build` (300 mixed + 6 factories, zoom 1.0, 200 reps, 3 runs): Low 1.15 -> 0.82 ms, High 1.39 -> 0.94 ms (dev budget 0.91 for the whole plumbing incl. 0.75 snapshot: still **EXCEEDED**, about 1.6-1.7 ms).
+
+Rendered: `sh tools/run_game.sh res://scenes/movement_benchmark.tscn [-- args]`, vsync off, load 1.9 before / 2.5 after, no WoW. Logs `~/projects/wargrid-art-work/s2-*.log`. Tick-frame p95 (ms, `tick_ms`, the C1 method; min-max of 3 runs) against 3.04, then frame-interval p95 (non-tick frames) and draw calls:
+
+| Layout | High 0.5 tick p95 | Low 0.5 tick p95 | High 1.0 tick p95 | High 0.5 frame p95 | Low frame p95 | calls (ceiling) | Verdict |
+|---|---|---|---|---|---|---|---|
+| open | 2.77-3.07 | 2.69-2.70 | 2.86-3.08 | 0.35-0.62 | 0.56-0.57 | 4 (3 at 1.0) (50) | Low passes; High median 2.83 passes, worst run 3.07 **EXCEEDED** |
+| dense | 2.72-3.24 | 2.69-2.82 | 2.85-3.10 | 0.35-1.48 | 0.34-0.36 | 5 (4) (50) | Low passes; High median 2.91, worst 3.24 **EXCEEDED** |
+| ashfall | 2.84-2.93 | 2.71-2.74 | 2.85-2.90 | 0.65-1.68 (guard 3.3) | 0.59-1.70 | 24 (60) | passes both |
+| horde | 5.95-6.02 | 5.78 | 5.93-5.98 | 0.36-1.27 (budget 3.04) | 0.77-1.61 | 5 (50) | **EXCEEDED** (about 2x) |
+
+- Row c (`--zoom=2 --layout=horde`): tick p95 6.00-6.11, frame p95 0.31-0.38, 3 calls. Row d (`--units=500`): tick p95 7.52-7.63, frame p95 0.66-1.31, 5 calls. Both report-only.
+- Before -> after (tick p95 High/Low, gate 2 single runs): open 3.44/3.10 -> 2.83/2.70, dense 3.55/3.18 -> 2.91/2.80, ashfall 3.77/3.13 -> 2.84/2.72, horde 6.53/6.34 -> 6.00/5.78 (medians).
+- Remaining over budget: horde (about 6 ms, simulation-heavy: Task 1 baseline was already 4.53) and the worst High run of open/dense; goes to the performance spike, the look stays. The frame-interval p95 swings 0.3-1.7 with tick pacing and is not the verdict.
+- `sh tools/run_benchmark.sh` alone: exit 0, 10 BUDGET PASS, no failing line.
+- Web (Firefox 159, `Web Render Bench` rebuilt on this tree, vsync=browser, CPU frame time with the I1 fix): horde total p95 10.34, p99 10.88 ms, 5 calls; ashfall p95 9.58, p99 10.02, 24 calls (before: 10.98 / 10.80). Per C2: / 1.42-1.60 gives about 6.5-7.3 (horde) and 6.0-6.7 ms (ashfall) editor-equivalent against 3.04: **EXCEEDED about 2.0-2.4x**; Deck conversion x 3.5-4.1 gives about 36-42 ms against 16.7 (horde). Max 12.3 / 21.7 ms (the 226-333 ms artifact is gone).
 
 ### Correction to the design and plan wording
 

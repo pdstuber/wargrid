@@ -6,9 +6,10 @@ const Shapes = preload("res://scripts/presentation/shapes.gd")
 const Bake = preload("res://scripts/presentation/shape_bake.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 const Fixture = preload("res://tests/economy_fixture.gd")
+const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 
 func cases() -> Array[Callable]:
-	return [test_sort_key_orders_layers_then_depth, test_unit_in_front_of_factory_draws_later, test_unit_behind_factory_draws_earlier, test_air_kind_draws_above_ground, test_build_one_submission, test_empty_state, test_marks_join_the_array, test_rise_from_work, test_damage_stage_edges, test_building_rises_with_work, test_supply_stack_shrinks, test_small_pile_inside_footprint, test_shadow_only_with_flag, test_lab_roles_mapped, test_back_to_front_across_objects, test_lifts_clear_unit_height, test_top_lift_by_role]
+	return [test_sort_key_orders_layers_then_depth, test_unit_in_front_of_factory_draws_later, test_unit_behind_factory_draws_earlier, test_air_kind_draws_above_ground, test_build_one_submission, test_empty_state, test_marks_join_the_array, test_rise_from_work, test_damage_stage_edges, test_building_rises_with_work, test_supply_stack_shrinks, test_small_pile_inside_footprint, test_shadow_only_with_flag, test_lab_roles_mapped, test_back_to_front_across_objects, test_lifts_clear_unit_height, test_top_lift_by_role, test_golden_output]
 
 func _find(items: Array[Dictionary], id: int) -> Dictionary:
 	for item in items:
@@ -205,4 +206,69 @@ func test_top_lift_by_role(runner) -> bool:
 	runner.check(is_equal_approx(WorldBatch.top_lift("usa_factory"), 49.0), "WB17 factory roof is 49 px")
 	runner.check(is_equal_approx(WorldBatch.top_lift("usa_command_center"), 63.0), "WB17 command centre is 63 px")
 	runner.check(WorldBatch.top_lift("usa_power_plant") > WorldBatch.top_lift("usa_barracks"), "WB17 the power plant's drums rise above a barracks")
+	return true
+
+const GOLDEN_DIGEST := "75bda4acb47ad5e14751f49aebcb1c8187c52ba8fc7f1255cdae9e6a331dca83"
+
+func _golden_state() -> Dictionary:
+	var sim = Fixture.make_world(10000, Vector2i(96, 96))
+	var state: Dictionary = sim.snapshot()
+	var entities: Array = state.entities
+	var next_id: int = 5000
+	var n: int = 0
+	for kind: String in Registry.units():
+		for h in 8:
+			var unit: Dictionary = entities[0].duplicate(true)
+			unit.id = next_id
+			next_id += 1
+			unit.kind = kind
+			unit.owner = 1 + n % 3
+			unit.position = [2.0 + (n % 20) * 1.3, 2.0 + floorf(n / 20.0) * 1.3]
+			unit.heading = [cos(h * TAU / 8.0 + n * 0.07), sin(h * TAU / 8.0 + n * 0.07)]
+			entities.append(unit)
+			n += 1
+	for kind in ["usa_factory", "usa_power_plant", "usa_barracks", "usa_command_center", "china_factory", "frc_supply_center"]:
+		var building: int = Fixture.add_completed(sim, 1 + n % 3, kind, Vector2i(10 + (n % 5) * 8, 60 + (n % 2) * 8))
+		sim._buildings[building].hp = sim._buildings[building].max_hp * (n % 3 + 1) / 3
+		if n % 4 == 0:
+			sim._buildings[building].completed = false
+			sim._buildings[building].work = 1500
+		n += 1
+	state = sim.snapshot()
+	state.entities.append_array(entities.slice(1))
+	state.entities.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.id < b.id)
+	for i in 4: state.sources.append({"id": 9000 + i, "origin": [50 + i * 5, 50], "boxes": [0, 3, 20, 400][i]})
+	return state
+
+func test_golden_output(runner) -> bool:
+	var items: Array[Dictionary] = WorldBatch.objects(_golden_state())
+	var angles := {}
+	for i in items.size():
+		if i % 3 == 0: angles[items[i].id] = i * 0.31
+	var effects: Array[Dictionary] = []
+	for i in 6: effects.append({"type": [&"muzzle", &"hit", &"fade"][i % 3], "anchor": Vector2(5 + i, 5 + i), "age": i % 4, "id": i})
+	var marks: Array[Vector2] = [Vector2(0, 0), Vector2(30, 40), Vector2(-20, 7)]
+	var hasher := HashingContext.new()
+	hasher.start(HashingContext.HASH_SHA256)
+	var triangles: int = 0
+	for detail in 3:
+		for flags in [0, WorldBatch.FLAG_SHADOWS]:
+			for with_extras in [false, true]:
+				var batch = WorldBatch.new()
+				if with_extras: batch.build(items, angles, detail, flags, marks, effects)
+				else: batch.build(items, {}, detail, flags)
+				hasher.update(batch.points.to_byte_array())
+				hasher.update(batch.colors.to_byte_array())
+				triangles += batch.triangle_count
+	var warm = WorldBatch.new()
+	warm.build(items, angles, 1, WorldBatch.FLAG_SHADOWS)
+	WorldBatch._bodies.clear()
+	WorldBatch._body_count = WorldBatch.BODY_CACHE_CAP
+	var cold = WorldBatch.new()
+	cold.build(items, angles, 1, WorldBatch.FLAG_SHADOWS)
+	runner.check(cold.points == warm.points and cold.colors == warm.colors and WorldBatch._body_count < WorldBatch.BODY_CACHE_CAP, "WB19 a full body cache clears and output is unchanged")
+	var digest: String = hasher.finish().hex_encode()
+	print("GOLDEN %s %d" % [digest, triangles])
+	runner.check(triangles > 20000, "WB18 fixture is big (%d triangles)" % triangles)
+	runner.check(digest == GOLDEN_DIGEST, "WB18 output equals the digest recorded at 4d6b764")
 	return true
