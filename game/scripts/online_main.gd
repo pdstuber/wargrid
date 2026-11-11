@@ -9,6 +9,8 @@ const LATENCY_FILE: String = "user://netplay-latency.txt"
 var _transport: RefCounted
 var _lockstep: RefCounted
 var _report_path: String = ""
+var web: bool = OS.has_feature("web")
+var download: Callable = JavaScriptBridge.download_buffer
 var _finished: bool = false
 var _credit: int = 0
 var _rejections_seen: int = 0
@@ -79,9 +81,13 @@ func _finish() -> void:
 	_transport.close()
 
 func _write_report() -> String:
-	DirAccess.make_dir_recursive_absolute(DESYNC_DIR)
 	var report: Dictionary = _report()
-	var path: String = "%s/desync-seat%d.json" % [DESYNC_DIR, report.seat]
+	var file_name: String = "desync-seat%d.json" % report.seat
+	if web:
+		download.call(JSON.stringify(report, "", true, true).to_utf8_buffer(), file_name, "application/json")
+		return file_name
+	DirAccess.make_dir_recursive_absolute(DESYNC_DIR)
+	var path: String = "%s/%s" % [DESYNC_DIR, file_name]
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file == null: return ""
 	file.store_string(JSON.stringify(report, "", true, true))
@@ -121,7 +127,7 @@ func notice() -> String:
 		"waiting": return "Waiting for player %d" % _lockstep.waiting_for()[0]
 		"ended_left": return "Opponent left before the start (different map files or version)" if _lockstep.left_before_start() else "Player %d disconnected" % _lockstep.left_seat()
 		"ended_relay": return "Connection to relay lost" if _lockstep.end_reason() == "connection to relay lost" else "Relay: " + _lockstep.end_reason()
-		"ended_desync": return "Desync — report saved to %s" % _report_path
+		"ended_desync": return ("Desync — report downloaded as %s" if web else "Desync — report saved to %s") % _report_path
 		"ended_protocol": return "Protocol error: " + _lockstep.end_reason()
 	return ""
 

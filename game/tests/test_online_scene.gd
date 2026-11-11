@@ -131,6 +131,16 @@ func test_status_lines_and_layout(runner) -> bool:
 	_layout_ok(runner, desync.main, "desync")
 	DirAccess.remove_absolute("user://desync/desync-seat2.json")
 	desync.main.free()
+
+	var web_desync: Dictionary = await _online(runner, 2)
+	var downloads: Array = []
+	web_desync.main.web = true
+	web_desync.main.download = func(buffer: PackedByteArray, file_name: String, mime: String) -> void: downloads.append([buffer.size(), file_name, mime])
+	web_desync.transport.frames.append(Wire.encode(Wire.tick_message(1, 4, [], {"tick": 0, "value": "0000000000000000"})))
+	_run(web_desync.main, 12)
+	var web_text: String = web_desync.main.get_node("HUD/Status").text
+	runner.check(downloads.size() == 1 and downloads[0][0] > 0 and downloads[0][1] == "desync-seat2.json" and web_text.contains("report downloaded as desync-seat2.json") and not FileAccess.file_exists("user://desync/desync-seat2.json"), "N2w web desync downloads the report and writes no file, got " + web_text)
+	web_desync.main.free()
 	return true
 
 func test_match_end_reports_latency(runner) -> bool:
