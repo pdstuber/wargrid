@@ -5,7 +5,7 @@ const Main = preload("res://scenes/main.tscn")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 
 func cases() -> Array[Callable]:
-	return [test_ready, test_clicks, test_rejection, test_camera, test_driver, test_boxes, test_drag_rules, test_obstacle_toggle, test_double_click_same_kind_on_screen, test_double_click_alt_whole_map, test_double_click_shift_keeps, test_double_click_ctrl_ignored, test_double_click_enemy_or_ground_plain]
+	return [test_ready, test_clicks, test_rejection, test_camera, test_driver, test_boxes, test_drag_rules, test_obstacle_toggle, test_status_counts, test_double_click_same_kind_on_screen, test_double_click_alt_whole_map, test_double_click_shift_keeps, test_double_click_ctrl_ignored, test_double_click_enemy_or_ground_plain]
 
 func setup(runner):
 	var main = Main.instantiate()
@@ -277,6 +277,18 @@ func test_obstacle_toggle(runner) -> bool:
 		main._physics_process(0.0)
 	await _key(runner, KEY_B, true)
 	runner.check(main.simulation.snapshot().map.blocked_cells.size() == 24, "S8 rejected toggle preserves next action")
+	main.free()
+	return true
+
+func test_status_counts(runner) -> bool:
+	var main = await setup(runner)
+	var command := {"tick": 0, "player": 1, "sequence": 0, "type": "move", "entity_ids": [1, 2, 3], "target": [10.5, 3.5]}
+	runner.check(main.simulation.issue_command(command).ok, "S9 move issued")
+	for i in 3: main._physics_process(0.0)
+	var counts := {"moving": 0, "path_pending": 0, "arrived": 0, "blocked": 0}
+	for unit: Dictionary in main.simulation.snapshot().entities: if counts.has(unit.status): counts[unit.status] += 1
+	var line: String = "Moving: %d | Pending: %d | Arrived: %d | Blocked: %d" % [counts.moving, counts.path_pending, counts.arrived, counts.blocked]
+	runner.check(counts.moving + counts.path_pending > 0 and main.get_node("HUD/Status").text.contains(line), "S9 status counts from the rows match the snapshot: " + line)
 	main.free()
 	return true
 

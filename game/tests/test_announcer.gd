@@ -4,6 +4,7 @@ extends RefCounted
 const Announcer = preload("res://scripts/presentation/announcer.gd")
 const Director = preload("res://scripts/presentation/sound_director.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
+const ViewRows = preload("res://scripts/simulation/view_rows.gd")
 const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
 const SkirmishScene = preload("res://scenes/skirmish.tscn")
 
@@ -73,7 +74,7 @@ func _building(id: int, kind: String, owner: int, extra: Dictionary = {}) -> Dic
 	return row
 
 func _state(tick: int, entities: Array, buildings: Array, extra: Dictionary = {}) -> Dictionary:
-	var row := {"tick": tick, "entities": entities, "buildings": buildings, "players": [_player(1, 1), _player(2, 2)], "match": {"status": "ongoing", "winner": null}}
+	var row := {"tick": tick, "units": ViewRows.from_units(entities), "buildings": buildings, "players": [_player(1, 1), _player(2, 2)], "match": {"status": "ongoing", "winner": null}}
 	row.merge(extra, true)
 	return row
 

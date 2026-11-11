@@ -111,10 +111,10 @@ func _fill_all(units: Array) -> void:
 			c_target[i] = -1
 			c_mode[i] = NONE
 		else:
-			var aim: Variant = combat.target_id
+			var aim: Variant = combat.get("target_id")
 			c_target[i] = -1 if aim == null else aim
 			c_tier[i] = combat.get("tier", 0)
-			var current: String = combat.mode
+			var current: String = combat.get("mode", "")
 			var mode_slot: int = mode_index.get(current, -1)
 			if mode_slot == -1:
 				mode_slot = modes.size()

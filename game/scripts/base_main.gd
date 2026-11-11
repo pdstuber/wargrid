@@ -65,7 +65,7 @@ func _building(state: Dictionary, id: int) -> Dictionary:
 	return {}
 
 func _refresh() -> void:
-	var state: Dictionary = simulation.snapshot()
+	var state: Dictionary = simulation.view_state()
 	if selected_building_id != -1 and _building(state,selected_building_id).is_empty(): selected_building_id = -1
 	_show(state)
 	$HUD/Economy.position.y = maxf(116.0,_status.position.y + _status.get_minimum_size().y + 8.0)
@@ -92,8 +92,9 @@ func _menu_kinds(state: Dictionary, building: Dictionary) -> Array:
 	if not building.is_empty(): return Registry.kind(building.kind).produces if building.completed else []
 	var kind: String = Registry.faction(_local_state(state).get("faction",Registry.Factions.DEFAULT_FACTION)).get("start_unit","")
 	if selected_ids.size() == 1:
-		for unit: Dictionary in state.entities:
-			if unit.id == selected_ids[0] and Registry.is_builder(unit.kind): kind = unit.kind
+		var i: int = state.units.index_of(selected_ids[0])
+		var unit_kind: String = state.units.kinds[state.units.kind[i]] if i != -1 else ""
+		if Registry.is_builder(unit_kind): kind = unit_kind
 	return Registry.kind(kind).get("builds",[])
 
 static func menu_label(index: int, kind: String) -> String:

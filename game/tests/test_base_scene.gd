@@ -8,7 +8,7 @@ const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
 
 func cases() -> Array[Callable]:
-	return [test_base_ready,test_placement_input,test_production_ui,test_context_orders,test_execution_feedback,test_preview_hover_cost,test_resume_status,test_queue_label,test_one_snapshot_per_refresh,test_refresh_waits_for_next_frame,test_build_menu_from_capabilities,test_build_menu_wraps_eleven,test_build_menu_quantity_label]
+	return [test_base_ready,test_placement_input,test_production_ui,test_context_orders,test_execution_feedback,test_preview_hover_cost,test_resume_status,test_queue_label,test_one_snapshot_per_refresh,test_ticks_take_no_snapshot,test_refresh_waits_for_next_frame,test_build_menu_from_capabilities,test_build_menu_wraps_eleven,test_build_menu_quantity_label]
 
 func setup(runner):
 	var main = Base.instantiate()
@@ -257,10 +257,25 @@ func test_one_snapshot_per_refresh(runner) -> bool:
 	Profiler.reset()
 	Profiler.enabled = true
 	main._refresh()
-	var calls: int = Profiler.calls(&"snapshot")
+	var snapshots: int = Profiler.calls(&"snapshot")
+	var views: int = Profiler.calls(&"view_state")
 	Profiler.enabled = false
 	Profiler.reset()
-	runner.check(calls == 1, "RF1 a refresh takes one snapshot, got %d" % calls)
+	runner.check(snapshots == 0 and views == 1, "RF1 a refresh takes no snapshot and one view state, got %d and %d" % [snapshots, views])
+	main.free()
+	return true
+
+func test_ticks_take_no_snapshot(runner) -> bool:
+	var main = await setup(runner)
+	main.simulation = Fixture.make_world()
+	Profiler.reset()
+	Profiler.enabled = true
+	for i in 10: main._physics_process(0.0)
+	var snapshots: int = Profiler.calls(&"snapshot")
+	var views: int = Profiler.calls(&"view_state")
+	Profiler.enabled = false
+	Profiler.reset()
+	runner.check(snapshots == 0 and views == 10, "RF6 ten ticks take no snapshot and ten view states, got %d and %d" % [snapshots, views])
 	main.free()
 	return true
 

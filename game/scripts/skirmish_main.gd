@@ -179,17 +179,23 @@ func _order_defence(event: InputEventMouseButton) -> bool:
 
 func _selected_summary(state: Dictionary) -> String:
 	if selected_ids.size() != 1: return ""
-	for unit: Dictionary in state.entities:
-		if unit.id != selected_ids[0]: continue
-		var line: String = "%s #%d HP %d/%d" % [Registry.kind(unit.kind).display_name, unit.id, unit.hp / 1000, unit.max_hp / 1000]
-		if unit.combat != null: line += " | %s%s" % [unit.combat.mode, "" if unit.combat.target_id == null else " -> #" + str(unit.combat.target_id)]
-		if unit.collection != null and unit.collection.enabled: line += _collection_suffix(state, unit)
-		return line + "\n"
-	return ""
+	var i: int = state.units.index_of(selected_ids[0])
+	if i == -1: return ""
+	var unit: Dictionary = _unit_record(state.units, i)
+	var line: String = "%s #%d HP %d/%d" % [Registry.kind(unit.kind).display_name, unit.id, unit.hp / 1000, unit.max_hp / 1000]
+	if unit.combat != null: line += " | %s%s" % [unit.combat.mode, "" if unit.combat.target_id == null else " -> #" + str(unit.combat.target_id)]
+	if unit.collection != null and unit.collection.enabled: line += _collection_suffix(state, unit)
+	return line + "\n"
+
+func _unit_record(units: RefCounted, i: int) -> Dictionary:
+	var target: Variant = units.target[i] if units.target[i] != -1 else null
+	var combat: Variant = {"mode": units.modes[units.mode[i]], "target_id": target} if units.mode[i] != ViewRows.NONE else null
+	var collection: Variant = {"enabled": (units.flags[i] & ViewRows.COLLECTING) != 0, "phase": units.phases[units.phase[i]]} if units.phase[i] != ViewRows.NONE else null
+	return {"id": units.id[i], "owner": units.owner[i], "kind": units.kinds[units.kind[i]], "hp": units.hp[i], "max_hp": units.max_hp[i], "combat": combat, "collection": collection}
 
 func _collection_suffix(state: Dictionary, unit: Dictionary) -> String:
 	var line: String = " | " + unit.collection.phase
-	if unit.collection.phase.begins_with("waiting_"): line += " (%s in line)" % _ordinal(View.line_position(state.entities, unit))
+	if unit.collection.phase.begins_with("waiting_"): line += " (%s in line)" % _ordinal(View.line_position(state.units, state.units.index_of(unit.id)))
 	return line
 
 func _ordinal(n: int) -> String:
@@ -197,9 +203,10 @@ func _ordinal(n: int) -> String:
 	return str(n) + suffix
 
 func _inspected(state: Dictionary) -> Dictionary:
-	for key: String in ["entities", "buildings"]:
-		for object: Variant in state[key]:
-			if object.id == inspected_id: return object
+	var i: int = state.units.index_of(inspected_id)
+	if i != -1: return _unit_record(state.units, i)
+	for building: Dictionary in state.buildings:
+		if building.id == inspected_id: return building
 	return {}
 
 func _enemy_summary(state: Dictionary) -> String:

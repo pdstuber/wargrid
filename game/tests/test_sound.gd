@@ -8,6 +8,7 @@ const Music = preload("res://scripts/presentation/music_player.gd")
 const AudioSettings = preload("res://scripts/presentation/audio_settings.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const Shared = preload("res://scripts/simulation/definitions/shared.gd")
+const ViewRows = preload("res://scripts/simulation/view_rows.gd")
 const SkirmishScene = preload("res://scenes/skirmish.tscn")
 const Fixture = preload("res://tests/combat_fixture.gd")
 const OnlineTests = preload("res://tests/test_online_scene.gd")
@@ -82,7 +83,7 @@ func _building(id: int, kind: String, owner: int, origin: Vector2, extra: Dictio
 	return row
 
 func _state(entities: Array, buildings: Array = [], status: String = "ongoing") -> Dictionary:
-	return {"entities": entities, "buildings": buildings, "match": {"status": status}}
+	return {"units": ViewRows.from_units(entities), "buildings": buildings, "match": {"status": status}}
 
 func _events(items: Array) -> Array[Dictionary]:
 	var typed: Array[Dictionary] = []

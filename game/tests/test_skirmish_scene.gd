@@ -118,7 +118,7 @@ func test_match_hud_and_restart(runner) -> bool:
 	main._refresh()
 	var text: String = main.get_node("HUD/Status").text
 	runner.check(text.contains("Credits") and text.contains("Battle Tank #" + str(ids.tank)) and text.contains("HP 480/480") and text.contains("guard"), "K4 credits, kind, HP and order in the HUD")
-	var setup: Dictionary = main.simulation.snapshot()
+	var setup: Dictionary = main.simulation.view_state()
 	setup.match.status = "setup"
 	main._refresh_hud(setup)
 	runner.check(main.get_node("HUD/Result").text.is_empty() and not main.get_node("HUD/Restart").visible, "K4 the setup phase shows no result")
@@ -600,10 +600,11 @@ func test_one_snapshot_per_refresh(runner) -> bool:
 	Profiler.reset()
 	Profiler.enabled = true
 	main._refresh()
-	var calls: int = Profiler.calls(&"snapshot")
+	var snapshots: int = Profiler.calls(&"snapshot")
+	var views: int = Profiler.calls(&"view_state")
 	Profiler.enabled = false
 	Profiler.reset()
-	runner.check(calls == 1, "RF2 a skirmish refresh with a production building selected takes one snapshot, got %d" % calls)
+	runner.check(snapshots == 0 and views == 1, "RF2 a skirmish refresh with a production building selected takes no snapshot and one view state, got %d and %d" % [snapshots, views])
 	runner.check(main.get_node("HUD/Economy/Produce").text == "Produce Rifleman (E)", "RF2 produce label unchanged")
 	main.free()
 	return true
@@ -660,14 +661,15 @@ func test_hud_summaries_are_pinned(runner) -> bool:
 	var enemy_unit: Array[int] = _ids_where(state.entities, func(unit: Dictionary) -> bool: return unit.owner == 2 and unit.combat != null)
 	var enemy_building: Array[int] = _ids_where(state.buildings, func(building: Dictionary) -> bool: return building.owner == 2)
 	runner.check(waiting.size() >= 2 and not working.is_empty() and not firing.is_empty() and not plain.is_empty() and not enemy_unit.is_empty() and not enemy_building.is_empty(), "HUD1 fixture: every case has its unit")
+	var view: Dictionary = sim.view_state()
 	var texts: Array[String] = []
 	for id: int in [firing[0], waiting[-1], working[0], plain[0]]:
 		main.selected_ids.assign([id])
-		texts.append(main._selected_summary(state))
+		texts.append(main._selected_summary(view))
 	main.selected_ids.clear()
 	for id: int in [enemy_unit[0], enemy_building[0]]:
 		main.inspected_id = id
-		texts.append(main._enemy_summary(state))
+		texts.append(main._enemy_summary(view))
 	runner.check(texts == HUD_TEXTS, "HUD1 pinned summary texts, got " + str(texts))
 	main.free()
 	return true

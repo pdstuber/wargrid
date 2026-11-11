@@ -1,6 +1,7 @@
 extends Node
 
 const Simulation = preload("res://scripts/simulation/simulation.gd")
+const ViewRows = preload("res://scripts/simulation/view_rows.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
 const PerfOverlay = preload("res://scripts/presentation/perf_overlay.gd")
@@ -221,16 +222,15 @@ func _move(target: Vector2) -> void:
 	_submit({"type":"move","entity_ids":selected_ids.duplicate(),"target":[target.x,target.y]})
 
 func _refresh() -> void:
-	_show(simulation.snapshot())
+	_show(simulation.view_state())
 
 func _show(state: Dictionary) -> void:
-	_perf.set_counts(state.entities.size(), state.get("buildings", []).size(), state.tick)
+	_perf.set_counts(state.units.size(), state.get("buildings", []).size(), state.tick)
 	_perf.split_share = _clock.split_share()
 	var zone: int = Profiler.begin()
-	var live: Array = state.entities.map(func(unit: Dictionary) -> int: return unit.id)
-	selected_ids.assign(selected_ids.filter(func(id: int) -> bool: return live.has(id)))
+	selected_ids.assign(selected_ids.filter(func(id: int) -> bool: return state.units.index_of(id) != -1))
 	Profiler.end(&"refresh.selection", zone)
-	_view.set_state(state, _view_selection())
+	_view.set_view(state, _view_selection())
 	zone = Profiler.begin()
 	_refresh_hud(state)
 	Profiler.end(&"refresh.hud", zone)
@@ -247,9 +247,9 @@ func _create_simulation() -> Simulation:
 
 func _refresh_hud(state: Dictionary) -> void:
 	var counts := {"moving": 0, "path_pending": 0, "arrived": 0, "blocked": 0}
-	for unit: Dictionary in state.entities:
-		if counts.has(unit.status):
-			counts[unit.status] += 1
+	for status: int in state.units.status:
+		if status < ViewRows.STATUSES.size() and counts.has(ViewRows.STATUSES[status]):
+			counts[ViewRows.STATUSES[status]] += 1
 	_status.text = "Left/drag: select | Shift: add | Right: move | WASD/arrows: pan | Wheel: zoom | Esc: clear | B: obstacle\nSelected: %d | Tick: %d | Moving: %d | Pending: %d | Arrived: %d | Blocked: %d\n%s" % [
 		selected_ids.size(), state.tick, counts.moving, counts.path_pending, counts.arrived, counts.blocked, _error,
 	]
