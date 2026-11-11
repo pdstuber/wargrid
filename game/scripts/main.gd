@@ -28,6 +28,7 @@ var _camera_bounds: Rect2
 @onready var _view: Node2D = $WorldView
 @onready var _camera: Camera2D = $Camera2D
 var _perf: Label
+var _clock := PresentationClock.new()
 var _pause: Control
 var change_scene: Callable = _change_scene
 @onready var _status: Label = $HUD/Status
@@ -52,6 +53,7 @@ func _ready() -> void:
 	_view.set_show_destinations(GraphicsSettings.load_destinations())
 	_view.local_player = local_player
 	simulation = _create_simulation()
+	_clock = PresentationClock.new()
 	_reset_camera()
 	_refresh()
 
@@ -101,9 +103,15 @@ func _physics_process(_delta: float) -> void:
 	var started: int = Time.get_ticks_usec()
 	_step_simulation()
 	_perf.record_step((Time.get_ticks_usec() - started) / 1000.0)
+	if not is_processing() or _clock.stepped(Engine.get_process_frames(), simulation.tick()): _refresh()
+
+func _present_if_due() -> bool:
+	if not _clock.rendered(Engine.get_process_frames(), simulation.tick()): return false
 	_refresh()
+	return true
 
 func _process(delta: float) -> void:
+	_present_if_due()
 	pan_camera(Input.get_vector("camera_left", "camera_right", "camera_up", "camera_down"), delta)
 	_view.advance_frame()
 
@@ -217,6 +225,7 @@ func _refresh() -> void:
 
 func _show(state: Dictionary) -> void:
 	_perf.set_counts(state.entities.size(), state.get("buildings", []).size(), state.tick)
+	_perf.split_share = _clock.split_share()
 	var zone: int = Profiler.begin()
 	var live: Array = state.entities.map(func(unit: Dictionary) -> int: return unit.id)
 	selected_ids.assign(selected_ids.filter(func(id: int) -> bool: return live.has(id)))

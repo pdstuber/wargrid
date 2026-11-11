@@ -12,6 +12,7 @@ var _step_count: int = 0
 var _units: int = 0
 var _buildings: int = 0
 var _tick: int = 0
+var split_share: float = 0.0
 var _since_refresh: float = 0.0
 
 func _init() -> void:
@@ -55,8 +56,8 @@ func _process(delta: float) -> void:
 func refresh_text() -> void:
 	var frame: Dictionary = _summary(_frames, _frame_count)
 	var step: Dictionary = _summary(_steps, _step_count)
-	var lines: String = "FPS %d\nFrame %.1f / p95 %.1f / max %.1f ms\nSim step %.2f / p95 %.2f ms\nUnits %d | Buildings %d | Tick %d" % [
-		Engine.get_frames_per_second(), frame.last, frame.p95, frame.max, step.last, step.p95, _units, _buildings, _tick]
+	var lines: String = "FPS %d\nFrame %.1f / p95 %.1f / max %.1f ms\nSim step %.2f / p95 %.2f ms\nUnits %d | Buildings %d | Tick %d | split %d%%" % [
+		Engine.get_frames_per_second(), frame.last, frame.p95, frame.max, step.last, step.p95, _units, _buildings, _tick, roundi(split_share * 100.0)]
 	if extra.is_valid(): lines += "\n" + str(extra.call())
 	text = lines
 

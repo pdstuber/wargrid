@@ -12,7 +12,7 @@ const Profiler = preload("res://scripts/debug/profiler.gd")
 const UiStyle = preload("res://scripts/presentation/ui_style.gd")
 
 func cases() -> Array[Callable]:
-	return [test_skirmish_ready_and_tick, test_combat_context_input, test_match_hud_and_restart, test_combat_view, test_hud_layout_and_focus, test_hud_build_line, test_enemy_selection_read_only, test_rally_input_and_marker, test_supply_pile_labels, test_attack_move_hint_and_rejection, test_selection_prunes_dead, test_order_marks_own_only, test_health_bar_clear_of_boxes, test_result_clear_of_status, test_silent_keys_explain, test_hud_strings_use_display_names, test_hud_font_size_is_shared, test_defence_attack_scene, test_enter_unload_scene, test_right_click_pile_gathers, test_right_click_pile_in_launcher_flow, test_frc_laborer_right_click_pile, test_one_snapshot_per_refresh]
+	return [test_skirmish_ready_and_tick, test_combat_context_input, test_match_hud_and_restart, test_combat_view, test_hud_layout_and_focus, test_hud_build_line, test_enemy_selection_read_only, test_rally_input_and_marker, test_supply_pile_labels, test_attack_move_hint_and_rejection, test_selection_prunes_dead, test_order_marks_own_only, test_health_bar_clear_of_boxes, test_result_clear_of_status, test_silent_keys_explain, test_hud_strings_use_display_names, test_hud_font_size_is_shared, test_defence_attack_scene, test_enter_unload_scene, test_right_click_pile_gathers, test_right_click_pile_in_launcher_flow, test_frc_laborer_right_click_pile, test_one_snapshot_per_refresh, test_refresh_waits_for_next_frame]
 
 func _setup(runner):
 	var main = Scene.instantiate()
@@ -604,5 +604,18 @@ func test_one_snapshot_per_refresh(runner) -> bool:
 	Profiler.reset()
 	runner.check(calls == 1, "RF2 a skirmish refresh with a production building selected takes one snapshot, got %d" % calls)
 	runner.check(main.get_node("HUD/Economy/Produce").text == "Produce Rifleman (E)", "RF2 produce label unchanged")
+	main.free()
+	return true
+
+func test_refresh_waits_for_next_frame(runner) -> bool:
+	var main = await _setup(runner)
+	main.set_process(true)
+	await runner.process_frame
+	main._physics_process(0.0)
+	runner.check(main.simulation.tick() == 1 and main._view._state.tick == 0, "RF3 a step does not refresh in its own frame")
+	await runner.process_frame
+	runner.check(main._view._state.tick == 0, "RF3 still not refreshed before the frame's _process")
+	await runner.process_frame
+	runner.check(main._view._state.tick == 1, "RF3 the next frame's _process refreshes")
 	main.free()
 	return true

@@ -65,6 +65,8 @@ func _physics_process(delta: float) -> void:
 	if _auto_pending: _auto_tick_usec += Time.get_ticks_usec() - started
 
 func _process(delta: float) -> void:
+	var presented_at: int = Time.get_ticks_usec()
+	if _present_if_due() and _auto_pending: _auto_tick_usec += Time.get_ticks_usec() - presented_at
 	pan_camera(Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down"), delta)
 	_view.advance_frame()
 	if not _auto_pending: return
@@ -96,6 +98,7 @@ func _enter_placement(kind: String) -> void:
 
 func _restart() -> void:
 	simulation = _create_simulation()
+	_clock = PresentationClock.new()
 	_sound.director.reset()
 	_visuals.reset()
 	selected_ids.clear()

@@ -6,7 +6,7 @@ const Skirmish = preload("res://scenes/skirmish.tscn")
 const Overlay = preload("res://scripts/presentation/perf_overlay.gd")
 
 func cases() -> Array[Callable]:
-	return [test_summary_math, test_f3_toggles_hidden_default, test_layout_clear_of_hud, test_step_and_counts_shown, test_skirmish_wired]
+	return [test_summary_math, test_f3_toggles_hidden_default, test_layout_clear_of_hud, test_step_and_counts_shown, test_skirmish_wired, test_split_share_shown]
 
 func _scene(runner, packed):
 	var main = packed.instantiate()
@@ -77,5 +77,14 @@ func test_step_and_counts_shown(runner) -> bool:
 func test_skirmish_wired(runner) -> bool:
 	var main = await _scene(runner, Skirmish)
 	runner.check(main.get_node("HUD/PerfOverlay") != null and not main.get_node("HUD/PerfOverlay").visible, "PO5 skirmish has the hidden overlay")
+	main.free()
+	return true
+
+func test_split_share_shown(runner) -> bool:
+	var main = await _scene(runner, Base)
+	var overlay: Label = main.get_node("HUD/PerfOverlay")
+	overlay.split_share = 0.97
+	overlay.refresh_text()
+	runner.check(overlay.text.contains("split 97%"), "PO6 split share shown")
 	main.free()
 	return true
