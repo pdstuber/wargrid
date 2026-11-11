@@ -17,6 +17,7 @@ Status labels: rules in "Rules" are **in force** (those marked *enforced* are ch
 
 ## Couplings a port must reproduce
 
+- **Engine-compiled maths:** `Vector2` methods (`length_squared`, `distance_squared_to`) checked for fused multiply-add on macOS arm64, Godot 4.7.2: none (audit probe 2026-11-11, 278,134 discriminating samples, probe script not kept). Re-check after an engine upgrade.
 - **float32 at `Vector2`:** GDScript `float` is float64 but `Vector2` is float32 and rounds at each construction. 65 `Vector2(` sites under `game/scripts/simulation` (`rg -c`, 14 files; `combat.gd` 16, `destination_allocation.gd` 7, `simulation.gd` 8, `production.gd` 7). A port rounds to f32 at exactly those sites. Also `Vector2i(position.floor())` (`simulation.gd:82`).
 - **Setup RNG:** start spots use Godot's seeded `RandomNumberGenerator` (PCG32; `start_spots.gd:19-20`, `randi_range` at `:27-28`), called from `match_settings.gd:33`. A port reproduces PCG32 or switches to xorshift with one re-pin.
 - **A\* tie-breaks:** `AStarGrid2D` with Manhattan heuristics, `DIAGONAL_MODE_NEVER`, no jumping (`grid_navigation.gd:5, 20-25`); tie-breaking is Godot's and was not read in its source. Golden A\* vectors are a later no-regret step.
