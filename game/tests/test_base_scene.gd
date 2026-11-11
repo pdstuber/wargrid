@@ -8,7 +8,7 @@ const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
 
 func cases() -> Array[Callable]:
-	return [test_base_ready,test_placement_input,test_production_ui,test_context_orders,test_execution_feedback,test_preview_hover_cost,test_resume_status,test_queue_label,test_one_snapshot_per_refresh,test_build_menu_from_capabilities,test_build_menu_wraps_eleven,test_build_menu_quantity_label]
+	return [test_base_ready,test_placement_input,test_production_ui,test_context_orders,test_execution_feedback,test_preview_hover_cost,test_resume_status,test_queue_label,test_one_snapshot_per_refresh,test_refresh_waits_for_next_frame,test_build_menu_from_capabilities,test_build_menu_wraps_eleven,test_build_menu_quantity_label]
 
 func setup(runner):
 	var main = Base.instantiate()
@@ -261,6 +261,18 @@ func test_one_snapshot_per_refresh(runner) -> bool:
 	Profiler.enabled = false
 	Profiler.reset()
 	runner.check(calls == 1, "RF1 a refresh takes one snapshot, got %d" % calls)
+	main.free()
+	return true
+
+func test_refresh_waits_for_next_frame(runner) -> bool:
+	var main = await setup(runner)
+	main.set_process(true)
+	await runner.process_frame
+	main._physics_process(0.0)
+	runner.check(main.simulation.tick() == 1 and main._view._state.tick == 0,"RF5 a step does not refresh in its own frame")
+	await runner.process_frame
+	await runner.process_frame
+	runner.check(main._view._state.tick == 1,"RF5 a later frame's _process refreshes")
 	main.free()
 	return true
 
