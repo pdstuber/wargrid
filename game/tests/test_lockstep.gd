@@ -282,6 +282,7 @@ func test_protocol_errors(runner) -> bool:
 		"command player mismatch": [_tick_frame(2, 4, [{"type": "stop", "tick": 4, "player": 1, "sequence": 0, "entity_ids": [1]}])],
 		"command tick mismatch": [_tick_frame(2, 4, [{"type": "stop", "tick": 9, "player": 2, "sequence": 0, "entity_ids": [1]}])],
 		"own seat": [_tick_frame(1, 4)],
+		"runaway queue": range(4, 4 + Lockstep.MAX_QUEUED_TICKS).map(func(tick: int) -> String: return _tick_frame(2, tick)),
 		"unknown message type": ['{"type":"nope"}'],
 		"garbage": ["not json"],
 		"unexpected welcome": ['{"type":"welcome","seat":1,"match":"ABC234"}'],

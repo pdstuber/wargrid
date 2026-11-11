@@ -4,6 +4,7 @@ const Wire = preload("res://scripts/net/wire.gd")
 const StateHash = preload("res://scripts/simulation/state_hash.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
+const MAX_QUEUED_TICKS: int = 300 # a legitimate peer queues at most about 2 * input delay + 2 ticks; raise this if the relay delay nears 150
 
 var send: Callable = func(_frame: String) -> void: pass
 
@@ -182,6 +183,9 @@ func _receive_tick(message: Dictionary) -> void:
 		if command.get("player") != s or command.get("tick") != message.tick:
 			_end("ended_protocol", "bad command stamp")
 			return
+	if _packets[s].size() >= MAX_QUEUED_TICKS:
+		_end("ended_protocol", "peer too far ahead")
+		return
 	_last_received[s] = message.tick
 	_packets[s][message.tick] = message
 
