@@ -4,7 +4,7 @@ Resume record and dated evidence for [the handoff](../native-sim-spike-prompt.tx
 
 ```text
 Resume record (updated 2026-11-10 run finished, coordinator)
-Branch / base commit / working-tree state: spike-native-sim in ~/projects/wargrid-wt-native, base dde868e, clean after this commit; not pushed
+Branch / base commit / working-tree state: spike-native-sim in ~/projects/wargrid-wt-native, base dde868e, clean; pushed by the user 2026-11-11 (49784cf); docs copied to main as 260d0c6
 Last green task / next incomplete task: T0-T14 all green / none; the run is finished
 Changed paths since last commit: none
 Last command / cases / checks / failures / exit / marker: T14: cargo test 24 passed, clippy, lint, warnings, python checks exit 0; last suite run 737 cases 139594 checks 0 failures (T9, extension removed)
