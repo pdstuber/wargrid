@@ -332,3 +332,32 @@ Answers to an outside audit of `main` at `ec78012` (audit and fix list kept outs
 - **Documentation:** `docs/ARCHITECTURE.md`; a `docs/STATUS.md` that replaces the status bullets in the development notes' Start here; symbols instead of line numbers in living documents; a short table at the head of the performance ledger. Logs are not moved.
 - **README:** current screenshot and a short fight clip (needs a window: ask first), remove "placeholder shapes for now", CI badge once `main` is green, three lines on what Wargrid does differently. Align `AGENTS.md` with the README's "inspired by" wording; open item: a qualified opinion on deriving the roster's numbers from retail data before wider distribution.
 - **Next (user):** overhaul milestone planning into smaller packages that each give players a meaningful increment and can be shipped and playtested on their own, plus tooling that focuses playtests on the current aspects and makes feedback easy, clear and directed. Starts right after the audit batch, with brainstorming.
+
+## Planning overhaul: packages and playtest tooling (user, 2026-11-11 night)
+
+- **Feedback moments:** both mid-match and afterwards: a quick in-match marker plus a short after-match form that shows the markers again.
+- **Players:** mostly the user alone; a friend joins only for online parts.
+- **Playtest length per package:** 15 to 20 minutes, one or two matches.
+- **Cadence:** a new package every 2 to 3 days.
+- **Package rule:** mostly every package changes something the player can feel in a match; a pure engine package is allowed now and then, without a playtest.
+- **Big changes (movement, avoidance):** ship behind a toggle, old and new side by side in the build, flipped with a key like the art lab, before the new one becomes the default.
+- **Where packages go:** every package to the test app (`wargrid-web-test`); a public release bundles a week's packages.
+- **Playtest findings:** a problem in what the package was about is fixed before the next package; other findings go on a list that orders later packages.
+- **In-match marker:** one key (for example F2) opens a quick note, Good / Bad / Confusing plus an optional line of text, pausing offline; it saves tick, camera spot, selection and a screenshot.
+- **Focus:** the launcher shows a card per build (what is new, what to try); in a match a toggleable checklist ticks items off as they are done.
+- **After-match form:** in the game, shown after the match: three to five rating questions about the package's focus, and the session's markers listed again to comment on; works in the browser and on desktop.
+- **Hand-off:** one file per session, saved on desktop and downloaded in the browser (the desync report's download path); the user drops it in a folder the agent reads.
+- **First package:** the playtest helper (marker key, focus card, checklist, after-match form, session file).
+- **Open playtest backlog** (M7 FRC checks, art-lab defaults never seen in a match, M6 fixes checked headless only): three 15-minute focus cards, one per area, played with the helper.
+- **Focus cards:** the agent drafts each from the package plan; the user approves it with the plan and may edit it before playing.
+- **Re-plan depth:** the next five packages in detail (about two weeks), the rest of blueprint §7 re-cut roughly, re-planned as playtests come in.
+- **Order (replaces "playable slice directly after the movement milestone" above):** interleave: playtest helper, camera controls, movement part 1 behind a toggle, order controls (control groups, Shift-queue, acknowledgement sound), movement part 2, and so on.
+- **Engine-only audit items** (fuzz test, `BUDGET EXCEEDED` line, browser against native measurement): riders, one small item per package next to its player change.
+- **Naming:** P1, P2, ... with a player-facing name (for example "P3 Camera that follows you"), tracked in `docs/STATUS.md`; M-numbers stay for history.
+- **Helper scope:** on by default in the test app and dev builds; off in public releases unless switched on in the settings, so friends can send session files too.
+- **Session file contents:** the match's command log (so the agent replays the match headless and jumps to each marker's tick), the notes, answers, build id, map and seed, and each marker's screenshot as a small JPG (about 640 px wide) inside the one file.
+- **Plan home:** `docs/packages.md` (next five packages in detail, the rest rough); blueprint §7 links to it and keeps design scope; `docs/STATUS.md` shows state.
+- **Session inbox:** `~/projects/wargrid-playtests/`, outside the public repository; the agent reads new files at kickoff.
+- **Earlier order kept:** the interpolation rework becomes its own package ("Smooth motion", P4) before movement (P5); the `SimPump` seam goes with controller flattening in the HUD packages; writing the movement design is P3's rider.
+- **Session:** one sitting; one file holds every match of the sitting; a short marker review after each match, the focus questions once when the session ends.
+- **First plan covers:** `docs/packages.md`, `docs/STATUS.md` and the blueprint §7 link; P1 with its rider; all three backlog focus cards. Only card 1 blocks P2; findings from cards 2 and 3 go on the list unless they block play. Design: [packages and playtest helper](../superpowers/specs/2026-11-11-packages-and-playtest-helper-design.md).
