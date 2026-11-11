@@ -102,9 +102,12 @@ func _input(event: InputEvent) -> void:
 func _physics_process(_delta: float) -> void:
 	if _pause.visible and _pauses_sim(): return
 	var started: int = Time.get_ticks_usec()
+	var tick_before: int = simulation.tick()
 	_step_simulation()
 	_perf.record_step((Time.get_ticks_usec() - started) / 1000.0)
-	if not is_processing() or _clock.stepped(Engine.get_process_frames(), simulation.tick()): _refresh()
+	# A stall frame (online, waiting for the peer) is not a step frame; counting it would inflate the split share.
+	var advanced: bool = simulation.tick() != tick_before
+	if not is_processing() or (advanced and _clock.stepped(Engine.get_process_frames(), simulation.tick())): _refresh()
 
 func _present_if_due() -> bool:
 	if not _clock.rendered(Engine.get_process_frames(), simulation.tick()): return false
