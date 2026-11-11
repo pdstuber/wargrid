@@ -15,6 +15,7 @@ const Locomotion = preload("res://scripts/simulation/locomotion.gd")
 const Allocation = preload("res://scripts/simulation/destination_allocation.gd")
 const Navigation = preload("res://scripts/simulation/grid_navigation.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
+const ViewRows = preload("res://scripts/simulation/view_rows.gd")
 const PATH_REQUESTS_PER_TICK: int = 8
 const START_DELAY_TICKS: int = 2
 var _navigation: RefCounted
@@ -630,6 +631,23 @@ func snapshot() -> Dictionary:
 	var result: Dictionary = _snapshot()
 	Profiler.end(&"snapshot", zone)
 	return result
+
+func view_state() -> Dictionary:
+	var zone: int = Profiler.begin()
+	var result: Dictionary = {"tick": _tick, "map": _navigation.snapshot(), "players": _player_snapshots(true), "buildings": _sorted_copies(_buildings), "sources": _sorted_copies(_sources), "command_results": _command_results.duplicate(true), "match": _match.duplicate(true) if _match != null else null, "units": _view_rows()}
+	if not _crates.is_empty(): result.crates = _crates.duplicate(true)
+	Profiler.end(&"view_state", zone)
+	return result
+
+func _view_rows() -> RefCounted:
+	var ids: Array = _entities.keys()
+	ids.sort()
+	var units: Array = []
+	for id: Variant in ids: units.append(_entities[id])
+	var zone: int = Profiler.begin()
+	var rows: RefCounted = ViewRows.from_units(units)
+	Profiler.end(&"view_rows", zone)
+	return rows
 
 func _snapshot() -> Dictionary:
 	var entities: Array = []

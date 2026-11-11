@@ -7,6 +7,9 @@ const Iso = preload("res://scripts/presentation/isometric.gd")
 const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 const CombatWorkload = preload("res://scripts/debug/combat_workload.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
+const ViewRows = preload("res://scripts/simulation/view_rows.gd")
+const StateHash = preload("res://scripts/simulation/state_hash.gd")
+const TeamMatch = preload("res://scripts/debug/team_match.gd")
 
 const SKIRMISH_TICKS: int = 3000
 const HORDES_TICKS: int = 400
@@ -14,7 +17,7 @@ const EXTRA_COLLECTORS: int = 3
 const EXPECTED_DIGEST: String = "2046606c78e467de7a7ec23c0342b31e5b9136fcdb2f2ee2ac920fad7e6b60af"
 
 func cases() -> Array[Callable]:
-	return [test_view_reads_digest_is_pinned]
+	return [test_view_reads_digest_is_pinned, test_rows_equal_snapshot, test_view_state_other_keys, test_view_state_is_read_only]
 
 # At tick 3000 nothing has a target or waits, so the fixture adds an attacker and a collector line.
 static func skirmish_sim() -> RefCounted:
@@ -106,4 +109,137 @@ func test_view_reads_digest_is_pinned(runner) -> bool:
 	var first: String = digest([skirmish, hordes])
 	runner.check(first == digest([skirmish, hordes]), "VR1 digest is repeatable on one state")
 	runner.check(first == EXPECTED_DIGEST, "VR1 view reads digest, got " + first)
+	return true
+
+static func vr2_states() -> Array:
+	var states: Array = []
+	var hordes = CombatWorkload.create("hordes300")
+	for target in [40, 400, 1500]:
+		while hordes.tick() < target: hordes.step()
+		states.append(hordes.snapshot())
+	var skirmish = skirmish_sim()
+	states.append(skirmish.snapshot())
+	var team = TeamMatch.create()
+	for i in 2000: TeamMatch.step(team)
+	states.append(team.snapshot())
+	var transports: Dictionary = CombatWorkload.create("transports").snapshot()
+	var armed: Array = transports.entities.filter(func(unit: Dictionary) -> bool: return unit.combat != null)
+	armed[0].combat.tier = 2 # only a salvage pickup raises a tier, which needs a private crate write
+	states.append(transports)
+	return states
+
+static func flag_of(unit: Dictionary) -> int:
+	var combat: Variant = unit.combat
+	var collection: Variant = unit.collection
+	var bits: int = 0
+	if combat != null and combat.get("horde", 0) > 0: bits |= ViewRows.HORDE
+	if unit.has("container_id"): bits |= ViewRows.CONTAINED
+	if unit.has("hole_id"): bits |= ViewRows.HOLE
+	if combat != null and combat.mode == "attack": bits |= ViewRows.ATTACKING
+	if unit.order != null: bits |= ViewRows.ORDERED
+	if collection != null and collection.phase == "waiting_source": bits |= ViewRows.WAITING_SOURCE
+	if collection != null and collection.enabled: bits |= ViewRows.COLLECTING
+	return bits
+
+static func expected_row(unit: Dictionary) -> Dictionary:
+	var combat: Variant = unit.combat
+	var collection: Variant = unit.collection
+	var heading: Array = unit.get("heading", [1.0, 0.0])
+	var waiting: bool = collection != null and collection.phase.begins_with("waiting_")
+	var status: int = ViewRows.STATUSES.find(unit.status)
+	return {"id": unit.id, "owner": unit.owner, "hp": unit.hp, "max_hp": unit.max_hp, "x": unit.position[0], "y": unit.position[1],
+		"heading_x": heading[0], "heading_y": heading[1],
+		"target": -1 if combat == null or combat.target_id == null else combat.target_id,
+		"queue": collection.target_id if waiting and collection.target_id != null else -1,
+		"order_x": unit.order.target[0] if unit.order != null else 0.0, "order_y": unit.order.target[1] if unit.order != null else 0.0,
+		"status": 255 if status == -1 else status, "tier": combat.get("tier", 0) if combat != null else 0, "flags": flag_of(unit)}
+
+static func row_mismatch(rows, i: int, unit: Dictionary) -> String:
+	var want: Dictionary = expected_row(unit)
+	for column: String in want:
+		if rows.get(column)[i] != want[column]: return "%s of unit %d: row %s, snapshot %s" % [column, unit.id, str(rows.get(column)[i]), str(want[column])]
+	if rows.kinds[rows.kind[i]] != unit.kind: return "kind of unit %d" % unit.id
+	var combat: Variant = unit.combat
+	var collection: Variant = unit.collection
+	if (rows.mode[i] == ViewRows.NONE) != (combat == null) or (combat != null and rows.modes[rows.mode[i]] != combat.mode): return "mode of unit %d" % unit.id
+	if (rows.phase[i] == ViewRows.NONE) != (collection == null) or (collection != null and rows.phases[rows.phase[i]] != collection.phase): return "phase of unit %d" % unit.id
+	return ""
+
+static func tally(rows, seen: Dictionary) -> void:
+	for i in rows.size():
+		for bit in [ViewRows.HORDE, ViewRows.CONTAINED, ViewRows.HOLE, ViewRows.ATTACKING, ViewRows.ORDERED, ViewRows.WAITING_SOURCE, ViewRows.COLLECTING]:
+			if rows.flags[i] & bit != 0: seen["flag%d" % bit] = true
+		if rows.queue[i] != -1: seen.queue = true
+		if rows.tier[i] != 0: seen.tier = true
+		if rows.mode[i] == ViewRows.NONE: seen.mode_none = true
+		elif rows.modes[rows.mode[i]] != "guard": seen.mode_other = true
+		if rows.phase[i] == ViewRows.NONE: seen.phase_none = true
+		elif rows.phases[rows.phase[i]].begins_with("waiting_"): seen.phase_waiting = true
+
+func test_rows_equal_snapshot(runner) -> bool:
+	var seen: Dictionary = {}
+	var with_target: int = 0
+	for state in vr2_states():
+		var rows = ViewRows.from_units(state.entities)
+		runner.check(rows.size() == state.entities.size(), "VR2 one row per unit")
+		var bad: String = ""
+		var targets: int = 0
+		for i in rows.size():
+			bad = row_mismatch(rows, i, state.entities[i])
+			if bad != "": break
+			if rows.target[i] != -1: targets += 1
+		runner.check(bad == "", "VR2 rows equal snapshot: " + bad)
+		runner.check(rows.index_of(state.entities[0].id) == 0 and rows.index_of(-7) == -1, "VR2 index_of")
+		tally(rows, seen)
+		if targets > 0: with_target += 1
+	runner.check(with_target >= 2, "VR2 coverage: states with a target, got " + str(with_target))
+	for key in ["flag1", "flag2", "flag8", "flag16", "flag32", "flag64", "queue", "tier", "mode_none", "mode_other", "phase_none", "phase_waiting"]:
+		runner.check(seen.has(key), "VR2 coverage: " + key)
+	return true
+
+func test_view_state_other_keys(runner) -> bool:
+	for sim in [skirmish_sim(), hordes_sim()]:
+		var view: Dictionary = sim.view_state()
+		var snap: Dictionary = sim.snapshot()
+		var allowed: Array = ["tick", "map", "players", "buildings", "sources", "match", "command_results", "units"]
+		if snap.has("crates"): allowed.append("crates")
+		for key: String in allowed:
+			if key != "units": runner.check(view.has(key) and view[key] == snap[key], "VR3 key " + key)
+		for key: String in view: runner.check(allowed.has(key), "VR3 no extra key " + key)
+		runner.check(view.units.size() == snap.entities.size(), "VR3 units present")
+		var bad: String = ""
+		for i in view.units.size():
+			bad = row_mismatch(view.units, i, snap.entities[i])
+			if bad != "": break
+		runner.check(bad == "", "VR3 view_state rows equal the snapshot: " + bad)
+	return true
+
+func held_copy(view: Dictionary) -> Dictionary:
+	var copy: Dictionary = {}
+	for key: String in view:
+		if key == "units": continue
+		copy[key] = view[key].duplicate(true) if view[key] is Array or view[key] is Dictionary else view[key]
+	var rows = view.units
+	for column in ["id", "owner", "kind", "hp", "max_hp", "target", "queue", "x", "y", "heading_x", "heading_y", "order_x", "order_y", "status", "tier", "mode", "phase", "flags", "kinds", "modes", "phases"]:
+		copy["units." + column] = rows.get(column).duplicate()
+	return copy
+
+func test_view_state_is_read_only(runner) -> bool:
+	var a = Skirmish.create()
+	var b = Skirmish.create()
+	var before: String = StateHash.digest(a.snapshot())
+	a.view_state()
+	runner.check(StateHash.digest(a.snapshot()) == before, "VR4 view_state leaves the digest unchanged")
+	var held: Dictionary = {}
+	var kept: Dictionary = {}
+	for tick in 300:
+		a.view_state()
+		Skirmish.issue_opponents(a, [1, 2])
+		Skirmish.issue_opponents(b, [1, 2])
+		a.step()
+		b.step()
+		if tick == 150: held = a.view_state(); kept = held_copy(held)
+		if tick == 180: runner.check(held_copy(held) == kept, "VR4 a held view state is unchanged after 30 steps")
+		if tick % 30 == 29: runner.check(StateHash.digest(a.snapshot()) == StateHash.digest(b.snapshot()), "VR4 digests equal at tick " + str(a.tick()))
+	runner.check(StateHash.digest(a.snapshot()) == StateHash.digest(b.snapshot()), "VR4 digests equal at the end")
 	return true
