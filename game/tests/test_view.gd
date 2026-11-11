@@ -177,7 +177,7 @@ func test_depth_order_matches_comparator(runner) -> bool:
 		var depth_a: float = a.position[0] + a.position[1]
 		var depth_b: float = b.position[0] + b.position[1]
 		return a.id < b.id if depth_a == depth_b else depth_a < depth_b)
-	var got: Array = view._state.entities.map(func(u): return u.id)
+	var got: Array = Array(view._order).map(func(i): return view._state.units.id[i])
 	runner.check(state.entities.size() == 300 and got == expected.map(func(u): return u.id), "VW2 depth order matches the comparator")
 	view.free()
 	return true

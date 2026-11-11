@@ -298,10 +298,13 @@ func test_shot_dash(runner) -> bool:
 func test_depth_order_matches_sorted(runner) -> bool:
 	var state: Dictionary = _golden_state()
 	var order: PackedInt32Array = WorldBatch.depth_order(ViewRows.from_units(state.entities))
-	var expected: Array = WorldBatch.depth_sorted(state.entities).map(func(unit: Dictionary) -> int: return unit.id)
+	var sorted: Array = state.entities.duplicate()
+	sorted.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return WorldBatch.sort_key(WorldBatch.LAYER_GROUND, Vector2(a.position[0], a.position[1]), a.id) < WorldBatch.sort_key(WorldBatch.LAYER_GROUND, Vector2(b.position[0], b.position[1]), b.id))
+	var expected: Array = sorted.map(func(unit: Dictionary) -> int: return unit.id)
 	var got: Array = []
 	for row in order: got.append(state.entities[row].id)
-	runner.check(order.size() == state.entities.size() and got == expected and expected.size() > 100, "WB20 depth_order lists the rows in depth_sorted order")
+	runner.check(order.size() == state.entities.size() and got == expected and expected.size() > 100, "WB20 depth_order lists the rows in depth order")
 	return true
 
 func test_unit_item_rewrite_leaves_nothing_stale(runner) -> bool:

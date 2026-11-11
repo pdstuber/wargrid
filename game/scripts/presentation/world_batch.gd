@@ -153,21 +153,6 @@ static func sort_key(layer: int, anchor: Vector2, id: int) -> int:
 	var depth: int = int(floor((anchor.x + anchor.y) * DEPTH_SCALE))
 	return (layer << (ID_BITS + DEPTH_BITS)) | (depth << ID_BITS) | id
 
-# Input is in id order, so equal depths keep id order like the old comparator.
-static func depth_sorted(entities: Array) -> Array:
-	assert(entities.size() < (1 << INDEX_BITS))
-	var keys := PackedInt64Array()
-	keys.resize(entities.size())
-	for i in entities.size():
-		var unit: Dictionary = entities[i]
-		keys[i] = (sort_key(LAYER_GROUND, Vector2(unit.position[0], unit.position[1]), unit.id) << INDEX_BITS) | i
-	keys.sort()
-	var sorted: Array = []
-	sorted.resize(keys.size())
-	for i in keys.size():
-		sorted[i] = entities[keys[i] & ((1 << INDEX_BITS) - 1)]
-	return sorted
-
 # Row indices in draw order; equal depths keep id order because rows are in id order.
 static func depth_order(rows: ViewRows) -> PackedInt32Array:
 	assert(rows.size() < (1 << INDEX_BITS))

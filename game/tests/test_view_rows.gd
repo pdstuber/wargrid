@@ -17,7 +17,7 @@ const EXTRA_COLLECTORS: int = 3
 const EXPECTED_DIGEST: String = "2046606c78e467de7a7ec23c0342b31e5b9136fcdb2f2ee2ac920fad7e6b60af"
 
 func cases() -> Array[Callable]:
-	return [test_view_reads_digest_is_pinned, test_rows_equal_snapshot, test_view_state_other_keys, test_view_state_is_read_only]
+	return [test_view_reads_digest_is_pinned, test_rows_equal_snapshot, test_view_state_other_keys, test_view_state_is_read_only, test_view_items_persist]
 
 # At tick 3000 nothing has a target or waits, so the fixture adds an attacker and a collector line.
 static func skirmish_sim() -> RefCounted:
@@ -67,11 +67,12 @@ static func _unit(units: Array, id: int) -> Dictionary:
 		if unit.id == id: return unit
 	return {}
 
-static func view_reads(state: Dictionary) -> Array:
+static func view_reads(state: Dictionary, view_state: Dictionary = {}) -> Array:
 	var chosen: Array[int] = selection(state)
 	var view = View.new()
 	view.set_show_destinations(true)
-	view.set_state(state, chosen)
+	if view_state.is_empty(): view.set_state(state, chosen)
+	else: view.set_view(view_state, chosen)
 	var batch = WorldBatch.new()
 	batch.build(WorldBatch.objects(state), {}, 1, true)
 	var parts: Array = [batch.points, batch.colors, view.selected_unit_lines()]
@@ -90,10 +91,10 @@ static func view_reads(state: Dictionary) -> Array:
 	view.free()
 	return parts
 
-static func digest(sims: Array) -> String:
+static func digest(sims: Array, through_view_state: bool = false) -> String:
 	var hasher := HashingContext.new()
 	hasher.start(HashingContext.HASH_SHA256)
-	for sim in sims: hasher.update(var_to_bytes(view_reads(sim.snapshot())))
+	for sim in sims: hasher.update(var_to_bytes(view_reads(sim.snapshot(), sim.view_state() if through_view_state else {})))
 	return hasher.finish().hex_encode()
 
 func test_view_reads_digest_is_pinned(runner) -> bool:
@@ -109,6 +110,38 @@ func test_view_reads_digest_is_pinned(runner) -> bool:
 	var first: String = digest([skirmish, hordes])
 	runner.check(first == digest([skirmish, hordes]), "VR1 digest is repeatable on one state")
 	runner.check(first == EXPECTED_DIGEST, "VR1 view reads digest, got " + first)
+	var rows_digest: String = digest([skirmish, hordes], true)
+	runner.check(rows_digest == EXPECTED_DIGEST, "VR1 the same digest through set_view, got " + rows_digest)
+	return true
+
+static func _view_of(snapshot: Dictionary, entities: Array, tick: int) -> Dictionary:
+	var state: Dictionary = snapshot.duplicate()
+	state.units = ViewRows.from_units(entities)
+	state.tick = tick
+	return state
+
+func test_view_items_persist(runner) -> bool:
+	var sim = Skirmish.create()
+	for i in 5: sim.step()
+	var snapshot: Dictionary = sim.snapshot()
+	var view = View.new()
+	view.set_smooth(false)
+	view.set_view(_view_of(snapshot, snapshot.entities, 1), [])
+	var before: Array = view._unit_items.duplicate()
+	var next: Array = snapshot.entities.duplicate(true)
+	var gone: int = next.pop_back().id
+	next[0].position = [next[0].position[0] + 1.0, next[0].position[1] + 1.0]
+	var spawned: Dictionary = next[0].duplicate(true)
+	spawned.id = snapshot.entities[-1].id + 10
+	next.append(spawned)
+	view.set_view(_view_of(snapshot, next, 2), [])
+	var items: Array = view._unit_items
+	runner.check(snapshot.entities.size() >= 2 and items.size() == next.size(), "VR5 fixture: two or more units, one removed, one added")
+	runner.check(is_same(items[0], before[0]), "VR5 a surviving unit keeps its item")
+	runner.check(items.all(func(item: Dictionary) -> bool: return item.id != gone) and before.any(func(item: Dictionary) -> bool: return item.id == gone), "VR5 a removed unit's item is gone")
+	runner.check(items[-1].id == spawned.id and not before.any(func(item: Dictionary) -> bool: return is_same(item, items[-1])), "VR5 a spawned unit gets a new item")
+	runner.check(items[0].anchor == Vector2(next[0].position[0], next[0].position[1]), "VR5 the item holds the new position")
+	view.free()
 	return true
 
 static func vr2_states() -> Array:

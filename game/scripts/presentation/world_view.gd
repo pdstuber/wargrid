@@ -15,9 +15,13 @@ const BodyLayer = preload("res://scripts/presentation/body_layer.gd")
 const GraphicsSettings = preload("res://scripts/presentation/graphics_settings.gd")
 const Director = preload("res://scripts/presentation/visual_director.gd")
 const Palette = preload("res://scripts/presentation/palette.gd")
+const ViewRows = preload("res://scripts/simulation/view_rows.gd")
 var _preview_cells: Array[Vector2i] = []
 var _preview_valid: bool = false
 var _state: Dictionary = {}
+var _rows: ViewRows = ViewRows.from_units([])
+var _order := PackedInt32Array()
+var _unit_items: Array[Dictionary] = []
 var _last_points: Dictionary = {}
 var _selection := {}
 var _inspected_id: int = -1
@@ -56,7 +60,6 @@ const HINT_TICKS: int = 40
 const MUZZLE_LIFT: float = 20.0
 const HEALTH_BAR := Vector2(24, 3)
 const SELECT_COLOR := Color("8cff87")
-const CHEVRON_COLOR := Color("f0e6a0")
 const GRID_COLOR := Color(0, 0, 0, 0.18)
 const CHEVRON_WIDTH: float = 5.0
 
@@ -137,13 +140,13 @@ func set_biome(biome: int) -> void:
 func selected_unit_lines() -> PackedVector2Array:
 	var lines := PackedVector2Array()
 	if _selection.is_empty(): return lines
-	for unit: Dictionary in _state.get("entities", []):
-		if _selection.has(unit.id): lines.append_array(_ground_diamond(unit))
+	for i in _order:
+		if _selection.has(_rows.id[i]): lines.append_array(_ground_diamond(_kind_of(i), _drawn_position(i)))
 	return lines
 
-func _ground_diamond(unit: Dictionary) -> PackedVector2Array:
-	var anchor: Vector2 = Iso.world_to_plane(_drawn_position(unit))
-	var rx: float = _half_width(unit.kind) + 4.0
+func _ground_diamond(kind: String, point: Vector2) -> PackedVector2Array:
+	var anchor: Vector2 = Iso.world_to_plane(point)
+	var rx: float = _half_width(kind) + 4.0
 	var top: Vector2 = anchor + Vector2(0, -rx * 0.5)
 	var right: Vector2 = anchor + Vector2(rx, 0)
 	var bottom: Vector2 = anchor + Vector2(0, rx * 0.5)
@@ -167,7 +170,7 @@ func veterancy_lines(unit: Dictionary) -> PackedVector2Array:
 	var lines := PackedVector2Array()
 	var rank: int = unit.get("veterancy", 0)
 	if rank <= 0: return lines
-	var base: Vector2 = Iso.world_to_plane(_drawn_position(unit)) + Vector2(_half_width(unit.kind) + 6.0, -8.0)
+	var base: Vector2 = Iso.world_to_plane(_drawn.get(unit.id, Vector2(unit.position[0], unit.position[1]))) + Vector2(_half_width(unit.kind) + 6.0, -8.0)
 	for i in rank:
 		var tip: Vector2 = base + Vector2(0, -3.0 * i)
 		lines.append_array([tip + Vector2(-CHEVRON_WIDTH / 2.0, -2.0), tip, tip, tip + Vector2(CHEVRON_WIDTH / 2.0, -2.0)])
@@ -177,15 +180,20 @@ static func hp_fraction(hp: int, max_hp: int) -> float:
 	return clampf(float(hp) / float(max_hp), 0.0, 1.0) if max_hp > 0 else 1.0
 
 func set_state(state: Dictionary, selected_ids: Array[int]) -> void:
-	var zone: int = Profiler.begin()
-	_state = state.duplicate()
-	Profiler.end(&"view.copy", zone)
+	var view: Dictionary = state.duplicate()
+	view.units = ViewRows.from_units(view.get("entities", []))
+	view.erase("entities")
+	set_view(view, selected_ids)
+
+func set_view(view: Dictionary, selected_ids: Array[int]) -> void:
+	_state = view
+	_rows = view.units
 	_selection = {}
 	for id in selected_ids: _selection[id] = true
 	_terrain.set_map(_state.get("map", {}))
 	_prune_hints()
-	zone = Profiler.begin()
-	if _state.has("entities"): _state.entities = WorldBatch.depth_sorted(state.entities)
+	var zone: int = Profiler.begin()
+	_order = WorldBatch.depth_order(_rows)
 	Profiler.end(&"view.sort", zone)
 	zone = Profiler.begin()
 	_remember_points()
@@ -193,33 +201,55 @@ func set_state(state: Dictionary, selected_ids: Array[int]) -> void:
 	zone = Profiler.begin()
 	_refresh_structures()
 	Profiler.end(&"view.structures_key", zone)
+	var batch_zone: int = Profiler.begin()
 	zone = Profiler.begin()
-	_items = WorldBatch.objects(_state)
-	_track_poses(_state.get("entities", []).size())
+	_rebuild_items(WorldBatch.structure_items(_state))
+	Profiler.end(&"view.objects", zone)
+	zone = Profiler.begin()
+	_track_poses()
 	_apply_alpha(_alpha)
+	Profiler.end(&"view.poses", zone)
+	zone = Profiler.begin()
 	if _visuals != null and _state.get("tick", 0) != _visual_tick:
 		_visual_tick = _state.get("tick", 0)
 		_visuals.update(_items)
+	Profiler.end(&"view.visuals", zone)
+	zone = Profiler.begin()
 	_rebuild_batch()
-	Profiler.end(&"view.batch", zone)
+	Profiler.end(&"view.build", zone)
+	Profiler.end(&"view.batch", batch_zone)
+
+# Ids only ascend, so one merge pass keeps a unit's item across ticks.
+func _rebuild_items(structures: Array[Dictionary]) -> void:
+	var old: Array[Dictionary] = _unit_items
+	var next: Array[Dictionary] = []
+	var j: int = 0
+	for i in _rows.size():
+		var id: int = _rows.id[i]
+		while j < old.size() and old[j].id < id: j += 1
+		var item: Dictionary = old[j] if j < old.size() and old[j].id == id else {}
+		WorldBatch.write_unit_item(item, _rows, i)
+		next.append(item)
+	_unit_items = next
+	_items = next.duplicate()
+	_items.append_array(structures)
 
 # Interpolation (High only): each moving unit is drawn between its previous and its current tick.
 # More than one tick at once (online catch-up, a restart) snaps instead of blending.
-func _track_poses(entity_count: int) -> void:
+func _track_poses() -> void:
 	var tick: int = _state.get("tick", 0)
 	if tick != _blend_tick:
 		_prev_pose = _pose if tick == _blend_tick + 1 else {}
 		_pose = {}
 		if _interpolating():
-			for i in entity_count: _pose[_items[i].id] = _pose_of(_items[i])
+			for item: Dictionary in _unit_items: _pose[item.id] = _pose_of(item)
 		_blend_tick = tick
 		_alpha = 0.0
 		_tick_usec = Time.get_ticks_usec()
 		_fresh = true
 	_moves = []
 	if not _interpolating(): return
-	for i in entity_count:
-		var item: Dictionary = _items[i]
+	for item: Dictionary in _unit_items:
 		var old: Variant = _prev_pose.get(item.id)
 		var now: Vector3 = _pose_of(item)
 		if old != null and old != now: _moves.append([item, old, now])
@@ -257,8 +287,11 @@ func advance_frame(now_usec: int = -1) -> void:
 	blend(alpha)
 	if time_draws: draw_usec += Time.get_ticks_usec() - started
 
-func _drawn_position(unit: Dictionary) -> Vector2:
-	return _drawn.get(unit.id, Vector2(unit.position[0], unit.position[1]))
+func _drawn_position(i: int) -> Vector2:
+	return _drawn.get(_rows.id[i], Vector2(_rows.x[i], _rows.y[i]))
+
+func _kind_of(i: int) -> String:
+	return _rows.kinds[_rows.kind[i]]
 
 func _rebuild_batch() -> void:
 	if not _state.has("map"): return
@@ -308,10 +341,8 @@ func pile_text_points(source: Dictionary) -> PackedVector2Array:
 
 func resume_candidate() -> int:
 	if _selection.size() != 1: return -1
-	var builders: int = 0
-	for unit: Dictionary in _state.get("entities", []):
-		if _selection.has(unit.id) and unit.owner == local_player and Registry.is_builder(unit.kind): builders += 1
-	if builders != 1: return -1
+	var i: int = _rows.index_of(_selection.keys()[0])
+	if i == -1 or _rows.owner[i] != local_player or not Registry.is_builder(_kind_of(i)): return -1
 	for building: Dictionary in _state.get("buildings", []):
 		if building.id == _hovered_id and building.owner == local_player and not building.completed and building.builder_id == null: return building.id
 	return -1
@@ -322,14 +353,14 @@ func _half_width(kind: String) -> float:
 	var weapon: Dictionary = CombatDefinitions.weapon(row.get("weapon", ""))
 	return 15.0 if weapon.get("damage_type", "") == "armor_piercing" else 12.0
 
-func _vehicle_bounds(unit: Dictionary) -> Rect2:
-	var point: Vector2 = _drawn_position(unit)
-	var extent: Rect2 = WorldBatch.pick_extent(unit.get("kind"))
+func _vehicle_bounds(kind: String, point: Vector2) -> Rect2:
+	var extent: Rect2 = WorldBatch.pick_extent(kind)
 	return Rect2(extent.position + Iso.world_to_plane(point), extent.size)
 
-func _pick_bounds(unit: Dictionary) -> Rect2:
-	var bounds: Rect2 = _vehicle_bounds(unit)
-	if not WorldBatch.INFANTRY_ROLES.has(WorldBatch.kind_info(unit.kind)[0]): return bounds
+func _pick_bounds(i: int) -> Rect2:
+	var kind: String = _kind_of(i)
+	var bounds: Rect2 = _vehicle_bounds(kind, _drawn_position(i))
+	if not WorldBatch.INFANTRY_ROLES.has(WorldBatch.kind_info(kind)[0]): return bounds
 	var centre: float = bounds.get_center().x
 	return Rect2(centre - WIDE_PICK_WIDTH / 2.0, bounds.position.y, WIDE_PICK_WIDTH, bounds.size.y)
 
@@ -340,8 +371,8 @@ func set_show_destinations(on: bool) -> void:
 func order_marks() -> Array[Vector2]:
 	var marks: Array[Vector2] = []
 	if not _show_destinations: return marks
-	for unit: Dictionary in _state.get("entities", []):
-		if unit.owner == local_player and unit.order != null: marks.append(Iso.world_to_plane(Vector2(unit.order.target[0], unit.order.target[1])))
+	for i in _order:
+		if _rows.owner[i] == local_player and (_rows.flags[i] & ViewRows.ORDERED) != 0: marks.append(Iso.world_to_plane(Vector2(_rows.order_x[i], _rows.order_y[i])))
 	return marks
 
 # Above the focus box's outer stroke (grow 4 + half of 3 px), so the bar stays readable under a target box.
@@ -360,9 +391,9 @@ func crate_marks() -> Array[Vector2]:
 	return marks
 
 func pick_target(plane_point: Vector2, own: int) -> int:
-	for i in range(_state.get("entities", []).size() - 1, -1, -1):
-		var unit: Dictionary = _state.entities[i]
-		if unit.owner != own and not unit.has("container_id") and not Registry.air_kinds.has(unit.get("kind")) and _pick_bounds(unit).has_point(plane_point): return unit.id
+	for n in range(_order.size() - 1, -1, -1):
+		var i: int = _order[n]
+		if _rows.owner[i] != own and (_rows.flags[i] & ViewRows.CONTAINED) == 0 and not Registry.air_kinds.has(_kind_of(i)) and _pick_bounds(i).has_point(plane_point): return _rows.id[i]
 	var point: Vector2 = Iso.plane_to_world(plane_point)
 	for building: Dictionary in _state.get("buildings", []):
 		var definition: Dictionary = Definitions.building(building.kind)
@@ -371,10 +402,10 @@ func pick_target(plane_point: Vector2, own: int) -> int:
 	return -1
 
 func pick_entity(plane_point: Vector2, any_owner: bool = false) -> int:
-	for i in range(_state.get("entities", []).size() - 1, -1, -1):
-		var unit: Dictionary = _state.entities[i]
-		if (any_owner or unit.owner == local_player) and not unit.has("hole_id") and not unit.has("container_id") and _pick_bounds(unit).has_point(plane_point):
-			return unit.id
+	for n in range(_order.size() - 1, -1, -1):
+		var i: int = _order[n]
+		if (any_owner or _rows.owner[i] == local_player) and (_rows.flags[i] & (ViewRows.HOLE | ViewRows.CONTAINED)) == 0 and _pick_bounds(i).has_point(plane_point):
+			return _rows.id[i]
 	return -1
 
 func _draw() -> void:
@@ -403,9 +434,9 @@ func _draw() -> void:
 # One pass per command type: all rects here, then all lines, then text.
 func _draw_rects() -> void:
 	for mark in crate_marks(): draw_rect(Rect2(mark - Vector2(2, 2), Vector2(4, 4)), Color("e8c547"))
-	for unit: Dictionary in _state.get("entities", []):
-		var selected: bool = _selection.has(unit.id)
-		if _wants_bar(unit, selected): _draw_health(health_rect(_vehicle_bounds(unit)).position, unit, selected)
+	for i in _order:
+		var selected: bool = _selection.has(_rows.id[i])
+		if _wants_bar(_unit_items[i], selected): _draw_health(health_rect(_vehicle_bounds(_kind_of(i), _drawn_position(i))).position, _unit_items[i], selected)
 	for building: Dictionary in _state.get("buildings", []):
 		var definition: Dictionary = Definitions.building(building.kind)
 		if definition.is_empty(): continue
@@ -418,10 +449,6 @@ func _draw_lines() -> void:
 	for point in order_marks():
 		green.append_array([point - Vector2(6, 0), point + Vector2(6, 0), point - Vector2(0, 6), point + Vector2(0, 6)])
 	if not green.is_empty(): draw_multiline(green, SELECT_COLOR, 2.0)
-	var chevrons := PackedVector2Array()
-	for unit: Dictionary in _state.get("entities", []):
-		if unit.has("veterancy"): chevrons.append_array(veterancy_lines(unit))
-	if not chevrons.is_empty(): draw_multiline(chevrons, CHEVRON_COLOR, 2.0)
 
 func _draw_labels() -> void:
 	for building: Dictionary in _state.get("buildings", []):
@@ -475,17 +502,18 @@ func _draw_health(top_left: Vector2, object: Dictionary, selected: bool) -> void
 func focus_targets() -> Dictionary:
 	var targets := {}
 	if _selection.is_empty(): return targets
-	for unit: Dictionary in _state.get("entities", []):
-		var combat: Variant = unit.get("combat")
-		if not _selection.has(unit.id) or combat == null or combat.target_id == null: continue
-		targets[combat.target_id] = targets.get(combat.target_id, false) or combat.mode == "attack"
+	for i in _order:
+		var aim: int = _rows.target[i]
+		if aim == -1 or not _selection.has(_rows.id[i]): continue
+		targets[aim] = targets.get(aim, false) or (_rows.flags[i] & ViewRows.ATTACKING) != 0
 	return targets
 
 func _draw_focus() -> void:
 	var targets: Dictionary = focus_targets()
 	if targets.is_empty(): return
-	for unit: Dictionary in _state.get("entities", []):
-		if targets.has(unit.id): draw_rect(_vehicle_bounds(unit).grow(4.0), Color("ff3b30"), false, 3.0 if targets[unit.id] else 1.5)
+	for i in _order:
+		var id: int = _rows.id[i]
+		if targets.has(id): draw_rect(_vehicle_bounds(_kind_of(i), _drawn_position(i)).grow(4.0), Color("ff3b30"), false, 3.0 if targets[id] else 1.5)
 	for building: Dictionary in _state.get("buildings", []):
 		var definition: Dictionary = Definitions.building(building.kind)
 		if not targets.has(building.id) or definition.is_empty(): continue
@@ -499,8 +527,8 @@ func set_inspected(id: int) -> void:
 
 func _draw_inspected() -> void:
 	if _inspected_id == -1: return
-	for unit: Dictionary in _state.get("entities", []):
-		if unit.id == _inspected_id: draw_rect(_vehicle_bounds(unit).grow(2.0), Color("ff3b30"), false, 2.0)
+	var i: int = _rows.index_of(_inspected_id)
+	if i != -1: draw_rect(_vehicle_bounds(_kind_of(i), _drawn_position(i)).grow(2.0), Color("ff3b30"), false, 2.0)
 	for building: Dictionary in _state.get("buildings", []):
 		var definition: Dictionary = Definitions.building(building.kind)
 		if building.id != _inspected_id or definition.is_empty(): continue
@@ -543,9 +571,8 @@ func _pile_lines(source: Dictionary, waiting: int) -> PackedStringArray:
 
 func _waiting_counts() -> Dictionary:
 	var counts := {}
-	for unit: Dictionary in _state.get("entities", []):
-		var collection: Variant = unit.get("collection")
-		if collection != null and collection.phase == "waiting_source": counts[collection.target_id] = counts.get(collection.target_id, 0) + 1
+	for i in _rows.size():
+		if (_rows.flags[i] & ViewRows.WAITING_SOURCE) != 0: counts[_rows.queue[i]] = counts.get(_rows.queue[i], 0) + 1
 	return counts
 
 static func line_position(entities: Array, unit: Dictionary) -> int:
@@ -573,13 +600,14 @@ func _remember_points() -> void:
 		if _selection.has(building.id) and combat != null and combat.target_id != null:
 			wanted[building.id] = true
 			wanted[combat.target_id] = true
-	_last_points = _points_of(wanted, _state.get("entities", []), _state.get("buildings", []))
+	_last_points = _points_of(wanted, _state.get("buildings", []))
 
-func _points_of(wanted: Dictionary, entities: Array, buildings: Array) -> Dictionary:
+func _points_of(wanted: Dictionary, buildings: Array) -> Dictionary:
 	var points := {}
 	if wanted.is_empty(): return points
-	for unit: Dictionary in entities:
-		if wanted.has(unit.id): points[unit.id] = Iso.world_to_plane(Vector2(unit.position[0], unit.position[1])) + Vector2(0, -8)
+	for id: int in wanted:
+		var i: int = _rows.index_of(id)
+		if i != -1: points[id] = Iso.world_to_plane(Vector2(_rows.x[i], _rows.y[i])) + Vector2(0, -8)
 	for building: Dictionary in buildings:
 		if not wanted.has(building.id): continue
 		var definition: Dictionary = Definitions.building(building.kind)
@@ -593,10 +621,10 @@ func _cell_polygon(origin: Vector2, size: Vector2) -> PackedVector2Array:
 func pick_entities(plane_rect: Rect2) -> Array[int]:
 	var rect := plane_rect.abs()
 	var ids: Array[int] = []
-	for unit: Dictionary in _state.get("entities", []):
-		var point: Vector2 = Iso.world_to_plane(_drawn_position(unit))
-		if unit.owner == local_player and not unit.has("hole_id") and not unit.has("container_id") and point.x >= rect.position.x and point.y >= rect.position.y and point.x <= rect.end.x and point.y <= rect.end.y:
-			ids.append(unit.id)
+	for i in _rows.size():
+		var point: Vector2 = Iso.world_to_plane(_drawn_position(i))
+		if _rows.owner[i] == local_player and (_rows.flags[i] & (ViewRows.HOLE | ViewRows.CONTAINED)) == 0 and point.x >= rect.position.x and point.y >= rect.position.y and point.x <= rect.end.x and point.y <= rect.end.y:
+			ids.append(_rows.id[i])
 	ids.sort()
 	return ids
 
