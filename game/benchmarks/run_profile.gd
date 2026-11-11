@@ -31,14 +31,14 @@ func _run() -> void:
 			_movement(layout)
 			done += 1
 		for layout: String in ["contact", "skirmish3v3", "open"]:
-			_fixed("combat_" + layout, CombatWorkload.create(layout), 1)
+			_fixed("combat_" + layout, CombatWorkload.create(layout))
 			done += 1
 		_skirmish()
 		done += 1
 		_large()
 		done += 1
 	for layout: String in ["dense", "hordes300"]:
-		_fixed("combat_" + layout, CombatWorkload.create(layout), 1)
+		_fixed("combat_" + layout, CombatWorkload.create(layout))
 		done += 1
 	_team_match()
 	done += 1
@@ -46,11 +46,9 @@ func _run() -> void:
 	print("PROFILE COMPLETE ", done)
 	quit(0)
 
-# Mirrors one rendered tick: the scene snapshots (base scenes twice), then the view copies and sorts.
-func _frame(sim: Simulation, snapshots: int) -> void:
-	var state: Dictionary = {}
-	for i in range(snapshots): state = sim.snapshot()
-	_view.set_state(state, _no_selection)
+# Mirrors one rendered tick: the scene builds the view state once, then the view sorts and batches it.
+func _frame(sim: Simulation) -> void:
+	_view.set_view(sim.view_state(), _no_selection)
 	Profiler.end_tick()
 
 func _harness(workload: Callable) -> Variant:
@@ -78,12 +76,12 @@ func _movement(layout: String) -> void:
 			_harness(func() -> void: MovementWorkload.issue_leg(sim, leg))
 			leg += 1
 		sim.step()
-		_frame(sim, 1)
+		_frame(sim)
 	_phase("movement_" + layout, false)
 	Profiler.enabled = false
 	print("PROFILE_END movement_", layout, " legs=", leg)
 
-func _fixed(label: String, sim: Simulation, snapshots: int, edits: Dictionary = {}) -> void:
+func _fixed(label: String, sim: Simulation, edits: Dictionary = {}) -> void:
 	Profiler.reset()
 	Profiler.enabled = true
 	var start_units: int = sim.snapshot().entities.size()
@@ -91,7 +89,7 @@ func _fixed(label: String, sim: Simulation, snapshots: int, edits: Dictionary = 
 		if tick == WARMUP: _phase(label, true)
 		if edits.has(tick): edits[tick].call()
 		sim.step()
-		_frame(sim, snapshots)
+		_frame(sim)
 	_phase(label, false)
 	Profiler.enabled = false
 	print("PROFILE_END ", label, " units_start=", start_units, " units_end=", sim.snapshot().entities.size())
@@ -106,7 +104,7 @@ func _skirmish() -> void:
 		_harness(func() -> void: ScriptedHuman.issue(sim))
 		Skirmish.issue_opponent(sim)
 		sim.step()
-		_frame(sim, 2)
+		_frame(sim)
 		peak = maxi(peak, _harness(func() -> int: return sim.snapshot().entities.size()))
 	_phase("skirmish_match", false)
 	Profiler.enabled = false
@@ -126,7 +124,7 @@ func _large() -> void:
 		cells.append_array(obstacle)
 		sim._replace_union(cells)
 	var remove := func() -> void: sim._replace_union(sim._union_cells())
-	_fixed("large_196", sim, 1, {600: add, 1200: remove})
+	_fixed("large_196", sim, {600: add, 1200: remove})
 
 func _team_match() -> void:
 	var sim: Simulation = TeamMatch.create()
@@ -136,7 +134,7 @@ func _team_match() -> void:
 	while not sim.match_over() and sim.tick() < TeamMatch.TEAM_TICK_CAP:
 		if sim.tick() == WARMUP: _phase("team_match", true)
 		TeamMatch.step(sim)
-		_frame(sim, 1)
+		_frame(sim)
 		peak = maxi(peak, sim._entities.size())
 	_phase("team_match", false)
 	Profiler.enabled = false

@@ -8,6 +8,7 @@ const CombatWorkload = preload("res://scripts/debug/combat_workload.gd")
 const SoundPlayer = preload("res://scripts/presentation/sound_player.gd")
 const VisualDirector = preload("res://scripts/presentation/visual_director.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
+const ViewRows = preload("res://scripts/simulation/view_rows.gd")
 # New with the ashfall layout (R2): worst of six rendered runs 3.02 ms plus about 50%. No ceiling exists for the other layouts.
 const ASHFALL_FRAME_P95_MS: float = 3.3
 # Fixed ceilings on max draw calls per frame in the sample window; never raised to pass.
@@ -161,13 +162,13 @@ func _physics_process(_delta: float) -> void:
 			_completed_legs += 1
 		_leg += 1
 		_leg_ticks = 0
-		_queue_start = _simulation.snapshot().tick
+		_queue_start = _simulation.tick()
 		Workload.issue_leg(_simulation, _leg, Workload.ASHFALL_ANCHORS if _layout_name() == "ashfall" else Workload.ANCHORS)
 	_simulation.step()
 	_leg_ticks += 1
-	var state: Dictionary = _simulation.snapshot()
+	var state: Dictionary = _simulation.view_state()
 	var no_selection: Array[int] = []
-	_view.set_state(state, no_selection)
+	_view.set_view(state, no_selection)
 	_status.text = "%s | %s | tick %d | leg %d | Esc: quit" % [_layout_name(),
 		"draining" if _sampling_done else ("sampling" if _sample_started > 0 else "warmup"), state.tick, _leg]
 	var elapsed: float = (Time.get_ticks_usec() - started) / 1000.0
@@ -179,19 +180,20 @@ func _physics_process(_delta: float) -> void:
 	if command_tick:
 		_command_times.append(elapsed)
 	Profiler.end_tick()
-	_queue_peak = maxi(_queue_peak, state.path_queue.size())
-	if state.path_queue.is_empty() and _queue_start >= 0:
+	var queued: int = _simulation._path_queue.size() # the view state omits the queue; a private read keeps the per-tick snapshot out of the timed loop
+	_queue_peak = maxi(_queue_peak, queued)
+	if queued == 0 and _queue_start >= 0:
 		_queue_drain = maxi(_queue_drain, state.tick - _queue_start)
 		_queue_start = -1
 	if _leg_ticks > 3000:
 		_fail("Rendered workload leg exceeded 3000 ticks")
 		return
-	for unit: Dictionary in state.entities:
-		if unit.status == "blocked":
-			_fail("Rendered workload blocked unit " + str(unit.id))
-			return
+	var blocked: int = state.units.status.find(ViewRows.STATUSES.find("blocked"))
+	if blocked >= 0:
+		_fail("Rendered workload blocked unit " + str(state.units.id[blocked]))
+		return
 	if _sampling_done and Workload.settled(_simulation):
-		_finish_layout(state)
+		_finish_layout(_simulation.snapshot())
 
 func _process(_delta: float) -> void:
 	_view.advance_frame()
@@ -336,28 +338,28 @@ func _post() -> void:
 		_status.text = "post failed"
 
 # Zoom 0.5 shows the whole fight from a fixed camera; closer zooms follow the owner-1 army so they do not render empty ground.
-static func horde_camera(entities: Array, level: float) -> Vector2:
+static func horde_camera(rows: RefCounted, level: float) -> Vector2:
 	var fixed: Vector2 = Iso.world_to_plane(Vector2(32, 32))
 	if level <= 0.5: return fixed
 	var sum := Vector2.ZERO
 	var count: int = 0
-	for unit: Dictionary in entities:
-		if unit.owner == 1:
-			sum += Vector2(unit.position[0], unit.position[1])
+	for i in range(rows.size()):
+		if rows.owner[i] == 1:
+			sum += Vector2(rows.x[i], rows.y[i])
 			count += 1
 	return Iso.world_to_plane(sum / count) if count > 0 else fixed
 
 func _horde_tick() -> void:
 	var started: int = Time.get_ticks_usec()
 	_simulation.step()
-	var state: Dictionary = _simulation.snapshot()
+	var state: Dictionary = _simulation.view_state()
 	_visuals.collect_step(state.tick, _simulation.combat_events(), _simulation.command_results())
 	if _sound != null:
 		_sound.collect_step(state.tick, _simulation.combat_events(), _simulation.command_results())
 		_sound_state = state
 	var no_selection: Array[int] = []
-	$Camera2D.position = horde_camera(state.entities, $Camera2D.zoom.x)
-	_view.set_state(state, no_selection)
+	$Camera2D.position = horde_camera(state.units, $Camera2D.zoom.x)
+	_view.set_view(state, no_selection)
 	_status.text = "horde | %s | tick %d | Esc: quit" % ["draining" if _sampling_done else ("sampling" if _sample_started > 0 else "warmup"), state.tick]
 	if _sample_started > 0 and not _sampling_done:
 		_sample_ticks += 1
@@ -369,7 +371,7 @@ func _horde_tick() -> void:
 		_horde_marked_ticks += 1 if marks > 0 else 0
 	Profiler.end_tick()
 	if _sampling_done:
-		_finish_horde(state)
+		_finish_horde(_simulation.snapshot())
 
 func _finish_horde(state: Dictionary) -> void:
 	var moved: int = 0
@@ -421,7 +423,7 @@ func _large_tick() -> void:
 	var started: int = Time.get_ticks_usec()
 	_simulation.step()
 	var no_selection: Array[int] = []
-	_view.set_state(_simulation.snapshot(), no_selection)
+	_view.set_view(_simulation.view_state(), no_selection)
 	if _sample_started > 0 and not _sampling_done:
 		_sample_ticks += 1
 		_window_ticks += 1

@@ -349,6 +349,7 @@ func test_horde_camera_follows_army_when_zoomed(runner) -> bool:
 	for i in range(300):
 		sim.step()
 	var entities: Array = sim.snapshot().entities
+	var rows: RefCounted = sim.view_state().units
 	var sum := Vector2.ZERO
 	var count: int = 0
 	for unit: Dictionary in entities:
@@ -356,7 +357,7 @@ func test_horde_camera_follows_army_when_zoomed(runner) -> bool:
 			sum += Vector2(unit.position[0], unit.position[1])
 			count += 1
 	var centroid: Vector2 = sum / count
-	var camera: Vector2 = MovementBenchmark.horde_camera(entities, 2.0)
+	var camera: Vector2 = MovementBenchmark.horde_camera(rows, 2.0)
 	runner.check(camera.distance_to(Iso.world_to_plane(centroid)) < 1.0 * Iso.world_to_plane(Vector2(1, 0)).length(), "BM17 zoom 2 camera is within a cell of the owner-1 centroid, got %s vs %s" % [camera, Iso.world_to_plane(centroid)])
-	runner.check(MovementBenchmark.horde_camera(entities, 0.5) == Iso.world_to_plane(Vector2(32, 32)), "BM17 zoom 0.5 keeps the fixed camera")
+	runner.check(MovementBenchmark.horde_camera(rows, 0.5) == Iso.world_to_plane(Vector2(32, 32)), "BM17 zoom 0.5 keeps the fixed camera")
 	return true
