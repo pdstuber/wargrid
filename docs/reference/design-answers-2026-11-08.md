@@ -305,3 +305,12 @@ Asked one at a time after the native sim spike; analysis and experiments in [per
 - **Budgets:** may be re-derived from a new structure (simulation on its own thread or frame) as an explicit proposal with measurements and a ledger row for the user's approval; nothing is loosened silently.
 - **Measuring host:** the Mac mini; the Steam Deck gets a break. Windows and non-headless runs on the Mac mini were approved for 2026-11-11 while the user was away.
 - **Working style (user):** other engines' sources (OpenRA, Recoil, Permafrost) are one input, not the only one: "we have looked at the other engines before and not fixed our own engine so far".
+
+## After performance next (user, 2026-11-11 evening)
+
+- Interpolation rework (presentation only, folds in T4b, changes WB18's golden batch by design, needs a rendered A/B): before the movement milestone.
+- Packed-array storage for per-unit simulation state: inside the movement milestone, not as its own refactor task; after the golden scenarios plan.
+- Test app: final tree, single-threaded (deployed 2026-11-11 as fly release v11 of wargrid-web-test); the threaded build with isolation headers stays in `~/projects/wargrid-perf-work/threaded-deploy/`.
+- Next run to start: the golden scenarios plan ([plan](../superpowers/plans/2026-11-09-state-digest-golden-scenarios.md)).
+- Worker thread for the simulation: the user wants to pursue it ("unless you tell me it is not worth it"); design in [worker thread design](../superpowers/specs/2026-11-12-worker-thread-design.md), stage 1 (single-threaded `SimPump` boundary) first, the thread itself after a browser measurement.
+- Order of the next work (user agreed, 2026-11-11): 1 golden scenarios, 2 interpolation rework, 3 worker thread stage 1 (`SimPump` boundary), 4 the worker thread itself only if a browser measurement shows a main-thread win. Each is started by the user explicitly.
