@@ -16,6 +16,7 @@ var local_player: int = 1
 var stepped_results: Array = []
 var _sequence: int = 0
 var _error: String = ""
+var _shown_note: String = ""
 var _selecting: bool = false
 var _dragged: bool = false
 var _start: Vector2
@@ -109,7 +110,7 @@ func _physics_process(_delta: float) -> void:
 	# A stall frame (online, waiting for the peer) is not a step frame; counting it would inflate the split share.
 	var advanced: bool = simulation.tick() != tick_before
 	if advanced: stepped_results.append_array(simulation.command_results().duplicate(true))
-	if not is_processing() or (advanced and _clock.stepped(Engine.get_process_frames(), simulation.tick())): _refresh()
+	if not is_processing() or (advanced and _clock.stepped(Engine.get_process_frames(), simulation.tick())) or (not advanced and _note() != _shown_note): _refresh()
 
 func _present_if_due() -> bool:
 	if not _clock.rendered(Engine.get_process_frames(), simulation.tick()): return false
@@ -229,7 +230,11 @@ func _move(target: Vector2) -> void:
 func _refresh() -> void:
 	_show(simulation.view_state())
 
+func _note() -> String:
+	return _error
+
 func _show(state: Dictionary) -> void:
+	_shown_note = _note()
 	_perf.set_counts(state.units.size(), state.get("buildings", []).size(), state.tick)
 	_perf.split_share = _clock.split_share()
 	var zone: int = Profiler.begin()

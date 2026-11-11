@@ -31,7 +31,7 @@ class FakeTransport extends RefCounted:
 	func rtt_samples() -> PackedInt64Array: return PackedInt64Array([40000])
 
 func cases() -> Array[Callable]:
-	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_rejection_line, test_funds_rejection_is_announced, test_overlay_net_line, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_stall_frames_are_not_step_frames, test_launcher_layout, test_launcher_faction_selectors_fit, test_plays_dry_wells_from_each_seat, test_offline_uses_chosen_map, test_restart_keeps_map_and_starts, test_joiner_refuses_other_map, test_old_relay_mismatch_is_shown, test_cancel_and_copy_while_waiting, test_start_without_settings_is_a_protocol_error, test_both_seats_share_map_and_starts, test_host_told_opponent_left_before_start, test_credits_panel_layout]
+	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_rejection_line, test_funds_rejection_is_announced, test_overlay_net_line, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_stall_frames_are_not_step_frames, test_notices_reach_the_hud_while_processing, test_launcher_layout, test_launcher_faction_selectors_fit, test_plays_dry_wells_from_each_seat, test_offline_uses_chosen_map, test_restart_keeps_map_and_starts, test_restart_drops_old_stepped_results, test_joiner_refuses_other_map, test_old_relay_mismatch_is_shown, test_cancel_and_copy_while_waiting, test_start_without_settings_is_a_protocol_error, test_both_seats_share_map_and_starts, test_host_told_opponent_left_before_start, test_credits_panel_layout]
 
 func _online(runner, seat: int) -> Dictionary:
 	var transport := FakeTransport.new()
@@ -189,6 +189,18 @@ func test_stall_frames_are_not_step_frames(runner) -> bool:
 	main.free()
 	return true
 
+func test_notices_reach_the_hud_while_processing(runner) -> bool:
+	var waiting: Dictionary = await _online(runner, 2)
+	waiting.main.set_process(true)
+	_run(waiting.main, 6)
+	runner.check(waiting.main.get_node("HUD/Status").text.contains("Waiting for player 1"), "N2 waiting line shows while processing")
+	runner.check(waiting.main._clock.split_share() == 0.0, "N2 notice refresh leaves the clock alone")
+	waiting.transport.is_closed = true
+	_run(waiting.main, 3)
+	runner.check(waiting.main.get_node("HUD/Status").text.contains("Connection to relay lost"), "N2 ended match shows its message while processing")
+	waiting.main.free()
+	return true
+
 func test_launcher_layout(runner) -> bool:
 	var original: Vector2i = runner.root.size
 	for size in [Vector2i(1280, 720), Vector2i(1920, 1080)]:
@@ -341,6 +353,16 @@ func test_restart_keeps_map_and_starts(runner) -> bool:
 	SkirmishMain.map_path = before_path
 	SkirmishMain.starts = before_starts
 	SkirmishMain.match_seed = before_seed
+	return true
+
+func test_restart_drops_old_stepped_results(runner) -> bool:
+	var main = load(LauncherScript.OFFLINE_SCENE).instantiate()
+	runner.root.add_child(main)
+	await runner.process_frame
+	main.stepped_results.append({"ok": false, "error": "old match", "player": main.local_player, "tick": 50, "sequence": 0})
+	main._restart()
+	runner.check(not main.get_node("HUD/Status").text.contains("old match"), "N12 Restart drops the old match's stepped results")
+	main.free()
 	return true
 
 func test_joiner_refuses_other_map(runner) -> bool:

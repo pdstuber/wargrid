@@ -3,6 +3,7 @@ extends RefCounted
 
 const View = preload("res://scripts/presentation/world_view.gd")
 const WorldBatch = preload("res://scripts/presentation/world_batch.gd")
+const GraphicsSettings = preload("res://scripts/presentation/graphics_settings.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 const CombatWorkload = preload("res://scripts/debug/combat_workload.gd")
@@ -17,7 +18,7 @@ const EXTRA_COLLECTORS: int = 3
 const EXPECTED_DIGEST: String = "2046606c78e467de7a7ec23c0342b31e5b9136fcdb2f2ee2ac920fad7e6b60af"
 
 func cases() -> Array[Callable]:
-	return [test_view_reads_digest_is_pinned, test_rows_equal_snapshot, test_view_state_other_keys, test_view_state_is_read_only, test_view_items_persist]
+	return [test_view_reads_digest_is_pinned, test_rows_equal_snapshot, test_view_state_other_keys, test_view_state_is_read_only, test_view_items_persist, test_view_batch_equals_snapshot_batch]
 
 # At tick 3000 nothing has a target or waits, so the fixture adds an attacker and a collector line.
 static func skirmish_sim() -> RefCounted:
@@ -112,6 +113,24 @@ func test_view_reads_digest_is_pinned(runner) -> bool:
 	runner.check(first == EXPECTED_DIGEST, "VR1 view reads digest, got " + first)
 	var rows_digest: String = digest([skirmish, hordes], true)
 	runner.check(rows_digest == EXPECTED_DIGEST, "VR1 the same digest through set_view, got " + rows_digest)
+	return true
+
+func test_view_batch_equals_snapshot_batch(runner) -> bool:
+	for sim in [skirmish_sim(), hordes_sim()]:
+		var state: Dictionary = sim.snapshot()
+		var chosen: Array[int] = selection(state)
+		var from_snapshot = View.new()
+		from_snapshot.set_state(state, chosen)
+		var from_view = View.new()
+		from_view.set_view(sim.view_state(), chosen)
+		var expected = WorldBatch.new()
+		expected.build(WorldBatch.objects(state), {}, from_view.detail(), from_view._quality == GraphicsSettings.HIGH)
+		runner.check(from_snapshot._batch.points.size() > 0, "VR1 batch fixture: points exist")
+		runner.check(expected.points == from_view._batch.points and expected.colors == from_view._batch.colors, "VR1 the WorldView batch equals WorldBatch.objects")
+		runner.check(from_snapshot._batch.points == from_view._batch.points, "VR1 the WorldView batch points match through set_view")
+		runner.check(from_snapshot._batch.colors == from_view._batch.colors, "VR1 the WorldView batch colors match through set_view")
+		from_snapshot.free()
+		from_view.free()
 	return true
 
 static func _view_of(snapshot: Dictionary, entities: Array, tick: int) -> Dictionary:

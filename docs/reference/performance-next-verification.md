@@ -1,15 +1,15 @@
 # Performance next: verification
 
 ```text
-Resume record (updated 2026-11-11 13:45)
-Branch / base commit / working-tree state: perf-next / 78d7a77 / T4 task 5 uncommitted (scenes and sound on the view state)
-Last green task / next incomplete task: T4 task 5 (scenes and sound on view_state, uncommitted) / T4 task 6 (harness and rendered benchmark), then task 7 (measure)
-Changed paths since last commit: game/scripts/{main,base_main,skirmish_main}.gd, game/scripts/presentation/{sound_director,world_view}.gd, game/scripts/simulation/view_rows.gd, game/tests/{test_announcer,test_base_scene,test_scene,test_skirmish_scene,test_sound}.gd, this file
-Last command / cases / checks / failures / exit / marker: full suite, 78d7a77 + task 5: CASES 746 CHECKS 139685 FAILURES 0, exit 0, TESTS PASSED
-Known red case or blocker: none. Open review finding 4 (online stall in split share) deferred until after T4.
-Approved decisions, pre-authorizations used, deferred gates: local commits on perf-next after each GREEN, never push. Gate 2 approved with: RF1/RF2 -> 0 snapshot + 1 view_state, RF6; plumbing row = hand-off sum, 0.91 ms unchanged; HUD columns instead of details; T4b decided after the T4 numbers; VR4 digest check only, no private read. Rendered benchmark (task 6/7) needs the user's yes first. Gate 3 pending.
+Resume record (updated 2026-11-11 gate 3)
+Branch / base commit / working-tree state: perf-next / main base 5f9efee / clean after the commit of the gate 3 code fixes; 27 local commits, nothing pushed
+Last green task / next incomplete task: all tasks of the plan done (T0, T1, T3, T4 tasks 1-7, T5, T6) plus review fixes / STOP GATE 3: the user decides on the merge of T1+T4+fixes to main and answers two T6 questions
+Changed paths since last commit: none after the gate 3 fix commit
+Last command / cases / checks / failures / exit / marker: full suite on the gate 3 fix tree: CASES 751 CHECKS 139700 FAILURES 0, exit 0, TESTS PASSED; lint 0; warnings 141 files 0; test_sim_boundary OK; run_netplay match PASSED 15.5 s (tick 9024)
+Known red case or blocker: none. Known limits: (a) online catch-up runs up to 2 ticks per physics frame but main.gd collects only the last tick's command_results (predates this run); (b) the split A/B load is scripted attack-move, absolute capped-60 frame times are suspect, only direction is evidence; (c) rendered frame comparisons need the host's bimodal mode tagged; (d) test app wargrid-web-test runs a THREADED build with COOP/COEP (release v10, copy of 6dbcc02 without later fixes), not the final tree; (e) performance.md Status line still says the plumbing row is exceeded on every layout (skirmish3v3 now passes).
+Approved decisions, pre-authorizations used, deferred gates: local commits on perf-next, never push. User approved: split kept, T4 design (HUD columns, T4b after numbers, VR4 digest only), RF1/RF2 change, plumbing row as hand-off sum (0.91 unchanged), windows for rendered runs, test deploys (v9 single-threaded 4acff95, v10 threaded + headers), T5 kept, finding 4 fix. Not approved: merge to main, push, any production deploy or production headers (needs a measured thread win, a macOS Safari check and explicit approval; iOS Safari boots the threaded build per the user), any budget change (W1/W2/M1 and the plumbing wording are proposals).
 Usage so far: n/a
-Next exact action: coordinator: read the 2026-11-11 split A/B row (last row; split lowers tick-frame time and p95/p99 at 60 fps, max only on hordes300), then task 7 ledger row (plumbing row as hand-off sum, proposal); headless and rendered task 7 measurements are done (rows at the end of this file: gains beyond spread on every layout; team_match 0.951 and hordes300 1.927 exceed the 0.91 budget; rendered frame p50/p95 rose on dense, ashfall and horde, see the 2026-11-11 rendered row). Interpolation-on rendered check done (last row): no per-frame regression.
+Next exact action: wait for the user's merge decision and the two T6 answers (storage change inside the movement milestone or its own task; interpolation rework before the movement milestone). Then /wrapup.
 ```
 
 ## Evidence rows (append-only)

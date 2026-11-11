@@ -125,6 +125,9 @@ func notice() -> String:
 		"ended_protocol": return "Protocol error: " + _lockstep.end_reason()
 	return ""
 
+func _note() -> String:
+	return _error + notice()
+
 func _refresh_hud(state: Dictionary) -> void:
 	super._refresh_hud(state)
 	var line: String = notice()

@@ -110,6 +110,7 @@ func _restart() -> void:
 	_selecting = false
 	_dragged = false
 	_error = ""
+	stepped_results.clear()
 	_sequence = 0
 	_last_result_tick = -1
 	_last_result_sequence = -1
