@@ -200,7 +200,16 @@ func test_top_lift_by_role(runner) -> bool:
 	runner.check(WorldBatch.top_lift("usa_power_plant") > WorldBatch.top_lift("usa_barracks"), "WB17 the power plant's drums rise above a barracks")
 	return true
 
-const GOLDEN_DIGEST := "412a2fbb528014cb4ac18bbcab7aff90ab359ecffe19cbf69f94133fed70bb79"
+const GOLDEN_COLORS := "0e5eb239a17771bd8a68be19fe9248bbc6b0794a704a20efe6fac8d4cc3db901"
+const GOLDEN_SHAPES: Array = [
+	[3558, 1867997.33498216, 4192273.88938141], [3572, 1872818.9491446, 4204155.5892334],
+	[3832, 2083651.73576951, 4452030.68871307], [3846, 2088473.34993196, 4463912.38856506],
+	[4256, 2524701.60499603, 4942902.84593964], [4270, 2529523.21915847, 4954784.54579163],
+	[4530, 2740356.00578338, 5202659.6452713], [4544, 2745177.61994582, 5214541.34512329],
+	[4884, 3122156.61789632, 5602656.94532013], [4898, 3126978.23205876, 5614538.64517212],
+	[5158, 3337811.01868367, 5862413.74465179], [5172, 3342632.63284612, 5874295.44450378],
+]
+const SUM_TOLERANCE := 0.01 # libm trig differs by 1 ulp across platforms (1.5e-5 px, CI run 43101932602)
 
 func _golden_state() -> Dictionary:
 	var sim = Fixture.make_world(10000, Vector2i(96, 96))
@@ -242,16 +251,20 @@ func test_golden_output(runner) -> bool:
 	for i in 6: effects.append({"type": [&"muzzle", &"hit", &"fade", &"dash"][i % 4], "anchor": Vector2(5 + i, 5 + i), "to": Vector2(9 + i, 4), "age": i % 4, "id": i})
 	var hasher := HashingContext.new()
 	hasher.start(HashingContext.HASH_SHA256)
-	var triangles: int = 0
+	var shapes: Array = []
 	for detail in 3:
 		for shadows in [false, true]:
 			for with_extras in [false, true]:
 				var batch = WorldBatch.new()
 				if with_extras: batch.build(items, angles, detail, shadows, effects)
 				else: batch.build(items, {}, detail, shadows)
-				hasher.update(batch.points.to_byte_array())
 				hasher.update(batch.colors.to_byte_array())
-				triangles += batch.triangle_count
+				var sum_x: float = 0.0
+				var sum_y: float = 0.0
+				for p in batch.points:
+					sum_x += p.x
+					sum_y += p.y
+				shapes.append([batch.triangle_count, sum_x, sum_y])
 	var warm = WorldBatch.new()
 	warm.build(items, angles, 1, true)
 	WorldBatch._bodies.clear()
@@ -259,10 +272,16 @@ func test_golden_output(runner) -> bool:
 	var cold = WorldBatch.new()
 	cold.build(items, angles, 1, true)
 	runner.check(cold.points == warm.points and cold.colors == warm.colors and WorldBatch._body_count < WorldBatch.BODY_CACHE_CAP, "WB19 a full body cache clears and output is unchanged")
-	var digest: String = hasher.finish().hex_encode()
-	print("GOLDEN %s %d" % [digest, triangles])
+	var colors: String = hasher.finish().hex_encode()
+	var triangles: int = shapes.reduce(func(total: int, shape: Array) -> int: return total + shape[0], 0)
+	print("GOLDEN %s %d %s" % [colors, triangles, JSON.stringify(shapes)])
 	runner.check(triangles > 20000, "WB18 fixture is big (%d triangles)" % triangles)
-	runner.check(digest == GOLDEN_DIGEST, "WB18 output equals the digest re-recorded for the winners task (intended look change: sand-independent; infantry colour B, horde rings in the batch, no marks; was 598c4b03 at 52556 triangles)")
+	runner.check(colors == GOLDEN_COLORS, "WB18 colours equal the pinned digest (was 412a2fbb over points and colours at 52520 triangles)")
+	runner.check(shapes.size() == GOLDEN_SHAPES.size(), "WB18 one shape row per batch")
+	for i in mini(shapes.size(), GOLDEN_SHAPES.size()):
+		var got: Array = shapes[i]
+		var want: Array = GOLDEN_SHAPES[i]
+		runner.check(got[0] == want[0] and absf(got[1] - want[1]) < SUM_TOLERANCE and absf(got[2] - want[2]) < SUM_TOLERANCE, "WB18 batch %d triangles and coordinate sums: got %s, want %s" % [i, got, want])
 	return true
 
 func _shot(attacker: int, target: int) -> Array[Dictionary]:
