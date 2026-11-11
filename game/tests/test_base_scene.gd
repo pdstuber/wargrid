@@ -8,7 +8,7 @@ const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
 
 func cases() -> Array[Callable]:
-	return [test_base_ready,test_placement_input,test_production_ui,test_context_orders,test_execution_feedback,test_preview_hover_cost,test_resume_status,test_queue_label,test_one_snapshot_per_refresh,test_ticks_take_no_snapshot,test_refresh_waits_for_next_frame,test_build_menu_from_capabilities,test_build_menu_wraps_eleven,test_build_menu_quantity_label]
+	return [test_base_ready,test_placement_input,test_production_ui,test_context_orders,test_execution_feedback,test_preview_hover_cost,test_resume_status,test_queue_label,test_one_snapshot_per_refresh,test_ticks_take_no_snapshot,test_refresh_waits_for_next_frame,test_rejection_survives_two_steps,test_build_menu_from_capabilities,test_build_menu_wraps_eleven,test_build_menu_quantity_label]
 
 func setup(runner):
 	var main = Base.instantiate()
@@ -288,6 +288,21 @@ func test_refresh_waits_for_next_frame(runner) -> bool:
 	await runner.process_frame
 	await runner.process_frame
 	runner.check(main._view._state.tick == 1,"RF5 a later frame's _process refreshes")
+	main.free()
+	return true
+
+func test_rejection_survives_two_steps(runner) -> bool:
+	var main = await setup(runner)
+	main.simulation = Fixture.make_world(800)
+	main.set_process(true)
+	await runner.process_frame
+	Fixture.send(main.simulation,{"type":"build","builder_id":1,"building_kind":"usa_power_plant","origin":[8,4],"tick":0})
+	Fixture.send(main.simulation,{"type":"build","builder_id":1,"building_kind":"usa_power_plant","origin":[12,4],"tick":0})
+	main._physics_process(0.0)
+	main._physics_process(0.0)
+	await runner.process_frame
+	await runner.process_frame
+	runner.check(main.get_node("HUD/Status").text.contains("Insufficient credits"),"RF8 a rejection from the first of two steps reaches the HUD")
 	main.free()
 	return true
 

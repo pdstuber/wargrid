@@ -71,7 +71,7 @@ func _refresh() -> void:
 	$HUD/Economy.position.y = maxf(116.0,_status.position.y + _status.get_minimum_size().y + 8.0)
 
 func _refresh_hud(state: Dictionary) -> void:
-	for result: Dictionary in state.command_results:
+	for result: Dictionary in stepped_results + state.command_results:
 		if result.player == local_player and (result.tick > _last_result_tick or (result.tick == _last_result_tick and result.sequence > _last_result_sequence)):
 			_error = result.error
 			_last_result_tick = result.tick

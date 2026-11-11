@@ -13,6 +13,7 @@ const ZOOMS: Array[float] = [0.5, 1.0, 2.0]
 var simulation: Simulation = Simulation.new()
 var selected_ids: Array[int] = []
 var local_player: int = 1
+var stepped_results: Array = []
 var _sequence: int = 0
 var _error: String = ""
 var _selecting: bool = false
@@ -107,6 +108,7 @@ func _physics_process(_delta: float) -> void:
 	_perf.record_step((Time.get_ticks_usec() - started) / 1000.0)
 	# A stall frame (online, waiting for the peer) is not a step frame; counting it would inflate the split share.
 	var advanced: bool = simulation.tick() != tick_before
+	if advanced: stepped_results.append_array(simulation.command_results().duplicate(true))
 	if not is_processing() or (advanced and _clock.stepped(Engine.get_process_frames(), simulation.tick())): _refresh()
 
 func _present_if_due() -> bool:
@@ -237,6 +239,7 @@ func _show(state: Dictionary) -> void:
 	zone = Profiler.begin()
 	_refresh_hud(state)
 	Profiler.end(&"refresh.hud", zone)
+	stepped_results.clear()
 
 func _create_simulation() -> Simulation:
 	for y in range(4, 10):
