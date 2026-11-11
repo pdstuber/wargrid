@@ -1,15 +1,15 @@
 # Performance next: verification
 
 ```text
-Resume record (updated 2026-11-11 12:10)
-Branch / base commit / working-tree state: perf-next / f8efb98 + this file / T1, runner fix and T3 committed
-Last green task / next incomplete task: T3 / Stop gate 1 (review done: PASS with fixes), then T4 if the user starts it
-Changed paths since last commit: this file
-Last command / cases / checks / failures / exit / marker: full suite on game code of f8efb98: CASES 733 CHECKS 139582 FAILURES 0, exit 0, TESTS PASSED; lint 0; warnings 0
-Known red case or blocker: none. Open gate findings: no test for main.gd _present_if_due (base scene) and skirmish auto-pick timing; auto pick may now choose higher quality (p95 sampled per frame)
-Approved decisions, pre-authorizations used, deferred gates: user 2026-11-11: local commits on perf-next after each GREEN, never push. Gates 1-3 pending; gate 1 waits for the user's playtest and go.
+Resume record (updated 2026-11-11 13:15)
+Branch / base commit / working-tree state: perf-next / 763d85b + design doc + this file / committed
+Last green task / next incomplete task: T4 design written (docs/superpowers/specs/2026-11-12-view-rows-design.md) / Stop gate 2: user approves the design (open questions: RF1/RF2 expectations change 1 snapshot -> 0 snapshots + 1 view_state; plumbing row measured as the T3 hand-off sum)
+Changed paths since last commit: none after the commit of this file
+Last command / cases / checks / failures / exit / marker: full suite on 5de291e game code: CASES 735 CHECKS 139585 FAILURES 0, exit 0, TESTS PASSED; lint 0; warnings 0
+Known red case or blocker: none. Open review finding 4 (online stall counts as step frames in the split share, cosmetic) deferred until after T4.
+Approved decisions, pre-authorizations used, deferred gates: user 2026-11-11: local commits on perf-next after each GREEN, never push; split kept and T4 started (2026-11-11); test deploy of 4acff95 to wargrid-web-test approved and done. Gates 2 and 3 pending.
 Usage so far: n/a
-Next exact action: wait for the user's gate-1 answer (split kept? T4 starts?). If kept: optionally add the two missing tests, then T4 Opus design.
+Next exact action: wait for the user's gate-2 answer; then dispatch the design's 7 tasks to Sonnet one at a time (task 1 is the VR1 characterization digest on the unchanged tree).
 ```
 
 ## Evidence rows (append-only)
