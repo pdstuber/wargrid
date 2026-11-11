@@ -291,3 +291,17 @@ Interview before the overnight run of the [handoff](../native-sim-spike-prompt.t
 - Each turreted kind keeps its own Zero Hour turret rate (Crusader 180, BattleMaster 120, Scorpion 100, Technical 240 deg/s; table in the impact note). China/FRC kind mappings are inferred from display names: re-check with `tools/zh_ini.py` at batch A planning.
 - After losing its target a turret holds for `RecenterTime` (2 s; Humvee and Scorpion 5 s), then turns back to face forward (Zero Hour default, TurretAI.cpp:200, :1439).
 - Turreted units fire while driving at whatever is in range once their turret is aligned; units without a turret still stop to fire (Zero Hour: the turret's idle state picks targets on its own timer, TurretAI.cpp:879-900, :1306-1327; `getNextMoodTarget` has no movement check, AIUpdate.cpp:4495; source reading, not every guard traced). Check each unit's `AutoAcquireEnemiesWhenIdle` with `tools/zh_ini.py` at batch A planning.
+
+## Performance next (user, 2026-11-11)
+
+Asked one at a time after the native sim spike; analysis and experiments in [performance next](performance-next.md).
+
+- **Goal row:** a 210-unit 3v3 must run smoothly in Firefox on the Steam Deck. 400 units fighting at once (hordes300) stays a reported stress row, not the goal. Budgets, F and gates in the [ledger](performance.md) are unchanged by this answer.
+- **Motive:** no performance problem is felt in play. All playtesters have gaming PCs; no low-end tester exists yet. The work is driven by the ledger, a possible horde mode later, and fixing architectural base issues now so later work is easier.
+- **Horde mode size:** 1,000 enemies "for now". Not thought through; a spike comes first so the user can see whether the mode makes sense. The horde spike is approved (benchmark, then a playable throwaway scene).
+- **Threads:** a threaded browser build may send the cross-origin isolation headers in production if the experiment shows a clear win (replaces "test app only" for that case). The user still wants threads together with Godot's "Separate" render thread measured (asked 2026-11-09 as perf question Q11, never run).
+- **Tick rate:** split rates. Movement and firing stay at 30 per second; unit decisions may run less often, staggered across units. Asked first how modern RTS games do it (StarCraft II 22.4, OpenRA 25, Recoil and Zero Hour 30, Permafrost movement 20 and combat 10; sources in the note).
+- **Order:** experiments first (speed-built web template, simulation on a thread, packed-array horde spike), then decide the data layout, before the movement and pathing milestone starts.
+- **Budgets:** may be re-derived from a new structure (simulation on its own thread or frame) as an explicit proposal with measurements and a ledger row for the user's approval; nothing is loosened silently.
+- **Measuring host:** the Mac mini; the Steam Deck gets a break. Windows and non-headless runs on the Mac mini were approved for 2026-11-11 while the user was away.
+- **Working style (user):** other engines' sources (OpenRA, Recoil, Permafrost) are one input, not the only one: "we have looked at the other engines before and not fixed our own engine so far".
