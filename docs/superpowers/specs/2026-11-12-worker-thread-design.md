@@ -1,6 +1,6 @@
 # Simulation on a worker thread: design (2026-11-12)
 
-Status: **proposed, design only. Nothing built, no thread, no benchmark, no header change.** Task T5 of the [performance next plan](../plans/2026-11-11-performance-next.md) (the plan names the file `2026-11-13-sim-worker-design.md`; the coordinator's brief named this one). Written against `perf-next` at 96334d6 (T1 clock and T4 view rows in the tree). Lever A2 of the [performance note](../../reference/performance-next.md) (sections 5.2, 6, 7 step 2, 8). Waits for stop gate 3 and the user.
+Status: **proposed, design only. Nothing built, no thread, no benchmark, no header change.** Task T5 of the [performance next plan](../plans/2026-11-11-performance-next.md) (the plan now links this file name). Written against `perf-next` at 96334d6 (T1 clock and T4 view rows in the tree). Lever A2 of the [performance note](../../reference/performance-next.md) (sections 5.2, 6, 7 step 2, 8). Waits for stop gate 3 and the user.
 
 Labels: **measured** (a row in the [verification file](../../reference/performance-next-verification.md), the note or `~/projects/wargrid-perf-work/threads/threads-result.md`), **source** (file:line at 96334d6, or Godot `4.7.2-stable` in `~/projects/wargrid-perf-work/godot`), **inferred** (arithmetic on measured rows), **estimate** (not measured). Host for every measured number: the Mac mini. No Steam Deck number exists; every "target" number is a Mac number times F = 5.5.
 
@@ -28,7 +28,7 @@ Why not "go" for the thread straight away: the probe (section 2) showed the work
 | After T4, hand-off sum per tick (view_state + view.sort + view.batch), mean | skirmish3v3 0.537, team_match 0.951, hordes300 1.927, movement_open 1.303 | measured (T4 task 7) |
 | `view_state()` alone, mean | skirmish3v3 0.160, hordes300 0.444; team_match 0.058 on its first 1,800 ticks only | measured (T4 task 2) |
 | `step`, mean / p95 / max | skirmish3v3 0.705 / 1.313; team_match 1.071 / 1.929 / 9.31 (of which `opponent.decide` 7.37); hordes300 1.987 / 2.850 | measured (T0 profile, note section 2) |
-| Real skirmish scene, uncapped, native, about 169 units | physics frame with the split (step + sound collect) p50 0.98 ms; without the split (step + refresh) 1.82 | measured (split A/B) |
+| Combat workload in the real skirmish scene path (scripted attack-move, no bot, no buildings), uncapped, native, about 169 units alive | physics frame with the split (step + sound collect) p50 0.98 ms; without the split (step + refresh) 1.82 | measured (split A/B) |
 | Threaded test app with COOP/COEP on iOS Safari | boots to the menu; lobby creates a match code through the relay under COEP | reported by the user, not measured |
 
 The split A/B rows capped at 60 fps show 4-5x larger tick times than uncapped on the same tree (skirmish3v3 tick p50 4.8 vs 0.98 ms). That is a host effect (probably clock frequency at low load; not verified), so this design takes gains from CPU time per tick, not from capped frame intervals.
@@ -148,7 +148,7 @@ Mean ms per tick, Mac native headless, from the measured rows of section 2. "Mai
 | hordes300 (stress) | 1.987 + 1.927 = 3.91 | 1.48 | 62 % | 2.43 | 21.5 → 8.1 |
 
 - **Worst ticks leave the frame:** team_match max 9.31 ms with `opponent.decide` 7.37 (measured) is about 51 ms on the target (inferred), three dropped frames today; with the worker the main thread does not see it.
-- **Real scene:** with the split, the physics frame (step + sound collect) is 0.98 ms p50 and step + refresh 1.82 (measured, uncapped, about 169 units). The worker removes the first and `view_state` from the second, leaving about 0.7 ms per tick on the main thread (estimate, about -60 %).
+- **Real scene:** with the split, the physics frame (step + sound collect) is 0.98 ms p50 and step + refresh 1.82 (measured, uncapped, scripted attack-move load with about 169 units alive, not a bot-driven 210-unit match). The worker removes the first and `view_state` from the second, leaving about 0.7 ms per tick on the main thread (estimate, about -60 %).
 - **Browser:** the horde render bench's tick frame was about 10 ms p50 in Firefox before T4 (measured). On native it fell from 4.9 to 3.6 ms with T4 (measured) and step plus `view_state` are about 2.4 of that; scaled the same way, a worker would leave about 3 ms of the 10 on the browser's main thread (estimate, the weakest number here).
 - **Not a gain:** total CPU per tick rises by the tax (4-7 %) plus copies of events and the queue (not measured; small).
 

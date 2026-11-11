@@ -1,6 +1,6 @@
 # Simulation interface
 
-Status: describes the code at e3a4b2b plus the view rows change, task 2 (2026-11-12, commit pending). Update in the same change as any public method. Paths relative to `game/scripts/simulation/`; `sim` is a `Simulation` (`simulation.gd`).
+Status: describes the code at e3a4b2b plus the view rows change, task 2 (2026-11-12, commit 54cba1e). Update in the same change as any public method. Paths relative to `game/scripts/simulation/`; `sim` is a `Simulation` (`simulation.gd`).
 
 ## Construct and set up (before tick 0)
 - `Simulation.new(blocked_cells, size)`: empty world. `simulation.gd:52`
