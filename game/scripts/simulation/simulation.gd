@@ -665,7 +665,17 @@ func _snapshot() -> Dictionary:
 	var result: Dictionary = {"tick": _tick, "next_entity_id": _next_entity_id, "entities": entities,
 		"pending_commands": pending, "last_sequences": sequences, "map": _navigation.snapshot(), "path_queue": _path_queue.duplicate(), "players":_player_snapshots(true),"buildings":_sorted_copies(_buildings),"sources":_sorted_copies(_sources),"terrain_cells":_terrain_snapshot(),"next_production_id":_next_production_id,"command_results":_command_results.duplicate(true),"combat_events":_combat_events.duplicate(true),"match":_match.duplicate(true) if _match != null else null,"rng":_rng}
 	if not _crates.is_empty(): result.crates = _crates.duplicate(true)
+	if not _chases.is_empty(): result.chases = _chase_snapshots()
 	return result
+
+func _chase_snapshots() -> Array:
+	var ids: Array = _chases.keys()
+	ids.sort()
+	var out: Array = []
+	for id: Variant in ids:
+		var resume: Variant = _chases[id]
+		out.append({"id": id, "resume": resume.duplicate() if resume != null else null})
+	return out
 
 func replace_blocked_cells(cells: Array[Vector2i]) -> Dictionary:
 	var size: Array = _navigation.snapshot().size

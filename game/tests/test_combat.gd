@@ -694,14 +694,19 @@ func test_scan_radius_boundary(runner) -> bool:
 		runner.check((Fixture.object(sim, guard).combat.target_id != null) == case[1], "R2 enemy at x=" + str(case[0]) + " (ai radius 5.332): acquired=" + str(case[1]))
 	return true
 
+func _chase(sim, id: int) -> Variant:
+	for entry: Dictionary in sim.snapshot().get("chases", []):
+		if entry.id == id: return entry
+	return null
+
 func test_removed_chaser_clears_chase(runner) -> bool:
 	var sim = _ai_world()
 	var guard: int = sim.spawn(1, Vector2(2.5, 2.5), "usa_rifle_infantry")
 	sim.spawn(2, Vector2(7.5, 2.5), "usa_builder")
 	sim.step()
-	runner.check(sim._chases.has(guard), "R3 chase started")
+	runner.check(_chase(sim, guard) != null, "R3 chase started")
 	sim.remove_object(guard)
-	runner.check(not sim._chases.has(guard), "R3 removing the chaser clears its chase")
+	runner.check(_chase(sim, guard) == null, "R3 removing the chaser clears its chase")
 	return true
 
 func test_scan_keeps_target_leaving_radius(runner) -> bool:
@@ -775,7 +780,8 @@ func test_scan_same_tick_orders(runner) -> bool:
 	marching[0].step()
 	var marcher: Dictionary = Fixture.object(marching[0], marching[1])
 	runner.check(marcher.combat.mode == "attack_move" and marcher.combat.goal == [2.5, 20.5], "O4 attack_move replaces the chase")
-	var resume: Variant = marching[0]._chases.get(marching[1])
+	var chase: Variant = _chase(marching[0], marching[1])
+	var resume: Variant = chase.resume if chase != null else null
 	runner.check(resume == null or Vector2(resume[0], resume[1]).distance_to(Vector2(2.5, 20.5)) < 1.5, "O4 any chase now resumes to the new attack_move goal, not the old one")
 	var removed: Array = _chasing_world()
 	removed[0].remove_object(removed[2])

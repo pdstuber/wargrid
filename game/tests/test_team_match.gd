@@ -10,7 +10,7 @@ const Economy = preload("res://tests/economy_fixture.gd")
 
 const PREFIX_TICKS: int = 20000
 const TRACE_INTERVAL: int = 200
-const FINAL_DIGEST: String = "69a1e12278c29044"
+const FINAL_DIGEST: String = "91106ae278c29044"
 const BUILD_CHECK_TICK: int = 3000
 const TEAM_CORE_SERIES: int = 1748824102688385527
 
