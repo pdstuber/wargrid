@@ -314,3 +314,21 @@ Asked one at a time after the native sim spike; analysis and experiments in [per
 - Next run to start: the golden scenarios plan ([plan](../superpowers/plans/2026-11-09-state-digest-golden-scenarios.md)).
 - Worker thread for the simulation: the user wants to pursue it ("unless you tell me it is not worth it"); design in [worker thread design](../superpowers/specs/2026-11-12-worker-thread-design.md), stage 1 (single-threaded `SimPump` boundary) first, the thread itself after a browser measurement.
 - Order of the next work (user agreed, 2026-11-11): 1 golden scenarios, 2 interpolation rework, 3 worker thread stage 1 (`SimPump` boundary), 4 the worker thread itself only if a browser measurement shows a main-thread win. Each is started by the user explicitly.
+
+## Main branch audit (user, 2026-11-11 night)
+
+Answers to an outside audit of `main` at `ec78012` (audit and fix list kept outside the repo in `~/projects/wargrid-overnight-work/audit-2026-11-11/`). Fixes applied the same night on branch `verify/2026-11-11`: WB18 made platform-stable, CI check in kickoff and wrap-up, web desync download, lockstep queue bound, `chases` in the snapshot, release actions pinned by SHA.
+
+- **Golden order (changes "After performance next" item 1):** pin as few new golden digests as possible until the movement milestone has landed; the golden scenarios plan moves after movement. The snapshot restore round-trip test comes with the movement milestone's unit schema, not before.
+- **Presentation tests:** no byte-exact goldens over drawn geometry; use counts, summed coordinates with a tolerance and colour digests (as WB18 now does).
+- **Reference-trace parity:** a gate only for units that change locomotion feel; otherwise a tool used when a unit feels wrong.
+- **Design questions:** research only for the next one or two milestone packages.
+- **Bot memory:** stays outside the snapshot while each netplay client runs only its own seat's bot; revisit when M9 bot takeover runs bots on every client.
+- **Relay Origin check:** skipped for now (friends only); revisit in M9.
+- **Fuzz and invariant test:** before the movement milestone. **One targetability predicate:** before ground batch A. **Controller chain flattening:** with the controls task, together with the `SimPump` seam.
+- **Performance:** now a `BUDGET EXCEEDED` summary line and a report-only worst-tick line; the forward budget per unbuilt system after measuring the browser against native on the team match (desktop-only 3v3 is decided from that measurement); a report-only late-game canary before the movement design.
+- **Roadmap:** a thin playable slice (controls task, minimal real HUD, order acknowledgement sound, regular 1v1 playtests) directly after the movement milestone; fog (M7.9) before ground batch A; the roster stays at four units per faction until three recorded 1v1 matches are reviewed.
+- **Unit autonomy (human vs AI behaviour):** decided at the M8 design, leaning toward a per-unit stance; count "units just stood there" and "ran off" remarks in playtests first.
+- **Documentation:** `docs/ARCHITECTURE.md`; a `docs/STATUS.md` that replaces the status bullets in the development notes' Start here; symbols instead of line numbers in living documents; a short table at the head of the performance ledger. Logs are not moved.
+- **README:** current screenshot and a short fight clip (needs a window: ask first), remove "placeholder shapes for now", CI badge once `main` is green, three lines on what Wargrid does differently. Align `AGENTS.md` with the README's "inspired by" wording; open item: a qualified opinion on deriving the roster's numbers from retail data before wider distribution.
+- **Next (user):** overhaul milestone planning into smaller packages that each give players a meaningful increment and can be shipped and playtested on their own, plus tooling that focuses playtests on the current aspects and makes feedback easy, clear and directed. Starts right after the audit batch, with brainstorming.
