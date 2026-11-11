@@ -8,9 +8,10 @@ const Bake = preload("res://scripts/presentation/shape_bake.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 const Fixture = preload("res://tests/economy_fixture.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
+const ViewRows = preload("res://scripts/simulation/view_rows.gd")
 
 func cases() -> Array[Callable]:
-	return [test_sort_key_orders_layers_then_depth, test_unit_in_front_of_factory_draws_later, test_unit_behind_factory_draws_earlier, test_air_kind_draws_above_ground, test_build_one_submission, test_empty_state, test_rise_from_work, test_damage_stage_edges, test_building_rises_with_work, test_supply_stack_shrinks, test_small_pile_inside_footprint, test_shadow_only_with_flag, test_lab_roles_mapped, test_back_to_front_across_objects, test_lifts_clear_unit_height, test_top_lift_by_role, test_golden_output, test_shot_dash]
+	return [test_sort_key_orders_layers_then_depth, test_unit_in_front_of_factory_draws_later, test_unit_behind_factory_draws_earlier, test_air_kind_draws_above_ground, test_build_one_submission, test_empty_state, test_rise_from_work, test_damage_stage_edges, test_building_rises_with_work, test_supply_stack_shrinks, test_small_pile_inside_footprint, test_shadow_only_with_flag, test_lab_roles_mapped, test_back_to_front_across_objects, test_lifts_clear_unit_height, test_top_lift_by_role, test_golden_output, test_shot_dash, test_depth_order_matches_sorted, test_unit_item_rewrite_leaves_nothing_stale, test_structure_items_follow_units]
 
 func _find(items: Array[Dictionary], id: int) -> Dictionary:
 	for item in items:
@@ -292,4 +293,32 @@ func test_shot_dash(runner) -> bool:
 		for b: Vector2 in first.points: reach = maxf(reach, a.distance_to(b))
 	runner.check(reach > 11.0 and reach < 14.0, "W7 the dash is about 12 px long, got %f" % reach)
 	runner.check(first.points != later.points and (later.points[0].x - first.points[0].x) > 0.0, "W7 the dash flies toward the target")
+	return true
+
+func test_depth_order_matches_sorted(runner) -> bool:
+	var state: Dictionary = _golden_state()
+	var order: PackedInt32Array = WorldBatch.depth_order(ViewRows.from_units(state.entities))
+	var expected: Array = WorldBatch.depth_sorted(state.entities).map(func(unit: Dictionary) -> int: return unit.id)
+	var got: Array = []
+	for row in order: got.append(state.entities[row].id)
+	runner.check(order.size() == state.entities.size() and got == expected and expected.size() > 100, "WB20 depth_order lists the rows in depth_sorted order")
+	return true
+
+func test_unit_item_rewrite_leaves_nothing_stale(runner) -> bool:
+	var state: Dictionary = _golden_state()
+	var units: Array = state.entities.slice(0, 40)
+	var rows = ViewRows.from_units(units)
+	var item := {}
+	var same: bool = true
+	for i in units.size():
+		WorldBatch.write_unit_item(item, rows, i)
+		same = same and item == WorldBatch.objects({"entities": [units[i]]})[0]
+	runner.check(same, "WB21 one item rewritten across 40 different units equals a fresh item each time")
+	return true
+
+func test_structure_items_follow_units(runner) -> bool:
+	var state: Dictionary = _golden_state()
+	var all: Array[Dictionary] = WorldBatch.objects(state)
+	var structures: Array[Dictionary] = WorldBatch.structure_items(state)
+	runner.check(structures.size() == 10 and all.slice(state.entities.size()) == structures, "WB22 structure_items are the buildings then sources of objects()")
 	return true

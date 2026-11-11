@@ -7,6 +7,7 @@ const Shapes = preload("res://scripts/presentation/shapes.gd")
 const Bake = preload("res://scripts/presentation/shape_bake.gd")
 const Palette = preload("res://scripts/presentation/palette.gd")
 const Director = preload("res://scripts/presentation/visual_director.gd")
+const ViewRows = preload("res://scripts/simulation/view_rows.gd")
 
 const LAYER_GROUND := 1
 const LAYER_AIR := 2
@@ -89,15 +90,39 @@ static func pick_extent(kind: String) -> Rect2:
 	return Rect2(extent.position + Vector2(0, -AIR_LIFT), extent.size) if kind_info(kind)[1] == LAYER_AIR else extent
 
 static func objects(state: Dictionary) -> Array[Dictionary]:
+	var rows: ViewRows = ViewRows.from_units(state.get("entities", []))
 	var found: Array[Dictionary] = []
-	for unit: Dictionary in state.get("entities", []):
-		var heading: Array = unit.get("heading", [1.0, 0.0])
-		var combat: Variant = unit.get("combat")
-		var kind: String = unit.get("kind", "")
+	for i in rows.size():
+		var item := {}
+		write_unit_item(item, rows, i)
+		found.append(item)
+	found.append_array(structure_items(state))
+	return found
+
+# Rewrites every per-tick field; the kind-derived ones only when the kind changed, so one item can live across ticks.
+static func write_unit_item(item: Dictionary, rows: ViewRows, i: int) -> void:
+	var kind: String = rows.kinds[rows.kind[i]]
+	if item.get("kind") != kind:
 		var info: Array = kind_info(kind)
-		found.append(_item(unit, kind, info[0], info[1], Vector2(unit.position[0], unit.position[1]), Vector2i.ONE, atan2(heading[1], heading[0]), 1.0, -1 if combat == null or combat.target_id == null else combat.target_id))
-		found[-1].shadow = SHADOW_RADIUS if found[-1].layer == LAYER_AIR else GROUND_SHADOW_RADIUS
-		found[-1].horde = combat != null and combat.get("horde", 0) > 0
+		item.kind = kind
+		item.role = info[0]
+		item.layer = info[1]
+		item.shadow = SHADOW_RADIUS if info[1] == LAYER_AIR else GROUND_SHADOW_RADIUS
+		item.footprint = Vector2i.ONE
+		item.rise = 1.0
+		item.boxes = 0
+		item.variant = 0
+	item.id = rows.id[i]
+	item.owner = rows.owner[i]
+	item.anchor = Vector2(rows.x[i], rows.y[i])
+	item.heading = atan2(rows.heading_y[i], rows.heading_x[i])
+	item.target_id = rows.target[i]
+	item.hp = rows.hp[i]
+	item.max_hp = rows.max_hp[i]
+	item.horde = (rows.flags[i] & ViewRows.HORDE) != 0
+
+static func structure_items(state: Dictionary) -> Array[Dictionary]:
+	var found: Array[Dictionary] = []
 	for building: Dictionary in state.get("buildings", []):
 		var definition: Dictionary = Economy.building(building.kind)
 		if definition.is_empty(): continue
@@ -142,6 +167,19 @@ static func depth_sorted(entities: Array) -> Array:
 	for i in keys.size():
 		sorted[i] = entities[keys[i] & ((1 << INDEX_BITS) - 1)]
 	return sorted
+
+# Row indices in draw order; equal depths keep id order because rows are in id order.
+static func depth_order(rows: ViewRows) -> PackedInt32Array:
+	assert(rows.size() < (1 << INDEX_BITS))
+	var keys := PackedInt64Array()
+	keys.resize(rows.size())
+	for i in rows.size():
+		keys[i] = (sort_key(LAYER_GROUND, Vector2(rows.x[i], rows.y[i]), rows.id[i]) << INDEX_BITS) | i
+	keys.sort()
+	var order := PackedInt32Array()
+	order.resize(keys.size())
+	for i in keys.size(): order[i] = keys[i] & ((1 << INDEX_BITS) - 1)
+	return order
 
 func build(items: Array[Dictionary], turret_angles: Dictionary, detail: int, shadows: bool, effects: Array[Dictionary] = []) -> void:
 	points.clear()
