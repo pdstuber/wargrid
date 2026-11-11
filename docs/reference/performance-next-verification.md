@@ -2,7 +2,7 @@
 
 ```text
 Resume record (updated 2026-11-11 gate 3)
-Branch / base commit / working-tree state: perf-next / main base 5f9efee / clean after the commit of the gate 3 code fixes; 27 local commits, nothing pushed
+Branch / base commit / working-tree state: perf-next / main base 5f9efee / clean after the commit of the gate 3 code fixes; 34 local commits on perf-next after main, nothing pushed
 Last green task / next incomplete task: all tasks of the plan done (T0, T1, T3, T4 tasks 1-7, T5, T6) plus review fixes / STOP GATE 3: the user decides on the merge of T1+T4+fixes to main and answers two T6 questions
 Changed paths since last commit: none after the gate 3 fix commit
 Last command / cases / checks / failures / exit / marker: full suite on the gate 3 fix tree: CASES 751 CHECKS 139700 FAILURES 0, exit 0, TESTS PASSED; lint 0; warnings 141 files 0; test_sim_boundary OK; run_netplay match PASSED 15.5 s (tick 9024)
