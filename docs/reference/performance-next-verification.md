@@ -1,15 +1,15 @@
 # Performance next: verification
 
 ```text
-Resume record (updated 2026-11-11 11:45)
-Branch / base commit / working-tree state: perf-next / 577ca06 / T1 committed; only this file changed by T3
-Last green task / next incomplete task: T3 (probe rows, evidence only) / Stop gate 1, then T4 if the user starts it
-Changed paths since last commit: docs/reference/performance-next-verification.md (T3 rows and lists). Probe code lives only in ~/projects/wargrid-perf-work/probe-rows/ (tree/, run-1..3.log, agg.py)
-Last command / cases / checks / failures / exit / marker: 3x sh tools/run_profile.sh in the probe copy, each exit 0, PROFILE COMPLETE 10; rows_equal.gd ROWS EQUAL. No WT game code touched, so no suite rerun needed.
-Known red case or blocker: none
-Approved decisions, pre-authorizations used, deferred gates: user 2026-11-11: local commits on perf-next after each GREEN, never push. Gates 1-3 pending.
+Resume record (updated 2026-11-11 12:10)
+Branch / base commit / working-tree state: perf-next / f8efb98 + this file / T1, runner fix and T3 committed
+Last green task / next incomplete task: T3 / Stop gate 1 (review done: PASS with fixes), then T4 if the user starts it
+Changed paths since last commit: this file
+Last command / cases / checks / failures / exit / marker: full suite on game code of f8efb98: CASES 733 CHECKS 139582 FAILURES 0, exit 0, TESTS PASSED; lint 0; warnings 0
+Known red case or blocker: none. Open gate findings: no test for main.gd _present_if_due (base scene) and skirmish auto-pick timing; auto pick may now choose higher quality (p95 sampled per frame)
+Approved decisions, pre-authorizations used, deferred gates: user 2026-11-11: local commits on perf-next after each GREEN, never push. Gates 1-3 pending; gate 1 waits for the user's playtest and go.
 Usage so far: n/a
-Next exact action: coordinator commits this file, runs Stop gate 1.
+Next exact action: wait for the user's gate-1 answer (split kept? T4 starts?). If kept: optionally add the two missing tests, then T4 Opus design.
 ```
 
 ## Evidence rows (append-only)
@@ -58,3 +58,5 @@ Next exact action: coordinator commits this file, runs Stop gate 1.
     - debug/movement_workload.gd:44 (benchmark setup); debug/combat_workload.gd:36 (setup/settled check); debug/movement_benchmark.gd:129 _begin_layout (once), :164/:168 _physics_process (per tick), :353 _horde_tick (per tick), :424 _large_tick (per tick, into set_state)
     - lab/lab_fight.gd:86 _launch_assault, :91 _order_gather (buildings/state; once per action); lab/art_lab.gd:49 (sim.snapshot, per lab step)
     - Total 32 sites as counted by rg; per-tick game-scene consumers are main.gd:_refresh and base_main.gd:_refresh (plus the scene's own set_state call path), everything else is per input event, setup or net/benchmark.
+- 2026-11-11 12:05, tree perf-next 44de1a2 (f8efb98 differs only in docs), load quiet, measured: sh tools/run_tests.sh CASES 733 CHECKS 139582 FAILURES 0, exit 0, TESTS PASSED; run_lint exit 0; run_warnings exit 0. Runner wait 0.1 s still leaked on 3 of 3 partial runs, 0.5 s exit 0 on 3 of 3 (WARGRID_TEST_ONLY=test_one_snapshot). Logs logs/fix-*.log.
+- 2026-11-11 gate 1 review (Opus, read-only): PASS with fixes; findings 2 and 3 (missing tests) and 4 (online stall counted in split share) open, nit on the bracket label.
