@@ -10,9 +10,10 @@ const Fixture = preload("res://tests/economy_fixture.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
 const UiStyle = preload("res://scripts/presentation/ui_style.gd")
+const ViewRows = preload("res://tests/test_view_rows.gd")
 
 func cases() -> Array[Callable]:
-	return [test_skirmish_ready_and_tick, test_combat_context_input, test_match_hud_and_restart, test_combat_view, test_hud_layout_and_focus, test_hud_build_line, test_enemy_selection_read_only, test_rally_input_and_marker, test_supply_pile_labels, test_attack_move_hint_and_rejection, test_selection_prunes_dead, test_order_marks_own_only, test_health_bar_clear_of_boxes, test_result_clear_of_status, test_silent_keys_explain, test_hud_strings_use_display_names, test_hud_font_size_is_shared, test_defence_attack_scene, test_enter_unload_scene, test_right_click_pile_gathers, test_right_click_pile_in_launcher_flow, test_frc_laborer_right_click_pile, test_one_snapshot_per_refresh, test_refresh_waits_for_next_frame, test_auto_pick_samples_present_time]
+	return [test_skirmish_ready_and_tick, test_combat_context_input, test_match_hud_and_restart, test_combat_view, test_hud_layout_and_focus, test_hud_build_line, test_enemy_selection_read_only, test_rally_input_and_marker, test_supply_pile_labels, test_attack_move_hint_and_rejection, test_selection_prunes_dead, test_order_marks_own_only, test_health_bar_clear_of_boxes, test_result_clear_of_status, test_silent_keys_explain, test_hud_strings_use_display_names, test_hud_font_size_is_shared, test_defence_attack_scene, test_enter_unload_scene, test_right_click_pile_gathers, test_right_click_pile_in_launcher_flow, test_frc_laborer_right_click_pile, test_one_snapshot_per_refresh, test_refresh_waits_for_next_frame, test_auto_pick_samples_present_time, test_hud_summaries_are_pinned]
 
 func _setup(runner):
 	var main = Scene.instantiate()
@@ -635,5 +636,38 @@ func test_auto_pick_samples_present_time(runner) -> bool:
 	main._process(0.0)
 	main._start_auto_pick(false)
 	runner.check(main._auto_samples.size() == 1 and main._auto_samples[0] > 0.0, "RF4 the automatic quality sample includes the time of the frame's present")
+	main.free()
+	return true
+
+const HUD_TEXTS: Array[String] = ["Rifleman #50 HP 156/180 | attack -> #31\n", "Supply Helicopter #45 HP 300/300 | waiting_source (3rd in line)\n", "Supply Helicopter #11 HP 300/300 | unloading\n", "Bulldozer #1 HP 250/250\n", "Enemy (P2) Rifleman #20 HP 180/180 | guard\n", "Enemy (P2) Headquarters #4 HP 5000/5000\n"]
+
+func _ids_where(units: Array, test: Callable) -> Array[int]:
+	var ids: Array[int] = []
+	for unit: Dictionary in units:
+		if test.call(unit): ids.append(unit.id)
+	return ids
+
+func test_hud_summaries_are_pinned(runner) -> bool:
+	var main = await _setup(runner)
+	var sim = ViewRows.skirmish_sim()
+	main.simulation = sim
+	var state: Dictionary = sim.snapshot()
+	var own: Array = state.entities.filter(func(unit: Dictionary) -> bool: return unit.owner == 1)
+	var waiting: Array[int] = _ids_where(own, func(unit: Dictionary) -> bool: return unit.collection != null and unit.collection.phase.begins_with("waiting_"))
+	var working: Array[int] = _ids_where(own, func(unit: Dictionary) -> bool: return unit.collection != null and unit.collection.enabled and not unit.collection.phase.begins_with("waiting_"))
+	var firing: Array[int] = _ids_where(own, func(unit: Dictionary) -> bool: return unit.combat != null and unit.combat.target_id != null)
+	var plain: Array[int] = _ids_where(own, func(unit: Dictionary) -> bool: return unit.combat == null and unit.collection == null)
+	var enemy_unit: Array[int] = _ids_where(state.entities, func(unit: Dictionary) -> bool: return unit.owner == 2 and unit.combat != null)
+	var enemy_building: Array[int] = _ids_where(state.buildings, func(building: Dictionary) -> bool: return building.owner == 2)
+	runner.check(waiting.size() >= 2 and not working.is_empty() and not firing.is_empty() and not plain.is_empty() and not enemy_unit.is_empty() and not enemy_building.is_empty(), "HUD1 fixture: every case has its unit")
+	var texts: Array[String] = []
+	for id: int in [firing[0], waiting[-1], working[0], plain[0]]:
+		main.selected_ids.assign([id])
+		texts.append(main._selected_summary(state))
+	main.selected_ids.clear()
+	for id: int in [enemy_unit[0], enemy_building[0]]:
+		main.inspected_id = id
+		texts.append(main._enemy_summary(state))
+	runner.check(texts == HUD_TEXTS, "HUD1 pinned summary texts, got " + str(texts))
 	main.free()
 	return true
