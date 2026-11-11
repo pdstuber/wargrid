@@ -76,6 +76,7 @@ func _run() -> void:
 	if checks == 0 or case_count == 0:
 		failures += 1
 		print("FAIL: zero tests/checks")
+	await create_timer(0.5).timeout # the audio thread frees stopped playbacks asynchronously; quitting sooner leaks them
 	print("CASES ", case_count, " CHECKS ", checks, " FAILURES ", failures)
 	if failures == 0:
 		print("TESTS PASSED ", checks)
