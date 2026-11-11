@@ -69,12 +69,12 @@ All presentation code under `game/scripts/playtest/`, one overlay node the match
 
 - Data: `game/data/playtest/focus.json`, one entry per focus card (a build may carry several; the launcher lets the player pick one, newest first): `id`, `title`, `new` (lines), `try` (items with `id`, `text`, optional `trigger`), `questions` (three to five, each `id`, `text`, scale 1 to 5 with optional text).
 - Launcher: a card "This build" with what is new and what to try.
-- In a match: a checklist panel toggled by a key (agent's call: F1). Items tick when done.
+- In a match: a checklist panel toggled by a key (user: the ` key). Items tick when done.
 - Ticking (agent's call): manual by click by default; an item may name a trigger from a small fixed list the overlay can observe without touching the simulation: a command type sent by the local player (`gather`, `build:<kind>`, `attack_move`, ...), the Esc menu opened, a toggle key pressed. Anything else stays manual.
 
 ### Mid-match marker
 
-- One key (agent's call: F2) opens a quick note: Good, Bad, Confusing, plus an optional one-line text. Offline the match pauses while the note is open; online it does not pause.
+- One key (user: the N key) opens a quick note: Good, Bad, Confusing, plus an optional one-line text. Offline the match pauses while the note is open; online it does not pause.
 - Saved per marker: tick, kind, text, camera centre, selected ids, and a screenshot: the viewport image downscaled to about 640 px wide, JPG, base64 inside the session.
 
 ### After-match form
@@ -95,7 +95,7 @@ All presentation code under `game/scripts/playtest/`, one overlay node the match
 
 ### Scope of the helper
 
-- On by default in the test app and dev builds; off in public releases unless switched on in the settings (user). Mechanism (agent's call): on when the version ends in `-dev` (test-app builds come from `tools/deploy_web.sh test`, releases from CI with a release version), plus a settings toggle that overrides it.
+- On by default in the test app and dev builds; off in public releases unless switched on in the settings (user). Mechanism (agent's call): on when the version ends in `-dev` (test-app builds come from `tools/deploy_web.sh test`, releases from CI with a release version), plus a switch on the launcher and in the Esc menu that overrides it (user).
 
 ### Tests
 
