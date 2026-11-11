@@ -15,7 +15,7 @@ const TeamMatch = preload("res://scripts/debug/team_match.gd")
 const SKIRMISH_TICKS: int = 3000
 const HORDES_TICKS: int = 400
 const EXTRA_COLLECTORS: int = 3
-const EXPECTED_DIGEST: String = "2046606c78e467de7a7ec23c0342b31e5b9136fcdb2f2ee2ac920fad7e6b60af"
+const EXPECTED_DIGEST: String = "6882f9cad3a49db67034c1f7467c3d93670ccb1a542f7071cf082371de4c0880"
 
 func cases() -> Array[Callable]:
 	return [test_view_reads_digest_is_pinned, test_rows_equal_snapshot, test_view_state_other_keys, test_view_state_is_read_only, test_view_items_persist, test_view_batch_equals_snapshot_batch]
@@ -76,7 +76,7 @@ static func view_reads(state: Dictionary, view_state: Dictionary = {}) -> Array:
 	else: view.set_view(view_state, chosen)
 	var batch = WorldBatch.new()
 	batch.build(WorldBatch.objects(state), {}, 1, true)
-	var parts: Array = [batch.points, batch.colors, view.selected_unit_lines()]
+	var parts: Array = [batch.points.size(), batch.colors, view.selected_unit_lines()] # WB18 pins the points; their trig-derived bytes differ by platform
 	var focus: Dictionary = view.focus_targets()
 	parts.append([focus.keys(), focus.values()])
 	parts.append(view.order_marks())
@@ -105,7 +105,7 @@ func test_view_reads_digest_is_pinned(runner) -> bool:
 		var state: Dictionary = sim.snapshot()
 		var parts: Array = view_reads(state)
 		runner.check(selection(state).size() >= 5, "VR1 fixture: a selection of at least five")
-		runner.check(parts[0].size() > 0, "VR1 fixture: batch points exist, got " + str(parts[0].size()))
+		runner.check(parts[0] > 0, "VR1 fixture: batch points exist, got " + str(parts[0]))
 	runner.check(view_reads(skirmish.snapshot())[3][0].size() > 0, "VR1 fixture: skirmish selection has a focus target")
 	runner.check(view_reads(hordes.snapshot())[5].size() > 0, "VR1 fixture: hordes pick_entities non-empty")
 	var first: String = digest([skirmish, hordes])
