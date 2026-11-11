@@ -1,15 +1,15 @@
 # Performance next: verification
 
 ```text
-Resume record (updated 2026-11-11 13:15)
-Branch / base commit / working-tree state: perf-next / 763d85b + design doc + this file / committed
-Last green task / next incomplete task: T4 design written (docs/superpowers/specs/2026-11-12-view-rows-design.md) / Stop gate 2: user approves the design (open questions: RF1/RF2 expectations change 1 snapshot -> 0 snapshots + 1 view_state; plumbing row measured as the T3 hand-off sum)
-Changed paths since last commit: none after the commit of this file
-Last command / cases / checks / failures / exit / marker: full suite on 5de291e game code: CASES 735 CHECKS 139585 FAILURES 0, exit 0, TESTS PASSED; lint 0; warnings 0
-Known red case or blocker: none. Open review finding 4 (online stall counts as step frames in the split share, cosmetic) deferred until after T4.
-Approved decisions, pre-authorizations used, deferred gates: user 2026-11-11: local commits on perf-next after each GREEN, never push; split kept and T4 started (2026-11-11); test deploy of 4acff95 to wargrid-web-test approved and done. Gates 2 and 3 pending.
+Resume record (updated 2026-11-11 14:00)
+Branch / base commit / working-tree state: perf-next / 1116d32 / clean after this file's commit
+Last green task / next incomplete task: T4 design approved (gate 2, user 2026-11-11) / T4 implementation task 1 (VR1 + HUD1 characterization on the unchanged tree), tasks 1-7 of docs/superpowers/specs/2026-11-12-view-rows-design.md section 8
+Changed paths since last commit: none
+Last command / cases / checks / failures / exit / marker: full suite on 5de291e: CASES 735 CHECKS 139585 FAILURES 0, exit 0, TESTS PASSED
+Known red case or blocker: none. Open review finding 4 (online stall in split share) deferred until after T4.
+Approved decisions, pre-authorizations used, deferred gates: local commits on perf-next after each GREEN, never push. Gate 2 approved with: RF1/RF2 -> 0 snapshot + 1 view_state, RF6; plumbing row = hand-off sum, 0.91 ms unchanged; HUD columns instead of details; T4b decided after the T4 numbers; VR4 digest check only, no private read. Rendered benchmark (task 6/7) needs the user's yes first. Gate 3 pending.
 Usage so far: n/a
-Next exact action: wait for the user's gate-2 answer; then dispatch the design's 7 tasks to Sonnet one at a time (task 1 is the VR1 characterization digest on the unchanged tree).
+Next exact action: dispatch Sonnet for task 1; after each GREEN commit and dispatch the next.
 ```
 
 ## Evidence rows (append-only)
