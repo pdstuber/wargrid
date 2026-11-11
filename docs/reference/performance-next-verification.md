@@ -28,7 +28,7 @@ Next exact action: wait for the user's gate-1 answer (split kept? T4 starts?). I
 - 2026-11-11 11:21-11:30, tree = probe copy of perf-next 577ca06 (git archive) with scratch edits (view.* sub-zones in world_view.gd, Simulation.view_rows(), call in run_profile.gd), load 1.3-1.7, no WoW/godot/scons/emcc, measured. Logs ~/projects/wargrid-perf-work/probe-rows/run-{1,2,3}.log, aggregation agg.py. Ms per tick, median of 3 runs (A/A spread of means <= 0.01 everywhere); single variant, so nothing interleaved.
   - ROWS EQUAL check (rows_equal.gd): hordes300 after 40/150/400 ticks: 400 units, all fields equal (id, owner, x, y, heading, hp, max_hp, target_id, kind name via index, flags), but 0 units had a target there; after 1500 ticks: ROWS EQUAL 294, horde flag set on 279, 40 with a target. Skirmish.create (2 units): equal. Float64 and int values compared with ==.
   - Missing for rows: nothing a unit's WorldBatch._item needs (role/layer/shadow come from kind_index, anchor from x/y, footprint is constant). Other readers of the unit Dictionary that rows do not carry: `veterancy` (_draw_lines, dormant), `collection.phase/target_id` (_waiting_counts), and whatever the HUD reads off snapshot units (orders, status).
-  - Per scenario, mean / p95 (spread of mean across runs in brackets):
+  - Per scenario, mean / p95 (spread of the means across the 3 runs was at most 0.010 ms in every cell; per-run values in ~/projects/wargrid-perf-work/probe-rows/run-1..3.log):
 
 | zone | skirmish3v3 | team_match | hordes300 | movement_open |
 |---|---|---|---|---|
