@@ -361,3 +361,14 @@ Answers to an outside audit of `main` at `ec78012` (audit and fix list kept outs
 - **Earlier order kept:** the interpolation rework becomes its own package ("Smooth motion", P4) before movement (P5); the `SimPump` seam goes with controller flattening in the HUD packages; writing the movement design is P3's rider.
 - **Session:** one sitting; one file holds every match of the sitting; a short marker review after each match, the focus questions once when the session ends.
 - **First plan covers:** `docs/packages.md`, `docs/STATUS.md` and the blueprint §7 link; P1 with its rider; all three backlog focus cards. Only card 1 blocks P2; findings from cards 2 and 3 go on the list unless they block play. Design: [packages and playtest helper](../superpowers/specs/2026-11-11-packages-and-playtest-helper-design.md).
+
+## Dock option C follow-up (user, 2026-11-12 night)
+
+Answers to the open points of the [dock-hold note](dock-hold-experiment.md#option-c-and-saturation-2026-11-12):
+
+- **Dock model:** none chosen yet; the frc7 shortfall is investigated first, because it decides whether any dock rebuild pays (c1 18 of 22 rows, split 17, hold 16, c2 15).
+- **USA 2-Chinook overshoot:** up to +5 % above Zero Hour is acceptable (c1's usa2 far +4.3 % steady is inside).
+- **frc7 shortfall** (Wargrid loses 14.4 % against the pile bound, Zero Hour about 7 %): one small evidence-only investigation: phase breakdown at n = 1 and n = 7 on both sides, the gap between a pile release and the next grant, and the far-depot cycle length.
+- **Economy metrics:** saturated income per dock site with spend to 90 %, and marginal income with payback, become standing report rows (cap, n90, spend90 per curve, payback only up to n90, a flag when a pile empties); the basket metric waits until a basket is chosen.
+- **Branch `dock-hold`:** stays local; nothing is cherry-picked or pushed until a dock decision.
+- **c1 and c2 in CI:** run only when named (`WARGRID_DOCK_MODELS`); the default suite runs hold, split and queue.
