@@ -10,6 +10,9 @@ const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const EconomyDefinitions = preload("res://scripts/simulation/economy_definitions.gd")
 const DockC = preload("res://scripts/experiments/dock_c.gd")
 const Metrics = preload("res://tests/dock_metrics.gd")
+const Probe = preload("res://tests/dock_probe.gd")
+const StateHash = preload("res://scripts/simulation/state_hash.gd")
+const ViewRows = preload("res://scripts/simulation/view_rows.gd")
 
 const MODELS := ["hold", "split", "queue", "c1", "c2"]
 const DEFAULT_MODELS := ["hold", "split", "queue"]
@@ -19,7 +22,7 @@ const SWEEP_MAX := 8
 const SWEEP := [{"kind": "frc_builder", "gap": 3}, {"kind": "frc_builder", "gap": 9}, {"kind": "china_collector", "gap": 9}, {"kind": "usa_collector", "gap": 9}]
 
 func cases() -> Array[Callable]:
-	return [test_default_model_is_hold, test_steady_rate_window, test_split_lone_cycle_unchanged, test_split_overlaps_lead_in, test_split_same_tick_arrival, test_split_stop_during_lead, test_split_release_on_removal, test_c_tables_follow_the_rule, test_c_lock_clamps_to_the_stand, test_c_fractional_earnings_round_up, test_c_lone_cycle_unchanged, test_queue_fifo, test_queue_lock_covers_moves, test_queue_air, test_queue_same_tick_and_removal, test_report_rows, test_wargrid_saturation_matches_python, test_wargrid_saturation_skips_short, test_phase_shares_sum_to_100, test_sweep_row_flags_an_emptied_pile, test_sweep_rows]
+	return [test_default_model_is_hold, test_steady_rate_window, test_split_lone_cycle_unchanged, test_split_overlaps_lead_in, test_split_same_tick_arrival, test_split_stop_during_lead, test_split_release_on_removal, test_c_tables_follow_the_rule, test_c_lock_clamps_to_the_stand, test_c_fractional_earnings_round_up, test_c_lone_cycle_unchanged, test_queue_fifo, test_queue_lock_covers_moves, test_queue_air, test_queue_same_tick_and_removal, test_report_rows, test_wargrid_saturation_matches_python, test_wargrid_saturation_skips_short, test_phase_shares_sum_to_100, test_sweep_row_flags_an_emptied_pile, test_sweep_rows, test_probe_transplant_spawns_every_start, test_probe_transplant_fails_on_an_occupied_start, test_probe_delayed_gather, test_probe_window_rate, test_probe_swap_rows, test_probe_gap_counts_empty_samples, test_probe_leg_parts, test_probe_leg_zones_and_distance, test_probe_unknown_phase_is_other, test_probe_drops_partial_legs, test_probe_counts_overlaps, test_probe_drop_counts_blocked, test_probe_cycle, test_probe_leaves_the_run_unchanged, test_probe_rows]
 
 func models() -> Array:
 	var wanted: String = OS.get_environment("WARGRID_DOCK_MODELS")
@@ -504,3 +507,248 @@ func phases_line(model: String, shares: Dictionary) -> String:
 	var parts: Array = []
 	for name in names: parts.append("%s=%.1f" % [name, shares[name]])
 	return "DOCK %s phases frc7 gap=3 %s" % [model, ",".join(parts)]
+
+func collecting(sim, id: int) -> bool:
+	var units = sim.view_state().units
+	var index: int = units.index_of(id)
+	return index >= 0 and (units.flags[index] & ViewRows.COLLECTING) != 0
+
+func test_probe_transplant_spawns_every_start(runner) -> bool:
+	var world: Dictionary = transplant("split", [{"tick": 0, "position": Vector2(5.5, 10.5)}, {"tick": 5, "position": Vector2(5.5, 12.5)}])
+	runner.check(world.ids.size() == 2 and not world.ids.has(-1), "every start spawns, got %s" % [world.ids])
+	runner.check(world.sim.view_state().tick == 5, "transplant returns after the last start's tick")
+	world.sim.step()
+	runner.check(collecting(world.sim, world.ids[0]) and collecting(world.sim, world.ids[1]), "every transplanted unit gathers")
+	return true
+
+func test_probe_transplant_fails_on_an_occupied_start(runner) -> bool:
+	var world: Dictionary = transplant("split", [{"tick": 0, "position": Vector2(3.5, 11.5)}])
+	runner.check(world.ids.has(-1), "a start inside the depot is reported as -1, not skipped")
+	return true
+
+func test_probe_delayed_gather(runner) -> bool:
+	var world: Dictionary = delayed_world("split", 10)
+	var last: int = world.ids[world.ids.size() - 1]
+	runner.check(world.sim.view_state().tick == 10 and not collecting(world.sim, last), "the delayed unit is not gathering before its delay")
+	world.sim.step()
+	runner.check(collecting(world.sim, last) and collecting(world.sim, world.ids[0]), "the delayed unit gathers after its delay, the others from the start")
+	return true
+
+func test_probe_window_rate(runner) -> bool:
+	runner.check(window_rate(PackedInt32Array([0, 0, 75, 75]), 1, 3) == 1800.0 * 75 / 2, "window rate is credits per minute over the window")
+	return true
+
+const PERTURB_DELAYS := [0, 1, 2, 3, 5, 8, 13, 21]
+const PROBE_TO_TICK := 18000
+const PROBE_DEPOT := Vector2(3.5, 11.5)
+
+func probe_pile(gap: int) -> Vector2:
+	return Vector2(7 + gap, 11.5)
+
+func probe_models() -> Array:
+	return models().filter(func(model: String) -> bool: return model != "queue")
+
+func opening_starts(model: String) -> Dictionary:
+	var seen: Dictionary = {}
+	var starts: Array = []
+	var recorder := func(tick: int, view: Dictionary, _source: int) -> void:
+		var units = view.units
+		for index in range(units.size()):
+			if units.kinds[units.kind[index]] != "frc_builder" or seen.has(units.id[index]) or (units.flags[index] & ViewRows.COLLECTING) == 0: continue
+			seen[units.id[index]] = true
+			starts.append({"tick": tick, "position": Vector2(units.x[index], units.y[index])})
+	var opening: Dictionary = Openings.new().run_opening("frc7", 3, model, recorder)
+	starts.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.tick < b.tick)
+	return {"starts": starts, "steady": opening.steady}
+
+# Sweep world (Parity.layout gap 3), units spawned and sent to gather at the starts' ticks relative to the first.
+func transplant(model: String, starts: Array) -> Dictionary:
+	var sim = Fixture.make_world(10000, Vector2i(48, 24))
+	sim.dock_model = model
+	Fixture.add_completed(sim, 1, "frc_supply_center", Vector2i(2, 10))
+	var source: int = sim.add_supply_source(Vector2i(8, 9), 400)
+	var ids: Array = []
+	for start in starts:
+		while sim.view_state().tick < start.tick - starts[0].tick: sim.step()
+		var id: int = sim.spawn(1, start.position, "frc_builder")
+		ids.append(id)
+		if id >= 0: Fixture.send(sim, {"type": "gather", "entity_ids": [id], "source_id": source})
+	return {"sim": sim, "source": source, "ids": ids}
+
+func credits_until(sim, to_tick: int) -> PackedInt32Array:
+	var credits := PackedInt32Array()
+	credits.resize(to_tick + 1)
+	var view: Dictionary = sim.view_state()
+	for tick in range(view.tick + 1): credits[tick] = view.players[0].credits
+	while view.tick < to_tick:
+		sim.step()
+		view = sim.view_state()
+		credits[view.tick] = view.players[0].credits
+	return credits
+
+func window_rate(credits: PackedInt32Array, from_tick: int, to_tick: int) -> float:
+	return 1800.0 * (credits[to_tick] - credits[from_tick]) / (to_tick - from_tick)
+
+func delayed_world(model: String, delay: int) -> Dictionary:
+	var world: Dictionary = Parity.new().layout("frc_builder", 3, 7, model)
+	if delay <= 0: return world
+	var last: int = world.ids[world.ids.size() - 1]
+	Fixture.send(world.sim, {"type": "stop", "entity_ids": [last]})
+	while world.sim.view_state().tick < delay: world.sim.step()
+	Fixture.send(world.sim, {"type": "gather", "entity_ids": [last], "source_id": world.source})
+	return world
+
+func delayed_sweep(model: String, delay: int) -> float:
+	return Parity.new().steady_rate(delayed_world(model, delay).sim, GATHER_TICK).per_min
+
+func test_probe_swap_rows(runner) -> bool:
+	if OS.get_environment("WARGRID_DOCK_PROBE") != "1":
+		runner.check(true, "dock probe rows run only with WARGRID_DOCK_PROBE=1")
+		return true
+	for model in probe_models():
+		var opening: Dictionary = opening_starts(model)
+		var starts: Array = opening.starts
+		var t0: int = starts[0].tick
+		var sweep: float = Parity.new().steady_rate(Parity.new().layout("frc_builder", 3, 7, model).sim, GATHER_TICK).per_min
+		var world: Dictionary = transplant(model, starts)
+		var spawned: int = world.ids.filter(func(id: int) -> bool: return id >= 0).size()
+		var credits: PackedInt32Array = credits_until(world.sim, PROBE_TO_TICK)
+		var relative: Array = starts.map(func(start: Dictionary) -> String: return str(start.tick - t0))
+		print("DOCK %s swap frc7 gap=3 opening=%.1f sweep_n7=%.1f transplant=%.1f transplant_opening_window=%.1f t0=%d spawned=%d starts=%s" % [model, opening.steady, sweep, window_rate(credits, 9000, PROBE_TO_TICK), window_rate(credits, 9000 - t0, PROBE_TO_TICK - t0), t0, spawned, ",".join(relative)])
+		runner.check(spawned == 7, "%s transplant spawns all 7 starts, got %d of %d" % [model, spawned, starts.size()])
+		runner.check(Openings.new().pile_boxes(world.sim.view_state(), world.source) > 0, "%s transplant pile still has boxes at the end" % model)
+		var rates: Dictionary = {}
+		for delay in PERTURB_DELAYS: rates[delay] = delayed_sweep(model, delay)
+		var spread: float = rates.values().max() - rates.values().min()
+		print("DOCK %s perturb frc_builder gap=3 n=7 rates=%s spread=%.1f" % [model, joined(rates, func(value: float) -> String: return "%.1f" % value), spread])
+	return true
+
+func unit_row(phase: String, status: String = "moving", position: Vector2 = Vector2.ZERO) -> Dictionary:
+	return {"phase": phase, "status": status, "position": position}
+
+func feed(probe, timeline: Array) -> void:
+	for tick in range(timeline.size()): probe.observe(tick + 1, timeline[tick])
+
+func test_probe_gap_counts_empty_samples(runner) -> bool:
+	var probe = Probe.new()
+	var timeline: Array = []
+	for tick in range(1, 7):
+		var units: Dictionary = {}
+		if tick <= 3: units[1] = unit_row("loading")
+		if tick == 6: units[2] = unit_row("loading")
+		if tick <= 5: units[3] = unit_row("waiting_source")
+		timeline.append(units)
+	feed(probe, timeline)
+	var s: Dictionary = probe.summary()
+	runner.check(s.gaps == [2] and s.contended == [2] and s.ready == [2], "two empty samples between holders, contended and ready, got %s" % [s])
+	runner.check(s.idle_samples == 2 and s.samples == 6, "idle samples counted, got %s" % [s])
+	var direct = Probe.new()
+	feed(direct, [{1: unit_row("loading")}, {1: unit_row("flying_depot"), 2: unit_row("loading")}])
+	runner.check(direct.summary().gaps == [0] and direct.summary().contended == [], "a direct handoff is a 0 gap, uncontended, got %s" % [direct.summary()])
+	return true
+
+func test_probe_leg_parts(runner) -> bool:
+	var probe = Probe.new()
+	var timeline: Array = [{1: unit_row("unloading")}, {1: unit_row("seeking")}, {1: unit_row("flying_source", "path_pending")}]
+	for x in [1.0, 2.0, 3.0]: timeline.append({1: unit_row("flying_source", "moving", Vector2(x, 0))})
+	timeline.append({1: unit_row("lead_source", "arrived", Vector2(3, 0))})
+	timeline.append({1: unit_row("lead_source", "arrived", Vector2(3, 0))})
+	timeline.append({1: unit_row("loading", "arrived", Vector2(3, 0))})
+	feed(probe, timeline)
+	var legs: Array = probe.summary().legs_empty
+	var expected: Dictionary = {"total": 7, "flying": 4, "standing": 2, "other": 1, "moved": 3, "path_pending": 1}
+	runner.check(legs.size() == 1 and expected.keys().all(func(key: String) -> bool: return legs[0][key] == expected[key]), "one empty leg with its parts, got %s" % [legs])
+	return true
+
+func test_probe_leg_zones_and_distance(runner) -> bool:
+	var probe = Probe.new(Vector2(0, 0), Vector2(9, 0))
+	var timeline: Array = [{1: unit_row("unloading", "arrived", Vector2(0, 0))}, {1: unit_row("flying_source", "moving", Vector2(1, 0))}]
+	timeline.append({1: unit_row("flying_source", "moving", Vector2(4.5, 0)), 2: unit_row("lead_source", "arrived", Vector2(4.5, 0.5))})
+	timeline.append({1: unit_row("flying_source", "moving", Vector2(8, 0))})
+	timeline.append({1: unit_row("loading", "arrived", Vector2(8, 0))})
+	feed(probe, timeline)
+	var leg: Dictionary = probe.summary().legs_empty[0]
+	runner.check(is_equal_approx(leg.distance, 8.0), "leg distance is the path walked, got %s" % [leg])
+	runner.check(leg.flying_depot_zone == 1 and leg.flying_mid == 1 and leg.flying_pile_zone == 1, "flying ticks split by thirds of the depot-pile axis, got %s" % [leg])
+	runner.check(leg.crowded == 1, "a flying tick with another unit within one cell is crowded, got %s" % [leg])
+	return true
+
+func test_probe_unknown_phase_is_other(runner) -> bool:
+	var probe = Probe.new()
+	feed(probe, [{1: unit_row("unloading")}, {1: unit_row("none")}, {1: unit_row("flying_source")}, {1: unit_row("loading")}])
+	var leg: Dictionary = probe.summary().legs_empty[0]
+	runner.check(leg.other == 1 and leg.total == leg.flying + leg.standing + leg.other, "an unnamed phase counts as other, got %s" % [leg])
+	return true
+
+func test_probe_drops_partial_legs(runner) -> bool:
+	var probe = Probe.new()
+	feed(probe, [{1: unit_row("flying_source")}, {1: unit_row("loading")}, {1: unit_row("flying_depot")}])
+	var s: Dictionary = probe.summary()
+	runner.check(s.legs_empty == [] and s.legs_loaded == [], "a leg cut by the first sighting or the last tick is dropped, got %s" % [s])
+	return true
+
+func test_probe_counts_overlaps(runner) -> bool:
+	var probe = Probe.new()
+	feed(probe, [{1: unit_row("loading")}, {1: unit_row("loading"), 2: unit_row("loading")}, {2: unit_row("loading")}])
+	runner.check(probe.summary().overlaps == 1 and probe.summary().gaps == [], "two loading units on one tick is an overlap, not a gap, got %s" % [probe.summary()])
+	return true
+
+func test_probe_drop_counts_blocked(runner) -> bool:
+	var probe = Probe.new()
+	feed(probe, [{1: unit_row("flying_source", "blocked")}, {1: unit_row("seeking", "idle")}])
+	runner.check(probe.summary().drops == 1 and probe.summary().drops_blocked == 1, "a blocked flight that falls back to seeking is a blocked drop, got %s" % [probe.summary()])
+	return true
+
+func test_probe_cycle(runner) -> bool:
+	var probe = Probe.new()
+	for tick in range(1, 400):
+		probe.observe(tick, {1: unit_row("unloading" if tick in [10, 11, 320] else "flying_source")})
+	runner.check(probe.summary().cycles == [310] and probe.summary().trips == 2, "cycle is ticks between unloading starts, got %s" % [probe.summary()])
+	runner.check(Probe.quantile([3, 1, 2], 0.5) == 2.0 and Probe.quantile([], 0.5) == -1.0, "nearest-rank median, -1 when empty")
+	return true
+
+func test_probe_leaves_the_run_unchanged(runner) -> bool:
+	var a = Parity.new().layout("frc_builder", 3, 7, "split").sim
+	var b = Parity.new().layout("frc_builder", 3, 7, "split").sim
+	var probe = Probe.new()
+	for index in range(3000):
+		a.step()
+		b.step()
+		var view: Dictionary = b.view_state()
+		probe.observe(view.tick, Probe.units_of(view, "frc_builder"))
+	runner.check(StateHash.digest(a.snapshot()) == StateHash.digest(b.snapshot()), "observing every tick leaves the state hash unchanged")
+	runner.check(probe.summary().trips > 0, "the observed run records trips")
+	return true
+
+func probe_sweep(model: String, gap: int, count: int) -> Dictionary:
+	var world: Dictionary = Parity.new().layout("frc_builder", gap, count, model)
+	var probe = Probe.new(PROBE_DEPOT, probe_pile(gap))
+	var openings = Openings.new()
+	while world.sim.view_state().tick < PROBE_TO_TICK:
+		world.sim.step()
+		var view: Dictionary = world.sim.view_state()
+		if openings.pile_boxes(view, world.source) <= 0: break
+		if view.tick > 9000: probe.observe(view.tick, Probe.units_of(view, "frc_builder"))
+	return probe.summary()
+
+func probe_opening(model: String, gap: int) -> Dictionary:
+	var probe = Probe.new(PROBE_DEPOT, probe_pile(gap))
+	var openings = Openings.new()
+	var observer := func(tick: int, view: Dictionary, source: int) -> void:
+		if tick > openings.STEADY_FROM_TICK and openings.pile_boxes(view, source) > 0: probe.observe(tick, Probe.units_of(view, "frc_builder"))
+	openings.run_opening("frc7", gap, model, observer)
+	return probe.summary()
+
+func test_probe_rows(runner) -> bool:
+	if OS.get_environment("WARGRID_DOCK_PROBE") != "1":
+		runner.check(true, "dock probe rows run only with WARGRID_DOCK_PROBE=1")
+		return true
+	for model in probe_models():
+		var rows: Dictionary = {}
+		for gap in [3, 9]:
+			for count in [1, 7]: rows["sweep_g%d_n%d" % [gap, count]] = probe_sweep(model, gap, count)
+			rows["frc7_g%d" % gap] = probe_opening(model, gap)
+		for scenario in rows:
+			print(Probe.line(model, scenario, rows[scenario]))
+			runner.check(rows[scenario].trips > 0 and rows[scenario].overlaps == 0, "%s %s has trips and no overlaps" % [model, scenario])
+	return true
