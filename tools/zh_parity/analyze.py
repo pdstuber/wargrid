@@ -580,6 +580,42 @@ def pooled_metrics(name, runs):
     return out
 
 
+COLLECTOR_COST = {"worker": 200, "truck": 600, "chinook": 1200}  # retail INI, the first collector comes with the depot
+SWEEP_NAME = re.compile(r"collect_(\w+?)_u(\d+)_x(\d+)_s600")
+
+
+def saturation(rates, collector_cost, short=frozenset()):
+    """Income curve over collector counts: cap, the count reaching 90 % of it, and what each added collector pays back."""
+    skipped = sorted(n for n, r in rates.items() if r is None or n in short)
+    used = {n: r for n, r in rates.items() if n not in skipped}
+    if not used:
+        return {"skipped": skipped}
+    cap = max(used.values())
+    n90 = min(n for n, r in used.items() if r >= 0.9 * cap)
+    marginal = {n: used[n] - used[n - 1] for n in used if n - 1 in used}
+    return {
+        "cap": cap,
+        "n_cap": min(n for n, r in used.items() if r == cap),
+        "n90": n90,
+        "spend90": (n90 - 1) * collector_cost,
+        "marginal": marginal,
+        "payback_s": {n: collector_cost / (m / 60) if m > 0 else float("inf") for n, m in marginal.items()},
+        "skipped": skipped,
+    }
+
+
+def saturation_lines(dirs):
+    groups: dict[tuple[str, str], dict[int, Any]] = collections.defaultdict(dict)
+    for name in sorted({s for s, _, _ in find_traces(dirs)}):
+        if m := SWEEP_NAME.fullmatch(name):
+            groups[m[1], m[2]][int(m[3])] = pooled_metrics(name, runs_of(name, dirs))
+    for (kind, units), by_n in sorted(groups.items()):
+        rates = {n: pm.get("steady_per_min", {}).get("median") for n, pm in by_n.items()}
+        short = {n for n, pm in by_n.items() if pm.get("short_window")}
+        result = saturation(rates, COLLECTOR_COST[kind], short)
+        yield json.dumps({"kind": kind, "units10": int(units), "rates": rates, **result})
+
+
 def json_lines(dirs):
     for name, rep, path in find_traces(dirs):
         meta, rows = load(path)
@@ -786,11 +822,14 @@ if __name__ == "__main__":
     ap.add_argument(
         "--wargrid", type=Path, help="JSON {scenario: {metric: value}} for Wargrid column of collect_* rows"
     )
+    ap.add_argument("--saturation", nargs="+", type=Path, metavar="DIR")
     ap.add_argument("--same", nargs=2, type=Path, metavar="TSV")
     ap.add_argument("dirs", nargs="*", type=Path)
     a = ap.parse_args()
     if a.json:
         print("\n".join(json_lines(a.json)))
+    elif a.saturation:
+        print("\n".join(saturation_lines(a.saturation)))
     elif a.report:
         print(md_report(a.dirs, wargrid=json.loads(a.wargrid.read_text()) if a.wargrid else None))
     elif a.same:

@@ -431,6 +431,19 @@ def place_depot(g, builder, depot, pile_x, y, dist):
     raise RuntimeError(f"no legal {depot} placement at {dist or 'any'} units from the pile")
 
 
+# retail INI costs (docs/superpowers/plans/2026-11-12-faction-income-parity.md, Global Constraints)
+DEPOT_COST = {"chinook": 2000, "truck": 1500, "worker": 1500}
+COLLECTOR_COST = {"chinook": 1200, "truck": 600, "worker": 200}
+
+
+def train_affordable(g, depot_id, template, cost, pending):
+    """Queue what the bank allows (Zero Hour takes the price when queuing); returns how many are still waiting."""
+    while pending and g.call(f"/resources?player={g.me}")["money"] >= cost:
+        g.command("train_unit", [depot_id], template=template)
+        pending -= 1
+    return pending
+
+
 def collect(kind, dist, collectors=1, deposits=8, limit=22000, seconds=None):
     """Build a depot dist units from one SupplyDock (dist None: the nearest legal spot) and record the first collector's trips.
 
@@ -457,9 +470,7 @@ def collect(kind, dist, collectors=1, deposits=8, limit=22000, seconds=None):
         if dist and dist > 650:  # beyond the 700-unit warehouse scan an idle collector never starts; walk it into range
             g.command("move", [first], pos=[pile_x - 450, y, 0])
         units = [first]
-        if collectors > 1:
-            for _ in range(collectors - 1):
-                g.command("train_unit", [depot["id"]], template=collector_t)
+        pending = train_affordable(g, depot["id"], collector_t, COLLECTOR_COST[kind], collectors - 1)
         meta = {
             "order_frame": order, "unit": first, "dock": pile, "builder": builder, "kind": kind, "collectors": collectors,
             "pile": [pile_x, y], "depot": [depot["x"], depot["y"]], "dist": abs(pile_x - depot["x"]), "requested": dist,
@@ -475,6 +486,7 @@ def collect(kind, dist, collectors=1, deposits=8, limit=22000, seconds=None):
             if len(extra) < collectors - 1:  # trained collectors appear later; record them as they do
                 extra += [u for u in g.own(collector_t) if u not in {*units, *extra, builder, *before}]
             g.record([*units, *extra, builder, pile], 1, rows, money=True, docks=docks)
+            pending = train_affordable(g, depot["id"], collector_t, COLLECTOR_COST[kind], pending)
             cash = rows[-1][8]
             seen += last is not None and cash > last
             last = cash
@@ -484,11 +496,6 @@ def collect(kind, dist, collectors=1, deposits=8, limit=22000, seconds=None):
         return rows, meta
 
     return run
-
-
-# retail INI costs (docs/superpowers/plans/2026-11-12-faction-income-parity.md, Global Constraints)
-DEPOT_COST = {"chinook": 2000, "truck": 1500, "worker": 1500}
-COLLECTOR_COST = {"chinook": 1200, "truck": 600, "worker": 200}
 
 
 def opening(kind, units, collectors, seconds=600):
@@ -641,14 +648,8 @@ SCENARIOS = {
     **{f"collect_worker_u1625_x{n}": collect("worker", 162.5, n) for n in (2, 4)},
     **{
         f"collect_{kind}_u{int(units * 10)}_x{n}_s600": collect(kind, units, n, seconds=600)
-        for kind, units, n in (
-            ("chinook", 312.5, 2),
-            ("worker", 162.5, 2),
-            ("worker", 162.5, 4),
-            ("truck", 312.5, 2),
-            ("truck", 312.5, 4),
-            ("chinook", 312.5, 4),
-        )
+        for kind, units in (("worker", 162.5), ("worker", 312.5), ("truck", 312.5), ("chinook", 312.5))
+        for n in range(1, 9)
     },
     **{
         f"open_{kind}_u{int(units * 10)}_x{n}": opening(kind, units, n)

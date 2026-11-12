@@ -258,6 +258,67 @@ class DockHold(unittest.TestCase):
             run = parity.SCENARIOS[n]
             self.assertEqual(inspect.getclosurevars(run).nonlocals["seconds"], 600, n)
 
+    def test_sweep_rows_registered(self) -> None:
+        names = {
+            f"collect_{k}_u{u}_x{n}_s600"
+            for k, u in (("worker", 1625), ("worker", 3125), ("truck", 3125), ("chinook", 3125))
+            for n in range(1, 9)
+        }
+        self.assertEqual(len(names), 32)
+        self.assertLessEqual(names, set(parity.SCENARIOS))
+        for n in names:
+            self.assertEqual(inspect.getclosurevars(parity.SCENARIOS[n]).nonlocals["seconds"], 600, n)
+
+    def test_x1_long_row_metrics(self) -> None:
+        meta = {
+            "order_frame": 100, "collectors": 1, "dist": 10, "dock": 99, "unit": 7, "depot_id": 55,
+            "collector_ids": [7], "depot": [0, 0], "pile": [10, 0],
+        }  # fmt: skip
+        cycle = [(10, 0), (10, 0), (5, 1), (0, 1), (0, 0), (0, 0)]
+        rows: list[tuple[Any, ...]] = []
+        cash = 0
+        for off in range(0, 600 * 30 + 1):
+            f = 100 + off
+            px, v = cycle[off % 6]
+            cash += 75 if off and off % 6 == 0 else 0
+            rows.append((f, "money", "money", "", "", "", "", "", cash))
+            rows.append((f, 7, "u", px, 0, 0, v, 0, 10))
+            rows.append((f, 99, "lock", "", "", "", "", "", 7 if off % 6 < 2 else 0))
+            rows.append((f, 55, "lock", "", "", "", "", "", 7 if off % 6 in (4, 5) else 0))
+        m = analyze.metrics("collect_worker_u1625_x1_s600", meta, self.load_rows(rows))
+        self.assertEqual(m["depositors"], 1)
+        self.assertEqual(m["old_per_min"], 75 / 6 * 1800)
+        self.assertGreater(m["pile_lock_count"], 0)
+        self.assertGreater(m["depot_lock_count"], 0)
+        self.assertGreater(m["steady_per_min"], 0)
+
+    def test_saturation_curve(self) -> None:
+        rates = {1: 434, 2: 855, 3: 1270, 4: 1650, 5: 2000, 6: 2010, 7: 2010, 8: 1990}
+        s = analyze.saturation(rates, 200)
+        self.assertEqual((s["cap"], s["n_cap"], s["n90"], s["spend90"]), (2010, 6, 5, 800))
+        self.assertEqual(s["marginal"][6], 10)
+        self.assertEqual(s["payback_s"][8], float("inf"))
+        self.assertEqual(s["payback_s"][7], float("inf"))
+        self.assertEqual(s["payback_s"][2], 200 / ((855 - 434) / 60))
+        self.assertEqual(s["skipped"], [])
+
+    def test_saturation_skips_short(self) -> None:
+        s = analyze.saturation({1: 400, 2: 800, 3: None, 4: 900, 5: 5000}, 200, short={4, 5})
+        self.assertEqual(s["skipped"], [3, 4, 5])
+        self.assertEqual((s["cap"], s["n_cap"], s["n90"]), (800, 2, 2))
+        self.assertEqual(sorted(s["marginal"]), [2])
+
+    def test_saturation_lines_pool_sweep_dirs(self) -> None:
+        meta = {**self.META, "depot_id": 55, "collector_ids": [1, 2], "depot": [0, 0], "pile": [100, 0]}
+        with tempfile.TemporaryDirectory() as t:
+            root = Path(t)
+            for n, period, stop in ((1, 120, 600), (2, 60, 600), (3, 40, 300)):
+                put_trace(root, f"collect_worker_u1625_x{n}_s600", self.deposits_raw(stop, period=period), **meta)
+            (line,) = analyze.saturation_lines([root])
+        out = json.loads(line)
+        self.assertEqual((out["kind"], out["units10"], out["skipped"]), ("worker", 1625, [3]))
+        self.assertEqual(out["n_cap"], 2)
+
     def test_metrics_routes_s600_to_lock_windows(self) -> None:
         meta = {**self.META, "depot_id": 55, "collector_ids": [1, 2], "depot": [0, 0], "pile": [100, 0]}
         rows = self.deposits()
@@ -426,6 +487,26 @@ class Helpers(unittest.TestCase):
         self.assertEqual([r[8] for r in rows if r[2] == "lock"], [7, 0])  # absent dock reads 0
         with self.assertRaises(KeyError):
             g.record([], 1, rows, docks=(6,))  # present without the field: an old fork
+
+    def test_train_affordable_waits_for_money(self) -> None:
+        class Bank:
+            me = 1
+
+            def __init__(self, money: int) -> None:
+                self.money, self.trained = money, 0
+
+            def call(self, path: str) -> dict[str, int]:
+                return {"money": self.money}
+
+            def command(self, verb: str, ids: Any, **params: Any) -> None:
+                self.money -= 1200
+                self.trained += 1
+
+        g = Bank(2500)
+        self.assertEqual(parity.train_affordable(g, 5, "Chinook", 1200, 4), 2)
+        g.money += 3000
+        self.assertEqual(parity.train_affordable(g, 5, "Chinook", 1200, 2), 0)
+        self.assertEqual(g.trained, 4)
 
     def test_place_depot_retries_illegal_spots(self) -> None:
         g = FakeGame(refuse=2)
