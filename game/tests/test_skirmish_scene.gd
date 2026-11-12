@@ -220,7 +220,7 @@ func _pile_world(main) -> Dictionary:
 	var first: int = sim.spawn(1, Vector2(10.0, 10.5), "usa_collector")
 	var second: int = sim.spawn(1, Vector2(10.0, 10.5), "usa_collector")
 	Fixture.send(sim, {"type": "gather", "entity_ids": [first, second], "source_id": source})
-	Fixture.steps(sim, 3)
+	Fixture.steps(sim, 19)
 	sim.start_match([1, 2] as Array[int])
 	main.simulation = sim
 	main.selected_ids.clear()

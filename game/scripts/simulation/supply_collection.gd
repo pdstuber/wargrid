@@ -136,6 +136,14 @@ static func _admit(sim: Simulation, unit: Dictionary, target: Dictionary) -> voi
 		sim._stop_unit(unit)
 		collection.retry_tick = sim._tick + 1
 		return
+	var lock: Dictionary = Registry.collects(unit.kind).lock
+	var lead: int = lock.depot.lead if depot else lock.source.lead
+	# Only the lock window is exclusive; the lead overlaps other collectors, as Zero Hour's dock grants do.
+	if lead > 0 and collection.phase.begins_with("flying_"):
+		collection.phase = "lead_depot" if depot else "lead_source"
+		collection.remaining_ticks = lead
+		sim._stop_unit(unit)
+		return
 	var waiting_before: bool = false
 	for other: Dictionary in sim._entities.values():
 		if other.id == unit.id or other.collection == null or not other.collection.enabled: continue
@@ -145,7 +153,7 @@ static func _admit(sim: Simulation, unit: Dictionary, target: Dictionary) -> voi
 	if target.active_collector_id == null and not waiting_before:
 		target.active_collector_id = unit.id
 		collection.phase = "unloading" if depot else "loading"
-		collection.remaining_ticks = Registry.collects(unit.kind).unload_ticks if depot else Registry.collects(unit.kind).load_ticks
+		collection.remaining_ticks = lock.depot.work if depot else lock.source.box
 	else:
 		# remaining_ticks is idle while waiting; a ground truck stores the tick it began waiting there, for first-come order.
 		if _is_ground(unit) and not collection.phase.begins_with("waiting_"): collection.remaining_ticks = sim._tick
@@ -176,7 +184,11 @@ static func step(sim: Simulation, unit_ids: Array[int]) -> void:
 			continue
 		collection.remaining_ticks -= 1
 		if collection.remaining_ticks > 0: continue
-		if collection.phase == "loading":
+		if collection.phase.begins_with("lead_"):
+			collection.phase = "waiting_depot" if collection.phase == "lead_depot" else "waiting_source"
+			collection.remaining_ticks = sim._tick
+			_admit(sim,unit,target)
+		elif collection.phase == "loading":
 			# Zero Hour waits one more delay after the last box at a permanent source.
 			if collection.cargo == Registry.collects(unit.kind).boxes or target.boxes == 0:
 				release(sim,id)
@@ -186,7 +198,7 @@ static func step(sim: Simulation, unit_ids: Array[int]) -> void:
 			if target.boxes == 0 and target.get("delete_when_empty", false):
 				sim.remove_object(target.id)
 				continue
-			collection.remaining_ticks = Registry.collects(unit.kind).load_ticks
+			collection.remaining_ticks = Registry.collects(unit.kind).lock.source.box
 		elif collection.phase == "unloading":
 			sim._players[unit.owner].credits += collection.cargo * Registry.collects(unit.kind).box_value
 			collection.cargo = 0
