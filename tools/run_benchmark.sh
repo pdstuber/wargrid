@@ -15,6 +15,7 @@ cat "$log_dir/tests.log"
 if grep -E 'ERROR:|SCRIPT ERROR:' "$log_dir/tests.log"; then exit 1; fi
 grep -Eq '^BENCHMARK PASSED 2$' "$log_dir/tests.log" || exit 1
 [ "$(grep -c '^BUDGET PASS ' "$log_dir/tests.log")" -eq 2 ] || exit 1
+[ "$(grep -c '^WORST TICK ' "$log_dir/tests.log")" -eq 2 ] || exit 1
 "$engine" --headless --path "$repo_root/game" --script res://benchmarks/run_combat.gd >"$log_dir/combat.log" 2>&1
 code=$?
 cat "$log_dir/combat.log"
@@ -22,6 +23,7 @@ cat "$log_dir/combat.log"
 if grep -E 'ERROR:|SCRIPT ERROR:' "$log_dir/combat.log"; then exit 1; fi
 grep -Eq '^COMBAT BENCHMARK PASSED 10$' "$log_dir/combat.log" || exit 1
 [ "$(grep -c '^COMBAT BUDGET PASS ' "$log_dir/combat.log")" -eq 7 ] || exit 1
+[ "$(grep -c '^WORST TICK ' "$log_dir/combat.log")" -eq 10 ] || exit 1
 "$engine" --headless --path "$repo_root/game" --script res://benchmarks/run_lockstep.gd >"$log_dir/lockstep.log" 2>&1
 code=$?
 cat "$log_dir/lockstep.log"
@@ -29,3 +31,7 @@ cat "$log_dir/lockstep.log"
 if grep -E 'ERROR:|SCRIPT ERROR:' "$log_dir/lockstep.log"; then exit 1; fi
 grep -Eq '^LOCKSTEP BENCHMARK PASSED 1$' "$log_dir/lockstep.log" || exit 1
 [ "$(grep -c '^LOCKSTEP BUDGET PASS ' "$log_dir/lockstep.log")" -eq 1 ] || exit 1
+[ "$(grep -c '^WORST TICK ' "$log_dir/lockstep.log")" -eq 1 ] || exit 1
+over=$(cat "$log_dir"/*.log | sed -n 's/^OVER BUDGET \([^ ]*\) .*/\1/p' | tr '\n' ' ')
+[ -z "$over" ] || echo "BUDGET EXCEEDED ${over% } (regression ceilings held)"
+exit 0

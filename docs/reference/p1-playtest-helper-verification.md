@@ -1,13 +1,13 @@
 ```text
-Resume record (updated 2026-11-12 Task 6 done)
-Branch / base commit / working-tree state: p1-playtest-helper / 54f25a0 (Task 5) / Task 6 implemented, uncommitted (coordinator commits "Add tools to read and replay playtest sessions"); tools/replay_session.sh and the two new Python files are `git add -N` so ShellCheck sees them
-Last green task / next incomplete task: Task 6 / Task 7
-Changed paths since last commit: tools/{playtest_session.py,test_playtest_session.py,replay_session.sh}, docs/kickoff.md, this file
-Last command / cases / checks / failures / exit / marker: full run_tests CASES 785 CHECKS 140696 FAILURES 0, exit 0, TESTS PASSED; lint 0; warnings 152 files 0; run_python_checks 0; run_shell_checks 0
+Resume record (updated 2026-11-12 Task 7 done)
+Branch / base commit / working-tree state: p1-playtest-helper / 2e5477c (Task 6) / Task 7 implemented, uncommitted (coordinator commits "Report exceeded budgets and worst ticks")
+Last green task / next incomplete task: Task 7 / Task 8
+Changed paths since last commit: game/scripts/debug/timing_stats.gd, game/benchmarks/{run_movement,run_combat,run_lockstep}.gd, game/tests/test_benchmark.gd, tools/run_benchmark.sh, tools/run_python_tests.sh, this file
+Last command / cases / checks / failures / exit / marker: full run_tests CASES 787 CHECKS 140702 FAILURES 0, exit 0, TESTS PASSED; lint 0; warnings 152 files 0; run_python_checks 0; run_shell_checks 0; run_benchmark exit 0
 Known red case or blocker: none
 Approved decisions, pre-authorizations used, deferred gates: local commits per task by the coordinator; never push
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: Task 7 (rider: BUDGET EXCEEDED summary and worst-tick lines)
+Next exact action: Task 8 (package documents)
 ```
 
 ## Evidence rows (append-only)
@@ -51,3 +51,8 @@ Next exact action: Task 7 (rider: BUDGET EXCEEDED summary and worst-tick lines)
   - Untampered fixture (`fixture-session.json`, 2 matches, end ticks 60 and 90): `sh tools/replay_session.sh` prints `REPLAY MATCHED 1`, `REPLAY MATCHED 2`, exit 0, plus `ORACLE STATE 45` for match 2's marker (t6-replay1.log). Copy with match 2's only command line removed (`fixture-tampered.json`): `REPLAY MATCHED 1`, `REPLAY DIFFERS 2 recorded=4d901e15a1105e60 replayed=987923549ff1c0b8`, exit 1 (t6-replay2.log). `--tick 30` exit 0, writes `fixture-session-m<k>-snapshots/tick-30.json` next to the file (t6-replay3.log). `playtest_session.py` on the fixture wrote the three JPGs next to it and printed the summary lines; nothing was written inside the repository.
   - Full run_tests: CASES 785 CHECKS 140696 FAILURES 0, TESTS PASSED, exit 0 (Task 5: same). run_lint exit 0; run_warnings 152 files exit 0 (Task 5 reported 151, no GDScript changed in this task). `git diff main -- game/scripts/simulation` empty.
   - Known limit: a marker at the match's end tick prints no `ORACLE STATE` row, because the oracle loop prints state before stepping and stops at `end_tick`; the end digest covers that tick. `--tick N` replaces the marker ticks for every match.
+- 2026-11-12, tree p1-playtest-helper 2e5477c + uncommitted Task 7, host load 1.55 before / 1.99 after (uptime), no World of Warcraft, no other Godot process. Logs ~/projects/wargrid-p1-work/t7-*.log. Rider functional check only, not the exit-gate ledger row (Task 9).
+  - Red: `WARGRID_TEST_ONLY=test_benchmark` with stubbed `worst` / `over_budget_line`: 6 assertion failures (BM19, BM20), no parse errors (t7-red.log). Full run_tests: CASES 787 CHECKS 140702 FAILURES 0, TESTS PASSED, exit 0 (Task 6: 785 / 140696). run_lint 0; run_warnings 152 files 0; run_python_checks 0; run_shell_checks 0.
+  - `sh tools/run_benchmark.sh` alone: exit 0 (ledger and `main` behaviour: exit 0, no row over its regression ceiling), BENCHMARK PASSED 2, COMBAT BENCHMARK PASSED 10, LOCKSTEP BENCHMARK PASSED 1, 13 `WORST TICK` lines (2 + 10 + 1). Last line: `BUDGET EXCEEDED open hordes300 (regression ceilings held)` (combat open p95=1.862 p99=2.193; hordes300 p95=2.826 p99=3.322; dense measured within budget this run). Worst ticks: movement open 3.447 ms tick 1262, dense 3.605 tick 1281; combat contact 11.260 tick 420, hordes300 7.566 tick 776; lockstep overhead 0.168 tick 359.
+  - Deviation: the over-budget parameter is named `stats`, not `summary` (the plan's name shadows `Stats.summary`, a warning treated as error). `Stats.worst_tick_line` added to share the print format across the three runners.
+  - Fix outside the owned files: `tools/run_python_tests.sh` selected `tools/playtest_session.py` as a test (pathspec `tools/*test_*.py` matches `playtest_session.py`) and failed on its missing argument once Task 6 tracked it; it is now excluded like `test_install_godot.py`.

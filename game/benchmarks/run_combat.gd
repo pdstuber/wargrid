@@ -120,6 +120,7 @@ func _measure(layout: String) -> bool:
 		" combat_work=", JSON.stringify(Stats.summary(work)), " allocation_calls=", JSON.stringify(Stats.summary(allocations)),
 		" shots=", shots, " deaths=", deaths, " first_shot=", first_shot, " alive_start=", start_units, " alive_end=", alive,
 		" scan_chases_warmup=", warmup_chases, " scan_chases_window=", window_chases, " retaliations_window=", window_retaliations)
+	print(Stats.worst_tick_line("combat", layout, samples, WARMUP))
 	if layout == "transports":
 		print("COMBAT TRANSPORTS passenger_shots_window=", rider_shots, " passengers=", riders.size())
 		if not _budget_ok(layout, summary):
@@ -192,6 +193,9 @@ func _budget_ok(layout: String, summary: Dictionary) -> bool:
 
 func _stress_ok(layout: String, summary: Dictionary) -> bool:
 	var ceiling: Array = STRESS_CEILING[layout]
+	var over: String = Stats.over_budget_line(layout, summary)
+	if not over.is_empty():
+		print(over)
 	var ok: bool = Stats.within(summary, ceiling[0], ceiling[1])
 	print("COMBAT STRESS ", "PASS" if ok else "FAIL", " ", layout, " exceeds the ", Stats.BUDGET_P95_MS, "/", Stats.BUDGET_P99_MS, " budget, regression ceiling p95/p99 ", ceiling)
 	if not ok:

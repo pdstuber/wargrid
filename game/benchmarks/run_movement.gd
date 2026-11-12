@@ -71,6 +71,7 @@ func _measure(layout: String) -> bool:
 	print("HEADLESS ", layout, " tick_ms=", JSON.stringify(summary), " command_tick_ms=", JSON.stringify(Stats.summary(command_samples)),
 		" queue_peak=", queue_peak, " queue_drain_ticks=", queue_drain, " timed_counts=", JSON.stringify(timed_counts),
 		" completed_legs=", completed, " drain_ticks=", drain_ticks, " final_counts=", JSON.stringify(_counts(sim.snapshot())), " unique_destinations=", destinations.size())
+	print(Stats.worst_tick_line("movement", layout, samples, 300))
 	var within_budget: bool = Stats.within(summary, Stats.BUDGET_P95_MS, Stats.BUDGET_P99_MS)
 	print("BUDGET ", "PASS" if within_budget else "FAIL", " ", layout, " simulation_only")
 	if not within_budget:
