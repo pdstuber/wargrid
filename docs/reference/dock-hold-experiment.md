@@ -330,7 +330,7 @@ The row reading behind the answer: in 31 split pairs of the three scenarios (all
 
 *Recommendation (agent's):* a fix would go in `_claim_dock`'s held-cell exclusion (`supply_collection.gd:57-59`, `:65`), not in routing or avoidance.
 
-Causality check: pending (Task 4).
+Causality check: **measured (Wargrid, throwaway counterfactual: dock-hold 1b32890 + causality.diff sha256 ea9d40b1, never committed; user approved, 2026-11-12)**, `_claim_dock` without the held-cell exclusion (`supply_collection.gd:65`), so every collector claims the nearest ring cell. **Partial** by the plan's test: the slow kind's split median drops from 133 / 133 / 313 to 97 / 97 / 277 in `transplant_g3` / `sweep_g3_n7` / `sweep_g9_n7`, lone + 7 in all three (confirmed needs lone + 6, killed lone + 20), and the lone pair carries 0 %, 15 %, 14 % of those legs (needs 90 %). No leg has a manhattan above the lone pair's: the extra cell and its two corners are gone; a one-corner leg (+7) remains on the cell most legs now share, and the other kind moves from 90 / 270 to 97 / 277. Hold and c1 read the same 97 / 277 (reported, not judged). The answer stays "not established". Lines: `extra-cell/causality.txt`, `verdicts.md` ("Causality").
 
 ## Decision list for the user
 
