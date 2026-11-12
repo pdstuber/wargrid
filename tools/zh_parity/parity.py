@@ -530,10 +530,10 @@ def opening(kind, units, collectors, seconds=600):
         for _ in range(seconds * 30 - (g.frame - order)):
             if len(seen) < collectors:
                 seen += found()
-            g.record([*seen, pile], 1, rows, money=True)
+            g.record([*seen, pile], 1, rows, money=True, docks=(pile, depot["id"]))
         meta = {
             "order_frame": order, "unit": seen[0], "dock": pile, "builder": builder, "kind": kind, "units": units,
-            "collectors": collectors, "collector_ids": seen, "spend": spend, "seconds": seconds,
+            "collectors": collectors, "collector_ids": seen, "spend": spend, "seconds": seconds, "depot_id": depot["id"],
             "pile": [pile_x, y], "depot": [depot["x"], depot["y"]], "dist": abs(pile_x - depot["x"]),
             "depot_template": depot_t,
         }  # fmt: skip
