@@ -12,17 +12,18 @@ const DockC = preload("res://scripts/experiments/dock_c.gd")
 const Metrics = preload("res://tests/dock_metrics.gd")
 
 const MODELS := ["hold", "split", "queue", "c1", "c2"]
+const DEFAULT_MODELS := ["hold", "split", "queue"]
 const RATIOS := {"c1": Vector2i(184, 300), "c2": Vector2i(44, 75)}
 const GATHER_TICK := 0
 const SWEEP_MAX := 8
 const SWEEP := [{"kind": "frc_builder", "gap": 3}, {"kind": "frc_builder", "gap": 9}, {"kind": "china_collector", "gap": 9}, {"kind": "usa_collector", "gap": 9}]
 
 func cases() -> Array[Callable]:
-	return [test_default_model_is_hold, test_steady_rate_window, test_split_lone_cycle_unchanged, test_split_overlaps_lead_in, test_split_same_tick_arrival, test_split_stop_during_lead, test_split_release_on_removal, test_c_tables_follow_the_rule, test_c_lock_clamps_to_the_stand, test_c_lone_cycle_unchanged, test_queue_fifo, test_queue_lock_covers_moves, test_queue_air, test_queue_same_tick_and_removal, test_report_rows, test_wargrid_saturation_matches_python, test_wargrid_saturation_skips_short, test_phase_shares_sum_to_100, test_sweep_row_flags_an_emptied_pile, test_sweep_rows]
+	return [test_default_model_is_hold, test_steady_rate_window, test_split_lone_cycle_unchanged, test_split_overlaps_lead_in, test_split_same_tick_arrival, test_split_stop_during_lead, test_split_release_on_removal, test_c_tables_follow_the_rule, test_c_lock_clamps_to_the_stand, test_c_fractional_earnings_round_up, test_c_lone_cycle_unchanged, test_queue_fifo, test_queue_lock_covers_moves, test_queue_air, test_queue_same_tick_and_removal, test_report_rows, test_wargrid_saturation_matches_python, test_wargrid_saturation_skips_short, test_phase_shares_sum_to_100, test_sweep_row_flags_an_emptied_pile, test_sweep_rows]
 
 func models() -> Array:
 	var wanted: String = OS.get_environment("WARGRID_DOCK_MODELS")
-	if wanted.is_empty(): return MODELS
+	if wanted.is_empty(): return DEFAULT_MODELS # c1 and c2 add two long-sim models; the unfiltered CI suite stays on the original three
 	var picked: Array = []
 	for name in wanted.split(","):
 		if name.strip_edges() in MODELS: picked.append(name.strip_edges())
@@ -80,6 +81,16 @@ func test_c_lock_clamps_to_the_stand(runner) -> bool:
 	var collects: Dictionary = Registry.collects(Parity.new().TARGETS.keys()[0])
 	var entry: Dictionary = DockC.source_entry(collects, Vector2i(1000, 300))
 	runner.check(entry.lead == 0 and entry.box == collects.load_ticks, "a computed lock longer than the stand clamps to lead 0, box load_ticks, got %s" % [entry])
+	return true
+
+func test_c_fractional_earnings_round_up(runner) -> bool:
+	var collects: Dictionary = Registry.collects(Parity.new().TARGETS.keys()[0])
+	var loads: int = collects.boxes + 1
+	var entry: Dictionary = DockC.source_entry(collects, Vector2i(1, 7))
+	var credits: int = collects.boxes * collects.box_value
+	runner.check(credits % 7 != 0, "the 1/7 fixture leaves a fractional earning")
+	runner.check(entry.box == roundi(ceili(credits / 7.0) / float(loads)), "ratio 1/7 sizes the lock from the rounded-up earning, got %s" % [entry])
+	runner.check(entry.box != roundi(floori(credits / 7.0) / float(loads)), "floor would give a different box, got %s" % [entry])
 	return true
 
 func test_c_lone_cycle_unchanged(runner) -> bool:

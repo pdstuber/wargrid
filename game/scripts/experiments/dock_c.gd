@@ -3,7 +3,7 @@ extends RefCounted
 const DockSplit = preload("res://scripts/experiments/dock_split.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 
-# Dock models c1 and c2: split's lead/lock mechanics with the pile lock sized to a share of the credits a visit earns; the stand keeps its length.
+# c1 and c2 keep split's mechanics but size the pile lock in ticks per credit, to test whether the lock rule explains the shortfall.
 const RATIOS := {"c1": Vector2i(184, 300), "c2": Vector2i(44, 75)}
 
 static var tables: Dictionary = _build_tables()
