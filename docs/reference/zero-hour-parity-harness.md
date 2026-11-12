@@ -11,7 +11,7 @@ Not covered: anything that needs the retail binary (exact retail floating point,
 ## Setup (once per machine)
 
 1. Game data: extracted retail copy in `~/CnC/run/` ([installation](installation.md)). Other location: `ZH_PARITY_DATA=<dir containing INIZH.big>`. To read the retail INI values, use `python3 tools/zh_ini.py dump` (local `build/zh_ini/inizh.jsonl`).
-2. Engine: the parity patch exists only in the local branch `wargrid-parity` of `~/projects/GeneralsGameCode-macOS` (never pushed; contents in the [spike](zero-hour-parity-spike.md#what-was-built)). On another machine, clone [dvcdsys/GeneralsGameCode-macOS](https://github.com/dvcdsys/GeneralsGameCode-macOS), then carry the branch over without publishing it: on this machine `git -C ~/projects/GeneralsGameCode-macOS bundle create wargrid-parity.bundle 8fedb1649..wargrid-parity`, on the other `git fetch <path>/wargrid-parity.bundle wargrid-parity:wargrid-parity && git switch wargrid-parity`. Other location: `ZH_PARITY_BIN=<path to generalszh_api>`.
+2. Engine: the parity patch exists only in the local branch `wargrid-parity` of `~/projects/GeneralsGameCode-macOS` (never pushed; contents in the [spike](zero-hour-parity-spike.md#what-was-built); the `activeDocker` unit field, which `_s600` rows need, is the later commit a75330d82 and is not described there). On another machine, clone [dvcdsys/GeneralsGameCode-macOS](https://github.com/dvcdsys/GeneralsGameCode-macOS), then carry the branch over without publishing it: on this machine `git -C ~/projects/GeneralsGameCode-macOS bundle create wargrid-parity.bundle 8fedb1649..wargrid-parity`, on the other `git fetch <path>/wargrid-parity.bundle wargrid-parity:wargrid-parity && git switch wargrid-parity`. Other location: `ZH_PARITY_BIN=<path to generalszh_api>`.
 3. Build (about 15 minutes clean, Command Line Tools are enough):
    `cmake --preset apple-arm64-release -DRTS_BUILD_OUTPUT_SUFFIX=_api && cmake --build build/apple-arm64-release --config Release --target z_generals`
 
@@ -22,7 +22,7 @@ The fork is GPL code with EA's additional terms. It stays outside Wargrid; the h
 ```sh
 python3 -I tools/zh_parity/parity.py [--out DIR] [scenario-or-glob ...]   # default: all; unknown names exit 2 before any launch
 python3 -I tools/zh_parity/parity.py --list 'collect_*'                   # resolved names
-python3 -I tools/zh_parity/parity.py --out DIR --repeats 3 --lanes 3 'collect_truck_*'   # sweep
+python3 -I tools/zh_parity/parity.py --out DIR --repeats 3 --lanes 3 'collect_truck_*'   # sweep (the glob includes the _s600 rows)
 python3 -I tools/zh_parity/parity.py --kill DIR                           # stop only that sweep's games
 python3 -I tools/zh_parity/parity.py --smoke                              # one real game, move_crusader, about 4 s (local only)
 python3 -I tools/zh_parity/analyze.py [--traces DIR]                      # metrics vs Wargrid values
@@ -53,6 +53,7 @@ Sweeps (`--repeats R` or `--lanes N`): one child process per job (`rep<r>/<scena
 | `duel_<unit>` | mirror duel, defender fires back | time-to-kill, winner |
 | `splash_crusader` | tank shell into a five-Ranger cluster | shots to kill, hits, splash damage on neighbours |
 | `collect_<chinook\|truck\|worker>_<d>[_x2]`, `collect_<kind>_u<units*10>[_xN]` | a built depot `d` cells (or exact units) from a spawned `SupplyDock`, one or more collectors | credits per deposit, credits/min (pooled over repeats), cycle phases (travel, load, unload) |
+| `collect_<kind>_u<n>_x<N>_s600` | as `collect_<kind>_u<units*10>_xN`, recorded for 600 s with every collector and both docks' locks | steady (300-600 s, cut where the pile runs dry) and old-window rate, pile and depot lock windows (`--json`); needs the fork's active-docker commit (a75330d82, local branch `wargrid-parity`); globs such as `collect_truck_*` now include these rows |
 | `supply_chinook` | supply centre and warehouse 400 apart | deposit size, cycle frames, cruise speed |
 | `retaliate_ranger`, `retaliate_bisect`, `retaliate_return` | an attacker (tank, or a Ranger for `_return`) hits one idle Ranger; Rangers at set distances | who joins (starts moving, fires) and how far they chase; read from the trace by hand, no `analyze.py` metric |
 
