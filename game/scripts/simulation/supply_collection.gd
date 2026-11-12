@@ -3,20 +3,24 @@ extends RefCounted
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const DockSplit = preload("res://scripts/experiments/dock_split.gd")
+const DockQueueWork = preload("res://scripts/experiments/dock_queue_work.gd")
+const DockQueue = preload("res://scripts/simulation/dock_queue.gd")
 
 const DOCK_SHIFT := 0.25
-const DOCK_MODELS := ["hold", "split"]
+const DOCK_MODELS := ["hold", "split", "queue"]
 
 static func release(sim: Simulation, unit_id: int) -> void:
 	var unit: Dictionary = sim._entities[unit_id]
 	var collection: Dictionary = unit.collection
+	var target: Dictionary = {}
 	if collection.target_id != null:
-		var target: Dictionary = sim._sources.get(collection.target_id,sim._buildings.get(collection.target_id,{}))
+		target = sim._sources.get(collection.target_id,sim._buildings.get(collection.target_id,{}))
 		if target.get("active_collector_id") == unit_id: target.active_collector_id = null
 	collection.target_id = null
 	collection.erase("dock")
 	collection.remaining_ticks = 0
 	collection.phase = "seeking" if collection.enabled else "idle"
+	if sim.dock_model == "queue": DockQueue.leave(sim,target,unit_id)
 
 static func _size(target: Dictionary) -> Vector2i:
 	return Registry.source_footprint(target) if target.has("boxes") else Registry.building_view(target.kind).footprint
@@ -106,8 +110,12 @@ static func _seek(sim: Simulation, unit: Dictionary) -> void:
 		sim._stop_unit(unit)
 		return
 	collection.target_id = target.id
-	var goal: Array = _arrival(unit,target)
+	var goal: Array = DockQueue.approach(unit,target) if sim.dock_model == "queue" else _arrival(unit,target)
 	collection.phase = "flying_depot" if collection.cargo > 0 else "flying_source"
+	_move_to(sim,unit,goal)
+	if unit.position == goal: _admit(sim,unit,target)
+
+static func _move_to(sim: Simulation, unit: Dictionary, goal: Array) -> void:
 	unit.destination = goal.duplicate()
 	unit.order = {"type":"move","target":goal.duplicate()}
 	if _is_ground(unit) and unit.position != goal:
@@ -117,7 +125,6 @@ static func _seek(sim: Simulation, unit: Dictionary) -> void:
 	else:
 		unit.route = [sim._frozen(goal.duplicate())]
 		unit.status = "moving"
-	if unit.position == goal: _admit(sim,unit,target)
 
 # Air: lowest id first, ahead of all ground. Ground: waiters in the order they began waiting, then arrivals by id, so no truck starves.
 static func _ahead(unit: Dictionary, other: Dictionary) -> bool:
@@ -131,16 +138,28 @@ static func _ahead(unit: Dictionary, other: Dictionary) -> bool:
 	return theirs < mine or theirs == mine and other.id < unit.id
 
 static func _load_delay(sim: Simulation, unit: Dictionary) -> int:
+	if sim.dock_model == "queue": return DockQueueWork.QUEUE_WORK[unit.kind].source_box
 	return DockSplit.SPLIT[unit.kind].source.box if sim.dock_model == "split" else Registry.collects(unit.kind).load_ticks
 
 static func _unload_delay(sim: Simulation, unit: Dictionary) -> int:
+	if sim.dock_model == "queue": return DockQueueWork.QUEUE_WORK[unit.kind].depot
 	return DockSplit.SPLIT[unit.kind].depot.work if sim.dock_model == "split" else Registry.collects(unit.kind).unload_ticks
+
+static func _end_stay(sim: Simulation, unit: Dictionary, target: Dictionary) -> void:
+	if sim.dock_model == "queue":
+		DockQueue.begin_leaving(sim,unit,target)
+		return
+	release(sim,unit.id)
+	unit.collection.retry_tick = sim._tick + 1
 
 static func _lead(sim: Simulation, unit: Dictionary, depot: bool) -> int:
 	if sim.dock_model != "split": return 0
 	return DockSplit.SPLIT[unit.kind].depot.lead if depot else DockSplit.SPLIT[unit.kind].source.lead
 
 static func _admit(sim: Simulation, unit: Dictionary, target: Dictionary) -> void:
+	if sim.dock_model == "queue":
+		DockQueue.arrive(sim,unit,target)
+		return
 	var collection: Dictionary = unit.collection
 	var depot: bool = collection.cargo > 0
 	if not depot and target.boxes == 0:
@@ -186,6 +205,7 @@ static func step(sim: Simulation, unit_ids: Array[int]) -> void:
 			sim._stop_unit(unit)
 			collection.retry_tick = sim._tick + 1
 			continue
+		if sim.dock_model == "queue" and DockQueue.step_unit(sim,unit,target): continue
 		if collection.phase.begins_with("flying_") and _is_ground(unit) and unit.status == "blocked":
 			release(sim,id)
 			collection.retry_tick = sim._tick + 30
@@ -202,8 +222,7 @@ static func step(sim: Simulation, unit_ids: Array[int]) -> void:
 		elif collection.phase == "loading":
 			# Zero Hour waits one more delay after the last box at a permanent source.
 			if collection.cargo == Registry.collects(unit.kind).boxes or target.boxes == 0:
-				release(sim,id)
-				collection.retry_tick = sim._tick + 1
+				_end_stay(sim,unit,target)
 				continue
 			_load_box(collection, target)
 			if target.boxes == 0 and target.get("delete_when_empty", false):
@@ -213,8 +232,7 @@ static func step(sim: Simulation, unit_ids: Array[int]) -> void:
 		elif collection.phase == "unloading":
 			sim._players[unit.owner].credits += collection.cargo * Registry.collects(unit.kind).box_value
 			collection.cargo = 0
-			release(sim,id)
-			collection.retry_tick = sim._tick + 1
+			_end_stay(sim,unit,target)
 
 static func _load_box(collection: Dictionary, target: Dictionary) -> void:
 	target.boxes -= 1

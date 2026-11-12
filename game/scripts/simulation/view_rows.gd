@@ -135,7 +135,7 @@ func _fill_all(units: Array) -> void:
 				phases.append(step)
 			c_phase[i] = phase_slot
 			if collection.enabled: bits |= COLLECTING
-			if step == "waiting_source": bits |= WAITING_SOURCE
+			if step == "waiting_source" or step == "queued_source": bits |= WAITING_SOURCE
 			var waiting: Variant = collection.target_id
-			if waiting != null and step.begins_with("waiting_"): c_queue[i] = waiting
+			if waiting != null and (step.begins_with("waiting_") or step.begins_with("queued_")): c_queue[i] = waiting
 		c_flags[i] = bits
