@@ -6,7 +6,7 @@ Development status, setup, commands and operations for Wargrid's agent-driven wo
 
 Status: early development. `main` has three factions (USA, China, FRC), teams, three converted maps (Dry Wells, Broken Crown and Ashfall are selectable in the launcher; released in 0.10.0 on 2026-11-09), skirmish against a bot and online play (milestones M0–M7; M7 merged 2026-11-07 at its stop gate, CI green and macOS traces matching; its exit gate waits on the user's playtest; latest release 0.10.0). Per-milestone plans and evidence: [Start here](#start-here).
 
-Developed with AI coding agents (Claude Code). [AGENTS.md](../AGENTS.md), the [blueprint](blueprint.md) and `docs/superpowers/` are that workflow's plans, decisions and evidence.
+Developed with AI coding agents (Claude Code). [AGENTS.md](../AGENTS.md), the [blueprint](blueprint.md) and `docs/superpowers/` are that workflow's plans, decisions and evidence. In these documents "the user" is the project owner: a tag such as "(user, 2026-11-05)" marks a decision the owner made on that date, as opposed to an agent's proposal or assessment.
 
 ## Start here
 
