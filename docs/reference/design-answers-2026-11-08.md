@@ -378,6 +378,7 @@ Answers to the open points of the [dock-hold note](dock-hold-experiment.md#optio
 Answers after the [frc7 gap measurement](dock-hold-experiment.md#frc7-gap-measurement-2026-11-12) (one extra cell walked per trip with several workers; no dock lock rule touches it):
 
 - **Dock model:** c1 is chosen for a clean rebuild (one pile throughput rule, 184 ticks per 300 credits; usa2 far +4.3 % is inside the +5 % allowance). Order: the dock rebuild comes before the movement fix, so FRC income leaves hold's cap (frc7 close 1590 against Zero Hour's 2850) without waiting for it.
-- **Next session:** the c1 rebuild plan (Opus-written), then its run; frc7 close and far rows stay reported, not judged, because the movement fix will lift them about 8 %. The evidence-only spike on the rule behind the extra cell (trace one leaving worker's cells against the standing workers' cells, then the route, arrival-cell and exit-cell code) runs after it or in a second worktree.
+- **Release first:** release 0.11.0 before any of this, so the live site gets the new graphics (top priority).
+- **Then:** the c1 rebuild plan (Opus-written), then its run; frc7 close and far rows stay reported, not judged, because the movement fix will lift them about 8 %. The evidence-only spike on the rule behind the extra cell (trace one leaving worker's cells against the standing workers' cells, then the route, arrival-cell and exit-cell code) runs after it or in a second worktree.
 - **Start-dependent n = 7 rates** (split sweep 2385 against opening 2625; Zero Hour 30 apart): a caveat in the note for now; revisited after the movement fix.
 - **Zero Hour far opening:** three new games approved and run (`open_worker_u3125_x7`, 3 of 3).
