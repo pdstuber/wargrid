@@ -18,7 +18,7 @@ lan_address='(^|[^0-9.])(10\.[0-9]{1,3}|192\.168|172\.(1[6-9]|2[0-9]|3[01]))\.[0
 session_id='[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
 scratch_path='claude-[0-9]+/|\.claude/projects/-'
 personal_mail='@(gmail|googlemail|outlook|hotmail|icloud|yahoo|proton|protonmail|gmx)\.[a-z]+'
-if git grep -nIE "$home_path|$hostname|$lan_address|$session_id|$scratch_path|$personal_mail" -- . ':(exclude)tools/check_public.sh'; then
+if git grep -nIE "$home_path|$hostname|$lan_address|$session_id|$scratch_path|$personal_mail" -- . ':(exclude)tools/*check_public*'; then
   echo "PUBLIC CHECK FAILED: home path, hostname, LAN address, session id, scratch path or personal mail address in tracked files"
   status=1
 fi

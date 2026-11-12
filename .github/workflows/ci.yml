@@ -293,6 +293,7 @@ jobs:
           python3 tools/test_install_export_templates.py
           python3 tools/test_package_release.py
           python3 tools/test_deploy_web.py
+          python3 tools/test_check_public.py
           python3 tools/zh_map/test_zh_map.py
           python3 tools/zh_parity/analyze.py --self-test
           python3 tools/test_zh_parity.py
