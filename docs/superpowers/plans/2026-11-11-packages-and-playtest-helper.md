@@ -338,7 +338,7 @@ Stop: a status in Start here contradicts its verification file (ask which is rig
 
 ```text
 Task: final evidence on the final tree, one rendered batch, reviews.
-Owns: docs/reference/p1-playtest-helper-verification.md, docs/reference/performance.md (row), docs/STATUS.md (P1 state), docs/session-notes.md
+Owns: docs/reference/p1-playtest-helper-verification.md, docs/reference/performance.md (row), docs/STATUS.md (P1 state), the session notes (private, `~/projects/wargrid-private/docs/session-notes.md`)
 Invariant: no budget, ceiling or label changed.
 Boundary: an unverified browser capture stays "unverified", not assumed.
 Red: n/a.

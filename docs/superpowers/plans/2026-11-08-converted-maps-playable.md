@@ -8,7 +8,7 @@
 
 **Tech Stack:** Godot 4.7.2 typed GDScript (`game/`), Go relay (`relay/`), Go conformance suite (`protocol/conformance`), POSIX sh tools.
 
-**Spec:** [design](../specs/2026-11-08-converted-maps-playable-design.md) (approved 2026-11-08) and the user's [handoff](../../converted-maps-prompt.txt) ("Facts", "Decided", "Done when" are binding). Execution rules: [milestone prompt](../../milestone-prompt.md), overridden where noted below.
+**Spec:** [design](../specs/2026-11-08-converted-maps-playable-design.md) (approved 2026-11-08) and the user's handoff (`converted-maps-prompt.txt`, private) ("Facts", "Decided", "Done when" are binding). Execution rules: [milestone prompt](../../milestone-prompt.md), overridden where noted below.
 
 ## Zero Hour facts this plan relies on (spot-checked 2026-11-08, plan writer)
 

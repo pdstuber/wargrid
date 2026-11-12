@@ -304,7 +304,7 @@ Resolve `collector` from snapshot by kind/ID in test, not internal dictionaries.
 
 Design coverage: funds/commands/state tasks1–2; air3; construction4–5; production6; supply7–8; presentation9–10; replay11; acceptance12. Each review-focus failure has named cases above. No new prerequisite/rate/value is left for executor to invent. Fixture/code bodies intentionally omitted; contracts and assertions decide them.
 
-Fresh design builder check found no consequential planning gaps before this plan. Plan self-review must still reconcile future final M2 names, snapshot literal sites and performance evidence at task0. Remaining M2 visual/rendered/backlog gates were explicitly deferred with risk accepted at M3 kickoff; they remain open. [M3 kickoff prompt](../../m3-prompt.txt) is a separate artifact; root prompt was installed during authorized branch handoff, then explicitly invoked for M3.
+Fresh design builder check found no consequential planning gaps before this plan. Plan self-review must still reconcile future final M2 names, snapshot literal sites and performance evidence at task0. Remaining M2 visual/rendered/backlog gates were explicitly deferred with risk accepted at M3 kickoff; they remain open. M3 kickoff prompt (`m3-prompt.txt`, private) is a separate artifact; root prompt was installed during authorized branch handoff, then explicitly invoked for M3.
 
 
 ## Executed checkpoint — 2026-11-03

@@ -1,6 +1,6 @@
 # M6 verification
 
-Plan: [M6 plan](../superpowers/plans/2026-11-05-m6-teams-full-map.md). Run rules: [milestone prompt](../milestone-prompt.md). Handoff: [M6 prompt](../m6-prompt.txt).
+Plan: [M6 plan](../superpowers/plans/2026-11-05-m6-teams-full-map.md). Run rules: [milestone prompt](../milestone-prompt.md). Handoff: M6 prompt (`m6-prompt.txt`, private).
 
 **Closed:** merged to `main` as `de647e1` (2026-11-05). The resume record below is the last pre-merge state and was not rewritten at the merge; its "next exact action" is done.
 

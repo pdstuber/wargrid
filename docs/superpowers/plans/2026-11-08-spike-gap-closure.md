@@ -2,7 +2,7 @@
 
 Status: **planned, not started.** Read against `perf-spike` at bcaf65b while the ws6 job (Jobs A-D, below) was running. Planning alone authorizes nothing. Start only on the user's word.
 
-Goal: close every gap between the user's [original request](../../performance-spike-original-input.md) and what the spike delivered. The refined [handoff](../../performance-spike-prompt.txt) dropped half of goal 2: "if thresholds are unrealistic, propose revised values supported by measurements". That half is deliverable 6 and the main point of this plan. Part 1 therefore comes first and gets the most care.
+Goal: close every gap between the user's original request (`performance-spike-original-input.md`, private) and what the spike delivered. The refined handoff (`performance-spike-prompt.txt`, private) dropped half of goal 2: "if thresholds are unrealistic, propose revised values supported by measurements". That half is deliverable 6 and the main point of this plan. Part 1 therefore comes first and gets the most care.
 
 Process: [milestone prompt](../../milestone-prompt.md) "Unattended run". A coordinator plus one fresh subagent per task, Sonnet (medium). One Opus (high) gate review at the end of Part 2, plus the Opus final check (T9). Subagents never commit. Local commits after green tasks are pre-authorized only as in the milestone prompt. Resume record: [perf-spike-verification.md](../../reference/perf-spike-verification.md). Every task appends a dated evidence row there.
 

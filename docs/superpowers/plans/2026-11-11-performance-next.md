@@ -2,7 +2,7 @@
 
 **Status: written 2026-11-11 with the user (wizard answers in the [design answers](../../reference/design-answers-2026-11-08.md#performance-next-user-2026-11-11)); run not started.** The user starts it with "run docs/perf-next-prompt.txt".
 
-> **For agentic workers:** run rules are in the [handoff](../../perf-next-prompt.txt) and the [milestone prompt](../../milestone-prompt.md). The coordinator reads only "Dispatch". A task subagent reads the handoff once, "Conventions", its own task and the files that task names.
+> **For agentic workers:** run rules are in the handoff (`perf-next-prompt.txt`, private) and the [milestone prompt](../../milestone-prompt.md). The coordinator reads only "Dispatch". A task subagent reads the handoff once, "Conventions", its own task and the files that task names.
 
 **Goal:** Make a 210-unit 3v3 run smoothly in Firefox on a slow device, and settle the simulation's data layout before the movement milestone, by removing structural waste first: everything in one frame, three Dictionaries per unit per tick, a size-optimised browser build.
 

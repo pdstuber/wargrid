@@ -262,7 +262,7 @@ Questions from [sim core options](sim-core-options.md) (Q1-Q15) and [state diges
 
 ## Native simulation core spike (user, 2026-11-10 evening)
 
-Interview before the overnight run of the [handoff](../native-sim-spike-prompt.txt); evidence in [its verification file](native-sim-spike-verification.md).
+Interview before the overnight run of the handoff (`native-sim-spike-prompt.txt`, private); evidence in [its verification file](native-sim-spike-verification.md).
 
 - Verdict by the ratio rule (language gain K, hand-off H, effective gain E, template tax T against the need Q), not by "5x"; the old quantity is still reported as E.
 - Headroom factor 1.5: the projected gain must reach Q x 1.5 (today 1.45 x 1.5 = 2.18).

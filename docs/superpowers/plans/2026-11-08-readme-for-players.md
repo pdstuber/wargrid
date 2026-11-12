@@ -51,7 +51,7 @@
 - [ ] **Step 4: session notes header** (`docs/session-notes.md:3`): "Setup lives in [README](../README.md)" becomes `[development notes](development.md)`.
 - [ ] **Step 5: blueprint**: line 6 "[README](README.md) owns current verification status" and line 841 "[README.md](README.md) records current implementation status and verified commands" point to `docs/development.md`. §7.1 lines 729-745 stay (M0 history).
 - [ ] **Step 6: anchors and release**: `README.md#relay` links become `development.md#relay` with the right relative prefix from each file; `release-verification.md:16` "README > Release" becomes "[development notes > Release](../development.md#release)".
-- [ ] **Step 7: `docs/development.md` Start here line** naming root `prompt.txt` as the M7 handoff now names `[M7](m7-prompt.txt)` among the historical prompts. This is a link fix forced by the move, not a rewrite.
+- [ ] **Step 7: `docs/development.md` Start here line** naming root `prompt.txt` as the M7 handoff now names M7 (`m7-prompt.txt`, private) among the historical prompts. This is a link fix forced by the move, not a rewrite.
 
 ### Task 3: Verify
 

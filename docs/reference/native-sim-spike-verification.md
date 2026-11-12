@@ -1,6 +1,6 @@
 # Native simulation core spike: verification
 
-Resume record and dated evidence for [the handoff](../native-sim-spike-prompt.txt) and [its plan](../superpowers/plans/2026-11-10-native-sim-spike.md). Labels: **measured** (run here), **source** (quoted file or fetched page), **inferred**, **unverified**. Rows below the resume record are append-only.
+Resume record and dated evidence for the handoff (`native-sim-spike-prompt.txt`, private) and [its plan](../superpowers/plans/2026-11-10-native-sim-spike.md). Labels: **measured** (run here), **source** (quoted file or fetched page), **inferred**, **unverified**. Rows below the resume record are append-only.
 
 ```text
 Resume record (updated 2026-11-10 run finished, coordinator)

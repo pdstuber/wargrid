@@ -1,6 +1,6 @@
 # Zero Hour INI dump tool: verification
 
-Plan: [zh-ini dump plan](../superpowers/plans/2026-11-09-zh-ini-dump.md). Handoff: [zh-ini-dump-prompt.txt](../zh-ini-dump-prompt.txt).
+Plan: [zh-ini dump plan](../superpowers/plans/2026-11-09-zh-ini-dump.md). Handoff: `zh-ini-dump-prompt.txt` (private).
 
 ```text
 Resume record (updated 2026-11-09, after gate-review fixes)

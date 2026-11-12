@@ -1,6 +1,6 @@
 # Native sim spike: boundary note
 
-Status: written by T2 of the [native sim spike plan](../superpowers/plans/2026-11-10-native-sim-spike.md) on 2026-11-10, tree `spike-native-sim-t2` (base 0570f6a). Describes the skeleton; the slice tasks (T5 horde, T6 movement) fill the buffer layouts in their own notes, `native-sim-spike-slice-horde.md` and `native-sim-spike-slice-move.md`, and must keep the rules below. Labels as in the other reference notes: **measured**, **source** (file:line read), **inferred**, **unverified**. Spec: [handoff](../native-sim-spike-prompt.txt) Stage 1 (paper part) and Stage 4.
+Status: written by T2 of the [native sim spike plan](../superpowers/plans/2026-11-10-native-sim-spike.md) on 2026-11-10, tree `spike-native-sim-t2` (base 0570f6a). Describes the skeleton; the slice tasks (T5 horde, T6 movement) fill the buffer layouts in their own notes, `native-sim-spike-slice-horde.md` and `native-sim-spike-slice-move.md`, and must keep the rules below. Labels as in the other reference notes: **measured**, **source** (file:line read), **inferred**, **unverified**. Spec: handoff (`native-sim-spike-prompt.txt`, private) Stage 1 (paper part) and Stage 4.
 
 ## Layers
 

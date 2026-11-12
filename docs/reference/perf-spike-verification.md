@@ -2,7 +2,7 @@
 
 > Commit hashes in this file were rewritten on 2026-11-08 when `perf-spike` was rebased onto `fe2d08a` (CI and Godot install tooling only) before the merge to `main`; they name the rebased commits. Measurements ran on the pre-rebase trees, which differ from the rebased ones only by `fe2d08a`'s files (`.github/workflows/tests.yml`, `tools/install_godot.py`, `tools/test_install_godot.py`).
 
-Handoff: [performance-spike-prompt.txt](../performance-spike-prompt.txt). Ledger: [performance.md](performance.md). Dated evidence rows below the record are append-only.
+Handoff: `performance-spike-prompt.txt` (private). Ledger: [performance.md](performance.md). Dated evidence rows below the record are append-only.
 
 ```text
 Resume record (updated 2026-11-08)
@@ -490,7 +490,7 @@ Not done: g5 (below spread), `plan` body hoists (g2), Variant sentinels elsewher
 
 ## Workstream 5 tasks (Opus plan, 2026-11-08, read against ecff815; nothing run)
 
-Inputs: the [spike prompt](../performance-spike-prompt.txt) item 5, the threads research brief of 2026-11-07 (scratchpad `threads-gdext-brief.md`, not in the repo; threads part only, GDExtension dropped by the user), the 2a, 2f.0, 2i and Workstream 4 results above. User decisions (2026-11-08): a threaded web build is acceptable if Firefox and a Chromium browser (Vivaldi, `/Applications/Vivaldi.app`) work; Safari failure is not a blocker; the game is only served from the user's own fly static server, so COOP/COEP embedding limits do not matter; a fly deploy of the web app for the threaded-web test is approved (not the relay, not a release; ask for anything else); the wss relay must work under COEP, checked in a browser; native and WASM agree bit for bit; windows allowed (non-interactive, display on); a single-threaded build stays buildable.
+Inputs: the spike prompt (`performance-spike-prompt.txt`, private) item 5, the threads research brief of 2026-11-07 (scratchpad `threads-gdext-brief.md`, not in the repo; threads part only, GDExtension dropped by the user), the 2a, 2f.0, 2i and Workstream 4 results above. User decisions (2026-11-08): a threaded web build is acceptable if Firefox and a Chromium browser (Vivaldi, `/Applications/Vivaldi.app`) work; Safari failure is not a blocker; the game is only served from the user's own fly static server, so COOP/COEP embedding limits do not matter; a fly deploy of the web app for the threaded-web test is approved (not the relay, not a release; ask for anything else); the wss relay must work under COEP, checked in a browser; native and WASM agree bit for bit; windows allowed (non-interactive, display on); a single-threaded build stays buildable.
 
 ### Parallel share re-estimated from the current profile
 

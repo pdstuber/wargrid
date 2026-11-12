@@ -1,6 +1,6 @@
 # Performance: what next after the native sim spike (2026-11-11)
 
-Analysis and experiment record. Written after the [native sim spike](native-sim-spike.md) ended CONDITIONAL GO (whole port only). Question from the user: where are the hot spots, and what else can be tried to reach the performance goals. Handoff for the follow-up work: [perf next prompt](../perf-next-prompt.txt). Budgets, F and history stay in the [performance ledger](performance.md); nothing here changes a budget, a gate or a pin.
+Analysis and experiment record. Written after the [native sim spike](native-sim-spike.md) ended CONDITIONAL GO (whole port only). Question from the user: where are the hot spots, and what else can be tried to reach the performance goals. Handoff for the follow-up work: perf next prompt (`perf-next-prompt.txt`, private). Budgets, F and history stay in the [performance ledger](performance.md); nothing here changes a budget, a gate or a pin.
 
 Labels: **measured** (run on 2026-11-11, command given), **source** (quoted file or fetched page), **inferred** (arithmetic or reasoning on measured rows), **estimate** (not measured). Host for every measured row: the Mac mini (Apple M6, 12 cores, macOS 27.2.1, Godot 4.7.2.stable.official `ed1daf0bf`), tree `main` 91de974 unless a row says otherwise. No Steam Deck run was made (user, 2026-11-11: the Deck gets a break; the Mac mini is the measuring host for now).
 

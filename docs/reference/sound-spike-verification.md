@@ -1,6 +1,6 @@
 # Sound spike verification
 
-Handoff: [sound-spike-prompt.txt](../sound-spike-prompt.txt). Plan: [sound spike plan](../superpowers/plans/2026-11-08-sound-spike.md). Evidence: [sound-spike.md](sound-spike.md). Dated sections below the record are append-only.
+Handoff: `sound-spike-prompt.txt` (private). Plan: [sound spike plan](../superpowers/plans/2026-11-08-sound-spike.md). Evidence: [sound-spike.md](sound-spike.md). Dated sections below the record are append-only.
 
 ```text
 Resume record (updated 2026-11-08)

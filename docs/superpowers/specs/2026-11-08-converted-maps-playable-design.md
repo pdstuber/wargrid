@@ -1,6 +1,6 @@
 # Converted maps playable (design, approved by the user 2026-11-08)
 
-Small task, not a milestone; blueprint §7 "Converted maps playable". Handoff and every decision with its evidence: [converted maps prompt](../../converted-maps-prompt.txt), section "Decided". This design adds only the points settled after it; it does not repeat the handoff.
+Small task, not a milestone; blueprint §7 "Converted maps playable". Handoff and every decision with its evidence: converted maps prompt (`converted-maps-prompt.txt`, private), section "Decided". This design adds only the points settled after it; it does not repeat the handoff.
 
 ## Intent
 

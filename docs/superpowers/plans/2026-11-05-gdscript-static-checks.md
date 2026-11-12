@@ -1,6 +1,6 @@
 # GDScript Static Checks Implementation Plan
 
-**Status (2026-11-06):** Tasks 1 and 2 done and merged to `main` (`3e3aae0`); the user accepted the tests exemption. Task 3 skipped by the user (2026-11-06): its count step found 1,044 game-code findings, over the stop rule (see [session notes](../../session-notes.md)). Also done outside the plan: `sim` handles typed `Simulation` (the bot and scripted-human code keeps `RefCounted` because `SeatSim` is passed to it).
+**Status (2026-11-06):** Tasks 1 and 2 done and merged to `main` (`3e3aae0`); the user accepted the tests exemption. Task 3 skipped by the user (2026-11-06): its count step found 1,044 game-code findings, over the stop rule (see session notes (private)). Also done outside the plan: `sim` handles typed `Simulation` (the bot and scripted-human code keeps `RefCounted` because `SeatSim` is passed to it).
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task (native, sequential). Steps use checkbox (`- [ ]`) syntax for tracking.
 

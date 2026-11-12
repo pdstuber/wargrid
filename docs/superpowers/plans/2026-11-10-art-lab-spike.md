@@ -10,7 +10,7 @@
 
 **Tech Stack:** Godot 4.7.2, typed GDScript, Compatibility renderer, `RenderingServer`; Python 3 only for the existing `tools/serve_web_bench.py`.
 
-**Spec:** [art lab design](../specs/2026-11-10-art-lab-design.md) (read it fully once). Handoff: [art lab prompt](../../art-lab-prompt.txt).
+**Spec:** [art lab design](../specs/2026-11-10-art-lab-design.md) (read it fully once). Handoff: art lab prompt (`art-lab-prompt.txt`, private).
 
 **Model routing:** Tasks Sonnet (mid tier); stop-gate reviews Opus (high), fresh context. Verification file and resume record: `docs/reference/art-lab-verification.md` (created in Task 1).
 

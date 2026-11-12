@@ -1,6 +1,6 @@
 # Persistent occupancy for `_hold_cells`: design (2026-11-08)
 
-Status: **proposed, not approved, not started.** This is recommendation 1 of the [post-M7 performance spike](../../reference/performance.md#post-m7-performance-spike-2026-11). Rules come from the [spike handoff](../../performance-spike-prompt.txt): the fix must keep every trace, it counts as one of at most three kept fixes, it changes no gameplay, and no budget is loosened. Read against `perf-spike` at 8839e4f.
+Status: **proposed, not approved, not started.** This is recommendation 1 of the [post-M7 performance spike](../../reference/performance.md#post-m7-performance-spike-2026-11). Rules come from the spike handoff (`performance-spike-prompt.txt`, private): the fix must keep every trace, it counts as one of at most three kept fixes, it changes no gameplay, and no budget is loosened. Read against `perf-spike` at 8839e4f.
 
 ## Recommendation: do not build; at most run the Task 0 gate
 

@@ -1,6 +1,6 @@
 # Milestone prompt
 
-Reusable execution rules for implementing one milestone. A task's handoff `docs/<task>-prompt.txt` names the milestone, its design, plan and verification file, its model choice and anything milestone-specific, then says "follow `docs/milestone-prompt.md`". Rules here do not override `AGENTS.md`; they fill in how a milestone run proceeds. Why these rules exist: [workflow retrospective](reference/2026-11-03-milestone-workflow-retrospective.md).
+Reusable execution rules for implementing one milestone. A task's handoff (`<task>-prompt.txt`, private, location in `AGENTS.md`) names the milestone, its design, plan and verification file, its model choice and anything milestone-specific, then says "follow `docs/milestone-prompt.md`". Rules here do not override `AGENTS.md`; they fill in how a milestone run proceeds. Why these rules exist: [workflow retrospective](reference/2026-11-03-milestone-workflow-retrospective.md).
 
 ## Resume record
 
@@ -29,8 +29,8 @@ Next exact action:
 
 Fresh context per task keeps the token saving of the old restart rule (retrospective item 1) without a manual `/clear` (user, 2026-11-06).
 
-- **Start.** The user runs `claude --remote-control --permission-mode auto --model sonnet` in the repo and says "run docs/<task>-prompt.txt". One-time setup: `/config` "Push when actions required" on, so questions reach the phone.
-- **Coordinator** (the main session) reads only `AGENTS.md`, the task's `docs/<task>-prompt.txt` and the resume record. It never reads suite logs, diffs or plan task bodies.
+- **Start.** The user runs `claude --remote-control --permission-mode auto --model sonnet` in the repo and says "run ~/projects/wargrid-private/docs/<task>-prompt.txt". One-time setup: `/config` "Push when actions required" on, so questions reach the phone.
+- **Coordinator** (the main session) reads only `AGENTS.md`, the task's handoff and the resume record. It never reads suite logs, diffs or plan task bodies.
 - **One fresh subagent per task** (model per the plan's routing). Its brief names paths, not content: the resume record and the plan task heading. It runs session start steps 1–4, does the task test-first, runs lint and warnings, updates the resume record and verification rows, and returns at most ten lines: `GREEN` with counts, exit, marker and changed paths, or `BLOCKED` with the question, the options and its recommendation. It never commits.
 - **After `GREEN`** the coordinator checks `git status --short` against the reported paths, makes the pre-authorized local commit and dispatches the next task.
 - **After `BLOCKED` or any stop condition** the coordinator sends a `PushNotification`, asks with `AskUserQuestion` (stays open until answered; reaches the phone over Remote Control), then continues the same subagent with `SendMessage` so its context is kept.

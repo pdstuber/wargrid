@@ -2,7 +2,7 @@
 
 **Status: written 2026-11-10 in the refinement session with the user, revised the same evening after a fresh-context builder check; run not started.** The user starts it with "run docs/native-sim-spike-prompt.txt".
 
-> **For agentic workers:** run rules are in the [handoff](../../native-sim-spike-prompt.txt) ("How this run works", "Night rules") and the [milestone prompt](../../milestone-prompt.md). The coordinator reads only the "Dispatch" section. A task subagent reads the handoff once, "Conventions", its own task and the files that task names. Skip the milestone prompt's session-start steps 2 and 3: T0 ran the baseline, and other tasks' files are expected to be dirty.
+> **For agentic workers:** run rules are in the handoff (`native-sim-spike-prompt.txt`, private) ("How this run works", "Night rules") and the [milestone prompt](../../milestone-prompt.md). The coordinator reads only the "Dispatch" section. A task subagent reads the handoff once, "Conventions", its own task and the files that task names. Skip the milestone prompt's session-start steps 2 and 3: T0 ran the baseline, and other tasks' files are expected to be dirty.
 
 **Goal:** Measure whether Rust behind a Godot extension pays for itself in the browser on the Steam Deck: two real simulation slices ported behaviour-equal, their language gain K, hand-off cost H, effective gain E and the template tax T measured, and a report with one of four outcomes.
 
@@ -10,7 +10,7 @@
 
 **Tech stack:** Godot 4.7.2, typed GDScript, Rust (gdext 0.5.5), Emscripten, the existing web bench runner and `tools/serve_web_bench.py`.
 
-**Spec:** the [handoff](../../native-sim-spike-prompt.txt) (Stages 2-6, decision rule, report order). Evidence so far and the resume record: [verification file](../../reference/native-sim-spike-verification.md).
+**Spec:** the handoff (`native-sim-spike-prompt.txt`, private) (Stages 2-6, decision rule, report order). Evidence so far and the resume record: [verification file](../../reference/native-sim-spike-verification.md).
 
 ## Conventions
 
