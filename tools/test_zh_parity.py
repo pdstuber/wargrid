@@ -173,12 +173,22 @@ class DockHold(unittest.TestCase):
             put_trace(Path(t), "collect_x", rows)
             return analyze.load(Path(t) / "collect_x.tsv")[1]
 
-    def deposits(self, stop_s: float = 600, dead_pile_s: float | None = None) -> list[dict[str, str]]:
+    def deposits(
+        self,
+        stop_s: float = 600,
+        dead_pile_s: float | None = None,
+        period: int = 60,
+        credit: int = 75,
+        later_credit: int | None = None,
+        length: int = 600 * 30,
+    ) -> list[dict[str, str]]:
         rows: list[tuple[Any, ...]] = []
-        cash = 0
-        for off in range(0, 600 * 30 + 1):
+        cash = n = 0
+        for off in range(0, length + 1):
             f = self.ORDER + off
-            cash += 75 if off and off % 60 == 0 and off <= stop_s * 30 else 0
+            if off and off % period == 0 and off <= stop_s * 30:
+                n += 1
+                cash += later_credit if later_credit and n > 16 else credit
             rows.append((f, "money", "money", "", "", "", "", "", cash))
             if dead_pile_s is not None and off >= dead_pile_s * 30:
                 rows.append((f, 99, "dead", "", "", "", "", "", 0))
@@ -197,10 +207,11 @@ class DockHold(unittest.TestCase):
         self.assertEqual(analyze.lock_windows(self.load_rows(rows), 7)["median"], None)
 
     def test_collect_rates_steady_window(self) -> None:
-        rows = self.deposits()
+        rows = self.deposits(later_credit=150)
         r = analyze.collect_rates(self.META, rows)
-        self.assertEqual(r["steady_per_min"], 2250.0)  # 75 credits every 2 s
-        self.assertEqual(r["old_per_min"], analyze.collecting(self.META, rows)["credits_per_min"])
+        self.assertEqual(r["steady_per_min"], 4500.0)  # 150 credits every 2 s
+        self.assertEqual(r["old_per_min"], 2250.0)  # first 16 deposits (8 per collector) paid 75
+        self.assertEqual(r["old_per_min"], analyze.collecting(self.META, rows, 16)["credits_per_min"])
         self.assertEqual((r["window_end_s"], r["short_window"], r["pile_empty_s"]), (600.0, False, None))
 
     def test_collect_rates_pile_empty(self) -> None:
@@ -211,6 +222,13 @@ class DockHold(unittest.TestCase):
         short = analyze.collect_rates(self.META, self.deposits(stop_s=400))
         self.assertEqual((short["pile_empty_s"], short["short_window"]), (400.0, True))
         self.assertEqual(short["steady_per_min"], 2250.0)
+
+    def test_sparse_live_collectors_are_not_an_empty_pile(self) -> None:
+        # Chinook-like: 600 credits every 375 frames, trace ends 360 frames after the last deposit
+        rows = self.deposits(period=375, credit=600, length=43 * 375 + 360)
+        r = analyze.collect_rates(self.META, rows)
+        self.assertIsNone(r["pile_empty_s"])
+        self.assertEqual(r["window_end_s"], round((43 * 375 + 360) / 30, 1))
 
     def test_long_rows_registered(self) -> None:
         names = {

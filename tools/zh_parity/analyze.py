@@ -22,7 +22,9 @@ from typing import Any
 FPS = 30
 OPENING_TIMES = (60, 120, 180, 300, 600)
 OPENING_STEADY_FROM = 300  # seconds; the steady rate is credits per minute from here to the end of the run (600 s)
-OPENING_EMPTY_GAP = 300  # frames without a deposit before the trace ends count as a dry pile
+OPENING_EMPTY_GAP = (
+    300  # frames; at least this long (and 3 median deposit gaps) without a deposit at trace end = dry pile
+)
 STEADY_TO = 600  # seconds after the order
 SHORT_WINDOW_S = 450
 TRACES = Path.home() / "CnC/parity/traces"
@@ -433,8 +435,10 @@ def collect_rates(meta, rows):
     dead = next(
         (int(r["frame"]) - order for r in rows if r["id"] == str(meta["dock"]) and r["template"] == "dead"), None
     )
-    if dead is None and deps and last - deps[-1][0] > OPENING_EMPTY_GAP:
-        dead = deps[-1][0]  # no deposit in the last 300 frames: the pile ran dry then
+    gaps = [b[0] - a[0] for a, b in itertools.pairwise(deps)]
+    quiet = max(OPENING_EMPTY_GAP, 3 * statistics.median(gaps)) if gaps else OPENING_EMPTY_GAP
+    if dead is None and deps and last - deps[-1][0] > quiet:
+        dead = deps[-1][0]  # nothing delivered for far longer than the usual gap: the pile ran dry then
     end = min(last, STEADY_TO * FPS, dead if dead is not None else last)
     start = OPENING_STEADY_FROM * FPS
     steady = None
