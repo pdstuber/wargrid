@@ -1,15 +1,13 @@
-# P1 playtest helper: verification
-
 ```text
-Resume record (updated 2026-11-12 Task 4 done)
-Branch / base commit / working-tree state: p1-playtest-helper / c3634fc (Task 3) / Task 4 implemented, uncommitted (coordinator commits "Add the in-match checklist and marker note")
-Last green task / next incomplete task: Task 4 / Task 5
-Changed paths since last commit: game/scripts/playtest/playtest_overlay.gd(+.uid), game/scripts/{skirmish_main,online_main}.gd, game/scripts/presentation/pause_menu.gd, game/tests/{test_playtest_overlay.gd(+.uid),test_pause_menu.gd,run_tests.gd}, this file
-Last command / cases / checks / failures / exit / marker: full run_tests CASES 779 CHECKS 140121 FAILURES 0, exit 0, TESTS PASSED; lint 0; warnings 149 files 0; run_python_checks 0
+Resume record (updated 2026-11-12 Task 5 done)
+Branch / base commit / working-tree state: p1-playtest-helper / 16968f8 (Task 4) / Task 5 implemented, uncommitted (coordinator commits "Add the after-match form and session saving")
+Last green task / next incomplete task: Task 5 / Task 6
+Changed paths since last commit: game/scripts/playtest/{session_form.gd(+.uid),playtest_overlay.gd}, game/scripts/{skirmish_main,online_main}.gd, game/tests/{test_playtest_overlay,test_pause_menu}.gd, this file
+Last command / cases / checks / failures / exit / marker: full run_tests CASES 785 CHECKS 140696 FAILURES 0, exit 0, TESTS PASSED; lint 0; warnings 151 files 0; run_python_checks 0
 Known red case or blocker: none
 Approved decisions, pre-authorizations used, deferred gates: local commits per task by the coordinator; never push
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: Task 5 (after-match form and leaving)
+Next exact action: Task 6 (agent tooling for session files); fixture ~/projects/wargrid-p1-work/fixture-session.json (2 matches, end ticks 60 and 90)
 ```
 
 ## Evidence rows (append-only)
@@ -40,3 +38,11 @@ Next exact action: Task 5 (after-match form and leaving)
   - Mutation proofs (each reverted, files diffed back): Esc no longer closes the note or is handled fails PO4 "Esc closes the note and leaves the pause menu closed" (t4-mut1a.log); no `_text.grab_focus()` plus no `holds_match()` guard in `skirmish_main._unhandled_input` fails the three PO4 typing checks (focus, letters, no command; t4-mut1b.log); capturing after `_dialog.show()` fails PO3 "screenshot is taken before the note is shown, saw [true]" (t4-mut3.log).
   - Layout: `test_overlay_layout` gets a real second size by instantiating the scene inside a `SubViewport` of 1280x720 and 1920x1080 and asserting `get_visible_rect().size` equals it; resizing `runner.root` does not work headless (Task 2). E8 in `test_pause_menu.gd` still resizes `runner.root`, so its two sizes check the same layout; only the new Playtest-button visibility check was added there.
   - Choices: the kind buttons are toggles and Save stays disabled until one is picked; the overlay sits in `$HUD` just below the pause menu; `skirmish_main._unhandled_input` returns while the note is open (so clicking a kind button, which takes focus, cannot turn letters into hotkeys); with the note open ` and N are not handled so they can be typed; `key:<name>` triggers are observed only while no note is open. `web`, `download` and `match_record` are declared on the overlay for Task 5 but unused until then.
+- 2026-11-12, tree p1-playtest-helper 16968f8 + uncommitted Task 5, load unmeasured, no game window. Logs ~/projects/wargrid-p1-work/t5-*.log.
+  - Red (before any implementation, stubs for `end_match`, `begin_match`, `reviewing`, `_process`, no SessionForm): `WARGRID_TEST_ONLY=test_playtest_overlay`, CASES 14 CHECKS 111 FAILURES 44, assertion failures only, no parse or script errors (t5-red.log).
+  - test_playtest_overlay 14 cases, 632 checks green. Full run_tests: CASES 785 CHECKS 140696 FAILURES 0, TESTS PASSED, exit 0 (Task 4: 779 / 140121). run_lint exit 0; run_warnings 151 files exit 0; run_python_checks exit 0. `git diff main -- game/scripts/simulation` empty; `game/scripts/net` unchanged since Task 1.
+  - Mutation proofs (each reverted, files diffed back): (4) dropping `_pending.clear()` in `PlaytestSession.finish_match` fails PO12 "markers 1 and 2 land in their own match, got 1 and 3" and "marker texts stay with their match" (t5-mut1.log); (5a) online `_leave` without `_transport.close()` fails PO9 twice with `closed 0` (t5-mut2a.log); (5b) a second `_transport.close()` after `super()` fails PO9 twice with `closed 2` (t5-mut2b.log).
+  - Fixture: `WARGRID_SESSION_OUT=$HOME/projects/wargrid-p1-work/fixture-session.json WARGRID_TEST_ONLY=test_two_match_session_file sh tools/run_tests.sh` exit 0; file exists (19289 bytes), format 1, build `0.11.0-dev+unknown`, matches end_tick 60 and 90 with 1 and 2 markers, 4 answers (t5-fixture.log).
+  - Fix found in Task 1 code: `online_main.playtest_match` read `player.faction`, which is missing until the first tick, so an early online leave raised a script error; it now uses `player.get("faction", "")`.
+  - `test_pause_menu` E3 and E5 (offline and online leave) now run with the helper switched off through a scratch settings path: the helper defaults on in a `-dev` build, so with it on they correctly show the form (covered by PO9); with it off they are the unchanged `main` behaviour.
+  - Choices: `SessionForm` also has `signal end_session` (EndSession opens the questions; the overlay owns the card) and the error state offers `SaveSession` and `Close`; `end_match()` returns bool (true when it opened a review) so `skirmish_main._leave` is `if _playtest.end_match(): close menu, await finished`; helper off or an already reviewed match makes it fall through to `super()` unchanged. Leaving after the match-end review therefore skips the focus questions; the sitting stays in `current.json` and resumes. `Restart` calls `begin_match()` (new pending match, checklist back, form hidden). LineEdit `text_changed` fires deferred on typing, so the tests set `text` and emit `text_changed` themselves. The write-error test blocks the file name with a directory (an unwritable path prints an engine ERROR that fails the run).

@@ -4,6 +4,8 @@ const UiStyle = preload("res://scripts/presentation/ui_style.gd")
 const FocusCards = preload("res://scripts/playtest/focus_cards.gd")
 const MarkerCapture = preload("res://scripts/playtest/marker_capture.gd")
 const PlaytestSettings = preload("res://scripts/playtest/playtest_settings.gd")
+const SessionForm = preload("res://scripts/playtest/session_form.gd")
+signal finished
 const CHECKLIST_KEY: Key = KEY_QUOTELEFT
 const MARKER_KEY: Key = KEY_N
 const CHECKLIST_WIDTH: float = 320.0
@@ -20,6 +22,8 @@ var _session: PlaytestSession
 var _checklist: PanelContainer
 var _boxes: Dictionary = {}
 var _dialog: PanelContainer
+var _form: SessionForm
+var _reviewed: bool = false
 var _text: LineEdit
 var _save: Button
 var _kinds: Dictionary = {}
@@ -37,6 +41,7 @@ func setup(card: Dictionary, context: Callable, record: Callable) -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_checklist()
 	_build_dialog()
+	_build_form()
 
 func set_active(on: bool) -> void:
 	if on == _active: return
@@ -45,15 +50,39 @@ func set_active(on: bool) -> void:
 		_checklist.hide()
 		cancel_marker()
 		return
+	_open_session()
+	_checklist.show()
+
+func _open_session() -> void:
 	_session = PlaytestSession.resume_or_open(str(_card.get("id", "")), PlaytestSettings.build_id())
 	for id: String in _boxes: _boxes[id].set_pressed_no_signal(checked(id))
+
+func end_match() -> bool:
+	if not _active or _reviewed: return false
+	_reviewed = true
+	cancel_marker()
+	_checklist.hide()
+	_form.open_review(_session, _session.finish_match(match_record.call()))
+	return true
+
+func begin_match() -> void:
+	_reviewed = false
+	_form.hide()
+	if not _active: return
+	_open_session()
 	_checklist.show()
+
+func reviewing() -> bool:
+	return _form.visible
+
+func _process(_delta: float) -> void:
+	if _active and not _reviewed and _context.call().over: end_match()
 
 func is_active() -> bool:
 	return _active
 
 func holds_match() -> bool:
-	return _dialog.visible
+	return _dialog.visible or _form.visible
 
 func checked(item_id: String) -> bool:
 	return _session != null and _session.data.checklist.get(item_id, false)
@@ -65,7 +94,7 @@ func observe_menu() -> void:
 	_tick_triggers(func(trigger: String) -> bool: return trigger == "esc_menu")
 
 func open_marker() -> void:
-	if not _active or _dialog.visible: return
+	if not _active or _dialog.visible or _form.visible: return
 	var context: Dictionary = _context.call()
 	if context.over or context.menu: return
 	_captured = context
@@ -85,7 +114,9 @@ func cancel_marker() -> void:
 func _input(event: InputEvent) -> void:
 	if not _active or not (event is InputEventKey and event.pressed and not event.echo): return
 	var key: Key = (event as InputEventKey).physical_keycode
-	if _dialog.visible:
+	if _form.visible:
+		if key != KEY_ESCAPE: return
+	elif _dialog.visible:
 		if key != KEY_ESCAPE: return
 		cancel_marker()
 	elif key == CHECKLIST_KEY: _checklist.visible = not _checklist.visible
@@ -122,6 +153,21 @@ func _build_checklist() -> void:
 		box.add_child(check)
 		_boxes[item.id] = check
 	_checklist.hide()
+
+func _build_form() -> void:
+	_form = SessionForm.new()
+	add_child(_form)
+	_form.next_match.connect(_close_form)
+	_form.closed.connect(_close_form)
+	_form.end_session.connect(func() -> void: _form.open_questions(_session, _card))
+	_form.save_requested.connect(func() -> void: _form.show_saved(_session.write(web, download), web))
+	_form.discard_requested.connect(func() -> void:
+		_session.discard()
+		_close_form())
+
+func _close_form() -> void:
+	_form.hide()
+	finished.emit()
 
 func _build_dialog() -> void:
 	_dialog = _corner_panel("MarkerDialog", DIALOG_WIDTH, 0.5)

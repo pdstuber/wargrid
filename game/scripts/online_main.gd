@@ -71,7 +71,7 @@ func playtest_context() -> Dictionary:
 	return context
 
 func playtest_match() -> Dictionary:
-	var seats: Array = simulation.view_state().players.map(func(player: Dictionary) -> String: return player.faction)
+	var seats: Array = simulation.view_state().players.map(func(player: Dictionary) -> String: return player.get("faction", ""))
 	return _match_record("online", seats, Lockstep.log_lines(_lockstep.command_log()))
 
 func _submit(payload: Dictionary) -> void:

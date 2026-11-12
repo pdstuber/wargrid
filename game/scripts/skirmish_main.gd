@@ -140,7 +140,14 @@ func _enter_placement(kind: String) -> void:
 	_attack_move_mode = false
 	super._enter_placement(kind)
 
+func _leave() -> void:
+	if _playtest.end_match():
+		_pause.close()
+		await _playtest.finished
+	super()
+
 func _restart() -> void:
+	_playtest.begin_match()
 	simulation = _create_simulation()
 	_clock = PresentationClock.new()
 	_sound.director.reset()

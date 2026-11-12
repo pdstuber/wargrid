@@ -7,6 +7,8 @@ const OnlineScene = preload("res://scenes/online_skirmish.tscn")
 const PauseMenu = preload("res://scripts/presentation/pause_menu.gd")
 const Lockstep = preload("res://scripts/net/lockstep.gd")
 const Wire = preload("res://scripts/net/wire.gd")
+const AudioSettings = preload("res://scripts/presentation/audio_settings.gd")
+const PlaytestSettings = preload("res://scripts/playtest/playtest_settings.gd")
 const LAUNCHER: String = "res://scenes/launcher.tscn"
 
 class FakeTransport extends RefCounted:
@@ -24,6 +26,19 @@ class FakeTransport extends RefCounted:
 
 func cases() -> Array[Callable]:
 	return [test_esc_toggles_and_defers_to_cancel, test_offline_pauses_sim, test_offline_leave_and_quit, test_online_keeps_running, test_online_leave_confirm, test_online_leave_cancel, test_quit_hidden_on_web, test_menu_layout]
+
+var helper_scratch: String = "user://test-pause-settings-%d.cfg" % OS.get_process_id()
+
+func _helper_off() -> String:
+	var saved: String = AudioSettings.path
+	AudioSettings.path = helper_scratch
+	DirAccess.remove_absolute(helper_scratch)
+	PlaytestSettings.save_enabled(false)
+	return saved
+
+func _helper_restore(saved: String) -> void:
+	DirAccess.remove_absolute(helper_scratch)
+	AudioSettings.path = saved
 
 func _esc(main) -> void:
 	var event := InputEventKey.new()
@@ -104,12 +119,14 @@ func test_offline_pauses_sim(runner) -> bool:
 	return true
 
 func test_offline_leave_and_quit(runner) -> bool:
+	var saved: String = _helper_off()
 	var main = await _scene(runner, Skirmish)
 	var scenes: Array[String] = []
 	main.change_scene = func(path: String) -> void: scenes.append(path)
 	_esc(main)
 	_click(main, "Back to main menu")
 	runner.check(scenes == [LAUNCHER], "E3 offline leave goes straight to the launcher, got " + str(scenes))
+	_helper_restore(saved)
 	main.free()
 	return true
 
@@ -127,6 +144,7 @@ func test_online_keeps_running(runner) -> bool:
 	return true
 
 func test_online_leave_confirm(runner) -> bool:
+	var saved: String = _helper_off()
 	var online: Dictionary = await _online(runner)
 	var main = online.main
 	var scenes: Array[String] = []
@@ -139,6 +157,7 @@ func test_online_leave_confirm(runner) -> bool:
 	runner.check(online.transport.close_calls == 1, "E5 leave closes the transport once")
 	runner.check(online.lockstep.status().begins_with("ended"), "E5 lockstep ended for this client, got " + online.lockstep.status())
 	runner.check(scenes == [LAUNCHER], "E5 launcher scene requested")
+	_helper_restore(saved)
 	main.free()
 	return true
 
