@@ -77,19 +77,19 @@ func _run() -> void:
 	if checks == 0 or case_count == 0:
 		failures += 1
 		print("FAIL: zero tests/checks")
-	_remove_playtest_dir()
+	remove_dir(PlaytestSession.dir)
 	await create_timer(0.5).timeout # the audio thread frees stopped playbacks asynchronously; quitting sooner leaks them
 	print("CASES ", case_count, " CHECKS ", checks, " FAILURES ", failures)
 	if failures == 0:
 		print("TESTS PASSED ", checks)
 	quit(0 if failures == 0 else 1)
 
-func _remove_playtest_dir() -> void:
-	if not DirAccess.dir_exists_absolute(PlaytestSession.dir): return
-	for file in DirAccess.get_files_at(PlaytestSession.dir): DirAccess.remove_absolute(PlaytestSession.dir.path_join(file))
-	DirAccess.remove_absolute(PlaytestSession.dir)
+static func remove_dir(path: String) -> void:
+	if not DirAccess.dir_exists_absolute(path): return
+	for file in DirAccess.get_files_at(path): DirAccess.remove_absolute(path.path_join(file))
+	DirAccess.remove_absolute(path)
 
 func _timeout() -> void:
 	print("FAIL: watchdog timeout in ", _active_case)
-	_remove_playtest_dir()
+	remove_dir(PlaytestSession.dir)
 	quit(1)

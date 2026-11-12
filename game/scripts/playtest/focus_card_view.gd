@@ -46,10 +46,11 @@ func _pick(index: int) -> void:
 	_render()
 
 func _render() -> void:
-	var current: Dictionary = FocusCards.card(FocusCards.chosen, _cards)
+	var current: Dictionary = FocusCards.card(FocusCards.shown(), _cards)
 	if current.is_empty(): return
 	_picker.select(_cards.find(current))
 	var open: int = _open_count.call()
+	_picker.disabled = open >= 0
 	_session.visible = open >= 0
 	_session.text = "Session open: %d %s" % [open, "match" if open == 1 else "matches"]
 	for child in _content.get_children():

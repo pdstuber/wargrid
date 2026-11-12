@@ -38,7 +38,7 @@ class Camera extends RefCounted:
 		return image
 
 func cases() -> Array[Callable]:
-	return [test_marker_pauses_offline, test_marker_does_not_pause_online, test_capture_before_dialog, test_note_typing_is_not_a_hotkey, test_marker_ignored_when_menu_or_over, test_checklist_triggers, test_helper_off_changes_nothing, test_overlay_layout, test_leave_flow, test_match_end_opens_review_once, test_two_match_session_file, test_web_save_downloads, test_desktop_write_error_keeps_session, test_form_layout, test_resume_uses_stored_card, test_restart_drops_pending_markers]
+	return [test_marker_pauses_offline, test_marker_does_not_pause_online, test_capture_before_dialog, test_note_typing_is_not_a_hotkey, test_marker_ignored_when_menu_or_over, test_checklist_triggers, test_helper_off_changes_nothing, test_overlay_layout, test_leave_flow, test_match_end_opens_review_once, test_leave_after_closed_sitting, test_two_match_session_file, test_web_save_downloads, test_desktop_write_error_keeps_session, test_form_layout, test_resume_uses_stored_card, test_restart_drops_pending_markers]
 
 func _begin(helper_on: bool = true, card: String = CARD_ECONOMY) -> String:
 	var saved: String = AudioSettings.path
@@ -53,9 +53,7 @@ func _begin(helper_on: bool = true, card: String = CARD_ECONOMY) -> String:
 
 func _end(saved: String) -> void:
 	DirAccess.remove_absolute(scratch)
-	if DirAccess.dir_exists_absolute(sessions):
-		for file in DirAccess.get_files_at(sessions): DirAccess.remove_absolute(sessions.path_join(file))
-		DirAccess.remove_absolute(sessions)
+	WargridTestRunner.remove_dir(sessions)
 	PlaytestSession.dir = saved_dir
 	PlaytestSession.current = null
 	AudioSettings.path = saved
@@ -418,6 +416,27 @@ func test_match_end_opens_review_once(runner) -> bool:
 	runner.check(_press(main, "Leave") and scenes == [LAUNCHER] and not _form_shown(main) and PlaytestSession.current.data.matches.size() == 1, "PO11 Leave changes scene once and keeps the sitting, scenes %s" % [scenes])
 	main.free()
 	_end(saved)
+	return true
+
+func test_leave_after_closed_sitting(runner) -> bool:
+	for ending: String in ["SaveSession", "DiscardSession"]:
+		var saved: String = _begin()
+		var main = await _scene(runner)
+		var overlay = main.get_node("HUD/Playtest")
+		var state: Dictionary = main.simulation.snapshot()
+		for object: Dictionary in state.entities + state.buildings:
+			if object.owner == 2: main.simulation.remove_object(object.id)
+		main._physics_process(0.0)
+		overlay._process(0.0)
+		_press(main, "EndSession")
+		_rate_all(runner, main, 3)
+		_press(main, ending)
+		if ending == "SaveSession": _press(main, "Close")
+		var scenes := _scenes(main)
+		main.get_node("HUD/PauseMenu").leave_requested.emit()
+		runner.check(scenes == [LAUNCHER] and not _form_shown(main), "PO11b leaving after %s does not offer the closed sitting again, scenes %s" % [ending, scenes])
+		main.free()
+		_end(saved)
 	return true
 
 func test_two_match_session_file(runner) -> bool:

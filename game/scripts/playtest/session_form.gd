@@ -37,14 +37,14 @@ func _init() -> void:
 func open_review(session: PlaytestSession, match_index: int) -> void:
 	_reset(session, "Match %d" % (match_index + 1))
 	_add_markers(match_index)
-	_action("NextMatch", "Next match", next_match)
-	_action("EndSession", "End session", end_session)
+	add_action(_buttons, "NextMatch", "Next match", next_match)
+	add_action(_buttons, "EndSession", "End session", end_session)
 	show()
 
 func open_leave(session: PlaytestSession) -> void:
 	_reset(session, "Leaving")
-	_action("EndSession", "End session", end_session)
-	_action("Leave", "Leave", closed)
+	add_action(_buttons, "EndSession", "End session", end_session)
+	add_action(_buttons, "Leave", "Leave", closed)
 	show()
 
 func open_questions(session: PlaytestSession, card: Dictionary) -> void:
@@ -54,20 +54,20 @@ func open_questions(session: PlaytestSession, card: Dictionary) -> void:
 	for m: int in session.data.matches.size():
 		_add_label("Match %d" % (m + 1))
 		_add_markers(m)
-	_action("SaveSession", "Save session", save_requested)
-	_action("DiscardSession", "Discard", discard_requested)
+	add_action(_buttons, "SaveSession", "Save session", save_requested)
+	add_action(_buttons, "DiscardSession", "Discard", discard_requested)
 	show()
 
 func show_saved(where: String, web: bool) -> void:
 	_reset(_session, "Session")
 	if where.is_empty():
 		_add_label("Could not save the session file. It is kept for this sitting.")
-		_action("SaveSession", "Try again", save_requested)
-		_action("Close", "Close", closed)
+		add_action(_buttons, "SaveSession", "Try again", save_requested)
+		add_action(_buttons, "Close", "Close", closed)
 		return
 	_add_label(("Downloaded %s" if web else "Saved to %s") % where)
-	if not web: _action("ShowInFolder", "Show in folder", Callable(OS, "shell_show_in_file_manager").bind(where))
-	_action("Close", "Close", closed)
+	if not web: add_action(_buttons, "ShowInFolder", "Show in folder", Callable(OS, "shell_show_in_file_manager").bind(where))
+	add_action(_buttons, "Close", "Close", closed)
 
 func _reset(session: PlaytestSession, title: String) -> void:
 	_session = session
@@ -84,13 +84,14 @@ func _add_label(text: String) -> Label:
 	_content.add_child(label)
 	return label
 
-func _action(button_name: String, label: String, target: Variant) -> void:
+static func add_action(parent: Control, button_name: String, label: String, target: Variant) -> Button:
 	var button := Button.new()
 	button.name = button_name
 	button.text = label
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.pressed.connect(target.emit if target is Signal else target)
-	_buttons.add_child(button)
+	parent.add_child(button)
+	return button
 
 func _add_markers(match_index: int) -> void:
 	var markers: Array = _session.data.matches[match_index].markers

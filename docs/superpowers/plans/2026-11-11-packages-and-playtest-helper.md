@@ -157,7 +157,7 @@ Read the [release workflow plan](2026-11-06-release-workflow.md) before touching
   - `test_launcher_focus_card`: at 1280x720 and 1920x1080, with the helper on: `Center/Box/ThisBuild` is visible, inside the viewport and clear of every other `Center/Box` control; pressing it shows `FocusPanel` and hides `Center`; `Close` reverses it; the panel and all its labels lie inside the viewport; the `Picker` has 3 items and choosing item 2 sets `FocusCards.chosen == "p1-frc-tunnels-online"`. With the switch saved off, `ThisBuild` is absent or hidden; pressing `PlaytestSwitch` then shows it and `PlaytestSettings.enabled("0.11.0")` becomes true; `PlaytestSwitch` is inside the viewport and clear of every other `Center/Box` control at both sizes.
   - N5 (`test_launcher_layout`): set the scratch settings path and add `ThisBuild` to its path list.
 - [ ] **Step 2:** Run `WARGRID_TEST_ONLY=test_playtest sh tools/run_tests.sh`. Expected: FAIL.
-- [ ] **Step 3:** Implement. Check `sh tools/export_build.sh Web ~/projects/wargrid-p1-work/web/index.html` leaves `game/build_commit.txt` with the short hash and that `git status --short` does not list it.
+- [ ] **Step 3:** Implement. Check `sh tools/export_build.sh Web ~/projects/wargrid-p1-work/web/index.html` removes `game/build_commit.txt` after packing it (`run_game.sh` leaves it, rewritten on each launch) and that `git status --short` does not list it.
 - [ ] **Step 4:** Full suite, lint, warnings. Expected: PASS.
 - [ ] **Step 5:** GREEN; coordinator commits "Ship the P1 focus cards and the helper switch".
 

@@ -20,6 +20,9 @@ def load_session(path: Path) -> dict:
             match[key] = int(match[key])
         for marker in match["markers"]:
             marker["tick"] = int(marker["tick"])
+            marker["selected"] = [int(e) for e in marker["selected"]]
+    for answer in session["answers"].values():
+        answer["score"] = int(answer["score"])
     return session
 
 

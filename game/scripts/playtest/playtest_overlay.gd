@@ -58,7 +58,7 @@ func _open_session() -> void:
 	for id: String in _boxes: _boxes[id].set_pressed_no_signal(checked(id))
 
 func end_match() -> bool:
-	if not _active: return false
+	if not _active or (_reviewed and PlaytestSession.current != _session): return false
 	cancel_marker()
 	_checklist.hide()
 	if _reviewed: _form.open_leave(_session)
@@ -194,18 +194,9 @@ func _build_dialog() -> void:
 	box.add_child(_text)
 	var row := HBoxContainer.new()
 	box.add_child(row)
-	_save = _action(row, "Save", func() -> void: save_marker(_kind, _text.text))
-	_action(row, "Cancel", cancel_marker)
+	_save = SessionForm.add_action(row, "Save", "Save", func() -> void: save_marker(_kind, _text.text))
+	SessionForm.add_action(row, "Cancel", "Cancel", cancel_marker)
 	_dialog.hide()
-
-func _action(parent: Control, label: String, action: Callable) -> Button:
-	var button := Button.new()
-	button.name = label
-	button.text = label
-	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	button.pressed.connect(action)
-	parent.add_child(button)
-	return button
 
 func _choose_kind(kind: String) -> void:
 	_kind = kind

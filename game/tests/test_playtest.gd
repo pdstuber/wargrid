@@ -13,7 +13,7 @@ var sessions: String = "user://test-playtests-%d" % OS.get_process_id()
 var saved_dir: String = ""
 
 func cases() -> Array[Callable]:
-	return [test_shipped_focus_file_valid, test_focus_validation, test_trigger_matching, test_switch_defaults_and_override, test_build_id, test_launcher_focus_card, test_capture_bounds, test_marker_fields, test_session_schema, test_session_web_download, test_session_desktop_write, test_session_resumes_after_restart, test_suite_playtest_dir_redirected]
+	return [test_shipped_focus_file_valid, test_focus_validation, test_trigger_matching, test_switch_defaults_and_override, test_build_id, test_launcher_focus_card, test_launcher_shows_open_sitting_card, test_capture_bounds, test_marker_fields, test_session_schema, test_session_web_download, test_session_desktop_write, test_session_resumes_after_restart, test_suite_playtest_dir_redirected]
 
 func _begin() -> String:
 	var saved: String = AudioSettings.path
@@ -22,22 +22,17 @@ func _begin() -> String:
 	saved_dir = PlaytestSession.dir
 	PlaytestSession.dir = sessions
 	PlaytestSession.current = null
-	_clear_sessions()
+	WargridTestRunner.remove_dir(sessions)
 	return saved
 
 func _end(saved: String) -> void:
 	DirAccess.remove_absolute(scratch)
 	DirAccess.remove_absolute(commit_scratch)
-	_clear_sessions()
+	WargridTestRunner.remove_dir(sessions)
 	PlaytestSession.dir = saved_dir
 	PlaytestSession.current = null
 	AudioSettings.path = saved
 	FocusCards.chosen = ""
-
-func _clear_sessions() -> void:
-	if not DirAccess.dir_exists_absolute(sessions): return
-	for file in DirAccess.get_files_at(sessions): DirAccess.remove_absolute(sessions.path_join(file))
-	DirAccess.remove_absolute(sessions)
 
 func _shipped() -> Variant:
 	return JSON.parse_string(FileAccess.get_file_as_string(FocusCards.PATH))
@@ -213,16 +208,9 @@ func test_launcher_focus_card(runner) -> bool:
 	_end(saved)
 	return true
 
-func _image(width: int, height: int, noise: bool = false) -> Image:
+func _image(width: int, height: int) -> Image:
 	var image := Image.create(width, height, false, Image.FORMAT_RGB8)
-	if noise:
-		var rng := RandomNumberGenerator.new()
-		rng.seed = 7
-		var bytes := PackedByteArray()
-		bytes.resize(width * height * 3)
-		for i in bytes.size(): bytes[i] = rng.randi() & 255
-		image.set_data(width, height, false, Image.FORMAT_RGB8, bytes)
-	else: image.fill(Color(0.2, 0.5, 0.3))
+	image.fill(Color(0.2, 0.5, 0.3))
 	return image
 
 func _grainy(width: int, height: int) -> Image:
@@ -238,6 +226,33 @@ func _decode(encoded: String) -> Image:
 	image.load_jpg_from_buffer(Marshalls.base64_to_raw(encoded))
 	return image
 
+func test_launcher_shows_open_sitting_card(runner) -> bool:
+	var saved := _begin()
+	PlaytestSettings.save_enabled(true)
+	var port := SubViewport.new()
+	port.size = Vector2i(1280, 720)
+	runner.root.add_child(port)
+	var launcher = await _launcher(runner, port)
+	var picker: OptionButton = launcher.get_node("FocusPanel").find_child("Picker", true, false)
+	runner.check(not picker.disabled, "PT6b with no sitting the picker is enabled")
+	launcher.free()
+	var stored := PlaytestSession.resume_or_open(SHIPPED[1], "0.11.0-dev+abc")
+	stored.finish_match({"mode": "offline", "end_tick": 10})
+	PlaytestSession.current = null
+	FocusCards.chosen = ""
+	launcher = await _launcher(runner, port)
+	var title: String = FocusCards.card(SHIPPED[1], FocusCards.load_cards()).title
+	var panel: Control = launcher.get_node("FocusPanel")
+	runner.check(launcher.get_node("Center/Box/ThisBuild").text == "This build: " + title, "PT6b ThisBuild names the open sitting's card, got %s" % launcher.get_node("Center/Box/ThisBuild").text)
+	runner.check(panel.find_child("Picker", true, false).disabled, "PT6b the picker is disabled while a sitting is open")
+	var shown := PackedStringArray()
+	for label: Label in panel.find_children("*", "Label", true, false): shown.append(label.text)
+	runner.check(title in shown, "PT6b the panel shows the open sitting's card, got %s" % [shown])
+	launcher.free()
+	port.free()
+	_end(saved)
+	return true
+
 func test_capture_bounds(runner) -> bool:
 	runner.check(MarkerCapture.jpg_base64(null) == "", "PT7 a null image gives no jpg")
 	runner.check(MarkerCapture.jpg_base64(Image.new()) == "", "PT7 an empty image gives no jpg")
@@ -247,7 +262,7 @@ func test_capture_bounds(runner) -> bool:
 	runner.check(flat.get_size() == Vector2i(1920, 1080), "PT7 the caller's image keeps its size, got %s" % flat.get_size())
 	var tiny := _image(1, 1)
 	runner.check(_decode(MarkerCapture.jpg_base64(tiny)).get_size() == Vector2i(1, 1), "PT7 a 1x1 image stays 1x1")
-	var noisy := _image(1920, 1080, true)
+	var noisy := _grainy(1920, 1080)
 	var encoded := MarkerCapture.jpg_base64(noisy)
 	runner.check(encoded == "" or Marshalls.base64_to_raw(encoded).size() <= MarkerCapture.MAX_JPG_BYTES, "PT7 a noise image is bounded or dropped")
 	runner.check(noisy.get_size() == Vector2i(1920, 1080), "PT7 the noise image keeps its size")

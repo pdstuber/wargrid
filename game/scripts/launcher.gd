@@ -72,7 +72,7 @@ func _add_playtest() -> void:
 	box.add_child(build)
 	box.move_child(build, $Center/Box/Offline.get_index() + 1)
 	var show_panel := func(open: bool) -> void:
-		build.text = "This build: " + FocusCards.card(FocusCards.chosen, cards).title
+		build.text = "This build: " + FocusCards.card(FocusCards.shown(), cards).title
 		panel.visible = open
 		$Center.visible = not open
 	show_panel.call(false)

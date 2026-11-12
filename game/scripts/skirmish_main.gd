@@ -40,10 +40,8 @@ func _ready() -> void:
 	_add_playtest()
 
 func _add_playtest() -> void:
-	var focus: String = PlaytestSession.open_focus()
-	if focus.is_empty(): focus = FocusCards.chosen
 	_playtest = PlaytestOverlay.new()
-	_playtest.setup(FocusCards.card(focus, FocusCards.load_cards()), playtest_context, playtest_match)
+	_playtest.setup(FocusCards.card(FocusCards.shown(), FocusCards.load_cards()), playtest_context, playtest_match)
 	$HUD.add_child(_playtest)
 	$HUD.move_child(_playtest, _pause.get_index())
 	_pause.opened.connect(_playtest.observe_menu)

@@ -73,11 +73,7 @@ func write(web: bool, download: Callable) -> String:
 		_store(LAST, json) # the browser may block the download; this copy survives until the next save
 		download.call(json.to_utf8_buffer(), file, "application/json")
 	else:
-		DirAccess.make_dir_recursive_absolute(dir)
-		var out := FileAccess.open(dir.path_join(file), FileAccess.WRITE)
-		if out == null: return ""
-		out.store_string(json)
-		out.close()
+		if not _store(file, json): return ""
 		result = ProjectSettings.globalize_path(dir.path_join(file))
 	discard()
 	return result
@@ -89,9 +85,10 @@ func discard() -> void:
 func _mirror() -> void:
 	_store(CURRENT, JSON.stringify(data))
 
-func _store(file: String, text: String) -> void:
+func _store(file: String, text: String) -> bool:
 	DirAccess.make_dir_recursive_absolute(dir)
 	var out := FileAccess.open(dir.path_join(file), FileAccess.WRITE)
-	if out == null: return
+	if out == null: return false
 	out.store_string(text)
 	out.close()
+	return true

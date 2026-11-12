@@ -111,6 +111,9 @@ class PlaytestSessionTest(unittest.TestCase):
                 m[key] = float(m[key])
             for mk in m["markers"]:
                 mk["tick"] = float(mk["tick"])
+                mk["selected"] = [float(e) for e in mk["selected"]]
+        for answer in floaty["answers"].values():
+            answer["score"] = float(answer["score"])
         self.path.write_text(json.dumps(floaty))
         s = ps.load_session(self.path)
         self.assertEqual(

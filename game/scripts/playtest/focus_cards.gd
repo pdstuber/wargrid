@@ -76,6 +76,10 @@ static func matches_command(trigger: String, payload: Dictionary) -> bool:
 	if trigger.begins_with("produce:"): return type == "produce" and payload.get("unit_kind") == trigger.substr(8)
 	return trigger in COMMAND_TYPES and type == trigger
 
+static func shown() -> String:
+	var open: String = PlaytestSession.open_focus()
+	return open if not open.is_empty() else chosen
+
 static func card(id: String, cards: Array[Dictionary]) -> Dictionary:
 	for entry in cards:
 		if entry.id == id: return entry

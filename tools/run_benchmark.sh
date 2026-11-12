@@ -34,4 +34,3 @@ grep -Eq '^LOCKSTEP BENCHMARK PASSED 1$' "$log_dir/lockstep.log" || exit 1
 [ "$(grep -c '^WORST TICK ' "$log_dir/lockstep.log")" -eq 1 ] || exit 1
 over=$(cat "$log_dir"/*.log | sed -n 's/^OVER BUDGET \([^ ]*\) .*/\1/p' | tr '\n' ' ')
 [ -z "$over" ] || echo "BUDGET EXCEEDED ${over% } (regression ceilings held)"
-exit 0
