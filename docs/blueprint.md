@@ -472,6 +472,8 @@ Add a regression fixture **before** implementing the fix wherever possible.
 
 ## 7. Milestones and exit criteria
 
+Work after M7 ships as packages P1, P2, ..., planned in [packages](packages.md) with state in [STATUS](STATUS.md); this section keeps design scope. The order in "Order after M7" below is superseded by `packages.md` from P1 on (user, 2026-11-11 night).
+
 ### M0 — Project skeleton + executable test foundation (first task)
 
 **Deliverable:** a Godot project that imports cleanly; a simulation object updated by fixed ticks; one headless test command; tests listed in §7.1; minimal README and CI. Temporarily break an existing expectation, verify a nonzero exit, then restore it. Do not leave a disabled failing test in the normal suite.
