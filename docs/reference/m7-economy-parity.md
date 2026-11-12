@@ -77,7 +77,7 @@ Wargrid ground collectors already take (boxes + 1) x delay (`supply_collection.g
 | China collector | Truck 1 free; 4 boxes; 1000 / 400 ms; 1.6 cells/s | `china_collector` boxes 4, speed 1.6, load/unload per `china.gd` | yes | none |
 | FRC collector (GLA Worker) | Worker 1 free from Stash; 1 box; 150 / 150 ms; 1.0 cells/s | `frc_builder` boxes 1, speed 1.0, load/unload per `frc.gd`; spawns_on_complete | yes | none |
 | Collectors per player at start | 0 (USA/China) / 1 Worker (GLA, also the builder) | 0 / 0 / 1 builder | yes | none |
-| Bot collector count | AI builds more over time | FRC bot builds up to `LABORERS = 7` (`skirmish.gd:19`) | n/a (bot) | note, not ZH-derived |
+| Bot collector count | AI builds more over time | per completed supply center, USA 2, China 3, FRC 5 (`bot_collectors_per_supply_center` in `definitions/factions.gd`; corrected 2026-11-12, was a `LABORERS = 7` constant no longer in the code) | n/a (bot) | note, not ZH-derived |
 | Dock concurrency | one active docker per dock; depot docks: Supply Center 9 approach bones, Stash/China centre boneless | one active collector per source/depot; queueing by `_ahead` | yes for single dock | none |
 | Depot dock position | boneless: centre + half major radius toward collector | `supply_collection.gd` footprint-edge cells | approximate | unverified |
 | Scan distance | 700 units = 28 cells for automatic warehouse search (explicit dock order ignores it) | all-map search | no (M3 choice) | optional |

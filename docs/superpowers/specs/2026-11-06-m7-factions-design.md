@@ -90,6 +90,7 @@ Bring combat stress `open` and `dense` and the team match under 1.82 / 3.64 ms p
   - `rebuild_hole {delay, regen}`;
   - `spawns_on_complete`.
   No field is added before a unit uses it.
+  (Corrected 2026-11-12: as built, kinds carry no faction field, only the seat does (below); the faction follows from the definition file the kind is in. Shapes differ too: `collects {boxes, load_ticks, unload_ticks, box_value}`, `horde {count, radius, match}`; see `game/scripts/simulation/definitions/*.gd`.)
 - **Faction table:** per faction the id, display name, starting structure and unit, the bot build order and the bot's unit choice per producer. Nothing else.
 - **Seat:** a `faction` field per seat, part of the snapshot and the state hash.
 - **Survival rule (Zero Hour, user 2026-11-06; replaces the earlier "my call"):** a seat survives while it owns a building, foundation or completed, whose kind has the capability `counts_for_victory`. Units never count, inside containers or not. The flag is set on Command Centers, power plants, supply centers, barracks, factories, the GLA Supply Stash, Arms Dealer and rebuild holes, and not on defences or tunnels. Source: `GameLogic.cpp:1630` sets `VICTORY_NOBUILDINGS`; `Team::hasAnyBuildings` (`Team.cpp:1711-1726`) needs STRUCTURE and `MP_COUNT_FOR_VICTORY` ([evidence](../../reference/m7-factions.md#findings)). Matches run longer than before, because Command Centers have 5000 HP and every counting building must fall.

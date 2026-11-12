@@ -1,6 +1,6 @@
 # M7 supply cycle measured in Zero Hour (2026-11-07, narrowed sweep)
 
-Status: harness extended and working; the narrowed sweep ran as parallel instances (ports via `ZH_PARITY_PORT`, no clashes seen with 5-8 concurrent games). Labels: **measured (source build)**, **formula** ([m7-economy-parity.md](m7-economy-parity.md) section 3), **Wargrid today** (headless scratch sim on the working tree, see below), **unverified**. Zero Hour names appear only here as evidence.
+Status: harness extended and working; the narrowed sweep ran as parallel instances (ports via `ZH_PARITY_PORT`, no clashes seen with 5-8 concurrent games). Labels: **measured (source build)**, **formula** ([m7-economy-parity.md](m7-economy-parity.md) section 3), **Wargrid today** (headless scratch sim on the working tree, see below), **unverified**. (Corrected 2026-11-12: "Wargrid today" was measured on `b7c9ae3` plus an uncommitted tree (below), the code before the economy parity rework, `1b8c10d` "Match the Zero Hour supply economy", 2026-11-07; see the [economy rework record](m7-verification-archive-economy.md).) Zero Hour names appear only here as evidence.
 
 ## Provenance
 

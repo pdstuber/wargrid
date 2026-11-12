@@ -2,6 +2,8 @@
 
 Status: **SOURCE/CONFIG SUPPORTED; RETAIL UNVERIFIED**. Planning research only. User selected source-informed stats with provisional grid geometry. No implementation or runtime parity claim.
 
+(Corrected 2026-11-12: this records the M4 research. Today's weapons (`definitions/shared.gd`) differ: the rifle has `delay_ticks` 4 and `reload_ticks` 22, the cannon has splash (`primary_radius` 0.2) and its `affects` includes allies, and splash shells such as the cannon's scatter against infantry (`combat.gd` `_splash`, `_scatter`; a weapon can opt out with `infantry_scatter: false`). Current rules: [guide chapter 8](../guide/08-combat.md).)
+
 ## Provenance
 
 Read local official checkout `~/projects/CnC_Generals_Zero_Hour`, revision `0a05454d8574207440a5fb15241b98ad0b435590`. Read root member `Command & Conquer Generals - Zero Hour/INIZH.big` from `~/CnC/Command & Conquer Generals - Zero Hour.tar.gz` in memory; verified SHA-256 `1a6d41a7a2cb31e67ad2f868aca9264ad069c275e0074f8a0d970a336071e9a0`, checked entry bounds. Decoded selected payloads only in `/tmp/wargrid-m4-plan/`, outside repository. Archives unchanged. Effective retail overrides/mod/version remain unresolved: [installation evidence](installation.md).

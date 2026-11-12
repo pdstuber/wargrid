@@ -1,6 +1,6 @@
 # M5 online spike: findings
 
-Status: written 2026-11-04 at Task 11. Evidence rows and review rulings live in [M5 verification](m5-verification.md); this file answers "how hard is multiplayer" and lists the M9 work. Labels: **measured** (command and tree in the verification file), **docs** (primary source read), **unverified**.
+Status: written 2026-11-04 at Task 11. (Corrected 2026-11-12: the Kotlin relay described here was replaced on 2026-11-05 by a protocol-compatible Go port in `relay/`; see the [relay stack spike](relay-stack-spike.md).) Evidence rows and review rulings live in [M5 verification](m5-verification.md); this file answers "how hard is multiplayer" and lists the M9 work. Labels: **measured** (command and tree in the verification file), **docs** (primary source read), **unverified**.
 
 ## Answer
 
@@ -16,7 +16,7 @@ Lockstep over a dumb relay was not hard once the simulation was deterministic. T
 | Kotlin relay tests | 269 |
 | Tools (`run_netplay.sh`, `desync_diff.py`, `compare_replays.py`) | 255 |
 
-Branch diff against `main`: 90 files, +4,600 / -99. Design: approach A, relay forwards, clients stamp ticks, input delay 4 ticks (133 ms), JSON wire, FNV-1a/`Dictionary.hash()` state digest every 30 ticks, desync report plus `desync_diff.py`.
+Branch diff against `main`: 90 files, +4,600 / -99. Design: approach A, relay forwards, clients stamp ticks, input delay 4 ticks (133 ms; corrected 2026-11-12: `lockstep.gd` `submit` stamps `_last_sent + 1`, one past the last sent packet (`finish_tick`: `tick + delay`), so five ticks run before the tick that applies the order), JSON wire, FNV-1a/`Dictionary.hash()` state digest every 30 ticks, desync report plus `desync_diff.py`.
 
 ## What broke and why
 

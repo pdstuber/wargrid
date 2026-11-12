@@ -1,5 +1,7 @@
 # Art pass: Godot integration findings
 
+(Corrected 2026-11-12: this describes the flow before the art lab. Today units and buildings are baked shapes (`shapes.gd`, `shape_bake.gd`, baked on first use) drawn in one sorted triangle batch (`world_batch.gd`); see [guide chapter 5](../guide/05-presentation.md) and the [art lab verification](art-lab-verification.md).)
+
 Written by GPT with the [art direction](../art-direction/ART_DIRECTION.md) (moved here from `docs/art-direction/GODOT_INTEGRATION.md` on 2026-11-09). Evidence for planning M7.5, not decisions; recheck the cited code before relying on it. The `spike-avoidance` links work only once that branch is pushed.
 
 **Recommendation:** keep Wargrid's centralized 2D drawing and deterministic simulation. Implement the geometric 2.5D style as presentation geometry, with explicit ground anchors, role attachments and a small amount of local animation state. First resolve depth ordering, combat-event delivery and actual screen-size readability. A 3D migration or per-unit scene hierarchy is not justified by this art direction.

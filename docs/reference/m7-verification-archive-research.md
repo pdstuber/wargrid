@@ -60,6 +60,8 @@ Not found in source. C++ gives: pick nearest enemy player, run teams along appro
 
 ### Wargrid today (`game/scripts/simulation/skirmish.gd`)
 
+(Corrected 2026-11-12: this is the bot before the wave proposal below was built. Today `skirmish.gd` gathers waves (`WAVE_MIN` 6, `WAVE_TIMEOUT` 1800 ticks, `_drive_waves`).)
+
 - `ATTACK_TICK 5400` (3 min): after it, every tick-30 decision sends EVERY idle unit (guard mode, no target) individually to `_pick` (:172): first category with any enemy, closest within category: builders, producers, supply receivers, power. Armed non-producer buildings (battery) are NOT in any category, so a unit never chooses a battery; it only fights it when auto-acquire fires on arrival. Units are sent as they become idle, so production trickles in one by one: no wave size, no rally, no regroup. `_defend` only reacts to intruders within `DEFENCE_RADIUS` 10 cells of own buildings.
 - Gap vs ZH: (1) no rally/release gate; (2) no armed-structure targeting; (3) no per-unit distance-weighted priority; (4) no player-level enemy selection (fine for 1v1).
 
@@ -171,4 +173,4 @@ Tree: m7-factions 06f570e + uncommitted. `game/scripts/simulation/skirmish.gd`, 
 - Rule 3, one target per wave, re-picked from the wave's centre when it dies or becomes invalid; idle members are re-sent every decision. A wave with no enemy left is dropped.
 - Numbers: priorities 29/28/27/26 are from the decoded Normal Tank set (confirmed). Guesses: the 4-cell divisor (ZH 100 units, assumed 25 units per cell), `WAVE_TIMEOUT` 1800 (ZH `checkReadyTeams` 60 s), `RALLY_RADIUS` 6, and `WAVE_MIN`. `WAVE_MIN` 8 (the starting value) leaves the 6-seat team match unfinished at the 45000 cap (ended tick 54974, winner team 2); scratch runs with other values, same tree: 6 / 1800 won 33204 team 1, 8 / 900 won 39370 team 1, 10 / 1200 won 36521 team 2, 5 / 900 won 61243, 12 / 1800 won 59970, 5 / 1800 not done by 65000. The outcome is chaotic in the constant, not monotone; 6 was chosen as the one that keeps the old 60 s timeout and ends inside the cap. S1 with 8: 8384, with 6: 9473 (both window, winner 1).
 - Probe (scratch script, not tracked; 10 riflemen behind 3 batteries and 2 power plants, human does nothing else, bot seat 2 on the skirmish map, 30000 ticks): new bot killed 2 of 3 batteries (ticks 6990 and 18989), made 120 combat units, 112 died, no win in 30000 ticks, human riflemen all alive. Old bot at the same ticks: 0 batteries killed, 123 made, 123 died, no win. So the bot now deals with batteries but pays about 55 units per battery.
-- The bot still never builds `usa_defence` (user ruling kept).
+- The bot still never builds `usa_defence` (user ruling kept). (Corrected 2026-11-12: true for USA and China; FRC's bot build order ends with `frc_defence`, the Tunnel Hub, in `definitions/factions.gd`.)

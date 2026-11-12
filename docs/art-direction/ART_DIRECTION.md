@@ -116,6 +116,8 @@ The sheet's drawn sizes are display samples, not approved gameplay thresholds. E
 
 ## 10. Repository integration, when separately authorized
 
+(Corrected 2026-11-12: this describes the flow before the art lab. Today units and buildings are baked shapes (`shapes.gd`, `shape_bake.gd`, baked on first use) drawn in one sorted triangle batch (`world_batch.gd`); see [guide chapter 5](../guide/05-presentation.md) and the [art lab verification](../reference/art-lab-verification.md).)
+
 The [Godot integration review](../reference/art-godot-integration.md) records inspected code, event and input boundaries, actual zooms, roster constraints, performance gates and the existing `spike-avoidance` research. GPT's handoff (`~/projects/wargrid-art-archive/IMPLEMENTATION_HANDOFF.md`) proposed a lab scope; M7.5's scope is decided in the questions above. The renderer already uses centralized 2D drawing plus a cached structure layer and terrain layer. Reuse those boundaries first. No new generic geometry framework, per-unit scene graph or 3D migration is justified by these reference sheets alone.
 
 One concrete integration risk: structures currently draw behind the unit parent, so taller art cannot assume correct unit/building interleaving. Another: static structure redraw caching does not automatically support animated generator and factory parts. Resolve those in a small art lab, with measurements, rather than changing simulation or redrawing every building every frame by default.

@@ -336,6 +336,8 @@ Especially for damage, armor, weapon cadence, travel speed and supply rates, do 
 
 Store small, versioned, human-readable fixtures under `game/tests/fixtures/`.
 
+(Status 2026-11-12: not built. `game/tests/fixtures/` does not exist; scenarios live in the GDScript suites under `game/tests/`, and the runner reports counts and `TESTS PASSED`, not the §5.3 statuses. The [golden scenarios plan](superpowers/plans/2026-11-09-state-digest-golden-scenarios.md) plans the first fixtures.)
+
 Each scenario should record:
 
 - `fixture_version`, stable `scenario_id`, description.
@@ -819,7 +821,7 @@ Use profiling before shifting code to C#, C++ or GDExtension. **Do not infer tha
 **Decided (user, 2026-11-08): lockstep through the relay, decided by the M5 spike (2026-11-04).** The direction as first proposed (2026-11-03), kept as history, with the alternatives:
 
 - **Deterministic lockstep.** Every client runs the full simulation; only commands travel. Commands already carry tick, player and sequence, and snapshots already hash exactly; trace comparison already shows identical results across three platforms.
-- **Bots run inside the simulation on every client.** The opponent policy is a deterministic function of the snapshot, so all clients compute identical bot commands without extra traffic. From M8 it reads only that player's observation (own state, team vision, its own memory), not the full snapshot; the code rule is enforced by tests, since lockstep gives every client the full state.
+- **Bots run inside the simulation on every client.** The opponent policy is a deterministic function of the snapshot, so all clients compute identical bot commands without extra traffic. From M8 it reads only that player's observation (own state, team vision, its own memory), not the full snapshot; the code rule is enforced by tests, since lockstep gives every client the full state. (Corrected 2026-11-12: as built, a bot runs only on its own seat's machine and sends its commands through lockstep like a player (`net/headless_client.gd`, `Skirmish.issue_opponent`); the online game client runs no bot, and offline the scene calls the policy outside the simulation.)
 - **Transport: WebSocket through a small relay server** (user choice: relay rather than one player hosting). Godot's high-level multiplayer API works over a WebSocket peer on desktop and in web exports, while ENet is not available in browsers, so one transport keeps the later browser build open. The relay forwards per-tick command batches and hashes and holds no game logic. Hosting: the user's existing fly.io account (sample config in the sibling `sb-watcher` project: `fly.toml`, region `fra`, shared 256 MB VM). Unlike that always-on worker, the relay accepts inbound WebSocket connections, so it needs an `[http_service]` section; letting fly stop idle machines and start them on connection keeps cost near zero between matches. Details belong to the M5 design.
 - **Clients:** desktop builds first (user choice), browser later; the browser build has been live since 2026-11-06.
 - **Desync detection:** clients exchange the per-tick snapshot hash periodically; a mismatch stops the match with a report.

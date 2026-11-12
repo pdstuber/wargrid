@@ -2,6 +2,8 @@
 
 Scope: keep generic Wargrid M1 prototype; source-supported gaps carry into M2 planning. Identify movement gaps; no production changes or parity implementation. Read-only primary-source inspection of `GeneralsMD`. Source HEAD: `0a05454d8574207440a5fb15241b98ad0b435590`. Tracked source clean; untracked `.DS_Store`, `Generals/.DS_Store`, `Generals/Code/.DS_Store` present before and after inspection. No sibling changes, retail extraction, source upload, source/assets copied into Wargrid, or visible game run.
 
+**Corrected 2026-11-12:** the Wargrid column describes the M1 prototype, and its `simulation.gd` line numbers no longer match. Since then Wargrid has gained queued path requests (`simulation.gd` `_service_paths`, 8 per tick), group destination allocation (`destination_allocation.gd`), and per-kind speed, acceleration and turning (`locomotion.gd`). Current movement: [guide chapter 6](../guide/06-movement.md).
+
 `SOURCE_SUPPORTED` means implementation exists in inspected source revision. It does **not** establish that released executable/configuration takes that branch for a particular unit. `WARGRID_PROTOTYPE/INTENTIONAL` means adopted M1 contract. `UNKNOWN` means evidence still missing, not a test failure.
 
 | Area | Primary-source finding | M1 comparison/status | Future measurement |

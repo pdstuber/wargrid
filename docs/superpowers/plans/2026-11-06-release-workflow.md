@@ -1,5 +1,7 @@
 # Release Workflow Implementation Plan
 
+(Corrected 2026-11-12: names below are as planned. The reusable workflow is now `.github/workflows/ci.yml` (was `tests.yml`), and the relay's fly app is `wargrid-relay` (`relay/fly.toml`; was `wargrid-relay-jvm`).)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Pushing a `v*` tag builds Linux, Windows, macOS and Web from that commit after the full test suite passes on it. After one approval it deploys the relay, then the web build, to fly, and publishes the three desktop builds as a GitHub Release.

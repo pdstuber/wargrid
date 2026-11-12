@@ -2,6 +2,8 @@
 
 **Reference status: `UNVERIFIED_REFERENCE`.** Rules below are adopted Wargrid prototype choices from [M1 plan](../superpowers/plans/2026-11-01-m1-vehicle.md), not Zero Hour measurements. No EA source, retail data or assets used for this implementation.
 
+**Corrected 2026-11-12:** this note describes the M1 prototype. Today's code differs: path requests are queued and served first in, first out, at most `PATH_REQUESTS_PER_TICK` (8) per tick (`simulation.gd` `_service_paths`), and groups get separate destinations (`destination_allocation.gd`). Current movement: [guide chapter 6](../guide/06-movement.md).
+
 World uses square unit cells; projection is presentation only. Static four-way A* on a bounded grid supplies cell centers and exact final target. Retargets first return toward current cell center so paths cannot cut blocked corners. Final replacement order gets one tick budget; accepted unreachable targets become persistently blocked and can recover on a later order. Invalid targets preserve active orders and sequence state. Snapshots include independent map, route and status data.
 
 See plan for exact dimensions, projection, speed, tick phases and tolerance. [Verification](m1-verification.md) records internal correctness separately from reference fidelity.
