@@ -1,13 +1,13 @@
 ```text
-Resume record (updated 2026-11-12 Task 5 done)
-Branch / base commit / working-tree state: p1-playtest-helper / 16968f8 (Task 4) / Task 5 implemented, uncommitted (coordinator commits "Add the after-match form and session saving")
-Last green task / next incomplete task: Task 5 / Task 6
-Changed paths since last commit: game/scripts/playtest/{session_form.gd(+.uid),playtest_overlay.gd}, game/scripts/{skirmish_main,online_main}.gd, game/tests/{test_playtest_overlay,test_pause_menu}.gd, this file
-Last command / cases / checks / failures / exit / marker: full run_tests CASES 785 CHECKS 140696 FAILURES 0, exit 0, TESTS PASSED; lint 0; warnings 151 files 0; run_python_checks 0
+Resume record (updated 2026-11-12 Task 6 done)
+Branch / base commit / working-tree state: p1-playtest-helper / 54f25a0 (Task 5) / Task 6 implemented, uncommitted (coordinator commits "Add tools to read and replay playtest sessions"); tools/replay_session.sh and the two new Python files are `git add -N` so ShellCheck sees them
+Last green task / next incomplete task: Task 6 / Task 7
+Changed paths since last commit: tools/{playtest_session.py,test_playtest_session.py,replay_session.sh}, docs/kickoff.md, this file
+Last command / cases / checks / failures / exit / marker: full run_tests CASES 785 CHECKS 140696 FAILURES 0, exit 0, TESTS PASSED; lint 0; warnings 152 files 0; run_python_checks 0; run_shell_checks 0
 Known red case or blocker: none
 Approved decisions, pre-authorizations used, deferred gates: local commits per task by the coordinator; never push
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: Task 6 (agent tooling for session files); fixture ~/projects/wargrid-p1-work/fixture-session.json (2 matches, end ticks 60 and 90)
+Next exact action: Task 7 (rider: BUDGET EXCEEDED summary and worst-tick lines)
 ```
 
 ## Evidence rows (append-only)
@@ -46,3 +46,8 @@ Next exact action: Task 6 (agent tooling for session files); fixture ~/projects/
   - Fix found in Task 1 code: `online_main.playtest_match` read `player.faction`, which is missing until the first tick, so an early online leave raised a script error; it now uses `player.get("faction", "")`.
   - `test_pause_menu` E3 and E5 (offline and online leave) now run with the helper switched off through a scratch settings path: the helper defaults on in a `-dev` build, so with it on they correctly show the form (covered by PO9); with it off they are the unchanged `main` behaviour.
   - Choices: `SessionForm` also has `signal end_session` (EndSession opens the questions; the overlay owns the card) and the error state offers `SaveSession` and `Close`; `end_match()` returns bool (true when it opened a review) so `skirmish_main._leave` is `if _playtest.end_match(): close menu, await finished`; helper off or an already reviewed match makes it fall through to `super()` unchanged. Leaving after the match-end review therefore skips the focus questions; the sitting stays in `current.json` and resumes. `Restart` calls `begin_match()` (new pending match, checklist back, form hidden). LineEdit `text_changed` fires deferred on typing, so the tests set `text` and emit `text_changed` themselves. The write-error test blocks the file name with a directory (an unwritable path prints an engine ERROR that fails the run).
+- 2026-11-12, tree p1-playtest-helper 54f25a0 + uncommitted Task 6, load unmeasured, no game window. Logs ~/projects/wargrid-p1-work/t6-*.log.
+  - Red: `sh tools/run_python_checks.sh` fails with the missing `playtest_session` module (mypy import-not-found, t6-red.log); the tests never ran. Green: test_playtest_session 4 cases; run_python_checks exit 0 (t6-py.log); run_shell_checks exit 0 with `replay_session.sh` tracked via `git add -N`.
+  - Untampered fixture (`fixture-session.json`, 2 matches, end ticks 60 and 90): `sh tools/replay_session.sh` prints `REPLAY MATCHED 1`, `REPLAY MATCHED 2`, exit 0, plus `ORACLE STATE 45` for match 2's marker (t6-replay1.log). Copy with match 2's only command line removed (`fixture-tampered.json`): `REPLAY MATCHED 1`, `REPLAY DIFFERS 2 recorded=4d901e15a1105e60 replayed=987923549ff1c0b8`, exit 1 (t6-replay2.log). `--tick 30` exit 0, writes `fixture-session-m<k>-snapshots/tick-30.json` next to the file (t6-replay3.log). `playtest_session.py` on the fixture wrote the three JPGs next to it and printed the summary lines; nothing was written inside the repository.
+  - Full run_tests: CASES 785 CHECKS 140696 FAILURES 0, TESTS PASSED, exit 0 (Task 5: same). run_lint exit 0; run_warnings 152 files exit 0 (Task 5 reported 151, no GDScript changed in this task). `git diff main -- game/scripts/simulation` empty.
+  - Known limit: a marker at the match's end tick prints no `ORACLE STATE` row, because the oracle loop prints state before stepping and stops at `end_tick`; the end digest covers that tick. `--tick N` replaces the marker ticks for every match.
