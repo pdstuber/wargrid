@@ -10,8 +10,8 @@ Rules, reasons and the full list: [packages and playtest helper design](superpow
 |---|---|---|---|
 | P1 | Tell us what you see | The playtest helper: focus card, checklist, markers, after-match form, one replayable session file | Exceeded-budget summary line and worst-tick lines in `run_benchmark.sh` |
 | P2 | You clicked, we heard | An acknowledgement sound per accepted order | Browser against native team-match measurement |
-| P3 | Camera that follows you | Edge scrolling, right-drag pan, jump-to-alert and home keys | Movement milestone design |
-| P4 | Smooth motion | Interpolation rework behind a toggle key | Seeded fuzz and invariant test, before movement |
+| P3 | Camera that follows you | Edge scrolling, right-drag pan, jump-to-alert and home keys (playtesters find arrow keys cumbersome, user 2026-11-12) | Movement milestone design |
+| P4 | Smooth motion | Interpolation rework behind a toggle key | Seeded fuzz and invariant test, before movement; perf overlay `split %` in Safari against Firefox (Safari can stay low, user 2026-11-12) |
 | P5 | Smarter paths (toggle) | Movement milestone part 1 behind a toggle key | Late-game 3v3 canary workload |
 
 ### P1 in detail
@@ -28,6 +28,10 @@ Each gets a plan and a drafted focus card when it is next; the design holds the 
 
 Re-planned as playtests come in; blueprint §7 has the scope of each.
 
+- Menu quick wins (user, 2026-11-12): group the launcher into sections, relay URL under an advanced fold, fix F5; no redesign.
+- Map pack (user, 2026-11-12): two or three more maps through `tools/zh_map/convert.py` ([more maps](reference/more-maps.md)), the user picks from a short list; tech buildings stay skipped.
+- Is Wargrid healthy (user, 2026-11-12): relay `/metrics` (rooms, players, round trip, desyncs) into fly's hosted Grafana, plus a small public traffic light on the web page.
+- What's new (user, 2026-11-12): one player-facing line per shipped package in a changelog file, shown in the menu and on the web page.
 - Order controls ("Orders that feel yours").
 - Movement part 2 (toggle becomes default).
 - Minimal real HUD.
