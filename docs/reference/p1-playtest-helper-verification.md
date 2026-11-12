@@ -1,15 +1,15 @@
 # P1 playtest helper: verification
 
 ```text
-Resume record (updated 2026-11-12 Task 3 done)
-Branch / base commit / working-tree state: p1-playtest-helper / 4bab5b0 (Task 2) / Task 3 implemented, uncommitted (coordinator commits "Capture markers and keep playtest sessions")
-Last green task / next incomplete task: Task 3 / Task 4
-Changed paths since last commit: game/scripts/launcher.gd, game/scripts/playtest/{marker_capture,playtest_session}.gd(+.uid), game/tests/test_playtest.gd, this file
-Last command / cases / checks / failures / exit / marker: full run_tests CASES 771 CHECKS 140026 FAILURES 0, exit 0, TESTS PASSED; lint 0; warnings 147 files 0; run_python_checks 0
+Resume record (updated 2026-11-12 Task 4 done)
+Branch / base commit / working-tree state: p1-playtest-helper / c3634fc (Task 3) / Task 4 implemented, uncommitted (coordinator commits "Add the in-match checklist and marker note")
+Last green task / next incomplete task: Task 4 / Task 5
+Changed paths since last commit: game/scripts/playtest/playtest_overlay.gd(+.uid), game/scripts/{skirmish_main,online_main}.gd, game/scripts/presentation/pause_menu.gd, game/tests/{test_playtest_overlay.gd(+.uid),test_pause_menu.gd,run_tests.gd}, this file
+Last command / cases / checks / failures / exit / marker: full run_tests CASES 779 CHECKS 140121 FAILURES 0, exit 0, TESTS PASSED; lint 0; warnings 149 files 0; run_python_checks 0
 Known red case or blocker: none
 Approved decisions, pre-authorizations used, deferred gates: local commits per task by the coordinator; never push
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: Task 4 (in-match overlay: checklist and marker note)
+Next exact action: Task 5 (after-match form and leaving)
 ```
 
 ## Evidence rows (append-only)
@@ -34,3 +34,9 @@ Next exact action: Task 4 (in-match overlay: checklist and marker note)
   - test_playtest 12 cases, 190 checks green. Full run_tests: CASES 771 CHECKS 140026 FAILURES 0, TESTS PASSED, exit 0 (Task 2: 765 / 139995). run_lint exit 0; run_warnings 147 files exit 0; run_python_checks exit 0. `git diff main -- game/scripts/simulation` empty.
   - Mutation proofs: dropping the `_mirror()` call in `finish_match` fails PT11 (mirror) and PT12 (count after restart, resume) (t3-mut1.log); resizing the caller's image instead of a copy fails PT7 "keeps its size" twice (t3-mut2.log). Both reverted.
   - `PlaytestSession` uses `class_name` (static `dir`/`current` typed as itself); tests and later tasks reference it as a global, no preload const. `open_count` is wired into `FocusCardView` in `launcher.gd`. Corrupt `current.json` is parsed through `JSON.new().parse` so no engine ERROR prints. Pending (unfinished-match) markers are not mirrored; only `finish_match`, `set_comment`, `set_answer`, `set_checked` write `current.json`.
+- 2026-11-12, tree p1-playtest-helper c3634fc + uncommitted Task 4, load unmeasured, no game window. Logs ~/projects/wargrid-p1-work/t4-*.log.
+  - test_playtest_overlay 8 cases, 57 checks green (t4-run2.log). Full run_tests: CASES 779 CHECKS 140121 FAILURES 0, TESTS PASSED, exit 0 (Task 3: 771 / 140026). run_lint exit 0; run_warnings 149 files exit 0; run_python_checks exit 0. `git diff main -- game/scripts/simulation` empty.
+  - Red phase not run: the overlay was written before the suite, so there was no separate red run. The mutation proofs below stand in for it.
+  - Mutation proofs (each reverted, files diffed back): Esc no longer closes the note or is handled fails PO4 "Esc closes the note and leaves the pause menu closed" (t4-mut1a.log); no `_text.grab_focus()` plus no `holds_match()` guard in `skirmish_main._unhandled_input` fails the three PO4 typing checks (focus, letters, no command; t4-mut1b.log); capturing after `_dialog.show()` fails PO3 "screenshot is taken before the note is shown, saw [true]" (t4-mut3.log).
+  - Layout: `test_overlay_layout` gets a real second size by instantiating the scene inside a `SubViewport` of 1280x720 and 1920x1080 and asserting `get_visible_rect().size` equals it; resizing `runner.root` does not work headless (Task 2). E8 in `test_pause_menu.gd` still resizes `runner.root`, so its two sizes check the same layout; only the new Playtest-button visibility check was added there.
+  - Choices: the kind buttons are toggles and Save stays disabled until one is picked; the overlay sits in `$HUD` just below the pause menu; `skirmish_main._unhandled_input` returns while the note is open (so clicking a kind button, which takes focus, cannot turn letters into hotkeys); with the note open ` and N are not handled so they can be typed; `key:<name>` triggers are observed only while no note is open. `web`, `download` and `match_record` are declared on the overlay for Task 5 but unused until then.

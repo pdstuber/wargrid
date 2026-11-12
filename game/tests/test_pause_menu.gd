@@ -188,6 +188,8 @@ func test_menu_layout(runner) -> bool:
 		runner.check(smooth != null and smooth.is_visible_in_tree() and buttons.has(smooth), "E8 the Smooth toggle is visible at %s" % size)
 		var destinations: Button = menu.find_child("Destinations", true, false)
 		runner.check(destinations != null and destinations.is_visible_in_tree() and buttons.has(destinations), "E8 the Destinations toggle is visible at %s" % size)
+		var playtest: Button = menu.find_child("Playtest", true, false)
+		runner.check(playtest != null and playtest.is_visible_in_tree() and buttons.has(playtest), "E8 the Playtest toggle is visible at %s" % size)
 		var sliders: Array = menu.find_children("*", "Range", true, false).filter(func(slider: Range) -> bool: return slider.is_visible_in_tree())
 		var labels: Array = menu.find_child("Volume", true, false).find_children("*Label", "Label", true, false)
 		runner.check(sliders.size() == 3 and labels.size() == 4, "E8 menu has 3 sliders and their labels, got %d and %d" % [sliders.size(), labels.size()])

@@ -78,6 +78,7 @@ func _submit(payload: Dictionary) -> void:
 	_show_hint(payload)
 	_error = ""
 	_lockstep.submit(payload)
+	_playtest.observe_command(payload)
 	_refresh()
 
 func _restart() -> void:

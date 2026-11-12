@@ -3,6 +3,7 @@ extends Control
 const UiStyle = preload("res://scripts/presentation/ui_style.gd")
 const GraphicsSettings = preload("res://scripts/presentation/graphics_settings.gd")
 const VolumeSliders = preload("res://scripts/presentation/volume_sliders.gd")
+const PlaytestSettings = preload("res://scripts/playtest/playtest_settings.gd")
 signal resume_requested
 signal leave_requested
 signal quit_requested
@@ -10,6 +11,8 @@ signal quality_changed(quality: int)
 signal neon_changed(neon: bool)
 signal smooth_changed(smooth: bool)
 signal destinations_changed(on: bool)
+signal playtest_changed(on: bool)
+signal opened
 var confirm_leave: bool = false
 var _confirming: bool = false
 var _main_box: VBoxContainer
@@ -20,6 +23,8 @@ var _smooth_button: Button
 var _smooth: bool = true
 var _destinations_button: Button
 var _destinations: bool = false
+var _playtest_button: Button
+var _playtest: bool = false
 var _neon: bool = false
 var _quality: int = GraphicsSettings.HIGH
 
@@ -55,6 +60,9 @@ func _init(web: bool = OS.has_feature("web")) -> void:
 	_destinations_button = _button(_main_box, "", _toggle_destinations)
 	_destinations_button.name = "Destinations"
 	_show_destinations(GraphicsSettings.load_destinations())
+	_playtest_button = _button(_main_box, "", _toggle_playtest)
+	_playtest_button.name = "Playtest"
+	_show_playtest(PlaytestSettings.enabled())
 	_main_box.add_child(VolumeSliders.new())
 	_confirm_box = _box(center)
 	_confirm_box.visible = false
@@ -73,8 +81,10 @@ func open() -> void:
 	_show_neon(GraphicsSettings.load_neon())
 	_show_smooth(GraphicsSettings.load_smooth())
 	_show_destinations(GraphicsSettings.load_destinations())
+	_show_playtest(PlaytestSettings.enabled())
 	visible = true
 	_show_main()
+	opened.emit()
 
 func close() -> void:
 	visible = false
@@ -146,3 +156,12 @@ func _toggle_destinations() -> void:
 func _show_destinations(on: bool) -> void:
 	_destinations = on
 	_destinations_button.text = "Show unit destinations: " + ("On" if on else "Off")
+
+func _toggle_playtest() -> void:
+	_show_playtest(not _playtest)
+	PlaytestSettings.save_enabled(_playtest)
+	playtest_changed.emit(_playtest)
+
+func _show_playtest(on: bool) -> void:
+	_playtest = on
+	_playtest_button.text = "Playtest helper: " + ("On" if on else "Off")

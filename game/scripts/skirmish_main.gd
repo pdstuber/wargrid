@@ -6,6 +6,9 @@ const SoundPlayer = preload("res://scripts/presentation/sound_player.gd")
 const VisualDirector = preload("res://scripts/presentation/visual_director.gd")
 const MusicPlayer = preload("res://scripts/presentation/music_player.gd")
 const CommandRecorder = preload("res://scripts/playtest/command_recorder.gd")
+const FocusCards = preload("res://scripts/playtest/focus_cards.gd")
+const PlaytestOverlay = preload("res://scripts/playtest/playtest_overlay.gd")
+const PlaytestSettings = preload("res://scripts/playtest/playtest_settings.gd")
 const Lockstep = preload("res://scripts/net/lockstep.gd")
 const StateHash = preload("res://scripts/simulation/state_hash.gd")
 var _sound: SoundPlayer = null
@@ -20,6 +23,7 @@ var _visuals := VisualDirector.new()
 var _attack_move_mode: bool = false
 var inspected_id: int = -1
 var recorder: CommandRecorder
+var _playtest: PlaytestOverlay
 static var factions: Dictionary = Registry.Factions.DEFAULT_SKIRMISH
 static var map_path: String = Skirmish.MAP_PATH
 static var starts: Array[int] = []
@@ -33,6 +37,20 @@ func _ready() -> void:
 	var music := MusicPlayer.new()
 	add_child(music)
 	music.play_list(MusicPlayer.PLAYLIST, MusicPlayer.GAP_SECONDS)
+	_add_playtest()
+
+func _add_playtest() -> void:
+	var focus: String = PlaytestSession.current.data.focus if PlaytestSession.current != null else FocusCards.chosen
+	_playtest = PlaytestOverlay.new()
+	_playtest.setup(FocusCards.card(focus, FocusCards.load_cards()), playtest_context, playtest_match)
+	$HUD.add_child(_playtest)
+	$HUD.move_child(_playtest, _pause.get_index())
+	_pause.opened.connect(_playtest.observe_menu)
+	_pause.playtest_changed.connect(_playtest.set_active)
+	_playtest.set_active(PlaytestSettings.enabled())
+
+func menu_open() -> bool:
+	return super() or _playtest.holds_match()
 
 func _create_simulation() -> Simulation:
 	var sim: Simulation = Skirmish.create(true, "ai", factions, map_path, starts)
@@ -74,6 +92,7 @@ func _ensure_sound() -> void:
 func _submit(payload: Dictionary) -> void:
 	super._submit(payload)
 	if not _error.is_empty(): _sound.rejected(_error)
+	else: _playtest.observe_command(payload)
 
 func _collect_sound() -> void:
 	_ensure_sound()
@@ -164,7 +183,7 @@ func _enemy_at(plane: Vector2) -> int:
 	return -1
 
 func _unhandled_input(event: InputEvent) -> void:
-	if simulation.match_over():
+	if simulation.match_over() or _playtest.holds_match():
 		return
 	if event.is_action_pressed("deselect"): inspected_id = -1
 	if not _placement_kind.is_empty():
