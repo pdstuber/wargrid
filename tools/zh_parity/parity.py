@@ -162,7 +162,7 @@ class Game:
         assert f == target, f"stepped past frame {target} to {f}"
         self.frame = f
 
-    def record(self, ids, frames, rows, stop=None, money=False):
+    def record(self, ids, frames, rows, stop=None, money=False, docks=()):
         for _ in range(frames):
             self.step(1)
             units = {u["id"]: u for u in self.call("/units")}
@@ -186,6 +186,8 @@ class Game:
                         u.get("health", 0),
                     )
                 )
+            for d in docks:
+                rows.append((self.frame, d, "lock", "", "", "", "", "", units.get(d, {}).get("activeDocker", 0)))
             if money:
                 rows.append((self.frame, "money", "money", "", "", "", "", "", cash))
             if stop and stop(rows):
@@ -429,8 +431,11 @@ def place_depot(g, builder, depot, pile_x, y, dist):
     raise RuntimeError(f"no legal {depot} placement at {dist or 'any'} units from the pile")
 
 
-def collect(kind, dist, collectors=1, deposits=8, limit=22000):
-    """Build a depot dist units from one SupplyDock (dist None: the nearest legal spot) and record the first collector's trips."""
+def collect(kind, dist, collectors=1, deposits=8, limit=22000, seconds=None):
+    """Build a depot dist units from one SupplyDock (dist None: the nearest legal spot) and record the first collector's trips.
+
+    With `seconds`, record every collector and both docks' locks for that long after the order instead of stopping at `deposits` each.
+    """
     builder_t, depot_t, power_t, collector_t = COLLECTORS[kind]
 
     def run(g):
@@ -460,17 +465,20 @@ def collect(kind, dist, collectors=1, deposits=8, limit=22000):
             "pile": [pile_x, y], "depot": [depot["x"], depot["y"]], "dist": abs(pile_x - depot["x"]), "requested": dist,
             "depot_template": depot_t, "build_frames": g.frame - rows[0][0] + 1,
         }  # fmt: skip
+        if seconds:
+            meta |= {"seconds": seconds, "depot_id": depot["id"]}
 
         extra: list[int] = []
         seen, last = 0, None
-        for _ in range(limit):
+        docks = (pile, depot["id"]) if seconds else ()
+        for _ in range(seconds * 30 if seconds else limit):
             if len(extra) < collectors - 1:  # trained collectors appear later; record them as they do
                 extra += [u for u in g.own(collector_t) if u not in {*units, *extra, builder, *before}]
-            g.record([*units, *extra, builder, pile], 1, rows, money=True)
+            g.record([*units, *extra, builder, pile], 1, rows, money=True, docks=docks)
             cash = rows[-1][8]
             seen += last is not None and cash > last
             last = cash
-            if seen >= deposits * collectors:
+            if not seconds and seen >= deposits * collectors:
                 break
         meta["collector_ids"] = [*units, *extra]
         return rows, meta
@@ -631,6 +639,17 @@ SCENARIOS = {
     },
     **{f"collect_{kind}_u3125_x{n}": collect(kind, 312.5, n) for kind in ("chinook", "truck") for n in (2, 4)},
     **{f"collect_worker_u1625_x{n}": collect("worker", 162.5, n) for n in (2, 4)},
+    **{
+        f"collect_{kind}_u{int(units * 10)}_x{n}_s600": collect(kind, units, n, seconds=600)
+        for kind, units, n in (
+            ("chinook", 312.5, 2),
+            ("worker", 162.5, 2),
+            ("worker", 162.5, 4),
+            ("truck", 312.5, 2),
+            ("truck", 312.5, 4),
+            ("chinook", 312.5, 4),
+        )
+    },
     **{
         f"open_{kind}_u{int(units * 10)}_x{n}": opening(kind, units, n)
         for kind, n in (("chinook", 2), ("truck", 3), ("worker", 5), ("worker", 7))

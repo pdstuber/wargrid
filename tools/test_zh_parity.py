@@ -165,6 +165,64 @@ class Opening(unittest.TestCase):
         self.assertLessEqual(names, set(parity.SCENARIOS))
 
 
+class DockHold(unittest.TestCase):
+    ORDER = 100
+
+    def load_rows(self, rows: list[tuple[Any, ...]]) -> list[dict[str, str]]:
+        with tempfile.TemporaryDirectory() as t:
+            put_trace(Path(t), "collect_x", rows)
+            return analyze.load(Path(t) / "collect_x.tsv")[1]
+
+    def deposits(self, stop_s: float = 600, dead_pile_s: float | None = None) -> list[dict[str, str]]:
+        rows: list[tuple[Any, ...]] = []
+        cash = 0
+        for off in range(0, 600 * 30 + 1):
+            f = self.ORDER + off
+            cash += 75 if off and off % 60 == 0 and off <= stop_s * 30 else 0
+            rows.append((f, "money", "money", "", "", "", "", "", cash))
+            if dead_pile_s is not None and off >= dead_pile_s * 30:
+                rows.append((f, 99, "dead", "", "", "", "", "", 0))
+        return self.load_rows(rows)
+
+    META: ClassVar[dict[str, Any]] = {
+        "order_frame": 100, "collectors": 2, "dist": 10, "dock": 99,
+    }  # fmt: skip
+
+    def test_lock_windows(self) -> None:
+        held = (0, 5, 5, 5, 0, 6, 6, 0, 7)
+        rows = [(f, 9, "lock", "", "", "", "", "", a) for f, a in enumerate(held, 1)]
+        rows += [(f, 8, "lock", "", "", "", "", "", 3) for f in range(1, 10)]  # another dock never changes owner
+        w = analyze.lock_windows(self.load_rows(rows), 9)
+        self.assertEqual((w["lengths"], w["median"], w["count"], w["open"]), ([3, 2], 2.5, 2, 1))
+        self.assertEqual(analyze.lock_windows(self.load_rows(rows), 7)["median"], None)
+
+    def test_collect_rates_steady_window(self) -> None:
+        rows = self.deposits()
+        r = analyze.collect_rates(self.META, rows)
+        self.assertEqual(r["steady_per_min"], 2250.0)  # 75 credits every 2 s
+        self.assertEqual(r["old_per_min"], analyze.collecting(self.META, rows)["credits_per_min"])
+        self.assertEqual((r["window_end_s"], r["short_window"], r["pile_empty_s"]), (600.0, False, None))
+
+    def test_collect_rates_pile_empty(self) -> None:
+        dead = analyze.collect_rates(self.META, self.deposits(dead_pile_s=500))
+        self.assertEqual((dead["pile_empty_s"], dead["window_end_s"], dead["short_window"]), (500.0, 500.0, False))
+        quiet = analyze.collect_rates(self.META, self.deposits(stop_s=500))
+        self.assertEqual((quiet["pile_empty_s"], quiet["window_end_s"], quiet["short_window"]), (500.0, 500.0, False))
+        short = analyze.collect_rates(self.META, self.deposits(stop_s=400))
+        self.assertEqual((short["pile_empty_s"], short["short_window"]), (400.0, True))
+        self.assertEqual(short["steady_per_min"], 2250.0)
+
+    def test_long_rows_registered(self) -> None:
+        names = {
+            f"collect_{k}_u{u}_x{n}_s600"
+            for k, u, n in (
+                ("chinook", 3125, 2), ("worker", 1625, 2), ("worker", 1625, 4),
+                ("truck", 3125, 2), ("truck", 3125, 4), ("chinook", 3125, 4),
+            )
+        }  # fmt: skip
+        self.assertLessEqual(names, set(parity.SCENARIOS))
+
+
 class Report(unittest.TestCase):
     def test_md_table_columns_and_verdict(self) -> None:
         with tempfile.TemporaryDirectory() as t:

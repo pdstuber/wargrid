@@ -22,6 +22,9 @@ from typing import Any
 FPS = 30
 OPENING_TIMES = (60, 120, 180, 300, 600)
 OPENING_STEADY_FROM = 300  # seconds; the steady rate is credits per minute from here to the end of the run (600 s)
+OPENING_EMPTY_GAP = 300  # frames without a deposit before the trace ends count as a dry pile
+STEADY_TO = 600  # seconds after the order
+SHORT_WINDOW_S = 450
 TRACES = Path.home() / "CnC/parity/traces"
 
 # name, top speed, tolerance, turn rate (deg/s)
@@ -272,9 +275,9 @@ def supplying(meta, rows):
     }
 
 
-def collecting(meta, rows):
+def collecting(meta, rows, first=None):
     cash = [(int(r["frame"]), float(r["health"])) for r in rows if r["id"] == "money"]
-    deps = [(f2, b - a) for (_, a), (f2, b) in itertools.pairwise(cash) if b > a]
+    deps = [(f2, b - a) for (_, a), (f2, b) in itertools.pairwise(cash) if b > a][:first]
     out: dict[str, Any] = {
         "deposits": len(deps),
         "collectors": meta["collectors"],
@@ -402,6 +405,65 @@ def opening(meta, rows):
     return flat | {k: c[k] for k in keys}
 
 
+def lock_windows(rows, dock_id):
+    """Frames a dock's activeDocker stays nonzero, one window per grant; `open` windows were still running at the last frame."""
+    prev, start, lengths = 0, None, []
+    for r in rows:
+        if r["id"] == str(dock_id) and r["template"] == "lock":
+            frame, docker = int(r["frame"]), int(float(r["health"]))
+            if docker == prev:
+                continue
+            if start is not None:
+                lengths.append(frame - start)
+            start, prev = (frame if docker else None), docker
+    return {
+        "median": statistics.median(lengths) if lengths else None,
+        "count": len(lengths),
+        "open": int(start is not None),
+        "lengths": lengths,
+    }
+
+
+def collect_rates(meta, rows):
+    """Credits/min over the first 8 deposits per collector (old) and over 300-600 s after the order, cut where the pile runs dry (steady)."""
+    order = meta["order_frame"]
+    cash = [(int(r["frame"]) - order, float(r["health"])) for r in rows if r["id"] == "money"]
+    deps = [(f2, b - a) for (_, a), (f2, b) in itertools.pairwise(cash) if b > a and f2 > 0]
+    last = max(int(r["frame"]) for r in rows) - order
+    dead = next(
+        (int(r["frame"]) - order for r in rows if r["id"] == str(meta["dock"]) and r["template"] == "dead"), None
+    )
+    if dead is None and deps and last - deps[-1][0] > OPENING_EMPTY_GAP:
+        dead = deps[-1][0]  # no deposit in the last 300 frames: the pile ran dry then
+    end = min(last, STEADY_TO * FPS, dead if dead is not None else last)
+    start = OPENING_STEADY_FROM * FPS
+    steady = None
+    if end > start:
+        steady = round(sum(c for f, c in deps if start < f <= end) / ((end - start) / FPS / 60), 1)
+    return {
+        "old_per_min": collecting(meta, rows, 8 * meta["collectors"]).get("credits_per_min"),
+        "steady_per_min": steady,
+        "pile_empty_s": None if dead is None else round(dead / FPS, 1),
+        "window_end_s": round(end / FPS, 1),
+        "short_window": end / FPS < SHORT_WINDOW_S,
+    }
+
+
+def collecting_long(meta, rows):
+    """collect_rates, depositors, and lock windows of the pile and the depot, flattened so pooled_metrics can pool them."""
+    out = collect_rates(meta, rows)
+    out["depositors"] = len({who for _, who, _ in opening_deposits(meta, rows)})
+    for name, dock in (("pile", meta["dock"]), ("depot", meta["depot_id"])):
+        w = lock_windows(rows, dock)
+        out[f"{name}_lock_median"], out[f"{name}_lock_count"], out[f"{name}_lock_open"] = (
+            w["median"],
+            w["count"],
+            w["open"],
+        )
+        out.setdefault("lock_windows", {})[name] = w
+    return out
+
+
 def reaching(meta, rows):
     return {
         "farthest_fire": meta["farthest_fire"],
@@ -422,6 +484,8 @@ KINDS = {
 
 
 def metrics(name, meta, rows) -> dict[str, Any]:
+    if name.endswith("_s600"):
+        return collecting_long(meta, rows)
     return KINDS.get(name.split("_")[0], shots)(meta, rows)
 
 
