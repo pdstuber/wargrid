@@ -23,7 +23,7 @@ const SWEEP_MAX := 8
 const SWEEP := [{"kind": "frc_builder", "gap": 3}, {"kind": "frc_builder", "gap": 9}, {"kind": "china_collector", "gap": 9}, {"kind": "usa_collector", "gap": 9}]
 
 func cases() -> Array[Callable]:
-	return [test_default_model_is_hold, test_steady_rate_window, test_split_lone_cycle_unchanged, test_split_overlaps_lead_in, test_split_same_tick_arrival, test_split_stop_during_lead, test_split_release_on_removal, test_c_tables_follow_the_rule, test_c_lock_clamps_to_the_stand, test_c_fractional_earnings_round_up, test_c_lone_cycle_unchanged, test_queue_fifo, test_queue_lock_covers_moves, test_queue_air, test_queue_same_tick_and_removal, test_report_rows, test_wargrid_saturation_matches_python, test_wargrid_saturation_skips_short, test_phase_shares_sum_to_100, test_sweep_row_flags_an_emptied_pile, test_sweep_rows, test_probe_transplant_spawns_every_start, test_probe_transplant_fails_on_an_occupied_start, test_probe_delayed_gather, test_probe_window_rate, test_probe_swap_rows, test_probe_gap_counts_empty_samples, test_probe_leg_parts, test_probe_leg_zones_and_distance, test_probe_unknown_phase_is_other, test_probe_drops_partial_legs, test_probe_counts_overlaps, test_probe_drop_counts_blocked, test_probe_cycle, test_probe_leaves_the_run_unchanged, test_probe_rows, test_cell_trace_leg_cells, test_cell_trace_held_names_other_holders, test_cell_trace_leg_without_dock, test_cell_trace_drops_partial_legs, test_cell_trace_counts_reroutes, test_cell_trace_geometry, test_cell_trace_keeps_trace_only_when_asked, test_cell_trace_leaves_the_run_unchanged, test_cell_trip]
+	return [test_default_model_is_hold, test_steady_rate_window, test_split_lone_cycle_unchanged, test_split_overlaps_lead_in, test_split_same_tick_arrival, test_split_stop_during_lead, test_split_release_on_removal, test_c_tables_follow_the_rule, test_c_lock_clamps_to_the_stand, test_c_fractional_earnings_round_up, test_c_lone_cycle_unchanged, test_queue_fifo, test_queue_lock_covers_moves, test_queue_air, test_queue_same_tick_and_removal, test_report_rows, test_wargrid_saturation_matches_python, test_wargrid_saturation_skips_short, test_phase_shares_sum_to_100, test_sweep_row_flags_an_emptied_pile, test_sweep_rows, test_probe_transplant_spawns_every_start, test_probe_transplant_fails_on_an_occupied_start, test_probe_delayed_gather, test_probe_window_rate, test_probe_swap_rows, test_probe_gap_counts_empty_samples, test_probe_leg_parts, test_probe_leg_zones_and_distance, test_probe_unknown_phase_is_other, test_probe_drops_partial_legs, test_probe_counts_overlaps, test_probe_drop_counts_blocked, test_probe_cycle, test_probe_leaves_the_run_unchanged, test_probe_rows, test_cell_trace_leg_cells, test_cell_trace_held_names_other_holders, test_cell_trace_leg_without_dock, test_cell_trace_drops_partial_legs, test_cell_trace_counts_reroutes, test_cell_trace_geometry, test_cell_trace_keeps_trace_only_when_asked, test_cell_trace_leaves_the_run_unchanged, test_cell_trip, test_cell_trace_pair_lines_sorted, test_cell_trace_summary_line, test_cell_rows]
 
 func models() -> Array:
 	var wanted: String = OS.get_environment("WARGRID_DOCK_MODELS")
@@ -884,4 +884,54 @@ func test_cell_trip(runner) -> bool:
 	runner.check(not slow.is_empty() and not normal.is_empty(), "a slow (127..139) and a normal (91..103, the fast loaded leg of this run is 97) loaded leg exist")
 	print_trip("slow", slow)
 	print_trip("normal", normal)
+	return true
+
+func pair_leg(kind: String, start: Vector2i, end: Vector2i, flying: int) -> Dictionary:
+	return {"kind": kind, "start_cell": start, "end_cell": end, "flying": flying, "moved_ticks": flying, "route": 2.0, "moved_len": 2.0, "corners": 0, "routes": 1, "held": ""}
+
+func pair_legs() -> Array[Dictionary]:
+	return [pair_leg("loaded", Vector2i(7, 11), Vector2i(5, 11), 90), pair_leg("loaded", Vector2i(7, 10), Vector2i(5, 11), 133), pair_leg("empty", Vector2i(5, 11), Vector2i(7, 11), 91), pair_leg("loaded", Vector2i(7, 11), Vector2i(5, 11), 92)]
+
+func test_cell_trace_pair_lines_sorted(runner) -> bool:
+	var lines: Array[String] = CellTrace.pair_lines("split", "s", pair_legs())
+	runner.check(lines.size() == 3, "three pairs, got %d" % lines.size())
+	runner.check(lines[0].contains("empty 5,11->7,11 legs=1"), "empty first: %s" % lines[0])
+	runner.check(lines[1].contains("loaded 7,11->5,11 legs=2") and lines[1].contains("flying=90.0") and lines[1].contains("manhattan=2"), "two-leg pair second: %s" % lines[1])
+	runner.check(lines[2].contains("loaded 7,10->5,11 legs=1"), "one-leg pair last: %s" % lines[2])
+	return true
+
+func test_cell_trace_summary_line(runner) -> bool:
+	var line: String = CellTrace.summary_line("split", "s", pair_legs())
+	runner.check(line.ends_with("summary legs=4 empty_flying=91.0 loaded_flying=92.0"), line)
+	return true
+
+func cell_scenarios(model: String) -> Dictionary:
+	var scenarios: Dictionary = {}
+	for gap in [3, 9]:
+		for count in [1, 7]: scenarios["sweep_g%d_n%d" % [gap, count]] = Parity.new().layout("frc_builder", gap, count, model)
+	scenarios["transplant_g3"] = transplant(model, opening_starts(model).starts)
+	return scenarios
+
+func cell_legs(world: Dictionary) -> Array[Dictionary]:
+	var trace = CellTrace.new()
+	var openings = Openings.new()
+	while world.sim.view_state().tick < PROBE_TO_TICK:
+		world.sim.step()
+		if openings.pile_boxes(world.sim.view_state(), world.source) <= 0: break
+		if world.sim.view_state().tick > 9000: trace.observe(world.sim.view_state().tick, world.sim.snapshot().entities)
+	return trace.legs
+
+func test_cell_rows(runner) -> bool:
+	if OS.get_environment("WARGRID_DOCK_PROBE") != "1":
+		runner.check(true, "dock cell rows run only with WARGRID_DOCK_PROBE=1")
+		return true
+	for model in probe_models():
+		var scenarios: Dictionary = cell_scenarios(model)
+		for scenario in scenarios:
+			var world: Dictionary = scenarios[scenario]
+			runner.check(not world.has("ids") or not world.ids.has(-1), "%s %s spawns every start" % [model, scenario])
+			var legs: Array[Dictionary] = cell_legs(world)
+			print(CellTrace.summary_line(model, scenario, legs))
+			for line in CellTrace.pair_lines(model, scenario, legs): print(line)
+			runner.check(legs.size() > 0, "%s %s records legs" % [model, scenario])
 	return true

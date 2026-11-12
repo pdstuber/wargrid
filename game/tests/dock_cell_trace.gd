@@ -1,5 +1,7 @@
 extends RefCounted
 
+const Probe = preload("res://tests/dock_probe.gd")
+
 const NO_CELL := Vector2i(-1, -1)
 
 var legs: Array[Dictionary] = []
@@ -111,3 +113,58 @@ func _claim(leg: Dictionary, row: Dictionary, dock: Vector2i, entities: Array) -
 		if other_dock != null: held.append("%d,%d:%s" % [other_dock.x, other_dock.y, other.collection.phase])
 	held.sort()
 	leg.held = ";".join(held)
+
+static func _cell_text(cell: Vector2i) -> String:
+	return "none" if cell == NO_CELL else "%d,%d" % [cell.x, cell.y]
+
+static func _pair_text(leg: Dictionary) -> String:
+	return "%s %s->%s" % [leg.kind, _cell_text(leg.start_cell), _cell_text(leg.end_cell)]
+
+static func _median(group: Array, key: String) -> float:
+	return Probe.quantile(group.map(func(leg: Dictionary) -> float: return float(leg[key])), 0.5)
+
+static func _common_held(group: Array) -> String:
+	var counts: Dictionary = {}
+	for leg: Dictionary in group:
+		var held: String = leg.held if leg.held != "" else "-"
+		counts[held] = counts.get(held, 0) + 1
+	var best: String = "-"
+	var best_count: int = 0
+	var names: Array = counts.keys()
+	names.sort()
+	for name: String in names:
+		if counts[name] > best_count:
+			best = name
+			best_count = counts[name]
+	return best
+
+static func _pair_line(model: String, scenario: String, pair: String, group: Array) -> String:
+	var first: Dictionary = group[0]
+	var distance: int = -1 if first.end_cell == NO_CELL else manhattan(first.start_cell, first.end_cell)
+	return "DOCK %s cells %s %s legs=%d manhattan=%d flying=%.1f moved_ticks=%.1f route=%.2f moved_len=%.2f corners=%.1f routes=%.1f held=%s" % [model, scenario, pair, group.size(), distance, _median(group, "flying"), _median(group, "moved_ticks"), _median(group, "route"), _median(group, "moved_len"), _median(group, "corners"), _median(group, "routes"), _common_held(group)]
+
+static func _group_by_pair(all: Array[Dictionary]) -> Dictionary:
+	var groups: Dictionary = {}
+	for leg: Dictionary in all:
+		var pair: String = _pair_text(leg)
+		if not groups.has(pair): groups[pair] = []
+		groups[pair].append(leg)
+	return groups
+
+static func pair_lines(model: String, scenario: String, all: Array[Dictionary]) -> Array[String]:
+	var groups: Dictionary = _group_by_pair(all)
+	var pairs: Array = groups.keys()
+	pairs.sort_custom(func(a: String, b: String) -> bool:
+		var a_empty: bool = a.begins_with("empty")
+		var b_empty: bool = b.begins_with("empty")
+		if a_empty != b_empty: return a_empty
+		if groups[a].size() != groups[b].size(): return groups[a].size() > groups[b].size()
+		return a < b)
+	var lines: Array[String] = []
+	for pair: String in pairs: lines.append(_pair_line(model, scenario, pair, groups[pair]))
+	return lines
+
+static func summary_line(model: String, scenario: String, all: Array[Dictionary]) -> String:
+	var empty: Array = all.filter(func(leg: Dictionary) -> bool: return leg.kind == "empty")
+	var loaded: Array = all.filter(func(leg: Dictionary) -> bool: return leg.kind == "loaded")
+	return "DOCK %s cells %s summary legs=%d empty_flying=%.1f loaded_flying=%.1f" % [model, scenario, all.size(), _median(empty, "flying"), _median(loaded, "flying")]
