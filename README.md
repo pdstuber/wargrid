@@ -1,12 +1,38 @@
-# Wargrid
+<h1 align="center">Wargrid</h1>
 
 <p align="center"><img src="game/icon.png" width="128" alt="Wargrid emblem: a navy shield with an isometric desert grid tile and blue and red chevrons"></p>
 
-Wargrid is an isometric real-time strategy game written in Godot 4 and typed GDScript. Its design follows Command & Conquer: Generals – Zero Hour (factions, base building, supply economy, combat feel and pacing); the code is Wargrid's own and leaves out the original's known bugs and slow paths. Graphics are placeholder shapes drawn in code for now; the planned look is geometric 2.5D: machines built from a few flat shapes with bright owner colours over muted terrain. Not affiliated with or endorsed by Electronic Arts, see [License](#license).
+<p align="center">
+  <b>A free, open-source real-time strategy game in the spirit of Command &amp; Conquer: Generals – Zero Hour.</b><br>
+  Build a base, secure your supplies and outfight a bot or a friend, in the browser or on the desktop.
+</p>
+
+<p align="center">
+  <a href="https://wargrid.pdstuber.dev"><b>Play in the browser</b></a>
+  &nbsp;·&nbsp;
+  <a href="https://github.com/pdstuber/wargrid/releases">Download for Linux, Windows and macOS</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/pdstuber/wargrid/actions/workflows/ci.yml"><img src="https://github.com/pdstuber/wargrid/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI status"></a>
+  <a href="https://github.com/pdstuber/wargrid/releases"><img src="https://img.shields.io/github/v/release/pdstuber/wargrid" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0--or--later-blue" alt="License: GPL-3.0-or-later"></a>
+</p>
 
 ![Two bots fight on the skirmish map: blue and red bases at opposite corners, supply piles beside them, and both armies clashing in the middle](docs/images/skirmish.png)
 
-*Bot against bot on the skirmish map after 3:20 of game time (tick 6000).*
+*Bot against bot on the skirmish map after 3:20 of game time (tick 6000). The released build still draws placeholder shapes; the new look ships with the next release.*
+
+Wargrid is an isometric RTS written in Godot 4 and typed GDScript. Its design follows Zero Hour (factions, base building, supply economy, combat feel and pacing); the code is Wargrid's own and leaves out the original's known bugs and slow paths. Not affiliated with or endorsed by Electronic Arts, see [License](#license).
+
+## What's in it
+
+- **Three factions:** USA, China and the FRC, each with its own units, buildings and supply collectors.
+- **Base building and economy:** builders, power, finite supply piles and production queues.
+- **Skirmish against a bot** on three maps: Dry Wells, Broken Crown and Ashfall.
+- **Online 1v1** with a match code, no account needed.
+- **Sound:** music, combat effects and announcer lines.
+- **A geometric 2.5D look** (machines built from a few flat shapes, bright owner colours over muted terrain) is merged on `main` and ships with the next release.
 
 ## Play
 
@@ -17,11 +43,17 @@ Wargrid is an isometric real-time strategy game written in Godot 4 and typed GDS
 
 ## Status
 
-Early development. Three factions (USA, China, FRC), skirmish against a bot and online 1v1 on Dry Wells, Broken Crown or Ashfall (map choice in the launcher, since 0.10.0). Latest release: see [Releases](https://github.com/pdstuber/wargrid/releases).
+Early development; the latest build is on the [Releases](https://github.com/pdstuber/wargrid/releases) page. Playable today: three factions, skirmish against a bot and online 1v1 on Dry Wells, Broken Crown or Ashfall. The long-term target is 3v3 online, friends against bots; scope and milestones are in the [blueprint](docs/blueprint.md).
 
 ## How it's built
 
-A deterministic, tick-based simulation kept apart from rendering, so builds on different platforms produce identical replay traces (Linux and Windows compared in CI, macOS locally). Online play is lockstep through a small Go relay that only forwards commands; every client runs the full simulation. Several hundred headless test cases cover simulation, replays and HUD layout; CI also runs the exported builds and netplay scenarios through a local relay.
+- **Deterministic simulation.** Tick-based and kept apart from rendering and wall-clock time, so builds on different platforms produce identical replay traces (Linux and Windows compared in CI, macOS locally). See the [determinism rules](docs/reference/determinism-rules.md) and the [simulation interface](docs/reference/sim-interface.md).
+- **Lockstep online play.** A small Go relay only forwards commands; every client runs the full simulation. The wire protocol is fixed by test vectors and a black-box conformance suite in `protocol/`. See [relay scaling](docs/reference/relay-scaling.md).
+- **Tested headless.** More than 700 test cases cover simulation, replays and HUD layout; CI also runs the exported builds and netplay scenarios through a local relay.
+- **Performance budgets from a measured target.** Budgets are derived from a Steam Deck running the browser build, and every measurement, passed or exceeded, is recorded in the [performance ledger](docs/reference/performance.md).
+- **Checked against the original.** A [parity harness](docs/reference/zero-hour-parity-harness.md) measures the same mechanic in a source build of Zero Hour, so values are compared, not estimated.
+
+Where things live:
 
 - `game/`: the Godot project (simulation, presentation, scenes, tests, map data)
 - `relay/`: the Go WebSocket relay
@@ -29,7 +61,7 @@ A deterministic, tick-based simulation kept apart from rendering, so builds on d
 - `tools/`: test, benchmark, release and map-conversion scripts
 - `web/`: the static web server image for the browser build
 
-Developed with AI coding agents (Claude Code); plans, decisions and evidence: [development notes](docs/development.md).
+Developed with AI coding agents (Claude Code) working from written plans, review gates and recorded evidence: [development notes](docs/development.md), [project rules](AGENTS.md).
 
 ## License
 
