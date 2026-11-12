@@ -1,13 +1,13 @@
 ```text
-Resume record (updated 2026-11-12 gate-review fixes done)
-Branch / base commit / working-tree state: p1-playtest-helper / 20d6008 (Task 8 commit) / gate-review fixes implemented, uncommitted (coordinator commits)
-Last green task / next incomplete task: gate-review fixes / Task 9 (exit gate: final evidence on the final tree, one rendered batch, reviews; stop)
-Changed paths since last commit: see the gate-fix row below (game scripts and tests, tools, plan, STATUS, this file)
-Last command / cases / checks / failures / exit / marker: full run_tests CASES 790 CHECKS 140719 FAILURES 0, exit 0, TESTS PASSED 140719; run_lint, run_warnings (152 files), run_python_checks, run_shell_checks, check_public exit 0
-Known red case or blocker: none
-Approved decisions, pre-authorizations used, deferred gates: local commits per task by the coordinator; never push; per-match build field (user, 2026-11-12, gate review I6)
+Resume record (updated 2026-11-12 Task 9 steps 1-3 done)
+Branch / base commit / working-tree state: p1-playtest-helper / eb84fa2 (final tree) / Task 9 docs edits (ledger rows, this file, STATUS) uncommitted
+Last green task / next incomplete task: Task 9 steps 1-3 (final evidence, ledger rows, reviews) / the user's actions: playtest P1 on the test-app build, review the branch, decide merge (nothing merged, nothing pushed)
+Changed paths since last commit: docs/reference/performance.md, docs/reference/p1-playtest-helper-verification.md, docs/STATUS.md
+Last command / cases / checks / failures / exit / marker: full run_tests CASES 792 CHECKS 140733 FAILURES 0, exit 0, TESTS PASSED; run_lint, run_warnings, run_python_checks, run_shell_checks, check_public exit 0 (all on eb84fa2)
+Known red case or blocker: none; ledger rows exceeded as before (combat open, hordes300, rendered horde tick p95), not loosened; browser capture unverified until the test-app playtest
+Approved decisions, pre-authorizations used, deferred gates: per-match build field (user, 2026-11-12, gate review I6); junk test files in the user's Godot folder deleted (user, 2026-11-12); rendered window approved (user, 2026-11-12); playtest of P1 pending (the user starts it)
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: Task 9 (exit gate: final evidence on the final tree, one rendered batch, reviews; stop)
+Next exact action: the user's: playtest on the test-app build, decide merge; do not start P2
 ```
 
 ## Evidence rows (append-only)
@@ -78,3 +78,11 @@ Next exact action: Task 9 (exit gate: final evidence on the final tree, one rend
   - N4: `run_game.sh` trap removed and `exec` restored; `export_build.sh` keeps its cleanup; plan Task 2 Step 3 reworded.
   - Cuts: `_store` returns bool and `write` reuses it; shared `WargridTestRunner.remove_dir`; `_image` noise branch dropped; `SessionForm.add_action` static, shared by the overlay; trailing `exit 0` in `run_benchmark.sh` dropped (last command is `[ -z ] || echo`, status 0 either way).
   - Final tree: full run_tests CASES 792 CHECKS 140733 FAILURES 0, TESTS PASSED, exit 0; run_lint, run_warnings, run_python_checks, run_shell_checks, run_python_tests, check_public exit 0; `git diff main -- game/scripts/simulation` empty; real `playtests/` dir absent after the suite.
+- 2026-11-12, tree p1-playtest-helper eb84fa2 (final tree), Task 9 exit gate. Logs ~/projects/wargrid-p1-work/f-*.log and t9-*.log.
+  - Full run_tests CASES 792 CHECKS 140733 FAILURES 0, TESTS PASSED, exit 0; run_lint, run_warnings, run_python_checks, run_shell_checks, check_public exit 0 (fix subagent, f-*.log). `git diff main -- game/scripts/simulation` empty.
+  - Netplay CI set (`match perturb relay-down maps map-mismatch`, t9-netplay-final.log): all five PASSED, match terminal tick 9024, same as `main` (t1-netplay-main.log).
+  - Headless benchmark (`sh tools/run_benchmark.sh`, t9-bench-final.log): exit 0, uptime load 1.96 at start and 1.70 at end, 13 `WORST TICK` lines, last line `BUDGET EXCEEDED open hordes300 (regression ceilings held)` (accepted rows, not loosened). Ledger row added in [performance.md](performance.md).
+  - Rendered benchmark (window approved by the user 2026-11-12, kept visible; t9-render.log): `RENDERED BENCHMARK PASSED 4`, exit 0, load 1.98 at start and 2.82 at end (above the ledger's quiet range, tagged in the ledger row). Tick p95 ms open 1.863, dense 1.964, ashfall 2.073, horde 4.806; draw calls 3 / 4 / 23 / 4 under the ceilings. Ledger row added.
+  - Capture check (t9-capture.log): `CAPTURE OK width=640 height=360 bytes=14078` on desktop macOS; browser capture stays unverified until the test-app playtest.
+  - Reviews: Opus gate review (gate-review.md): 1 critical, 6 important, 12 minor, all fixed except accepted K3, K5, K7, m7, m8. Opus re-check (gate-recheck.md): 17 of 17 fixed, new N1 important and N2 to N4 minor, all fixed in `eb84fa2`. Lean `/ponytail-review` (ponytail-review.md): 5 of 7 cuts applied; the shared build-commit shell helper and the Python build fallback skipped. User decisions 2026-11-12: I6 = build per match; junk test files in the user's Godot folder deleted.
+  - P1 state: implemented, playtest pending. Not merged, not pushed.

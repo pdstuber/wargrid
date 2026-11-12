@@ -6,7 +6,7 @@ Where Wargrid stands: packages first, then finished work. Plans for packages: [p
 
 | Package | Name | State | Plan | Evidence |
 |---|---|---|---|---|
-| P1 | Tell us what you see | In progress (approved by the user 2026-11-11 night; run started 2026-11-12) | [plan](superpowers/plans/2026-11-11-packages-and-playtest-helper.md), [design](superpowers/specs/2026-11-11-packages-and-playtest-helper-design.md) | [verification](reference/p1-playtest-helper-verification.md) |
+| P1 | Tell us what you see | Implemented, playtest pending (approved by the user 2026-11-11 night; run 2026-11-12; exit gate evidence on `eb84fa2`, not merged) | [plan](superpowers/plans/2026-11-11-packages-and-playtest-helper.md), [design](superpowers/specs/2026-11-11-packages-and-playtest-helper-design.md) | [verification](reference/p1-playtest-helper-verification.md) |
 | P2 | You clicked, we heard | Planned | [packages](packages.md#the-next-five) | none yet |
 | P3 | Camera that follows you | Planned | [packages](packages.md#the-next-five) | none yet |
 | P4 | Smooth motion | Planned | [packages](packages.md#the-next-five) | none yet |
