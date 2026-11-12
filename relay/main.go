@@ -21,12 +21,16 @@ import (
 const (
 	closeGrace = 200 * time.Millisecond
 	stopGrace  = time.Second // close handshakes after a forced stop
+	// Far above legitimate traffic; a peer reading slower than the room sends is cut off before memory runs out.
+	maxQueuedBytes = 1 << 20
+	jobOverhead    = 256 // charged per job so empty pings count too
 )
 
 type conn struct {
 	sender
 	rejected atomic.Bool
-	room     *room // set by the reader goroutine after a successful hello
+	queued   atomic.Int64 // bytes waiting in gws's unbounded write queue
+	room     *room        // set by the reader goroutine after a successful hello
 	seat     *seat
 }
 
@@ -61,8 +65,19 @@ func getConn(s *gws.Conn) *conn { v, _ := s.Session().Load("c"); return v.(*conn
 
 // writeLater runs w in the connection's ordered write queue. The deadline makes a write to a peer that stopped
 // reading fail and close the socket; otherwise it holds gws's write lock forever and OnClose (and `left`) never runs.
-func (h *relay) writeLater(s *gws.Conn, w func() error) {
+func (h *relay) writeLater(s *gws.Conn, n int, w func() error) {
+	q := &getConn(s).queued
+	cost := int64(n + jobOverhead)
+	if v := q.Add(cost); v > maxQueuedBytes {
+		if v-cost <= maxQueuedBytes {
+			slog.Warn("write queue full, closing")
+		}
+		// Close the socket directly: a queued close would wait behind the backlog.
+		_ = s.NetConn().Close()
+		return
+	}
 	s.Async(func() {
+		defer q.Add(-cost)
 		_ = s.SetWriteDeadline(time.Now().Add(h.silence))
 		_ = w()
 	})
@@ -70,8 +85,8 @@ func (h *relay) writeLater(s *gws.Conn, w func() error) {
 
 func (h *relay) OnOpen(s *gws.Conn) {
 	s.Session().Store("c", &conn{sender: sender{
-		write: func(f []byte) { h.writeLater(s, func() error { return s.WriteMessage(gws.OpcodeText, f) }) },
-		shut:  func() { h.writeLater(s, func() error { return s.WriteClose(1000, nil) }) },
+		write: func(f []byte) { h.writeLater(s, len(f), func() error { return s.WriteMessage(gws.OpcodeText, f) }) },
+		shut:  func() { h.writeLater(s, 0, func() error { return s.WriteClose(1000, nil) }) },
 	}})
 	_ = s.SetReadDeadline(time.Now().Add(h.silence))
 	slog.Info("connection opened")
@@ -86,7 +101,7 @@ func (h *relay) OnClose(s *gws.Conn, err error) {
 
 func (h *relay) OnPing(s *gws.Conn, p []byte) {
 	p = bytes.Clone(p)
-	h.writeLater(s, func() error { return s.WritePong(p) })
+	h.writeLater(s, len(p), func() error { return s.WritePong(p) })
 }
 func (h *relay) OnPong(*gws.Conn, []byte) {}
 
