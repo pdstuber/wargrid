@@ -492,6 +492,8 @@ def collect(kind, dist, collectors=1, deposits=8, limit=22000, seconds=None):
             last = cash
             if not seconds and seen >= deposits * collectors:
                 break
+        if pending:
+            raise RuntimeError(f"{kind}: {pending} collectors never affordable, row would be short")
         meta["collector_ids"] = [*units, *extra]
         return rows, meta
 
