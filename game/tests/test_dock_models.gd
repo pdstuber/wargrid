@@ -11,6 +11,7 @@ const EconomyDefinitions = preload("res://scripts/simulation/economy_definitions
 const DockC = preload("res://scripts/experiments/dock_c.gd")
 const Metrics = preload("res://tests/dock_metrics.gd")
 const Probe = preload("res://tests/dock_probe.gd")
+const CellTrace = preload("res://tests/dock_cell_trace.gd")
 const StateHash = preload("res://scripts/simulation/state_hash.gd")
 const ViewRows = preload("res://scripts/simulation/view_rows.gd")
 
@@ -22,7 +23,7 @@ const SWEEP_MAX := 8
 const SWEEP := [{"kind": "frc_builder", "gap": 3}, {"kind": "frc_builder", "gap": 9}, {"kind": "china_collector", "gap": 9}, {"kind": "usa_collector", "gap": 9}]
 
 func cases() -> Array[Callable]:
-	return [test_default_model_is_hold, test_steady_rate_window, test_split_lone_cycle_unchanged, test_split_overlaps_lead_in, test_split_same_tick_arrival, test_split_stop_during_lead, test_split_release_on_removal, test_c_tables_follow_the_rule, test_c_lock_clamps_to_the_stand, test_c_fractional_earnings_round_up, test_c_lone_cycle_unchanged, test_queue_fifo, test_queue_lock_covers_moves, test_queue_air, test_queue_same_tick_and_removal, test_report_rows, test_wargrid_saturation_matches_python, test_wargrid_saturation_skips_short, test_phase_shares_sum_to_100, test_sweep_row_flags_an_emptied_pile, test_sweep_rows, test_probe_transplant_spawns_every_start, test_probe_transplant_fails_on_an_occupied_start, test_probe_delayed_gather, test_probe_window_rate, test_probe_swap_rows, test_probe_gap_counts_empty_samples, test_probe_leg_parts, test_probe_leg_zones_and_distance, test_probe_unknown_phase_is_other, test_probe_drops_partial_legs, test_probe_counts_overlaps, test_probe_drop_counts_blocked, test_probe_cycle, test_probe_leaves_the_run_unchanged, test_probe_rows]
+	return [test_default_model_is_hold, test_steady_rate_window, test_split_lone_cycle_unchanged, test_split_overlaps_lead_in, test_split_same_tick_arrival, test_split_stop_during_lead, test_split_release_on_removal, test_c_tables_follow_the_rule, test_c_lock_clamps_to_the_stand, test_c_fractional_earnings_round_up, test_c_lone_cycle_unchanged, test_queue_fifo, test_queue_lock_covers_moves, test_queue_air, test_queue_same_tick_and_removal, test_report_rows, test_wargrid_saturation_matches_python, test_wargrid_saturation_skips_short, test_phase_shares_sum_to_100, test_sweep_row_flags_an_emptied_pile, test_sweep_rows, test_probe_transplant_spawns_every_start, test_probe_transplant_fails_on_an_occupied_start, test_probe_delayed_gather, test_probe_window_rate, test_probe_swap_rows, test_probe_gap_counts_empty_samples, test_probe_leg_parts, test_probe_leg_zones_and_distance, test_probe_unknown_phase_is_other, test_probe_drops_partial_legs, test_probe_counts_overlaps, test_probe_drop_counts_blocked, test_probe_cycle, test_probe_leaves_the_run_unchanged, test_probe_rows, test_cell_trace_leg_cells, test_cell_trace_held_names_other_holders, test_cell_trace_leg_without_dock, test_cell_trace_drops_partial_legs, test_cell_trace_counts_reroutes, test_cell_trace_geometry, test_cell_trace_keeps_trace_only_when_asked, test_cell_trace_leaves_the_run_unchanged, test_cell_trip]
 
 func models() -> Array:
 	var wanted: String = OS.get_environment("WARGRID_DOCK_MODELS")
@@ -751,4 +752,136 @@ func test_probe_rows(runner) -> bool:
 		for scenario in rows:
 			print(Probe.line(model, scenario, rows[scenario]))
 			runner.check(rows[scenario].trips > 0 and rows[scenario].overlaps == 0, "%s %s has trips and no overlaps" % [model, scenario])
+	return true
+
+func cell_row(id: int, phase: String, position: Vector2, dock: Variant = null, target: int = 5, status: String = "moving", route: Array = []) -> Dictionary:
+	var collection: Dictionary = {"phase": phase, "target_id": target}
+	if dock != null: collection.dock = dock
+	return {"id": id, "kind": "frc_builder", "position": [position.x, position.y], "status": status, "route": route, "collection": collection}
+
+func cell_feed(trace, timeline: Array) -> void:
+	for tick in range(timeline.size()): trace.observe(tick + 1, timeline[tick])
+
+func cell_leg_timeline() -> Array:
+	var route: Array = [[6.5, 11.5], [7.5, 11.5], [7.5, 10.5]]
+	var start := Vector2(5.5, 11.5)
+	return [
+		[cell_row(1, "unloading", start)],
+		[cell_row(1, "seeking", start, null, 5, "idle")],
+		[cell_row(1, "flying_source", start, [7, 10], 5, "path_pending")],
+		[cell_row(1, "flying_source", start, [7, 10], 5, "moving", route)],
+		[cell_row(1, "flying_source", Vector2(6.5, 11.5), [7, 10], 5, "moving", route)],
+		[cell_row(1, "flying_source", Vector2(7.5, 11.5), [7, 10], 5, "moving", route)],
+		[cell_row(1, "flying_source", Vector2(7.5, 10.5), [7, 10], 5, "moving", route)],
+		[cell_row(1, "loading", Vector2(7.5, 10.5), [7, 10])],
+	]
+
+func test_cell_trace_leg_cells(runner) -> bool:
+	var trace = CellTrace.new()
+	cell_feed(trace, cell_leg_timeline())
+	runner.check(trace.legs.size() == 1, "one closed leg, got %d" % trace.legs.size())
+	if trace.legs.is_empty(): return true
+	var leg: Dictionary = trace.legs[0]
+	runner.check(leg.kind == "empty" and leg.start_cell == Vector2i(5, 11) and leg.end_cell == Vector2i(7, 10), "empty leg from 5,11 to 7,10, got %s" % [leg])
+	runner.check(leg.route == 3.0 and leg.corners == 1 and leg.moved_len == 3.0, "route 3 with one corner, walked 3, got %s" % [leg])
+	runner.check(leg.flying == 5 and leg.moved_ticks == 3 and leg.routes == 1 and leg.held == "", "flying 5, moved 3 ticks, one route, nobody held, got %s" % [leg])
+	return true
+
+func test_cell_trace_held_names_other_holders(runner) -> bool:
+	var trace = CellTrace.new()
+	var timeline: Array = cell_leg_timeline()
+	for row in timeline:
+		row.append(cell_row(2, "loading", Vector2(7.5, 11.5), [7, 11]))
+		row.append(cell_row(3, "unloading", Vector2(5.5, 11.5), [5, 11], 9))
+	cell_feed(trace, timeline)
+	var held := ""
+	for leg in trace.legs:
+		if leg.id == 1: held = leg.held
+	runner.check(held == "7,11:loading", "held names the other holder of the same target only, got '%s'" % held)
+	return true
+
+func test_cell_trace_leg_without_dock(runner) -> bool:
+	var trace = CellTrace.new()
+	var start := Vector2(5.5, 11.5)
+	cell_feed(trace, [[cell_row(1, "unloading", start)], [cell_row(1, "seeking", start)], [cell_row(1, "idle", start)], [cell_row(1, "flying_source", start)], [cell_row(1, "loading", start)]])
+	runner.check(trace.legs.size() == 1 and trace.legs[0].end_cell == Vector2i(-1, -1), "a leg without a claim stays, with no end cell")
+	return true
+
+func test_cell_trace_drops_partial_legs(runner) -> bool:
+	var trace = CellTrace.new()
+	var start := Vector2(5.5, 11.5)
+	cell_feed(trace, [[cell_row(1, "flying_source", start)], [cell_row(1, "flying_source", start)], [cell_row(1, "loading", start)], [cell_row(1, "flying_depot", start)]])
+	runner.check(trace.legs.is_empty(), "a leg first seen mid-way and a leg still open at the end are dropped, got %s" % [trace.legs])
+	return true
+
+func test_cell_trace_counts_reroutes(runner) -> bool:
+	var trace = CellTrace.new()
+	var start := Vector2(5.5, 11.5)
+	var first: Array = [[6.5, 11.5]]
+	var second: Array = [[5.5, 12.5]]
+	cell_feed(trace, [[cell_row(1, "unloading", start)], [cell_row(1, "flying_source", start, [7, 10], 5, "path_pending")], [cell_row(1, "flying_source", start, [7, 10], 5, "moving", first)], [cell_row(1, "flying_source", start, [7, 10], 5, "path_pending")], [cell_row(1, "flying_source", start, [7, 10], 5, "moving", second)], [cell_row(1, "loading", start)]])
+	runner.check(trace.legs.size() == 1 and trace.legs[0].routes == 2 and trace.legs[0].route == 1.0, "two routes, length from the first one, got %s" % [trace.legs])
+	return true
+
+func test_cell_trace_geometry(runner) -> bool:
+	runner.check(CellTrace.route_length(Vector2(0, 0), [[1.0, 0.0], [1.0, 1.0]]) == 2.0, "route length sums the segments")
+	runner.check(CellTrace.corners(Vector2(0, 0), [[1.0, 0.0], [1.0, 1.0]]) == 1 and CellTrace.corners(Vector2(0, 0), [[1.0, 0.0], [2.0, 0.0]]) == 0, "a turn is a corner, a straight run is not")
+	runner.check(CellTrace.manhattan(Vector2i(5, 11), Vector2i(7, 10)) == 3, "manhattan distance")
+	return true
+
+func test_cell_trace_keeps_trace_only_when_asked(runner) -> bool:
+	var kept = CellTrace.new(true)
+	var plain = CellTrace.new()
+	cell_feed(kept, cell_leg_timeline())
+	cell_feed(plain, cell_leg_timeline())
+	var leg: Dictionary = kept.legs[0]
+	runner.check(leg.trace.size() == leg.end_tick - leg.start_tick + 1 and leg.trace[0].begins_with("T "), "one trace line per leg tick")
+	runner.check(plain.legs[0].trace.is_empty(), "no trace lines unless asked")
+	return true
+
+func test_cell_trace_leaves_the_run_unchanged(runner) -> bool:
+	var a = Parity.new().layout("frc_builder", 3, 7, "split").sim
+	var b = Parity.new().layout("frc_builder", 3, 7, "split").sim
+	var trace = CellTrace.new()
+	for index in range(3000):
+		a.step()
+		b.step()
+		trace.observe(b.view_state().tick, b.snapshot().entities)
+	runner.check(StateHash.digest(a.snapshot()) == StateHash.digest(b.snapshot()), "snapshotting every tick leaves the state hash unchanged")
+	runner.check(not trace.legs.is_empty(), "the observed run records legs")
+	return true
+
+func trip_leg(legs: Array, low: int, high: int) -> Dictionary:
+	for leg in legs:
+		if leg.kind == "loaded" and leg.flying >= low and leg.flying <= high: return leg
+	return {}
+
+func print_trip(label: String, leg: Dictionary) -> void:
+	if leg.is_empty(): return
+	var start: Vector2i = leg.start_cell
+	var end: Vector2i = leg.end_cell
+	print("DOCK split trip %s id=%d start=%d,%d end=%d,%d route=%.2f manhattan=%d corners=%d flying=%d moved_len=%.2f held=%s" % [label, leg.id, start.x, start.y, end.x, end.y, leg.route, CellTrace.manhattan(start, end), leg.corners, leg.flying, leg.moved_len, leg.held])
+	for line in leg.trace: print("DOCK split trip %s %s" % [label, line])
+
+func test_cell_trip(runner) -> bool:
+	if OS.get_environment("WARGRID_DOCK_PROBE") != "1":
+		runner.check(true, "dock cell trip runs only with WARGRID_DOCK_PROBE=1")
+		return true
+	var world: Dictionary = transplant("split", opening_starts("split").starts)
+	runner.check(not world.ids.has(-1) and world.ids.size() == 7, "all 7 transplant starts spawn, got %s" % [world.ids])
+	var trace = CellTrace.new(true)
+	var openings = Openings.new()
+	while world.sim.view_state().tick < PROBE_TO_TICK:
+		world.sim.step()
+		var view: Dictionary = world.sim.view_state()
+		if openings.pile_boxes(view, world.source) <= 0: break
+		if view.tick > 9000: trace.observe(view.tick, world.sim.snapshot().entities)
+	var loaded: Array = trace.legs.filter(func(leg: Dictionary) -> bool: return leg.kind == "loaded")
+	print("DOCK split trip loaded_flying_median=%.1f" % Probe.quantile(loaded.map(func(leg: Dictionary) -> float: return float(leg.flying)), 0.5))
+	for kind in ["empty", "loaded"]: print("DOCK split trip flying_%s=%s" % [kind, ",".join(trace.legs.filter(func(leg: Dictionary) -> bool: return leg.kind == kind).map(func(leg: Dictionary) -> String: return str(leg.flying)))])
+	var slow: Dictionary = trip_leg(trace.legs, 127, 139)
+	var normal: Dictionary = trip_leg(trace.legs, 91, 103)
+	runner.check(not slow.is_empty() and not normal.is_empty(), "a slow (127..139) and a normal (91..103, the fast loaded leg of this run is 97) loaded leg exist")
+	print_trip("slow", slow)
+	print_trip("normal", normal)
 	return true
