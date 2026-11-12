@@ -110,13 +110,13 @@ Logs (`fly logs -a wargrid-relay`): one line per connection open/close, room cre
 
 ### Hosting
 
-fly.io, region `fra`, one shared-cpu-1x 256 MB machine that suspends when idle. Rooms live in memory, so deploy exactly one machine (`--ha=false`; `fly machine list` must show one). App `wargrid-relay` behind `wss://relay.pdstuber.dev/ws` since 2026-11-08 (CNAME at Namecheap, Let's Encrypt cert issued by fly). The old app `wargrid-relay-jvm` (named before the Go port; fly apps cannot be renamed) was destroyed after the 0.7.0 release (2026-11-08), so v0.6.0 clients can no longer play online.
+fly.io, region `fra`, one shared-cpu-1x 256 MB machine that suspends when idle. Rooms live in memory, so deploy exactly one machine (`--ha=false`; `fly machine list` must show one). App `wargrid-relay` behind `wss://relay.pdstuber.dev/ws` since 2026-11-08 (CNAME at the DNS registrar, Let's Encrypt cert issued by fly). The old app `wargrid-relay-jvm` (named before the Go port; fly apps cannot be renamed) was destroyed after the 0.7.0 release (2026-11-08), so v0.6.0 clients can no longer play online.
 
 Status: 2026-11-08: deployed as `wargrid-relay`; `https://relay.pdstuber.dev/health` ok, probe `RELAY WELCOME 77`. Release 0.7.0 (run 42472020039) deployed it through the workflow with the new deploy token; probe `RELAY WELCOME 71`. Release 0.8.0 (run 42480130047) redeployed relay and web; both `/health` answer 200. First deploy log of the old `wargrid-relay-jvm` app: [development history](reference/development-history.md).
 
 Capacity: a shared vCPU's 6.25 % baseline holds about one 3v3 room ([relay scaling](reference/relay-scaling.md#flyio-vs-railway-measured-2026-11-0405)).
 
-Cost: the user's org is on fly's legacy (free) Hobby plan (user, 2026-11-05). Per [discontinued plans](https://docs.fly.io/about/discontinued-plans) (read 2026-11-05) it has "no monthly subscription fee" and keeps free allowances of "Up to 3 shared-cpu-1x 256mb VMs" and "100 GB North America & Europe" outbound. So the one relay machine costs nothing even when it runs all the time, and 100 GB covers roughly 120 hours a month of 3v3 play (about 220 KiB/s per room in JSON, [M5 findings](reference/m5-online.md#m9-list)).
+Cost: the fly organisation is on fly's legacy Hobby plan (user, 2026-11-05). Per [discontinued plans](https://docs.fly.io/about/discontinued-plans) (read 2026-11-05) it has "no monthly subscription fee" and keeps free allowances of "Up to 3 shared-cpu-1x 256mb VMs" and "100 GB North America & Europe" outbound. So the one relay machine costs nothing even when it runs all the time, and 100 GB covers roughly 120 hours a month of 3v3 play (about 220 KiB/s per room in JSON, [M5 findings](reference/m5-online.md#m9-list)).
 
 Without the allowances, list prices ([pricing](https://fly.io/pricing.md)) are $2.53 a month for a started shared-cpu-1x 256 MB in `fra`, and $0.15 per GB of rootfs per month while stopped or suspended. Its "invoices under $5 are waived" applies to new users.
 
@@ -130,7 +130,7 @@ WARGRID_RELAY_URL=wss://relay.pdstuber.dev/ws WARGRID_MATCH_WAIT=600 sh tools/ru
 
 ## Browser build
 
-Single-threaded Godot web export (preset `Web`), served by static-web-server as its own fly app `wargrid-web` (`web/`), live at `https://wargrid.pdstuber.dev` since 2026-11-06 (CNAME at Namecheap, Let's Encrypt cert issued by fly; the apex CAA records allow only Let's Encrypt). The image carries brotli/gzip copies made at build time and `Cache-Control: no-cache` (SWS answers `If-Modified-Since` with 304), so a redeploy cannot pair a new `.wasm` with an old `.pck`. No cross-origin isolation headers: they are only needed with threads. The page talks to the same relay over `wss://`. Playtest builds go to the separate app `wargrid-web-test` and share that relay; the relay only puts equal build strings in one room, so `main` carries a `-dev` version between releases.
+Single-threaded Godot web export (preset `Web`), served by static-web-server as its own fly app `wargrid-web` (`web/`), live at `https://wargrid.pdstuber.dev` since 2026-11-06 (CNAME at the DNS registrar, Let's Encrypt cert issued by fly; the apex CAA records allow only Let's Encrypt). The image carries brotli/gzip copies made at build time and `Cache-Control: no-cache` (SWS answers `If-Modified-Since` with 304), so a redeploy cannot pair a new `.wasm` with an old `.pck`. No cross-origin isolation headers: they are only needed with threads. The page talks to the same relay over `wss://`. Playtest builds go to the separate app `wargrid-web-test` and share that relay; the relay only puts equal build strings in one room, so `main` carries a `-dev` version between releases.
 
 ```sh
 sh tools/deploy_web.sh                     # export, then fly deploy; needs a release version and explicit approval

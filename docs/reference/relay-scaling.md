@@ -114,7 +114,7 @@ For Railway:
 
 Against Railway:
 - **Latency:** the only EU region is Amsterdam, and players near Bavaria saw about +28 ms p50 per round trip. That eats into M5's 45–59 ms headroom under the 250 ms command budget, which the 4-tick input delay already leaves ([M5 findings](m5-online.md#latency-budget-command-p95--250-ms)). For lockstep this matters more than CPU.
-- **Cost floor:** Railway Hobby is $5/month (docs). The user's fly org is on the legacy (free) Hobby plan (user, 2026-11-05), whose allowances are honoured for pre-October-2024 orgs: "Up to 3 shared-cpu-1x 256mb VMs" and "100 GB North America & Europe" outbound, with "no monthly subscription fee" (docs.fly.io/about/discontinued-plans, read 2026-11-05). So up to three relay machines cost nothing on fly. For new fly orgs the list price is $2.53/month per started shared-cpu-1x 256 MB in `fra`; fly.io/pricing.md says "invoices under $5 are waived" for new users.
+- **Cost floor:** Railway Hobby is $5/month (docs). The fly organisation is on the legacy Hobby plan (user, 2026-11-05), whose allowances are honoured for pre-October-2024 orgs: "Up to 3 shared-cpu-1x 256mb VMs" and "100 GB North America & Europe" outbound, with "no monthly subscription fee" (docs.fly.io/about/discontinued-plans, read 2026-11-05). So up to three relay machines cost nothing on fly. For new fly orgs the list price is $2.53/month per started shared-cpu-1x 256 MB in `fra`; fly.io/pricing.md says "invoices under $5 are waived" for new users.
 - **Infra as code:** config sits in Railway's state, not in a reviewed file like `fly.toml`.
 - **Multi-region:** the plan's single-region limit conflicts with M9's region-aware placement unless Pro.
 - **Sleep:** the sleep/502 path is untested with the Godot client.

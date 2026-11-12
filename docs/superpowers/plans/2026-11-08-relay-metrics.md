@@ -75,7 +75,7 @@
 - Modify: `game/scenes/launcher.tscn:48`, `.github/workflows/release.yml` (relay deploy app and health URL), `README.md` (relay URLs and commands)
 
 - [ ] **Step 1 (approval):** `fly apps create wargrid-relay --org <user's org>`; `fly deploy relay -c $PWD/relay/fly.toml -a wargrid-relay --ha=false`; `fly machine list -a wargrid-relay` shows exactly one machine; `curl -fsS https://wargrid-relay.fly.dev/health` prints `ok`.
-- [ ] **Step 2 (approval):** `fly certs add relay.pdstuber.dev -a wargrid-relay`; give the user the record it prints. USER adds the CNAME at Namecheap. Then `fly certs show relay.pdstuber.dev -a wargrid-relay` shows issued, and `curl -fsS https://relay.pdstuber.dev/health` prints `ok`.
+- [ ] **Step 2 (approval):** `fly certs add relay.pdstuber.dev -a wargrid-relay`; give the user the record it prints. USER adds the CNAME at the DNS registrar. Then `fly certs show relay.pdstuber.dev -a wargrid-relay` shows issued, and `curl -fsS https://relay.pdstuber.dev/health` prints `ok`.
 - [ ] **Step 3:** `godot --headless --path game -- --probe-relay wss://relay.pdstuber.dev/ws` prints `RELAY WELCOME <ms>`.
 - [ ] **Step 4:** Launcher default `wss://relay.pdstuber.dev/ws`; `release.yml` deploys `-a wargrid-relay` and checks `https://relay.pdstuber.dev/health`; README relay status, commands and URLs updated (old app noted as serving v0.6.0 until removed). `sh tools/run_tests.sh` passes with unchanged totals (482 cases).
 - [ ] **Step 5:** USER creates `fly tokens create deploy -a wargrid-relay` and stores it as repo secret `FLY_API_TOKEN_RELAY` (the agent never prints a token).
