@@ -1,13 +1,13 @@
 ```text
 Resume record (updated 2026-11-12 P1 exit gate met)
-Branch / base commit / working-tree state: p1-playtest-helper / dc95570 / docs edits (this file, STATUS) uncommitted
-Last green task / next incomplete task: Task 9 and the card 1 playtest (user, 2026-11-12) / the user's push and merge decision (nothing merged, nothing pushed); do not start P2
+Branch / base commit / working-tree state: p1-playtest-helper / dc95570 / docs edits (this file, STATUS) uncommitted at that time; P1 later merged to main as c2013d1
+Last green task / next incomplete task: Task 9 and the card 1 playtest (user, 2026-11-12) / merged to main as c2013d1 and pushed, CI run 43234176426 green (11 of 11 jobs); do not start P2
 Changed paths since last commit: docs/reference/p1-playtest-helper-verification.md, docs/STATUS.md
 Last command / cases / checks / failures / exit / marker: CI run 43227586170 on dc95570 green (11 jobs); compare_local_traces.sh 43227586170 all REPLAYS MATCHED; deploy_web.sh test exit 0, /health 200; playtest_session.py exit 0; replay_session.sh REPLAY MATCHED 1
 Known red case or blocker: none; ledger rows exceeded as before, not loosened; open findings F1 to F3 are in docs/STATUS.md
 Approved decisions, pre-authorizations used, deferred gates: per-match build field (user, 2026-11-12, gate review I6); junk test files in the user's Godot folder deleted (user, 2026-11-12); rendered window approved (user, 2026-11-12); P1 playtest done (user, 2026-11-12)
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: the user's: decide push and merge of p1-playtest-helper
+Next exact action: none for P1; P2 starts only on the user's explicit request
 ```
 
 ## Evidence rows (append-only)

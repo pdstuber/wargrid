@@ -6,7 +6,7 @@ Where Wargrid stands: packages first, then finished work. Plans for packages: [p
 
 | Package | Name | State | Plan | Evidence |
 |---|---|---|---|---|
-| P1 | Tell us what you see | Done: card 1 playtested 2026-11-12, not merged | [plan](superpowers/plans/2026-11-11-packages-and-playtest-helper.md), [design](superpowers/specs/2026-11-11-packages-and-playtest-helper-design.md) | [verification](reference/p1-playtest-helper-verification.md) |
+| P1 | Tell us what you see | Done: card 1 playtested 2026-11-12, merged to `main` (`c2013d1`) | [plan](superpowers/plans/2026-11-11-packages-and-playtest-helper.md), [design](superpowers/specs/2026-11-11-packages-and-playtest-helper-design.md) | [verification](reference/p1-playtest-helper-verification.md) |
 | P2 | You clicked, we heard | Planned | [packages](packages.md#the-next-five) | none yet |
 | P3 | Camera that follows you | Planned | [packages](packages.md#the-next-five) | none yet |
 | P4 | Smooth motion | Planned | [packages](packages.md#the-next-five) | none yet |
@@ -18,7 +18,7 @@ Open items that order later packages. P1's blocking focus is card 1; the others 
 
 | Open item | Where recorded | Card | Likely package |
 |---|---|---|---|
-| F3: FRC vs GLA cash inflow per faction (felt right, score 4) (user, 2026-11-12). Measured 2026-11-12, net at 600 s: USA and China match Zero Hour within 3 % (their Wargrid rows sit on the per-pile cap); FRC close depot is 25 % (5 workers) and 46 % (7 workers) short, far depot 5-7 % short; the user decides, see the [faction income parity note](reference/faction-income-parity.md) | [P1 verification](reference/p1-playtest-helper-verification.md), [income parity](reference/faction-income-parity.md) | `p1-frc-economy` | after P1 |
+| F3: FRC vs GLA cash inflow per faction (felt right, score 4) (user, 2026-11-12). Measured 2026-11-12, net at 600 s: USA and China match Zero Hour within 3 % (their Wargrid rows sit on the per-pile cap); FRC close depot is 25 % (5 workers) and 46 % (7 workers) short, far depot 5-7 % short. Decided (user, 2026-11-12): a measured dock-hold experiment on both holds (no number change until its rows are in), re-measure the gated x4 target first, far-depot gap folded into the experiment, reference openings fixed; bot collector count and Chinook full load stay open. See the [faction income parity note](reference/faction-income-parity.md) | [P1 verification](reference/p1-playtest-helper-verification.md), [income parity](reference/faction-income-parity.md) | `p1-frc-economy` | after P1 |
 | F1: the 1-5 answer scale has no legend (agreement, 1 strongly disagree to 5 strongly agree); fix in the form and the focus card docs | [P1 verification](reference/p1-playtest-helper-verification.md) | all | after P1 |
 | F2: FRC Laborer's back pack (`shapes.gd` role `laborer`, dark 0.14 x 0.14 x 0.5 box) reads as a shelf; make it shorter and wider | [P1 verification](reference/p1-playtest-helper-verification.md) | none (look) | after P1 |
 | M7 exit gate waits on the user's playtest (FRC economy, tunnels and pickups, online FRC) | [M7 verification](reference/m7-verification.md) | `p1-frc-economy`, `p1-frc-tunnels-online` | after P1 |

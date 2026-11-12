@@ -1,6 +1,6 @@
 # Packages and Playtest Helper Implementation Plan
 
-**Status: approved by the user 2026-11-11 (night), with the three focus cards as drafted; subagent run (milestone prompt), started by the user explicitly; run in progress (started 2026-11-12).** User changes at approval: keys ` (checklist) and N (note) instead of F1/F2 (no fn key on a Mac, F1 opens browser help); the helper switch is on the launcher and in the Esc menu.
+**Status: approved by the user 2026-11-11 (night), with the three focus cards as drafted; subagent run (milestone prompt), started by the user explicitly; run done 2026-11-12: exit gate met, card 1 playtested, merged to `main` (`c2013d1`).** User changes at approval: keys ` (checklist) and N (note) instead of F1/F2 (no fn key on a Mac, F1 opens browser help); the helper switch is on the launcher and in the Esc menu.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Run rules: [milestone prompt](../../milestone-prompt.md) (coordinator plus one fresh subagent per task, no per-task reviewers, one Opus review at the stop gate).
 
