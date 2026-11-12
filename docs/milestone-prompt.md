@@ -27,21 +27,11 @@ Next exact action:
 
 ## Unattended run
 
-Fresh context per task keeps the token saving of the old restart rule (retrospective item 1) without a manual `/clear` (user, 2026-11-06).
+Fresh context per task keeps the token saving of the old restart rule (retrospective item 1) without a manual `/clear` (user, 2026-11-06). Start and coordinator rules: [night run](night-run.md#start) and [coordinator rules](night-run.md#coordinator-rules). Milestone-specific:
 
-- **Start.** The user runs `claude --remote-control --permission-mode auto --model sonnet` in the repo and says "run ~/projects/wargrid-private/docs/<task>-prompt.txt". One-time setup: `/config` "Push when actions required" on, so questions reach the phone.
-- **Coordinator** (the main session) reads only `AGENTS.md`, the task's handoff and the resume record. It never reads suite logs, diffs or plan task bodies.
-- **One fresh subagent per task** (model per the plan's routing). Its brief names paths, not content: the resume record and the plan task heading. It runs session start steps 1–4, does the task test-first, runs lint and warnings, updates the resume record and verification rows, and returns at most ten lines: `GREEN` with counts, exit, marker and changed paths, or `BLOCKED` with the question, the options and its recommendation. It never commits.
-- **After `GREEN`** the coordinator checks `git status --short` against the reported paths, makes the pre-authorized local commit and dispatches the next task.
-- **After `BLOCKED` or any stop condition** the coordinator sends a `PushNotification`, asks with `AskUserQuestion` (stays open until answered; reaches the phone over Remote Control), then continues the same subagent with `SendMessage` so its context is kept.
-- **Stop gate.** Dispatch the gate reviewer (below), record its findings, notify the user and end the session. Playtest, visible windows, push, PR, merge and outline expansion wait for the user.
+- **Stop gate.** Dispatch the gate reviewer (below), record its findings, notify the user and end the session (a night run takes its backups instead). Playtest, visible windows, push, PR, merge and outline expansion wait for the user.
 - **No per-task reviewer subagents.** One review per stop gate.
-- If the coordinator compacts, it writes the resume record and ends; the user starts it again. The record is the handoff; the conversation is not.
 - Push only as plain `git push`: the ask rule matches the command prefix, so `git -C … push` would bypass it.
-- **Long commands.** Every suite, benchmark, netplay, lint and parity call passes `timeout: 600000` (the suite takes about 78 s; the default 120 s timeout fired 57 times in two days). Anything longer runs in the background; wait only for the completion notification or a `Monitor` with a `description` and an until-loop, never `sleep N; cat` (blocked by the harness; 321 poll requests, about 5 % of tokens).
-- **Diagnose before asking.** Before asking the user a question that a default or a rule can decide, dispatch an Opus (high) agent to diagnose and recommend (G3.5: five phone questions in 30 minutes). Ask only for what stays a real choice, with the diagnosis and options. The stop conditions below still need the user.
-- **No leftovers.** A subagent stops every loop or watcher it started (until-loops, monitors) before it returns; after each task the coordinator checks `pgrep -fl 'godot|generalszh'` and closes what the run started, never another session's processes.
-- **Opus work stays on Opus.** Plan or outline expansion and gate reviews go to an Opus (high) subagent even when the coordinator runs on Sonnet.
 
 ## Pre-authorized actions
 
