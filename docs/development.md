@@ -88,7 +88,7 @@ For separately authorized play: `sh tools/run_game.sh` opens the launcher (pick 
 
 The ordinary suite ends with `TESTS PASSED <checks>`; current case and check counts live in the resume record of [M7 verification](reference/m7-verification.md), not here.
 
-Rendered benchmark, separately authorized (opens a window): `sh tools/run_game.sh res://scenes/movement_benchmark.tscn`. It disables vsync itself (header shows `vsync=off`), uses 10 seconds wall-clock warmup and 60 seconds samples per layout at 1280×720/zoom 0.5, and reports tick timing, frame intervals, engine draw calls and 10-second backlog windows. First valid run 2026-11-03: frame p95 4.1/6.5 ms, zero backlog. Results and budgets: [performance ledger](reference/performance.md).
+Rendered benchmark, separately authorized (opens a window): `sh tools/run_game.sh res://scenes/movement_benchmark.tscn`. It disables vsync itself (header shows `vsync=off`), uses 10 seconds wall-clock warmup and 60 seconds samples per layout at 1280×720/zoom 0.5, and reports tick timing, frame intervals, engine draw calls and 10-second backlog windows. First valid run 2026-11-03: frame p95 4.1/6.5 ms, zero backlog. Results and budgets: [performance ledger](reference/performance.md). While iterating, `-- --layout=<name>` runs one layout (about 90 s); see the ledger's [while iterating](reference/performance.md#rule-per-milestone) rule.
 
 Historical M0-M3 suite counts, CI links and visible-check notes: [development history](reference/development-history.md).
 
