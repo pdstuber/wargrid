@@ -22,7 +22,7 @@
 - No protocol bump, no relay change; old and new clients are kept apart by the game version (`relay/room.go:141-142`; `tools/release_version.py` makes every release tag a new `config/version`). Dev builds all send the same `config/version`, so two dev clients from different commits can share a room and desync; accepted (user, 2026-11-10), Task 5 bumps the dev version once for this change.
 - `0.0` and `-0.0` hash alike; `1` and `1.0` do not; NaN in state is an error (determinism rules).
 - No horde-style golden scenario (user).
-- Benchmarks run alone on a quiet host; record `uptime` at start and end (user plays WoW sometimes; rerun a loaded row).
+- Benchmarks run alone on a quiet host; record `uptime` at start and end (the host is sometimes under load; rerun a loaded row).
 
 ## Review Focus
 

@@ -20,7 +20,7 @@
 - `AW4` = `~/projects/wargrid-overnight-work/avoidance/round4` (raw data, logs, trees, scratch checks). Nothing from it goes into the repo. `AW3`, `AW2` and round 1's `AW` are read-only; copy scripts into `AW4/scripts/`.
 - No test file changes. Failing suite lines are listed with what changed; the user decides per test before the milestone.
 - Cap (user): median-of-3 delta p95 against r0 at most +0.500 ms on all six rows (HEADLESS open and dense with round 3's four-group legs, COMBAT docks, open, dense, `hordes300`); no noise allowance. Never loosen a budget, cap or ceiling; report exceeded values.
-- Quiet machine: no World of Warcraft; `uptime` and the WoW check before and after every timed run; a loaded run is repeated, never judged.
+- Quiet machine: no heavy app running; `uptime` and the heavy-app check before and after every timed run; a loaded run is repeated, never judged.
 - One Godot process at a time (lock directory `AW4/godot.lock`); every suite, benchmark and harness call with output to a file and tool timeout 600000; scratch Godot scripts inside the tree's `game/` (untracked), `quit()` on every path.
 - Typed GDScript; `sh tools/run_lint.sh` and `sh tools/run_warnings.sh` pass on every code commit. Known limits get a `# shortcut:` comment.
 - `s1x` contradicts the user's "about 5 s" last resort for crossing movers. It is built as a measured variant only; the rule stays the user's to decide after the results.

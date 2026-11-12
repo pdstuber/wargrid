@@ -121,6 +121,6 @@ Return: at most ten lines: GREEN or BLOCKED, counts, tree id, changed paths; no 
 
 - Token counts are processed volume, not money; Opus and Sonnet prices differ.
 - The poll cost counts whole requests that only waited; some of those requests also read a log.
-- Wall-time totals include concurrent agents and the user's own machine load (WoW sessions).
+- Wall-time totals include concurrent agents and other load on the machine.
 - Review-finding classes are this analysis's reading of the records in `m7-verification.md`, not the reviewers' own labels.
 - Not checked: Codex sessions, CI time, and whether the earlier retrospective's items 8–10, 13 and 14 were adopted since.

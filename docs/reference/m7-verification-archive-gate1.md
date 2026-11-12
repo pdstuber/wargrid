@@ -23,7 +23,7 @@ Moved verbatim from [m7-verification.md](m7-verification.md).
 - Trace check: replay, economy, combat and team traces at 7293c91 are `cmp`-identical to a clean worktree at 2a71a6d (Task 9); suites 318/112,995 vs 312/112,983, both 0 failures (counts differ with traces on). Traces vs pre-M7 base are not comparable (kind-string rename, armed scout car, command center).
 - Netplay: match (terminal tick 8257), kill, stall, silent, spike, perturb, version: all PASSED.
 - `run_team_match.sh` exit 0: won tick=23816 winner=2; TEAM TIMING n 23816, p50 1.2, p95 2.412, p99 6.169, max 12.932 (budget 1.82 / 3.64: exceeded; base 3.196 / 6.958).
-- `run_benchmark.sh` exit 1 (stops at combat stress, as at base; lockstep run alone afterwards, exit 0). Machine: no World of Warcraft process; Battle.net launcher and Codex renderer were running (about 20 % CPU), a stale headless Godot (pid 38232, idle) from a scratch script was present.
+- `run_benchmark.sh` exit 1 (stops at combat stress, as at base; lockstep run alone afterwards, exit 0). Machine: no heavy app running; a background launcher and the Codex renderer were running (about 20 % CPU), a stale headless Godot (pid 38232, idle) from a scratch script was present.
   - movement open p95/p99 1.691 / 1.889, dense 1.738 / 2.06 (PASS).
   - combat stress open 2.798 / 3.716 and dense 3.152 / 4.75: exceed the 1.82 / 3.64 budget and the ceilings (open 2.05 / 3.86, dense 2.52 / 4.02); base open 2.897 / 4.027. Not loosened.
   - contact 1.191 / 1.665 PASS, skirmish3v3 1.406 / 1.588 PASS.

@@ -22,7 +22,7 @@
 - Grid scale 2 (user): one building cell is 2x2 pathing cells. Ashfall is 194x187 building cells, so 388x374 pathing cells.
 - Unit widths 1, 2 and 3 pathing cells stand in for "size per unit kind" (user). Which kind gets which width is not part of this spike.
 - Every number is a GDScript cost on the development Mac. The note labels them so, and gives the browser figure only as "projected, x5.5" (the slowdown factor in `docs/reference/performance.md`). They are re-read after the native simulation core spike.
-- One Godot process at a time on the whole machine. Before every run: `pgrep -fl godot` must print nothing, and `pgrep -fl 'World of Warcraft'` must print nothing; write `uptime` into the log before and after. If either process is running, wait; never time a run beside another.
+- One Godot process at a time on the whole machine. Before every run: `pgrep -fl godot` must print nothing, and the heavy-app `pgrep` check must print nothing; write `uptime` into the log before and after. If either process is running, wait; never time a run beside another.
 - Every Godot call: output redirected to a file under `PW/logs/`, Bash tool `timeout: 600000`. Read only the `PATHSPIKE` lines and any line containing `ERROR`.
 - Every script that extends `SceneTree` calls `quit()` on every path (a script error otherwise hangs until the timeout).
 - Typed GDScript, no comments except a one-line why. `sh tools/run_lint.sh` and `sh tools/run_warnings.sh` pass in the worktree before each commit. `run_warnings.sh` rejects integer division: write `floori(a / float(b))`, as `avoidance.gd` does.
