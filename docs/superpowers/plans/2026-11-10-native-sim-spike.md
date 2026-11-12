@@ -16,7 +16,7 @@
 
 Every task follows these; a task that cannot returns BLOCKED.
 
-**Places.** `MAIN` = `/Users/pdstuber/projects/wargrid` (never edited by this run). `WT` = `/Users/pdstuber/projects/wargrid-wt-native` (branch `spike-native-sim`). `WORK` = `/Users/pdstuber/projects/wargrid-native-work` (nothing in it is tracked). A task marked "own tree" works in `WORK/wt/<task>` (branch `spike-native-sim-<task>`, created by the coordinator); every other task works in `WT`. Call the task's tree `TREE`. `WORK/smoke/` is a throwaway build from the evening before: read it for working configuration, never cite it as evidence.
+**Places.** `MAIN` = `~/projects/wargrid` (never edited by this run). `WT` = `~/projects/wargrid-wt-native` (branch `spike-native-sim`). `WORK` = `~/projects/wargrid-native-work` (nothing in it is tracked). A task marked "own tree" works in `WORK/wt/<task>` (branch `spike-native-sim-<task>`, created by the coordinator); every other task works in `WT`. Call the task's tree `TREE`. `WORK/smoke/` is a throwaway build from the evening before: read it for working configuration, never cite it as evidence.
 
 **Every shell call starts with `cd TREE && `.** A subagent's shell returns to `MAIN` after each call, so a bare `sh tools/run_tests.sh` would test the wrong tree. Every log starts with `pwd` and `git rev-parse --short HEAD`. Long commands (suite, exports, browser runs, container builds) run in the background with `timeout: 600000`; wait for the completion notification.
 
@@ -92,13 +92,13 @@ Sums over the window, never single-call timings. `NativeBridge.report()` returns
 
 **Quiet Mac for timing.** Once at the start of a timing task: wait up to 10 minutes until `pgrep -fl 'godot|cargo|rustc|emcc'` is empty and `ps -Ao pcpu,comm -r | head -3` shows no process above 50 % CPU; then go on either way and tag the rows "loaded" if it never got quiet. Record `uptime` at the start and end of every run and `sw_vers -productVersion` once. No timing on the Mac while another task runs.
 
-**Checks before GREEN.** For changed GDScript: `sh tools/run_lint.sh` and `sh tools/run_warnings.sh` pass. For Rust: `cargo test` for the touched crates and `cargo +stable clippy -- -D warnings`. For changed files under `tools/`: `PATH=/Users/pdstuber/projects/wargrid/tools/.venv/bin:$PATH sh tools/run_python_checks.sh` (a worktree has no `tools/.venv` of its own).
+**Checks before GREEN.** For changed GDScript: `sh tools/run_lint.sh` and `sh tools/run_warnings.sh` pass. For Rust: `cargo test` for the touched crates and `cargo +stable clippy -- -D warnings`. For changed files under `tools/`: `PATH=~/projects/wargrid/tools/.venv/bin:$PATH sh tools/run_python_checks.sh` (a worktree has no `tools/.venv` of its own).
 
 **Evidence.** A task writes its dated rows (tree, host, command, result, label, raw-log path) to `WORK/rows/<task>.md`, never to the verification file: parallel tasks would overwrite each other. T9 and T12 copy the rows into the verification file. Only the coordinator writes the resume record. Raw logs go to `WORK/results/` or `WORK/logs/<task>/` with the command that made them.
 
 ## Dispatch
 
-Dispatch every task of a phase together; a task starts when everything in "After" is GREEN or was defaulted. `model` is the Agent tool's value. Brief for a task, with `<TREE>` filled in: "Read docs/native-sim-spike-prompt.txt, then 'Conventions' and '<task heading>' in docs/superpowers/plans/2026-11-10-native-sim-spike.md, in <TREE>. Your tree is <TREE>: start every shell call with `cd <TREE> &&`. Write your evidence rows to /Users/pdstuber/projects/wargrid-native-work/rows/<task>.md. Do not commit. Return GREEN or BLOCKED in at most ten lines with the changed paths."
+Dispatch every task of a phase together; a task starts when everything in "After" is GREEN or was defaulted. `model` is the Agent tool's value. Brief for a task, with `<TREE>` filled in: "Read docs/native-sim-spike-prompt.txt, then 'Conventions' and '<task heading>' in docs/superpowers/plans/2026-11-10-native-sim-spike.md, in <TREE>. Your tree is <TREE>: start every shell call with `cd <TREE> &&`. Write your evidence rows to ~/projects/wargrid-native-work/rows/<task>.md. Do not commit. Return GREEN or BLOCKED in at most ten lines with the changed paths."
 
 | Phase | Task | Tree | Model | After | Time box | If BLOCKED or over time |
 |---|---|---|---|---|---|---|
@@ -119,10 +119,10 @@ Dispatch every task of a phase together; a task starts when everything in "After
 | 5 | T14 fixes, lean review, morning summary | WT | opus, then coordinator | T13 | 90 min | list unfixed findings in the morning summary |
 
 Coordinator recipes (exact commands; `<t>` is the task id in lower case):
-- **Before an "own tree" task:** `cd /Users/pdstuber/projects/wargrid-wt-native && git worktree add /Users/pdstuber/projects/wargrid-native-work/wt/<t> -b spike-native-sim-<t> spike-native-sim`.
-- **After GREEN from an "own tree" task:** `cd /Users/pdstuber/projects/wargrid-native-work/wt/<t> && git status --short`; every reported path must appear and every changed path must be in the reported list; then `git add <those paths> && git commit -m "<short message>"`; then `cd /Users/pdstuber/projects/wargrid-wt-native && git cherry-pick spike-native-sim-<t>`. Task trees stay on disk for the morning.
+- **Before an "own tree" task:** `cd ~/projects/wargrid-wt-native && git worktree add ~/projects/wargrid-native-work/wt/<t> -b spike-native-sim-<t> spike-native-sim`.
+- **After GREEN from an "own tree" task:** `cd ~/projects/wargrid-native-work/wt/<t> && git status --short`; every reported path must appear and every changed path must be in the reported list; then `git add <those paths> && git commit -m "<short message>"`; then `cd ~/projects/wargrid-wt-native && git cherry-pick spike-native-sim-<t>`. Task trees stay on disk for the morning.
 - **If the cherry-pick stops on a conflict:** `git cherry-pick --abort`, write "<t> not integrated: conflict in <path>" into the morning summary, treat the task as BLOCKED for the table's "After" column and tell T9 in its brief.
-- **After GREEN from a WT task:** `cd /Users/pdstuber/projects/wargrid-wt-native && git status --short`; `git add <reported paths> && git commit -m "<short message>"`. Paths that belong to a task still running are left alone.
+- **After GREEN from a WT task:** `cd ~/projects/wargrid-wt-native && git status --short`; `git add <reported paths> && git commit -m "<short message>"`. Paths that belong to a task still running are left alone.
 - **After every task:** append one line to `WORK/morning-summary.md` (task, GREEN or BLOCKED, key numbers, any default taken) and update the resume record.
 - **Deck up** means T1 passed. If it failed, run T1 again when phase 2 starts and when phase 4 starts. Deck up at phase 4 runs T11 even if T8 never ran (T11 has its own baseline runs); T8 then follows T11 if the Deck is still up.
 - Phase 4 is the only phase with Mac timing: dispatch T10 only when no other task is running on the Mac. T11 runs on the Deck and may overlap T10.
@@ -143,7 +143,7 @@ Coordinator recipes (exact commands; `<t>` is the task id in lower case):
 
 ### T0: Worktree and baseline (coordinator)
 
-- [ ] `cd /Users/pdstuber/projects/wargrid && git status --short && git log --oneline -3`; `git worktree add /Users/pdstuber/projects/wargrid-wt-native -b spike-native-sim main`; `mkdir -p` `WORK/{build,exports,results,logs,fixtures,locks,rows,wt}`; start `WORK/morning-summary.md`.
+- [ ] `cd ~/projects/wargrid && git status --short && git log --oneline -3`; `git worktree add ~/projects/wargrid-wt-native -b spike-native-sim main`; `mkdir -p` `WORK/{build,exports,results,logs,fixtures,locks,rows,wt}`; start `WORK/morning-summary.md`.
 - [ ] Guard: `cd WT && git ls-files docs/superpowers/plans/2026-11-10-native-sim-spike.md` prints the path. If it prints nothing, the documents were not committed on `main`: stop the run and say so.
 - [ ] Resume record: base commit, `sw_vers -productVersion`, `godot --version`, `rustup toolchain list`, `rustc +nightly-2026-03-15 --version`, `container system status`, `pmset -g | grep -i sleep`, whether Safari and Vivaldi are running (`pgrep -x Safari`, `pgrep -x Vivaldi`).
 - [ ] Baseline in WT, each to a log under `WORK/logs/baseline/`, summary lines only: `godot --headless --path game --import`; `sh tools/run_tests.sh`; `sh tools/run_lint.sh`; `sh tools/run_warnings.sh`; the python checks as in "Checks before GREEN". Record counts, exit codes and the completion marker. Python checks red at baseline is recorded and not a stop.
@@ -152,7 +152,7 @@ Green: suite passes with its completion marker on the untouched tree.
 
 ### T1: Deck check (coordinator)
 
-- [ ] If `WORK/deck-address.txt` exists: `sh /Users/pdstuber/projects/wargrid-native-work/deck-preflight.sh "$(cat /Users/pdstuber/projects/wargrid-native-work/deck-address.txt)"`; copy its output into the morning summary. `RESULT: OK` means Deck up.
+- [ ] If `WORK/deck-address.txt` exists: `sh ~/projects/wargrid-native-work/deck-preflight.sh "$(cat ~/projects/wargrid-native-work/deck-address.txt)"`; copy its output into the morning summary. `RESULT: OK` means Deck up.
 - [ ] Otherwise, or on `RESULT: FAIL`: write `DECK DOWN` with the output into the resume record and the morning summary; continue.
 
 ### T2: Skeleton, bridge and boundary note (opus, own tree)

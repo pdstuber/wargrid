@@ -1,6 +1,6 @@
 # Zero Hour controls vs Wargrid (friend's playtest)
 
-Paths: ZH = ~/projects/CnC_Generals_Zero_Hour/GeneralsMD/Code/GameEngine/Source (abbrev `ZH/`). Retail dumps in /Users/pdstuber/projects/wargrid-overnight-work/scratch_ctl/ (decoded with read_big on a copy of tools/check_reference.py, `python3 -I`).
+Paths: ZH = ~/projects/CnC_Generals_Zero_Hour/GeneralsMD/Code/GameEngine/Source (abbrev `ZH/`). Retail dumps in ~/projects/wargrid-overnight-work/scratch_ctl/ (decoded with read_big on a copy of tools/check_reference.py, `python3 -I`).
 
 ## Findings (short, cited)
 

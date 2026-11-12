@@ -1,6 +1,6 @@
 # Playtest findings: idle repair by builders, and bot supply economy
 ## Findings (short, cited)
-ZH root: ~/projects/CnC_Generals_Zero_Hour/GeneralsMD/Code/GameEngine/Source (shortened "ZH/" below). Retail INI decoded into /Users/pdstuber/projects/wargrid-overnight-work/ini/ (from INIZH.big).
+ZH root: ~/projects/CnC_Generals_Zero_Hour/GeneralsMD/Code/GameEngine/Source (shortened "ZH/" below). Retail INI decoded into ~/projects/wargrid-overnight-work/ini/ (from INIZH.big).
 
 A) Idle repair
 - **source** Dozers repair damaged own structures by themselves when idle: after BoredTime of idle with no pending task, the dozer picks the closest own STRUCTURE in BoredRange that is repairable and issues `aiRepair` (ZH/GameLogic/Object/Update/AIUpdate/DozerAIUpdate.cpp:1111-1128, finder at :868-926). It never takes enemy buildings (canRepairObject rejects ENEMIES; neutral allowed), full-health ones, ones under construction, bridges, rebuild holes (ZH/Common/RTS/ActionManager.cpp:383-433).
@@ -16,7 +16,7 @@ B) Bot supply economy
 - **source** Where the bot builds the supply center: `Skirmish._build` walks `build_order(faction)` and takes the first kind not yet owned; the site is the map's fixed slot `MapData.slot(map, player, kind)` (game/scripts/simulation/skirmish.gd:104-113, game/scripts/simulation/map_data.gd:21-24). It never looks at sources.
 - **source** Slots come from tools/zh_map/convert.py: `_find_slot` scans rings of growing distance (2..12 cells) around the start cell in order power_plant, supply_center, barracks, factory, command_center, defence (convert.py:32-39, :268-285, :315-320). supply_center is the 2nd slot, 3x3, so it lands at about 2-3 cells from the start; sources are only used to mark taken cells, plus a check that some source is within 20 cells (SUPPLY_REACH, convert.py:322). The slot choice does not aim at supplies.
 - **source** Collector count: USA supply center row has `spawns_on_complete: [usa_collector]` (game/scripts/simulation/definitions/usa.gd:14) and `units_for` has no entry for `usa_supply_center` (factions.gd:12), so `unit_for` returns "" and `_produce` skips it (skirmish.gd:131-139). Only a faction whose start unit collects (FRC) gets LABORERS = 7 (skirmish.gd:15-17, :119-125). So a USA or China bot has exactly 1 collector for the whole game. Matches the playtest.
-- **source** Measured (cells, distance from 3x3 supply_center slot centre to nearest source centre; script output in /Users/pdstuber/projects/wargrid-overnight-work/supply_distance.txt):
+- **source** Measured (cells, distance from 3x3 supply_center slot centre to nearest source centre; script output in ~/projects/wargrid-overnight-work/supply_distance.txt):
   - dry_wells: seat 1 nearest 25.6 (but that is a 50-box pile; nearest 400-box dock 28.3); seat 2 nearest 19.5 (400 boxes). Seat 1 has no source within 20, none within 25 that is a full dock.
   - broken_crown: 22.4, 18.1, 15.9, 19.8 (all 400 boxes).
   - ashfall: 21.5, 22.4, 25.1, 18.0, 20.4, 21.1, 23.7, 26.5 (all 400 boxes).

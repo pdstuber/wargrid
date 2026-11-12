@@ -669,7 +669,7 @@ Deferred edit (not applied; U1 and Q6 need it; apply after the benchmark job end
 
 ### T0f scratch scripts (parse-checked with `sh -n` only, never run)
 
-Directory `/private/tmp/claude-501/-Users-pdstuber-projects-wargrid/f3d3e9b0-7fed-4adb-93af-49de839b7d31/scratchpad/ws8/`: `scale_workload.gd` and `run_scale.gd` (Q2: total units and owner count via user args, 128x96 map, spawn failures recorded), `run_mem.gd` (Q3: `MEMORY_STATIC`, `OBJECT_COUNT`, node count every 300 ticks on `hordes300` or the team match), `batch.sh` (Q1 x10 combat + movement, 10 team runs, Q2 units 150-600 and owners 2-6, Q3; ws6 guard; one STOP line per failed job). Each Godot script calls `quit(0)` on its only path. Not included: Q2 on bba985c, Q4 (T0c says not needed), Q6, Q5, Q7, Q8. The batch copies the three scripts into a git-archive copy given as argument; GDScript files in `game/` root are scratch only.
+Directory `<session scratchpad>/ws8/`: `scale_workload.gd` and `run_scale.gd` (Q2: total units and owner count via user args, 128x96 map, spawn failures recorded), `run_mem.gd` (Q3: `MEMORY_STATIC`, `OBJECT_COUNT`, node count every 300 ticks on `hordes300` or the team match), `batch.sh` (Q1 x10 combat + movement, 10 team runs, Q2 units 150-600 and owners 2-6, Q3; ws6 guard; one STOP line per failed job). Each Godot script calls `quit(0)` on its only path. Not included: Q2 on bba985c, Q4 (T0c says not needed), Q6, Q5, Q7, Q8. The batch copies the three scripts into a git-archive copy given as argument; GDScript files in `game/` root are scratch only.
 
 ## 7 results (Deck native) (2026-11-08, HEAD bcaf65b via git archive, Steam Deck, headless, native editor build; web half not run)
 

@@ -206,13 +206,13 @@ Limits: Codex's M2/M3 coordinator can't be split between the two milestones; chi
 
 Transcript paths are local to this machine and are not part of the repository. Line numbers are JSONL lines.
 
-**Claude Code** (`~/.claude/projects/-Users-pdstuber-projects-wargrid/`):
+**Claude Code** (`~/.claude/projects/<project>/`):
 
 | Short | File | Claims |
 |---|---|---|
-| A | `02fa9e69-3ff4-42f7-9468-5b2a5a41bf28.jsonl` | M4 plan finish, performance, prep; context 47.5 k to 401 k |
-| B | `0e86fa79-3ebb-41d4-833b-1f06a6ad76a7.jsonl` | Tasks 1–4; 150-v-150 spike at line 543 |
-| C | `89c7cb45-5a77-4ad3-82f5-0c13014ed500.jsonl` | Tasks 4d–10; baseline attachments at lines 24–27; stumbles at lines 158, 197, 1303, 1412, 1553, 1564; review hand-backs near lines 415, 764, 1132; user playtest at line 1828 |
+| A | `02fa9e69.jsonl` | M4 plan finish, performance, prep; context 47.5 k to 401 k |
+| B | `0e86fa79.jsonl` | Tasks 1–4; 150-v-150 spike at line 543 |
+| C | `89c7cb45.jsonl` | Tasks 4d–10; baseline attachments at lines 24–27; stumbles at lines 158, 197, 1303, 1412, 1553, 1564; review hand-backs near lines 415, 764, 1132; user playtest at line 1828 |
 | C reviews | `89c7cb45-…/subagents/agent-a80a610700f06017a.jsonl`, `agent-acf1f2e720ce14eec.jsonl`, `agent-a2cfad27ff8039c26.jsonl` | the three Opus reviews |
 
 Repository: review findings in `docs/reference/m4-verification.md` (lines 28, 40, 52), the 4d ruling (line 21), the playtest (line 72), and the Task 5 pre-check (plan line 225).
@@ -221,13 +221,13 @@ Repository: review findings in `docs/reference/m4-verification.md` (lines 28, 40
 
 | Claim | Location |
 |---|---|
-| M1 review found regressions; weak M1 assertions | `11/01/rollout-2026-11-01T16-16-02-01a197ae-8f7c-7fd3-8b57-0a59ecc44ce8.jsonl:248` |
-| M1 sandbox and approval friction | `11/01/rollout-2026-11-01T16-04-30-01a197a4-01ef-79a3-8b8c-30684b1b7508.jsonl:268` |
-| M3 review defects | `11/03/rollout-2026-11-03T08-32-49-01a1a053-320e-7211-85ae-16b13449797c.jsonl:215` |
-| M2/M3 coordinator waits | `11/02/rollout-2026-11-02T16-42-24-01a19ced-0edc-78a0-8563-9d2512d52973.jsonl:713` |
+| M1 review found regressions; weak M1 assertions | `11/01/rollout-2026-11-01T16-16-02-01a197ae.jsonl:248` |
+| M1 sandbox and approval friction | `11/01/rollout-2026-11-01T16-04-30-01a197a4.jsonl:268` |
+| M3 review defects | `11/03/rollout-2026-11-03T08-32-49-01a1a053.jsonl:215` |
+| M2/M3 coordinator waits | `11/02/rollout-2026-11-02T16-42-24-01a19ced.jsonl:713` |
 | delayed M2 rendered run | same file, line 606 |
 | CI workflow expression failure | same file, line 891 |
-| M3 startup truncated reads | `11/03/rollout-2026-11-03T07-45-56-01a1a028-4481-7883-978c-9ed0de616ea3.jsonl:41` |
+| M3 startup truncated reads | `11/03/rollout-2026-11-03T07-45-56-01a1a028.jsonl:41` |
 | rendered benchmark script errors with exit 0 | `docs/reference/m2-verification.md:117` |
 | assertion count is not coverage | `docs/reference/m2-verification.md:146` |
 | internal correctness vs retail fidelity | `docs/reference/m2-verification.md:60` |

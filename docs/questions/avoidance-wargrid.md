@@ -1,5 +1,5 @@
 # Unit avoidance: what Wargrid's own code and rules constrain
-(repo /Users/pdstuber/projects/wargrid, tree main c04ef27; paths relative to it. "source" = read in code/docs, "inferred" = my reading.)
+(repo ~/projects/wargrid, tree main c04ef27; paths relative to it. "source" = read in code/docs, "inferred" = my reading.)
 
 ## Findings (short, cited)
 - **Scope is undecided.** Blueprint says only: units go around each other, "a firm requirement from the M7 gate 2 playtest", re-pins every trace, needs own benchmarks, a design spike on one map first, a playtest; risks named: docks, chokepoints, trucks, container boarding, horde clusters, lockstep determinism, WASM cost. Source: docs/blueprint.md:554. "Scope not designed": blueprint.md:547. Comes after converted maps, before ground batch A: blueprint.md:549.

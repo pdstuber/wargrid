@@ -79,7 +79,7 @@ A hello-world gdext extension (one class, a `PackedFloat32Array` in, a computed 
 ### Environment (measured)
 
 - Linux x86-64 builds: `container run --rm --platform linux/amd64 docker.io/library/rust:1.94-slim` works on this Mac (rustc 1.94.1, gcc 14.2); image cached; the container service was started by hand (the user's auto-mode settings refuse `container system start`).
-- Steam Deck: `ssh deck@172.16.0.63` timed out at 20:22; the user sets it up before the run. Check: `sh ~/projects/wargrid-native-work/deck-preflight.sh <address>`.
+- Steam Deck: `ssh deck@<deck>` timed out at 20:22; the user sets it up before the run. Check: `sh ~/projects/wargrid-native-work/deck-preflight.sh <address>`.
 - `pmset`: system sleep after 1 minute unless prevented; start the run under `caffeinate`.
 - Emscripten 3.1.74 in `~/emsdk`, 4.0.20 in `~/projects/wargrid-native-work/emsdk-4.0.20`; neither is on `PATH`.
 - Firefox on the Mac: a terms-accepted profile for the benchmark runs is `~/projects/wargrid-native-work/profiles/firefox-accepted` (created 2026-11-10; the user accepts the first-run page in it once); earlier spikes lost runs to that page.
@@ -92,7 +92,7 @@ Copied verbatim, headings demoted. `t8.md` did not exist yet (T8 still running o
 
 ### T2 rows (skeleton, bridge and boundary note)
 
-Tree `/Users/pdstuber/projects/wargrid-native-work/wt/t2`, branch `spike-native-sim-t2`, HEAD 0570f6a plus uncommitted T2 work. Host: Mac (Apple Silicon), macOS 27.2.1, Godot 4.7.2.stable.official.ed1daf0bf, rustc 1.96.0-nightly (03749d625 2026-03-14) via `native/rust-toolchain.toml`, clippy from stable. Raw logs in `/Users/pdstuber/projects/wargrid-native-work/logs/t2/`. All rows measured 2026-11-10 21:34-22:00 CET unless labelled.
+Tree `~/projects/wargrid-native-work/wt/t2`, branch `spike-native-sim-t2`, HEAD 0570f6a plus uncommitted T2 work. Host: Mac (Apple Silicon), macOS 27.2.1, Godot 4.7.2.stable.official.ed1daf0bf, rustc 1.96.0-nightly (03749d625 2026-03-14) via `native/rust-toolchain.toml`, clippy from stable. Raw logs in `~/projects/wargrid-native-work/logs/t2/`. All rows measured 2026-11-10 21:34-22:00 CET unless labelled.
 
 | # | Command | Result | Label | Log |
 |---|---|---|---|---|
@@ -138,7 +138,7 @@ Option keys beyond `only` and `warm` are accepted and ignored until T5-T7.
 
 ### T4 rows
 
-- 2026-11-10, tree /Users/pdstuber/projects/wargrid-wt-native, host Mac: fetched live via WebFetch (excerpted by a small model, not raw): gdext book export-web, godot-cpp README, Godot Exporting for the Web, Compiling for the Web (latest, not 4.7), gdext #438, #1119. Result: all six fetched; quotes in docs/reference/native-sim-spike-candidates.md. Label: source. Raw copies from the same day: WORK/prep/toolchain-sources/. Not re-fetched: Godot PR 124118. Gap: "Emscripten 6.0.12+" on the latest compiling page looks odd; not reconciled.
+- 2026-11-10, tree ~/projects/wargrid-wt-native, host Mac: fetched live via WebFetch (excerpted by a small model, not raw): gdext book export-web, godot-cpp README, Godot Exporting for the Web, Compiling for the Web (latest, not 4.7), gdext #438, #1119. Result: all six fetched; quotes in docs/reference/native-sim-spike-candidates.md. Label: source. Raw copies from the same day: WORK/prep/toolchain-sources/. Not re-fetched: Godot PR 124118. Gap: "Emscripten 6.0.12+" on the latest compiling page looks odd; not reconciled.
 - Output: docs/reference/native-sim-spike-candidates.md (new, untracked; no commit).
 
 ### T5 horde slice rows (2026-11-10, host Mac, tree wt/t5, base 96000ae + uncommitted work)
@@ -158,7 +158,7 @@ Not covered by GDScript scenario: contained units (Rust unit test `contained_and
 
 ### T6 rows (movement slice)
 
-Tree `/Users/pdstuber/projects/wargrid-native-work/wt/t6`, branch `spike-native-sim-t6`, HEAD 96000ae plus uncommitted T6 work. Host: Mac (Apple Silicon), macOS 27.2.1, Godot 4.7.2.stable.official.ed1daf0bf, toolchain from `native/rust-toolchain.toml`, clippy from stable. Other tasks (T5, T7) ran on the Mac at the same time: no row here is a timing row. Raw logs in `/Users/pdstuber/projects/wargrid-native-work/logs/t6/`. Measured 2026-11-10 21:52-22:14 CET unless labelled.
+Tree `~/projects/wargrid-native-work/wt/t6`, branch `spike-native-sim-t6`, HEAD 96000ae plus uncommitted T6 work. Host: Mac (Apple Silicon), macOS 27.2.1, Godot 4.7.2.stable.official.ed1daf0bf, toolchain from `native/rust-toolchain.toml`, clippy from stable. Other tasks (T5, T7) ran on the Mac at the same time: no row here is a timing row. Raw logs in `~/projects/wargrid-native-work/logs/t6/`. Measured 2026-11-10 21:52-22:14 CET unless labelled.
 
 | # | Command | Result | Label | Log |
 |---|---|---|---|---|
@@ -188,7 +188,7 @@ Not covered by the workloads (row 5), covered instead by Rust unit tests and `te
 
 ### T7 rows (browser probe and snapshot probe), 2026-11-10
 
-Tree: /Users/pdstuber/projects/wargrid-native-work/wt/t7 @ 96000ae + uncommitted T7 changes (working tree exported). Host: Mac (macOS 27.2.1, Apple M-series). Functional runs, NOT timing: single runs, Mac not checked quiet. Logs: WORK/results/<label>/ (run.txt, web-*.log, server.log), build logs WORK/logs/t7/.
+Tree: ~/projects/wargrid-native-work/wt/t7 @ 96000ae + uncommitted T7 changes (working tree exported). Host: Mac (macOS 27.2.1, Apple M-series). Functional runs, NOT timing: single runs, Mac not checked quiet. Logs: WORK/results/<label>/ (run.txt, web-*.log, server.log), build logs WORK/logs/t7/.
 
 #### Versions and commands (Stage 2: versions)
 - Godot 4.7.2.stable (official), template web_dlink_nothreads_release 4.7.2 (its own banner: "Emscripten 4.0.20, single-threaded, GDExtension support").
@@ -248,11 +248,11 @@ Reading [measured, caveat: snapshot-by-dict of 400 entities incl. 60-point route
 
 #### Deck (Stage 2 gate)
 [unverified] The W3 functional run on the Deck was NOT done. The Deck lock (WORK/locks/deck) was held by T8's back-to-back Deck runs from 22:11 to 22:23 (about 330 retries at 1 s, log WORK/logs/t7/deck-retry.log: all `LOCKED`), so the run never started. Stage 2 gate stays open. Command to run when the Deck is free (export is ready and kept):
-`sh native/tools/web_run.sh deck firefox /Users/pdstuber/projects/wargrid-native-work/exports/t7-96000ae/W3 'probe=1&only=contact' t7-deck-w3 600` (from the t7 tree; record the Firefox version from the logged UA line). Also available: W3-4.0.20 in the same folder, and a panic run with `probe=panic`.
+`sh native/tools/web_run.sh deck firefox ~/projects/wargrid-native-work/exports/t7-96000ae/W3 'probe=1&only=contact' t7-deck-w3 600` (from the t7 tree; record the Firefox version from the logged UA line). Also available: W3-4.0.20 in the same folder, and a panic run with `probe=panic`.
 
 ### T9 rows (integration and behaviour evidence, Stage 5)
 
-Tree `/Users/pdstuber/projects/wargrid-wt-native`, branch `spike-native-sim`, HEAD e2693e7 plus the uncommitted T9 fixes below. Host: Mac (Apple M6), macOS 27.2.1, Godot 4.7.2.stable.official.ed1daf0bf, rustc 1.96.0-nightly (03749d625 2026-03-14) from `native/rust-toolchain.toml`, clippy from stable, Linux container `rust:1.94-slim` (rustc 1.94.1, x86-64). T8 ran on the Deck at the same time (lock held by T8 throughout): no row here is a timing row. Raw logs in `/Users/pdstuber/projects/wargrid-native-work/logs/t9/`. Measured 2026-11-10 22:22-22:50 CET. The extension is removed again at the end (`build.sh remove`, `REMOVED`); the final suite, netplay, lint and warnings ran on that final tree. Both slices (horde, move) green: no slice was left out.
+Tree `~/projects/wargrid-wt-native`, branch `spike-native-sim`, HEAD e2693e7 plus the uncommitted T9 fixes below. Host: Mac (Apple M6), macOS 27.2.1, Godot 4.7.2.stable.official.ed1daf0bf, rustc 1.96.0-nightly (03749d625 2026-03-14) from `native/rust-toolchain.toml`, clippy from stable, Linux container `rust:1.94-slim` (rustc 1.94.1, x86-64). T8 ran on the Deck at the same time (lock held by T8 throughout): no row here is a timing row. Raw logs in `~/projects/wargrid-native-work/logs/t9/`. Measured 2026-11-10 22:22-22:50 CET. The extension is removed again at the end (`build.sh remove`, `REMOVED`); the final suite, netplay, lint and warnings ran on that final tree. Both slices (horde, move) green: no slice was left out.
 
 T9 fixes (integration):
 - `game/tests/test_map.gd:59,72`: preset count 11 -> 13 (T3 appended `Web Bench Dlink` and `Web Render Bench Dlink`, authorized by the handoff; not a loosening: every preset is still checked for the notice and credits).
@@ -289,7 +289,7 @@ Not done in T9: Deck replay (above); Deck W3 (T11); Safari and Vivaldi digest ru
 
 Copied verbatim, headings demoted (`#` to `###`, `##` to `####`). T12 rows hold the arithmetic behind the [report](native-sim-spike.md) section 1.
 
-### T8 rows (2026-11-10, tree /Users/pdstuber/projects/wargrid-wt-native @ 1d43859, Deck Firefox 159 via native/tools/web_run.sh, mains power)
+### T8 rows (2026-11-10, tree ~/projects/wargrid-wt-native @ 1d43859, Deck Firefox 159 via native/tools/web_run.sh, mains power)
 
 Exports (working tree of 1d43859, clean apart from the web_run/deck.sh edit below; git logs next to them): WORK/exports/wargrid-wt-native-1d43859/{W1,W2,R1,R2}. Sizes KB: W1 51784, W2 60236, R1 51784, R2 60236 (W2/R2 add index.side.wasm 44078870 B). Template tax in size: +8452 KB (+16.3 %).
 Raw logs: WORK/results/t8-{w1-full,w1-2,w1-3,w2-1,w2-2,w2-3,r1-1..3,r2-1..3}/ (web-*.log plus run.txt with ACAD and /proc/loadavg at START and END). Loop logs: WORK/logs/t8-loop.log, t8-loop-r.log. Mac side: nothing timed.
@@ -361,7 +361,7 @@ Reading: ashfall (steady scene) shows the template tax at +7 to +16 % on tick an
 
 ### T10 rows (Mac measurements), 2026-11-10 23:04-23:40 CET
 
-Tree /Users/pdstuber/projects/wargrid-wt-native, built and exported from HEAD 1eb8f89 (working tree; only `native/tools/deck.sh` was dirty, by T11, not used here). Host Mac Apple M6, macOS 27.2.1 (`sw_vers`), Godot 4.7.2.stable.official, Firefox 160 (separate instance, fresh profile copy), Safari 27.2 and Vivaldi (Chrome 156) cold-started by web_run.sh, rustc 1.96.0-nightly (nightly-2026-03-15), Emscripten 3.1.74 (main), 4.0.20 (one comparison). Nothing else ran on the Mac; T11 ran on the Deck only.
+Tree ~/projects/wargrid-wt-native, built and exported from HEAD 1eb8f89 (working tree; only `native/tools/deck.sh` was dirty, by T11, not used here). Host Mac Apple M6, macOS 27.2.1 (`sw_vers`), Godot 4.7.2.stable.official, Firefox 160 (separate instance, fresh profile copy), Safari 27.2 and Vivaldi (Chrome 156) cold-started by web_run.sh, rustc 1.96.0-nightly (nightly-2026-03-15), Emscripten 3.1.74 (main), 4.0.20 (one comparison). Nothing else ran on the Mac; T11 ran on the Deck only.
 Quiet check (plan rule): at the start no process matched `godot|cargo|rustc|emcc` and the top CPU process was 11 % (the claude CLI), so rows are NOT tagged "loaded" by the plan's rule. Load average was never below ~1.3 though (1.4-2.3 at run starts/ends, `uptime` is in each log): the Mac was shared with the user's session. Treat absolute numbers as "Mac, normal desktop background"; the A/A spread across the three interleaved runs is small (see below), so the ratios hold.
 Never multiplied by F. Raw logs: desktop `WORK/results/mac/desktop/<row>-<mode>-<run>.log` (each starts with pwd, rev, uptime, command); Firefox/Safari/Vivaldi/render/probe `WORK/results/t10-<...>/web-*.log` with the run label equal to the folder; drivers `WORK/logs/t10/{builds,exports,desktop,web}.sh`, their outputs `WORK/logs/t10/{builds,exports,desktop,web-all,kernel}.log`, per-run web_run output `WORK/logs/t10/web-<label>.log`. Analysis script: scratchpad `t10an.py` (medians over the three runs, "(min-max)" in brackets is the A/A spread of that statistic). All 59 web_run invocations exit 0; 18 desktop runs exit 0 with `mismatch=none`.
 
@@ -571,7 +571,7 @@ Copied `WORK/build/wargrid-wt-native/linux/target/release/wargrid_runner` (Linux
 
 ### T12 rows (decision-rule arithmetic), 2026-11-10
 
-Tree /Users/pdstuber/projects/wargrid-wt-native (`spike-native-sim` ed9d868, report written uncommitted). No new measurement: every number below is arithmetic on the T8, T10, T11 rows (label inferred unless marked). Script: inline `python3 -I` in the T12 session, inputs typed from the rows and `WORK/logs/t11-analysis.txt`.
+Tree ~/projects/wargrid-wt-native (`spike-native-sim` ed9d868, report written uncommitted). No new measurement: every number below is arithmetic on the T8, T10, T11 rows (label inferred unless marked). Script: inline `python3 -I` in the T12 session, inputs typed from the rows and `WORK/logs/t11-analysis.txt`.
 
 #### Inputs (measured, copied)
 - Deck Firefox hordes300, sums over 1800 ticks (ms), T11 medians: horde gd 3883.4, pass pack 2335.0, call_pass 84.2, native call 140.1, apply 51.6, native pack 2325.1, entities 530,719; move gd 4206.7, pass pack 2293.8, call_pass 120.9, native call 142.7, apply 670.0, native pack 2309.4, entities 442,998; off tick_sum 20,377 (mean tick 11.32 ms).
@@ -609,7 +609,7 @@ Gate passed (T11). Stage 5 green except Windows (T9, T11). G_inc 1.09 < 2.20 and
 
 ### T14 rows (gate-review fixes and lean review), 2026-11-10
 
-Tree /Users/pdstuber/projects/wargrid-wt-native, `spike-native-sim` a517e5b plus uncommitted doc edits. No new measurement. Arithmetic: inline `python3 -I` on the T11 and T12 rows (label inferred). Raw per-run call sums re-read from `WORK/results/t11-{native,pass}-hordes300-{1,2,3}/web-*.log`.
+Tree ~/projects/wargrid-wt-native, `spike-native-sim` a517e5b plus uncommitted doc edits. No new measurement. Arithmetic: inline `python3 -I` on the T11 and T12 rows (label inferred). Raw per-run call sums re-read from `WORK/results/t11-{native,pass}-hordes300-{1,2,3}/web-*.log`.
 
 #### Rulings on the T13 findings (`WORK/rows/t13.md`)
 | # | Severity | Ruling | Where |

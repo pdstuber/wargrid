@@ -4,8 +4,8 @@ Status: **PROPOSED (2026-11-07), nothing adopted.** Written by a read-only Opus 
 
 ## Scope and method
 
-- **Sources:** 36 main sessions and 94 subagent transcripts under `~/.claude/projects/-Users-pdstuber-projects-wargrid*/` modified on or after 2026-11-06, including the `-wt` and `-wt-2` worktrees. Parsed with small stream scripts (usage per request, tool calls, tool-result sizes and errors, tool wall time). Totals agree with `tools/session_usage.py` (coordinator: 54,750,897 processed, 249 requests).
-- **Main subject:** the coordinator session `77c02dce-6b2d-4f3e-b2bf-73a55134f5e7` (short name `wargrid-5e [2acd58]`), 12:00–20:26 UTC on 2026-11-07: gate 3 (G3.1–G3.5), gate 3 review, ultra review, playtest fixes, economy parity rework, parity harness, Opus reviews, rendered rerun. Earlier milestone runs: `cf1e101b` (gate 1), `b6dc7faa` (gate 2), `61d689f5` (gate 3 planning).
+- **Sources:** 36 main sessions and 94 subagent transcripts under `~/.claude/projects/<project>*/` modified on or after 2026-11-06, including the `-wt` and `-wt-2` worktrees. Parsed with small stream scripts (usage per request, tool calls, tool-result sizes and errors, tool wall time). Totals agree with `tools/session_usage.py` (coordinator: 54,750,897 processed, 249 requests).
+- **Main subject:** the coordinator session `77c02dce` (short name `wargrid-5e [2acd58]`), 12:00–20:26 UTC on 2026-11-07: gate 3 (G3.1–G3.5), gate 3 review, ultra review, playtest fixes, economy parity rework, parity harness, Opus reviews, rendered rerun. Earlier milestone runs: `cf1e101b` (gate 1), `b6dc7faa` (gate 2), `61d689f5` (gate 3 planning).
 - "Processed" means input plus cached input per request, summed, as in the earlier retrospective. Times are UTC from the transcripts.
 - This analysis itself (`agent-a1f3a421e…`) is excluded from all counts.
 

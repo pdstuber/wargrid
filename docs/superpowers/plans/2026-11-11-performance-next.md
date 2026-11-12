@@ -16,7 +16,7 @@
 
 Every task follows these; a task that cannot returns `BLOCKED`.
 
-- **Places.** `MAIN` = `/Users/pdstuber/projects/wargrid`. `WT` = `/Users/pdstuber/projects/wargrid-wt-perf` (branch `perf-next`, created by T0 from `main`). All work happens in `WT`; `MAIN` is never edited by this run. The resume record is `WT/docs/reference/performance-next-verification.md`; the coordinator's own git checks run as `git -C WT ...`. `WORK` = `/Users/pdstuber/projects/wargrid-perf-work` (not tracked; logs, exports, scratch scripts; today's experiment results are already there).
+- **Places.** `MAIN` = `~/projects/wargrid`. `WT` = `~/projects/wargrid-wt-perf` (branch `perf-next`, created by T0 from `main`). All work happens in `WT`; `MAIN` is never edited by this run. The resume record is `WT/docs/reference/performance-next-verification.md`; the coordinator's own git checks run as `git -C WT ...`. `WORK` = `~/projects/wargrid-perf-work` (not tracked; logs, exports, scratch scripts; today's experiment results are already there).
 - **Every shell call starts with `cd WT && `.** A subagent's shell returns to `MAIN` after each call. Every log starts with `pwd` and `git rev-parse --short HEAD`.
 - **Host.** The Mac mini (Apple M6). No Steam Deck in this run (user, 2026-11-11). Budgets are the ledger's dev-machine values (target ÷ 5.5): simulation tick p95 1.82 ms, plumbing 0.91 ms, rendered frame 3.04 ms. Never change a budget, ceiling, guard or pin; report `EXCEEDED`.
 - **Quiet host for timings.** Before every timed run: `uptime` (load under 2.5), the heavy-app `pgrep` check (if running: measure, tag the row "loaded", rerun later), no other Godot, scons or emcc process. Benchmarks run alone, never beside the suite.
@@ -156,7 +156,7 @@ The speed-built web template was measured on 2026-11-11: 0-4 % gain, inside the 
 ### Stop gate 1
 
 - Opus gate review (fresh context) of the T1 diff and of the T3 numbers: is the clock implemented as written and wired into every `_process` override, do the tests pin the table, is any gate, pin or budget touched, is the probe's `ROWS EQUAL` check real.
-- For the user: play a skirmish from `WT` (`cd /Users/pdstuber/projects/wargrid-wt-perf && sh tools/run_game.sh`), press F3, and say whether anything feels late and what split share the overlay shows; read the T3 numbers (how a tick divides, and the bound from rows). Then the user says whether the split is kept and whether T4 starts.
+- For the user: play a skirmish from `WT` (`cd ~/projects/wargrid-wt-perf && sh tools/run_game.sh`), press F3, and say whether anything feels late and what split share the overlay shows; read the T3 numbers (how a tick divides, and the bound from rows). Then the user says whether the split is kept and whether T4 starts.
 
 ### T4: View rows (Opus design, then Sonnet)
 
