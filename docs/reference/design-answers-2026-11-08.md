@@ -369,3 +369,24 @@ Evidence: [dock-hold experiment](dock-hold-experiment.md).
 - **Dock model:** adopt neither split nor queue yet; measure option C next (one pile lock per credit for every collector, rest of the stand unlocked), with a per-phase breakdown for the unexplained FRC 7-worker loss and the saturation and payback metrics.
 - **Gated multi-collector targets:** change them (steady window, re-measured values) together with the change that adopts a dock model, not before.
 - **Code location:** harness tooling and the note on `main`; the split and queue variants stay on the local branch `dock-hold` as evidence.
+
+## Dock option C follow-up (user, 2026-11-12 night)
+
+Answers to the open points of the [dock-hold note](dock-hold-experiment.md#option-c-and-saturation-2026-11-12):
+
+- **Dock model:** none chosen yet; the frc7 shortfall is investigated first, because it decides whether any dock rebuild pays (c1 18 of 22 rows, split 17, hold 16, c2 15).
+- **USA 2-Chinook overshoot:** up to +5 % above Zero Hour is acceptable (c1's usa2 far +4.3 % steady is inside).
+- **frc7 shortfall** (Wargrid loses 14.4 % against the pile bound, Zero Hour about 7 %): one small evidence-only investigation: phase breakdown at n = 1 and n = 7 on both sides, the gap between a pile release and the next grant, and the far-depot cycle length.
+- **Economy metrics:** saturated income per dock site with spend to 90 %, and marginal income with payback, become standing report rows (cap, n90, spend90 per curve, payback only up to n90, a flag when a pile empties); the basket metric waits until a basket is chosen.
+- **Branch `dock-hold`:** stays local; nothing is cherry-picked or pushed until a dock decision.
+- **c1 and c2 in CI:** run only when named (`WARGRID_DOCK_MODELS`); the default suite runs hold, split and queue.
+
+## frc7 gap follow-up (user, 2026-11-12 night)
+
+Answers after the [frc7 gap measurement](dock-hold-experiment.md#frc7-gap-measurement-2026-11-12) (one extra cell walked per trip with several workers; no dock lock rule touches it):
+
+- **Dock model:** c1 is chosen for a clean rebuild (one pile throughput rule, 184 ticks per 300 credits; usa2 far +4.3 % is inside the +5 % allowance). Order: the dock rebuild comes before the movement fix, so FRC income leaves hold's cap (frc7 close 1590 against Zero Hour's 2850) without waiting for it.
+- **Release first:** release 0.11.0 before any of this, so the live site gets the new graphics (top priority).
+- **Then:** the c1 rebuild plan (Opus-written), then its run; frc7 close and far rows stay reported, not judged, because the movement fix will lift them about 8 %. The evidence-only spike on the rule behind the extra cell (trace one leaving worker's cells against the standing workers' cells, then the route, arrival-cell and exit-cell code) runs after it or in a second worktree.
+- **Start-dependent n = 7 rates** (split sweep 2385 against opening 2625; Zero Hour 30 apart): a caveat in the note for now; revisited after the movement fix.
+- **Zero Hour far opening:** three new games approved and run (`open_worker_u3125_x7`, 3 of 3).
