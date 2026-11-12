@@ -1,4 +1,4 @@
-FROM alpine:3.22 AS compress
+FROM alpine:3.24 AS compress
 RUN apk add --no-cache brotli
 WORKDIR /site
 COPY site/ .
