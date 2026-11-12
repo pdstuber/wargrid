@@ -8,13 +8,22 @@ tick=""
 file=$(CDPATH= cd -- "$(dirname -- "$file")" && pwd)/$(basename -- "$file")
 stem=${file%.json}
 repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd) || exit 1
-client=${WARGRID_CLIENT:-"godot --headless --path $repo_root/game"}
+# A repository path with spaces breaks word splitting, so the default command is spelled out; WARGRID_CLIENT is split on spaces.
+run_client() {
+	if [ -n "${WARGRID_CLIENT:-}" ]; then
+		# shellcheck disable=SC2086
+		$WARGRID_CLIENT -- --netclient "$@"
+	else
+		godot --headless --path "$repo_root/game" -- --netclient "$@"
+	fi
+}
 log=$(mktemp) || exit 1
 trap 'rm -f "$log"' EXIT HUP INT TERM
 rows=$(${PYTHON:-python3} "$repo_root/tools/playtest_session.py" --replay-args "$file") || exit 1
+[ -n "$rows" ] || { echo "REPLAY FAILED: the session holds no matches"; exit 1; }
 status=0
 tab=$(printf '\t')
-while IFS=$tab read -r k cmd mode map seed factions end_tick end_digest marker_ticks; do
+while IFS=$tab read -r k cmd mode map seed factions end_tick end_digest marker_ticks build; do
 	set -- --replay-log "$cmd" --map "$map" --seed "$seed" --oracle-ticks "$end_tick"
 	[ "$factions" = "-" ] || set -- "$@" --factions "$factions"
 	state_ticks=$marker_ticks
@@ -23,8 +32,7 @@ while IFS=$tab read -r k cmd mode map seed factions end_tick end_digest marker_t
 		set -- "$@" --snapshot-dir "$stem-m$k-snapshots"
 	fi
 	[ "$state_ticks" = "-" ] || set -- "$@" --state-ticks "$state_ticks"
-	# shellcheck disable=SC2086
-	$client -- --netclient "$@" >"$log" 2>&1
+	run_client "$@" >"$log" 2>&1
 	grep '^ORACLE STATE' "$log"
 	replayed=$(sed -n 's/^ORACLE FINAL [0-9]* //p' "$log")
 	if [ -z "$replayed" ]; then
@@ -34,7 +42,7 @@ while IFS=$tab read -r k cmd mode map seed factions end_tick end_digest marker_t
 	elif [ "$replayed" = "$end_digest" ]; then
 		echo "REPLAY MATCHED $k"
 	else
-		echo "REPLAY DIFFERS $k recorded=$end_digest replayed=$replayed"
+		echo "REPLAY DIFFERS $k recorded=$end_digest replayed=$replayed (recorded on build $build)"
 		status=1
 	fi
 done <<EOF2

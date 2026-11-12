@@ -58,16 +58,19 @@ func _open_session() -> void:
 	for id: String in _boxes: _boxes[id].set_pressed_no_signal(checked(id))
 
 func end_match() -> bool:
-	if not _active or _reviewed: return false
-	_reviewed = true
+	if not _active: return false
 	cancel_marker()
 	_checklist.hide()
-	_form.open_review(_session, _session.finish_match(match_record.call()))
+	if _reviewed: _form.open_leave(_session)
+	else:
+		_reviewed = true
+		_form.open_review(_session, _session.finish_match(match_record.call()))
 	return true
 
 func begin_match() -> void:
 	_reviewed = false
 	_form.hide()
+	if _session != null: _session.clear_pending()
 	if not _active: return
 	_open_session()
 	_checklist.show()
@@ -130,6 +133,7 @@ func _viewport_image() -> Image:
 	return get_viewport().get_texture().get_image()
 
 func _tick_triggers(matches: Callable) -> void:
+	if not _active: return
 	for item: Dictionary in _card.get("try", []):
 		var id: String = item.id
 		if item.has("trigger") and not checked(id) and matches.call(item.trigger):

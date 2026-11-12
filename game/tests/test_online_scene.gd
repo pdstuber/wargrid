@@ -6,6 +6,7 @@ const Launcher = preload("res://scenes/launcher.tscn")
 const LauncherScript = preload("res://scripts/launcher.gd")
 const AudioSettings = preload("res://scripts/presentation/audio_settings.gd")
 const MatchSettings = preload("res://scripts/match_settings.gd")
+const PlaytestSettings = preload("res://scripts/playtest/playtest_settings.gd")
 const SkirmishMain = preload("res://scripts/skirmish_main.gd")
 const Lockstep = preload("res://scripts/net/lockstep.gd")
 const Wire = preload("res://scripts/net/wire.gd")
@@ -213,15 +214,16 @@ func test_notices_reach_the_hud_while_processing(runner) -> bool:
 	return true
 
 func test_launcher_layout(runner) -> bool:
-	var original: Vector2i = runner.root.size
 	var saved_settings: String = AudioSettings.path
 	var scratch: String = "user://test-launcher-settings-%d.cfg" % OS.get_process_id()
 	AudioSettings.path = scratch
 	DirAccess.remove_absolute(scratch)
 	for size in [Vector2i(1280, 720), Vector2i(1920, 1080)]:
-		runner.root.size = size
+		var port := SubViewport.new()
+		port.size = size
+		runner.root.add_child(port)
 		var launcher = Launcher.instantiate()
-		runner.root.add_child(launcher)
+		port.add_child(launcher)
 		launcher.get_node("Center/Box/WaitRow").visible = true
 		await runner.process_frame
 		await runner.process_frame
@@ -238,7 +240,7 @@ func test_launcher_layout(runner) -> bool:
 		for part in ["Electronic Arts", "GNU GPL", "no warranty", "github.com/pdstuber/wargrid"]:
 			runner.check(part in legal, "N5 launcher legal notice names %s" % part)
 		launcher.free()
-	runner.root.size = original
+		port.free()
 	AudioSettings.path = saved_settings
 	DirAccess.remove_absolute(scratch)
 	var offline = load(LauncherScript.OFFLINE_SCENE).instantiate()
@@ -277,11 +279,12 @@ func test_funds_rejection_is_announced(runner) -> bool:
 	return true
 
 func test_launcher_faction_selectors_fit(runner) -> bool:
-	var original: Vector2i = runner.root.size
 	for size in [Vector2i(1280, 720), Vector2i(1920, 1080)]:
-		runner.root.size = size
+		var port := SubViewport.new()
+		port.size = size
+		runner.root.add_child(port)
 		var launcher = Launcher.instantiate()
-		runner.root.add_child(launcher)
+		port.add_child(launcher)
 		await runner.process_frame
 		await runner.process_frame
 		var box: Control = launcher.get_node("Center/Box")
@@ -294,7 +297,7 @@ func test_launcher_faction_selectors_fit(runner) -> bool:
 		runner.check(launcher.get_node("Center/Box/FactionRow").get_global_rect().size.x <= 520.0, "F5 faction row stays compact at %s" % size)
 		runner.check(own.item_count == 3 and own.get_item_text(0) == "China" and own.get_item_text(1) == "Free Resistance Coalition" and own.get_item_text(own.selected) == "United States", "F5 selector lists faction display names and defaults to the United States")
 		launcher.free()
-	runner.root.size = original
+		port.free()
 	return true
 
 func _start_message(id: String, match_seed: int) -> Dictionary:
@@ -532,11 +535,12 @@ func _credits_wired(runner, shown: String, size: Vector2i) -> void:
 	runner.check(ordered, "N10 Credits sections run Wargrid, Music, Voice, Maps, Godot, third-party at %s, got %s" % [size, at])
 
 func test_credits_panel_layout(runner) -> bool:
-	var original: Vector2i = runner.root.size
 	for size in [Vector2i(1280, 720), Vector2i(1920, 1080)]:
-		runner.root.size = size
+		var port := SubViewport.new()
+		port.size = size
+		runner.root.add_child(port)
 		var launcher = Launcher.instantiate()
-		runner.root.add_child(launcher)
+		port.add_child(launcher)
 		await runner.process_frame
 		await runner.process_frame
 		var panel: Control = launcher.get_node("CreditsPanel")
@@ -555,7 +559,7 @@ func test_credits_panel_layout(runner) -> bool:
 		close.pressed.emit()
 		runner.check(not panel.visible and launcher.get_node("Center").visible, "N10 Close returns to the launcher at %s" % size)
 		launcher.free()
-	runner.root.size = original
+		port.free()
 	return true
 
 func test_online_playtest_record(runner) -> bool:
@@ -564,7 +568,7 @@ func test_online_playtest_record(runner) -> bool:
 	_peer_packets(online.transport, 2, 4, PEER_TICKS)
 	_run(main, 10)
 	var record: Dictionary = main.playtest_match()
-	runner.check(record.mode == "online", "N-PT1 the online record names its mode")
+	runner.check(record.mode == "online" and record.build == PlaytestSettings.build_id(), "N-PT1 the online record names its mode and build")
 	runner.check(record.commands == Lockstep.log_lines(online.lockstep.command_log()) and record.commands.size() >= 1, "N-PT1 the record holds the lockstep command lines")
 	runner.check(main.playtest_context().over == false, "N-PT1 a running online match is not over")
 	main.free()

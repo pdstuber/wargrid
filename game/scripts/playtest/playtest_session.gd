@@ -3,6 +3,7 @@ extends RefCounted
 
 const FORMAT: int = 1
 const CURRENT := "current.json"
+const LAST := "last-session.json"
 static var dir: String = "user://playtests"
 static var current: PlaytestSession = null
 var data: Dictionary = {}
@@ -21,6 +22,10 @@ static func open_count() -> int:
 	var shown: Dictionary = current.data if current != null else _stored()
 	return shown.matches.size() if not shown.is_empty() else -1
 
+static func open_focus() -> String:
+	var shown: Dictionary = current.data if current != null else _stored()
+	return str(shown.get("focus", ""))
+
 static func file_name(started: String) -> String:
 	return "session-%s.json" % started.replace(":", "-")
 
@@ -36,6 +41,9 @@ func add_marker(marker: Dictionary) -> void:
 
 func pending_markers() -> Array[Dictionary]:
 	return _pending
+
+func clear_pending() -> void:
+	_pending.clear()
 
 func finish_match(record: Dictionary) -> int:
 	var finished: Dictionary = record.duplicate(true)
@@ -61,7 +69,9 @@ func write(web: bool, download: Callable) -> String:
 	var file: String = file_name(data.started)
 	var json: String = JSON.stringify(data, "\t")
 	var result: String = file
-	if web: download.call(json.to_utf8_buffer(), file, "application/json")
+	if web:
+		_store(LAST, json) # the browser may block the download; this copy survives until the next save
+		download.call(json.to_utf8_buffer(), file, "application/json")
 	else:
 		DirAccess.make_dir_recursive_absolute(dir)
 		var out := FileAccess.open(dir.path_join(file), FileAccess.WRITE)
@@ -77,8 +87,11 @@ func discard() -> void:
 	if current == self: current = null
 
 func _mirror() -> void:
+	_store(CURRENT, JSON.stringify(data))
+
+func _store(file: String, text: String) -> void:
 	DirAccess.make_dir_recursive_absolute(dir)
-	var out := FileAccess.open(dir.path_join(CURRENT), FileAccess.WRITE)
+	var out := FileAccess.open(dir.path_join(file), FileAccess.WRITE)
 	if out == null: return
-	out.store_string(JSON.stringify(data))
+	out.store_string(text)
 	out.close()

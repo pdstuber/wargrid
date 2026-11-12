@@ -13,7 +13,7 @@ var sessions: String = "user://test-playtests-%d" % OS.get_process_id()
 var saved_dir: String = ""
 
 func cases() -> Array[Callable]:
-	return [test_shipped_focus_file_valid, test_focus_validation, test_trigger_matching, test_switch_defaults_and_override, test_build_id, test_launcher_focus_card, test_capture_bounds, test_marker_fields, test_session_schema, test_session_web_download, test_session_desktop_write, test_session_resumes_after_restart]
+	return [test_shipped_focus_file_valid, test_focus_validation, test_trigger_matching, test_switch_defaults_and_override, test_build_id, test_launcher_focus_card, test_capture_bounds, test_marker_fields, test_session_schema, test_session_web_download, test_session_desktop_write, test_session_resumes_after_restart, test_suite_playtest_dir_redirected]
 
 func _begin() -> String:
 	var saved: String = AudioSettings.path
@@ -143,10 +143,9 @@ func _clear_of_siblings(runner, box: Control, control: Control, view: Rect2, lab
 		if other != control and other is Control and other.visible:
 			runner.check(not control.get_global_rect().intersects(other.get_global_rect()), "PT6 %s clear of %s" % [label, other.name])
 
-func _launcher(runner, size: Vector2i):
-	runner.root.size = size
+func _launcher(runner, port: SubViewport):
 	var launcher = Launcher.instantiate()
-	runner.root.add_child(launcher)
+	port.add_child(launcher)
 	await runner.process_frame
 	await runner.process_frame
 	return launcher
@@ -158,12 +157,15 @@ func _labels_inside(runner, node: Node, view: Rect2, label: String) -> void:
 
 func test_launcher_focus_card(runner) -> bool:
 	var saved := _begin()
-	var original: Vector2i = runner.root.size
 	for size in [Vector2i(1280, 720), Vector2i(1920, 1080)]:
+		var port := SubViewport.new()
+		port.size = size
+		runner.root.add_child(port)
 		var view := Rect2(Vector2.ZERO, Vector2(size))
 		var label := str(size)
 		PlaytestSettings.save_enabled(true)
-		var launcher = await _launcher(runner, size)
+		var launcher = await _launcher(runner, port)
+		runner.check(launcher.get_viewport().get_visible_rect().size == Vector2(size), "PT6 the viewport really is %s, got %s" % [size, launcher.get_viewport().get_visible_rect().size])
 		var box: Control = launcher.get_node("Center/Box")
 		var button: Button = launcher.get_node_or_null("Center/Box/ThisBuild")
 		runner.check(button != null and button.visible, "PT6 ThisBuild shows with the helper on at %s" % label)
@@ -188,7 +190,7 @@ func test_launcher_focus_card(runner) -> bool:
 		launcher.free()
 		FocusCards.chosen = ""
 		PlaytestSettings.save_enabled(false)
-		launcher = await _launcher(runner, size)
+		launcher = await _launcher(runner, port)
 		box = launcher.get_node("Center/Box")
 		button = launcher.get_node_or_null("Center/Box/ThisBuild")
 		runner.check(button == null or not button.visible, "PT6 ThisBuild hidden with the switch off at %s" % label)
@@ -207,7 +209,7 @@ func test_launcher_focus_card(runner) -> bool:
 			await runner.process_frame
 			runner.check(button == null or not button.visible, "PT6 switching off hides ThisBuild at %s" % label)
 		launcher.free()
-	runner.root.size = original
+		port.free()
 	_end(saved)
 	return true
 
@@ -222,6 +224,14 @@ func _image(width: int, height: int, noise: bool = false) -> Image:
 		image.set_data(width, height, false, Image.FORMAT_RGB8, bytes)
 	else: image.fill(Color(0.2, 0.5, 0.3))
 	return image
+
+func _grainy(width: int, height: int) -> Image:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	var bytes := PackedByteArray()
+	bytes.resize(width * height * 3)
+	for i in bytes.size(): bytes[i] = clampi(128 + rng.randi_range(-128, 128), 0, 255)
+	return Image.create_from_data(width, height, false, Image.FORMAT_RGB8, bytes)
 
 func _decode(encoded: String) -> Image:
 	var image := Image.new()
@@ -241,6 +251,10 @@ func test_capture_bounds(runner) -> bool:
 	var encoded := MarkerCapture.jpg_base64(noisy)
 	runner.check(encoded == "" or Marshalls.base64_to_raw(encoded).size() <= MarkerCapture.MAX_JPG_BYTES, "PT7 a noise image is bounded or dropped")
 	runner.check(noisy.get_size() == Vector2i(1920, 1080), "PT7 the noise image keeps its size")
+	var grainy := _grainy(640, 360)
+	runner.check(grainy.save_jpg_to_buffer(MarkerCapture.QUALITY).size() > MarkerCapture.MAX_JPG_BYTES and grainy.save_jpg_to_buffer(MarkerCapture.FALLBACK_QUALITY).size() <= MarkerCapture.MAX_JPG_BYTES, "PT7 fixture: the grainy image is too big at the first quality and fits at the fallback")
+	var kept_size: int = Marshalls.base64_to_raw(MarkerCapture.jpg_base64(grainy)).size()
+	runner.check(kept_size > 0 and kept_size <= MarkerCapture.MAX_JPG_BYTES, "PT7 the fallback quality keeps a screenshot the first quality cannot")
 	return true
 
 func test_marker_fields(runner) -> bool:
@@ -253,7 +267,7 @@ func test_marker_fields(runner) -> bool:
 	return true
 
 func _record(seed_value: int) -> Dictionary:
-	return {"mode": "offline", "map": "dry_wells", "seed": seed_value, "factions": ["frc", "china"], "seat": 0, "end_tick": 600, "end_digest": "abc", "result": "won", "commands": ["l1"]}
+	return {"mode": "offline", "map": "dry_wells", "seed": seed_value, "factions": ["frc", "china"], "seat": 0, "end_tick": 600, "end_digest": "abc", "result": "won", "commands": ["l1"], "build": "0.11.0-dev+abc"}
 
 func _marker(tick: int) -> Dictionary:
 	return MarkerCapture.marker("good", "ok", {"tick": tick, "camera": [1.0, 2.0], "selected": []}, "")
@@ -280,7 +294,7 @@ func test_session_schema(runner) -> bool:
 	runner.check(int(parsed.answers.q1.score) == 4 and parsed.answers.q1.text == "fine" and parsed.checklist.t1 == true, "PT9 answer and checklist, got %s" % [parsed.answers])
 	var match_keys: Array = parsed.matches[0].keys()
 	match_keys.sort()
-	runner.check(match_keys == ["commands", "end_digest", "end_tick", "factions", "map", "markers", "mode", "result", "seat", "seed"], "PT9 match keys, got %s" % [match_keys])
+	runner.check(match_keys == ["build", "commands", "end_digest", "end_tick", "factions", "map", "markers", "mode", "result", "seat", "seed"], "PT9 match keys, got %s" % [match_keys])
 	session.set_comment(0, 0, "why")
 	runner.check(session.data.matches[0].markers[0].comment == "why", "PT9 set_comment reaches the marker")
 	_end(saved)
@@ -297,6 +311,12 @@ func test_session_web_download(runner) -> bool:
 	var written: Array = Array(DirAccess.get_files_at(sessions))
 	runner.check(not written.any(func(file: String) -> bool: return file.begins_with("session-")), "PT10 the browser path writes no session file, got %s" % [written])
 	runner.check(PlaytestSession.current == null and not FileAccess.file_exists(sessions.path_join("current.json")), "PT10 the sitting is closed")
+	var kept: Variant = JSON.parse_string(FileAccess.get_file_as_string(sessions.path_join("last-session.json")))
+	runner.check(kept is Dictionary and kept.started == session.data.started and kept.matches.size() == 2, "PT10 the written JSON is kept as last-session.json in case the browser blocks the download")
+	var next := _two_match_session()
+	next.data.started = "2099-01-01T00:00:00"
+	next.write(true, func(_buffer: PackedByteArray, _file_name: String, _mime: String) -> void: pass)
+	runner.check(JSON.parse_string(FileAccess.get_file_as_string(sessions.path_join("last-session.json"))).started == "2099-01-01T00:00:00", "PT10 last-session.json is overwritten by the next save")
 	_end(saved)
 	return true
 
@@ -334,4 +354,8 @@ func test_session_resumes_after_restart(runner) -> bool:
 	var fresh := PlaytestSession.resume_or_open("c1", "b")
 	runner.check(fresh.data.matches.is_empty() and fresh.data.format == 1, "PT12 a corrupt file gives a new empty sitting")
 	_end(saved)
+	return true
+
+func test_suite_playtest_dir_redirected(runner) -> bool:
+	runner.check(PlaytestSession.dir != "user://playtests", "PT13 the suite never writes the player's real playtests folder, got %s" % PlaytestSession.dir)
 	return true

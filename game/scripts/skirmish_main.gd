@@ -40,7 +40,8 @@ func _ready() -> void:
 	_add_playtest()
 
 func _add_playtest() -> void:
-	var focus: String = PlaytestSession.current.data.focus if PlaytestSession.current != null else FocusCards.chosen
+	var focus: String = PlaytestSession.open_focus()
+	if focus.is_empty(): focus = FocusCards.chosen
 	_playtest = PlaytestOverlay.new()
 	_playtest.setup(FocusCards.card(focus, FocusCards.load_cards()), playtest_context, playtest_match)
 	$HUD.add_child(_playtest)
@@ -53,9 +54,7 @@ func menu_open() -> bool:
 	return super() or _playtest.holds_match()
 
 func _create_simulation() -> Simulation:
-	var sim: Simulation = Skirmish.create(true, "ai", factions, map_path, starts)
-	recorder = CommandRecorder.new(sim)
-	return sim
+	return Skirmish.create(true, "ai", factions, map_path, starts)
 
 # Tests swap `simulation` directly; a recorder left on the old one would swallow commands.
 func _recording() -> CommandRecorder:
@@ -74,7 +73,7 @@ func playtest_match() -> Dictionary:
 
 func _match_record(mode: String, match_factions: Array, lines: PackedStringArray) -> Dictionary:
 	var state: Dictionary = simulation.snapshot()
-	return {"mode": mode, "map": map_path.get_file().get_basename(), "seed": match_seed, "factions": match_factions, "seat": local_player, "end_tick": state.tick, "end_digest": StateHash.digest(state), "result": _result_text(state.match), "commands": lines}
+	return {"mode": mode, "map": map_path.get_file().get_basename(), "seed": match_seed, "factions": match_factions, "seat": local_player, "end_tick": state.tick, "end_digest": StateHash.digest(state), "build": PlaytestSettings.build_id(), "result": _result_text(state.match), "commands": lines}
 
 func _escape_pending() -> bool:
 	return not simulation.match_over() and (_attack_move_mode or inspected_id != -1 or super())

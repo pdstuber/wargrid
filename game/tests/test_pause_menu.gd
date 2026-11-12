@@ -47,9 +47,9 @@ func _esc(main) -> void:
 	event.pressed = true
 	main._input(event)
 
-func _scene(runner, packed):
+func _scene(runner, packed, parent = null):
 	var main = packed.instantiate()
-	runner.root.add_child(main)
+	(parent if parent != null else runner.root).add_child(main)
 	main.set_process(false)
 	main.set_physics_process(false)
 	await runner.process_frame
@@ -186,13 +186,15 @@ func test_quit_hidden_on_web(runner) -> bool:
 	return true
 
 func test_menu_layout(runner) -> bool:
-	var main = await _scene(runner, Skirmish)
-	var original: Vector2i = runner.root.size
-	_esc(main)
 	for size in [Vector2i(1280, 720), Vector2i(1920, 1080)]:
-		runner.root.size = size
+		var port := SubViewport.new()
+		port.size = size
+		runner.root.add_child(port)
+		var main = await _scene(runner, Skirmish, port)
+		_esc(main)
 		await runner.process_frame
 		await runner.process_frame
+		runner.check(main.get_viewport().get_visible_rect().size == Vector2(size), "E8 the viewport really is %s, got %s" % [size, main.get_viewport().get_visible_rect().size])
 		var menu: Control = main.get_node("HUD/PauseMenu")
 		var buttons: Array = menu.find_children("*", "Button", true, false).filter(func(button: Button) -> bool: return button.is_visible_in_tree())
 		var hud: Array[Rect2] = []
@@ -222,6 +224,5 @@ func test_menu_layout(runner) -> bool:
 			runner.check(Rect2(Vector2.ZERO, Vector2(size)).encloses(rect), "E8 button %d inside %s" % [i, size])
 			for other in hud: runner.check(not rect.intersects(other), "E8 button %d clear of HUD text at %s" % [i, size])
 			for j in range(i + 1, buttons.size()): runner.check(not rect.intersects(buttons[j].get_global_rect()), "E8 buttons %d and %d apart at %s" % [i, j, size])
-	runner.root.size = original
-	main.free()
+		port.free()
 	return true

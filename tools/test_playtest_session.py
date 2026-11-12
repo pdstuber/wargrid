@@ -39,6 +39,7 @@ def session():
                 "map": "skirmish",
                 "seed": 7,
                 "factions": ["frc", "china"],
+                "build": "0.11.0-dev+abc1234",
                 "seat": 1,
                 "end_tick": 60,
                 "end_digest": "aa",
@@ -50,7 +51,8 @@ def session():
                 "mode": "online",
                 "map": "dry_wells",
                 "seed": 3,
-                "factions": [],
+                "factions": ["usa", "china"],
+                "build": "0.11.0-dev+def5678",
                 "seat": 0,
                 "end_tick": 90,
                 "end_digest": "bb",
@@ -77,10 +79,10 @@ class PlaytestSessionTest(unittest.TestCase):
             "CHECK a yes",
             "CHECK b no",
             'ANSWER q1 4 fine "quoted"',
-            "MATCH 1 offline skirmish seed=7 seat=1 end_tick=60 result=win",
+            "MATCH 1 offline skirmish seed=7 seat=1 end_tick=60 build=0.11.0-dev+abc1234 result=win",
             f'MARKER 1.1 tick=30 good text="nice" comment="" camera=4.5,14.5 selected=1,2 jpg={jpgs[0]}',
             'MARKER 1.2 tick=60 bad text="no pic" comment="" camera=4.5,14.5 selected=1,2 jpg=-',
-            "MATCH 2 online dry_wells seed=3 seat=0 end_tick=90 result=",
+            "MATCH 2 online dry_wells seed=3 seat=0 end_tick=90 build=0.11.0-dev+def5678 result=",
         ]
         self.assertEqual(ps.summary_lines(s, jpgs), expected)
 
@@ -92,10 +94,35 @@ class PlaytestSessionTest(unittest.TestCase):
     def test_replay_rows(self):
         rows = [r.split("\t") for r in ps.replay_rows(ps.load_session(self.path), self.path)]
         cmd1 = self.path.parent / "sess-m1.cmd"
-        self.assertEqual(rows[0], ["1", str(cmd1), "offline", "skirmish", "7", "frc,china", "60", "aa", "30,60"])
-        self.assertEqual(rows[1][5], "-")
+        self.assertEqual(
+            rows[0],
+            ["1", str(cmd1), "offline", "skirmish", "7", "frc,china", "60", "aa", "30,60", "0.11.0-dev+abc1234"],
+        )
+        self.assertEqual(rows[1][5], "-", "online rows pass no --factions")
         self.assertEqual(rows[1][8], "-")
+        self.assertEqual(rows[1][9], "0.11.0-dev+def5678")
         self.assertEqual(cmd1.read_text(), "line one\nline two\n")
+
+    def test_float_numbers_from_a_resumed_sitting(self):
+        floaty = session()
+        floaty["format"] = 1.0
+        for m in floaty["matches"]:
+            for key in ("seed", "seat", "end_tick"):
+                m[key] = float(m[key])
+            for mk in m["markers"]:
+                mk["tick"] = float(mk["tick"])
+        self.path.write_text(json.dumps(floaty))
+        s = ps.load_session(self.path)
+        self.assertEqual(
+            ps.summary_lines(s, [None, None]), ps.summary_lines(ps.load_session(self._write(session())), [None, None])
+        )
+        rows = [r.split("\t") for r in ps.replay_rows(s, self.path)]
+        self.assertEqual(rows[0][4:9], ["7", "frc,china", "60", "aa", "30,60"])
+
+    def _write(self, data):
+        other = self.path.with_name("plain.json")
+        other.write_text(json.dumps(data))
+        return other
 
     def test_rejects_other_format(self):
         bad = session()

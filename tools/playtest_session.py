@@ -15,6 +15,11 @@ def load_session(path: Path) -> dict:
     session = json.loads(path.read_text())
     if session.get("format") != 1:
         raise SystemExit(f"unsupported session format {session.get('format')!r} (this tool reads 1)")
+    for match in session["matches"]:
+        for key in ("seed", "seat", "end_tick"):
+            match[key] = int(match[key])
+        for marker in match["markers"]:
+            marker["tick"] = int(marker["tick"])
     return session
 
 
@@ -43,7 +48,8 @@ def summary_lines(session: dict, jpgs: list[Path | None]) -> list[str]:
     flat = iter(jpgs)
     for k, m in enumerate(session["matches"], 1):
         lines.append(
-            f"MATCH {k} {m['mode']} {m['map']} seed={m['seed']} seat={m['seat']} end_tick={m['end_tick']} result={m['result']}"
+            f"MATCH {k} {m['mode']} {m['map']} seed={m['seed']} seat={m['seat']} end_tick={m['end_tick']} "
+            f"build={_build(session, m)} result={m['result']}"
         )
         for i, mk in enumerate(m["markers"], 1):
             jpg = next(flat, None)
@@ -56,12 +62,16 @@ def summary_lines(session: dict, jpgs: list[Path | None]) -> list[str]:
     return lines
 
 
+def _build(session: dict, match: dict) -> str:
+    return match.get("build", session["build"])
+
+
 def replay_rows(session: dict, path: Path) -> list[str]:
     rows = []
     for k, m in enumerate(session["matches"], 1):
         cmd = path.with_name(f"{path.stem}-m{k}.cmd")
         cmd.write_text("".join(line + "\n" for line in m["commands"]))
-        factions = ",".join(m["factions"]) or "-"
+        factions = "-" if m["mode"] == "online" else ",".join(m["factions"])
         ticks = ",".join(str(mk["tick"]) for mk in m["markers"]) or "-"
         row = [
             str(k),
@@ -73,6 +83,7 @@ def replay_rows(session: dict, path: Path) -> list[str]:
             str(m["end_tick"]),
             m["end_digest"],
             ticks,
+            _build(session, m),
         ]
         rows.append("\t".join(row))
     return rows

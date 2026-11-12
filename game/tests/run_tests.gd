@@ -44,6 +44,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	AudioSettings.path = "user://test-settings-%d.cfg" % OS.get_process_id() # a developer machine's real volumes must not reach the suite
+	PlaytestSession.dir = "user://test-runner-playtests-%d" % OS.get_process_id() # scene tests resume and write sittings; the player's real one must stay untouched
 	if current_scene != null: # exported builds also load the main scene (the launcher), whose UI swallows test clicks
 		current_scene.free()
 	create_timer(180.0).timeout.connect(_timeout) # a slow case on a host shared with other agents must not look hung
@@ -76,12 +77,19 @@ func _run() -> void:
 	if checks == 0 or case_count == 0:
 		failures += 1
 		print("FAIL: zero tests/checks")
+	_remove_playtest_dir()
 	await create_timer(0.5).timeout # the audio thread frees stopped playbacks asynchronously; quitting sooner leaks them
 	print("CASES ", case_count, " CHECKS ", checks, " FAILURES ", failures)
 	if failures == 0:
 		print("TESTS PASSED ", checks)
 	quit(0 if failures == 0 else 1)
 
+func _remove_playtest_dir() -> void:
+	if not DirAccess.dir_exists_absolute(PlaytestSession.dir): return
+	for file in DirAccess.get_files_at(PlaytestSession.dir): DirAccess.remove_absolute(PlaytestSession.dir.path_join(file))
+	DirAccess.remove_absolute(PlaytestSession.dir)
+
 func _timeout() -> void:
 	print("FAIL: watchdog timeout in ", _active_case)
+	_remove_playtest_dir()
 	quit(1)

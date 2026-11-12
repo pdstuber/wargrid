@@ -38,7 +38,7 @@ class Camera extends RefCounted:
 		return image
 
 func cases() -> Array[Callable]:
-	return [test_marker_pauses_offline, test_marker_does_not_pause_online, test_capture_before_dialog, test_note_typing_is_not_a_hotkey, test_marker_ignored_when_menu_or_over, test_checklist_triggers, test_helper_off_changes_nothing, test_overlay_layout, test_leave_flow, test_match_end_opens_review_once, test_two_match_session_file, test_web_save_downloads, test_desktop_write_error_keeps_session, test_form_layout]
+	return [test_marker_pauses_offline, test_marker_does_not_pause_online, test_capture_before_dialog, test_note_typing_is_not_a_hotkey, test_marker_ignored_when_menu_or_over, test_checklist_triggers, test_helper_off_changes_nothing, test_overlay_layout, test_leave_flow, test_match_end_opens_review_once, test_two_match_session_file, test_web_save_downloads, test_desktop_write_error_keeps_session, test_form_layout, test_resume_uses_stored_card, test_restart_drops_pending_markers]
 
 func _begin(helper_on: bool = true, card: String = CARD_ECONOMY) -> String:
 	var saved: String = AudioSettings.path
@@ -231,7 +231,7 @@ func test_checklist_triggers(runner) -> bool:
 	_key(runner, KEY_QUOTELEFT)
 	runner.check(list.visible, "PO6 ` shows it again")
 	main.free()
-	PlaytestSession.current = null
+	PlaytestSession.current.discard() # a stored sitting keeps its own card
 	FocusCards.chosen = CARD_TUNNELS
 	main = await _scene(runner)
 	overlay = main.get_node("HUD/Playtest")
@@ -253,6 +253,14 @@ func test_helper_off_changes_nothing(runner) -> bool:
 	runner.check(main.menu_open() == main.get_node("HUD/PauseMenu").visible and PlaytestSession.current == null, "PO7 off: menu_open is the pause menu and no session exists")
 	_key(runner, KEY_ESCAPE)
 	runner.check(main.menu_open(), "PO7 off: Esc still opens the pause menu")
+	_key(runner, KEY_ESCAPE)
+	var sim = SkirmishRules.create(true, "ai", {1: "frc", 2: "usa"})
+	main.simulation = sim
+	var pile: Dictionary = sim.snapshot().sources[0]
+	var laborer: int = sim.spawn(1, Vector2(pile.origin[0] + 6.5, pile.origin[1] + 8.5), "frc_builder")
+	main._submit({"type": "gather", "entity_ids": [laborer], "source_id": pile.id})
+	runner.check(main._error.is_empty() and not overlay.get_node("Checklist").find_child("collect", true, false).button_pressed and PlaytestSession.current == null, "PO7 off: an accepted gather ticks nothing and opens no session, error '%s'" % main._error)
+	_key(runner, KEY_ESCAPE)
 	_click(main, "Playtest helper: Off")
 	runner.check(overlay.is_active() and overlay.get_node("Checklist").visible and PlaytestSettings.enabled(), "PO7 the pause menu switch turns the helper on mid-match and stores it")
 	_click(main, "Playtest helper: On")
@@ -405,7 +413,9 @@ func test_match_end_opens_review_once(runner) -> bool:
 	_press(main, "NextMatch")
 	runner.check(not overlay.reviewing() and scenes.is_empty(), "PO11 NextMatch at match end closes the form and stays in the match")
 	main.get_node("HUD/PauseMenu").leave_requested.emit()
-	runner.check(scenes == [LAUNCHER] and not _form_shown(main) and PlaytestSession.current.data.matches.size() == 1, "PO11 leaving after the review goes straight out without a second review")
+	runner.check(scenes.is_empty() and _form_shown(main) and PlaytestSession.current.data.matches.size() == 1, "PO11 leaving after the review reopens the form without a second match, scenes %s" % [scenes])
+	runner.check(_form(main).find_child("EndSession", true, false) != null and _form(main).find_child("NextMatch", true, false) == null, "PO11 the reopened form offers EndSession and no NextMatch")
+	runner.check(_press(main, "Leave") and scenes == [LAUNCHER] and not _form_shown(main) and PlaytestSession.current.data.matches.size() == 1, "PO11 Leave changes scene once and keeps the sitting, scenes %s" % [scenes])
 	main.free()
 	_end(saved)
 	return true
@@ -590,5 +600,36 @@ func test_form_layout(runner) -> bool:
 		await runner.process_frame
 		_check_form_layout(runner, main, form, size, "saved")
 		port.free()
+	_end(saved)
+	return true
+
+func test_resume_uses_stored_card(runner) -> bool:
+	var saved: String = _begin(true, CARD_TUNNELS)
+	var stored := PlaytestSession.resume_or_open(CARD_TUNNELS, "0.11.0-dev+abc")
+	stored.finish_match({"mode": "offline", "end_tick": 10})
+	PlaytestSession.current = null
+	FocusCards.chosen = ""
+	var main = await _scene(runner)
+	var list: Control = main.get_node("HUD/Playtest/Checklist")
+	runner.check(PlaytestSession.current != null and PlaytestSession.current.data.focus == CARD_TUNNELS, "PO16 the resumed sitting keeps its card")
+	runner.check(list.find_child("esc", true, false) != null and list.find_child("collect", true, false) == null, "PO16 the checklist is the stored card's, not card 1's")
+	main.free()
+	_end(saved)
+	return true
+
+func test_restart_drops_pending_markers(runner) -> bool:
+	var saved: String = _begin()
+	var main = await _scene(runner)
+	var overlay = main.get_node("HUD/Playtest")
+	_camera(main)
+	_mark(overlay, "bad", "abandoned")
+	main._restart()
+	runner.check(PlaytestSession.current.pending_markers().is_empty(), "PO17 a restart drops the abandoned match's markers")
+	_mark(overlay, "bad", "helper switched off")
+	overlay.set_active(false)
+	main._restart()
+	overlay.set_active(true)
+	runner.check(PlaytestSession.current.pending_markers().is_empty(), "PO17 a restart with the helper off drops them too, got %d" % PlaytestSession.current.pending_markers().size())
+	main.free()
 	_end(saved)
 	return true

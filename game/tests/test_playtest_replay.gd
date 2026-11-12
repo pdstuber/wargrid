@@ -10,6 +10,7 @@ const Wire = preload("res://scripts/net/wire.gd")
 const StateHash = preload("res://scripts/simulation/state_hash.gd")
 const MatchSettings = preload("res://scripts/match_settings.gd")
 const SkirmishMain = preload("res://scripts/skirmish_main.gd")
+const PlaytestSettings = preload("res://scripts/playtest/playtest_settings.gd")
 
 const STEPS: int = 600
 const MOVE_STEP: int = 30
@@ -103,6 +104,7 @@ func test_offline_scene_replays_to_same_digest(runner) -> bool:
 	var record: Dictionary = main.playtest_match()
 	runner.check(record.mode == "offline" and record.map == "dry_wells" and record.seed == 7, "RP4 record names mode, map and seed")
 	runner.check(record.factions == ["frc", "china"] and record.seat == 1, "RP4 record names factions and seat")
+	runner.check(record.build == PlaytestSettings.build_id(), "RP4 record names its build, got %s" % record.get("build"))
 	runner.check(record.end_tick == STEPS, "RP4 end tick is %d, got %d" % [STEPS, record.end_tick])
 	runner.check(record.end_digest == StateHash.digest(main.simulation.snapshot()), "RP4 end digest is the live digest")
 	var lines: PackedStringArray = record.commands
@@ -164,16 +166,16 @@ func test_oracle_factions_arg(runner) -> bool:
 
 func test_oracle_state_rows(runner) -> bool:
 	var dir := "user://rp-state-%d" % OS.get_process_id()
-	var client = _replay(PackedStringArray(), {"state-ticks": "0,30", "oracle-ticks": "31", "snapshot-dir": dir})
-	runner.check(client.state_rows.size() == 2, "RP7 two state rows, got %d" % client.state_rows.size())
-	runner.check(client.state_rows.size() == 2 and client.state_rows[0].begins_with("ORACLE STATE 0 ") and client.state_rows[1].begins_with("ORACLE STATE 30 "), "RP7 rows name their ticks")
+	var client = _replay(PackedStringArray(), {"state-ticks": "0,30,31", "oracle-ticks": "31", "snapshot-dir": dir})
+	runner.check(client.state_rows.size() == 3, "RP7 three state rows, got %d" % client.state_rows.size())
+	runner.check(client.state_rows.size() == 3 and client.state_rows[0].begins_with("ORACLE STATE 0 ") and client.state_rows[1].begins_with("ORACLE STATE 30 ") and client.state_rows[2].begins_with("ORACLE STATE 31 "), "RP7 rows name their ticks, the end tick included")
 	var path := "%s/tick-30.json" % dir
 	runner.check(FileAccess.file_exists(path), "RP7 the snapshot file exists")
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
 	runner.check(parsed is Dictionary and int(parsed.tick) == 30, "RP7 the snapshot file is tick 30")
 	var summary: Variant = JSON.parse_string(Client.state_summary(client._sim.snapshot()))
 	runner.check(summary is Dictionary and summary.has("match") and summary.has("players") and summary.has("units") and summary.has("buildings"), "RP7 summary has match, players, units, buildings")
-	for file_name in ["tick-0.json", "tick-30.json"]: DirAccess.remove_absolute("%s/%s" % [dir, file_name])
+	for file_name in ["tick-0.json", "tick-30.json", "tick-31.json"]: DirAccess.remove_absolute("%s/%s" % [dir, file_name])
 	DirAccess.remove_absolute(dir)
 	client.free()
 	return true

@@ -4,7 +4,8 @@ repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd) || exit 1
 # Godot resolves a relative export path against game/, not the caller's directory.
 case "$2" in /*) out=$2 ;; *) out=$(pwd)/$2 ;; esac
 mkdir -p "$(dirname -- "$out")" || exit 1
-# Shown in the playtest helper's build id; a failing git writes nothing.
+# Shown in the playtest helper's build id; a failing git writes nothing. Removed on exit so a later direct launch shows no stale commit.
+trap 'rm -f "$repo_root/game/build_commit.txt"' EXIT HUP INT TERM
 if commit=$(git -C "$repo_root" rev-parse --short HEAD 2>/dev/null); then
 	[ -z "$(git -C "$repo_root" status --porcelain)" ] || commit=$commit-dirty
 	printf '%s\n' "$commit" > "$repo_root/game/build_commit.txt"

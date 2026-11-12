@@ -41,6 +41,12 @@ func open_review(session: PlaytestSession, match_index: int) -> void:
 	_action("EndSession", "End session", end_session)
 	show()
 
+func open_leave(session: PlaytestSession) -> void:
+	_reset(session, "Leaving")
+	_action("EndSession", "End session", end_session)
+	_action("Leave", "Leave", closed)
+	show()
+
 func open_questions(session: PlaytestSession, card: Dictionary) -> void:
 	_reset(session, "How was it?")
 	for question: Dictionary in card.get("questions", []):

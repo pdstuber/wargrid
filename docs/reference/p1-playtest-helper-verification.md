@@ -1,11 +1,11 @@
 ```text
-Resume record (updated 2026-11-12 Task 8 done)
-Branch / base commit / working-tree state: p1-playtest-helper / Task 7 commit / Task 8 implemented, uncommitted (coordinator commits "Plan work as packages and track their state")
-Last green task / next incomplete task: Task 8 / Task 9 (exit gate, stop)
-Changed paths since last commit: docs/packages.md (new), docs/STATUS.md (new), docs/development.md, docs/blueprint.md, docs/wrapup.md, AGENTS.md, this file
-Last command / cases / checks / failures / exit / marker: link check 345 links, 0 broken (one false positive, see the Task 8 row); check_public exit 0 PUBLIC CHECK PASSED; docs only, no suite run
+Resume record (updated 2026-11-12 gate-review fixes done)
+Branch / base commit / working-tree state: p1-playtest-helper / 20d6008 (Task 8 commit) / gate-review fixes implemented, uncommitted (coordinator commits)
+Last green task / next incomplete task: gate-review fixes / Task 9 (exit gate: final evidence on the final tree, one rendered batch, reviews; stop)
+Changed paths since last commit: see the gate-fix row below (game scripts and tests, tools, plan, STATUS, this file)
+Last command / cases / checks / failures / exit / marker: full run_tests CASES 790 CHECKS 140719 FAILURES 0, exit 0, TESTS PASSED 140719; run_lint, run_warnings (152 files), run_python_checks, run_shell_checks, check_public exit 0
 Known red case or blocker: none
-Approved decisions, pre-authorizations used, deferred gates: local commits per task by the coordinator; never push
+Approved decisions, pre-authorizations used, deferred gates: local commits per task by the coordinator; never push; per-match build field (user, 2026-11-12, gate review I6)
 Usage so far (python3 tools/session_usage.py <session files>): n/a
 Next exact action: Task 9 (exit gate: final evidence on the final tree, one rendered batch, reviews; stop)
 ```
@@ -60,3 +60,14 @@ Next exact action: Task 9 (exit gate: final evidence on the final tree, one rend
   - Link check (t8-links.log, script t8-linkcheck.py, files and anchors, six changed docs): 345 relative links, 0 broken; the one anchor reported (`design-answers-2026-11-08.md#turret-aiming-...`, in `blueprint.md`) is unchanged from `main` and exists as a heading that contains a link, which the script's slug rule does not strip. Every link target of the old Start here is still in the new one (compared programmatically). `sh tools/check_public.sh` exit 0 (it first failed on a private-list word in the Task 7 row above, reworded).
   - `rg -n -i 'merged|done|released|playtest|green' docs/development.md`: no milestone state left in Start here; the remaining hits are navigation labels and Relay/Browser build operations text.
   - STATUS "Finished work" phrases come from each item's verification or evidence file. Stale snapshots found, treated as dated records, not contradictions (the merge is in `git log`, ancestor of `main`): `m4-verification.md` header still says IN PROGRESS although its later sections record the user playtest and the closed cross-OS gate; resume records of the sound spike, converted maps, performance next and the performance spike end before their merge; M6 says so itself. Not corrected here (not owned files).
+- 2026-11-12, tree p1-playtest-helper 20d6008 + uncommitted gate-review fixes, load unmeasured, no game window. Logs ~/projects/wargrid-p1-work/g-*.log. Red first (g-red1.log, g-red3.log, g-red5.log, g-py-red.log), then green.
+  - C1: PT13 `test_suite_playtest_dir_redirected` red alone with `got user://playtests` (g-red3.log); `run_tests.gd` now sets `PlaytestSession.dir` to `user://test-runner-playtests-<pid>` and removes it at exit and on the watchdog. Full suite: the real `playtests/` folder is absent afterwards and no `test-playtest-settings-*.cfg` is left.
+  - I1: PO7 extension red with SCRIPT ERROR `set_checked` on Nil plus a failed check (g-red1.log); `_tick_triggers` returns when inactive; green.
+  - I2: `test_replay_rows` online fixture `["usa", "china"]` expects `-`; red then green (g-py-red.log). I3: `test_float_numbers_from_a_resumed_sitting` red (`seed=7.0`); `load_session` coerces seed, seat, end_tick and marker ticks to int; green. The GDScript reload still stores floats (not a one-liner), so only the Python side is fixed.
+  - I4: PO16 `test_resume_uses_stored_card` red (card 1 checklist); `PlaytestSession.open_focus()` (current, else stored, else `FocusCards.chosen`); green. PO6 now discards the stored sitting before choosing card 2.
+  - I5: PO11 extended red (leave after review changed scene at once); `end_match` reopens the review through `SessionForm.open_leave` (EndSession and Leave); green.
+  - I6 (user, 2026-11-12): per-match `build` from `_match_record`; PT9 match keys, RP4, N-PT1 and the Python summary and replay-row tests red then green; plan Global Constraints, Task 1, 3 and 6 text updated; `replay_session.sh` names the recorded build on REPLAY DIFFERS.
+  - m1: PT6, E8 (test_menu_layout), N5, F5 and N10 now use a `SubViewport` of the real size; PT6 and E8 assert the viewport size; all green at 1280x720 and 1920x1080, so none is left as known.
+  - m2: dead recorder line deleted. m3: PT7 grainy 640x360 image (first quality over 98304 bytes, fallback fits); dropping `FALLBACK_QUALITY` fails PT7 (g-mut-m3.log), reverted. m4: RP7 now lists the end tick, red (2 rows), green. m5: plan Task 1 note. m6: PT10 red, `last-session.json` kept and overwritten per save.
+  - m9: STATUS rows for avoidance rounds 1 to 4 and the pathing timing spike (from their notes on `spike-avoidance` and `spike-pathing`); plan status line "run in progress (started 2026-11-12)". m10: `run_game.sh` and `export_build.sh` remove `game/build_commit.txt` on exit (checked with `GODOT_BIN=true` and `false`). m11: PO17 `test_restart_drops_pending_markers` red (2 pending), `begin_match` clears pending in every state. m12: `run_client` function in `replay_session.sh`; a session with no matches prints `REPLAY FAILED: the session holds no matches`, exit 1 (run by hand on an empty session); the fixture session still replays.
+  - Final tree: full run_tests CASES 790 CHECKS 140719 FAILURES 0, TESTS PASSED, exit 0 (review's HEAD run: 787 / 140702); run_lint exit 0; run_warnings 152 files exit 0; run_python_checks exit 0; run_shell_checks exit 0; check_public PUBLIC CHECK PASSED; `git diff main -- game/scripts/simulation` empty. No new `.gd` files, so no `git add -N` needed.

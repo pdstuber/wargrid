@@ -239,6 +239,7 @@ func _replay_oracle() -> void:
 		for command: Variant in by_tick.get(sim.tick(), []): sim.issue_command(command)
 		sim.step()
 		if sim.tick() % every == 0: rows.append("%d\t%s" % [sim.tick(), StateHash.digest(sim.snapshot())])
+	if state_ticks.has(str(sim.tick())): _state_row(sim)
 	if _args.has("hash-log"): _write_lines(_args["hash-log"], rows)
 	_status = "match_over" if sim.match_over() else "oracle_overrun"
 	print("ORACLE FINAL %d %s" % [sim.tick(), StateHash.digest(sim.snapshot())])
