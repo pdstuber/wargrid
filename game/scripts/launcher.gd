@@ -11,6 +11,9 @@ const VolumeSliders = preload("res://scripts/presentation/volume_sliders.gd")
 const SkirmishMain = preload("res://scripts/skirmish_main.gd")
 const MatchSettings = preload("res://scripts/match_settings.gd")
 const Credits = preload("res://scripts/presentation/credits.gd")
+const PlaytestSettings = preload("res://scripts/playtest/playtest_settings.gd")
+const FocusCards = preload("res://scripts/playtest/focus_cards.gd")
+const FocusCardView = preload("res://scripts/playtest/focus_card_view.gd")
 const OFFLINE_SCENE: String = "res://scenes/skirmish.tscn"
 const HEADLESS_FLAGS: Array[String] = ["--netclient", "--relay", "--replay-log", "--probe-relay"]
 var _transport: RefCounted
@@ -30,6 +33,7 @@ func _ready() -> void:
 	_fill_factions()
 	_fill_maps()
 	_add_audio()
+	_add_playtest()
 	$Center/Box/Offline.pressed.connect(func() -> void:
 		_offline_setup()
 		get_tree().change_scene_to_file(OFFLINE_SCENE))
@@ -49,6 +53,34 @@ func _show_credits(open: bool) -> void:
 		text.text = Credits.text(FileAccess.get_file_as_string("res://audio/CREDITS.md"), FileAccess.get_file_as_string("res://data/maps/NOTICE.md"), Engine.get_license_text(), Engine.get_copyright_info(), Engine.get_license_info())
 	$CreditsPanel.visible = open
 	$Center.visible = not open
+
+func _add_playtest() -> void:
+	var box: VBoxContainer = $Center/Box
+	var toggle := CheckButton.new()
+	toggle.name = "PlaytestSwitch"
+	toggle.text = "Playtest helper"
+	toggle.button_pressed = PlaytestSettings.enabled()
+	box.add_child(toggle)
+	box.move_child(toggle, $Center/Box/Credits.get_index())
+	var cards: Array[Dictionary] = FocusCards.load_cards()
+	if cards.is_empty(): return
+	var panel := FocusCardView.new(cards)
+	add_child(panel)
+	var build := Button.new()
+	build.name = "ThisBuild"
+	build.visible = toggle.button_pressed
+	box.add_child(build)
+	box.move_child(build, $Center/Box/Offline.get_index() + 1)
+	var show_panel := func(open: bool) -> void:
+		build.text = "This build: " + FocusCards.card(FocusCards.chosen, cards).title
+		panel.visible = open
+		$Center.visible = not open
+	show_panel.call(false)
+	build.pressed.connect(show_panel.bind(true))
+	panel.get_node("Box/Close").pressed.connect(show_panel.bind(false))
+	toggle.toggled.connect(func(on: bool) -> void:
+		PlaytestSettings.save_enabled(on)
+		build.visible = on)
 
 func _add_audio() -> void:
 	add_child(SoundPlayer.new(0))

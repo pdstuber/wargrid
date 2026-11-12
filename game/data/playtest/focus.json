@@ -1,0 +1,39 @@
+[
+ {"id": "p1-frc-economy", "title": "FRC economy",
+  "new": ["Playtest helper: ` shows this checklist, N drops a note with a screenshot.", "FRC Laborers collect supplies; small piles are separate sources."],
+  "try": [
+   {"id": "frc_offline", "text": "Start an offline match as FRC on any map"},
+   {"id": "collect", "text": "Select Laborers and right-click a supply pile", "trigger": "gather"},
+   {"id": "cache", "text": "Place a Supply Cache next to a pile", "trigger": "build:frc_supply_center"},
+   {"id": "workers", "text": "Produce more Laborers at the Supply Cache", "trigger": "produce:frc_builder"},
+   {"id": "income", "text": "Watch your credits for two minutes"}],
+  "questions": [
+   {"id": "collect_clear", "text": "Right-click collecting did what I expected"},
+   {"id": "placement", "text": "Placing the Supply Cache near piles was easy"},
+   {"id": "income_feel", "text": "FRC income felt right for the faction"},
+   {"id": "helper", "text": "The checklist and N notes stayed out of the way"}]},
+ {"id": "p1-frc-tunnels-online", "title": "FRC tunnels, pickups and online",
+  "new": ["Tunnel Hubs and Armed Pickups carry infantry.", "Esc opens the pause menu."],
+  "try": [
+   {"id": "tunnel", "text": "Build a Tunnel Hub", "trigger": "build:frc_defence"},
+   {"id": "enter", "text": "Right-click a Tunnel Hub or pickup with infantry selected", "trigger": "enter"},
+   {"id": "unload", "text": "Unload with U", "trigger": "unload"},
+   {"id": "esc", "text": "Open the Esc menu and resume", "trigger": "esc_menu"},
+   {"id": "online", "text": "Play FRC online against China or USA"}],
+  "questions": [
+   {"id": "riders", "text": "Tunnels and pickup riders behaved as I expected"},
+   {"id": "esc_menu", "text": "The Esc menu was clear"},
+   {"id": "online_feel", "text": "The online match felt responsive"}]},
+ {"id": "p1-look-and-m6-fixes", "title": "The new look in a real match",
+  "new": ["The art lab look is the default now.", "M6 fixes: health bars, result text and enemy order marks."],
+  "try": [
+   {"id": "zoom_fight", "text": "Zoom in on a fight with the mouse wheel"},
+   {"id": "attack_building", "text": "Attack an enemy building and watch its health bar", "trigger": "attack"},
+   {"id": "attack_move", "text": "Attack-move with A and a left-click", "trigger": "attack_move"},
+   {"id": "enemy_marks", "text": "Check whether enemy move orders show on your screen"},
+   {"id": "result", "text": "Finish a match and read the result text"}],
+  "questions": [
+   {"id": "readable", "text": "Units and buildings were easy to tell apart"},
+   {"id": "health_bar", "text": "Health bars stayed readable during attacks"},
+   {"id": "look", "text": "The new look fits Wargrid"}]}
+]

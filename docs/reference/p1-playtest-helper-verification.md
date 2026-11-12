@@ -1,15 +1,15 @@
 # P1 playtest helper: verification
 
 ```text
-Resume record (updated 2026-11-12 Task 1 done)
-Branch / base commit / working-tree state: p1-playtest-helper / main 6402e74 / Task 1 implemented, uncommitted (coordinator commits "Record offline commands for session replays")
-Last green task / next incomplete task: Task 1 / Task 2
-Changed paths since last commit: game/scripts/main.gd, skirmish_main.gd, online_main.gd, net/lockstep.gd, net/headless_client.gd, game/scripts/playtest/command_recorder.gd(+.uid), game/tests/test_playtest_replay.gd(+.uid), test_online_scene.gd, run_tests.gd, this file
-Last command / cases / checks / failures / exit / marker: full run_tests CASES 759 CHECKS 139750 FAILURES 0, exit 0, TESTS PASSED; lint 0; warnings 141 files 0; netplay CI set (match perturb relay-down maps map-mismatch) all PASSED on the branch and on main
-Known red case or blocker: none. run_python_checks: ruff, mypy, test_sim_boundary pass; tools/audio/test_synth.py fails here (no numpy installed; unrelated, no Python changed)
+Resume record (updated 2026-11-12 Task 2 done)
+Branch / base commit / working-tree state: p1-playtest-helper / 182ceb1 (Task 1) / Task 2 implemented, uncommitted (coordinator commits "Ship the P1 focus cards and the helper switch")
+Last green task / next incomplete task: Task 2 / Task 3
+Changed paths since last commit: .gitignore, game/export_presets.cfg, game/scenes/launcher.tscn, game/scripts/launcher.gd, game/scripts/playtest/{playtest_settings,focus_cards,focus_card_view}.gd(+.uid), game/data/playtest/focus.json, game/tests/test_playtest.gd(+.uid), test_online_scene.gd, run_tests.gd, tools/export_build.sh, tools/run_game.sh, this file
+Last command / cases / checks / failures / exit / marker: full run_tests CASES 765 CHECKS 139995 FAILURES 0, exit 0, TESTS PASSED; lint 0; warnings 143 files 0; run_shell_checks 0; run_python_checks all pass (ruff, mypy, test_sim_boundary, python tests)
+Known red case or blocker: none
 Approved decisions, pre-authorizations used, deferred gates: local commits per task by the coordinator; never push
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: Task 2 (helper switch, build id, focus cards)
+Next exact action: Task 3 (marker capture and the session file)
 ```
 
 ## Evidence rows (append-only)
@@ -23,3 +23,9 @@ Next exact action: Task 2 (helper switch, build id, focus cards)
   - run_netplay (no argument is an error; CI set `match perturb relay-down maps map-mismatch`, script ~/projects/wargrid-p1-work/t1-netplay.sh): branch t1-netplay.log and main t1-netplay-main.log both: match PASSED (terminal tick 9024), perturb PASSED (`snapshot.players[1].credits: 9200 != 9201`), relay-down PASSED, maps PASSED, map-mismatch PASSED. Only differences: wall times, relay-down end ticks (1270/1275 vs 1280/1275) and the maps scenario's random seed/starts, as expected.
   - `git diff main -- game/scripts/simulation` empty.
   - Deviation from the plan text: test_bot_through_recorder_keeps_memory passes attack_tick 0 (the bot only creates its memory on an attack decision, never at tick 0 with the default attack tick). skirmish_main `_issue`/`_step_simulation` go through `_recording()`, which rewraps when a test swaps `simulation` directly.
+- 2026-11-12, tree p1-playtest-helper 182ceb1 + uncommitted Task 2, load unmeasured, no game window. Logs ~/projects/wargrid-p1-work/t2-*.log.
+  - Red: `WARGRID_TEST_ONLY=test_playtest.gd` with stubbed settings/cards/view and no focus file: 28 assertion failures, no parse errors (t2-red.log).
+  - test_playtest (6 cases, 159 checks) and test_online_scene (24 cases, 650 checks) green. Full run_tests: CASES 765 CHECKS 139995 FAILURES 0, TESTS PASSED, exit 0 (Task 1: 759 / 139750). run_lint exit 0; run_warnings 143 files exit 0; run_shell_checks exit 0; run_python_checks all pass.
+  - `sh tools/export_build.sh Web ~/projects/wargrid-p1-work/web/index.html` exit 0; `game/build_commit.txt` held `182ceb1-dirty`, is not in `git status --short` (gitignored), and `build_commit.txt` plus `data/playtest/focus.json` appear in the exported pck. The file was removed afterwards.
+  - `git diff main -- game/scripts/simulation game/scripts/net` empty.
+  - Deviation: `Center/Box` separation 12 to 8 in `launcher.tscn`; the two new controls made the box 738 px tall in the 720 px test viewport (Title and Legal outside), 8 gives 686. The headless test root stays 1280x720 when its size is set to 1920x1080, so both sizes check the same layout. The "corrupt stored switch" boundary is tested with a stored string and a stored number; a malformed settings file prints an engine ERROR that the runner counts as a failure. `ThisBuild` and `FocusPanel` are created whenever the cards load and hidden while the switch is off.

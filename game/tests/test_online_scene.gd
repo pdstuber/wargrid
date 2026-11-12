@@ -4,6 +4,7 @@ extends RefCounted
 const OnlineScene = preload("res://scenes/online_skirmish.tscn")
 const Launcher = preload("res://scenes/launcher.tscn")
 const LauncherScript = preload("res://scripts/launcher.gd")
+const AudioSettings = preload("res://scripts/presentation/audio_settings.gd")
 const MatchSettings = preload("res://scripts/match_settings.gd")
 const SkirmishMain = preload("res://scripts/skirmish_main.gd")
 const Lockstep = preload("res://scripts/net/lockstep.gd")
@@ -213,6 +214,10 @@ func test_notices_reach_the_hud_while_processing(runner) -> bool:
 
 func test_launcher_layout(runner) -> bool:
 	var original: Vector2i = runner.root.size
+	var saved_settings: String = AudioSettings.path
+	var scratch: String = "user://test-launcher-settings-%d.cfg" % OS.get_process_id()
+	AudioSettings.path = scratch
+	DirAccess.remove_absolute(scratch)
 	for size in [Vector2i(1280, 720), Vector2i(1920, 1080)]:
 		runner.root.size = size
 		var launcher = Launcher.instantiate()
@@ -221,7 +226,7 @@ func test_launcher_layout(runner) -> bool:
 		await runner.process_frame
 		await runner.process_frame
 		var rects: Array[Rect2] = []
-		for path in ["Title", "Offline", "Map", "RelayUrl", "Create", "JoinRow/Code", "JoinRow/Join", "Credits", "WaitRow/Copy", "WaitRow/Cancel", "Volume/MusicLabel", "Volume/Music", "Volume/EffectsLabel", "Volume/Effects", "Volume/VoiceLabel", "Volume/Voice", "Volume/MuteLabel", "Volume/Mute", "Status", "Legal"]:
+		for path in ["Title", "Offline", "ThisBuild", "Map", "RelayUrl", "Create", "JoinRow/Code", "JoinRow/Join", "PlaytestSwitch", "Credits", "WaitRow/Copy", "WaitRow/Cancel", "Volume/MusicLabel", "Volume/Music", "Volume/EffectsLabel", "Volume/Effects", "Volume/VoiceLabel", "Volume/Voice", "Volume/MuteLabel", "Volume/Mute", "Status", "Legal"]:
 			var control: Control = launcher.get_node("Center/Box/" + path)
 			rects.append(control.get_global_rect())
 			runner.check(Rect2(Vector2.ZERO, Vector2(size)).encloses(control.get_global_rect()), "N5 %s inside %s" % [path, size])
@@ -234,6 +239,8 @@ func test_launcher_layout(runner) -> bool:
 			runner.check(part in legal, "N5 launcher legal notice names %s" % part)
 		launcher.free()
 	runner.root.size = original
+	AudioSettings.path = saved_settings
+	DirAccess.remove_absolute(scratch)
 	var offline = load(LauncherScript.OFFLINE_SCENE).instantiate()
 	runner.check(offline.get_script().resource_path == "res://scripts/skirmish_main.gd", "N5 Play offline loads the offline skirmish")
 	offline.free()
