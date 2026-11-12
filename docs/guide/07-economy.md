@@ -1,6 +1,6 @@
 # 7. Economy and building
 
-Money enters the game mostly through one door, a collector unloading boxes at a depot (a supply center: any building whose row has `receives_supply`), and leaves through two: a building placed or a unit queued. Everything else in this chapter exists to make those moments deterministic when several trucks, builders and factories compete for the same pile, the same footprint cells and the same exit cells. Most of it is a state machine per collector and an integer accumulator per build job. The shape follows Zero Hour's economy, and the supply loop was measured against Zero Hour (a source build, through the parity harness).
+Money enters mainly when a collector unloads boxes at a depot (a supply center: any building whose row has `receives_supply`), and leaves when a building is placed or a unit queued. Everything else in this chapter exists to make those moments deterministic when several trucks, builders and factories compete for the same pile, the same footprint cells and the same exit cells. Most of it is a state machine per collector and an integer accumulator per build job. The shape follows Zero Hour's economy, and the supply loop was measured against Zero Hour (a source build, through the parity harness).
 
 ## Money in, money out
 
@@ -66,7 +66,7 @@ How long a cycle takes depends on the distance. The pinned case is a depot and a
 | Wargrid | about 647 (derived: 300 credits per trip at 834.6 credits per minute) | 227 (190 pile, 37 depot) |
 | Zero Hour | 650 (measured) | 238 (188 pile, 50 depot) |
 
-The Wargrid rate is measured by `test_supply_parity.gd` (T3 record in the [economy verification archive](../reference/m7-verification-archive-economy.md); layout and constants in [rework plan R2.2](../reference/m7-economy-rework-plan.md)), the Zero Hour phases are in the [measured supply cycle](../reference/m7-supply-parity-measured.md). The 420 ticks left on Wargrid's side are driving, plus a few ticks per leg for the seek, the path queue and the start delay.
+The Wargrid rate is measured by `test_supply_parity.gd` ([economy verification archive](../reference/m7-verification-archive-economy.md); layout and constants in [rework plan](../reference/m7-economy-rework-plan.md)), the Zero Hour phases are in the [measured supply cycle](../reference/m7-supply-parity-measured.md). The 420 ticks left on Wargrid's side are driving, plus a few ticks per leg for the seek, the path queue and the start delay.
 
 **Credits become a tank.** A China Rotary Gun Tank costs 800, so one truck needs about three trips, roughly 1940 ticks or 65 seconds, to pay for one. Say the player has 800 credits and a completed vehicle factory.
 
@@ -147,17 +147,17 @@ A vehicle killed by an enemy unit whose row has `salvage` leaves a crate on its 
 
 ## Zero Hour: what matched, how it was proved
 
-The economy is the best-measured part of the project. The method was a ladder:
+The economy has the most Zero Hour measurement behind it. The method had three steps:
 
 1. **Read the source and the retail INI** for box value, capacities, delays, speeds, costs, the dock rule and placement rules ([M3 economy](../reference/m3-economy.md), [M7 economy parity](../reference/m7-economy-parity.md)).
 2. **Measure Zero Hour headless** with the parity harness (a source build): credits per minute for each collector type at up to three depot-to-pile distances, and for two and four collectors ([measured supply cycle](../reference/m7-supply-parity-measured.md)). Spreads between runs were mostly under 2 percent.
-3. **Fit the free parameters** (load and unload ticks, with the pile hold folded in) and pin the result as a test, `test_supply_parity.gd`, within 5 percent of the measured rate per row ([rework plan](../reference/m7-economy-rework-plan.md)). Before the fit Wargrid was 7 to 86 percent faster than the game on single-collector rows, and up to 90 percent with two collectors (measured, [measured supply cycle](../reference/m7-supply-parity-measured.md)); after it, the single-collector rows are within 2 percent and the two-collector rows within 1.6 percent (measured, T3 record in the [economy verification archive](../reference/m7-verification-archive-economy.md)).
+3. **Fit the free parameters** (load and unload ticks, with the pile hold folded in) and pin the result as a test, `test_supply_parity.gd`, within 5 percent of the measured rate per row ([rework plan](../reference/m7-economy-rework-plan.md)). Before the fit Wargrid was 7 to 86 percent faster than the game on single-collector rows, and up to 90 percent with two collectors (measured, [measured supply cycle](../reference/m7-supply-parity-measured.md)); after it, the single-collector rows are within 2 percent and the two-collector rows within 1.6 percent (measured, [economy verification archive](../reference/m7-verification-archive-economy.md)).
 
 What Wargrid takes over directly:
 
 | Rule | Zero Hour (evidence) | Wargrid |
 |---|---|---|
-| One collector holds a dock at a time | `DockUpdate`, [rework plan R2.1](../reference/m7-economy-rework-plan.md) | `active_collector_id` |
+| One collector holds a dock at a time | `DockUpdate`, [rework plan](../reference/m7-economy-rework-plan.md) | `active_collector_id` |
 | Last box costs one more delay | `AIDock`, [M3 economy](../reference/m3-economy.md) | loading waits once more with a full load |
 | Pay everything at once at the depot | `SupplyCenterDockUpdate`, [M3 economy](../reference/m3-economy.md) | `unload` pays `cargo * box_value` |
 | Cost charged at queueing or placing, refund in full | `ProductionUpdate`, `GameLogicDispatch`, [M3 economy](../reference/m3-economy.md) | `paid_cost` on the record |
@@ -169,14 +169,14 @@ What Wargrid takes over directly:
 
 Where Wargrid differs, and what the notes say about it:
 
-- **Search radius.** Zero Hour collectors do not start toward a pile beyond a scan distance. Wargrid searches the whole map. Deferred, not built ([rework plan R2.4](../reference/m7-economy-rework-plan.md)).
+- **Search radius.** Zero Hour collectors do not start toward a pile beyond a scan distance. Wargrid searches the whole map. Deferred, not built ([rework plan](../reference/m7-economy-rework-plan.md)).
 - **Clearance timeout.** Zero Hour's clearance timeout for a waiting collector is not modelled, so waiters never look for another pile ([rework plan](../reference/m7-economy-rework-plan.md), residual risks).
-- **Four helicopters.** Four helicopters at one depot produce 10.6 percent less than the game (3116 measured versus 2787); the row is reported, not gated, with a suspected harness artefact ([rework plan](../reference/m7-economy-rework-plan.md), R2.1 and R2.2).
-- **Placement.** The edge margin is 1 cell, rounded down from Zero Hour's (kept to keep maps playable, a user choice recorded in [placement rules](../reference/m7-placement-rules.md), rule 2). Factory exit lanes are not implemented. Wargrid is stricter than the game about ground units standing on a footprint: it refuses where Zero Hour pushes them aside.
+- **Four helicopters.** Four helicopters at one depot produce 10.6 percent less than the game (3116 measured versus 2787); the row is reported, not gated, with a suspected harness artefact ([rework plan](../reference/m7-economy-rework-plan.md)).
+- **Placement.** The edge margin is 1 cell, rounded down from Zero Hour's (kept to keep maps playable, a choice recorded in [placement rules](../reference/m7-placement-rules.md), rule 2). Factory exit lanes are not implemented. Wargrid is stricter than the game about ground units standing on a footprint: it refuses where Zero Hour pushes them aside.
 - **Salvage rules.** Zero Hour requires the owner to have a faction science, shows the crate to that player only and sometimes gives a veterancy level instead of money; Wargrid has no sciences, no fog and no veterancy, so any hostile salvager qualifies and the level branch became money ([factions note](../reference/m7-factions.md), comment in `salvage.gd`).
 - **Geometry.** Footprints are cell-snapped boxes and Wargrid's buildings are smaller than the game's (placement rules, "Scale caveat"). Helicopters fly straight with no ropes or altitude.
 
-## Engineering depth: what the design assumes and where it strains
+## Trade-offs and limits
 
 **The loop polls instead of reacting.** A collector with no target retries every 30 ticks; one that just finished retries after one tick. Events could wake it, but a poll needs no cleanup when a pile or depot dies in some other system, and `release` is the only place that has to be right. The price is whole-table scans: target choice loops all buildings or sources, and dock claiming and admission loop all entities, per call.  
 `Supply.choose_target, _claim_dock, _admit`  
@@ -184,7 +184,7 @@ Where Wargrid differs, and what the notes say about it:
 
 **Exact float equality means arrival.** A collector is "at the dock" when its position equals the arrival point exactly. That works because `_advance` writes the waypoint itself when a move reaches it. A unit that stops short (blocked, or displaced) is not treated as arrived; the blocked check and the retry cover the blocked case.
 
-**Production exits are the known hot spot.** In the M6 follow-up a building with a blocked exit retried every perimeter cell every tick and `step.production` dominated; `Simulation.occupied_cells()` is now built once per production step and shared (p95 0.776 to 0.119 ms; measured, [M6 verification](../reference/m6-verification.md), "Task 11 follow-up"). A blocked head still retries every tick.
+**Production exits are the known hot spot.** In the M6 follow-up a building with a blocked exit retried every perimeter cell every tick and `step.production` dominated; `Simulation.occupied_cells()` is now built once per production step and shared (p95 0.776 to 0.119 ms; measured, [M6 verification](../reference/m6-verification.md)). A blocked head still retries every tick.
 
 **Gaps the code admits.** The free unit of a finished building gets one spawn attempt: if every exit cell is occupied, it is lost (a `shortcut:` comment says upgrade if a playtest shows it).  
 `Simulation._spawn_on_complete → Production.spawn_unit`  

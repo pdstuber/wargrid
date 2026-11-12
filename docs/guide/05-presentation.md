@@ -36,7 +36,7 @@ The presentation holds no `Simulation` reference. It does import static simulati
 
 ## One tank, from view row to triangles
 
-A USA tank is on the map. This is its path through one refresh on the highest graphics quality. Each step is a sentence or two, then the code trail.
+A USA tank is on the map. This is its path through one refresh on the highest graphics quality.
 
 1. **State.** The simulation keeps the tank as a dictionary with position, heading, hit points, owner and combat state. Once per refresh it collects all units in id order and writes each into one row of the column arrays. The tank's kind becomes an index into a string table that is rebuilt on every call and holds `"usa_tank"`; booleans such as "is attacking" become bits in a flag byte.
    `Simulation.view_state → _view_rows → ViewRows.from_units`
@@ -52,7 +52,7 @@ A USA tank is on the map. This is its path through one refresh on the highest gr
    `VisualDirector.update → _aim`
 7. **Batch.** The view then rebuilds the whole batch. It sorts all items (units, buildings, supply piles) and walks them twice: first every shadow quad (High only) and horde ring, then every body, then the effects. So no shadow or ring covers a body, and effects sit on top of everything. For the tank, the heading becomes one of 64 buckets (the angle as a fraction of a full turn, times 64, rounded and wrapped), the turret angle becomes another, and the batch asks for the merged mesh of that pair.
    `WorldView._rebuild_batch → WorldBatch.build → _append_body → _body`
-8. **Baked mesh.** On first use, each part of the shape is baked. A USA tank has two: a body (a hull box and two track boxes, turning with the hull) and a turret (a dome box and one barrel box, turning with the turret angle). Baking rotates each box's corners by the bucket angle, projects them onto the screen plane, lifts them by their height (one height unit is 3.5 px) and emits a top face plus only the side faces that turn toward the viewer. Every vertex carries a colour slot, such as roof or machinery, not a colour. At one checked heading bucket the two meshes add up to 30 triangles, 18 + 12 (scratch run on this commit, Godot 4.7.2; the count changes a little with heading because the visible faces do).
+8. **Baked mesh.** On first use, each part of the shape is baked. A USA tank has two: a body (a hull box and two track boxes, turning with the hull) and a turret (a dome box and one barrel box, turning with the turret angle). Baking rotates each box's corners by the bucket angle, projects them onto the screen plane, lifts them by their height (one height unit is 3.5 px) and emits a top face plus only the side faces that turn toward the viewer. Every vertex carries a colour slot, such as roof or machinery, not a colour. At one checked heading bucket the two meshes add up to 30 triangles, 18 + 12 (one-off headless script at the commit named at the end of this chapter, Godot 4.7.2; the count changes a little with heading because the visible faces do).
    `ShapeBake.mesh → _bake`, parts from `Shapes._append_tank`
 9. **Copy and colour.** The merged mesh is copied into the batch through a translation-only transform. The tank is moved to its screen position but never rotated at draw time, because the rotation is already in the bucket. Colours come from looking up each vertex's slot in the owner's palette; that list is cached per mesh and owner, which is why the bake never needs to know the owner.
    `WorldBatch._append_body → _mesh_colors → Palette.owner_colors`
@@ -67,7 +67,7 @@ Health bars, selection diamonds, focus boxes and the rest are not in that array.
 
 The rows object holds one packed array per field: id, owner, kind, hit points, target, position, heading, order target, status, combat mode and tier, collection phase, and the flag byte. Three per-call string tables name the kinds, combat modes and collection phases. Row i is one unit, rows are in id order, and a binary search finds a unit's row by id. The fill is one flat loop over local column variables; a comment in `view_rows.gd` records that a helper-per-field version cost three times as much. The flag byte carries the booleans: horde, contained, hole, attacking, ordered, waiting for a source, collecting. The column list is in the [simulation interface](../reference/sim-interface.md); this chapter does not copy it.
 
-Two rules follow from the [view rows design](../superpowers/specs/2026-11-12-view-rows-design.md) (its status line still says proposed; the code is merged, and the ledger row below measured it):
+Two rules follow from the [view rows design](../superpowers/specs/2026-11-12-view-rows-design.md):
 
 - **Table indices are only valid with their own rows object.** A kind index points into that call's table, and the next tick may number the same string differently. The sound director keeps the previous tick's rows, so it compares strings.
 - **A new per-tick field becomes a column**, not a per-unit dictionary again.
@@ -99,7 +99,7 @@ Details worth knowing:
 - **Colour slots, not colours.** There are eight slots, resolved per owner when the colours are looked up. Eight owners, the Neon palette and a future ally/enemy option therefore need no re-bake. Vertical faces and machinery are neutral; roofs, the soldier torso and a few stripes take the owner hue ([art direction](../art-direction/ART_DIRECTION.md), sections 3 and 7).
 - **Variant.** A small integer selects a different part list for the same role: the damage stage of a building (0, 1 or 2, at 70 % and 35 % of hit points, integer maths) or a supply pile's stack level and footprint.
 - **Rise.** A building under construction scales its vertex lifts by its progress, so it grows out of the ground.
-- **Detail.** Low is always detail 0; High is 0 below zoom 1, 1 at zoom 1 and 2 at zoom 2 or more. Detail changes only the cylinder segment count (4, 6 or 8) and the generic vehicle's extra box. A tank is all boxes, so it bakes identical triangles at the three details (checked in the scratch run) but under three cache keys.
+- **Detail.** Low is always detail 0; High is 0 below zoom 1, 1 at zoom 1 and 2 at zoom 2 or more. Detail changes only the cylinder segment count (4, 6 or 8) and the generic vehicle's extra box. A tank is all boxes, so it bakes identical triangles at the three details (same script) but under three cache keys.
 - **Picking reads the bake.** A unit's pick box is the bounding box of its role's baked mesh over all 64 buckets at detail 1, so a click on any drawn pixel picks it. A small margin stands in for sweeping every hull-by-turret pose, which would take 4096 bakes; the code's `shortcut:` comment puts the measured overshoot under 2 px. Infantry get a fixed 36 px wide box instead.
 
 ### Layers and what redraws when
@@ -124,7 +124,7 @@ Quality (Low or High), Neon colours, smooth movement and the destination marks a
 
 ## Art direction, as built
 
-The [art direction](../art-direction/ART_DIRECTION.md) is a bible of proposals written before the code; its thirteen interview answers are a starting point, not frozen (user, 2026-11-09). The code now has geometric 2.5D bodies from boxes and cylinders with an owner-coloured top and neutral sides, 64 headings where the bible shows eight, selection as a ground diamond, sand ground with cliffs as a low step, damage stages, construction rise, and muzzle, hit, dash and fade effects. It does not have recoil, factory or generator animation, signature and shake effects, or any fog. Fog and the signature and shake variants exist only in the lab overlays. The two reference notes ([art Godot integration](../reference/art-godot-integration.md), [art perf levers](../reference/art-perf-levers.md)) are pre-implementation research; where they and the code differ, the code wins.
+The [art direction](../art-direction/ART_DIRECTION.md) was written before the code and is treated as proposals, open to change. The code now has geometric 2.5D bodies from boxes and cylinders with an owner-coloured top and neutral sides, 64 headings where the art direction shows eight, selection as a ground diamond, sand ground with cliffs as a low step, damage stages, construction rise, and muzzle, hit, dash and fade effects. It does not have recoil, factory or generator animation, signature and shake effects, or any fog. Fog and the signature and shake variants exist only in the lab overlays. The two reference notes ([art Godot integration](../reference/art-godot-integration.md), [art perf levers](../reference/art-perf-levers.md)) are pre-implementation research; where they and the code differ, the code wins.
 
 One triangle array instead of one polygon per face comes from the perf-levers note. In Godot's Compatibility renderer every polygon draw is its own GL draw call, while the triangle-array command is one polygon command and so one draw for the whole array (Godot 4.7.2-stable, `rasterizer_canvas_gles3.cpp`, in its item-command recording: "Polygon's can't be batched, so always create a new batch"; re-read 2026-11-12). The result, measured on the rendered benchmark, is 3 to 4 draw calls on the open, dense and horde layouts and 23 on Ashfall, against ceilings of 50 (60 on Ashfall) that `movement_benchmark.gd` asserts (ledger row "2026-11-11 perf-next stop gate, rendered, interpolation off").
 
@@ -132,7 +132,7 @@ One triangle array instead of one polygon per face comes from the perf-levers no
 
 The lab scene runs a scripted, repeatable fight on a real simulation, built from public calls: mirrored blocks of all 17 listed kinds, builds, a gather order, an attack-move at tick 240 and a wave at tick 600. Keys switch a question's variant (Tab), quality (Q), zoom (Z) and opponent colour (O). The variants go through the same hooks the game uses, such as the biome, ground colour and Neon setters. Lab-only extras (wrecks, signature rings, a fog mask, camera shake) are drawn by two overlay nodes placed around the bodies layer. The lab feeds the view a snapshot, which `set_state` converts to rows; that is why that path still exists.
 
-The user's click answers drove the defaults (sand ground `#A88E5C`, Neon as an opt-in palette, a wide infantry pick box, the dash effect, interpolation). They are recorded in the [art lab verification](../reference/art-lab-verification.md) (Task 10 table), and five questions remain in the lab. Nothing outside the lab files, its scene, its test, the test runner and the boundary checker's file list refers to it (checked with `rg`).
+The defaults (sand ground `#A88E5C`, Neon as an opt-in palette, a wide infantry pick box, the dash effect, interpolation) were chosen in the lab and are recorded in the [art lab verification](../reference/art-lab-verification.md); five questions remain open. The lab is self-contained: no game code refers to it.
 
 `art_lab.advance → _show → AbVariants.apply, WorldView.set_state`
 
@@ -177,7 +177,7 @@ Sound is presentation only: nothing in the simulation or a trace depends on it. 
 On each refresh the HUD update calls the sound player, which asks the director for requests. A shot event becomes a cue chosen from the attacker's weapon, by weapon id first and then by damage type; there is no catch-all, so a new weapon needs a row. A rifle burst plays once per burst, splash weapons add an impact at the target, and a death becomes an infantry, vehicle or building cue (vehicle deaths get random pitch within 5 %). State changes come from comparing this refresh with the last: an own building appearing plays a click cue, and low power, construction complete and a finished unit queue announcer lines. Events for ids already gone are looked up in the previous rows.
 `skirmish_main._refresh_hud → SoundPlayer.update → SoundDirector.update`
 
-Requests are cheap to make and easy to lose; most are dropped on purpose.
+Most requests are dropped by design:
 
 - **Effects.** The player splits requests into world and UI. A static, tested function gives a request a voice only if it is within 1145 px of the camera centre, its cue is under its limit and a voice is free. Nothing queues; a request that loses is gone. There are 25 world voices (attenuation 0.5, fitted to Zero Hour's falloff: [sound spike note](../reference/sound-spike.md), "Godot attenuation") and 2 UI voices.
 - **Announcer.** Lines for the local player only, one at a time, highest priority first. A line waits at most 150 ticks, and the alarm lines have cooldowns (900 ticks for base-under-attack and structure-lost, 3600 for low power), so a long fight does not repeat itself.
@@ -186,11 +186,11 @@ Requests are cheap to make and easy to lose; most are dropped on purpose.
 
 The random pitch uses a generator that seeds itself, which is fine because nothing here feeds back. Headless runs skip `play()` for the announcer voice and the music, because Godot reports their queued playback as a leak at exit; pooled effect voices play in every mode.
 
-## Engineering depth: what holds and where it strains
+## Trade-offs and limits
 
 - **A tick's pixels are a pure function of the view state and the settings.** The batch rebuild is stateless apart from caches (bakes, bodies, colours), which is why quality, zoom and Neon changes just trigger a rebuild. The price is that nothing is incremental.
 - **Per-frame cost is the open problem.** Interpolation rebuilds the batch each frame (measured above). The [data layout decision](../reference/data-layout-decision.md), section 7, proposes building the array once per tick and moving the vertex ranges of moving items per frame, or a shader or MultiMesh variant, and estimates 1.5 to 2 ms per tick saved at 60 Hz. Proposed, not built; the batch's golden test would change by design. The Auto quality pick may also switch smoothing off exactly on slow machines (same note, inferred).
-- **Items are still dictionaries.** The batch build and the pose tracking read dictionary keys. Reading rows directly ("T4b") was measured at 0.07 to 0.20 ms per tick at most and folded into the interpolation item above rather than done alone.
+- **Items are still dictionaries.** The batch build and the pose tracking read dictionary keys. Reading rows directly in the batch was measured at 0.07 to 0.20 ms per tick at most and folded into the interpolation item above rather than done alone.
 - **Hard limits are asserts.** See "Depth order and its limits": 65,536 items per batch, 2^20 ids; the 4096-body cache is a flush, not a failure.
 - **Match settings are static variables.** The launcher hands settings to the next scene through statics on `skirmish_main.gd`. Simple, and the scene depends on the launcher having run first.
 - **The caches are global.** Bakes, bodies and colours are static variables shared by every batch and shape user, so there is one cache per process and nothing to invalidate per scene.

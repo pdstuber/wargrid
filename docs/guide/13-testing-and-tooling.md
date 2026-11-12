@@ -103,7 +103,7 @@ Two sibling guards work the same way (regular expressions over `game/scripts/`, 
 
 Wargrid is "inspired by" Zero Hour, and some numbers are tuned against it. Three tools support that. None runs in CI against real data, and none puts EA data in the repository.
 
-**`tools/zh_ini.py`: a queryable dump of the shipped configuration.** `python3 tools/zh_ini.py dump` parses every block of the retail `INIZH.big` in place into `build/zh_ini/inizh.jsonl`, one JSON object per block with archive entry and line numbers. Findings are then cited as `entry:line`, and agents query the file with `rg` or `jq` instead of writing a decoder (a hand-rolled parse once came out garbled; blueprint section 7).
+**`tools/zh_ini.py`: a queryable dump of the shipped configuration.** `python3 tools/zh_ini.py dump` parses every block of the retail `INIZH.big` in place into `build/zh_ini/inizh.jsonl`, one JSON object per block with archive entry and line numbers. Findings are cited by archive entry and line, and the file is queried with `rg` or `jq` rather than with ad-hoc decoders, one of which once misread the format (blueprint section 7).
 
 - The archive must match the SHA-256 pinned in `check_reference.py`, unless `--skip-hash`.
 - The dump is written through a `.tmp` file and a rename into gitignored `build/`, and is never committed (`AGENTS.md`). Extracted values go into reference notes with their source.
@@ -113,7 +113,7 @@ Wargrid is "inspired by" Zero Hour, and some numbers are tuned against it. Three
 
 **`tools/zh_parity/`: measuring behaviour, not configuration.** Config says what a weapon's range is; it does not say what happens when a unit chases, turns, queues behind another or collects supplies. `parity.py` launches a fresh Zero Hour **source build** (a native macOS fork plus a small local patch) and drives it over the fork's localhost HTTP control API. Per scenario it spawns units on a flat strip, issues one order, and writes every logic frame to a tab-separated trace outside the repository. Properties that matter:
 
-- **Always silent and headless.** The game starts with `-headless -noaudio`, and the harness asserts the game reports itself headless before it proceeds. The code comment says why: a windowed run once blasted sound at the user.
+- **Always silent and headless.** The game starts with `-headless -noaudio`, and the harness asserts the game reports itself headless before it proceeds. The code comment gives the reason: a windowed run plays the game's audio at full volume.
 - **Frames, not wall time.** The game runs uncapped and paused-stepped, so a scenario costs seconds, and traces are comparable frame by frame.
 - **Sweeps.** `--repeats` and `--lanes` run several games in parallel on separate ports and pool the results; finished traces are skipped on rerun.
 - **Metrics live in `analyze.py`.** It reads the traces and computes start delay, speeds, turn rates, shot intervals, time to kill, credits per minute. Each metric has an `EXPECT` row with Wargrid's value and a tolerance, and a verdict, including `ACCEPTED` for a decided offset.
@@ -125,9 +125,9 @@ The bridge into the suite is a test like `test_supply_parity.gd`: a harness resu
 ## Static checks
 
 - **`sh tools/run_lint.sh`** runs `gdlint game` (gdtoolkit 4.5.0, pinned in `tools/requirements-dev.txt`). `.gdlintrc` turns off five rules, mainly line length, which the code base ignores. `gdformat` was tried and not adopted.
-- **`sh tools/run_warnings.sh`** runs each tracked `.gd` file through Godot `--check-only`, four at a time. `project.godot` sets six warnings to error level: untyped declaration, unused parameter, three kinds of shadowing and integer division. The script takes its file list from `git ls-files`, so a new file cannot escape the check; it fails on any `ERROR:`. Tests are exempt only from `untyped_declaration`, through `@warning_ignore_start` at the top of each test file. The plan's third step (the `unsafe_*` warnings) was skipped by the user because the count was over its stop rule ([static checks plan](../superpowers/plans/2026-11-05-gdscript-static-checks.md)).
+- **`sh tools/run_warnings.sh`** runs each tracked `.gd` file through Godot `--check-only`, four at a time. `project.godot` sets six warnings to error level: untyped declaration, unused parameter, three kinds of shadowing and integer division. The script takes its file list from `git ls-files`, so a new file cannot escape the check; it fails on any `ERROR:`. Tests are exempt only from `untyped_declaration`, through `@warning_ignore_start` at the top of each test file. The plan's third step (the `unsafe_*` warnings) was skipped because the count was over its stop rule ([static checks plan](../superpowers/plans/2026-11-05-gdscript-static-checks.md)).
 - **`sh tools/run_python_checks.sh`** runs `ruff format --check`, `ruff check`, `mypy`, then `run_python_tests.sh`, which runs every tracked `tools/**/test_*.py` except `test_install_godot.py` (it downloads Godot) as its own process, plus the harness self-test. Configuration is `tools/pyproject.toml`.
-- **`sh tools/check_public.sh`** exists because the repository is public and tracked files are engineering records. It fails when working files (handoffs, session notes) are tracked, and when tracked text matches patterns for a home path, a `.local` hostname, a LAN address, a full session id, an agent scratch path or a personal mail address. A further word list lives outside the repository because the words would themselves be a leak; CI runs without it, and the script uses the list when present. `tools/test_check_public.py` tests the script against throwaway repositories. The fix for a hit is rewording, never loosening the pattern (`AGENTS.md`).
+- **`sh tools/check_public.sh`** exists because the repository is public and tracked files are engineering records. It fails when private working notes are tracked, and when tracked text matches patterns for a home path, a local hostname or LAN address, a tool session id or a personal mail address. A further word list lives outside the repository because the words would themselves be a leak; CI runs without it, and the script uses the list when present. `tools/test_check_public.py` tests the script against throwaway repositories. The fix for a hit is rewording, never loosening the pattern (`AGENTS.md`).
 
 These checks are all text-level: lint and warnings find style and typing problems, the guards find forbidden patterns, and `check_public.sh` finds leaks. None proves a behaviour. The suite does.
 
@@ -173,19 +173,19 @@ Two more workflows round it out.
 3. `build` exports Linux, Windows, macOS and Web, writes Godot's licence text, and packages the desktop zips with `LICENSE` and the map and audio notices.
 4. `publish` runs in the GitHub Environment `production`, which needs a manual approval. For a normal release it deploys the relay, then the web build, each followed by a health check, then creates or updates the GitHub release. A prerelease tag (a version with a `-` suffix) builds and publishes a prerelease but skips both deploys. A rerun after a partial failure completes the release instead of failing on "already exists".
 
-Pushing a tag, changing workflows and approving the gate need explicit approval from the project owner; deploying to fly needs it too (`AGENTS.md`). Nothing in this chapter requires you to run them.
+Pushing a release tag and approving the `production` environment are manual steps.
 
 **`godot-release.yml`** runs weekly and opens an issue when a newer Godot stable exists than the pin in `ci.yml`. Pins are bumped by hand, in `ci.yml` and `release.yml` together, and a bump needs a green replay comparison.
 
-## Engineering depth: what the testing buys and what it does not
+## Trade-offs and limits
 
-**The runner is deliberately small.** One `SceneTree` script, hand-listed suites, no discovery, no fixture language. The blueprint says to evaluate GdUnit4 when suite size or scene testing justifies it; no such migration is recorded. Cost: a suite file missing from `SUITES` is silently never run, and the runner reports only totals, not a per-suite count. The gate against that is the check count staying stable across commits, which is human review (speculation: no automated check compares the list with the directory).
+**The runner is deliberately small.** One `SceneTree` script, hand-listed suites, no discovery, no fixture language. The blueprint says to evaluate GdUnit4 when suite size or scene testing justifies it; no such migration is recorded. Cost: a suite file missing from `SUITES` is silently never run, and the runner reports only totals, not a per-suite count. Nothing compares `SUITES` with the directory, so a missing entry shows only as a check count that did not grow.
 
 **The wrapper, not the runner, is the trust boundary.** Godot's exit code is not trusted. Success needs an exit code, the absence of `ERROR:` lines, every shard's final line and a positive check count. That design answers the real failure of "all green, zero tests ran".
 
 **Text guards are cheap and shallow.** They catch a class of mistake the tests cannot (a banned call that happens to work on this machine), but a regular expression can be evaded and each has an exemption list, with the limits written next to the entries.
 
-**Behaviour tests do not establish feel or speed.** The project rule is explicit: automated tests do not establish game feel or measured performance, and rendered checks need a window, so they are asked for first. Rendered benchmarks are manual.
+**Behaviour tests do not establish feel or speed.** The project rule is explicit: automated tests do not establish game feel or measured performance, Rendered checks open a window and are run by hand, benchmarks included.
 
 **Parity evidence has a ceiling.** The harness measures a source build of the original, not the shipped binary; the parity tests assert tolerances on pooled measurements, not equality. Where the original contradicts itself, the test says so in a comment and reports instead of gating.
 

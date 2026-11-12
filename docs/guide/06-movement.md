@@ -27,7 +27,7 @@ flowchart TD
 
 ## Six tanks, one click
 
-A scratch run on the footer commit: an open 40 by 20 map, six `usa_tank` standing in a column at x = 3.5 (y = 4.5, 6.5, ..., 14.5), one move command for all six to (30.5, 8.5), issued for tick 0. Each step is a sentence plus its code trail.
+A one-off headless script at the commit named at the end of this chapter: an open 40 by 20 map, six `usa_tank` standing in a column at x = 3.5 (y = 4.5, 6.5, ..., 14.5), one move command for all six to (30.5, 8.5), issued for tick 0.
 
 1. The command is validated, due, and applied in phase 1. All six ids are collected into one group; air units would be split off here and given a straight one-waypoint route, ground units go on.  
    `_apply_orders → _assign_move`
@@ -71,18 +71,18 @@ Every per-second rate is divided by a literal 30, the tick rate ([chapter 4](04-
 
 **Allocation.** A ring search around the target cell: ring r holds the cells at Chebyshev distance r; a cell is released from the pool only once no cell in an unexamined ring can be nearer, so the cost follows the group size, not the map size. Only cells in the target's component are candidates, so an unreachable target yields no goal and the unit becomes `blocked` instead of a failed search. A cell holding another group member is skipped, so a new slot never sits under a unit that has not yet left. A test pins the number of cells examined (`AL2` in `test_allocation.gd`).
 
-## Engineering depth: what it assumes and where it strains
+## Trade-offs and limits
 
-**Points on a four-way grid.** M1 chose this for one vehicle, and [movement](../reference/movement.md) keeps the label provisional: four-way zigzag routes, no footprint clearance, "no unit collision, dynamic blockers or group destination allocation" (M1 wording; allocation arrived with M2). A tank's `radius` in its definition does not enter navigation. A tank will route through a one-cell gap because the point fits.
+**Points on a four-way grid.** The first movement milestone chose this for a single vehicle, and the [movement](../reference/movement.md) note still labels it provisional: four-way zigzag routes, no footprint clearance. Its list of gaps was "no unit collision, dynamic blockers or group destination allocation"; allocation has since been added. A tank's `radius` in its definition does not enter navigation. A tank will route through a one-cell gap because the point fits.
 
-**Overlap in transit is a decision, not an omission.** The owner chose temporary overlap during travel and distinct reserved goals ([group movement](../reference/group-movement.md)), so units never deadlock at a choke; the cost is that a group looks like a stream of overlapping sprites, and at the end it relies on goals being distinct. The owner wants units to go around each other, which is what the avoidance branch explores ([design answers](../reference/design-answers-2026-11-08.md#unit-avoidance-behaviour)).
+**Units overlap in transit by design.** Temporary overlap during travel with distinct reserved goals was chosen ([group movement](../reference/group-movement.md)), so units never deadlock at a choke; the cost is that a group looks like a stream of overlapping sprites, and at the end it relies on goals being distinct. Units going around each other is a stated requirement; the avoidance branch explores it ([design answers](../reference/design-answers-2026-11-08.md#unit-avoidance-behaviour)).
 
 **Blocked is final until the next command.** A unit with no route, no reachable goal or a goal cut off by a new obstacle becomes `blocked`, loses its order and stays put. A plain move order has no retry timer; collectors and combat chases bring their own (chapters 7 and 8). Whenever the blocked cells change (a building placed or destroyed, a source removed, terrain replaced), the simulation empties the path queue and re-queues every moving unit; the M4 scenario envelope measured 19 ticks to drain it with 150 units pending at the peak ([M4 envelope](../reference/m4-scenario-envelope.md)).
 
 **Two costs are bursty, and neither is bounded by work done.**
 
-- *Route search* is capped by request count, not by search work. In the 2026-11-08 team match the worst tick spent 6.2 to 6.3 ms of its 7.3 to 7.4 ms in the path service, a burst of at most eight searches on the Ashfall grid (times measured, the burst is the note's inference, [T1b](../reference/perf-spike-verification.md#t1b-team-match-zones)).
-- *Allocation* is uncapped and runs inside order application. Since the ring rewrite it peaks at 0.15 ms in that match (measured, same T1b); the 2 to 6 ms per call in the [M4 envelope](../reference/m4-scenario-envelope.md) predate the rewrite. Besides orders, a new unit leaving its factory for the rally point ([chapter 7](07-economy.md)) and a retaliating unit walking home ([chapter 8](08-combat.md)) call it once each. A halted attack-move unit resumes without it.
+- *Route search* is capped by request count, not by search work. In the 2026-11-08 team match the worst tick spent 6.2 to 6.3 ms of its 7.3 to 7.4 ms in the path service, a burst of at most eight searches on the Ashfall grid (times measured, the burst is the note's inference, [team-match profile](../reference/perf-spike-verification.md#t1b-team-match-zones)).
+- *Allocation* is uncapped and runs inside order application. Since the ring rewrite it peaks at 0.15 ms in that match (measured, same profile); the 2 to 6 ms per call in the [M4 envelope](../reference/m4-scenario-envelope.md) predate the rewrite. Besides orders, a new unit leaving its factory for the rally point ([chapter 7](07-economy.md)) and a retaliating unit walking home ([chapter 8](08-combat.md)) call it once each. A halted attack-move unit resumes without it.
 
 Two smaller limits are written in the code. A `shortcut:` comment in `destination_allocation.gd` says the pool is re-sorted per ring, "fine while pools stay small", with a merge as the upgrade. Locomotion measures the remaining route every tick, but stops walking the waypoints once the braking cap can no longer bind.
 

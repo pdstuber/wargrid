@@ -104,7 +104,7 @@ A unit on a plain move order takes no part: it neither looks for targets nor sho
 - *Keep or drop.* A target is kept while it is hostile. A human-owned unit that stands also drops a target that left its weapon reach.
 - *Rescan*, at most once per cadence tick. A human-owned unit scans its weapon reach only, so an idle human guard never chases. A bot-owned unit scans its vision times a guard modifier, which is wider. A human unit that lost its target while attack-moving gets one wide scan too. "Bot-owned" means the player's `controller` is `ai` (README appendix). Both modifiers are constants named after the retail guard settings.
 - *Chase.* With a target out of reach, the unit drives to a firing cell. An attack-moving unit first stores its original destination.
-- *Resume.* When the target dies or comes into reach, the unit halts and gets that destination back. It is routed again without a new destination allocation (the P2 decision, below).
+- *Resume.* When the target dies or comes into reach, the unit halts and gets that destination back. It is routed again without a new destination allocation (the second fix under "Trade-offs and limits").
 
 `Combat._engage, _halt; Simulation._chases`
 
@@ -177,24 +177,24 @@ When a carrier dies, each passenger first takes the rule's share of its max HP a
 
 The simulation has no turret. Combat never reads a unit's facing (`combat.gd` has no use of `heading`), and hull turning runs only for moving units. A tank that stops fires on the same tick if its weapon is ready. The turret you see turning belongs to `VisualDirector._aim`, which follows the target in the view rows at a fixed `TURRET_RATE`.
 
-That is a stand-in. The owner decided on 2026-11-10 that a tank's turret must point at its target before it fires, at a rate per kind, and that this lands with ground batch A ([design answers](../reference/design-answers-2026-11-08.md#turret-aiming-user-2026-11-10-impact-note)). It is **decided, not built**. The [impact note](../reference/turret-aiming.md) lists what it would change:
+That is a stand-in. The [design answers](../reference/design-answers-2026-11-08.md#turret-aiming-user-2026-11-10-impact-note) decide that a tank's turret must point at its target before it fires, at a rate per kind, as part of a planned ground-combat milestone (ground batch A). It is **decided, not built**. The [impact note](../reference/turret-aiming.md) lists what it would change:
 
 - one more condition in `Combat.fire` and `fire_defences`;
 - a turret vector in the `combat` dictionary, which the snapshot and the state hash would pick up;
 - a re-pin of every trace that depends on first-shot timing;
 - turreted units firing while they drive once the turret is aligned, decided with the same answers; units without a turret still stop to fire.
 
-## What this design costs, and where it strains
+## Trade-offs and limits
 
 **Why plan before and fire after.** Checking range after movement keeps an engaged unit from shooting a target that already left, and "moved units do not fire" keeps the rules simple. The price is no firing on the move today. That changes with the turret rule: turreted units will fire while driving (decided, not built; same design answers, from a reading of the Zero Hour source).
 
-**Acquisition was the cost; now it is a staggered grid.** The first combat spike rescanned every enemy per unit per tick and measured 12.5 to 15.3 ms p95 for 150 against 150 ([performance ledger](../reference/performance.md), "Known M4 combat cost risks"). The user approved two fixes on 2026-11-03: rescans every few ticks, staggered by id (P1), and halted attack-move units resuming without a new allocation (P2). The 8-cell grid followed in M4.1.
+**Target search moved to a staggered grid.** The first combat spike rescanned every enemy per unit per tick and measured 12.5 to 15.3 ms p95 for 150 against 150 ([performance ledger](../reference/performance.md), "Known M4 combat cost risks"). Two fixes followed: rescans every few ticks, staggered by id, and halted attack-move units resuming without a new allocation. A grid of 8-cell buckets came next.
 
-A profile of 2026-11-11 on the Mac mini ([data layout decision](../reference/data-layout-decision.md), section 2; measured with the profile tool) gives `step.combat_plan` as 0.370 ms mean on the 210-unit 3v3, 0.403 on the team match and 0.796 on hordes300, which is 53, 38 and 40 percent of `step`. Building the grid is about 9 percent of `step`; the nearest-target search is 1 to 7 percent. `step.combat_fire` is 0.173, 0.130 and 0.136 ms. Whether that fits the target device is the question of chapter 12. The M4.1 stress layouts `open` and `dense` exceed the ledger's p95 budget (1.67 ms then, 1.82 ms now); they are report-only rows with pinned ceilings (user decision 2026-11-03).
+A profile of 2026-11-11 on the Mac mini ([data layout decision](../reference/data-layout-decision.md), section 2; measured with the profile tool) gives `step.combat_plan` as 0.370 ms mean on the 210-unit 3v3, 0.403 on the team match and 0.796 on hordes300, which is 53, 38 and 40 percent of `step`. Building the grid is about 9 percent of `step`; the nearest-target search is 1 to 7 percent. `step.combat_fire` is 0.173, 0.130 and 0.136 ms. Whether that fits the target device is the question of chapter 12. The M4.1 stress layouts `open` and `dense` exceed the ledger's p95 budget (1.67 ms then, 1.82 ms now); they are report-only rows with pinned ceilings.
 
 **Fights are bursty.** The ledger records a peak of 11.2 to 11.4 ms at tick 420 in the `contact` layout, 10.2 ms of it in `step.combat_fire`, because that layout fires synchronised volleys every 60 ticks (report-only, not fixed). The verification file puts the time in damage and death handling over all armed units, and the 2026-11-05 spike found allocation calls from retaliation inside the same zone ([perf spike verification](../reference/perf-spike-verification.md), [performance spike](../reference/performance-spike.md)). The split between the two is not profiled on the current tree. One candidate from reading the code: every removal runs `Combat.object_removed` over all units (speculation).
 
-**Documented shortcuts.** Four `shortcut:` comments in `combat.gd` mark known limits: the defence scan looks at every object; splash looks at every object per cannon shot; retaliation joiners are found by scanning idle guards per shot; and horde beats ramp. The first three name the ledger result that would trigger a fix. The [M4 scenario envelope](../reference/m4-scenario-envelope.md) measured 6.0 to 6.3 ms per allocation call on a 64x64 map before the allocation was rewritten to expand rings; the ledger cites that cost as the reason for P2.
+**Documented shortcuts.** Four `shortcut:` comments in `combat.gd` mark known limits: the defence scan looks at every object; splash looks at every object per cannon shot; retaliation joiners are found by scanning idle guards per shot; and horde beats ramp. The first three name the ledger result that would trigger a fix. The [M4 scenario envelope](../reference/m4-scenario-envelope.md) measured 6.0 to 6.3 ms per allocation call on a 64x64 map before the allocation was rewritten to expand rings; that cost is why a resuming unit skips allocation.
 
 **Humans and bots scan differently.** A bot's army wakes up and chases from further away than a human's idle units react. The constants cite the retail guard settings, but the rule is not symmetric, so keep it in mind when reading bot results (chapter 9).
 

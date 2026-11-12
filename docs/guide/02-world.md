@@ -32,7 +32,7 @@ Four maps ship: `skirmish` (48 × 32, hand-made, 2 starts, the test map), and th
 
 ## Dry Wells, from the source file to the first step of a unit
 
-One map followed through every stage. Re-running the converter on the pinned EA source (revision `3aad8e4`; path in `game/data/maps/NOTICE.md`) reproduces the committed map byte for byte (checked 2026-11-12). The numbers below come from that run and from a headless scratch script on the footer commit.
+One map followed through every stage. Re-running the converter on the pinned EA source (revision `3aad8e4`; path in `game/data/maps/NOTICE.md`) reproduces the committed map byte for byte (checked 2026-11-12). The numbers below come from that run and from a one-off headless script at the commit named at the end of this chapter.
 
 **1. The source.** The source map is a compressed chunk file. The converter checks its magic, decompresses it and walks the chunks. The height chunk holds 270 × 340 samples 10 world units apart, a 35-sample border and a playable boundary of 204 × 270 samples that the chunk stores itself (it is not width minus twice the border), so the playable area is 2040 × 2700 units. The tile chunk is version 8, which carries a painted cliff bit per sample. The object chunk holds the start waypoints, supply docks and piles, and the trigger chunk holds 2 water polygons. Format evidence: [M6 map and feel](../reference/m6-map-and-feel.md).
 
@@ -91,11 +91,11 @@ B  barracks   F  factory   D  defence
 
 `Skirmish.create → MapData.create → Simulation.setup_seat → Simulation.add_supply_source`
 
-The navigation grid is not only terrain. The simulation adds the footprint of every building and every source to the terrain cells. After setup the grid has 1,656 solid cells: 1,546 terrain, 2 × 9 for the two command centers, 4 × 20 for the docks and 12 for the piles (scratch run on the footer commit). Placing or removing a building changes the grid again.
+The navigation grid is not only terrain. The simulation adds the footprint of every building and every source to the terrain cells. After setup the grid has 1,656 solid cells: 1,546 terrain, 2 × 9 for the two command centers, 4 × 20 for the docks and 12 for the piles (same script). Placing or removing a building changes the grid again.
 
 `Simulation._union_cells → Simulation._replace_union`
 
-**6. A move order.** A move order to (40.5, 35.5) makes the navigation class return a 12-point route: the centres of cells (40, 24) to (40, 35), one waypoint per cell (scratch run). The tick pipeline that gets the unit moving is [chapter 4](04-the-tick.md); how routes are followed is [chapter 6](06-movement.md).
+**6. A move order.** A move order to (40.5, 35.5) makes the navigation class return a 12-point route: the centres of cells (40, 24) to (40, 35), one waypoint per cell (same script). The tick pipeline that gets the unit moving is [chapter 4](04-the-tick.md); how routes are followed is [chapter 6](06-movement.md).
 
 `Simulation._assign_route → GridNavigation.route`
 
@@ -161,12 +161,12 @@ Distances are straight lines between start cells; ties go to the lowest index. T
 
 **25 units per cell is inferred.** Zero Hour paths on a 10-unit grid. Comparing Wargrid's rifle and tank ranges (4 and 6 cells) with Zero Hour's implies 25 units per cell, "inferred from the range ratio, not documented anywhere else" ([Zero Hour verification](../reference/zero-hour-verification.md), "Level 0 result"). Every speed and range derived from Zero Hour data inherits that scale.
 
-**Elevation only decides passability, today.** Heights are folded into the cliff bit and then dropped. The converter writes a heights grid, but no GDScript reads it (a search over the scripts, tests and benchmarks folders finds none; `docs/questions/next-m75-art-world.md` says the same). The M6 decision that elevation affects passability only ([blueprint M6](../blueprint.md#m6--teams-and-a-full-scale-map)) is superseded for direct fire: line of sight over terrain is decided for ground batch A (user, 2026-11-09, [blueprint §7](../blueprint.md#7-milestones-and-exit-criteria), "Ground batch A"). It is not designed and not built. A raised-terrain look is an open art question, also not built.
+**Elevation only decides passability, today.** Heights are folded into the cliff bit and then dropped. The converter writes a heights grid, but no GDScript reads it (a search over the scripts, tests and benchmarks folders finds none; `docs/questions/next-m75-art-world.md` says the same). The M6 decision that elevation affects passability only ([blueprint M6](../blueprint.md#m6--teams-and-a-full-scale-map)) is superseded for direct fire: line of sight over terrain is planned for ground batch A ([blueprint §7](../blueprint.md#7-milestones-and-exit-criteria), "Ground batch A"). It is not designed and not built. A raised-terrain look is an open art question, also not built.
 
 **The resampling is lossy in known ways.** Zero Hour's one-cell cliff dilation is not copied ([M6 design](../superpowers/specs/2026-11-05-m6-teams-full-map-design.md), "Resampling"). A ramp narrower than a cell can vanish, so the converter refuses to write a map where one start cannot reach another and prints the narrowest corridor between neighbouring starts. Dry Wells' corridor clearance is 10, Broken Crown's 13 to 15 ([more maps](../reference/more-maps.md), "Converter report"). Two things the converter does not do:
 
 - **It measures routes the game cannot walk.** The converter's route check is an 8-neighbour Dijkstra (diagonal steps cost 1.414, corner cutting forbidden), while the game's grid sets `DIAGONAL_MODE_NEVER`. The ratios in the converter report therefore compare 8-connected lengths; a diagonal route is longer in game. On Dry Wells the lane between the starts is straight, so it makes no difference there (the route above is 61 cells, 61 steps).
-- **Water is tested at the cell centre.** The M6 design says a cell is blocked when "at least half of its area is cliff or water"; the code applies the half-area rule to cliff bits only and samples water at the centre point. A contradiction between design and code; the code wins here.
+- **Water is tested at the cell centre.** The M6 design says a cell is blocked when "at least half of its area is cliff or water"; the code applies the half-area rule to cliff bits only and samples water at the centre point. The M6 design describes water by area; the code samples the cell centre.
 
 **What is not on the map.** Trees, rock clusters, bridges, roads, tech buildings and ambient sound objects of the source are dropped ([M6 map and feel](../reference/m6-map-and-feel.md), "Terrain passability"); one tech building type is skipped because Wargrid has no tech buildings. The same note records a fidelity gap: whether rock clusters and civilian buildings block routes in Zero Hour was not checked. So the converted maps may be more open than the originals where rocks or buildings blocked a route, and less connected wherever a dropped bridge carried one (speculation: neither was measured).
 
@@ -175,8 +175,6 @@ Distances are straight lines between start cells; ties go to the lowest index. T
 **The loader trusts more than it checks.** It checks shape, open start cells, open slots and open sources. It does not check that seat numbers are unique, that starts can reach each other or that the heights grid matches the cells; the converter guarantees those, a hand-edited file would not be caught. Online, the host's map is identified by id and the SHA-256 of its file text with carriage returns removed (`MatchSettings.map_hash`); a joiner whose copy differs refuses the match. Chapter 11 follows the exchange. Builds that changed a map file cannot play each other online (noted in [more maps](../reference/more-maps.md), "Small piles").
 
 **Start-spot caveats, from the notes.** A spot chosen by a player is not recorded as its team's position, as in Zero Hour, so a teammate is placed far away; whether to keep that is open for M9 ([more maps](../reference/more-maps.md), "Converted maps playable"). The draw uses Godot's `RandomNumberGenerator` (PCG32) and is exempt from the simulation's randomness rule because it runs at setup ([determinism rules](../reference/determinism-rules.md)). The test pin `SS6` (Ashfall, seeds 0 to 15) was derived on macOS and holds on Linux and Windows: the test runs in the CI suite on both, green on the main branch (`b5cc483`, 2026-11-12).
-
-**No `shortcut:` comments** sit in the map loader, the start-spot code, the projection or the terrain view.
 
 ## Where in the code
 

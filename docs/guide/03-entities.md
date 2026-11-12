@@ -21,7 +21,7 @@ Definitions are constants, loaded once and never changed while a match runs. The
 
 Run-time storage lives inside `Simulation`:
 
-- Units are in one dictionary of id to record. Its name is older than buildings, so it holds units only. Trail: `Simulation._entities`.
+- Units are in one dictionary of id to record. The name predates buildings; it holds units only. Trail: `Simulation._entities`.
 - Buildings are in a second dictionary of the same shape with a different record layout. Trail: `Simulation._buildings`.
 - Supply sources and players have their own dictionaries; a player record holds credits, controller, team and faction. Trail: `Simulation._sources`, `Simulation._players`.
 - Units, buildings and sources draw ids from one counter, so an id names exactly one object. Ids are never reused and only grow, so id order is creation order (ordering rules: [determinism rules](../reference/determinism-rules.md)). Trail: `Simulation._next_entity_id`. Production queue entries have their own counter.
@@ -132,10 +132,10 @@ Anything with a leading underscore is not interface. Two things are open to ever
 How the boundary is held:
 
 - Presentation gets copies, so it cannot write simulation state ([chapter 1](01-big-picture.md)).
-- `tools/test_sim_boundary.py` fails any test file outside its allowlist that reads a private member of the simulation. It covers `game/tests` only, not other callers. The allowlist has 30 files, so most existing tests still reach into the unit and building dictionaries. The rule is to migrate them only when touched ([user, 2026-11-09](../reference/sim-interface.md#rule-for-tests-user-2026-11-09)).
+- `tools/test_sim_boundary.py` fails any test file outside its allowlist that reads a private member of the simulation. It covers `game/tests` only, not other callers. The allowlist has 30 files, so most existing tests still reach into the unit and building dictionaries. The rule is to migrate them only when touched ([simulation interface](../reference/sim-interface.md#rule-for-tests-user-2026-11-09)).
 - Known leaks outside tests, listed in the interface note: the two debug workloads and the headless network client read or write privates.
 
-## Engineering depth: what the storage costs and where it strains
+## Trade-offs and limits
 
 **One dictionary per entity is easy to extend and slow to copy.** Every field is a string key, so a record can gain a field without a schema change, and presence can mean state (a unit in a transport, a rebuild-hole worker, a building's combat record). The costs: `snapshot()` copies every record (only the route is shared, read-only), and `view_state` converts the dictionaries to columns on every call. That hand-off was measured (chapter 1 gives the numbers). Packed arrays for the per-unit state are **proposed, not built**. The [data layout decision](../reference/data-layout-decision.md) (status "proposed, not approved") recommends moving system by system, only inside the milestone that rewrites that system, with movement first. The only column storage in the code today is the output side, `ViewRows`. The decision note counts 20 test files that read the unit dictionary (measured, `rg -l`), and the boundary test keeps that number from growing.
 
