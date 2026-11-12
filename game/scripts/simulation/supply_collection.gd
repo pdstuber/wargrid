@@ -2,9 +2,10 @@ extends RefCounted
 
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
+const DockSplit = preload("res://scripts/experiments/dock_split.gd")
 
 const DOCK_SHIFT := 0.25
-const DOCK_MODELS := ["hold"]
+const DOCK_MODELS := ["hold", "split"]
 
 static func release(sim: Simulation, unit_id: int) -> void:
 	var unit: Dictionary = sim._entities[unit_id]
@@ -129,6 +130,16 @@ static func _ahead(unit: Dictionary, other: Dictionary) -> bool:
 	var theirs: int = other.collection.remaining_ticks
 	return theirs < mine or theirs == mine and other.id < unit.id
 
+static func _load_delay(sim: Simulation, unit: Dictionary) -> int:
+	return DockSplit.SPLIT[unit.kind].source.box if sim.dock_model == "split" else Registry.collects(unit.kind).load_ticks
+
+static func _unload_delay(sim: Simulation, unit: Dictionary) -> int:
+	return DockSplit.SPLIT[unit.kind].depot.work if sim.dock_model == "split" else Registry.collects(unit.kind).unload_ticks
+
+static func _lead(sim: Simulation, unit: Dictionary, depot: bool) -> int:
+	if sim.dock_model != "split": return 0
+	return DockSplit.SPLIT[unit.kind].depot.lead if depot else DockSplit.SPLIT[unit.kind].source.lead
+
 static func _admit(sim: Simulation, unit: Dictionary, target: Dictionary) -> void:
 	var collection: Dictionary = unit.collection
 	var depot: bool = collection.cargo > 0
@@ -136,6 +147,12 @@ static func _admit(sim: Simulation, unit: Dictionary, target: Dictionary) -> voi
 		release(sim,unit.id)
 		sim._stop_unit(unit)
 		collection.retry_tick = sim._tick + 1
+		return
+	var lead: int = _lead(sim,unit,depot)
+	if lead > 0 and collection.phase.begins_with("flying_"):
+		collection.phase = "lead_depot" if depot else "lead_source"
+		collection.remaining_ticks = lead
+		sim._stop_unit(unit)
 		return
 	var waiting_before: bool = false
 	for other: Dictionary in sim._entities.values():
@@ -146,7 +163,7 @@ static func _admit(sim: Simulation, unit: Dictionary, target: Dictionary) -> voi
 	if target.active_collector_id == null and not waiting_before:
 		target.active_collector_id = unit.id
 		collection.phase = "unloading" if depot else "loading"
-		collection.remaining_ticks = Registry.collects(unit.kind).unload_ticks if depot else Registry.collects(unit.kind).load_ticks
+		collection.remaining_ticks = _unload_delay(sim,unit) if depot else _load_delay(sim,unit)
 	else:
 		# remaining_ticks is idle while waiting; a ground truck stores the tick it began waiting there, for first-come order.
 		if _is_ground(unit) and not collection.phase.begins_with("waiting_"): collection.remaining_ticks = sim._tick
@@ -178,7 +195,11 @@ static func step(sim: Simulation, unit_ids: Array[int]) -> void:
 			continue
 		collection.remaining_ticks -= 1
 		if collection.remaining_ticks > 0: continue
-		if collection.phase == "loading":
+		if collection.phase.begins_with("lead_"):
+			collection.phase = "waiting_depot" if collection.phase == "lead_depot" else "waiting_source"
+			collection.remaining_ticks = sim._tick
+			_admit(sim,unit,target)
+		elif collection.phase == "loading":
 			# Zero Hour waits one more delay after the last box at a permanent source.
 			if collection.cargo == Registry.collects(unit.kind).boxes or target.boxes == 0:
 				release(sim,id)
@@ -188,7 +209,7 @@ static func step(sim: Simulation, unit_ids: Array[int]) -> void:
 			if target.boxes == 0 and target.get("delete_when_empty", false):
 				sim.remove_object(target.id)
 				continue
-			collection.remaining_ticks = Registry.collects(unit.kind).load_ticks
+			collection.remaining_ticks = _load_delay(sim,unit)
 		elif collection.phase == "unloading":
 			sim._players[unit.owner].credits += collection.cargo * Registry.collects(unit.kind).box_value
 			collection.cargo = 0

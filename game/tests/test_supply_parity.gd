@@ -67,7 +67,7 @@ func steady_rate(sim, gather_tick: int) -> Dictionary:
 	var end_tick: int = to_tick
 	var end_credits: int = 0
 	var empty_tick: int = -1
-	while true:
+	for index in range(to_tick - sim.view_state().tick + 1):
 		sim.step()
 		var view: Dictionary = sim.view_state()
 		var tick: int = view.tick
