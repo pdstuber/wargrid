@@ -7,14 +7,18 @@ const Openings = preload("res://tests/test_income_openings.gd")
 
 const Fixture = preload("res://tests/economy_fixture.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
+const EconomyDefinitions = preload("res://scripts/simulation/economy_definitions.gd")
 const DockC = preload("res://scripts/experiments/dock_c.gd")
+const Metrics = preload("res://tests/dock_metrics.gd")
 
 const MODELS := ["hold", "split", "queue", "c1", "c2"]
 const RATIOS := {"c1": Vector2i(184, 300), "c2": Vector2i(44, 75)}
 const GATHER_TICK := 0
+const SWEEP_MAX := 8
+const SWEEP := [{"kind": "frc_builder", "gap": 3}, {"kind": "frc_builder", "gap": 9}, {"kind": "china_collector", "gap": 9}, {"kind": "usa_collector", "gap": 9}]
 
 func cases() -> Array[Callable]:
-	return [test_default_model_is_hold, test_steady_rate_window, test_split_lone_cycle_unchanged, test_split_overlaps_lead_in, test_split_same_tick_arrival, test_split_stop_during_lead, test_split_release_on_removal, test_c_tables_follow_the_rule, test_c_lock_clamps_to_the_stand, test_c_lone_cycle_unchanged, test_queue_fifo, test_queue_lock_covers_moves, test_queue_air, test_queue_same_tick_and_removal, test_report_rows]
+	return [test_default_model_is_hold, test_steady_rate_window, test_split_lone_cycle_unchanged, test_split_overlaps_lead_in, test_split_same_tick_arrival, test_split_stop_during_lead, test_split_release_on_removal, test_c_tables_follow_the_rule, test_c_lock_clamps_to_the_stand, test_c_lone_cycle_unchanged, test_queue_fifo, test_queue_lock_covers_moves, test_queue_air, test_queue_same_tick_and_removal, test_report_rows, test_wargrid_saturation_matches_python, test_wargrid_saturation_skips_short, test_phase_shares_sum_to_100, test_sweep_row_flags_an_emptied_pile, test_sweep_rows]
 
 func models() -> Array:
 	var wanted: String = OS.get_environment("WARGRID_DOCK_MODELS")
@@ -384,3 +388,108 @@ func test_report_rows(runner) -> bool:
 				print(openings.report_line(name, gap, opening, model))
 				runner.check(opening.steady > 0.0 and opening.gross[openings.END_TICK] > opening.spend, "%s gap %d under %s earns more than it spent" % [name, gap, model])
 	return true
+
+func test_wargrid_saturation_matches_python(runner) -> bool:
+	var rates := {1: 434.0, 2: 855.0, 3: 1270.0, 4: 1650.0, 5: 2000.0, 6: 2010.0, 7: 2010.0, 8: 1990.0}
+	var s: Dictionary = Metrics.saturation(rates, 200)
+	runner.check(s.cap == 2010.0 and s.n_cap == 6 and s.n90 == 5 and s.spend90 == 800, "saturation cap/n_cap/n90/spend90, got %s" % [s])
+	runner.check(s.marginal[6] == 10.0, "marginal at 6 is 10, got %s" % [s.marginal])
+	runner.check(is_inf(s.payback_s[8]) and is_inf(s.payback_s[7]), "a zero or negative marginal pays back never (inf), got %s" % [s.payback_s])
+	runner.check(s.payback_s[2] == 200.0 / ((855.0 - 434.0) / 60.0), "payback at 2 is cost / (marginal per second), got %s" % [s.payback_s[2]])
+	runner.check(s.skipped == [], "nothing skipped, got %s" % [s.skipped])
+	return true
+
+func test_wargrid_saturation_skips_short(runner) -> bool:
+	var s: Dictionary = Metrics.saturation({1: 400.0, 2: 800.0, 3: null, 4: 900.0, 5: 5000.0}, 200, [4, 5])
+	runner.check(s.skipped == [3, 4, 5], "short and missing rows are skipped, got %s" % [s.skipped])
+	runner.check(s.cap == 800.0 and s.n_cap == 2 and s.n90 == 2, "skipped rows do not set the cap, got %s" % [s])
+	runner.check(s.marginal.keys() == [2], "marginal only between used neighbours, got %s" % [s.marginal.keys()])
+	runner.check(Metrics.saturation({1: 5.0}, 200, [1]) == {"skipped": [1]}, "all rows skipped gives only the skipped list")
+	return true
+
+func test_phase_shares_sum_to_100(runner) -> bool:
+	var sim = Parity.new().layout("frc_builder", 3, 7, "hold").sim
+	var tally: Dictionary = {}
+	for index in range(3000):
+		sim.step()
+		count_unit_phases(sim.view_state(), "frc_builder", tally)
+	var shares: Dictionary = phase_shares(tally)
+	var total: float = 0.0
+	for share in shares.values(): total += share
+	runner.check(absf(total - 100.0) <= 0.1, "phase shares sum to 100, got %f from %s" % [total, shares])
+	runner.check(shares.has("loading") and shares.has("unloading"), "shares include loading and unloading, got %s" % [shares.keys()])
+	return true
+
+func test_sweep_row_flags_an_emptied_pile(runner) -> bool:
+	var world: Dictionary = dock_world("hold", "frc_builder", [Vector2(7.5, 10.5), Vector2(7.5, 12.5), Vector2(7.5, 14.5)], 20, false)
+	var row: Dictionary = sweep_row(world.sim, "hold", "frc_builder", 3, 3)
+	runner.check(row.short and row.line.ends_with("short=true") and "pile_empty=-" not in row.line, "an emptied pile is reported with its time and short, got %s" % [row.line])
+	return true
+
+func test_sweep_rows(runner) -> bool:
+	if OS.get_environment("WARGRID_DOCK_SWEEP") != "1":
+		runner.check(true, "dock sweep rows run only with WARGRID_DOCK_SWEEP=1")
+		return true
+	var parity = Parity.new()
+	var openings = Openings.new()
+	for model in models():
+		for target in SWEEP:
+			var rates: Dictionary = {}
+			var short: Array = []
+			for count in range(1, SWEEP_MAX + 1):
+				var row: Dictionary = sweep_row(parity.layout(target.kind, target.gap, count, model).sim, model, target.kind, target.gap, count)
+				print(row.line)
+				runner.check(row.rate > 0.0, "%s deposits" % row.line)
+				rates[count] = row.rate
+				if row.short: short.append(count)
+			var line: String = saturation_line(model, target.kind, target.gap, Metrics.saturation(rates, int(EconomyDefinitions.unit(target.kind).cost), short))
+			print(line)
+			runner.check(line.contains(" cap=") or line.contains(" skipped="), "%s is a saturation row" % line)
+		var tally: Dictionary = {}
+		var counter := func(tick: int, view: Dictionary, source: int) -> void:
+			if tick > openings.STEADY_FROM_TICK and openings.pile_boxes(view, source) > 0: count_unit_phases(view, "frc_builder", tally)
+		openings.run_opening("frc7", 3, model, counter)
+		var line: String = phases_line(model, phase_shares(tally))
+		print(line)
+		runner.check(not tally.is_empty(), "%s has phase counts" % line)
+	return true
+
+func sweep_row(sim, model: String, kind: String, gap: int, count: int) -> Dictionary:
+	var steady: Dictionary = Parity.new().steady_rate(sim, GATHER_TICK)
+	var line: String = "DOCK %s sweep %s gap=%d n=%d steady=%.1f pile_empty=%s short=%s" % [model, kind, gap, count, steady.per_min, seconds_text(steady.pile_empty_s), str(steady.short).to_lower()]
+	return {"line": line, "rate": steady.per_min, "short": steady.short}
+
+func joined(values: Dictionary, format: Callable) -> String:
+	var parts: Array = []
+	var keys: Array = values.keys()
+	keys.sort()
+	for key in keys: parts.append("%d:%s" % [key, format.call(values[key])])
+	return ",".join(parts)
+
+func saturation_line(model: String, kind: String, gap: int, result: Dictionary) -> String:
+	var skipped: String = "-" if result.skipped.is_empty() else ",".join(result.skipped.map(str))
+	if not result.has("cap"): return "DOCK %s saturation %s gap=%d skipped=%s" % [model, kind, gap, skipped]
+	var payback := func(value: float) -> String: return "inf" if is_inf(value) else "%.1f" % value
+	var plain := func(value: float) -> String: return "%.1f" % value
+	return "DOCK %s saturation %s gap=%d cap=%.1f n_cap=%d n90=%d spend90=%d marginal=%s payback_s=%s skipped=%s" % [model, kind, gap, result.cap, result.n_cap, result.n90, result.spend90, joined(result.marginal, plain), joined(result.payback_s, payback), skipped]
+
+func count_unit_phases(view: Dictionary, kind: String, tally: Dictionary) -> void:
+	var units = view.units
+	for index in range(units.size()):
+		if units.kinds[units.kind[index]] != kind: continue
+		var phase: String = "none" if units.phase[index] == units.NONE else units.phases[units.phase[index]]
+		tally[phase] = tally.get(phase, 0) + 1
+
+func phase_shares(tally: Dictionary) -> Dictionary:
+	var total: int = 0
+	for count in tally.values(): total += count
+	var shares: Dictionary = {}
+	for phase in tally: shares[phase] = 100.0 * tally[phase] / total
+	return shares
+
+func phases_line(model: String, shares: Dictionary) -> String:
+	var names: Array = shares.keys()
+	names.sort()
+	var parts: Array = []
+	for name in names: parts.append("%s=%.1f" % [name, shares[name]])
+	return "DOCK %s phases frc7 gap=3 %s" % [model, ",".join(parts)]

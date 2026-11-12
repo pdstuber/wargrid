@@ -83,7 +83,7 @@ func setup(name: String, gap: int) -> Dictionary:
 	return {"sim": sim, "builder": builder, "source": sim.add_supply_source(Vector2i(5 + gap, 9), PILE_BOXES), "depot": faction + "_supply_center"}
 
 # Gross is every credit the pile paid, so orders paid this tick are added back.
-func run_opening(name: String, gap: int, model: String = "hold") -> Dictionary:
+func run_opening(name: String, gap: int, model: String = "hold", on_tick: Callable = Callable()) -> Dictionary:
 	var opening: Dictionary = OPENINGS[name]
 	var world: Dictionary = setup(name, gap)
 	var sim = world.sim
@@ -105,6 +105,7 @@ func run_opening(name: String, gap: int, model: String = "hold") -> Dictionary:
 	for tick in range(1, END_TICK + 1):
 		sim.step()
 		view = sim.view_state()
+		if on_tick.is_valid(): on_tick.call(tick, view, world.source)
 		var credits: int = credits_of(view)
 		gross.append(gross[tick - 1] + credits - previous + pending)
 		previous = credits
