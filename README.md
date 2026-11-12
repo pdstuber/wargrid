@@ -21,7 +21,7 @@
 
 ![Two bots fight on the skirmish map: blue and red bases at opposite corners, supply piles beside them, and both armies clashing in the middle](docs/images/skirmish.png)
 
-*Bot against bot on the skirmish map after 3:20 of game time (tick 6000). The released build still draws placeholder shapes; the new look ships with the next release.*
+*Bot against bot on the skirmish map after 3:20 of game time (tick 6000). Drawn with the old placeholder shapes; 0.11.0 replaced them with the new geometric look, and a new screenshot follows.*
 
 Wargrid is an isometric RTS written in Godot 4 and typed GDScript. Its design follows Zero Hour (factions, base building, supply economy, combat feel and pacing); the code is Wargrid's own and leaves out the original's known bugs and slow paths. Not affiliated with or endorsed by Electronic Arts, see [License](#license).
 

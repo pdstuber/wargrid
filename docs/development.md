@@ -149,10 +149,10 @@ Verified by the user 2026-11-06: Safari loads the live site and plays a skirmish
 
 A pushed tag `v<version>` runs [`release.yml`](../.github/workflows/release.yml) (plan: [release workflow](superpowers/plans/2026-11-06-release-workflow.md), evidence: [release verification](reference/release-verification.md)):
 
-1. Set `config/version` in `game/project.godot` to `<version>`, commit, push. The tag must equal `v` plus that value: the relay only lets clients with equal versions share a room.
-2. Push the tag. The full CI workflow runs on that commit, then Linux, Windows, macOS and Web are exported and packaged.
+1. On a branch `release-<version>`, set `config/version` in `game/project.godot` to `<version>`, commit, push, and wait for CI to pass; then fast-forward `main` to it and push. `main` otherwise only carries `-dev` versions, so tests that depend on the version first meet a release version here (0.11.0: N5 went red on `main`). The tag must equal `v` plus that value: the relay only lets clients with equal versions share a room.
+2. Push the tag on that commit. The full CI workflow runs on that commit, then Linux, Windows, macOS and Web are exported and packaged.
 3. Approve the `production` Environment. The job deploys the relay (`wargrid-relay`), checks `/health`, deploys the web build (`wargrid-web`), checks `/health`, then publishes the three desktop zips as a GitHub Release.
-4. Bump `config/version` on `main` to the next `-dev` version (`0.11.0-dev`), so local and test builds stay out of production rooms.
+4. Bump `config/version` on `main` to the next `-dev` version (`0.12.0-dev` after 0.11.0), so local and test builds stay out of production rooms.
 
 A prerelease tag (`v0.7.0-rc.1`) skips both fly deploys and publishes a GitHub prerelease only. A relay deploy ends matches in progress, so release when nobody is playing. Builds are unsigned; the first-start steps for players are in the [README](../README.md#play). Each zip's `README.txt` says so and links the source for its tag. Re-running a failed release redeploys both fly apps, which ends live matches again.
 

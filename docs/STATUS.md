@@ -28,7 +28,7 @@ Open items that order later packages. P1's blocking focus is card 1; the others 
 | M7 exit gate waits on the user's playtest (FRC economy, tunnels and pickups, online FRC) | [M7 verification](reference/m7-verification.md) | `p1-frc-economy`, `p1-frc-tunnels-online` | after P1 |
 | Full load for air collectors is not applied; fairness of the asymmetry unchecked | [M7 verification](reference/m7-verification.md) | `p1-frc-economy` | after P1 |
 | M6 playtest fixes verified headless only, not seen on screen | [M6 verification](reference/m6-verification.md#playtest-findings-fixed-2026-11-06) | `p1-look-and-m6-fixes` | after P1 |
-| Art-lab defaults not yet seen in a real match | [art lab verification](reference/art-lab-verification.md) | `p1-look-and-m6-fixes` | after P1 |
+| Art-lab defaults seen only in a short Firefox skirmish (0.11.0 test deploy, reported fine by the user 2026-11-12); no focused look playtest yet | [art lab verification](reference/art-lab-verification.md) | `p1-look-and-m6-fixes` | after P1 |
 | Controls from a friend's playtest (camera, force-attack, queued orders) | [blueprint §7](blueprint.md#controls-small-task-after-converted-maps-user-2026-11-08-not-designed) | none | P3 and order controls |
 | Repeat friend match on the fixed online build; leash-driven return timing | [M5 verification](reference/m5-verification.md), [M5.1 verification](reference/m5.1-verification.md) | none | online packages |
 | On Ashfall a seat can still end a match without hitting a building (M8) | [converted maps verification](reference/converted-maps-verification.md), [more maps](reference/more-maps.md#converted-maps-playable-2026-11-09) | none | bots |
@@ -54,13 +54,13 @@ State phrases come from each item's own verification or evidence file. Several r
 | More maps (Dry Wells, Broken Crown) | Merged to `main` (`4c98b9a`) 2026-11-08 | [more maps](reference/more-maps.md) |
 | Sound spike | Released in 0.9.0; Firefox web check and offline playtest done, online covered by tests only (not heard) | [sound spike verification](reference/sound-spike-verification.md), [evidence](reference/sound-spike.md) |
 | Converted maps playable | Merged (`17e7f3d`) 2026-11-09 and released as 0.10.0 (tag `v0.10.0`); user playtest 2026-11-09; Ashfall attack check open (M8) | [verification](reference/converted-maps-verification.md) |
-| Art lab spike | Merged to `main` (`874c6a3`) 2026-11-10; A/B winners are production defaults | [art lab verification](reference/art-lab-verification.md) |
+| Art lab spike | Merged to `main` (`874c6a3`) 2026-11-10; A/B winners are production defaults; released in 0.11.0 (2026-11-12) | [art lab verification](reference/art-lab-verification.md) |
 | Unit avoidance spike, rounds 1 to 4 | Measured, evidence only, nothing merged: no variant met the +0.5 ms p95 cap and none finished the packed or split 300-unit moves; round 4's feel session favoured front-first goals for regrouping and columns for travel; avoidance waits for the movement and pathing milestone. Note and prototypes live on branch `spike-avoidance` (`docs/reference/unit-avoidance-spike.md` there) | [round 4 plan](superpowers/plans/2026-11-10-avoidance-round4-spike.md) |
 | Pathing timing spike | Measured, evidence only, nothing merged: grid, rectangle navmesh and flow fields timed on Ashfall; proposal (the user decides) is the navmesh as base method with the grid as reference; says nothing about units getting stuck. Note on branch `spike-pathing` (`docs/reference/pathing-timing-spike.md` there) | [plan](superpowers/plans/2026-11-10-pathing-timing-spike.md) |
 | Sim interface and determinism notes | Done 2026-11-10 | [interface](reference/sim-interface.md), [determinism](reference/determinism-rules.md) |
 | Native simulation core spike | Done 2026-11-11; CONDITIONAL GO, whole port only | [report](reference/native-sim-spike.md), [verification](reference/native-sim-spike-verification.md) |
 | Performance next | Done 2026-11-11 and merged to local `main`; merge and later work in the design answers | [note](reference/performance-next.md), [verification](reference/performance-next-verification.md) |
 | GDScript static checks | Tasks 1 and 2 done and merged (`3e3aae0`); Task 3 skipped by the user 2026-11-06 | [plan](superpowers/plans/2026-11-05-gdscript-static-checks.md) |
-| Releases (R1) | Done 2026-11-07; v0.6.0 released | [release verification](reference/release-verification.md) |
+| Releases (R1) | Done 2026-11-07; v0.6.0 released; latest 0.11.0 (2026-11-12, new look live) | [release verification](reference/release-verification.md) |
 | Test environment, logo | On `main` (`68bcc0a`, `73b48a4`) 2026-11-07 | [test environment](superpowers/plans/2026-11-07-test-environment.md), [logo](superpowers/plans/2026-11-07-logo.md) |
 | Zero Hour INI dump tool | Tasks 1 and 2 and the gate-review fixes done 2026-11-09; on `main` | [verification](reference/zh-ini-dump-verification.md) |

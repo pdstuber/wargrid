@@ -62,3 +62,12 @@ Next exact action: none for R1; later releases follow [development notes > Relea
 - `WARGRID_RELAY_URL=wss://wargrid-relay-jvm.fly.dev/ws WARGRID_MATCH_WAIT=600 sh tools/run_netplay.sh match`: `NETPLAY PASSED match 30.4 s` (terminal tick 8242).
 - After the tag: `0f5b6d1` keeps large CI artifacts briefly (Windows exe and relay binaries 1 day, release artifacts 7 days); Tests on it green.
 - Unverified: the Windows exe icon from the Linux runner (local macOS export embeds it), a link preview in WhatsApp (cache), the boot splash on screen.
+
+## 0.11.0 release (2026-11-12, tag `v0.11.0` on `185521c`)
+
+- Test deploy of `main` (`5bc5876`) to `wargrid-web-test` (fly release v13), `/health` 200; user played about 5 minutes in Firefox: new graphics show, a skirmish runs, F3 numbers sane.
+- First tag on `333cf25` (the version commit): run 43303488157 red, N5 `controls 0 and 2 do not overlap` on all four Godot jobs. Cause: the launcher hides `ThisBuild` when the playtest helper defaults off, which is the case for any non-`-dev` version; the test measured the unlaid-out control. Reproduced locally, fixed in the test (`185521c`); suite 795 / 140,756 / 0. The tag was moved with the user's approval (nothing had been built or published). Release step 1 in the [development notes](../development.md#release) now runs the version commit through a branch first.
+- Release run 43304990341 on `185521c`: all test jobs and Compare replays green; production approved by the user; relay and web deployed; release published: https://github.com/pdstuber/wargrid/releases/tag/v0.11.0 with Linux 40,956,397, macOS 72,959,663 and Windows 50,585,557 bytes. Notes written by hand (`gh release edit --notes-file`).
+- Live: web and relay `/health` 200; `--probe-relay wss://relay.pdstuber.dev/ws` printed `RELAY WELCOME 73`; the user opened the live site in Firefox and saw the new look.
+- After: `main` set to `0.12.0-dev` (`0ce6471`).
+- Unverified: Chrome, Safari, the desktop zips on any machine, an online match on the live build.
