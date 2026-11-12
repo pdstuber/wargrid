@@ -1,6 +1,6 @@
 # Dock-Hold Experiment Implementation Plan
 
-**Status: proposed (2026-11-12), not approved.**
+**Status: approved by the user 2026-11-12 (subagent-driven run).**
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Run rules: [milestone prompt](../../milestone-prompt.md).
 
