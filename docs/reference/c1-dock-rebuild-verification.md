@@ -1,13 +1,13 @@
 ```text
-Resume record (updated 2026-11-12 night, Task 2 GREEN, uncommitted)
-Branch / base commit / working-tree state: c1-dock-rebuild / 96dd9b9 (Task 1 commit) / Task 2 changes uncommitted
-Last green task / next incomplete task: Task 2 (uncommitted) / Task 3 (MULTI targets on the steady window)
-Changed paths since last commit: game/scripts/simulation/definitions/usa.gd, china.gd, frc.gd, game/scripts/simulation/supply_collection.gd, game/tests/test_dock_lock.gd, game/tests/test_supply.gd, game/tests/test_skirmish_scene.gd (_pile_world), this file
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 805 / 140926 / 11 / exit 1 / no TESTS PASSED (expected red: test_multi_collector_rates and P1-P8 cases only; tree 96dd9b9 + Task 2 changes)
-Known red case or blocker: test_multi_collector_rates (Task 3), P1-P8 (Task 4); tools/audio/test_synth.py in run_python_checks.sh fails on missing numpy (environment); HUD1 fixture risk is a stop condition in Task 4
+Resume record (updated 2026-11-12 night, Task 3 GREEN, uncommitted)
+Branch / base commit / working-tree state: c1-dock-rebuild / ddacce1 (Task 2 commit) / Task 3 changes uncommitted
+Last green task / next incomplete task: Task 3 (uncommitted) / Task 4 (Re-pin P1-P10)
+Changed paths since last commit: game/tests/test_supply_parity.gd, this file
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 807 / 140928 / 9 / exit 1 / no TESTS PASSED (expected red: P1-P8 only; tree ddacce1 + Task 3 changes)
+Known red case or blocker: P1-P8 (Task 4); tools/audio/test_synth.py in run_python_checks.sh fails on missing numpy (environment); HUD1 fixture risk is a stop condition in Task 4
 Approved decisions, pre-authorizations used, deferred gates: c1 chosen, USA overshoot up to +5 %, frc7 rows reported not judged, MULTI targets to the steady window, trace rule (only P1-P10 regenerated) (user, 2026-11-12 night); plan decisions 1-6: same-tick tie to the lower id, lead-standing collectors neither docked nor waiting, dock-hold note and two design-answer sections brought over, one local commit per GREEN task (never push), run_netplay.sh match at night, FRC bot collector count stays 5 (user, 2026-11-12); rendered benchmark, CI, compare_local_traces and playtest deferred to the user
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: coordinator commits Task 2 locally; dispatch Task 3 from docs/superpowers/plans/2026-11-12-c1-dock-rebuild.md
+Next exact action: coordinator commits Task 3 locally; dispatch Task 4 from docs/superpowers/plans/2026-11-12-c1-dock-rebuild.md
 ```
 
 Plan: [c1 dock rebuild](../superpowers/plans/2026-11-12-c1-dock-rebuild.md). Work folder for logs: `~/projects/wargrid-dock-work/c1/` (outside the repository). Expected rows: `~/projects/wargrid-dock-work/c/wargrid-c1.txt`.
@@ -17,8 +17,8 @@ Plan: [c1 dock rebuild](../superpowers/plans/2026-11-12-c1-dock-rebuild.md). Wor
 | Task | What | Model | Status |
 |---|---|---|---|
 | 1 | Baseline, docs from `dock-hold`, lone-cycle pin (DL0) | Sonnet | GREEN (96dd9b9) |
-| 2 | c1 lock data and rule, spec tests DL1-DL9, hold-timing checks rewritten | Opus (high) | GREEN (uncommitted) |
-| 3 | MULTI targets on the steady window | Sonnet | open |
+| 2 | c1 lock data and rule, spec tests DL1-DL9, hold-timing checks rewritten | Opus (high) | GREEN (ddacce1) |
+| 3 | MULTI targets on the steady window | Sonnet | GREEN (uncommitted) |
 | 4 | Re-pin P1-P10 | Sonnet | open |
 | 5 | Headless benchmark and ledger row | Sonnet | open |
 | 6 | Docs: economy guide, status, note | Sonnet | open |
@@ -58,3 +58,5 @@ Plan: [c1 dock rebuild](../superpowers/plans/2026-11-12-c1-dock-rebuild.md). Wor
   - `INCOME frc7 gap=9 gross=525,1800,3150,5775,12225 net=-1975,-700,650,3275,9725 steady=1290.0 break_even=152.7 depositors=7 pile_empty=-`
 - 2026-11-12 night, Task 2 mutation proofs (each reverted; `git diff game/scripts` back to the green tree): (a) lead check without `and collection.phase.begins_with("flying_")`: `test_dock_lock` FAILURES 49 across DL0, DL2, DL3, DL4, DL5, DL6, DL7, DL8, DL9 (a lead's end re-enters the lead, nothing loads); (b) exclusive lead (`target.active_collector_id = unit.id` in the lead branch): FAILURES 46, DL3 among them ("one laborer loads while another stands its lead"). Logs `~/projects/wargrid-dock-work/c1/t2-mut-a.log`, `t2-mut-b.log`.
 - 2026-11-12 night, Task 2 full suite, tree 96dd9b9 + Task 2 changes: CASES 805 CHECKS 140926 FAILURES 11, exit 1. Failing cases exactly the allowed set: `test_multi_collector_rates` (Ep4 2 x usa_collector gap 9 got 2922.9 vs 2770; 4 x frc_builder gap 3 got 1736.3 vs 1590), P1 S1 core series (got 3617151610679531047), P2 S1 outcome (8753, winner 1), P3 Cs1 (11578, winner 2, won), P4 Fm1 (48321, winner 1, won), P5 TB3 final digest (3958ceaab11986af at tick 20000), P6 TB4 (8513092129969516499), P7 VR1 (7c7fbc8d27b1683f96f27525ac6f66c24a851a581dbf5433223ed2b09348a9e7, both checks), P8 HUD1 texts (a Chinook shows `lead_source`; "HUD1 fixture: every case has its unit" passes). Not re-pinned here (Task 4). Expected-unchanged pins (`test_state_hash` PINNED, `test_world_batch` GOLDEN, SS6, MP3, replay, single TARGETS) green. `run_lint.sh` exit 0, `run_warnings.sh` exit 0 (154 files), `tools/test_sim_boundary.py` OK, `check_public.sh` PASSED; `run_python_checks.sh` exit 1 only on `tools/audio/test_synth.py` missing numpy (ruff and mypy pass). Logs `~/projects/wargrid-dock-work/c1/t2-*.log`.
+- 2026-11-12 night, Task 3, tree c1-dock-rebuild ddacce1 clean: baseline `sh tools/run_tests.sh` CASES 805 CHECKS 140926 FAILURES 11 (the Task 2 set: `test_multi_collector_rates` and P1-P8), exit 1. Red: `test_steady_rate_window` and `test_steady_rate_stops_at_empty_pile` added with the `boxes` parameter first; `WARGRID_TEST_ONLY=test_supply_parity` fails to load, `SCRIPT ERROR: Parse Error: Function "steady_rate()" not found in base self.`, exit 1.
+- 2026-11-12 night, Task 3, tree ddacce1 + Task 3 changes (`steady_rate`, `pile_is_empty`, MULTI and `FOUR_HELICOPTERS_GAP_9` on the steady window): `WARGRID_TEST_ONLY=test_supply_parity` CASES 6 CHECKS 17 FAILURES 0, TESTS PASSED, exit 0. Steady values equal `wargrid-c1.txt` `DOCK c1 multi` lines exactly: 2 x usa 2880.0, 2 x frc 870.0, 4 x frc 1650.0, 2 x china 1680.0, 4 x china 2880.0, 4 x usa (Chinooks, reported) 2880.0. Full suite CASES 807 CHECKS 140928 FAILURES 9, exit 1: failing checks exactly P1 (S1 core series), P2 (S1 outcome 8753), P3 (Cs1 11578), P4 (Fm1 48321), P5 (TB3 3958ceaab11986af), P6 (TB4 8513092129969516499), P7 (VR1, two checks, 7c7fbc8d...9e7), P8 (HUD1); `test_multi_collector_rates` green. `run_lint.sh` exit 0, `run_warnings.sh` exit 0, `tools/test_sim_boundary.py` OK, `check_public.sh` PASSED. Logs `~/projects/wargrid-dock-work/c1/t3-*.log`.

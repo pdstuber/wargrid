@@ -12,25 +12,29 @@ const TARGETS := {
 	"frc_builder": {3: 434.0, 9: 201.0},
 }
 const DEPOT_OF := {"usa_collector": "usa_supply_center", "china_collector": "china_supply_center", "frc_builder": "frc_supply_center"}
-# kind, gap, collector count, pooled Zero Hour credits/min.
+# kind, gap, collector count, Zero Hour credits/min on the 300-600 s steady window: re-measure in docs/reference/dock-hold-experiment.md.
 const MULTI := [
-	["usa_collector", 9, 2, 2770.0],
-	["frc_builder", 3, 2, 855.0],
-	["frc_builder", 3, 4, 1590.0],
-	["china_collector", 9, 2, 1668.0],
-	["china_collector", 9, 4, 2814.0],
+	["usa_collector", 9, 2, 2760.0],
+	["frc_builder", 3, 2, 870.0],
+	["frc_builder", 3, 4, 1725.0],
+	["china_collector", 9, 2, 1680.0],
+	["china_collector", 9, 4, 2940.0],
 ]
-const FOUR_HELICOPTERS_GAP_9 := 3116.0
+# Not gated: three or more Chinooks are outside the openings (user, 2026-11-12).
+const FOUR_HELICOPTERS_GAP_9 := 3120.0
 const TOLERANCE := 0.05
+const STEADY_FROM_SECONDS := 300
+const STEADY_TO_SECONDS := 600
+const SHORT_SECONDS := 450
 
 func cases() -> Array[Callable]:
-	return [test_collector_rates_match_zero_hour,test_multi_collector_rates,test_four_helicopters_reported,test_gap_one_arrival_points_apart]
+	return [test_collector_rates_match_zero_hour,test_multi_collector_rates,test_four_helicopters_reported,test_gap_one_arrival_points_apart,test_steady_rate_window,test_steady_rate_stops_at_empty_pile]
 
 # Depot 3x3 at (2,10), pile 4x5 east of it, both centred on y 11.5.
-func layout(kind: String, gap: int, count: int = 1) -> Dictionary:
+func layout(kind: String, gap: int, count: int = 1, boxes: int = 400) -> Dictionary:
 	var sim = Fixture.make_world(10000,Vector2i(48,24))
 	var depot: int = Fixture.add_completed(sim,1,DEPOT_OF[kind],Vector2i(2,10))
-	var source: int = sim.add_supply_source(Vector2i(5 + gap,9),400)
+	var source: int = sim.add_supply_source(Vector2i(5 + gap,9),boxes)
 	var ids: Array = []
 	for index in range(count): ids.append(sim.spawn(1,Vector2(5.5,10.5 + index),kind))
 	Fixture.send(sim,{"type":"gather","entity_ids":ids,"source_id":source})
@@ -55,6 +59,36 @@ func rate(sim, deposits: int, maximum: int = 60000) -> float:
 			return 1800.0 * (credits - first_credits) / (sim._tick - first_tick)
 	return -1.0
 
+# Credits per minute 300-600 s after the gather order, ending early when the pile is empty; short when that ends before 450 s.
+func steady_rate(sim, gather_tick: int) -> Dictionary:
+	var from_tick: int = gather_tick + STEADY_FROM_SECONDS * 30
+	var to_tick: int = gather_tick + STEADY_TO_SECONDS * 30
+	var from_credits: int = 0
+	var end_tick: int = to_tick
+	var end_credits: int = 0
+	var empty_tick: int = -1
+	for index in range(to_tick - sim.view_state().tick + 1):
+		sim.step()
+		var view: Dictionary = sim.view_state()
+		var tick: int = view.tick
+		var credits: int = view.players[0].credits
+		if tick == from_tick: from_credits = credits
+		if pile_is_empty(view):
+			empty_tick = tick
+			end_tick = tick
+			end_credits = credits
+			break
+		if tick == to_tick:
+			end_credits = credits
+			break
+	var per_min: float = 0.0 if end_tick <= from_tick else 1800.0 * (end_credits - from_credits) / (end_tick - from_tick)
+	return {"per_min": per_min, "pile_empty_s": -1.0 if empty_tick < 0 else (empty_tick - gather_tick) / 30.0, "short": end_tick - gather_tick < SHORT_SECONDS * 30}
+
+func pile_is_empty(view: Dictionary) -> bool:
+	for source in view.sources:
+		if source.boxes > 0: return false
+	return true
+
 func within(value: float, expected: float) -> bool:
 	return absf(value - expected) <= TOLERANCE * expected
 
@@ -68,15 +102,16 @@ func test_collector_rates_match_zero_hour(runner) -> bool:
 
 func test_multi_collector_rates(runner) -> bool:
 	for row in MULTI:
-		var measured: float = rate(layout(row[0],row[1],row[2]).sim,1 + 8 * row[2])
-		runner.check(within(measured,row[3]),"Ep4/Ep6/Ep7 %d x %s gap %d within 5%% of %.0f/min, got %.1f" % [row[2],row[0],row[1],row[3],measured])
+		var steady: Dictionary = steady_rate(layout(row[0],row[1],row[2]).sim,0)
+		print("Ep4 steady %d x %s gap %d %.1f" % [row[2],row[0],row[1],steady.per_min])
+		runner.check(not steady.short and within(steady.per_min,row[3]),"Ep4/Ep6/Ep7 %d x %s gap %d steady 300-600 s within 5%% of Zero Hour %.0f/min, got %.1f" % [row[2],row[0],row[1],row[3],steady.per_min])
 	return true
 
 # Not gated: Zero Hour's 2.12x for four helicopter collectors contradicts its 1.89x for two (docs/reference/m7-economy-rework-plan.md, R2.1).
 func test_four_helicopters_reported(runner) -> bool:
-	var measured: float = rate(layout("usa_collector",9,4).sim,33)
-	print("Ep4b four helicopter collectors gap 9: %.1f/min (reported, not gated, ZH %.0f)" % [measured,FOUR_HELICOPTERS_GAP_9])
-	runner.check(measured > 0.0,"Ep4b four helicopter collectors gap 9 deposit")
+	var steady: Dictionary = steady_rate(layout("usa_collector",9,4).sim,0)
+	print("Ep4 steady 4 x usa_collector gap 9 %.1f (reported, not gated, ZH %.0f)" % [steady.per_min,FOUR_HELICOPTERS_GAP_9])
+	runner.check(steady.per_min > 0.0,"Ep4b four helicopter collectors gap 9 deposit")
 	return true
 
 func test_gap_one_arrival_points_apart(runner) -> bool:
@@ -89,4 +124,15 @@ func test_gap_one_arrival_points_apart(runner) -> bool:
 		var phase: String = unit.collection.phase
 		if phase in ["loading","unloading"] and not points.has(phase): points[phase] = Collection._arrival(unit,sim._sources.get(world.source) if phase == "loading" else sim._buildings[world.depot])
 	runner.check(points.size() == 2 and Vector2(points.loading[0],points.loading[1]).distance_to(Vector2(points.unloading[0],points.unloading[1])) > 0.49,"Ep5 gap 1 laborer pile and depot arrival points are 0.5 cell apart, got %s" % [points])
+	return true
+
+func test_steady_rate_window(runner) -> bool:
+	var steady: Dictionary = steady_rate(layout("frc_builder",3,2).sim,0)
+	var deposits: float = rate(layout("frc_builder",3,2).sim,17)
+	runner.check(not steady.short and absf(steady.per_min - deposits) <= 0.02 * deposits,"Ep4 steady window rate %.1f within 2%% of the 17-deposit rate %.1f and not short" % [steady.per_min,deposits])
+	return true
+
+func test_steady_rate_stops_at_empty_pile(runner) -> bool:
+	var steady: Dictionary = steady_rate(layout("china_collector",9,2,40).sim,0)
+	runner.check(steady.short and steady.pile_empty_s > 0.0 and steady.per_min == 0.0,"Ep4 a pile empty before 450 s is short with its empty time, got %s" % [steady])
 	return true
