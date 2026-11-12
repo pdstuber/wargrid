@@ -478,6 +478,62 @@ def collect(kind, dist, collectors=1, deposits=8, limit=22000):
     return run
 
 
+# retail INI costs (docs/superpowers/plans/2026-11-12-faction-income-parity.md, Global Constraints)
+DEPOT_COST = {"chinook": 2000, "truck": 1500, "worker": 1500}
+COLLECTOR_COST = {"chinook": 1200, "truck": 600, "worker": 200}
+
+
+def opening(kind, units, collectors, seconds=600):
+    """Whole opening from the depot order (t = 0): build, free collector, trained collectors, deposits for `seconds`.
+
+    `collectors` counts the free one; a GLA start worker (the builder) counts too and is sent to the pile after the stash.
+    """
+    builder_t, depot_t, power_t, collector_t = COLLECTORS[kind]
+    start_worker = kind == "worker"
+    trained = collectors - 1 - start_worker
+    spend = DEPOT_COST[kind] + trained * COLLECTOR_COST[kind]
+
+    def run(g):
+        x, y = g.clear_strip(units + 250, 200, 2)
+        pile_x = x + units + 150
+        pile = g.spawn("SupplyDock", pile_x, y, owner=g.neutral)  # map warehouses belong to the neutral player
+        builder = g.spawn(builder_t, x + 40, y)
+        scratch: list[tuple[Any, ...]] = []
+        g.record([pile], 10, scratch)  # a builder ordered in its spawn frame gets "buildObjectNow failed"
+        if g.can_make(depot_t) != "ok":
+            g.command("build_structure", [builder], template=power_t, pos=[x + 40, y + 70, 0])
+            until(g, scratch, pile, lambda: g.can_make(depot_t) == "ok", f"buildable {depot_t}")
+        before = set(g.own(""))
+        place_depot(g, builder, depot_t, pile_x, y, units)
+        order = g.frame
+        rows: list[tuple[Any, ...]] = []
+        seen: list[int] = [builder] if start_worker else []
+
+        def found():
+            return [u for u in g.own(collector_t) if u not in {*seen, builder, *before}]
+
+        until(g, rows, pile, found, f"{depot_t}'s collector")
+        seen += found()
+        depot = next(u for u in g.call(f"/units?player={g.me}") if u["template"] == depot_t)
+        if start_worker:  # the stash's builder stays idle unless ordered like a player would
+            g.command("dock", [builder], targetId=pile)
+        for _ in range(trained):
+            g.command("train_unit", [depot["id"]], template=collector_t)
+        for _ in range(seconds * 30 - (g.frame - order)):
+            if len(seen) < collectors:
+                seen += found()
+            g.record([*seen, pile], 1, rows, money=True)
+        meta = {
+            "order_frame": order, "unit": seen[0], "dock": pile, "builder": builder, "kind": kind, "units": units,
+            "collectors": collectors, "collector_ids": seen, "spend": spend, "seconds": seconds,
+            "pile": [pile_x, y], "depot": [depot["x"], depot["y"]], "dist": abs(pile_x - depot["x"]),
+            "depot_template": depot_t,
+        }  # fmt: skip
+        return rows, meta
+
+    return run
+
+
 def retaliate(
     gap=140, offsets=((0, 0), (0, 25), (0, -25), (0, 70), (0, -140)), attacker="AmericaTankCrusader", frames=900
 ):
@@ -575,6 +631,11 @@ SCENARIOS = {
     },
     **{f"collect_{kind}_u3125_x{n}": collect(kind, 312.5, n) for kind in ("chinook", "truck") for n in (2, 4)},
     **{f"collect_worker_u1625_x{n}": collect("worker", 162.5, n) for n in (2, 4)},
+    **{
+        f"open_{kind}_u{int(units * 10)}_x{n}": opening(kind, units, n)
+        for kind, n in (("chinook", 2), ("truck", 3), ("worker", 5), ("worker", 7))
+        for units in (162.5, 312.5)
+    },
     "retaliate_ranger": retaliate(),
     # An API Ranger attacker (range 100) 95 units away; the group stands behind the victim and walks out to kill it, then home.
     "retaliate_return": retaliate(
