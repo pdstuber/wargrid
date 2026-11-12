@@ -19,6 +19,8 @@ from pathlib import Path
 from typing import Any
 
 FPS = 30
+OPENING_TIMES = (60, 120, 180, 300, 600)
+OPENING_MOVE_WINDOW = 150  # frames; a unit unloading stood still for less than this
 TRACES = Path.home() / "CnC/parity/traces"
 
 # name, top speed, tolerance, turn rate (deg/s)
@@ -315,6 +317,64 @@ def phases(meta, rows, deps):
     return dict(zip(("cycle_frames", "travel_frames", "load_frames", "unload_frames"), med, strict=True))
 
 
+def opening_deposits(meta, rows):
+    """[(frames after the order, collector id, credits)]: each positive money step, credited to the collector nearest the depot."""
+    order, depot = meta["order_frame"], meta["depot"]
+    cash = [(int(r["frame"]), float(r["health"])) for r in rows if r["id"] == "money" and int(r["frame"]) >= order]
+    at = {(int(r["frame"]), r["id"]): (float(r["x"]), float(r["y"])) for r in rows if r["x"] != ""}
+    moved = {(int(r["frame"]), r["id"]) for r in rows if r["x"] != "" and float(r["speed"]) > 0}
+    out = []
+    for (_, a), (f, b) in itertools.pairwise(cash):
+        if b > a:
+            # a unit that never moved cannot have delivered; parked builders stand near the depot
+            live = [
+                c for c in meta["collector_ids"] if any((f - d, str(c)) in moved for d in range(OPENING_MOVE_WINDOW))
+            ]
+            near = min(live or meta["collector_ids"], key=lambda c: math.dist(at.get((f, str(c)), (1e9, 1e9)), depot))
+            out.append((f - order, near, b - a))
+    return out
+
+
+def opening_curve(meta, rows, spend):
+    """Gross and net credits at fixed seconds after the depot order, steady credits/min, break-even, depositors, pile empty."""
+    deps = opening_deposits(meta, rows)
+    last_frame = max(int(r["frame"]) for r in rows) - meta["order_frame"]
+    dock = str(meta["dock"])
+    gone = next(
+        (int(r["frame"]) - meta["order_frame"] for r in rows if r["id"] == dock and r["template"] == "dead"), None
+    )
+    gross = {t: sum(c for f, _, c in deps if f <= t * FPS) for t in OPENING_TIMES}
+    first: dict[int, int] = {}
+    for f, who, _ in deps:
+        first.setdefault(who, f)
+    end = min(last_frame, gone if gone is not None else last_frame, meta.get("seconds", 600) * FPS)
+    start = max(first.values(), default=None)
+    steady = None
+    if start is not None and end > start:
+        steady = round(sum(c for f, _, c in deps if start < f <= end) / ((end - start) / FPS / 60), 1)
+    total, break_even = 0, None
+    for f, _, c in deps:
+        total += c
+        if total >= spend:
+            break_even = round(f / FPS, 1)
+            break
+    return {
+        "gross": gross,
+        "net": {t: g - spend for t, g in gross.items()},
+        "steady_per_min": steady,
+        "break_even_s": break_even,
+        "depositors": len(first),
+        "pile_empty_s": None if gone is None else round(gone / FPS, 1),
+    }
+
+
+def opening(meta, rows):
+    """opening_curve flattened to scalar keys so pooled_metrics can pool them."""
+    c = opening_curve(meta, rows, meta["spend"])
+    flat = {f"{k}_{t}": v for k in ("gross", "net") for t, v in c[k].items()}
+    return flat | {k: c[k] for k in ("steady_per_min", "break_even_s", "depositors", "pile_empty_s")}
+
+
 def reaching(meta, rows):
     return {
         "farthest_fire": meta["farthest_fire"],
@@ -330,6 +390,7 @@ KINDS = {
     "supply": supplying,
     "reach": reaching,
     "collect": collecting,
+    "open": opening,
 }
 
 

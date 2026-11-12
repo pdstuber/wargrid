@@ -79,7 +79,7 @@ def fire(attacker, target, gap, frames):
 
 Then in `analyze.py`: pick a metric via the name prefix (`KINDS`) or add one, add an `EXPECT` row `(metric, Wargrid value, tolerance or None, note[, accepted])` (`accepted` = a decided offset: verdict `ACCEPTED`; `move_*` speeds are read from the definition files, so do not type them), and a synthetic case in `tools/test_zh_parity.py`. Unit tests never use real traces.
 
-API verbs (fork `docs/EXTERNAL_CONTROL_API.md`; `/commands` takes an array): `move`, `stop`, `retreat`, `attack_move`, `attack_target`, `guard_zone`, `capture`, `garrison`, `ungarrison`, `repair`, `sell`, `train_unit`, `build_structure`, `set_rally`, `special_power`, `ability`, plus `spawn` from the parity patch. Unit fields: position, `angle`, `speed` (units per frame), `lastShotFrame` (absolute), `health`. Money: `/resources?player=`.
+API verbs (fork `docs/EXTERNAL_CONTROL_API.md`; `/commands` takes an array): `move`, `stop`, `retreat`, `attack_move`, `attack_target`, `guard_zone`, `capture`, `garrison`, `ungarrison`, `repair`, `dock` (local patch: a worker or truck goes to a supply dock like a right-click), `sell`, `train_unit`, `build_structure`, `set_rally`, `special_power`, `ability`, plus `spawn` from the parity patch. Unit fields: position, `angle`, `speed` (units per frame), `lastShotFrame` (absolute), `health`. Money: `/resources?player=`.
 
 API quirks learned so far (keep scenarios honest):
 

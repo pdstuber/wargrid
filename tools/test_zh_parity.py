@@ -8,7 +8,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 sys.path.insert(0, str(Path(__file__).parent / "zh_parity"))
 
@@ -84,6 +84,52 @@ class Pooling(unittest.TestCase):
             pooled = analyze.pooled_metrics("collect_truck_6", analyze.runs_of("collect_truck_6", [root]))
             self.assertEqual(pooled["credits_per_min"]["median"], 75 * 18.0)
             self.assertEqual(pooled["credits_per_min"]["n"], 2)
+
+
+class Opening(unittest.TestCase):
+    ORDER = 100
+    DEPOSITS = ((1000, 11), (1200, 12), (1400, 13), (1600, 11), (1800, 12), (2000, 13), (3600, 11), (3601, 12))
+    META: ClassVar[dict[str, Any]] = {
+        "order_frame": ORDER, "collector_ids": [14, 11, 12, 13], "depot": [0, 0], "dock": 99, "seconds": 130
+    }  # fmt: skip
+
+    def opening_rows(self, dock_dies_at: int | None = None) -> list[dict[str, str]]:
+        paid = {self.ORDER + off: who for off, who in self.DEPOSITS}
+        rows: list[tuple[Any, ...]] = []
+        cash = 0
+        for f in range(self.ORDER, self.ORDER + 3701):
+            cash += 75 if f in paid else 0
+            rows.append((f, "money", "money", "", "", "", "", "", cash))
+            for c in self.META["collector_ids"]:
+                parked = c == 14  # never ordered: stands at the depot, never moves
+                rows.append((f, c, "u", 0 if parked or paid.get(f) == c else 100, 0, 0, 0 if parked else 1, 0, 10))
+            if dock_dies_at is not None and f >= self.ORDER + dock_dies_at:
+                rows.append((f, 99, "dead", "", "", "", "", "", 0))
+        with tempfile.TemporaryDirectory() as t:
+            put_trace(Path(t), "open_x", rows, **self.META)
+            return analyze.load(Path(t) / "open_x.tsv")[1]
+
+    def test_opening_curve(self) -> None:
+        c = analyze.opening_curve(self.META, self.opening_rows(), 200)
+        self.assertEqual((c["gross"][60], c["gross"][120]), (375, 525))
+        self.assertEqual((c["net"][60], c["net"][120]), (175, 325))
+        self.assertEqual(c["depositors"], 3)
+        self.assertAlmostEqual(c["break_even_s"], 1400 / 30, places=1)
+        self.assertAlmostEqual(c["steady_per_min"], 375 / (2300 / 1800), places=1)
+        self.assertIsNone(c["pile_empty_s"])
+
+    def test_pile_empty_cuts_the_steady_rate(self) -> None:
+        c = analyze.opening_curve(self.META, self.opening_rows(dock_dies_at=2100), 200)
+        self.assertAlmostEqual(c["pile_empty_s"], 70.0, places=1)
+        self.assertAlmostEqual(c["steady_per_min"], 3 * 75 / (700 / 1800), places=1)
+
+    def test_scenarios_registered(self) -> None:
+        names = {
+            f"open_{k}_u{u}_x{n}"
+            for k, n in (("chinook", 2), ("truck", 3), ("worker", 5), ("worker", 7))
+            for u in (1625, 3125)
+        }
+        self.assertLessEqual(names, set(parity.SCENARIOS))
 
 
 class Report(unittest.TestCase):
