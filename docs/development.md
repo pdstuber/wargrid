@@ -116,7 +116,7 @@ Logs (`fly logs -a wargrid-relay`): one line per connection open/close, room cre
 
 fly.io, region `fra`, one shared-cpu-1x 256 MB machine that suspends when idle. Rooms live in memory, so deploy exactly one machine (`--ha=false`; `fly machine list` must show one). App `wargrid-relay` behind `wss://relay.pdstuber.dev/ws` since 2026-11-08 (CNAME at the DNS registrar, Let's Encrypt cert issued by fly). The old app `wargrid-relay-jvm` (named before the Go port; fly apps cannot be renamed) was destroyed after the 0.7.0 release (2026-11-08), so v0.6.0 clients can no longer play online.
 
-Status: 2026-11-08: deployed as `wargrid-relay`; `https://relay.pdstuber.dev/health` ok, probe `RELAY WELCOME 77`. Release 0.7.0 (run 42472020039) deployed it through the workflow with the new deploy token; probe `RELAY WELCOME 71`. Release 0.8.0 (run 42480130047) redeployed relay and web; both `/health` answer 200. First deploy log of the old `wargrid-relay-jvm` app: [development history](reference/development-history.md).
+Status: 2026-11-08: deployed as `wargrid-relay`; `https://relay.pdstuber.dev/health` ok, probe `RELAY WELCOME 77`. Release 0.7.0 (run 42472020039) deployed it through the workflow with the new deploy token; probe `RELAY WELCOME 71`. Release 0.8.0 (run 42480130047) redeployed relay and web; both `/health` answer 200. 2026-11-12: relay redeployed by hand from `7ac65c7` (write-queue cap; CI run 43198963251 green), `/health` ok, one machine; no WebSocket probe. First deploy log of the old `wargrid-relay-jvm` app: [development history](reference/development-history.md).
 
 Capacity: a shared vCPU's 6.25 % baseline holds about one 3v3 room ([relay scaling](reference/relay-scaling.md#flyio-vs-railway-measured-2026-11-0405)).
 
