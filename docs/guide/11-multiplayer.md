@@ -166,6 +166,7 @@ Every 30th tick (`hash_interval`), `finish_tick` attaches the state hash to the 
 | Silent for over 10 s (no packets, no pings: the `silent` scenario, 15 s) | relay read deadline (`WARGRID_SILENCE_MS`, default 10 s) | relay closes that socket, others get `left`; the scenario asserts that this happens within 12 s |
 | Socket closed or process killed | relay at once | others get `left` with the last tick forwarded |
 | Stops reading (full TCP buffer) | relay write deadline, same timeout | socket closed, `left`; `TestStalledPeerStillProducesLeft` |
+| Reads, but slower than the room sends | relay write-queue cap: more than 1 MiB waiting for that socket | socket closed at once, `left`; `TestSlowReaderBacklogIsCapped` |
 | Relay unreachable | each client: a socket close, or the silence timer (5 s without any frame, pongs count) | `ended_relay`, "Connection to relay lost"; the `relay-down` scenario (relay killed) asserts both clients end within 2 s |
 | Sends bad frames | relay, or the receiver if the relay passed the frame | relay-detected: `error` to the sender (`ended_relay`), `left` to the others (`ended_left`); receiver-detected: `ended_protocol` on that receiver |
 
@@ -187,7 +188,7 @@ Clients ping the relay once per second after their first send, so a healthy but 
 
 **Fixed integer field list.** `Wire.decode` converts integers only in named command fields, plus the lists `entity_ids` and `origin`. A new command with a new integer field must be added to that list, or it stays a float on both machines and fails validation consistently (speculation on the exact symptom; the code requires integers for ids, tick, player and sequence).
 
-**Capacity and availability are host questions.** Rooms live in one process's memory; a relay crash ends every live match, and the high-availability options (rebuild rooms from clients, mirror state) are proposed in [relay scaling](../reference/relay-scaling.md#high-availability-options-proposed-2026-11-05) and not built. 3v3 online and a lobby are milestone M9, not built; the blueprint says a lobby needs relay protocol 3 because the seat count is global today ([blueprint M9](../blueprint.md#m9--3v3-online)). The spike note says outbound queues per connection are unbounded, so one peer that cannot keep up can only be cut by the write deadline (per that note; not re-checked in the `gws` library).
+**Capacity and availability are host questions.** Rooms live in one process's memory; a relay crash ends every live match, and the high-availability options (rebuild rooms from clients, mirror state) are proposed in [relay scaling](../reference/relay-scaling.md#high-availability-options-proposed-2026-11-05) and not built. 3v3 online and a lobby are milestone M9, not built; the blueprint says a lobby needs relay protocol 3 because the seat count is global today ([blueprint M9](../blueprint.md#m9--3v3-online)). The outbound queue per connection is capped at 1 MiB waiting (2026-11-12): the `gws` library's own queue has no limit, and the write deadline only bounds one write, so before the cap a peer that read slowly but steadily grew the relay's memory without bound (reproduced: 122 MB kept for 120 MB sent, on a 256 MB machine).
 
 **Cross-platform identity is evidenced, not assumed.** macOS, Linux and Windows exports produced identical netplay traces in the M5 gate (364 rows matched); a mismatch would show first as a desync here. See [M5 findings](../reference/m5-online.md#answer).
 
@@ -200,7 +201,7 @@ Clients ping the relay once per second after their first send, so a healthy but 
 - `game/scripts/net/headless_client.gd` — the netplay test client: seat scripts, stall, kill and perturb hooks, command-log replay.
 - `game/scripts/online_main.gd` — online scene: `setup`, `_submit`, `_step_simulation` (poll, catch-up credit, `finish_tick`), `notice`, desync report writing, latency line.
 - `game/scripts/launcher.gd` — hello, welcome and start handling; builds the `Lockstep` object and the online scene.
-- `relay/main.go` — WebSocket handlers (`OnMessage`, `OnClose`), silence and write deadlines, `reject`, shutdown and drain.
+- `relay/main.go` — WebSocket handlers (`OnMessage`, `OnClose`), silence and write deadlines, write-queue cap (`writeLater`), `reject`, shutdown and drain.
 - `relay/room.go` — `registry` (create, join, remove), `room.run`, `admit`, `forward`, `leave`, `recoverCrash`; constants `protocol`, `inputDelay`.
 - `relay/envelope.go` — `parseEnvelope`: what a client may send; size caps.
 - `relay/sender.go` — per-socket write queue; test delay and batch modes.
@@ -217,4 +218,4 @@ Clients ping the relay once per second after their first send, so a healthy but 
 - Previous: [10. Determinism and replays](10-determinism-and-replays.md). Next: [12. Performance and platforms](12-performance-and-platforms.md). The tick that lockstep gates is in [4. The tick](04-the-tick.md).
 
 ---
-Checked against `2b108ab`. Files: `game/scripts/net/lockstep.gd`, `game/scripts/net/wire.gd`, `game/scripts/net/relay_transport.gd`, `game/scripts/net/seat_sim.gd`, `game/scripts/net/headless_client.gd`, `game/scripts/online_main.gd`, `game/scripts/launcher.gd`, `relay/main.go`, `relay/room.go`, `relay/envelope.go`, `relay/sender.go`, `relay/envelope_test.go`, `relay/stall_test.go`, `protocol/conformance/conform.go`, `protocol/vectors/tick.json`, `tools/run_conformance.sh`, `tools/run_netplay.sh`
+Checked against `2b108ab`; relay rows re-checked against `12c9855`. Files: `game/scripts/net/lockstep.gd`, `game/scripts/net/wire.gd`, `game/scripts/net/relay_transport.gd`, `game/scripts/net/seat_sim.gd`, `game/scripts/net/headless_client.gd`, `game/scripts/online_main.gd`, `game/scripts/launcher.gd`, `relay/main.go`, `relay/room.go`, `relay/envelope.go`, `relay/sender.go`, `relay/envelope_test.go`, `relay/stall_test.go`, `relay/queue_test.go`, `protocol/conformance/conform.go`, `protocol/vectors/tick.json`, `tools/run_conformance.sh`, `tools/run_netplay.sh`

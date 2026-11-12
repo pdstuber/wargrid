@@ -107,7 +107,7 @@ Independent of language, M9 design inputs: batch per tick (option B), compact co
 - **Monitor + timer for reconnect:** on disconnect keep the seat reserved with a grace timer in the room's `select`, replay the command log on rejoin, announce `left` or hand the seat to a bot only when the timer fires.
 - **Everything is a message to the room:** the per-room 30 Hz ticker (server-stamped ticks), lobby slot changes, drop timeouts and drain become more `select` cases in the one goroutine that owns the room; no locks.
 - **Supervised shutdown as drain:** on SIGTERM refuse new rooms, let live rooms finish (`http.Server.Shutdown` plus a live-room count), then exit. **Implemented 2026-11-05 for one process** (`58d13f2`): drain bounded by `WARGRID_DRAIN_MS` under fly's `kill_timeout`, so hour-long matches still end on deploy; multi-machine drain stays M9.
-- **Bounded mailboxes:** cap each connection's outbound queue and drop a peer that cannot keep up, so one slow link cannot exhaust a 256 MB machine (both the BEAM mailbox and today's Go queue are unbounded).
+- **Bounded mailboxes:** cap each connection's outbound queue and drop a peer that cannot keep up, so one slow link cannot exhaust a 256 MB machine (both the BEAM mailbox and today's Go queue are unbounded). Done in the Go relay 2026-11-12: 1 MiB cap per connection, see the [development notes](../development.md#relay).
 
 Not worth copying: distributed Erlang and hot code upgrade (the R2 redirect and drain cover the need), and the Elixir port's synchronous call per tick.
 
