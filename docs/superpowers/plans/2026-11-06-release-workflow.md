@@ -103,7 +103,7 @@
   - `test_unknown_platform_fails`: `package("web", ...)` raises `SystemExit`.
 - [ ] **Step 2: Run** `python3 -m unittest tools.test_package_release -v`. Expected: FAIL, module not found.
 - [ ] **Step 3: Implement** `package` and the CLI (sorted entries for a stable listing; typed, mypy-clean), and `tools/godot_licenses.gd` (typed, `extends SceneTree`, reads the path after `--` from `OS.get_cmdline_user_args()`).
-- [ ] **Step 4: Run** `python3 -m unittest discover -s tools`, `sh tools/run_python_checks.sh`, and `godot --headless --script tools/godot_licenses.gd -- /tmp/claude-501/godot_licenses.txt; echo $?` followed by `rg -c 'Godot Engine' /tmp/claude-501/godot_licenses.txt`. Expected: OK, checks pass, exit 0, a count of at least 1.
+- [ ] **Step 4: Run** `python3 -m unittest discover -s tools`, `sh tools/run_python_checks.sh`, and `godot --headless --script tools/godot_licenses.gd -- <scratch>/godot_licenses.txt; echo $?` followed by `rg -c 'Godot Engine' <scratch>/godot_licenses.txt`. Expected: OK, checks pass, exit 0, a count of at least 1.
 - [ ] **Step 5: Commit** `Package release zips with license notices`.
 
 ### Task 4: The release workflow
