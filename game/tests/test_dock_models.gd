@@ -11,7 +11,7 @@ const MODELS := ["hold", "split"]
 const GATHER_TICK := 0
 
 func cases() -> Array[Callable]:
-	return [test_default_model_is_hold, test_steady_rate_window, test_split_lone_cycle_unchanged, test_split_overlaps_lead_in, test_split_same_tick_arrival, test_split_release_on_removal, test_report_rows]
+	return [test_default_model_is_hold, test_steady_rate_window, test_split_lone_cycle_unchanged, test_split_overlaps_lead_in, test_split_same_tick_arrival, test_split_stop_during_lead, test_split_release_on_removal, test_report_rows]
 
 func models() -> Array:
 	var wanted: String = OS.get_environment("WARGRID_DOCK_MODELS")
@@ -89,20 +89,44 @@ func pair_world(boxes: int, delete_when_empty: bool) -> Dictionary:
 func test_split_same_tick_arrival(runner) -> bool:
 	var world: Dictionary = pair_world(400, false)
 	var sim = world.sim
-	var lead_ended: bool = false
-	var simultaneous: bool = false
-	var was_leading: bool = false
+	var left: Dictionary = {}
+	var leading: Dictionary = {}
+	var after: Dictionary = {}
 	for index in range(600):
 		sim.step()
-		var phases: Dictionary = phases_of(sim.view_state())
-		var leading: bool = count_phase(phases, "lead_source") > 0
-		if was_leading and not leading:
-			lead_ended = true
-			simultaneous = phases.get(world.first) == "loading" and phases.get(world.second) == "waiting_source"
+		var view: Dictionary = sim.view_state()
+		var phases: Dictionary = phases_of(view)
+		for id in [world.first, world.second]:
+			if phases.get(id) == "lead_source": leading[id] = true
+			elif leading.has(id) and not left.has(id):
+				left[id] = view.tick
+				after[id] = phases.get(id)
+		if left.size() == 2: break
+	runner.check(left.size() == 2, "split: both lead-ins end")
+	runner.check(left.size() == 2 and left[world.first] == left[world.second], "split: both lead-ins end on one tick, got %s" % [left])
+	runner.check(after.get(world.first) == "loading" and after.get(world.second) == "waiting_source", "split: both lead-ins ending on one tick give the lock to the lower id, got %s" % [after])
+	return true
+
+func test_split_stop_during_lead(runner) -> bool:
+	var world: Dictionary = pair_world(400, false)
+	var sim = world.sim
+	var leading: bool = false
+	for index in range(200):
+		sim.step()
+		if phases_of(sim.view_state()).get(world.first) == "lead_source":
+			leading = true
 			break
-		was_leading = leading
-	runner.check(lead_ended, "split: the lead-in ends")
-	runner.check(simultaneous, "split: both lead-ins ending on one tick give the lock to the lower id")
+	runner.check(leading, "split: the first laborer reaches its lead-in")
+	Fixture.send(sim, {"type": "stop", "entity_ids": [world.first]})
+	var loaded: bool = false
+	var first_back: bool = false
+	for index in range(300):
+		sim.step()
+		var phases: Dictionary = phases_of(sim.view_state())
+		if phases.get(world.second) == "loading": loaded = true
+		if phases.get(world.first) in ["lead_source", "waiting_source", "loading"]: first_back = true
+	runner.check(loaded, "split: the second laborer still reaches loading after the first was stopped in its lead-in")
+	runner.check(not first_back, "split: the stopped laborer no longer collects")
 	return true
 
 func wait_for_waiter(world: Dictionary) -> bool:
