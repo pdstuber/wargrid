@@ -64,7 +64,7 @@ func _add_playtest() -> void:
 	box.move_child(toggle, $Center/Box/Credits.get_index())
 	var cards: Array[Dictionary] = FocusCards.load_cards()
 	if cards.is_empty(): return
-	var panel := FocusCardView.new(cards)
+	var panel := FocusCardView.new(cards, PlaytestSession.open_count)
 	add_child(panel)
 	var build := Button.new()
 	build.name = "ThisBuild"

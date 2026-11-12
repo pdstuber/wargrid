@@ -2,27 +2,42 @@
 extends RefCounted
 
 const AudioSettings = preload("res://scripts/presentation/audio_settings.gd")
+const MarkerCapture = preload("res://scripts/playtest/marker_capture.gd")
 const PlaytestSettings = preload("res://scripts/playtest/playtest_settings.gd")
 const FocusCards = preload("res://scripts/playtest/focus_cards.gd")
 const Launcher = preload("res://scenes/launcher.tscn")
 const SHIPPED := ["p1-frc-economy", "p1-frc-tunnels-online", "p1-look-and-m6-fixes"]
 var scratch: String = "user://test-playtest-settings-%d.cfg" % OS.get_process_id()
 var commit_scratch: String = "user://test-playtest-commit-%d.txt" % OS.get_process_id()
+var sessions: String = "user://test-playtests-%d" % OS.get_process_id()
+var saved_dir: String = ""
 
 func cases() -> Array[Callable]:
-	return [test_shipped_focus_file_valid, test_focus_validation, test_trigger_matching, test_switch_defaults_and_override, test_build_id, test_launcher_focus_card]
+	return [test_shipped_focus_file_valid, test_focus_validation, test_trigger_matching, test_switch_defaults_and_override, test_build_id, test_launcher_focus_card, test_capture_bounds, test_marker_fields, test_session_schema, test_session_web_download, test_session_desktop_write, test_session_resumes_after_restart]
 
 func _begin() -> String:
 	var saved: String = AudioSettings.path
 	AudioSettings.path = scratch
 	DirAccess.remove_absolute(scratch)
+	saved_dir = PlaytestSession.dir
+	PlaytestSession.dir = sessions
+	PlaytestSession.current = null
+	_clear_sessions()
 	return saved
 
 func _end(saved: String) -> void:
 	DirAccess.remove_absolute(scratch)
 	DirAccess.remove_absolute(commit_scratch)
+	_clear_sessions()
+	PlaytestSession.dir = saved_dir
+	PlaytestSession.current = null
 	AudioSettings.path = saved
 	FocusCards.chosen = ""
+
+func _clear_sessions() -> void:
+	if not DirAccess.dir_exists_absolute(sessions): return
+	for file in DirAccess.get_files_at(sessions): DirAccess.remove_absolute(sessions.path_join(file))
+	DirAccess.remove_absolute(sessions)
 
 func _shipped() -> Variant:
 	return JSON.parse_string(FileAccess.get_file_as_string(FocusCards.PATH))
@@ -193,5 +208,130 @@ func test_launcher_focus_card(runner) -> bool:
 			runner.check(button == null or not button.visible, "PT6 switching off hides ThisBuild at %s" % label)
 		launcher.free()
 	runner.root.size = original
+	_end(saved)
+	return true
+
+func _image(width: int, height: int, noise: bool = false) -> Image:
+	var image := Image.create(width, height, false, Image.FORMAT_RGB8)
+	if noise:
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 7
+		var bytes := PackedByteArray()
+		bytes.resize(width * height * 3)
+		for i in bytes.size(): bytes[i] = rng.randi() & 255
+		image.set_data(width, height, false, Image.FORMAT_RGB8, bytes)
+	else: image.fill(Color(0.2, 0.5, 0.3))
+	return image
+
+func _decode(encoded: String) -> Image:
+	var image := Image.new()
+	image.load_jpg_from_buffer(Marshalls.base64_to_raw(encoded))
+	return image
+
+func test_capture_bounds(runner) -> bool:
+	runner.check(MarkerCapture.jpg_base64(null) == "", "PT7 a null image gives no jpg")
+	runner.check(MarkerCapture.jpg_base64(Image.new()) == "", "PT7 an empty image gives no jpg")
+	var flat := _image(1920, 1080)
+	var decoded := _decode(MarkerCapture.jpg_base64(flat))
+	runner.check(decoded.get_size() == Vector2i(640, 360), "PT7 1920x1080 is scaled to 640x360, got %s" % decoded.get_size())
+	runner.check(flat.get_size() == Vector2i(1920, 1080), "PT7 the caller's image keeps its size, got %s" % flat.get_size())
+	var tiny := _image(1, 1)
+	runner.check(_decode(MarkerCapture.jpg_base64(tiny)).get_size() == Vector2i(1, 1), "PT7 a 1x1 image stays 1x1")
+	var noisy := _image(1920, 1080, true)
+	var encoded := MarkerCapture.jpg_base64(noisy)
+	runner.check(encoded == "" or Marshalls.base64_to_raw(encoded).size() <= MarkerCapture.MAX_JPG_BYTES, "PT7 a noise image is bounded or dropped")
+	runner.check(noisy.get_size() == Vector2i(1920, 1080), "PT7 the noise image keeps its size")
+	return true
+
+func test_marker_fields(runner) -> bool:
+	var context := {"tick": 90, "camera": [3.5, 4.0], "selected": [7], "over": false, "menu": false}
+	var marker := MarkerCapture.marker("bad", "stuck", context, "QUJD")
+	var keys: Array = marker.keys()
+	keys.sort()
+	runner.check(keys == ["camera", "comment", "jpg", "kind", "selected", "text", "tick"], "PT8 marker has exactly seven keys, got %s" % [keys])
+	runner.check(marker.tick == 90 and marker.kind == "bad" and marker.text == "stuck" and marker.camera == [3.5, 4.0] and marker.selected == [7] and marker.comment == "" and marker.jpg == "QUJD", "PT8 marker values, got %s" % [marker])
+	return true
+
+func _record(seed_value: int) -> Dictionary:
+	return {"mode": "offline", "map": "dry_wells", "seed": seed_value, "factions": ["frc", "china"], "seat": 0, "end_tick": 600, "end_digest": "abc", "result": "won", "commands": ["l1"]}
+
+func _marker(tick: int) -> Dictionary:
+	return MarkerCapture.marker("good", "ok", {"tick": tick, "camera": [1.0, 2.0], "selected": []}, "")
+
+func _two_match_session() -> PlaytestSession:
+	var session := PlaytestSession.resume_or_open("c1", "0.11.0-dev+abc")
+	session.add_marker(_marker(10))
+	session.finish_match(_record(1))
+	session.add_marker(_marker(20))
+	session.finish_match(_record(2))
+	return session
+
+func test_session_schema(runner) -> bool:
+	var saved := _begin()
+	var session := _two_match_session()
+	session.set_answer("q1", 4, "fine")
+	session.set_checked("t1", true)
+	var parsed: Dictionary = JSON.parse_string(JSON.stringify(session.data))
+	var keys: Array = parsed.keys()
+	keys.sort()
+	runner.check(keys == ["answers", "build", "checklist", "focus", "format", "matches", "started"], "PT9 session keys, got %s" % [keys])
+	runner.check(parsed.format == 1 and parsed.build == "0.11.0-dev+abc" and parsed.focus == "c1", "PT9 format, build and focus")
+	runner.check(parsed.matches.size() == 2 and parsed.matches[1].markers[0].tick == 20 and parsed.matches[0].markers.size() == 1, "PT9 each match keeps its own marker")
+	runner.check(int(parsed.answers.q1.score) == 4 and parsed.answers.q1.text == "fine" and parsed.checklist.t1 == true, "PT9 answer and checklist, got %s" % [parsed.answers])
+	var match_keys: Array = parsed.matches[0].keys()
+	match_keys.sort()
+	runner.check(match_keys == ["commands", "end_digest", "end_tick", "factions", "map", "markers", "mode", "result", "seat", "seed"], "PT9 match keys, got %s" % [match_keys])
+	session.set_comment(0, 0, "why")
+	runner.check(session.data.matches[0].markers[0].comment == "why", "PT9 set_comment reaches the marker")
+	_end(saved)
+	return true
+
+func test_session_web_download(runner) -> bool:
+	var saved := _begin()
+	var session := _two_match_session()
+	var downloads: Array = []
+	var name := session.write(true, func(buffer: PackedByteArray, file_name: String, mime: String) -> void: downloads.append([buffer, file_name, mime]))
+	runner.check(downloads.size() == 1 and downloads[0][2] == "application/json" and downloads[0][1] == PlaytestSession.file_name(session.data.started) and name == downloads[0][1], "PT10 one download with the session file name, got %s" % [name])
+	var parsed: Variant = JSON.parse_string(downloads[0][0].get_string_from_utf8())
+	runner.check(parsed is Dictionary and JSON.stringify(parsed) == JSON.stringify(JSON.parse_string(JSON.stringify(session.data, "\t"))), "PT10 the buffer parses back to data")
+	var written: Array = Array(DirAccess.get_files_at(sessions))
+	runner.check(not written.any(func(file: String) -> bool: return file.begins_with("session-")), "PT10 the browser path writes no session file, got %s" % [written])
+	runner.check(PlaytestSession.current == null and not FileAccess.file_exists(sessions.path_join("current.json")), "PT10 the sitting is closed")
+	_end(saved)
+	return true
+
+func test_session_desktop_write(runner) -> bool:
+	var saved := _begin()
+	var session := _two_match_session()
+	runner.check(FileAccess.file_exists(sessions.path_join("current.json")), "PT11 finishing a match mirrors current.json")
+	var path := session.write(false, func(_buffer: PackedByteArray, _file_name: String, _mime: String) -> void: pass)
+	var file := PlaytestSession.file_name(session.data.started)
+	runner.check(path.ends_with(file) and FileAccess.file_exists(sessions.path_join(file)), "PT11 session file written, got %s" % path)
+	runner.check(not FileAccess.file_exists(sessions.path_join("current.json")) and PlaytestSession.current == null, "PT11 current.json removed and sitting closed")
+	runner.check(not file.contains(":") and file.begins_with("session-") and file.ends_with(".json"), "PT11 file name has no colon, got %s" % file)
+	var again := PlaytestSession.resume_or_open("c1", "b")
+	again.discard()
+	runner.check(PlaytestSession.current == null and not FileAccess.file_exists(sessions.path_join("current.json")), "PT11 discard clears the sitting")
+	_end(saved)
+	return true
+
+func test_session_resumes_after_restart(runner) -> bool:
+	var saved := _begin()
+	runner.check(PlaytestSession.open_count() == -1, "PT12 no sitting gives -1, got %d" % PlaytestSession.open_count())
+	var session := PlaytestSession.resume_or_open("c1", "b")
+	runner.check(PlaytestSession.resume_or_open("other", "x") == session, "PT12 resume returns the current sitting")
+	var started: String = session.data.started
+	runner.check(session.finish_match(_record(1)) == 0, "PT12 first match has index 0")
+	PlaytestSession.current = null
+	runner.check(PlaytestSession.open_count() == 1, "PT12 the file counts one match after a restart, got %d" % PlaytestSession.open_count())
+	var resumed := PlaytestSession.resume_or_open("c1", "b")
+	runner.check(resumed.data.matches.size() == 1 and resumed.data.started == started, "PT12 restart resumes the same sitting")
+	PlaytestSession.current = null
+	var file := FileAccess.open(sessions.path_join("current.json"), FileAccess.WRITE)
+	file.store_string("{not json")
+	file.close()
+	runner.check(PlaytestSession.open_count() == -1, "PT12 a corrupt file counts as none")
+	var fresh := PlaytestSession.resume_or_open("c1", "b")
+	runner.check(fresh.data.matches.is_empty() and fresh.data.format == 1, "PT12 a corrupt file gives a new empty sitting")
 	_end(saved)
 	return true
