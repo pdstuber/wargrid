@@ -112,6 +112,10 @@ Evidence so far: movement, economy and combat traces matched exactly on Linux x8
 
 **Live clients and the oracle.** The headless client, driven by the netplay script, can write every command it applied and every hash it computed. Given a command log (`--replay-log`), it can instead run a fresh simulation from those commands alone, the *oracle*, and write its digest rows. The `match` scenario requires both live clients and the oracle to produce identical rows, and the script pins the match's end tick. That shows a networked match equals a plain local replay of its own command stream, so the network layer changed nothing.
 
+The oracle takes optional arguments. `--factions A,B` builds the offline skirmish instead (the player's seat with faction A, the AI with faction B), `--state-ticks` prints one summary line per listed tick, and `--snapshot-dir` also writes that tick's full snapshot as JSON. Unless the log fails to decode, it ends by printing `ORACLE FINAL <tick> <digest>`, which a caller can compare with a recorded digest.
+
+Playtest sessions use this. `tools/replay_session.sh` unpacks each recorded match with `tools/playtest_session.py` and replays it through the oracle, printing `REPLAY MATCHED` or `REPLAY DIFFERS`. The command-log writer `Lockstep.log_lines` is shared by the game and the headless client.
+
 ## Engineering depth
 
 **Floats, not fixed-point.** The simulation uses ordinary floats under the rules above, and the move to integers is tied to a port to another language ([decision](../reference/design-answers-2026-11-08.md#simulation-core-and-state-digest-user-2026-11-09-late-evening)). The bet is that the platforms Wargrid targets agree when the code sticks to basic arithmetic and `sqrt`, which the traces above support. The rules note lists the couplings that hold the bet together: `Vector2` rounds to 32-bit at construction (65 `Vector2(` sites under `game/scripts/simulation`, counted at this commit), Godot's A* breaks ties its own way, and fused multiply-add was checked absent on macOS arm64 under Godot 4.7.2. Each is a fact a native port must reproduce, and an engine upgrade must re-check.
@@ -130,9 +134,10 @@ Evidence so far: movement, economy and combat traces matched exactly on Linux x8
 - `game/scripts/simulation/simulation.gd` — `next_random`, `RNG_SEED`, `_rng` (snapshot field `rng`), `snapshot`.
 - `game/scripts/simulation/start_spots.gd` — `assign`: the only seeded Godot RNG, setup only.
 - `game/scripts/match_settings.gd` — `starts`: where the relay seed reaches `StartSpots`.
-- `game/scripts/net/lockstep.gd` — `finish_tick` (hash on hash ticks), `wants_snapshot`, `_verify_hashes`, `desync_report`, `hash_rows`, `command_log`.
+- `game/scripts/net/lockstep.gd` — `finish_tick` (hash on hash ticks), `wants_snapshot`, `_verify_hashes`, `desync_report`, `hash_rows`, `command_log`, `log_lines`.
 - `game/scripts/online_main.gd` — `_write_report`: writes or downloads the desync JSON.
-- `game/scripts/net/headless_client.gd` — `_test_hooks` (`perturb-at-tick`), `_replay_oracle`, `--hash-log`, `--command-log`, `--replay-log`.
+- `game/scripts/net/headless_client.gd` — `_test_hooks` (`perturb-at-tick`), `_replay_oracle`, `_oracle_sim`, `_state_row`, `--hash-log`, `--command-log`, `--replay-log`, `--factions`, `--state-ticks`, `--snapshot-dir`.
+- `tools/replay_session.sh`, `tools/playtest_session.py` — `replay_rows`: replay a playtest session's matches through the oracle.
 - `tools/test_sim_math.py` — the static determinism check (`CLOCK`, `RNG`, `NATIVE_HASH`, banned maths).
 - `tools/compare_replays.py` — `compare_traces`, `read_trace`: first diverging tick across traces.
 - `tools/compare_local_traces.sh` — the macOS-versus-CI comparison.
@@ -152,4 +157,4 @@ Evidence so far: movement, economy and combat traces matched exactly on Linux x8
 - Previous: [4. The tick](04-the-tick.md) for the sorted order the rules rely on. Next: [11. Multiplayer](11-multiplayer.md) for packets, relay and input delay.
 
 ---
-Checked against `2b108ab`. Files: `game/scripts/simulation/state_hash.gd`, `game/scripts/simulation/simulation.gd`, `game/scripts/simulation/start_spots.gd`, `game/scripts/match_settings.gd`, `game/scripts/net/lockstep.gd`, `game/scripts/net/headless_client.gd`, `game/scripts/online_main.gd`, `game/scripts/launcher.gd`, `game/scripts/presentation/sound_director.gd`, `tools/test_sim_math.py`, `tools/compare_replays.py`, `tools/compare_local_traces.sh`, `tools/desync_diff.py`, `tools/run_netplay.sh`, `tools/run_python_checks.sh`, `game/tests/test_replay.gd`, `game/tests/test_state_hash.gd`, `game/tests/test_team_match.gd`, `game/tests/test_lockstep.gd`, `.github/workflows/ci.yml`
+Checked against `e9d79b4`. Files: `game/scripts/simulation/state_hash.gd`, `game/scripts/simulation/simulation.gd`, `game/scripts/simulation/start_spots.gd`, `game/scripts/match_settings.gd`, `game/scripts/net/lockstep.gd`, `game/scripts/net/headless_client.gd`, `game/scripts/online_main.gd`, `game/scripts/launcher.gd`, `game/scripts/presentation/sound_director.gd`, `tools/test_sim_math.py`, `tools/compare_replays.py`, `tools/compare_local_traces.sh`, `tools/desync_diff.py`, `tools/run_netplay.sh`, `tools/replay_session.sh`, `tools/playtest_session.py`, `tools/run_python_checks.sh`, `game/tests/test_replay.gd`, `game/tests/test_state_hash.gd`, `game/tests/test_team_match.gd`, `game/tests/test_lockstep.gd`, `.github/workflows/ci.yml`

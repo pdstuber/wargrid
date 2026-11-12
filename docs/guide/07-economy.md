@@ -153,6 +153,12 @@ The economy has the most Zero Hour measurement behind it. The method had three s
 2. **Measure Zero Hour headless** with the parity harness (a source build): credits per minute for each collector type at up to three depot-to-pile distances, and for two and four collectors ([measured supply cycle](../reference/m7-supply-parity-measured.md)). Spreads between runs were mostly under 2 percent.
 3. **Fit the free parameters** (load and unload ticks, with the pile hold folded in) and pin the result as a test, `test_supply_parity.gd`, within 5 percent of the measured rate per row ([rework plan](../reference/m7-economy-rework-plan.md)). Before the fit Wargrid was 7 to 86 percent faster than the game on single-collector rows, and up to 90 percent with two collectors (measured, [measured supply cycle](../reference/m7-supply-parity-measured.md)); after it, the single-collector rows are within 2 percent and the two-collector rows within 1.6 percent (measured, [economy verification archive](../reference/m7-verification-archive-economy.md)).
 
+A later measurement shows where this fit is weakest. The [faction income comparison](../reference/faction-income-parity.md) plays whole openings (depot order, free collector, trained collectors, 600 s) in Zero Hour and in Wargrid. In net at 600 s, USA and China match within 3 percent, but their rows already sit on Wargrid's per-pile cap, so a larger opening would fall short. The FRC openings at the close depot fall 25 to 46 percent short.
+
+The leading candidate cause (not tested) is the exclusive hold. One collector holds a pile for (boxes + 1) times `load_ticks`, which caps the pile at one visit per that time: about 2790 credits a minute for supply helicopters, 2840 for supply trucks and 1600 for laborers. The depot unload hold is the next cap. Zero Hour's dock lets approaches overlap. The same note finds that the old four-laborer Zero Hour target in `test_supply_parity.gd` came from a window that included the ramp-in of the trained workers and is probably too low.
+
+This is evidence, not a number change. Decided (user, 2026-11-12): a measured dock-hold experiment on both holds with no number change until its rows are in, and a re-measure of the four-laborer target first.
+
 What Wargrid takes over directly:
 
 | Rule | Zero Hour (evidence) | Wargrid |
@@ -213,7 +219,8 @@ Where Wargrid differs, and what the notes say about it:
 - [M7 placement rules](../reference/m7-placement-rules.md) — placement rules, one by one.
 - [M7 factions](../reference/m7-factions.md) — hole and salvage evidence.
 - [Zero Hour parity harness](../reference/zero-hour-parity-harness.md) — how the real game is driven.
+- [Faction income parity](../reference/faction-income-parity.md) — whole-opening income per faction against Zero Hour, the per-pile cap, the decision list.
 - Previous: [6. Movement](06-movement.md) moves the collectors; next: [8. Combat](08-combat.md) ends buildings and units that leave holes and crates.
 
 ---
-Checked against `2b108ab`. Files: `game/scripts/simulation/supply_collection.gd`, `game/scripts/simulation/construction.gd`, `game/scripts/simulation/production.gd`, `game/scripts/simulation/rebuild_holes.gd`, `game/scripts/simulation/salvage.gd`, `game/scripts/simulation/economy_definitions.gd`, `game/scripts/simulation/simulation.gd`, `game/scripts/simulation/combat.gd`, `game/scripts/simulation/definitions/definitions.gd`, `game/scripts/simulation/definitions/shared.gd`, `game/scripts/simulation/definitions/china.gd`, `game/scripts/simulation/definitions/usa.gd`, `game/scripts/simulation/definitions/frc.gd`
+Checked against `e9d79b4`. Files: `game/scripts/simulation/supply_collection.gd`, `game/scripts/simulation/construction.gd`, `game/scripts/simulation/production.gd`, `game/scripts/simulation/rebuild_holes.gd`, `game/scripts/simulation/salvage.gd`, `game/scripts/simulation/economy_definitions.gd`, `game/scripts/simulation/simulation.gd`, `game/scripts/simulation/combat.gd`, `game/scripts/simulation/definitions/definitions.gd`, `game/scripts/simulation/definitions/shared.gd`, `game/scripts/simulation/definitions/china.gd`, `game/scripts/simulation/definitions/usa.gd`, `game/scripts/simulation/definitions/frc.gd`, `game/tests/test_supply_parity.gd`, `docs/reference/faction-income-parity.md`
