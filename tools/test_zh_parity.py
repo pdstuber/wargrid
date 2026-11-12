@@ -90,19 +90,35 @@ class Opening(unittest.TestCase):
     ORDER = 100
     DEPOSITS = ((1000, 11), (1200, 12), (1400, 13), (1600, 11), (1800, 12), (2000, 13), (3600, 11), (3601, 12))
     META: ClassVar[dict[str, Any]] = {
-        "order_frame": ORDER, "collector_ids": [14, 11, 12, 13], "depot": [0, 0], "dock": 99, "seconds": 130
+        "order_frame": ORDER, "collector_ids": [14, 11, 12, 13], "depot": [0, 0], "pile": [100, 0], "dock": 99,
+        "seconds": 130, "steady_from": 60,
     }  # fmt: skip
 
-    def opening_rows(self, dock_dies_at: int | None = None) -> list[dict[str, str]]:
-        paid = {self.ORDER + off: who for off, who in self.DEPOSITS}
+    def opening_rows(
+        self, dock_dies_at: int | None = None, deposits: tuple[tuple[int, int], ...] | None = None, extra=None
+    ) -> list[dict[str, str]]:
+        """Every collector stands at the pile, then at the depot for the 40 frames around its deposit; 14 is parked at the depot."""
+        paid = [(self.ORDER + off, who) for off, who in (deposits or self.DEPOSITS)]
         rows: list[tuple[Any, ...]] = []
         cash = 0
         for f in range(self.ORDER, self.ORDER + 3701):
-            cash += 75 if f in paid else 0
+            cash += 75 if any(f == pf for pf, _ in paid) else 0
             rows.append((f, "money", "money", "", "", "", "", "", cash))
             for c in self.META["collector_ids"]:
-                parked = c == 14  # never ordered: stands at the depot, never moves
-                rows.append((f, c, "u", 0 if parked or paid.get(f) == c else 100, 0, 0, 0 if parked else 1, 0, 10))
+                at_depot = c == 14 or any(who == c and pf - 30 <= f <= pf + 10 for pf, who in paid)
+                rows.append((f, c, "u", 3 if at_depot else 100, 0, 0, 0, 0, 10))
+            for c, x in (extra or {}).get(f, ()):
+                rows[self.META["collector_ids"].index(c) - len(self.META["collector_ids"])] = (
+                    f,
+                    c,
+                    "u",
+                    x,
+                    0,
+                    0,
+                    0,
+                    0,
+                    10,
+                )
             if dock_dies_at is not None and f >= self.ORDER + dock_dies_at:
                 rows.append((f, 99, "dead", "", "", "", "", "", 0))
         with tempfile.TemporaryDirectory() as t:
@@ -115,13 +131,30 @@ class Opening(unittest.TestCase):
         self.assertEqual((c["net"][60], c["net"][120]), (175, 325))
         self.assertEqual(c["depositors"], 3)
         self.assertAlmostEqual(c["break_even_s"], 1400 / 30, places=1)
-        self.assertAlmostEqual(c["steady_per_min"], 375 / (2300 / 1800), places=1)
+        self.assertAlmostEqual(c["steady_per_min"], 3 * 75 / (1900 / 1800), places=1)
         self.assertIsNone(c["pile_empty_s"])
 
     def test_pile_empty_cuts_the_steady_rate(self) -> None:
         c = analyze.opening_curve(self.META, self.opening_rows(dock_dies_at=2100), 200)
         self.assertAlmostEqual(c["pile_empty_s"], 70.0, places=1)
-        self.assertAlmostEqual(c["steady_per_min"], 3 * 75 / (700 / 1800), places=1)
+        self.assertAlmostEqual(c["steady_per_min"], 75 / (300 / 1800), places=1)
+
+    def test_steady_window_is_fixed_not_tied_to_the_first_deposits(self) -> None:
+        late = ((500, 11), (2000, 12), (2300, 11), (3000, 12), (3300, 11))  # 13 first delivers after the window opens
+        c = analyze.opening_curve(self.META, self.opening_rows(deposits=late), 200)
+        self.assertAlmostEqual(c["steady_per_min"], 4 * 75 / (1900 / 1800), places=1)
+
+    def test_deposit_goes_to_the_collector_that_unloads_not_the_nearest_one(self) -> None:
+        # 12 queues loaded and closer to the depot (x=1) while 11 unloads (x=3), there since 30 frames before its deposit
+        queue = {f: [(12, 1)] for f in range(100 + 985, 100 + 1006)}
+        rows = self.opening_rows(deposits=((1000, 11), (1200, 12)), extra=queue)
+        who = [w for _, w, _ in analyze.opening_deposits(self.META, rows)]
+        self.assertEqual(who, [11, 12])
+
+    def test_trips_count_every_collector_that_delivers(self) -> None:
+        c = analyze.opening_curve(self.META, self.opening_rows(), 200)
+        self.assertEqual(c["trips"], {11: 3, 12: 3, 13: 2})
+        self.assertEqual((c["trips_min"], c["trips_max"]), (2, 3))
 
     def test_scenarios_registered(self) -> None:
         names = {

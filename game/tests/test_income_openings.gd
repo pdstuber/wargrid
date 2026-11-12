@@ -8,6 +8,7 @@ const Fixture = preload("res://tests/economy_fixture.gd")
 const TICKS_PER_SECOND := 30
 const SECONDS := [60, 120, 180, 300, 600]
 const END_TICK := 600 * TICKS_PER_SECOND
+const STEADY_FROM_TICK := 300 * TICKS_PER_SECOND
 const START_CREDITS := 10000
 const PILE_BOXES := 400
 const DEPOT_ORIGIN := Vector2i(2, 10)
@@ -23,7 +24,7 @@ const GAPS := [3, 9]
 var rows: Dictionary = {}
 
 func cases() -> Array[Callable]:
-	return [test_openings_deposit, test_report_rows]
+	return [test_openings_deposit, test_steady_is_a_fixed_window, test_report_rows]
 
 func row_for(name: String, gap: int) -> Dictionary:
 	var key: String = "%s/%d" % [name, gap]
@@ -124,13 +125,9 @@ func run_opening(name: String, gap: int) -> Dictionary:
 	return row
 
 func summarize(gross: PackedInt32Array, spend: int, first_deposit: Dictionary, pile_empty: int, break_even: int, collectors: int) -> Dictionary:
-	var last_first: int = 0
-	for id in first_deposit: last_first = maxi(last_first, first_deposit[id])
-	var bound: int = END_TICK if pile_empty < 0 else mini(END_TICK, pile_empty)
-	var last_deposit: int = bound
-	while last_deposit > last_first and gross[last_deposit] == gross[last_deposit - 1]: last_deposit -= 1
+	var end: int = END_TICK if pile_empty < 0 else mini(END_TICK, pile_empty)
 	var steady: float = 0.0
-	if last_deposit > last_first: steady = 1800.0 * (gross[last_deposit] - gross[last_first]) / (last_deposit - last_first)
+	if end > STEADY_FROM_TICK: steady = 1800.0 * (gross[end] - gross[STEADY_FROM_TICK]) / (end - STEADY_FROM_TICK)
 	return {"gross": gross, "spend": spend, "depositors": first_deposit.size(), "collectors": collectors, "pile_empty": pile_empty, "break_even": break_even, "steady": steady, "start_credits": 0}
 
 func report_line(name: String, gap: int, row: Dictionary) -> String:
@@ -150,6 +147,22 @@ func test_openings_deposit(runner) -> bool:
 		runner.check(row.start_credits == START_CREDITS, "%s starts the depot order with %d credits, got %d" % [name, START_CREDITS, row.start_credits])
 		runner.check(row.collectors == OPENINGS[name].total, "%s has %d collectors, got %d" % [name, OPENINGS[name].total, row.collectors])
 		runner.check(row.depositors == OPENINGS[name].total, "%s: every collector deposits at least once, got %d" % [name, row.depositors])
+	return true
+
+func gross_by(per_tick: Callable) -> PackedInt32Array:
+	var gross := PackedInt32Array([0])
+	for tick in range(1, END_TICK + 1): gross.append(gross[tick - 1] + per_tick.call(tick))
+	return gross
+
+func test_steady_is_a_fixed_window(runner) -> bool:
+	var first: Dictionary = {1: 100, 2: 7000}
+	var row: Dictionary = summarize(gross_by(func(tick: int) -> int: return 1 if tick <= STEADY_FROM_TICK else 2), 0, first, -1, -1, 2)
+	runner.check(is_equal_approx(row.steady, 2.0 * 1800.0), "steady is credits per minute from 300 s to 600 s, got %f" % row.steady)
+	var sparse := gross_by(func(tick: int) -> int: return 75 if tick % 1000 == 0 else 0)
+	row = summarize(sparse, 0, first, -1, -1, 2)
+	runner.check(is_equal_approx(row.steady, 1800.0 * (sparse[END_TICK] - sparse[STEADY_FROM_TICK]) / (END_TICK - STEADY_FROM_TICK)), "steady ends at 600 s, not at the last deposit, got %f" % row.steady)
+	row = summarize(gross_by(func(tick: int) -> int: return 2 if tick <= 12000 else 10), 0, first, 12000, -1, 2)
+	runner.check(is_equal_approx(row.steady, 2.0 * 1800.0), "an empty pile ends the window, got %f" % row.steady)
 	return true
 
 # Report only: the rows are evidence for docs/reference/faction-income-parity.md, not gated.
