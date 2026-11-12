@@ -34,12 +34,14 @@ Success: the owner can read a chapter per sitting, then open the named files and
 
 Each chapter, about 100–250 lines:
 
+Superseded by the plan's Chapter brief after the pilot (owner feedback, 2026-11-12): payoff-first layers, no up-front primer, terms as a README appendix, a one-page TL;DR.
+
 1. The concept (how RTS games generally solve it).
 2. How Wargrid does it (with a Mermaid diagram where a flow or structure helps).
 3. Tradeoffs: what was chosen, what was rejected, why; Zero Hour comparison where relevant.
 4. Where in the code: files, key functions, constants.
 5. Evidence and further reading: links into `docs/reference/`, blueprint sections, plans.
-6. Footer: `Checked against <commit>` plus the chapter's file list, so `git log <commit>.. -- <files>` shows staleness (my call, from the review; complements the wrap-up line).
+6. Footer: `Checked against <commit>` plus the chapter's file list, so `git log <commit>.. -- <files>` shows staleness (builder's call, from the review; complements the wrap-up line).
 
 ## Chapter outline (builder may merge or split)
 
@@ -61,7 +63,7 @@ Each chapter, about 100–250 lines:
 ## Production
 
 - A shared style brief file.
-- Glossary first. Then a pilot: chapters 1 and one system chapter, written, fact-checked, read by the owner; the brief is fixed from that feedback before fanning out (my call, from the review).
+- Glossary first. Then a pilot: chapters 1 and one system chapter, written, fact-checked, read by the owner; the brief is fixed from that feedback before fanning out (builder's call, from the review).
 - One writer per chapter (mid tier) reads the code and the relevant reference notes, never invents; claims it cannot verify are marked "unverified".
 - A fresh reviewer (strongest tier) fact-checks against the code in batches of 3–4 chapters, and resolves or deletes every "unverified" marker; none survive to merge.
 - Index last.

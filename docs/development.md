@@ -10,6 +10,7 @@ Developed with AI coding agents (Claude Code). [AGENTS.md](../AGENTS.md), the [b
 
 ## Start here
 
+- [Codebase guide](guide/README.md): how Wargrid works and why, one-page TL;DR then 13 chapters from the big picture to testing.
 - [Kickoff](kickoff.md) and [wrap-up](wrapup.md): `/kickoff` and `/wrapup` in Claude Code; portable instructions for any agent.
 - Session notes and handoff prompts: working files, kept in a private notes repository. Documents here mention them by file name, marked "private".
 - [Blueprint](blueprint.md): scope, architecture and milestone gates; the M0 task plan (old §7.1) is archived in [blueprint archive](reference/blueprint-archive.md).

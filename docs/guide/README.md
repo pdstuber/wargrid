@@ -1,19 +1,80 @@
 # Wargrid codebase guide
 
-In an online Wargrid match, nothing about the battle crosses the network except the players' orders. Every machine runs the whole game itself: each one starts from the same map and start spots, receives the same player commands for each tick, and steps the same simulation. A small hash of the state, sent once a second (every 30th tick), tells the peers if one of them ever drifts.
+In an online Wargrid match, nothing about the battle crosses the network except the players' orders. Every machine runs the whole game itself: each one starts from the same map and start spots, receives the same player commands for each tick, and steps the same simulation. A small hash of the state, sent once a second (every 30th tick), tells the peers if one of them ever drifts. The price is discipline and waiting: every new rule must keep the simulation identical across platforms ([determinism rules](../reference/determinism-rules.md)), and an online tick cannot run until every seat's packet for it has arrived.
 
-Two decisions make that work, and most of the code follows from them.
+## The whole thing in one page
 
-- **The rules are deterministic.** The simulation advances in fixed ticks, takes its randomness from its own generator (a fixed start value; the match seed from the relay only picks start spots) and reads no wall clock, so the same start and the same commands give the same state on every machine. A relay only forwards each seat's per-tick packets; it never runs the game.
-- **Drawing is a separate layer.** The simulation is plain classes with no scenes, no rendering and no network. The presentation only draws the state it is handed and decides nothing; thin scene scripts (the drivers) call `step()`, turn clicks into commands and pass the new state on. That is why tests, replays, bots and benchmarks run the same simulation headless.
+```mermaid
+flowchart TD
+    in["Clicks, bots,<br/>other players"] -->|"orders"| drv["Drivers<br/>scene scripts"]
+    drv -->|"orders, one step per tick"| sim["Simulation<br/>the rules"]
+    drv -->|"state"| pres["Presentation<br/>draws and plays"]
+    drv <-->|"orders only"| net["Relay<br/>forwards packets"]
+    classDef sim fill:#2f5d8a,stroke:#7fb3e6,color:#ffffff
+    classDef pres fill:#2f6b45,stroke:#7fd09a,color:#ffffff
+    classDef driver fill:#5b3f86,stroke:#b79ae6,color:#ffffff
+    classDef net fill:#8a5a1f,stroke:#e6b06f,color:#ffffff
+    classDef ext fill:#4a4f57,stroke:#a0a7b1,color:#ffffff
+    class in ext
+    class drv driver
+    class sim sim
+    class pres pres
+    class net net
+    linkStyle default stroke:#9aa4b2,stroke-width:2px
+```
 
-The price is discipline and waiting: every new rule must keep the simulation identical across platforms ([determinism rules](../reference/determinism-rules.md)), and an online tick cannot run until every seat's packet for it has arrived.
+Diagram colours mark the layer, the same in every chapter: blue simulation, green presentation, purple drivers (scene scripts), orange network and relay, grey Godot, tools and tests.
+
+1. **Rules and drawing are two programs in one.** The simulation holds the whole game and advances it in fixed steps; it knows nothing of screens, clocks or networks. The presentation only draws what it is handed, and thin scene scripts sit between them. [Chapter 1](01-big-picture.md).
+2. **The world is a grid.** Every map is a rectangle of square cells, open or blocked, and drawing turns the cells into diamonds with two lines of arithmetic. Three of the four maps are converted from Zero Hour map files by a Python tool. [Chapter 2](02-world.md).
+3. **Units are dictionaries; what they can do is data.** Every unit and building is a plain dictionary, and a read-only table of definitions says what a tank is. There is no "if faction is X" in the rules, so a new unit with existing abilities is a data row. [Chapter 3](03-entities.md).
+4. **One function runs a tick, and orders are the only door.** `Simulation.step()` does everything in a fixed order, and the only way to ask for a change is a command. That narrow door makes lockstep, replays and desync checks possible. [Chapter 4](04-the-tick.md).
+5. **Drawing is one big batch.** Each refresh turns the state into one packed list of coloured triangles plus a few sound requests. Shapes are baked once and copied, so the GPU draws them in a single call. [Chapter 5](05-presentation.md).
+6. **Movement is deliberately simple.** Units are points on a four-way grid and nothing collides: a pathfinder, a step that models heading and speed, and an allocator that gives each unit in a group its own end cell. A planned milestone rewrites it; units going around each other exists only on a branch. [Chapter 6](06-movement.md).
+7. **Money comes in through one door.** Money enters mostly when a collector unloads boxes at a depot, and leaves when a building is placed or a unit queued. The shape follows Zero Hour, and the supply loop was measured against Zero Hour (a source build, through the parity harness). [Chapter 7](07-economy.md).
+8. **Combat is cheap and identical on every machine.** Units look for targets on a staggered timer, every shot of a tick is computed before any damage is applied, and a unit that moved this tick does not fire. [Chapter 8](08-combat.md).
+9. **The bot is just another player.** It looks at a snapshot once a second and issues ordinary commands, so it cannot do anything a human cannot. Today it is small and sees everything. [Chapter 9](09-ai.md).
+10. **A desync is caught, not repaired.** Coding rules keep the rules reproducible, peers compare a fingerprint of the state once a second, and traces show that different operating systems reach the same state. [Chapter 10](10-determinism-and-replays.md).
+11. **Online sends orders and nothing else.** A small relay server forwards each seat's packets, and a tick runs only when every seat's packet for it is in. A slow peer slows everyone. [Chapter 11](11-multiplayer.md).
+12. **Speed is judged on a weaker machine.** Each cost gets a share of the tick or frame time of the target device, divided by a measured slowdown, and the ledger says whether it fits. A worker thread, packed arrays for simulation state and unit avoidance are not built: two proposals and a branch-only spike. [Chapter 12](12-performance-and-platforms.md).
+13. **Tests are the specification.** The simulation is tested like a library: build one, issue commands, step it, read the state back, all headless. Guards, a harness that measures the original game, and CI sit around it. [Chapter 13](13-testing-and-tooling.md).
 
 ## How to read it
 
-Every chapter goes from cheap to deep: why the system exists, a diagram, one real case traced through the functions, the mechanics, then what it costs and where it breaks. Stop after any layer. Start with [1. Big picture and time](01-big-picture.md), then [4. The tick](04-the-tick.md). The term list below is for lookup, not for reading.
+Every chapter goes from cheap to deep: why the system exists, a diagram, one real case traced through the functions, the mechanics, then what it costs and where it breaks. Stop after any layer. Start with chapters 1 and 4. The term list at the end is for lookup, not for reading.
 
-Diagram colours mark the layer, the same in every chapter: blue simulation, green presentation, purple drivers (scene scripts), orange network and relay, grey Godot, tools and tests.
+1. [Big picture and time](01-big-picture.md): how is the game split, and who keeps the time?
+2. [The world](02-world.md): what is a map, and how does a cell become a diamond on screen?
+3. [Entities and definitions](03-entities.md): what is stored per unit, and what is looked up from data?
+4. [The tick](04-the-tick.md): what happens inside one step, and how does an order get in?
+5. [Presentation](05-presentation.md): how does state turn into pixels and sound?
+6. [Movement](06-movement.md): how does a click become a unit that moves?
+7. [Economy and building](07-economy.md): where does money come from, and where does it go?
+8. [Combat](08-combat.md): who shoots whom, when, and how is that kept identical everywhere?
+9. [AI](09-ai.md): how does the computer opponent play?
+10. [Determinism and replays](10-determinism-and-replays.md): what keeps every machine identical, and how is a failure found?
+11. [Multiplayer](11-multiplayer.md): what crosses the network, and what happens when a peer is slow?
+12. [Performance and platforms](12-performance-and-platforms.md): how are speed limits set, and what runs where?
+13. [Testing and tooling](13-testing-and-tooling.md): how is the game checked, built and released?
+
+## Major decisions
+
+Where each big choice lives: the decision log row, then the chapter that shows its consequences. Rows are in [blueprint section 14](../blueprint.md#14-decision-log).
+
+| Decision | Chapter | Evidence |
+|---|---|---|
+| Simulation separate from presentation (no §14 row) | [1](01-big-picture.md) | [Blueprint §3](../blueprint.md#3-engine-language-tools), [simulation interface](../reference/sim-interface.md) |
+| Fixed tick ("Simulation cadence") | [1](01-big-picture.md), [4](04-the-tick.md) | [Decision log](../blueprint.md#14-decision-log) |
+| Map source: converted from a Zero Hour map | [2](02-world.md) | [Decision log](../blueprint.md#14-decision-log), [more maps](../reference/more-maps.md) |
+| Faction model: capability data, no faction branches | [3](03-entities.md) | [Decision log](../blueprint.md#14-decision-log) |
+| Artistic direction: isometric geometric 2.5D | [5](05-presentation.md) | [Decision log](../blueprint.md#14-decision-log), [art direction](../art-direction/ART_DIRECTION.md) |
+| Game design: Zero Hour strengths, deliberate defect fixes | [7](07-economy.md), [8](08-combat.md) | [Decision log](../blueprint.md#14-decision-log), [Zero Hour verification](../reference/zero-hour-verification.md) |
+| Bots: fair, same rules as a human | [9](09-ai.md) | [Decision log](../blueprint.md#14-decision-log), [fair bots research](../reference/fair-bots-research.md) |
+| Multiplayer: deterministic lockstep through a relay | [10](10-determinism-and-replays.md), [11](11-multiplayer.md) | [Decision log](../blueprint.md#14-decision-log), [M5 verification](../reference/m5-verification.md) |
+| Online connection: small relay with no game logic | [11](11-multiplayer.md) | [Decision log](../blueprint.md#14-decision-log), [relay stack spike](../reference/relay-stack-spike.md) |
+| Performance target: browser next to desktop | [12](12-performance-and-platforms.md) | [Decision log](../blueprint.md#14-decision-log), [performance ledger](../reference/performance.md) |
+| Language: GDScript first | [12](12-performance-and-platforms.md) | [Decision log](../blueprint.md#14-decision-log), [native simulation spike](../reference/native-sim-spike.md) |
+| Testing: mandatory, concurrent with implementation | [13](13-testing-and-tooling.md) | [Decision log](../blueprint.md#14-decision-log), [Blueprint §5](../blueprint.md#5-behavior-first-testing-strategy) |
 
 ## Appendix: terms
 
@@ -51,4 +112,4 @@ Reference only: Wargrid's own meanings for words that appear across the chapters
 - **View rows**: the unit part of `view_state`, stored column by column in packed arrays (`id`, `owner`, `kind`, `hp`, `x`, `y`, `status`, `flags`, ...) instead of one dictionary per unit. Presentation reads them by row index; `index_of` finds a unit's row by id. `game/scripts/simulation/view_rows.gd`.
 
 ---
-Checked against `582725f`.
+Checked against `2b108ab`. Files: the chapters listed above.
