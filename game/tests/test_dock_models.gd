@@ -6,12 +6,15 @@ const Parity = preload("res://tests/test_supply_parity.gd")
 const Openings = preload("res://tests/test_income_openings.gd")
 
 const Fixture = preload("res://tests/economy_fixture.gd")
+const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
+const DockC = preload("res://scripts/experiments/dock_c.gd")
 
-const MODELS := ["hold", "split", "queue"]
+const MODELS := ["hold", "split", "queue", "c1", "c2"]
+const RATIOS := {"c1": Vector2i(184, 300), "c2": Vector2i(44, 75)}
 const GATHER_TICK := 0
 
 func cases() -> Array[Callable]:
-	return [test_default_model_is_hold, test_steady_rate_window, test_split_lone_cycle_unchanged, test_split_overlaps_lead_in, test_split_same_tick_arrival, test_split_stop_during_lead, test_split_release_on_removal, test_queue_fifo, test_queue_lock_covers_moves, test_queue_air, test_queue_same_tick_and_removal, test_report_rows]
+	return [test_default_model_is_hold, test_steady_rate_window, test_split_lone_cycle_unchanged, test_split_overlaps_lead_in, test_split_same_tick_arrival, test_split_stop_during_lead, test_split_release_on_removal, test_c_tables_follow_the_rule, test_c_lock_clamps_to_the_stand, test_c_lone_cycle_unchanged, test_queue_fifo, test_queue_lock_covers_moves, test_queue_air, test_queue_same_tick_and_removal, test_report_rows]
 
 func models() -> Array:
 	var wanted: String = OS.get_environment("WARGRID_DOCK_MODELS")
@@ -50,6 +53,38 @@ func test_split_lone_cycle_unchanged(runner) -> bool:
 		var held: Array = deposit_ticks(parity.layout(kind, 3, 1, "hold").sim, 9)
 		var split: Array = deposit_ticks(parity.layout(kind, 3, 1, "split").sim, 9)
 		runner.check(held.size() == 9 and split == held, "%s lone deposits are the same under split: %s vs %s" % [kind, split, held])
+	return true
+
+func test_c_tables_follow_the_rule(runner) -> bool:
+	var parity = Parity.new()
+	for model in RATIOS:
+		var table: Dictionary = DockC.tables[model]
+		for kind in parity.TARGETS:
+			var collects: Dictionary = Registry.collects(kind)
+			var loads: int = collects.boxes + 1
+			var stand: int = loads * collects.load_ticks
+			var earned: int = ceili(collects.boxes * collects.box_value * RATIOS[model].x / float(RATIOS[model].y))
+			var box: int = roundi(earned / float(loads))
+			var lead: int = stand - loads * box
+			var entry: Dictionary = table[kind].source
+			runner.check(entry.lead == lead and entry.box == box, "%s %s source is lead %d box %d, got %s" % [model, kind, lead, box, entry])
+			runner.check(entry.lead + loads * entry.box == stand, "%s %s source keeps today's pile stand %d" % [model, kind, stand])
+			runner.check(table[kind].depot.lead + table[kind].depot.work == collects.unload_ticks, "%s %s depot keeps today's unload stand" % [model, kind])
+	return true
+
+func test_c_lock_clamps_to_the_stand(runner) -> bool:
+	var collects: Dictionary = Registry.collects(Parity.new().TARGETS.keys()[0])
+	var entry: Dictionary = DockC.source_entry(collects, Vector2i(1000, 300))
+	runner.check(entry.lead == 0 and entry.box == collects.load_ticks, "a computed lock longer than the stand clamps to lead 0, box load_ticks, got %s" % [entry])
+	return true
+
+func test_c_lone_cycle_unchanged(runner) -> bool:
+	var parity = Parity.new()
+	for kind in parity.TARGETS:
+		var held: Array = deposit_ticks(parity.layout(kind, 3, 1, "hold").sim, 9)
+		for model in RATIOS:
+			var ticks: Array = deposit_ticks(parity.layout(kind, 3, 1, model).sim, 9)
+			runner.check(held.size() == 9 and ticks == held, "%s lone deposits are the same under %s: %s vs %s" % [kind, model, ticks, held])
 	return true
 
 func phases_of(view: Dictionary) -> Dictionary:

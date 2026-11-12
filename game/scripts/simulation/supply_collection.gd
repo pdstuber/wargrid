@@ -2,12 +2,12 @@ extends RefCounted
 
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
-const DockSplit = preload("res://scripts/experiments/dock_split.gd")
+const DockC = preload("res://scripts/experiments/dock_c.gd")
 const DockQueueWork = preload("res://scripts/experiments/dock_queue_work.gd")
 const DockQueue = preload("res://scripts/simulation/dock_queue.gd")
 
 const DOCK_SHIFT := 0.25
-const DOCK_MODELS := ["hold", "split", "queue"]
+const DOCK_MODELS := ["hold", "split", "queue", "c1", "c2"]
 
 static func release(sim: Simulation, unit_id: int) -> void:
 	var unit: Dictionary = sim._entities[unit_id]
@@ -139,11 +139,11 @@ static func _ahead(unit: Dictionary, other: Dictionary) -> bool:
 
 static func _load_delay(sim: Simulation, unit: Dictionary) -> int:
 	if sim.dock_model == "queue": return DockQueueWork.QUEUE_WORK[unit.kind].source_box
-	return DockSplit.SPLIT[unit.kind].source.box if sim.dock_model == "split" else Registry.collects(unit.kind).load_ticks
+	return DockC.tables[sim.dock_model][unit.kind].source.box if DockC.tables.has(sim.dock_model) else Registry.collects(unit.kind).load_ticks
 
 static func _unload_delay(sim: Simulation, unit: Dictionary) -> int:
 	if sim.dock_model == "queue": return DockQueueWork.QUEUE_WORK[unit.kind].depot
-	return DockSplit.SPLIT[unit.kind].depot.work if sim.dock_model == "split" else Registry.collects(unit.kind).unload_ticks
+	return DockC.tables[sim.dock_model][unit.kind].depot.work if DockC.tables.has(sim.dock_model) else Registry.collects(unit.kind).unload_ticks
 
 static func _end_stay(sim: Simulation, unit: Dictionary, target: Dictionary) -> void:
 	if sim.dock_model == "queue":
@@ -153,8 +153,9 @@ static func _end_stay(sim: Simulation, unit: Dictionary, target: Dictionary) -> 
 	unit.collection.retry_tick = sim._tick + 1
 
 static func _lead(sim: Simulation, unit: Dictionary, depot: bool) -> int:
-	if sim.dock_model != "split": return 0
-	return DockSplit.SPLIT[unit.kind].depot.lead if depot else DockSplit.SPLIT[unit.kind].source.lead
+	if not DockC.tables.has(sim.dock_model): return 0
+	var row: Dictionary = DockC.tables[sim.dock_model][unit.kind]
+	return row.depot.lead if depot else row.source.lead
 
 static func _admit(sim: Simulation, unit: Dictionary, target: Dictionary) -> void:
 	if sim.dock_model == "queue":
