@@ -14,7 +14,7 @@ Sources. **ZH src** = ~/projects/CnC_Generals_Zero_Hour @ 0a05454, paths under `
 
 ## Questions
 Q1. At match start, should the map look black or show the terrain greyed out?
-   a) Terrain shown grey from the start; enemy bases still hidden until scouted — ZH retail default (multiplayer.ini:38, GameLogic.cpp:1750-1754, PartitionManager.cpp:2972-2981)   b) Black until explored (your 2026-11-08 answer, which read the code default)   c) A lobby option, grey by default
+   a) Terrain shown grey from the start; enemy bases still hidden until scouted — ZH retail default (multiplayer.ini:38, GameLogic.cpp:1750-1754, PartitionManager.cpp:2972-2981)   b) Black until explored (the 2026-11-08 answer, which read the code default)   c) A lobby option, grey by default
    Recommendation: a, because it is what Zero Hour players actually saw in skirmish and online, and the earlier answer rested on a default the retail data overrides. Why it matters: it changes scouting, the minimap's first look and the stored "explored" state.
 
 Q2. If the map does start black (Q1 b), should neutral supply piles be visible from the start?

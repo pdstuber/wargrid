@@ -15,7 +15,7 @@ Sources: [performance ledger](../reference/performance.md), [levers note](../ref
 ## Questions
 Q1. Which build is the main target for performance?
    a) The browser build   b) The desktop build   c) Both equally
-   Recommendation: a, because that is what your friends play. Why it matters: budgets and benchmarks are measured on it first.
+   Recommendation: a, because that is what the playtesters use. Why it matters: budgets and benchmarks are measured on it first.
    **Answered 2026-11-09: a, the browser, unless good numbers turn out unreachable there; then an engine change may be considered (user did not know which engines suit WebAssembly best; not researched).**
 
 Q2. Whose machine should the budget be based on?
@@ -24,8 +24,8 @@ Q2. Whose machine should the budget be based on?
    **Answered 2026-11-09: a, keep Steam Deck in Firefox (F = 5.5), against the recommendation.**
 
 Q3. Should friends get a benchmark page to run in their browser?
-   a) Yes: they open a link and copy the result text to you   b) Yes, and results are sent automatically (needs a server endpoint)   c) No
-   Recommendation: a, because it is about 5 lines plus a deploy to the test web app and needs no server. Why it matters: every deploy still asks you first.
+   a) Yes: they open a link and send back the result text   b) Yes, and results are sent automatically (needs a server endpoint)   c) No
+   Recommendation: a, because it is about 5 lines plus a deploy to the test web app and needs no server. Why it matters: every deploy still needs approval first.
    **Answered 2026-11-09: b, results sent automatically (needs a server endpoint; where it lives is not decided).**
 
 Q4. Should the web app send the "cross-origin isolation" headers (no threads, just the headers)?

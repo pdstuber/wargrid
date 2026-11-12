@@ -1,6 +1,6 @@
 # M9 lobby backend brainstorm — 2026-11-09
 
-Status: **PROPOSED**, research only; nothing here is decided, planned or built. Input for M9 planning ([blueprint §7 M9](../blueprint.md#m9--3v3-online)). User brief (2026-11-09): "I do love microservices, Go etc, so if it's slightly overengineered, cool. Not totally overblown of course. We also might need persistence etc. I'd want to stay at fly.io." Fixed inputs: relay stays `net/http` + `gws`, new services in Go with `chi/v5` (blueprint §7 M9 "Backend stack"); cloud-agnostic routing (relay-scaling.md:3); one relay machine is fine, availability is the open question (relay-scaling.md:128-146). Labels: **source** (repo path:line or ZH src), **docs** (fetched 2026-11-09, quoted), **inferred**.
+Status: **PROPOSED**, research only; nothing here is decided, planned or built. Input for M9 planning ([blueprint §7 M9](../blueprint.md#m9--3v3-online)). User brief (2026-11-09): microservices in Go are welcome and slight over-engineering is acceptable, within reason; persistence may be needed; hosting stays on fly.io. Fixed inputs: relay stays `net/http` + `gws`, new services in Go with `chi/v5` (blueprint §7 M9 "Backend stack"); cloud-agnostic routing (relay-scaling.md:3); one relay machine is fine, availability is the open question (relay-scaling.md:128-146). Labels: **source** (repo path:line or ZH src), **docs** (fetched 2026-11-09, quoted), **inferred**.
 
 ## What the lobby must do
 

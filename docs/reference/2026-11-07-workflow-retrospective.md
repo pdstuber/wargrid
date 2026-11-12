@@ -74,7 +74,7 @@ Review findings by origin:
 - **User questions:** 12 `AskUserQuestion` and 7 `PushNotification` in `77c02dce`; the user picked the recommended option in 9 of 11 answered choices. Over two days 66 of 90 recorded answers were the recommended option.
 - **Avoidable by a default:** the five G3.5 questions (diagnose first), and the Lb2 question, where the recommendation was to relax an assertion that turned out to hide the playtest bug.
 - **Unattended mode worked once Opus decided** [evidence]. After the user's 17:00 instruction ("decide as many things unattended as you can, spawn an Opus high agent if unsure") there was one question in 3.4 h (the rendered tail), and four Opus decision agents settled the cycle design, the ground model, Fm1 (200 → 400 boxes) and the harness speed-up. The user signed off all five open items in one message at 19:31.
-- **Status pings:** six user status questions in `77c02dce` ("is the worker agent on the right track? This is taking forever…", "I can see many of the commands failing in the harness agent"), all during the long harness run. 13 task notifications reached the user's view.
+- **Status pings:** six user status questions in `77c02dce` (whether the worker agent was on track, and about failing commands in the harness agent), all during the long harness run. 13 task notifications reached the user's view.
 
 ### 4. What worked and should stay
 

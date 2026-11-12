@@ -4,7 +4,7 @@ Status: **HEADLESS AND CROSS-OS CI VERIFIED; POSITIVE USER PLAYTEST; NO USER-REP
 
 ## Authorization and inherited gates
 
-User explicitly kicked off M3 on prepared `m3-base-supplies` at `d7acea9` and accepted risk from deferring remaining M2 visible play, rendered-frame and real-time backlog gates: "yeah let's run with the risk recorded". Gates remain pending, never passed. [M2 evidence](m2-verification.md) retains local correctness/review/performance. Parent independently verified [M2 matrix41591616563](https://github.com/pdstuber/wargrid/actions/runs/41591616563), head `4be6b7b`: Linux, macOS, Windows and replay comparison successful. That run covers M2, not M3 changes.
+User explicitly kicked off M3 on prepared `m3-base-supplies` at `d7acea9` and accepted risk from deferring remaining M2 visible play, rendered-frame and real-time backlog gates, with the risk recorded. Gates remain pending, never passed. [M2 evidence](m2-verification.md) retains local correctness/review/performance. Parent independently verified [M2 matrix41591616563](https://github.com/pdstuber/wargrid/actions/runs/41591616563), head `4be6b7b`: Linux, macOS, Windows and replay comparison successful. That run covers M2, not M3 changes.
 
 During implementation, user chose headless M3 checks after one batched visible request; no agent window, screenshot or rendering-dependent check was performed. Subsequent publication, user playtest and local merge approval are recorded below. No M4.
 

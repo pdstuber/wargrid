@@ -51,7 +51,7 @@ Q9. How does a match start once everyone is in?
 
 Q10. Should offline Restart keep the same start spots?
    a) Yes, the same starts as the first start — ZH (QuitMenu.cpp:200-250, GameLogic.cpp:974-1034; inferred) and what the converted-maps run built   b) No, draw new starts from a new seed
-   Recommendation: a, because it matches ZH and is already built. Why it matters: confirms a choice the plan made without you.
+   Recommendation: a, because it matches ZH and is already built. Why it matters: confirms a choice the plan made on its own.
 
 Q11. Should there be in-game chat?
    a) Yes, to allies or to everyone; a defeated player chats to everyone only — ZH default (VictoryConditions.cpp:236-237)   b) Allies only   c) No chat; use voice outside the game

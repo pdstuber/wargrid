@@ -19,7 +19,7 @@ Sources. **ZH src** = ~/projects/CnC_Generals_Zero_Hour @ 0a05454, paths under `
 ## Questions
 Q1. How bright should the ground be? **A/B**
    a) Dark, as on the sheets — interview Q6 ("desaturated/darker")   b) Mid-tone: same muted hues, clearly lighter than the darkest side faces   c) Light, like a sunny desert
-   Recommendation: a, because the contrast is what you liked, unless an A/B page with fog, wrecks and health bars shows side faces vanishing; then b. Why it matters: sets every other colour.
+   Recommendation: a, because the contrast was the stated preference, unless an A/B page with fog, wrecks and health bars shows side faces vanishing; then b. Why it matters: sets every other colour.
    **Answered 2026-11-09 (A/B page): b, mid-tone ground (mock-up #575C55).**
 
 Q2. How many owner colours does the palette need?
@@ -89,5 +89,5 @@ Q14. How does a building look while it is being built?
 
 Q15. How does a damaged building look? **A/B**
    a) Darker roof and a missing corner piece at 70 % and again at 35 % health — ZH thresholds (gamedata.ini:127-128)   b) Same, plus a thin geometric smoke column below 35 % — interview Q7 includes "simple smoke"   c) Only the health bar
-   Recommendation: b, because a burning base is a strong ZH cue and Q7 allowed simple smoke; the art bible's "no persistent smoke" is GPT's rule, not yours. Keep the column thin so it never hides units. Why it matters: two extra drawings per building kind.
+   Recommendation: b, because a burning base is a strong ZH cue and Q7 allowed simple smoke; the art bible's "no persistent smoke" is GPT's rule, not a user decision. Keep the column thin so it never hides units. Why it matters: two extra drawings per building kind.
    **Answered 2026-11-09 (A/B page): b, darker roof and missing corner at 70 % and 35 %, plus a thin static smoke column below 35 %.**

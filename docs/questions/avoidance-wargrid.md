@@ -65,7 +65,7 @@ Q11. How much extra cost per tick may avoidance take on the 300-unit benchmark?
 
 Q12. Should the first version cover units that are travelling only, or also units arriving and spreading at their destination?
    a) Travelling only (arrival spreading stays the existing destination reservation)   b) Both   c) Arrival only
-   Recommendation: a, because the destination spreading already exists (destination_allocation.gd) and the complaint was about passing through. Why it matters: halves the design surface.
+   Recommendation: a, because the destination spreading already exists (destination_allocation.gd) and the reported problem was units passing through each other. Why it matters: halves the design surface.
 
 Q13. Should air units ignore avoidance completely?
    a) Yes, air units never avoid   b) Air units avoid each other but not ground units   c) Air units avoid everything

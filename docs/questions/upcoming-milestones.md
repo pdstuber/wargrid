@@ -32,7 +32,7 @@ Q5. Should a building under construction reveal terrain?
 
 Q6. How should bots play at the weakest level?
    a) Slow and clumsy: fewer commands, no scouting, weak fights   b) Same play but small economy handicap - ZH style (difficulty changes gatherer count, AIPlayer.cpp:203-211)   c) Plays well but pauses often
-   Recommendation: a, because you decided no fake weakness and no rule changes (blueprint M8.1). Why it matters: b contradicts that decision; pick it only if you want ZH feel.
+   Recommendation: a, because no fake weakness and no rule changes were decided (blueprint M8.1). Why it matters: b contradicts that decision; pick it only for ZH feel.
 
 Q7. How many play styles ship, and is "random" a default?
    a) Five (aggressive, economic, defensive, raider, adaptive), random default   b) Three (aggressive, economic, defensive)   c) None until M9 lobby needs it
@@ -64,7 +64,7 @@ Q13. HUD: should a unit under attack flash on the minimap?
 
 Q14. Art: should the chosen look be the geometric style, sprites, or a mix per unit class?
    a) Sprites everywhere   b) Geometric shapes everywhere   c) Mix: buildings sprites, units geometric
-   Recommendation: wait for the A/B page (already decided); ask only if you want an early lean. Why it matters: blueprint §2 changes if b or c win.
+   Recommendation: wait for the A/B page (already decided); ask only for an early lean. Why it matters: blueprint §2 changes if b or c win.
 
 Q15. Batch A: do veterancy chevrons and level-up bonuses follow ZH three levels?
    a) Yes, three levels with ZH-like bonuses (values to be read at planning)   b) Two levels   c) Cosmetic only

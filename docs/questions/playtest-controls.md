@@ -123,7 +123,7 @@ Q12. Which key stops units, and should Ctrl force attack?
 
 Q13. Which keys select units one by one?
    a) Ctrl+Left/Right next/previous unit, Ctrl+Up/Down next/previous worker — ZH default (retail commandmap)   b) Only next worker   c) None
-   Recommendation: b, because finding idle dozers is the real use. Why it matters: the friend's building complaints started from dozer handling.
+   Recommendation: b, because finding idle dozers is the real use. Why it matters: the friend's building findings started from dozer handling.
 
 Q14. How should building and production hotkeys work?
    a) Per-button letter keys from the command card — ZH default (letters come from generals.csf `&`, not decoded here)   b) Keep 1..N for menu slots as today   c) Both

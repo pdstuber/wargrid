@@ -7,7 +7,7 @@
       "heading": "The overall aesthetic",
       "ask": "Which overall aesthetic should Wargrid pursue, rather than replacing the original primitive graphics with traditional pixel sprites?",
       "selected": "High-contrast flat geometric abstraction inspired by Space Invaders; the contrast from the early C image is valuable, but its faux-detailed/pixel-art look is not.",
-      "exact_user": "You said we should not replace them with pixel art, but above all three are pixel art. I was thinking more about space invaders and rectangles, circles and triangles. That being said what I like about your screenshot C is the high contrast. It dies go in the right direction",
+      "exact_user": "(Summarised.) All three options are still pixel art; the intent is closer to Space Invaders: rectangles, circles and triangles. Option C's high contrast goes in the right direction.",
       "options": [
         [
           "A",
@@ -129,7 +129,7 @@
         ]
       ],
       "rationale": "Movement and impact should be felt without turning large-scale combat into a bouncy cartoon.",
-      "extra": "Between questions 4 and 5, the user additionally said: “The game should still be isometric, so i guess at some point they will have to look a bit 3d. Or could it work flat? I suppose that will look strange”. This led directly to Question 5."
+      "extra": "Between questions 4 and 5, the user additionally asked whether an isometric game needs some 3D look or could work flat, expecting flat to look strange. This led directly to Question 5."
     },
     {
       "n": 5,

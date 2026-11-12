@@ -50,7 +50,7 @@ Format per milestone prompt. **Stop gates** (gate review, then restart): after T
 Task: start M5 from a verified baseline. Owns: `docs/reference/m5-verification.md`, status lines in `README.md`, `AGENTS.md`, blueprint §7 M4.1 header, `docs/session-notes.md`. Stop: baseline count differs from below.
 
 - [ ] Branch `m5-online` from local `main`; `sh tools/run_tests.sh > <log> 2>&1`; expect `TESTS PASSED 104024` (160 cases).
-- [ ] Check M4.1 status lines agree (updated during planning, 2026-11-04): merged to `main` at `f2c5f9e`; **user playtest still pending** ("I did not play test 4.1 yet, will do so later"). Fix any line that still says "not merged".
+- [ ] Check M4.1 status lines agree (updated during planning, 2026-11-04): merged to `main` at `f2c5f9e`; **user playtest still pending** (to be done later). Fix any line that still says "not merged".
 - [ ] Create the verification file with the resume-record block; record branch, base commit, counts.
 - [ ] Commit `Start M5 verification record`.
 

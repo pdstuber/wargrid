@@ -46,7 +46,7 @@ Q3. A unit's next cell is held by a friendly unit that is moving. How long shoul
 
 Q4. Two groups meet head-on in a one-cell-wide corridor. What should happen?
    a) Both stop, one side backs out after a wait (OpenRA "UnblockDestination", Move.cs:339-343)   b) The units that arrived first keep going, the others wait   c) They swap places and walk through each other
-   Recommendation: b), because a deterministic "first one wins" rule has no oscillation. Why it matters: this is the classic deadlock you listed as a risk.
+   Recommendation: b), because a deterministic "first one wins" rule has no oscillation. Why it matters: this is the classic deadlock already listed as a risk.
 
 Q5. Can your units push enemy units out of the way?
    a) No, enemies are walls (Recoil default, ModInfo.cpp:34; OpenRA never nudges enemies, Mobile.cs:883)   b) Yes, same as friends   c) Only the heavier unit pushes the lighter one
@@ -66,7 +66,7 @@ Q8. How should infantry behave in a crowd?
 
 Q9. Is it ok for two moving friendly units to overlap briefly when they cross?
    a) Yes, a short pass-through is fine (Recoil allows overlap, ModInfo.cpp:37; today's M2 design overlaps)   b) No, never; they wait or sidestep   c) Only infantry with infantry
-   Recommendation: c), because the firm requirement is "go around" and tanks overlapping is the thing that looked wrong. Why it matters: allowing overlap removes most deadlocks at the cost of the look you complained about.
+   Recommendation: c), because the firm requirement is "go around" and tanks overlapping is the thing that looked wrong. Why it matters: allowing overlap removes most deadlocks at the cost of the overlapping look that was rejected.
 
 Q10. A unit that cannot reach its spot because friends are standing there: what next?
    a) It gives up and stops where it is (OpenRA `CompleteDestinationBlocked`, Move.cs:343 region)   b) It stops "near enough", and units already at the goal shuffle outward to make room   c) It keeps pushing in until the others move (Recoil pushing contest, ended by an idle-goal rule, GroundMoveType.cpp:296-317)

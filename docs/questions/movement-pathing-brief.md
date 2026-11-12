@@ -4,7 +4,7 @@ Input and record of the movement brainstorm. It lists what is decided, how thing
 
 ## Why
 
-A friend who used to play StarCraft professionally said units "move strangely, probably because there is no 360° movement", and that the pathing grid looks as coarse as the building grid (user, 2026-11-10). Both points are true in the code (below). Unit avoidance depends on how units move, so this comes before the avoidance milestone.
+A playtester with competitive RTS experience said units "move strangely, probably because there is no 360° movement", and that the pathing grid looks as coarse as the building grid (user, 2026-11-10). Both points are true in the code (below). Unit avoidance depends on how units move, so this comes before the avoidance milestone.
 
 ## Decided (user, 2026-11-10; [design answers](../reference/design-answers-2026-11-08.md), "After round 3")
 

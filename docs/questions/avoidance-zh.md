@@ -64,9 +64,9 @@ Q3. When units get in each other's way, who should make way?
 
 Q4. If two units still block each other after a moment, may they pass through each other as a last resort?
    a) Yes: crossing or opposite units pass through after about 1 s, and other stuck cases ignore collisions for 2 s — ZH default (`AIUpdate.cpp:1359-1362`, `:505-518`, `:3219-3230`)   b) Yes, but only after about 5 s of being stuck   c) Never; they stay stuck until the player moves one
-   Recommendation: b, because ZH's 1 s gives up too fast for "units go around each other", and c breaks the blueprint's bounded-blocked-state rule (§5). Why it matters: this is the safety net against permanent deadlocks in lockstep, but too short brings back the overlap you disliked.
+   Recommendation: b, because ZH's 1 s gives up too fast for "units go around each other", and c breaks the blueprint's bounded-blocked-state rule (§5). Why it matters: this is the safety net against permanent deadlocks in lockstep, but too short brings back the overlap that was rejected.
 
-Q5. Should infantry be able to walk through other infantry? (This checks your 2026-11-07 "all units go around" against a ZH finding.)
+Q5. Should infantry be able to walk through other infantry? (This checks the 2026-11-07 "all units go around" against a ZH finding.)
    a) Yes, infantry pass through all infantry; only vehicles block them — ZH default (`Include/GameLogic/AIPathfind.h:51`, `AIUpdate.cpp:1331-1337`)   b) No, soldiers go around soldiers too   c) Through friendly soldiers only, never enemies
    Recommendation: a, because ZH does it and it avoids horde jams and extra cost in the browser build. Why it matters: it is the biggest cost and deadlock risk in the milestone, and the 2026-11-07 decision assumed ZH infantry avoid each other.
 
@@ -79,8 +79,8 @@ Q7. Should vehicles run over enemy soldiers they drive into?
    Recommendation: a, because blueprint §1 keeps crushing and it removes a whole class of jams. Why it matters: it changes how infantry play near tanks and whether this milestone also adds a kill rule.
 
 Q8. At a busy supply dock, how should trucks deal with each other?
-   a) ZH default: trucks on supply runs drive through all units, and others yield to them (`AIStates.cpp:6170`, `AIUpdate.cpp:1444`). This conflicts with your 2026-11-07 decision.   b) Trucks are solid everywhere, but may overlap other trucks right at the dock   c) Trucks are solid everywhere and queue in a line of waiting spots, as ZH's docks do (`DockUpdate.cpp:136-232`)
-   Recommendation: b, because docks are the deadlock risk the blueprint names, and overlap there is barely visible. Why it matters: it keeps your "trucks go around" decision without risking stalled income.
+   a) ZH default: trucks on supply runs drive through all units, and others yield to them (`AIStates.cpp:6170`, `AIUpdate.cpp:1444`). This conflicts with the 2026-11-07 decision.   b) Trucks are solid everywhere, but may overlap other trucks right at the dock   c) Trucks are solid everywhere and queue in a line of waiting spots, as ZH's docks do (`DockUpdate.cpp:136-232`)
+   Recommendation: b, because docks are the deadlock risk the blueprint names, and overlap there is barely visible. Why it matters: it keeps the "trucks go around" decision without risking stalled income.
 
 Q9. When a group travels far, how should it move?
    a) As a column on one shared route (infantry 3 wide, vehicles 2 wide), each unit at its own speed — ZH default (`AIGroup.cpp:528-638`, `:688`, `:1159`)   b) Each unit takes its own route   c) The group keeps its shape and moves at the slowest unit's speed

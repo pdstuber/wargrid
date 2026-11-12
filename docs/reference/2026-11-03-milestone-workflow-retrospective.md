@@ -2,7 +2,7 @@
 
 Status: **PARTLY ADOPTED (2026-11-03, branch `workflow-improvements`).** Adopted: items 1, 2, 3, 4, 6, 7, 12 and 15 via [milestone prompt](../milestone-prompt.md), `AGENTS.md`, `tools/session_usage.py`; item 11 via project skill settings (effect to be measured next session); macOS CI replaced by a local comparison. Not adopted yet: 5 (already the default), 8, 9 (wording only in AGENTS), 10, 13, 14. Written 2026-11-03 by merging two independent reviews of the session transcripts:
 
-- **Codex** reviewed the M0–M3 Codex sessions plus the M4 Claude sessions. It ran out of usage before measuring tokens.
+- **Codex** reviewed the M0–M3 Codex sessions plus the M4 Claude sessions. It did not measure tokens.
 - **Claude Code** reviewed the M4 Claude sessions, measured their tokens, then measured the Codex sessions too (see [measured usage](#measured-usage-per-milestone)).
 
 Both drafts stayed outside the repository; this file is self-contained. Tags: **[both]** means both reviews found it independently; **[Codex]** or **[Claude]** means one review only. The [evidence](#evidence) section lists the transcript locations behind the claims.

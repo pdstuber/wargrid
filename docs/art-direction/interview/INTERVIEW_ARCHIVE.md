@@ -1,12 +1,12 @@
 # Wargrid — Complete Art-Direction Interview Archive
 
-> **Images moved (user, 2026-11-09):** the interview images are not in the repository. They live outside it at `~/projects/wargrid-art-archive/interview/` (same file names as cited below), together with GPT's QA images and pack bookkeeping. Your 13 answers are the starting point for the art pass and may be revisited.
+> **Images moved (user, 2026-11-09):** the interview images are not in the repository. They live outside it at `~/projects/wargrid-art-archive/interview/` (same file names as cited below), together with GPT's QA images and pack bookkeeping. The 13 answers are the starting point for the art pass and may be revisited.
 
 **13 questions / 13 final user decisions.** Source: the interactive interview on November 8, 2026. This is a design-decision record and visual archive; for the visual rules read [`../ART_DIRECTION.md`](../ART_DIRECTION.md).
 
 > **Fidelity note:** The generated images from questions 1–2 are **copied original PNG/SVG files**. Questions 3–13 originally used interactive *inline vector diagrams*, not downloadable illustrations. Their shape coordinates, paths and colors have been **recreated in standalone editable SVGs** and rasterized to PNG for convenient viewing. The new comparison sheets and label layout are reconstructions, **not byte-for-byte screenshots of the original chat interface**. Do not claim screenshots of A/B/C/D where the original question did not illustrate every option.
 
-> **Answer fidelity:** User selections below are quoted as supplied, including spelling, where possible. Question wording and the option text preserve the substance of the original interview; some explanatory assistant prose has been condensed. Question 1 is especially important: its initial recommendation was *rejected* by the user and replaced with a different high-contrast primitive direction.
+> **Answer fidelity:** User selections below are quoted as supplied; the two free-text remarks (question 1 and before question 5) are summarised. Question wording and the option text preserve the substance of the original interview; some explanatory assistant prose has been condensed. Question 1 is especially important: its initial recommendation was *rejected* by the user and replaced with a different high-contrast primitive direction.
 
 ## Quick index
 
@@ -43,7 +43,7 @@
 
 **User’s answer (verbatim):**
 
-> You said we should not replace them with pixel art, but above all three are pixel art. I was thinking more about space invaders and rectangles, circles and triangles. That being said what I like about your screenshot C is the high contrast. It dies go in the right direction
+> (Summarised.) All three options are still pixel art; the intent is closer to Space Invaders: rectangles, circles and triangles. Option C's high contrast goes in the right direction.
 
 **Final interpretation:** High-contrast flat geometric abstraction inspired by Space Invaders; the contrast from the early C image is valuable, but its faux-detailed/pixel-art look is not.
 
@@ -145,7 +145,7 @@ Question 3 alternatives (`~/projects/wargrid-art-archive/interview/original-opti
 
 **Why this matters:** Movement and impact should be felt without turning large-scale combat into a bouncy cartoon.
 
-**Related user comment:** Between questions 4 and 5, the user additionally said: “The game should still be isometric, so i guess at some point they will have to look a bit 3d. Or could it work flat? I suppose that will look strange”. This led directly to Question 5.
+**Related user comment:** Between questions 4 and 5, the user additionally asked whether an isometric game needs some 3D look or could work flat, expecting flat to look strange. This led directly to Question 5.
 
 **Original inline diagrams, repackaged as a comparison sheet:**
 

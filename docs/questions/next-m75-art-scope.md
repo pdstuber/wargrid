@@ -20,7 +20,7 @@ Q1-Q2 decide what `spike-design` must look like before it merges into `main` (us
 
 Q1. What should stay of `docs/art-direction/` before `spike-design` merges into `main`?
    a) Everything, as GPT made it (20 MB)   b) Fold the 13 decisions and visual rules into blueprint §2, keep the 8 sheets (SVG + PNG) and the interview text (Markdown + JSON) as a reference note; move the zip, QA images, interview images and the six meta docs to a folder outside the repo   c) Keep the art bible and sheets only, delete the interview
-   Recommendation: b, because the repo is public and history keeps every byte, and decisions belong in the blueprint; the interview text is the record of your answers. Why it matters: about 19 MB less in the public history, one source of truth.
+   Recommendation: b, because the repo is public and history keeps every byte, and decisions belong in the blueprint; the interview text is the record of the answers. Why it matters: about 19 MB less in the public history, one source of truth.
    **Answered 2026-11-09 (11 smaller questions, [log](answers-2026-11-09.md#art-pass-merge-prep-evening)):** keep sheets, art bible, palette and interview text; move interview images, QA and meta docs to `~/projects/wargrid-art-archive/`; delete GPT's zip; Godot notes to `docs/reference/art-godot-integration.md`; short blueprint §2 with link.
 
 Q2. Which licence should Wargrid's own art use (sheets, any later textures, icons)?
@@ -30,17 +30,17 @@ Q2. Which licence should Wargrid's own art use (sheets, any later textures, icon
 
 Q3. Should the look questions marked **A/B** be answered on mock-up pages first, before any game code?
    a) Yes: variants of the reference SVGs (ground darkness, selection colour, roof colour, faction outlines at real size, 8 owner colours, shadows) on labelled A/B pages in Firefox, about five steps per page   b) No, wait for the in-game art lab
-   Recommendation: a for colour and shape, because SVG variants cost minutes and you answered the sound spike this way; motion, shake, fog and cost still need the lab. Why it matters: most of the look files can be answered before `spike-design` merges.
+   Recommendation: a for colour and shape, because SVG variants cost minutes and the sound spike was answered this way; motion, shake, fog and cost still need the lab. Why it matters: most of the look files can be answered before `spike-design` merges.
    **Answered 2026-11-09: a, SVG A/B pages first.**
 
 Q4. What should the M7.5 Task 1 spike compare, now that pixel sprites are out?
    a) Nothing: build the art lab straight in the new style   b) Today's rectangles against the new style, on one A/B page   c) Two variants of the new style for each open look question (for example dark vs lighter ground), on A/B pages
-   Recommendation: c, because the open look questions are easier to answer side by side in the real game than as sheets, and that is the workflow you liked in the sound spike. Why it matters: decides how many lab variants get built.
+   Recommendation: c, because the open look questions are easier to answer side by side in the real game than as sheets, and that is the workflow that worked in the sound spike. Why it matters: decides how many lab variants get built.
    **Answered 2026-11-09 (asked twice, reworded): c, two in-game variants for each look question the SVG pages cannot settle (motion, shake, fog, effects, cost).**
 
 Q5. When should the art lab run?
    a) Where M7.5 sits: after ground batch A   b) Right after `spike-design` merges, as an evidence-only spike on its own branch (like the sound spike); the rest of M7.5 stays after batch A   c) Before batch A, so batch A's new units are drawn once in the new style
-   Recommendation: b, because the lab touches no simulation or movement, so it does not collide with avoidance, and early evidence on cost and readability shapes batch A's kinds. Why it matters: changes milestone order only if you pick c.
+   Recommendation: b, because the lab touches no simulation or movement, so it does not collide with avoidance, and early evidence on cost and readability shapes batch A's kinds. Why it matters: changes milestone order only if c is picked.
    **Answered 2026-11-09: b, evidence-only spike on its own branch soon; rest of M7.5 after batch A.**
 
 Q6. Which objects go into the art lab?
