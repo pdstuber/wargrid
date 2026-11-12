@@ -1,6 +1,7 @@
 """Tests for the Zero Hour parity harness: synthetic traces and fake launches, no engine."""
 
 import base64
+import inspect
 import json
 import signal
 import subprocess
@@ -182,6 +183,17 @@ class DockHold(unittest.TestCase):
         later_credit: int | None = None,
         length: int = 600 * 30,
     ) -> list[dict[str, str]]:
+        return self.load_rows(self.deposits_raw(stop_s, dead_pile_s, period, credit, later_credit, length))
+
+    def deposits_raw(
+        self,
+        stop_s: float = 600,
+        dead_pile_s: float | None = None,
+        period: int = 60,
+        credit: int = 75,
+        later_credit: int | None = None,
+        length: int = 600 * 30,
+    ) -> list[tuple[Any, ...]]:
         rows: list[tuple[Any, ...]] = []
         cash = n = 0
         for off in range(0, length + 1):
@@ -192,7 +204,7 @@ class DockHold(unittest.TestCase):
             rows.append((f, "money", "money", "", "", "", "", "", cash))
             if dead_pile_s is not None and off >= dead_pile_s * 30:
                 rows.append((f, 99, "dead", "", "", "", "", "", 0))
-        return self.load_rows(rows)
+        return rows
 
     META: ClassVar[dict[str, Any]] = {
         "order_frame": 100, "collectors": 2, "dist": 10, "dock": 99,
@@ -200,8 +212,11 @@ class DockHold(unittest.TestCase):
 
     def test_lock_windows(self) -> None:
         held = (0, 5, 5, 5, 0, 6, 6, 0, 7)
-        rows = [(f, 9, "lock", "", "", "", "", "", a) for f, a in enumerate(held, 1)]
+        rows: list[tuple[Any, ...]] = [(f, 9, "lock", "", "", "", "", "", a) for f, a in enumerate(held, 1)]
         rows += [(f, 8, "lock", "", "", "", "", "", 3) for f in range(1, 10)]  # another dock never changes owner
+        rows += [
+            (f, 9, "SupplyDock", 0, 0, 0, 0, 0, hp) for f, hp in enumerate((1, 2, 3, 4, 5, 6, 7, 8, 9), 1)
+        ]  # same id: HP is not a lock
         w = analyze.lock_windows(self.load_rows(rows), 9)
         self.assertEqual((w["lengths"], w["median"], w["count"], w["open"]), ([3, 2], 2.5, 2, 1))
         self.assertEqual(analyze.lock_windows(self.load_rows(rows), 7)["median"], None)
@@ -239,6 +254,34 @@ class DockHold(unittest.TestCase):
             )
         }  # fmt: skip
         self.assertLessEqual(names, set(parity.SCENARIOS))
+        for n in names:
+            run = parity.SCENARIOS[n]
+            self.assertEqual(inspect.getclosurevars(run).nonlocals["seconds"], 600, n)
+
+    def test_metrics_routes_s600_to_lock_windows(self) -> None:
+        meta = {**self.META, "depot_id": 55, "collector_ids": [1, 2], "depot": [0, 0], "pile": [100, 0]}
+        rows = self.deposits()
+        rows += self.load_rows(
+            [(f, 99, "lock", "", "", "", "", "", 4 if 110 <= f < 120 else 0) for f in range(100, 700)]
+        )
+        rows += self.load_rows(
+            [(f, 55, "lock", "", "", "", "", "", 6 if 130 <= f < 150 else 0) for f in range(100, 700)]
+        )
+        m = analyze.metrics("collect_truck_u3125_x2_s600", meta, rows)
+        self.assertEqual((m["pile_lock_count"], m["pile_lock_median"]), (1, 10))
+        self.assertEqual((m["depot_lock_count"], m["depot_lock_median"]), (1, 20))
+        self.assertIn("steady_per_min", m)
+
+    def test_pooled_s600_has_no_whole_trace_rate_and_any_short(self) -> None:
+        meta = {**self.META, "depot_id": 55, "collector_ids": [1, 2], "depot": [0, 0], "pile": [100, 0]}
+        with tempfile.TemporaryDirectory() as t:
+            root = Path(t)
+            for rep, stop in (("rep1", 600), ("rep2", 400)):
+                put_trace(root / rep, "collect_truck_u3125_x2_s600", self.deposits_raw(stop), **meta)
+            name = "collect_truck_u3125_x2_s600"
+            pooled = analyze.pooled_metrics(name, analyze.runs_of(name, [root]))
+        self.assertNotIn("credits_per_min", pooled)
+        self.assertIs(pooled["short_window"], True)
 
 
 class Report(unittest.TestCase):
@@ -361,7 +404,29 @@ class FakeGame:
         return {}
 
 
+class RecordGame(parity.Game):
+    def __init__(self, units: list[dict[str, Any]]) -> None:
+        self.units, self.frame = units, 0
+
+    def call(self, path: str, body: Any = None) -> Any:
+        if path == "/units":
+            return self.units
+        return {"frame": self.frame}
+
+    def step(self, n: int = 1) -> None:
+        self.frame += n
+
+
 class Helpers(unittest.TestCase):
+    def test_record_lock_rows(self) -> None:
+        base = {"template": "SupplyDock", "x": 0, "y": 0, "angle": 0}
+        g = RecordGame([{**base, "id": 5, "activeDocker": 7}, {**base, "id": 6}])
+        rows: list[tuple[Any, ...]] = []
+        g.record([], 1, rows, docks=(5, 9))
+        self.assertEqual([r[8] for r in rows if r[2] == "lock"], [7, 0])  # absent dock reads 0
+        with self.assertRaises(KeyError):
+            g.record([], 1, rows, docks=(6,))  # present without the field: an old fork
+
     def test_place_depot_retries_illegal_spots(self) -> None:
         g = FakeGame(refuse=2)
         self.assertEqual(parity.place_depot(g, 1, "D", 1000, 0, None), 1000 - 15)

@@ -22,9 +22,8 @@ from typing import Any
 FPS = 30
 OPENING_TIMES = (60, 120, 180, 300, 600)
 OPENING_STEADY_FROM = 300  # seconds; the steady rate is credits per minute from here to the end of the run (600 s)
-OPENING_EMPTY_GAP = (
-    300  # frames; at least this long (and 3 median deposit gaps) without a deposit at trace end = dry pile
-)
+# A pile with no deposit for this many frames (and 3 median gaps) at trace end ran dry.
+EMPTY_GAP_FRAMES = 300
 STEADY_TO = 600  # seconds after the order
 SHORT_WINDOW_S = 450
 TRACES = Path.home() / "CnC/parity/traces"
@@ -436,7 +435,7 @@ def collect_rates(meta, rows):
         (int(r["frame"]) - order for r in rows if r["id"] == str(meta["dock"]) and r["template"] == "dead"), None
     )
     gaps = [b[0] - a[0] for a, b in itertools.pairwise(deps)]
-    quiet = max(OPENING_EMPTY_GAP, 3 * statistics.median(gaps)) if gaps else OPENING_EMPTY_GAP
+    quiet = max(EMPTY_GAP_FRAMES, 3 * statistics.median(gaps)) if gaps else EMPTY_GAP_FRAMES
     if dead is None and deps and last - deps[-1][0] > quiet:
         dead = deps[-1][0]  # nothing delivered for far longer than the usual gap: the pile ran dry then
     end = min(last, STEADY_TO * FPS, dead if dead is not None else last)
@@ -568,11 +567,13 @@ def pooled_metrics(name, runs):
     out: dict[str, Any] = {}
     for key in per_run[0] if per_run else []:
         vals = [m[key] for m in per_run if m.get(key) is not None]
-        if vals and all(isinstance(v, int | float) and not isinstance(v, bool) for v in vals):
+        if key == "short_window":
+            out[key] = any(vals)  # any rep short
+        elif vals and all(isinstance(v, int | float) and not isinstance(v, bool) for v in vals):
             out[key] = summarize(vals)
         elif vals and all(isinstance(v, str) for v in vals):
             out[key] = {"n": len(vals), "value": statistics.mode(vals), "distinct": len(set(vals))}
-    if (po := pool(runs)) and name.startswith("collect"):
+    if (po := pool(runs)) and name.startswith("collect") and not name.endswith("_s600"):
         out["credits_per_min"] = {**out.get("credits_per_min", {}), "n": po["runs"], "pooled": po["pooled"]}
         out["credits_per_min"]["median"] = po["pooled"]
         out["credits_per_min"]["spread"] = po["spread"]

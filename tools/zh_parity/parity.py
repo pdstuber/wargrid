@@ -187,7 +187,7 @@ class Game:
                     )
                 )
             for d in docks:
-                rows.append((self.frame, d, "lock", "", "", "", "", "", units.get(d, {}).get("activeDocker", 0)))
+                rows.append((self.frame, d, "lock", "", "", "", "", "", units[d]["activeDocker"] if d in units else 0))
             if money:
                 rows.append((self.frame, "money", "money", "", "", "", "", "", cash))
             if stop and stop(rows):
