@@ -361,3 +361,11 @@ Answers to an outside audit of `main` at `ec78012` (audit and fix list kept outs
 - **Earlier order kept:** the interpolation rework becomes its own package ("Smooth motion", P4) before movement (P5); the `SimPump` seam goes with controller flattening in the HUD packages; writing the movement design is P3's rider.
 - **Session:** one sitting; one file holds every match of the sitting; a short marker review after each match, the focus questions once when the session ends.
 - **First plan covers:** `docs/packages.md`, `docs/STATUS.md` and the blueprint §7 link; P1 with its rider; all three backlog focus cards. Only card 1 blocks P2; findings from cards 2 and 3 go on the list unless they block play. Design: [packages and playtest helper](../superpowers/specs/2026-11-11-packages-and-playtest-helper-design.md).
+
+## Dock-hold experiment (user, 2026-11-12)
+
+Evidence: [dock-hold experiment](dock-hold-experiment.md).
+
+- **Dock model:** adopt neither split nor queue yet; measure option C next (one pile lock per credit for every collector, rest of the stand unlocked), with a per-phase breakdown for the unexplained FRC 7-worker loss and the saturation and payback metrics.
+- **Gated multi-collector targets:** change them (steady window, re-measured values) together with the change that adopts a dock model, not before.
+- **Code location:** harness tooling and the note on `main`; the split and queue variants stay on the local branch `dock-hold` as evidence.
