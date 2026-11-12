@@ -5,6 +5,9 @@ const View = preload("res://scripts/presentation/world_view.gd")
 const SoundPlayer = preload("res://scripts/presentation/sound_player.gd")
 const VisualDirector = preload("res://scripts/presentation/visual_director.gd")
 const MusicPlayer = preload("res://scripts/presentation/music_player.gd")
+const CommandRecorder = preload("res://scripts/playtest/command_recorder.gd")
+const Lockstep = preload("res://scripts/net/lockstep.gd")
+const StateHash = preload("res://scripts/simulation/state_hash.gd")
 var _sound: SoundPlayer = null
 var _auto_samples := PackedFloat32Array()
 var _auto_pending: bool = false
@@ -16,6 +19,7 @@ var _auto_tick_usec: int = 0
 var _visuals := VisualDirector.new()
 var _attack_move_mode: bool = false
 var inspected_id: int = -1
+var recorder: CommandRecorder
 static var factions: Dictionary = Registry.Factions.DEFAULT_SKIRMISH
 static var map_path: String = Skirmish.MAP_PATH
 static var starts: Array[int] = []
@@ -31,13 +35,34 @@ func _ready() -> void:
 	music.play_list(MusicPlayer.PLAYLIST, MusicPlayer.GAP_SECONDS)
 
 func _create_simulation() -> Simulation:
-	return Skirmish.create(true, "ai", factions, map_path, starts)
+	var sim: Simulation = Skirmish.create(true, "ai", factions, map_path, starts)
+	recorder = CommandRecorder.new(sim)
+	return sim
+
+# Tests swap `simulation` directly; a recorder left on the old one would swallow commands.
+func _recording() -> CommandRecorder:
+	if recorder == null or not is_same(recorder.simulation(), simulation): recorder = CommandRecorder.new(simulation)
+	return recorder
+
+func _issue(command: Dictionary) -> Dictionary:
+	return _recording().issue_command(command)
+
+func playtest_context() -> Dictionary:
+	var camera: Vector2 = Iso.plane_to_world(_camera.position)
+	return {"tick": simulation.tick(), "camera": [camera.x, camera.y], "selected": _view_selection(), "over": simulation.match_over(), "menu": _pause.visible}
+
+func playtest_match() -> Dictionary:
+	return _match_record("offline", [factions[1], factions[2]], Lockstep.log_lines(_recording().commands()))
+
+func _match_record(mode: String, match_factions: Array, lines: PackedStringArray) -> Dictionary:
+	var state: Dictionary = simulation.snapshot()
+	return {"mode": mode, "map": map_path.get_file().get_basename(), "seed": match_seed, "factions": match_factions, "seat": local_player, "end_tick": state.tick, "end_digest": StateHash.digest(state), "result": _result_text(state.match), "commands": lines}
 
 func _escape_pending() -> bool:
 	return not simulation.match_over() and (_attack_move_mode or inspected_id != -1 or super())
 
 func _step_simulation() -> void:
-	Skirmish.issue_opponent(simulation)
+	Skirmish.issue_opponent(_recording())
 	simulation.step()
 	_collect_sound()
 

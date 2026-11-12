@@ -65,6 +65,15 @@ func _step_simulation() -> void:
 		_rejections_seen = rejections.size()
 	if not _finished and (simulation.match_over() or _lockstep.status().begins_with("ended")): _finish()
 
+func playtest_context() -> Dictionary:
+	var context: Dictionary = super()
+	context.over = _finished
+	return context
+
+func playtest_match() -> Dictionary:
+	var seats: Array = simulation.view_state().players.map(func(player: Dictionary) -> String: return player.faction)
+	return _match_record("online", seats, Lockstep.log_lines(_lockstep.command_log()))
+
 func _submit(payload: Dictionary) -> void:
 	_show_hint(payload)
 	_error = ""

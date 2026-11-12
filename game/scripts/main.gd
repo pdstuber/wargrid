@@ -102,7 +102,7 @@ func _input(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 
 func _physics_process(_delta: float) -> void:
-	if _pause.visible and _pauses_sim(): return
+	if menu_open() and _pauses_sim(): return
 	var started: int = Time.get_ticks_usec()
 	var tick_before: int = simulation.tick()
 	_step_simulation()
@@ -279,6 +279,9 @@ func _hint_point(payload: Dictionary) -> Variant:
 	if payload.type in ["move", "attack_move", "set_rally"]: return Vector2(payload.target[0], payload.target[1])
 	return null
 
+func _issue(command: Dictionary) -> Dictionary:
+	return simulation.issue_command(command)
+
 func _submit(payload: Dictionary) -> void:
 	_show_hint(payload)
 	var state: Dictionary = simulation.snapshot()
@@ -288,7 +291,7 @@ func _submit(payload: Dictionary) -> void:
 	for entry: Variant in state.last_sequences:
 		if entry.player == local_player: _sequence = maxi(_sequence,entry.sequence + 1)
 	command.sequence = _sequence
-	var result: Dictionary = simulation.issue_command(command)
+	var result: Dictionary = _issue(command)
 	if result.ok: _sequence += 1
 	_error = result.error
 	_refresh()

@@ -30,6 +30,7 @@ var _connect_msec: int = 0
 var _match_map: String = MatchSettings.TEST_MAP
 var _chosen: Array[int] = []
 var _match_seed: int = 0
+var state_rows := PackedStringArray()
 
 func _ready() -> void:
 	_args = _parse(OS.get_cmdline_user_args())
@@ -133,7 +134,10 @@ func _match_sim(id: String, chosen: Array[int]) -> Simulation:
 
 func _oracle_sim() -> Simulation:
 	var id: String = _map_id()
-	return _match_sim(id, MatchSettings.starts(id, int(_args.get("seed", "0"))))
+	var chosen: Array[int] = MatchSettings.starts(id, int(_args.get("seed", "0")))
+	if not _args.has("factions"): return _match_sim(id, chosen)
+	var names: PackedStringArray = str(_args["factions"]).split(",")
+	return Skirmish.create(true, "ai", {1: names[0], 2: names[1]}, MatchSettings.map_path(id), chosen)
 
 func _run_steps(limit: int) -> void:
 	for i in limit:
@@ -205,7 +209,7 @@ func _exit() -> void:
 
 func _write_logs() -> void:
 	if _args.has("hash-log"): _write_lines(_args["hash-log"], _lockstep.hash_rows())
-	if _args.has("command-log"): _write_lines(_args["command-log"], _command_lines(_lockstep.command_log()))
+	if _args.has("command-log"): _write_lines(_args["command-log"], Lockstep.log_lines(_lockstep.command_log()))
 	if _status == "ended_desync" and _args.has("report-dir"):
 		var file := FileAccess.open("%s/desync-seat%d.json" % [_args["report-dir"], _seat], FileAccess.WRITE)
 		if file == null: return
@@ -213,18 +217,6 @@ func _write_logs() -> void:
 		report.merge(MatchSettings.report_fields(_match_map, _match_seed, _chosen))
 		file.store_string(JSON.stringify(report, "", true, true))
 		file.close()
-
-func _command_lines(log_rows: Array[Dictionary]) -> PackedStringArray:
-	var by_tick: Dictionary = {}
-	var order: Array[int] = []
-	for command in log_rows:
-		if not by_tick.has(command.tick):
-			by_tick[command.tick] = []
-			order.append(command.tick)
-		by_tick[command.tick].append(command)
-	var lines := PackedStringArray()
-	for tick in order: lines.append(Wire.encode(Wire.tick_message(0, tick, by_tick[tick], null)))
-	return lines
 
 func _replay_oracle() -> void:
 	var by_tick: Dictionary = {}
@@ -241,19 +233,51 @@ func _replay_oracle() -> void:
 	var sim: Simulation = _oracle_sim()
 	_sim = sim
 	var rows := PackedStringArray(["0\t" + StateHash.digest(sim.snapshot())])
+	var state_ticks: PackedStringArray = str(_args.get("state-ticks", "")).split(",", false)
 	while not sim.match_over() and sim.tick() < max_ticks:
+		if state_ticks.has(str(sim.tick())): _state_row(sim)
 		for command: Variant in by_tick.get(sim.tick(), []): sim.issue_command(command)
 		sim.step()
 		if sim.tick() % every == 0: rows.append("%d\t%s" % [sim.tick(), StateHash.digest(sim.snapshot())])
 	if _args.has("hash-log"): _write_lines(_args["hash-log"], rows)
 	_status = "match_over" if sim.match_over() else "oracle_overrun"
+	print("ORACLE FINAL %d %s" % [sim.tick(), StateHash.digest(sim.snapshot())])
 	_exit()
+
+func _state_row(sim: Simulation) -> void:
+	var state: Dictionary = sim.snapshot()
+	var row: String = "ORACLE STATE %d %s %s" % [state.tick, StateHash.digest(state), state_summary(state)]
+	state_rows.append(row)
+	print(row)
+	if not _args.has("snapshot-dir"): return
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(_args["snapshot-dir"]))
+	var file := FileAccess.open("%s/tick-%d.json" % [_args["snapshot-dir"], state.tick], FileAccess.WRITE)
+	if file == null: return
+	file.store_string(JSON.stringify(state))
+	file.close()
+
+static func state_summary(snapshot: Dictionary) -> String:
+	var units: Dictionary = {}
+	var buildings: Dictionary = {}
+	for unit: Dictionary in snapshot.entities: units[str(unit.owner)] = units.get(str(unit.owner), 0) + 1
+	for building: Dictionary in snapshot.buildings: buildings[str(building.owner)] = buildings.get(str(building.owner), 0) + 1
+	var players: Array = snapshot.players.map(func(player: Dictionary) -> Dictionary: return {"id": player.id, "credits": player.credits})
+	return JSON.stringify({"match": snapshot.match.status, "players": players, "units": units, "buildings": buildings}, "", true)
 
 func _write_lines(path: String, lines: PackedStringArray) -> void:
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file == null: return
 	file.store_string("\n".join(lines) + "\n")
 	file.close()
+
+func _factions_error() -> String:
+	if not _args.has("factions"): return ""
+	var names: PackedStringArray = str(_args["factions"]).split(",")
+	var known: String = ", ".join(Registry.Factions.FACTIONS.keys())
+	if names.size() != 2: return "--factions needs two entries A,B; expected each of: %s" % known
+	for entry in names:
+		if Registry.faction(entry).is_empty(): return "Unknown --factions entry '%s'; expected one of: %s" % [entry, known]
+	return ""
 
 func _int_arg(key: String) -> int:
 	return int(_args[key]) if _args.has(key) else -1
@@ -262,6 +286,8 @@ func _now_ms() -> int:
 	return int(Time.get_unix_time_from_system() * 1000.0)
 
 func _faction_error() -> String:
+	var listed: String = _factions_error()
+	if listed != "": return listed
 	var faction: String = _args.get("faction", Skirmish.default_faction())
 	return "" if not Registry.faction(faction).is_empty() else "Unknown --faction '%s'; expected one of: %s" % [faction, ", ".join(Registry.Factions.FACTIONS.keys())]
 

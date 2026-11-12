@@ -154,6 +154,19 @@ func hash_rows() -> PackedStringArray:
 	for tick in _hash_order: rows.append("%d\t%s" % [tick, _own_hashes[tick]])
 	return rows
 
+# formerly in headless_client.gd
+static func log_lines(rows: Array[Dictionary]) -> PackedStringArray:
+	var by_tick: Dictionary = {}
+	var order: Array[int] = []
+	for command in rows:
+		if not by_tick.has(command.tick):
+			by_tick[command.tick] = []
+			order.append(command.tick)
+		by_tick[command.tick].append(command)
+	var lines := PackedStringArray()
+	for tick in order: lines.append(Wire.encode(Wire.tick_message(0, tick, by_tick[tick], null)))
+	return lines
+
 func command_log() -> Array[Dictionary]:
 	return _command_log
 
