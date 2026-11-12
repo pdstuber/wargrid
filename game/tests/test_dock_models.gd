@@ -869,18 +869,12 @@ func test_cell_trip(runner) -> bool:
 		return true
 	var world: Dictionary = transplant("split", opening_starts("split").starts)
 	runner.check(not world.ids.has(-1) and world.ids.size() == 7, "all 7 transplant starts spawn, got %s" % [world.ids])
-	var trace = CellTrace.new(true)
-	var openings = Openings.new()
-	while world.sim.view_state().tick < PROBE_TO_TICK:
-		world.sim.step()
-		var view: Dictionary = world.sim.view_state()
-		if openings.pile_boxes(view, world.source) <= 0: break
-		if view.tick > 9000: trace.observe(view.tick, world.sim.snapshot().entities)
-	var loaded: Array = trace.legs.filter(func(leg: Dictionary) -> bool: return leg.kind == "loaded")
+	var legs: Array[Dictionary] = cell_legs(world, true)
+	var loaded: Array = legs.filter(func(leg: Dictionary) -> bool: return leg.kind == "loaded")
 	print("DOCK split trip loaded_flying_median=%.1f" % Probe.quantile(loaded.map(func(leg: Dictionary) -> float: return float(leg.flying)), 0.5))
-	for kind in ["empty", "loaded"]: print("DOCK split trip flying_%s=%s" % [kind, ",".join(trace.legs.filter(func(leg: Dictionary) -> bool: return leg.kind == kind).map(func(leg: Dictionary) -> String: return str(leg.flying)))])
-	var slow: Dictionary = trip_leg(trace.legs, 127, 139)
-	var normal: Dictionary = trip_leg(trace.legs, 91, 103)
+	for kind in ["empty", "loaded"]: print("DOCK split trip flying_%s=%s" % [kind, ",".join(legs.filter(func(leg: Dictionary) -> bool: return leg.kind == kind).map(func(leg: Dictionary) -> String: return str(leg.flying)))])
+	var slow: Dictionary = trip_leg(legs, 127, 139)
+	var normal: Dictionary = trip_leg(legs, 91, 103)
 	runner.check(not slow.is_empty() and not normal.is_empty(), "a slow (127..139) and a normal (91..103, the fast loaded leg of this run is 97) loaded leg exist")
 	print_trip("slow", slow)
 	print_trip("normal", normal)
@@ -912,8 +906,8 @@ func cell_scenarios(model: String) -> Dictionary:
 	scenarios["transplant_g3"] = transplant(model, opening_starts(model).starts)
 	return scenarios
 
-func cell_legs(world: Dictionary) -> Array[Dictionary]:
-	var trace = CellTrace.new()
+func cell_legs(world: Dictionary, keep_trace: bool = false) -> Array[Dictionary]:
+	var trace = CellTrace.new(keep_trace)
 	var openings = Openings.new()
 	while world.sim.view_state().tick < PROBE_TO_TICK:
 		world.sim.step()
