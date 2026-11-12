@@ -49,6 +49,7 @@ var _navigation_local: int = 0
 var _map: Dictionary = {}
 const RNG_SEED: int = 0x2545F491
 var _rng: int = RNG_SEED
+var dock_model: String = "hold" # test-only switch for the dock experiment; never set by a command, scene or replay
 
 func _init(blocked_cells: Array[Vector2i] = [], size: Vector2i = Navigation.SIZE) -> void:
 	_navigation = Navigation.new(blocked_cells, size)

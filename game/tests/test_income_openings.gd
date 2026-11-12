@@ -83,10 +83,11 @@ func setup(name: String, gap: int) -> Dictionary:
 	return {"sim": sim, "builder": builder, "source": sim.add_supply_source(Vector2i(5 + gap, 9), PILE_BOXES), "depot": faction + "_supply_center"}
 
 # Gross is every credit the pile paid, so orders paid this tick are added back.
-func run_opening(name: String, gap: int) -> Dictionary:
+func run_opening(name: String, gap: int, model: String = "hold") -> Dictionary:
 	var opening: Dictionary = OPENINGS[name]
 	var world: Dictionary = setup(name, gap)
 	var sim = world.sim
+	sim.dock_model = model
 	var kind: String = opening.collector
 	var depot_cost: int = Definitions.building(world.depot).cost
 	var spend: int = depot_cost + opening.trained * Definitions.unit(kind).cost
@@ -130,13 +131,14 @@ func summarize(gross: PackedInt32Array, spend: int, first_deposit: Dictionary, p
 	if end > STEADY_FROM_TICK: steady = 1800.0 * (gross[end] - gross[STEADY_FROM_TICK]) / (end - STEADY_FROM_TICK)
 	return {"gross": gross, "spend": spend, "depositors": first_deposit.size(), "collectors": collectors, "pile_empty": pile_empty, "break_even": break_even, "steady": steady, "start_credits": 0}
 
-func report_line(name: String, gap: int, row: Dictionary) -> String:
+func report_line(name: String, gap: int, row: Dictionary, model: String = "") -> String:
 	var gross: Array = []
 	var net: Array = []
 	for second in SECONDS:
 		gross.append(str(row.gross[second * TICKS_PER_SECOND]))
 		net.append(str(row.gross[second * TICKS_PER_SECOND] - row.spend))
-	return "INCOME %s gap=%d gross=%s net=%s steady=%.1f break_even=%s depositors=%d pile_empty=%s" % [name, gap, ",".join(gross), ",".join(net), row.steady, seconds_text(row.break_even), row.depositors, seconds_text(row.pile_empty)]
+	var suffix: String = "" if model.is_empty() else " model=" + model
+	return "INCOME %s gap=%d gross=%s net=%s steady=%.1f break_even=%s depositors=%d pile_empty=%s%s" % [name, gap, ",".join(gross), ",".join(net), row.steady, seconds_text(row.break_even), row.depositors, seconds_text(row.pile_empty), suffix]
 
 func seconds_text(tick: int) -> String:
 	return "-" if tick < 0 else "%.1f" % [tick / float(TICKS_PER_SECOND)]

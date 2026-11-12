@@ -22,13 +22,17 @@ const MULTI := [
 ]
 const FOUR_HELICOPTERS_GAP_9 := 3116.0
 const TOLERANCE := 0.05
+const STEADY_FROM_SECONDS := 300
+const STEADY_TO_SECONDS := 600
+const SHORT_SECONDS := 450
 
 func cases() -> Array[Callable]:
 	return [test_collector_rates_match_zero_hour,test_multi_collector_rates,test_four_helicopters_reported,test_gap_one_arrival_points_apart]
 
 # Depot 3x3 at (2,10), pile 4x5 east of it, both centred on y 11.5.
-func layout(kind: String, gap: int, count: int = 1) -> Dictionary:
+func layout(kind: String, gap: int, count: int = 1, model := "hold") -> Dictionary:
 	var sim = Fixture.make_world(10000,Vector2i(48,24))
+	sim.dock_model = model
 	var depot: int = Fixture.add_completed(sim,1,DEPOT_OF[kind],Vector2i(2,10))
 	var source: int = sim.add_supply_source(Vector2i(5 + gap,9),400)
 	var ids: Array = []
@@ -54,6 +58,36 @@ func rate(sim, deposits: int, maximum: int = 60000) -> float:
 		elif count == deposits:
 			return 1800.0 * (credits - first_credits) / (sim._tick - first_tick)
 	return -1.0
+
+# Credits per minute 300-600 s after the gather order, ending early when the pile is empty; short when that ends before 450 s.
+func steady_rate(sim, gather_tick: int) -> Dictionary:
+	var from_tick: int = gather_tick + STEADY_FROM_SECONDS * 30
+	var to_tick: int = gather_tick + STEADY_TO_SECONDS * 30
+	var from_credits: int = 0
+	var end_tick: int = to_tick
+	var end_credits: int = 0
+	var empty_tick: int = -1
+	while true:
+		sim.step()
+		var view: Dictionary = sim.view_state()
+		var tick: int = view.tick
+		var credits: int = view.players[0].credits
+		if tick == from_tick: from_credits = credits
+		if pile_is_empty(view):
+			empty_tick = tick
+			end_tick = tick
+			end_credits = credits
+			break
+		if tick == to_tick:
+			end_credits = credits
+			break
+	var per_min: float = 0.0 if end_tick <= from_tick else 1800.0 * (end_credits - from_credits) / (end_tick - from_tick)
+	return {"per_min": per_min, "pile_empty_s": -1.0 if empty_tick < 0 else (empty_tick - gather_tick) / 30.0, "short": end_tick - gather_tick < SHORT_SECONDS * 30}
+
+func pile_is_empty(view: Dictionary) -> bool:
+	for source in view.sources:
+		if source.boxes > 0: return false
+	return true
 
 func within(value: float, expected: float) -> bool:
 	return absf(value - expected) <= TOLERANCE * expected

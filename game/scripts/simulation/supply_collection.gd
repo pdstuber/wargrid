@@ -4,6 +4,7 @@ const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 
 const DOCK_SHIFT := 0.25
+const DOCK_MODELS := ["hold"]
 
 static func release(sim: Simulation, unit_id: int) -> void:
 	var unit: Dictionary = sim._entities[unit_id]
@@ -153,6 +154,7 @@ static func _admit(sim: Simulation, unit: Dictionary, target: Dictionary) -> voi
 	sim._stop_unit(unit)
 
 static func step(sim: Simulation, unit_ids: Array[int]) -> void:
+	assert(sim.dock_model in DOCK_MODELS, "unknown dock_model " + sim.dock_model)
 	for id in unit_ids:
 		if not sim._entities.has(id): continue
 		var unit: Dictionary = sim._entities[id]
