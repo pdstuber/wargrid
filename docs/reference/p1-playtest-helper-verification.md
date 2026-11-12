@@ -1,13 +1,13 @@
 ```text
-Resume record (updated 2026-11-12 Task 9 steps 1-3 done)
-Branch / base commit / working-tree state: p1-playtest-helper / eb84fa2 (final tree) / Task 9 docs edits (ledger rows, this file, STATUS) uncommitted
-Last green task / next incomplete task: Task 9 steps 1-3 (final evidence, ledger rows, reviews) / the user's actions: playtest P1 on the test-app build, review the branch, decide merge (nothing merged, nothing pushed)
-Changed paths since last commit: docs/reference/performance.md, docs/reference/p1-playtest-helper-verification.md, docs/STATUS.md
-Last command / cases / checks / failures / exit / marker: full run_tests CASES 792 CHECKS 140733 FAILURES 0, exit 0, TESTS PASSED; run_lint, run_warnings, run_python_checks, run_shell_checks, check_public exit 0 (all on eb84fa2)
-Known red case or blocker: none; ledger rows exceeded as before (combat open, hordes300, rendered horde tick p95), not loosened; browser capture unverified until the test-app playtest
-Approved decisions, pre-authorizations used, deferred gates: per-match build field (user, 2026-11-12, gate review I6); junk test files in the user's Godot folder deleted (user, 2026-11-12); rendered window approved (user, 2026-11-12); playtest of P1 pending (the user starts it)
+Resume record (updated 2026-11-12 P1 exit gate met)
+Branch / base commit / working-tree state: p1-playtest-helper / dc95570 / docs edits (this file, STATUS) uncommitted
+Last green task / next incomplete task: Task 9 and the card 1 playtest (user, 2026-11-12) / the user's push and merge decision (nothing merged, nothing pushed); do not start P2
+Changed paths since last commit: docs/reference/p1-playtest-helper-verification.md, docs/STATUS.md
+Last command / cases / checks / failures / exit / marker: CI run 43227586170 on dc95570 green (11 jobs); compare_local_traces.sh 43227586170 all REPLAYS MATCHED; deploy_web.sh test exit 0, /health 200; playtest_session.py exit 0; replay_session.sh REPLAY MATCHED 1
+Known red case or blocker: none; ledger rows exceeded as before, not loosened; open findings F1 to F3 are in docs/STATUS.md
+Approved decisions, pre-authorizations used, deferred gates: per-match build field (user, 2026-11-12, gate review I6); junk test files in the user's Godot folder deleted (user, 2026-11-12); rendered window approved (user, 2026-11-12); P1 playtest done (user, 2026-11-12)
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: the user's: playtest on the test-app build, decide merge; do not start P2
+Next exact action: the user's: decide push and merge of p1-playtest-helper
 ```
 
 ## Evidence rows (append-only)
@@ -86,3 +86,13 @@ Next exact action: the user's: playtest on the test-app build, decide merge; do 
   - Capture check (t9-capture.log): `CAPTURE OK width=640 height=360 bytes=14078` on desktop macOS; browser capture stays unverified until the test-app playtest.
   - Reviews: Opus gate review (gate-review.md): 1 critical, 6 important, 12 minor, all fixed except accepted K3, K5, K7, m7, m8. Opus re-check (gate-recheck.md): 17 of 17 fixed, new N1 important and N2 to N4 minor, all fixed in `eb84fa2`. Lean `/ponytail-review` (ponytail-review.md): 5 of 7 cuts applied; the shared build-commit shell helper and the Python build fallback skipped. User decisions 2026-11-12: I6 = build per match; junk test files in the user's Godot folder deleted.
   - P1 state: implemented, playtest pending. Not merged, not pushed.
+- 2026-11-12, tree p1-playtest-helper dc95570, CI and test deploy.
+  - CI run 43227586170 on `dc95570`: green, 11 jobs including Compare replays.
+  - `sh tools/compare_local_traces.sh 43227586170` on `dc95570`: replay, economy and combat 1200 rows each, team 100, netplay 301, all `REPLAYS MATCHED`.
+  - Test deploy: `sh tools/deploy_web.sh test` from `dc95570`, exit 0, `/health` 200, `build_commit.txt` in the pack.
+- 2026-11-12, playtest of P1 (user, 2026-11-12), Firefox on macOS, test app, build `0.11.0-dev+dc95570`, focus card 1 `p1-frc-economy`.
+  - One offline match on Dry Wells as FRC (seat 1, end tick 6634). All 5 checklist items checked. Answers: collect_clear 5, placement 5, helper 5, income_feel 4 (no text).
+  - 3 markers, all "good": tick 1225 building a depot, tick 2690 movement fine, tick 4892 credit inflow seems all right (the user is unsure, from memory of Zero Hour's GLA). Each has a screenshot; browser capture is now verified in Firefox (3 JPGs, about 15 KB each). Identical marker camera positions were checked with the user (no panning), not a bug.
+  - The session file is outside the repo in `~/projects/wargrid-playtests/`. `tools/playtest_session.py` read it (exit 0); `sh tools/replay_session.sh` gave `REPLAY MATCHED 1` with ORACLE STATE rows at the three marker ticks.
+  - Findings (also in [STATUS](../STATUS.md#findings-list)): F1 the 1-5 answer scale has no legend (it is agreement, 1 strongly disagree to 5 strongly agree; fix in the form and the focus card docs). F2 the FRC Laborer's back pack (`shapes.gd` role `laborer`, a dark 0.14 x 0.14 x 0.5 box) reads as a shelf; make it shorter and wider (look, outside card 1). F3 FRC vs GLA income parity: the user wants cash inflow per faction checked against Zero Hour (felt right, score 4, unverified by measurement).
+  - P1 exit gate met. Not merged, not pushed; the push and merge decision is the user's.
