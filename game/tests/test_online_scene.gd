@@ -225,6 +225,7 @@ func test_launcher_layout(runner) -> bool:
 		var launcher = Launcher.instantiate()
 		port.add_child(launcher)
 		launcher.get_node("Center/Box/WaitRow").visible = true
+		launcher.get_node("Center/Box/ThisBuild").visible = true
 		await runner.process_frame
 		await runner.process_frame
 		var rects: Array[Rect2] = []
