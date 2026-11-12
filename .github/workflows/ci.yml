@@ -270,7 +270,7 @@ jobs:
           install-mode: goinstall # builds via proxy.golang.org instead of a GitHub release download
           working-directory: relay
   tools:
-    name: Tools / Python lint and tests
+    name: Tools / Python and shell lint, tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -281,6 +281,7 @@ jobs:
           python-version: "3.12"
       - run: pip install -r tools/requirements-dev.txt
       - run: sh tools/run_python_checks.sh
+      - run: sh tools/run_shell_checks.sh
       - name: Tool tests
         run: |
           python3 tools/test_compare_replays.py

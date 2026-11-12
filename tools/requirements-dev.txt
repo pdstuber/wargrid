@@ -4,3 +4,4 @@ gdtoolkit==4.5.0
 numpy==2.5.4
 scipy==1.18.1
 scipy-stubs==1.18.1.1
+shellcheck-py==0.11.0.1

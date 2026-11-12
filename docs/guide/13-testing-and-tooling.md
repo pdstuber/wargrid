@@ -25,7 +25,7 @@ The suite files are `game/tests/test_*.gd`; two more files, `combat_fixture.gd` 
 
 - **Static guards in Python** (`test_sim_boundary.py`, `test_sim_math.py`, `test_faction_guard.py`): read GDScript as text and fail on patterns. The other `tools/test_*.py` files test the tools themselves.
 - **Local research tools** (`zh_ini.py`, `check_reference.py`, `zh_parity/`): need the retail data or, for `zh_parity/`, a Zero Hour source build, and never run in CI, except their synthetic self-tests.
-- **Repository hygiene** (`check_public.sh`, lint, warnings, ruff, mypy, actionlint).
+- **Repository hygiene** (`check_public.sh`, lint, warnings, ruff, mypy, ShellCheck, actionlint).
 
 ## One test case, read end to end
 
@@ -127,6 +127,7 @@ The bridge into the suite is a test like `test_supply_parity.gd`: a harness resu
 - **`sh tools/run_lint.sh`** runs `gdlint game` (gdtoolkit 4.5.0, pinned in `tools/requirements-dev.txt`). `.gdlintrc` turns off five rules, mainly line length, which the code base ignores. `gdformat` was tried and not adopted.
 - **`sh tools/run_warnings.sh`** runs each tracked `.gd` file through Godot `--check-only`, four at a time. `project.godot` sets six warnings to error level: untyped declaration, unused parameter, three kinds of shadowing and integer division. The script takes its file list from `git ls-files`, so a new file cannot escape the check; it fails on any `ERROR:`. Tests are exempt only from `untyped_declaration`, through `@warning_ignore_start` at the top of each test file. The plan's third step (the `unsafe_*` warnings) was skipped because the count was over its stop rule ([static checks plan](../superpowers/plans/2026-11-05-gdscript-static-checks.md)).
 - **`sh tools/run_python_checks.sh`** runs `ruff format --check`, `ruff check`, `mypy`, then `run_python_tests.sh`, which runs every tracked `tools/**/test_*.py` except `test_install_godot.py` (it downloads Godot) as its own process, plus the harness self-test. Configuration is `tools/pyproject.toml`.
+- **`sh tools/run_shell_checks.sh`** runs ShellCheck (shellcheck-py, pinned in `tools/requirements-dev.txt`) on every tracked `*.sh`. `.shellcheckrc` turns off SC1007, which misreads the `CDPATH= cd --` idiom; deliberate word splitting carries a `disable` comment at the spot.
 - **`sh tools/check_public.sh`** exists because the repository is public and tracked files are engineering records. It fails when private working notes are tracked, and when tracked text matches patterns for a home path, a local hostname or LAN address, a tool session id or a personal mail address. A further word list lives outside the repository because the words would themselves be a leak; CI runs without it, and the script uses the list when present. `tools/test_check_public.py` tests the script against throwaway repositories. The fix for a hit is rewording, never loosening the pattern (`AGENTS.md`).
 
 These checks are all text-level: lint and warnings find style and typing problems, the guards find forbidden patterns, and `check_public.sh` finds leaks. None proves a behaviour. The suite does.
@@ -157,7 +158,7 @@ flowchart TD
 - **Relay / Test and conformance** runs `go vet` and `go test -race`, builds the relay for both platforms, and runs `run_conformance.sh`, the black-box protocol suite (chapter 11). **Relay / Lint** runs golangci-lint. **Docker** builds both images.
 - **Godot / Exported build** (needs the relay job) exports the tests build and the game for each platform, runs the suite from the exported tests binary, and runs five netplay scenarios (`run_netplay.sh`: a real match, perturbation, relay down, maps, map mismatch) with the real game binary and the freshly built relay.
 - **Compare replays** needs the test and export jobs and runs `tools/compare_replays.py` over the traces: Linux against Windows, then all four traces of one scenario together (editor and exported builds, both platforms), then the netplay trace pair. A platform difference in float behaviour shows up here as a first differing tick ([chapter 10](10-determinism-and-replays.md)). macOS is compared locally with `tools/compare_local_traces.sh RUN_ID`, because the hosted macOS runners were dropped from CI on 2026-11-03 ([development notes](../development.md#setup-and-commands)).
-- **Tools / Python lint and tests** runs `check_public.sh`, `run_python_checks.sh`, and then an explicit list of tool tests. That list overlaps with `run_python_tests.sh` (which already runs every tracked tool test except `test_install_godot.py`); the explicit list is what also covers that one.
+- **Tools / Python and shell lint, tests** runs `check_public.sh`, `run_python_checks.sh`, `run_shell_checks.sh`, and then an explicit list of tool tests. That list overlaps with `run_python_tests.sh` (which already runs every tracked tool test except `test_install_godot.py`); the explicit list is what also covers that one.
 - **Workflows / Lint** runs a pinned actionlint, with shellcheck on the `run:` blocks.
 
 Every job has a timeout, since the blueprint's CI contract relies on timeouts instead of GNU `timeout`.
@@ -200,7 +201,7 @@ Pushing a release tag and approving the `production` environment are manual step
 - `tools/test_sim_boundary.py`, `test_sim_math.py`, `test_faction_guard.py` — source-text guards.
 - `tools/zh_ini.py`, `check_reference.py` — INI dump and value comparison; `tools/test_zh_ini.py`, `test_check_reference.py`.
 - `tools/zh_parity/parity.py`, `analyze.py`, `tools/test_zh_parity.py` — the Zero Hour harness and its synthetic tests.
-- `tools/run_lint.sh`, `run_warnings.sh`, `run_python_checks.sh`, `run_python_tests.sh`, `check_public.sh`, `.gdlintrc`, `tools/pyproject.toml`, `tools/requirements-dev.txt`.
+- `tools/run_lint.sh`, `run_warnings.sh`, `run_python_checks.sh`, `run_python_tests.sh`, `run_shell_checks.sh`, `check_public.sh`, `.gdlintrc`, `.shellcheckrc`, `tools/pyproject.toml`, `tools/requirements-dev.txt`.
 - `tools/run_benchmark.sh`, `run_profile.sh`, `run_team_match.sh`, `run_netplay.sh`, `run_conformance.sh`, `compare_local_traces.sh`, `export_build.sh` — other gates, covered in chapters 10 to 12.
 - `.github/workflows/ci.yml`, `release.yml`, `godot-release.yml`, `.github/dependabot.yml`.
 - `game/project.godot` — warning levels, tick rate, and the `wargrid_tests` main loop type; `game/export_presets.cfg` — "Linux Tests" and the other test presets.

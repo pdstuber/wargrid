@@ -47,6 +47,7 @@ Current setup and milestone status live in the [development notes](docs/developm
 - Plans list same-tick interaction cases for every new command (against every existing command and against removal) and a spec-worded test for every AI rule. Benchmarks assert that their mechanics run inside the timed window. HUD changes get a headless layout test. Report every check with the tree it ran on.
 - Before reporting GDScript changes done, `sh tools/run_lint.sh` and `sh tools/run_warnings.sh` pass (new code is typed; tests are exempt from `untyped_declaration` only).
 - Before reporting Python tooling changes done, `sh tools/run_python_checks.sh` passes (config in `tools/pyproject.toml`).
+- Before reporting shell script changes done, `sh tools/run_shell_checks.sh` passes (ShellCheck on every tracked `*.sh`; config in `.shellcheckrc`).
 - Write meaningful behavior tests alongside mechanics. Keep small suites per system; fail on zero checks, parse errors, failed expectations and incomplete suites. Require successful exit plus final completion marker.
 - Rendered benchmarks (`sh tools/run_game.sh res://scenes/movement_benchmark.tscn`) open a window: ask first, batch with other visible checks. They disable vsync themselves (header shows `vsync=off`) so frame intervals measure render cost, not display refresh.
 - Pass `timeout: 600000` on every suite, benchmark, netplay, lint and parity call (the suite takes about 78 s; the default 120 s fired 57 times in two days); details in [milestone prompt](docs/milestone-prompt.md).

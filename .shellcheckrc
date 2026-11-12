@@ -1,0 +1,2 @@
+# `CDPATH= cd --` is the intended empty-CDPATH idiom, not a typo.
+disable=SC1007

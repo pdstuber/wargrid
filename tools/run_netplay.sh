@@ -23,7 +23,7 @@ start_relay() {
     relay_bin=$out/relay
     (cd "$repo_root/relay" && go build -o "$relay_bin" .) || fail "relay build failed"
   fi
-  env PORT=$port "$@" "$relay_bin" >"$out/relay.log" 2>&1 &
+  env PORT="$port" "$@" "$relay_bin" >"$out/relay.log" 2>&1 &
   relay_pid=$!
   pids="$pids $relay_pid"
   i=0
@@ -42,6 +42,7 @@ start_client() {
   pids="$pids $pid"
 }
 
+# shellcheck disable=SC2086 # $1 and $2 are flag lists, split on purpose
 start_pair() { # EXTRA_SEAT1 ... -- EXTRA_SEAT2 ...
   rm -f "$out/code"
   start_client s1 --match new --code-file "$out/code" --seat-script human $1
