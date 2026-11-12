@@ -1,11 +1,16 @@
+import io
+import json
 import math
 import struct
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import zh_w3d
+from test_check_reference import big
 
 S = math.sqrt(0.5)  # 90 degrees about z: (0, 0, S, S)
 ROOT = ("ROOTTRANSFORM", -1, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0, 1.0))
@@ -166,6 +171,103 @@ class RowsTest(unittest.TestCase):
         data = hierarchy("BAD", [ROOT, ("A", 2, (0, 0, 0), (0, 0, 0, 1)), ("B", 0, (0, 0, 0), (0, 0, 0, 1))])
         rows, skips = zh_w3d.build_rows([("W3D.big", "bad.w3d", data)])
         self.assertEqual((rows, len(skips)), ([], 1))
+
+
+def latin(data: bytes) -> str:
+    return data.decode("latin-1")
+
+
+def write_big(directory: str, name: str, files: dict[str, bytes]) -> Path:
+    path = Path(directory) / name
+    path.write_bytes(big({entry: latin(data) for entry, data in files.items()}))
+    return path
+
+
+class DumpTest(unittest.TestCase):
+    def test_dump_and_cli(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            archive = write_big(tmp, "x.big", {"art\\w3d\\tank.w3d": TANK, "art\\w3d\\notes.txt": b"ignored"})
+            out = Path(tmp) / "sub" / "w3d.jsonl"
+            stream = io.StringIO()
+            code = zh_w3d.main(["dump", str(archive), "--out", str(out)], stream)
+            self.assertEqual(code, 0)
+            self.assertRegex(stream.getvalue(), r"^ZH_W3D entries=1 rows=1 meshes=4 skipped=0 out=")
+            rows = [json.loads(line) for line in out.read_text(encoding="utf-8").splitlines()]
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(
+                set(rows[0]),
+                {"entry", "archive", "hlod", "hierarchy", "meshes", "pivots", "body", "excluded", "unresolved"},
+            )
+
+    def test_first_archive_wins(self) -> None:
+        entry = "art\\w3d\\tank.w3d"
+        with tempfile.TemporaryDirectory() as tmp:
+            a = write_big(tmp, "a.big", {entry: TANK})
+            b = write_big(tmp, "b.big", {entry: mesh("", "ROCK", (0, 0, 0), (1, 1, 1))})
+            self.assertEqual([(x, y) for x, y, _ in zh_w3d.load_entries([a, b])], [("a.big", entry)])
+            self.assertEqual([(x, y) for x, y, _ in zh_w3d.load_entries([b, a])], [("b.big", entry)])
+
+    def test_missing_archive(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "w3d.jsonl"
+            stderr = io.StringIO()
+            with mock.patch.object(sys, "stderr", stderr):
+                code = zh_w3d.main(["dump", str(Path(tmp) / "none.big"), "--out", str(out)], io.StringIO())
+            self.assertEqual(code, 1)
+            self.assertTrue(stderr.getvalue())
+            self.assertFalse(out.exists())
+
+    def test_failed_run_keeps_previous_dump(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "w3d.jsonl"
+            out.write_text("old\n", encoding="utf-8")
+            archive = Path(tmp) / "x.big"
+            archive.write_bytes(b"not a big archive")
+            with mock.patch.object(sys, "stderr", io.StringIO()):
+                code = zh_w3d.main(["dump", str(archive), "--out", str(out)], io.StringIO())
+            self.assertEqual(code, 1)
+            self.assertEqual(out.read_text(encoding="utf-8"), "old\n")
+            self.assertFalse(out.with_name("w3d.jsonl.tmp").exists())
+
+
+@unittest.skipUnless(all(p.exists() for p in zh_w3d.DEFAULT_ARCHIVES), "retail archives not present")
+class RealArchiveTest(unittest.TestCase):
+    def assert_close(self, actual: list[float], expected: list[float]) -> None:
+        self.assertEqual(len(actual), len(expected))
+        for a, e in zip(actual, expected, strict=True):
+            self.assertAlmostEqual(a, e, delta=0.01)
+
+    def test_real_archives(self) -> None:
+        entries = zh_w3d.load_entries(zh_w3d.DEFAULT_ARCHIVES)
+        self.assertEqual(len(entries), 8896)
+        rows, skips = zh_w3d.build_rows(entries)
+        self.assertEqual(len(skips), 5)
+        for skip in skips:
+            self.assertTrue(skip.startswith("art\\w3d\\uisabotr_"), skip)
+        by_entry = {r["entry"]: r for r in rows}
+
+        leopard = by_entry["art\\w3d\\avleopard.w3d"]
+        self.assertEqual(leopard["archive"], "W3D.big")
+        turret = next(b for b in leopard["pivots"] if b["name"] == "TURRET")
+        self.assert_close(turret["position"], [0.49, 0.03, 7.36])
+        assert leopard["body"] is not None
+        self.assert_close(leopard["body"]["size"], [44.36, 17.27, 10.85])
+        self.assertIn("AVLEOPARD.TURRETFX01", leopard["excluded"])
+
+        ranger = by_entry["art\\w3d\\airngr_skn.w3d"]
+        self.assertEqual(ranger["hierarchy"], "AIRNGR_SKL")
+        skin = next(m for m in ranger["meshes"] if m["name"] == "AIRNGR_SKN.AIRNGR-SKN")
+        self.assertTrue(skin["skin"])
+        assert ranger["body"] is not None
+        self.assertAlmostEqual(ranger["body"]["max"][2], 14.55, delta=0.01)
+        self.assert_close(ranger["body"]["size"], [3.7, 19.51, 14.61])
+
+        barracks = by_entry["art\\w3d\\abbarracks.w3d"]
+        assert barracks["body"] is not None
+        self.assert_close(barracks["body"]["size"], [110.35, 88.12, 48.88])
+        house = next(m for m in barracks["meshes"] if m["name"] == "ABBARRACKS.HOUSECOLOR04")
+        self.assert_close(house["min"], [38.25, -29.13, 38.62])
+        self.assert_close(house["max"], [42.8, -28.12, 46.31])
 
 
 if __name__ == "__main__":

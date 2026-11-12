@@ -24,7 +24,7 @@ flowchart TD
 The suite files are `game/tests/test_*.gd`; two more files, `combat_fixture.gd` and `economy_fixture.gd`, hold shared set-up. Beside the Godot suite there are three other kinds of check:
 
 - **Static guards in Python** (`test_sim_boundary.py`, `test_sim_math.py`, `test_faction_guard.py`): read GDScript as text and fail on patterns. The other `tools/test_*.py` files test the tools themselves.
-- **Local research tools** (`zh_ini.py`, `check_reference.py`, `zh_parity/`): need the retail data or, for `zh_parity/`, a Zero Hour source build, and never run in CI, except their synthetic self-tests.
+- **Local research tools** (`zh_ini.py`, `zh_w3d.py`, `check_reference.py`, `zh_parity/`): need the retail data or, for `zh_parity/`, a Zero Hour source build, and never run in CI, except their synthetic self-tests.
 - **Repository hygiene** (`check_public.sh`, lint, warnings, ruff, mypy, ShellCheck, actionlint).
 
 ## One test case, read end to end
@@ -102,15 +102,17 @@ Two sibling guards work the same way (regular expressions over `game/scripts/`, 
 - `test_sim_math.py` bans in simulation code what [determinism rules](../reference/determinism-rules.md) forbid: trig and exp/log calls, clocks (`Time`, `OS`, `Engine`), the random-number API and Godot's native `hash()`. Two files are exempt: the start-spot picker uses seeded random numbers for setup, and the state hash uses Godot's hash until a replacement digest lands.
 - `test_faction_guard.py` bans faction ids in `simulation/` and `net/` outside `definitions/`, so factions stay data (the project rule in `AGENTS.md`).
 
-## Reading Zero Hour: three separate tools
+## Reading Zero Hour: four separate tools
 
-Wargrid is "inspired by" Zero Hour, and some numbers are tuned against it. Three tools support that. None runs in CI against real data, and none puts EA data in the repository.
+Wargrid is "inspired by" Zero Hour, and some numbers are tuned against it. Four tools support that. None runs in CI against real data, and none puts EA data in the repository.
 
 **`tools/zh_ini.py`: a queryable dump of the shipped configuration.** `python3 tools/zh_ini.py dump` parses every block of the retail `INIZH.big` in place into `build/zh_ini/inizh.jsonl`, one JSON object per block with archive entry and line numbers. Findings are cited by archive entry and line, and the file is queried with `rg` or `jq` rather than with ad-hoc decoders, one of which once misread the format (blueprint section 7).
 
 - The archive must match the SHA-256 pinned in `check_reference.py`, unless `--skip-hash`.
 - The dump is written through a `.tmp` file and a rename into gitignored `build/`, and is never committed (`AGENTS.md`). Extracted values go into reference notes with their source.
 - Its test builds a fixture archive in memory; the one real-archive test is skipped when the archive is absent.
+
+**`tools/zh_w3d.py`: model sizes, not models.** `python3 tools/zh_w3d.py dump` reads the retail W3D archives in place (Zero Hour first, then Generals `W3D.big`, as the game loads them) into `build/zh_w3d/w3d.jsonl`, one row per `.w3d` entry: each mesh's bounding box moved into model space through its bone, a `body` box over the visible meshes (hidden and `*FX*` effect meshes are listed in `excluded`), and bone positions. INI `Geometry` is a collision shape, not the visible body; this measures the body. It reads headers only: no vertices, textures or outlines. Cite as entry plus mesh or bone name, for example `jq -c 'select(.entry=="art\\w3d\\avleopard.w3d") | .body' build/zh_w3d/w3d.jsonl`; a skin's bones are on the row of its hierarchy (`select(.hierarchy=="AIRNGR_SKL" and .hlod==null)`).
 
 **`tools/check_reference.py`: the value comparison.** It compares Wargrid's unit, building, weapon and armour numbers with the pinned INI data and prints the differences. Local only.
 
@@ -210,6 +212,7 @@ Pushing a release tag and approving the `production` environment are manual step
 - `tools/run_tests.sh` — the wrapper: import stamp, shards, `WARGRID_TEST_ONLY`, `WARGRID_TEST_EXE`, summary.
 - `tools/test_sim_boundary.py`, `test_sim_math.py`, `test_faction_guard.py` — source-text guards.
 - `tools/zh_ini.py`, `check_reference.py` — INI dump and value comparison; `tools/test_zh_ini.py`, `test_check_reference.py`.
+- `tools/zh_w3d.py` — model size dump; `tools/test_zh_w3d.py`.
 - `tools/zh_parity/parity.py`, `analyze.py`, `tools/test_zh_parity.py` — the Zero Hour harness and its synthetic tests.
 - `tools/run_lint.sh`, `run_warnings.sh`, `run_python_checks.sh`, `run_python_tests.sh`, `run_shell_checks.sh`, `check_public.sh`, `.gdlintrc`, `.shellcheckrc`, `tools/pyproject.toml`, `tools/requirements-dev.txt`.
 - `tools/playtest_session.py`, `replay_session.sh`, `test_playtest_session.py` — read and replay a playtest session.

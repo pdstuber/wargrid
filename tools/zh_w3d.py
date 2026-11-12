@@ -4,9 +4,16 @@ Local research tool: reads the retail archives in place; the output stays under 
     python3 tools/zh_w3d.py dump [archive ...] [--out PATH]
 """
 
+import argparse
+import json
+import os
 import struct
+import sys
 from collections.abc import Iterator
-from typing import NamedTuple, TypedDict
+from pathlib import Path
+from typing import NamedTuple, TextIO, TypedDict
+
+from check_reference import read_big
 
 Vec3 = tuple[float, float, float]
 Quat = tuple[float, float, float, float]
@@ -25,6 +32,13 @@ HLOD_HEADER_STRUCT = struct.Struct("<II16s16s")
 SUB_OBJECT = struct.Struct("<I32s")
 BOX_NAME_OFFSET = 8
 NO_PARENT = 0xFFFFFFFF
+_RUN = Path(os.environ.get("HOME", "")) / "CnC/run"
+DEFAULT_ARCHIVES = [
+    _RUN / "Command & Conquer Generals - Zero Hour/W3DZH.big",
+    _RUN / "Command & Conquer Generals - Zero Hour/W3DEnglishZH.big",
+    _RUN / "Command and Conquer Generals/W3D.big",
+]
+DEFAULT_OUT = Path(__file__).resolve().parent.parent / "build/zh_w3d/w3d.jsonl"
 
 
 class Box(TypedDict):
@@ -289,3 +303,47 @@ def build_rows(entries: list[Entry]) -> tuple[list[Row], list[str]]:
             hierarchies.setdefault(p.hierarchy.name.upper(), p.hierarchy)
     rows = [make_row(a, e, p, hierarchies) for a, e, p in parsed if p.meshes or p.hierarchy]
     return rows, skips
+
+
+def load_entries(archives: list[Path]) -> list[Entry]:
+    chosen: dict[str, tuple[str, str]] = {}
+    for path in archives:
+        for name, content in read_big(path.read_bytes()).items():
+            if name.endswith(".w3d"):
+                chosen.setdefault(name, (path.name, content))
+    # read_big decodes latin-1, which round-trips every byte.
+    return [(archive, name, content.encode("latin-1")) for name, (archive, content) in sorted(chosen.items())]
+
+
+def dump(archives: list[Path], out: Path) -> tuple[int, int, int, int]:
+    entries = load_entries(archives)
+    rows, skips = build_rows(entries)
+    for skip in skips:
+        print(f"zh_w3d: skipped {skip}", file=sys.stderr)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    partial = out.with_name(out.name + ".tmp")
+    with partial.open("w", encoding="utf-8") as handle:
+        for row in rows:
+            handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+    partial.replace(out)
+    return len(entries), len(rows), sum(len(r["meshes"]) for r in rows), len(skips)
+
+
+def main(argv: list[str], out: TextIO = sys.stdout) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("command", choices=["dump"])
+    parser.add_argument("archives", nargs="*", type=Path, default=DEFAULT_ARCHIVES)
+    parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
+    args = parser.parse_args(argv)
+    try:
+        entries, rows, meshes, skipped = dump(args.archives, args.out)
+    except (OSError, ValueError) as error:
+        args.out.with_name(args.out.name + ".tmp").unlink(missing_ok=True)
+        print(f"zh_w3d: {error}", file=sys.stderr)
+        return 1
+    print(f"ZH_W3D entries={entries} rows={rows} meshes={meshes} skipped={skipped} out={args.out}", file=out)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
