@@ -64,3 +64,4 @@ State phrases come from each item's own verification or evidence file. Several r
 | Releases (R1) | Done 2026-11-07; v0.6.0 released; latest 0.11.0 (2026-11-12, new look live) | [release verification](reference/release-verification.md) |
 | Test environment, logo | On `main` (`68bcc0a`, `73b48a4`) 2026-11-07 | [test environment](superpowers/plans/2026-11-07-test-environment.md), [logo](superpowers/plans/2026-11-07-logo.md) |
 | Zero Hour INI dump tool | Tasks 1 and 2 and the gate-review fixes done 2026-11-09; on `main` | [verification](reference/zh-ini-dump-verification.md) |
+| Zero Hour W3D size reader | Done and on `main` (`92fd4b8`) 2026-11-13, review findings fixed | [verification](reference/w3d-size-reader-verification.md) |

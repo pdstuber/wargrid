@@ -3,15 +3,15 @@
 Plan: [W3D size reader plan](../superpowers/plans/2026-11-12-w3d-size-reader.md). Handoff: the night-run prompt (private).
 
 ```text
-Resume record (updated 2026-11-13, Task 3 review GREEN; three low findings fixed, uncommitted)
-Branch / base commit / working-tree state: w3d-size-reader / main c2ea952 plus 97737bf, 40c36a7, Task 2 commit ed99895 / this file, tools/zh_w3d.py, tools/test_zh_w3d.py, docs/guide/13-testing-and-tooling.md changed, uncommitted
-Last green task / next incomplete task: Task 3 (review GREEN) / none; merge and push wait for the user
-Changed paths since last commit: docs/reference/w3d-size-reader-verification.md, tools/zh_w3d.py, tools/test_zh_w3d.py, docs/guide/13-testing-and-tooling.md
+Resume record (updated 2026-11-13, done: fixes committed 92fd4b8, merged to main and pushed)
+Branch / base commit / working-tree state: w3d-size-reader, fast-forwarded into main at 92fd4b8 / clean
+Last green task / next incomplete task: Task 3 and the low-finding fixes / none
+Changed paths since last commit: none
 Last command / cases / checks / failures / exit / marker: sh tools/run_python_checks.sh / 21 tests in test_zh_w3d.py (4 dump/CLI, 1 real-archive) / ruff format, ruff check, mypy clean / 0 / 0 / PYTHON TESTS PASSED; sh tools/check_public.sh exit 0, PUBLIC CHECK PASSED
 Known red case or blocker: none
 Approved decisions, pre-authorizations used, deferred gates: local commit after each GREEN task, never push (user, 2026-11-12); coordinator commits; push and merge wait for the user
 Usage so far (python3 tools/session_usage.py <session files>): not measured
-Next exact action: coordinator commits the low-finding fixes and writes the Gate result; then stop (merge and push wait for the user)
+Next exact action: none; the tool is on main
 ```
 
 No Godot suite run: the plan changes no game code (Python tooling and docs only).
@@ -29,4 +29,4 @@ No Godot suite run: the plan changes no game code (Python tooling and docs only)
 
 ## Gate result
 
-Reviewed 2026-11-13 (fresh Opus, read-only): no blocking findings. Three low findings and one info note stay open for the user (see the T3 row): unbounded `parse_pivots` and header unpacks, the guide's "one row per entry" wording, and the missing skin-through-bone test. Merge and push wait for the user.
+Reviewed 2026-11-13 (fresh Opus, read-only): no blocking findings. The three low findings were fixed 2026-11-13 (last evidence row, commit 92fd4b8); the info note on skin boxes as model space stays open. On `main` and pushed (92fd4b8).
