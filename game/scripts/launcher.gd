@@ -72,6 +72,7 @@ func _apply_page() -> void:
 
 func _set_advanced(open: bool) -> void:
 	$Center/Box/RelayUrl.visible = open
+	$Center/Box/RelayHelp.visible = open
 	$Center/Box/Advanced.text = "Hide advanced settings" if open else "Show advanced settings"
 
 func _show_credits(open: bool) -> void:

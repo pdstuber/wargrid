@@ -18,7 +18,7 @@ anchor_bottom = 1.0
 [node name="Box" type="VBoxContainer" parent="Center"]
 custom_minimum_size = Vector2(520, 0)
 layout_mode = 2
-theme_override_constants/separation = 6
+theme_override_constants/separation = 4
 
 [node name="Title" type="Label" parent="Center/Box"]
 layout_mode = 2
@@ -124,6 +124,15 @@ text = "Cancel"
 layout_mode = 2
 toggle_mode = true
 text = "Show advanced settings"
+
+[node name="RelayHelp" type="Label" parent="Center/Box"]
+visible = false
+custom_minimum_size = Vector2(520, 0)
+layout_mode = 2
+text = "Relay server: matches players online. Test builds only; leave it unless you are trying another relay."
+autowrap_mode = 3
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 12
 
 [node name="RelayUrl" type="LineEdit" parent="Center/Box"]
 visible = false

@@ -1,5 +1,5 @@
 ```text
-Resume record (updated 2026-11-13 Task 3b implemented, uncommitted)
+Resume record (updated 2026-11-13 Task 3c implemented, uncommitted)
 Branch / base commit / working-tree state: p2-you-clicked / a86ea6a / worktree ~/projects/wargrid-wt-p2, Task 10b changes uncommitted
 Last green task / next incomplete task: Task 10a (committed a86ea6a); Task 10b (all gates green, awaiting the coordinator's commit) / Task 10c (after the user's check C in Firefox), then rest of gate (a) (test deploy, F5 repro, web bench, rendered rerun), then Task 10
 Changed paths since last commit: game/scripts/launcher.gd, game/scenes/launcher.tscn, game/tests/test_online_scene.gd, game/tests/test_audio_settings.gd, docs/reference/p2-verification.md
@@ -29,6 +29,7 @@ Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicke
 | 10a | Pure rules: JoinLink and PlaytestSettings.prerelease | done (a86ea6a) |
 | 10b | Launcher: prerelease-only fold, ?code=/?relay=, Copy link | done (uncommitted) |
 | 3b | Launcher faction rows | done (uncommitted) |
+| 3c | Relay caption | done (uncommitted) |
 | 10c | Paste shim (after the user's check C in Firefox) | not started |
 | 10d | F5 outcome and docs | not started |
 | 11 | Exit checks and ledger row | not started |
@@ -103,3 +104,8 @@ Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicke
 | 3b | `test_playtest.gd` 14/217, `test_pause_menu` 8/332, `test_audio_settings` 12/40, `test_join_link` 6/42 | 71fb2f3 + uncommitted | FAILURES 0, exit 0 |
 | 3b | measured `Center/Box` height at 1280x720, WaitRow and ThisBuild visible: release (Advanced closed) and prerelease with the fold open | 71fb2f3 + uncommitted | 640 px and 714 px (viewport 720), both unchanged from 10b |
 | 3b | full `sh tools/run_tests.sh` GREEN; `run_lint.sh`, `run_warnings.sh`, `check_public.sh` exit 0; `git diff main -- game/scripts/simulation game/scripts/net` empty | 71fb2f3 + uncommitted | CASES 838 CHECKS 143938 FAILURES 0, exit 0 |
+| 3c | `WARGRID_TEST_ONLY=test_launcher_relay_help` RED (no `RelayHelp`) | c8238cf + uncommitted | CASES 1 CHECKS 2 FAILURES 2, no SCRIPT ERROR, exit 1 |
+| 3c | caption added at separation 6, measured `Center/Box` at 1280x720 and 1920x1080, prerelease, fold open, WaitRow and ThisBuild visible | c8238cf + uncommitted | 737 px, over 720: fallback 1 (`Center/Box` separation 6 -> 4) |
+| 3c | `WARGRID_TEST_ONLY=test_launcher_relay_help` GREEN (N26) at separation 4 | c8238cf + uncommitted | CASES 1 CHECKS 82 FAILURES 0, exit 0; `Center/Box` prerelease fold open, WaitRow and ThisBuild visible 587 x 703 px (was 714); release with WaitRow and ThisBuild visible 612 px (N21; was 640), 577 px without them; width 587 px |
+| 3c | `test_online_scene` 31/3675, `test_playtest.gd` 14/217, `test_pause_menu` 8/332, `test_audio_settings` 12/40, `test_join_link` 6/42 | c8238cf + uncommitted | FAILURES 0, exit 0 |
+| 3c | full `sh tools/run_tests.sh` GREEN; `run_lint.sh`, `run_warnings.sh`, `check_public.sh` exit 0; `git diff main -- game/scripts/simulation game/scripts/net` empty | c8238cf + uncommitted | CASES 839 CHECKS 144156 FAILURES 0, exit 0 |

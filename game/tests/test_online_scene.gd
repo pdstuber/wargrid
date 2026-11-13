@@ -34,7 +34,7 @@ class FakeTransport extends RefCounted:
 	func rtt_samples() -> PackedInt64Array: return PackedInt64Array([40000])
 
 func cases() -> Array[Callable]:
-	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_rejection_line, test_funds_rejection_is_announced, test_overlay_net_line, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_stall_frames_are_not_step_frames, test_notices_reach_the_hud_while_processing, test_launcher_layout, test_launcher_sections, test_launcher_faction_selectors_fit, test_launcher_faction_rows, test_plays_dry_wells_from_each_seat, test_offline_uses_chosen_map, test_restart_keeps_map_and_starts, test_restart_drops_old_stepped_results, test_joiner_refuses_other_map, test_old_relay_mismatch_is_shown, test_cancel_and_copy_while_waiting, test_start_without_settings_is_a_protocol_error, test_both_seats_share_map_and_starts, test_host_told_opponent_left_before_start, test_credits_panel_layout, test_online_playtest_record, test_launcher_release_hides_relay, test_launcher_prefills_from_page, test_copy_link_on_web, test_launcher_reads_no_page_off_web]
+	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_rejection_line, test_funds_rejection_is_announced, test_overlay_net_line, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_stall_frames_are_not_step_frames, test_notices_reach_the_hud_while_processing, test_launcher_layout, test_launcher_sections, test_launcher_faction_selectors_fit, test_launcher_faction_rows, test_plays_dry_wells_from_each_seat, test_offline_uses_chosen_map, test_restart_keeps_map_and_starts, test_restart_drops_old_stepped_results, test_joiner_refuses_other_map, test_old_relay_mismatch_is_shown, test_cancel_and_copy_while_waiting, test_start_without_settings_is_a_protocol_error, test_both_seats_share_map_and_starts, test_host_told_opponent_left_before_start, test_credits_panel_layout, test_online_playtest_record, test_launcher_release_hides_relay, test_launcher_prefills_from_page, test_launcher_relay_help, test_copy_link_on_web, test_launcher_reads_no_page_off_web]
 
 func _online(runner, seat: int) -> Dictionary:
 	var transport := FakeTransport.new()
@@ -214,8 +214,8 @@ func test_notices_reach_the_hud_while_processing(runner) -> bool:
 	waiting.main.free()
 	return true
 
-const LAUNCHER_PATHS: Array[String] = ["Title", "MatchRow/MapLabel", "MatchRow/Map", "OfflineHeader", "OfflineRow/YouLabel", "OfflineRow/Own", "OfflineRow/BotLabel", "OfflineRow/Opponent", "OfflineRow/Offline", "ThisBuild", "OnlineHeader", "OnlineRow/YouLabel", "OnlineRow/Own", "OnlineRow/Create", "JoinRow/Code", "JoinRow/Join", "WaitRow/Copy", "WaitRow/Cancel", "Advanced", "RelayUrl", "Status", "SettingsHeader", "Volume/MusicLabel", "Volume/Music", "Volume/EffectsLabel", "Volume/Effects", "Volume/VoiceLabel", "Volume/Voice", "Volume/MuteLabel", "Volume/Mute", "PlaytestSwitch", "Credits", "Legal"]
-const LAUNCHER_ORDER: Array[String] = ["MatchRow", "OfflineHeader", "OfflineRow", "OnlineHeader", "OnlineRow", "JoinRow", "Advanced", "RelayUrl", "SettingsHeader", "Volume", "PlaytestSwitch", "Credits", "Legal"]
+const LAUNCHER_PATHS: Array[String] = ["Title", "MatchRow/MapLabel", "MatchRow/Map", "OfflineHeader", "OfflineRow/YouLabel", "OfflineRow/Own", "OfflineRow/BotLabel", "OfflineRow/Opponent", "OfflineRow/Offline", "ThisBuild", "OnlineHeader", "OnlineRow/YouLabel", "OnlineRow/Own", "OnlineRow/Create", "JoinRow/Code", "JoinRow/Join", "WaitRow/Copy", "WaitRow/Cancel", "Advanced", "RelayHelp", "RelayUrl", "Status", "SettingsHeader", "Volume/MusicLabel", "Volume/Music", "Volume/EffectsLabel", "Volume/Effects", "Volume/VoiceLabel", "Volume/Voice", "Volume/MuteLabel", "Volume/Mute", "PlaytestSwitch", "Credits", "Legal"]
+const LAUNCHER_ORDER: Array[String] = ["MatchRow", "OfflineHeader", "OfflineRow", "OnlineHeader", "OnlineRow", "JoinRow", "Advanced", "RelayHelp", "RelayUrl", "SettingsHeader", "Volume", "PlaytestSwitch", "Credits", "Legal"]
 
 func test_launcher_sections(runner) -> bool:
 	var saved_settings: String = AudioSettings.path
@@ -744,7 +744,7 @@ func test_launcher_release_hides_relay(runner) -> bool:
 		var view := Rect2(Vector2.ZERO, Vector2(size))
 		var rects: Array[Rect2] = []
 		for path in LAUNCHER_PATHS:
-			if path == "Advanced" or path == "RelayUrl": continue
+			if path == "Advanced" or path == "RelayUrl" or path == "RelayHelp": continue
 			var control: Control = box.get_node_or_null(path)
 			runner.check(control != null and control.visible and view.encloses(control.get_global_rect()), "N21 %s inside %s" % [path, size])
 			if control != null: rects.append(control.get_global_rect())
@@ -780,6 +780,57 @@ func test_launcher_prefills_from_page(runner) -> bool:
 	runner.check(bad_relay.relay == JoinLink.DEFAULT_RELAY and not bad_relay.open and bad_relay.code == "", "N22 a bad relay and a 7-character code are ignored")
 	var oversize: Dictionary = await _page_case(runner, true, "?code=" + "A".repeat(3000), "oversize")
 	runner.check(oversize.code == "", "N22 an oversize query is ignored")
+	AudioSettings.path = saved_settings
+	DirAccess.remove_absolute(scratch)
+	return true
+
+const RELAY_HELP := "Relay server: matches players online. Test builds only; leave it unless you are trying another relay."
+
+func test_launcher_relay_help(runner) -> bool:
+	var saved_settings: String = AudioSettings.path
+	var scratch: String = "user://test-launcher-relay-help-%d.cfg" % OS.get_process_id()
+	AudioSettings.path = scratch
+	DirAccess.remove_absolute(scratch)
+	for size in [Vector2i(1280, 720), Vector2i(1920, 1080)]:
+		var port := SubViewport.new()
+		port.size = size
+		runner.root.add_child(port)
+		var launcher = await _launcher(runner, port, true)
+		launcher.get_node("Center/Box/WaitRow").visible = true
+		launcher.get_node("Center/Box/ThisBuild").visible = true
+		await runner.process_frame
+		var box: Control = launcher.get_node("Center/Box")
+		var help: Label = box.get_node_or_null("RelayHelp")
+		runner.check(help != null and not help.visible, "N26 RelayHelp exists and is hidden while the fold is closed at %s" % size)
+		if help == null:
+			launcher.free()
+			port.free()
+			continue
+		box.get_node("Advanced").button_pressed = true
+		await runner.process_frame
+		await runner.process_frame
+		var relay: LineEdit = box.get_node("RelayUrl")
+		runner.check(help.visible and help.text == RELAY_HELP, "N26 opening the fold shows the exact caption at %s" % size)
+		runner.check(help.get_index() == relay.get_index() - 1, "N26 caption sits directly above the relay field at %s" % size)
+		var view := Rect2(Vector2.ZERO, Vector2(size))
+		runner.check(view.encloses(help.get_global_rect()), "N26 caption inside %s" % size)
+		for path in LAUNCHER_PATHS:
+			var control: Control = box.get_node_or_null(path)
+			if control == null or control == help or not control.visible: continue
+			runner.check(not control.get_global_rect().intersects(help.get_global_rect()), "N26 caption does not overlap %s at %s" % [path, size])
+		var height: float = box.get_global_rect().size.y
+		print("N26 prerelease fold-open worst-case Center/Box at %s: %s x %s, separation %s" % [size, box.get_global_rect().size.x, height, box.get_theme_constant("separation")])
+		runner.check(height <= 720.0 and box.get_global_rect().size.x < 600.0, "N26 worst-case box %s fits 720 high and under 600 wide at %s" % [box.get_global_rect().size, size])
+		launcher.free()
+		var opened = await _launcher(runner, port, true, "?relay=wss%3A%2F%2Fx.example%2Fws")
+		runner.check(opened.get_node("Center/Box/RelayHelp").visible, "N26 ?relay= opens the fold with the caption at %s" % size)
+		opened.free()
+		var release = await _launcher(runner, port, false, "?relay=wss%3A%2F%2Fx.example%2Fws")
+		runner.check(not release.get_node("Center/Box/RelayHelp").visible, "N26 release hides the caption on load and ignores ?relay= at %s" % size)
+		runner.check(release.get_node("Center/Box").get_global_rect().size.y <= 720.0 or size.y > 720, "N26 release box fits at %s" % size)
+		print("N26 release Center/Box at %s: %s" % [size, release.get_node("Center/Box").get_global_rect().size])
+		release.free()
+		port.free()
 	AudioSettings.path = saved_settings
 	DirAccess.remove_absolute(scratch)
 	return true
