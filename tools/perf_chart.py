@@ -32,7 +32,6 @@ class Point(NamedTuple):
     label: str
     date: str
     method: str
-    machine: str
     worst_pct: float
     load: float
 
@@ -121,7 +120,6 @@ def series(rows: list[dict[str, str]], line: Line) -> list[Point]:
                 label,
                 min(r["date"] for r in group),
                 group[0]["method"],
-                DEV,
                 max(values) / line.budget.dev_ms * 100,
                 load,
             )
