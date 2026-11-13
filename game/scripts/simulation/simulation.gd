@@ -548,13 +548,21 @@ func step() -> void:
 	zone = Profiler.begin()
 	var before: Dictionary = {}
 	for id in armed: before[id] = _entities[id].position
+	var part: int = Profiler.begin()
 	for id in ids:
 		var unit: Dictionary = _entities[id]
 		if unit.status == "moving": _advance(unit)
 		elif unit.status != "path_pending": unit.speed = 0.0
+	Profiler.end(&"advance.move", part)
+	part = Profiler.begin()
 	Containers.step(self)
+	Profiler.end(&"advance.containers", part)
+	part = Profiler.begin()
 	Horde.step(self,armed)
+	Profiler.end(&"advance.horde", part)
+	part = Profiler.begin()
 	Salvage.step(self)
+	Profiler.end(&"advance.salvage", part)
 	var moved: Array[int] = []
 	for id in armed:
 		if _entities[id].position != before[id] and not _entities[id].has("container_id"): moved.append(id)

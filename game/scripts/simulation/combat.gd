@@ -498,7 +498,10 @@ static func _splash(shots: Array[Dictionary], damage: Dictionary, sim: Simulatio
 	if Registry.kind(target.kind).get("class", "") == "infantry":
 		if weapon.get("infantry_scatter", true): impact += _scatter(sim) * CombatDefinitions.SCATTER_VS_INFANTRY * sim.next_random() / 4294967296.0
 		radius = weapon.get("infantry_blast", CombatDefinitions.INFANTRY_BLAST)
-	for victim in splash_victims(sim, impact, radius, weapon.affects, unit):
+	var zone: int = Profiler.begin()
+	var victims: Array[Dictionary] = splash_victims(sim, impact, radius, weapon.affects, unit)
+	Profiler.end(&"combat.splash", zone)
+	for victim in victims:
 		if victim.id != target.id: _hit(shots, damage, sim, unit.id, victim, weapon, true)
 
 static func _scatter(sim: Simulation) -> Vector2:
