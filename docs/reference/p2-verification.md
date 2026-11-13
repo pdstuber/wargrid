@@ -1,13 +1,13 @@
 ```text
-Resume record (updated 2026-11-13 Task 2 implemented, uncommitted)
-Branch / base commit / working-tree state: p2-you-clicked / 5c258d7 / worktree ~/projects/wargrid-wt-p2, Task 2 changes uncommitted
-Last green task / next incomplete task: Task 2 (green, awaiting the coordinator's commit) / Task 3
-Changed paths since last commit: game/scripts/presentation/sound_player.gd, game/scripts/main.gd, game/scripts/skirmish_main.gd, game/scripts/online_main.gd, game/audio/voice/units/ (12 placeholder WAVs + .import), game/tests/test_order_voice.gd, docs/reference/p2-verification.md
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 820 / 141028 / 0 / 0 / TESTS PASSED 141028
-Known red case or blocker: none
+Resume record (updated 2026-11-13 Task 3 implemented, uncommitted)
+Branch / base commit / working-tree state: p2-you-clicked / f94bb08 / worktree ~/projects/wargrid-wt-p2, Task 3 changes uncommitted
+Last green task / next incomplete task: Task 2 (committed f94bb08); Task 3 (green, awaiting the coordinator's commit) / Task 4
+Changed paths since last commit: game/scenes/launcher.tscn, game/scripts/launcher.gd, game/tests/test_online_scene.gd, game/tests/test_playtest.gd, game/tests/test_audio_settings.gd, docs/reference/p2-verification.md
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 821 / 142184 / 0 / 0 / TESTS PASSED 142184
+Known red case or blocker: none (Status minimum height 48 -> 24, user ruling 2026-11-13, brought Center/Box to 714 px at 1280x720)
 Approved decisions, pre-authorizations used, deferred gates: spec decisions (user, 2026-11-13) in docs/superpowers/specs/2026-11-13-p2-you-clicked-we-heard-design.md; Piper re-download approved (user, 2026-11-13); local commit per GREEN task (milestone prompt); stop gates (a), (b), (c) not reached
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: coordinator commits Task 2, then Task 3
+Next exact action: coordinator commits Task 3, then Task 4
 ```
 
 Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicked-we-heard.md). Spec: [design](../superpowers/specs/2026-11-13-p2-you-clicked-we-heard-design.md). Scratch and logs: `~/projects/wargrid-p2-work/`.
@@ -18,7 +18,7 @@ Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicke
 |---|---|---|
 | 1 | Order voice rule: table and director | done (5c258d7) |
 | 2 | Order voice in the game: player, hooks, placeholder WAVs | done (uncommitted) |
-| 3 | Launcher sections and Advanced fold | not started |
+| 3 | Launcher sections and Advanced fold | done (uncommitted) |
 | 4 | F4 music shuffle, F1 scale legend | not started |
 | 5 | Late-game 3v3 canary (report-only) | not started |
 | 6 | Browser rider prep: bench lines, two web exports, native run | not started |
@@ -51,3 +51,8 @@ Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicke
 | 2 | `WARGRID_TEST_ONLY=test_order_voice` GREEN | 5c258d7 + uncommitted | CASES 12 CHECKS 88 FAILURES 0, exit 0 |
 | 2 | `test_sound.gd`, `test_announcer`, `test_online_scene`, `test_playtest_overlay` unchanged | 5c258d7 + uncommitted | 24/179, 20/64, 24/650, 17/649 cases/checks, FAILURES 0, exit 0 |
 | 2 | full `sh tools/run_tests.sh` GREEN; `run_lint.sh`, `run_warnings.sh`, `check_public.sh` exit 0; `git diff main -- game/scripts/simulation game/scripts/net` empty | 5c258d7 + uncommitted | CASES 820 CHECKS 141028 FAILURES 0, exit 0 |
+| 3 | `WARGRID_TEST_ONLY=test_launcher_sections` RED (no headers, no Advanced) | f94bb08 + uncommitted | CASES 1 CHECKS 10 FAILURES 10, no SCRIPT ERROR, exit 1 |
+| 3 | measured `Center/Box` height at 1280x720 and 1920x1080, fold open, WaitRow and ThisBuild visible, separation 6 | f94bb08 + uncommitted | 738 px (viewport 720: Title and Legal outside), STOP condition |
+| 3 | full `sh tools/run_tests.sh` | f94bb08 + uncommitted | CASES 821 CHECKS 142174 FAILURES 4 (N5 and N20 Title/Legal inside 1280x720 only), exit 1; `test_playtest.gd` 14/213, `test_pause_menu` 8/332 FAILURES 0; lint, warnings, check_public exit 0; sim/net diff empty |
+| 3 | Status `custom_minimum_size` height 48 -> 24 (user ruling 2026-11-13); measured `Center/Box` at 1280x720 and 1920x1080, fold open, WaitRow and ThisBuild visible | f94bb08 + uncommitted | 714 px (viewport 720), N5 and N20 inside and no overlap; closed fold about 677 px (derived, not measured); Status one-line checks added to N20 (code line, relay lost, three map differ lines) pass |
+| 3 | full `sh tools/run_tests.sh` GREEN; `run_lint.sh`, `run_warnings.sh`, `check_public.sh` exit 0; `git diff main -- game/scripts/simulation game/scripts/net` empty | f94bb08 + uncommitted | CASES 821 CHECKS 142184 FAILURES 0, exit 0 |

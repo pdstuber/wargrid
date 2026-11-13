@@ -33,7 +33,7 @@ class FakeTransport extends RefCounted:
 	func rtt_samples() -> PackedInt64Array: return PackedInt64Array([40000])
 
 func cases() -> Array[Callable]:
-	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_rejection_line, test_funds_rejection_is_announced, test_overlay_net_line, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_stall_frames_are_not_step_frames, test_notices_reach_the_hud_while_processing, test_launcher_layout, test_launcher_faction_selectors_fit, test_plays_dry_wells_from_each_seat, test_offline_uses_chosen_map, test_restart_keeps_map_and_starts, test_restart_drops_old_stepped_results, test_joiner_refuses_other_map, test_old_relay_mismatch_is_shown, test_cancel_and_copy_while_waiting, test_start_without_settings_is_a_protocol_error, test_both_seats_share_map_and_starts, test_host_told_opponent_left_before_start, test_credits_panel_layout, test_online_playtest_record]
+	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_rejection_line, test_funds_rejection_is_announced, test_overlay_net_line, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_stall_frames_are_not_step_frames, test_notices_reach_the_hud_while_processing, test_launcher_layout, test_launcher_sections, test_launcher_faction_selectors_fit, test_plays_dry_wells_from_each_seat, test_offline_uses_chosen_map, test_restart_keeps_map_and_starts, test_restart_drops_old_stepped_results, test_joiner_refuses_other_map, test_old_relay_mismatch_is_shown, test_cancel_and_copy_while_waiting, test_start_without_settings_is_a_protocol_error, test_both_seats_share_map_and_starts, test_host_told_opponent_left_before_start, test_credits_panel_layout, test_online_playtest_record]
 
 func _online(runner, seat: int) -> Dictionary:
 	var transport := FakeTransport.new()
@@ -213,6 +213,71 @@ func test_notices_reach_the_hud_while_processing(runner) -> bool:
 	waiting.main.free()
 	return true
 
+const LAUNCHER_PATHS: Array[String] = ["Title", "MatchRow/Own", "MatchRow/Map", "OfflineHeader", "OfflineRow/Opponent", "OfflineRow/Offline", "ThisBuild", "OnlineHeader", "Create", "JoinRow/Code", "JoinRow/Join", "WaitRow/Copy", "WaitRow/Cancel", "Advanced", "RelayUrl", "Status", "SettingsHeader", "Volume/MusicLabel", "Volume/Music", "Volume/EffectsLabel", "Volume/Effects", "Volume/VoiceLabel", "Volume/Voice", "Volume/MuteLabel", "Volume/Mute", "PlaytestSwitch", "Credits", "Legal"]
+const LAUNCHER_ORDER: Array[String] = ["MatchRow", "OfflineHeader", "OfflineRow", "OnlineHeader", "Create", "JoinRow", "Advanced", "RelayUrl", "SettingsHeader", "Volume", "PlaytestSwitch", "Credits", "Legal"]
+
+func test_launcher_sections(runner) -> bool:
+	var saved_settings: String = AudioSettings.path
+	var scratch: String = "user://test-launcher-sections-%d.cfg" % OS.get_process_id()
+	AudioSettings.path = scratch
+	DirAccess.remove_absolute(scratch)
+	for size in [Vector2i(1280, 720), Vector2i(1920, 1080)]:
+		var port := SubViewport.new()
+		port.size = size
+		runner.root.add_child(port)
+		var launcher = Launcher.instantiate()
+		port.add_child(launcher)
+		launcher.get_node("Center/Box/WaitRow").visible = true
+		launcher.get_node("Center/Box/ThisBuild").visible = true
+		await runner.process_frame
+		await runner.process_frame
+		var box: Control = launcher.get_node("Center/Box")
+		for pair in [["OfflineHeader", "Play offline"], ["OnlineHeader", "Play online"], ["SettingsHeader", "Settings"]]:
+			var header: Label = box.get_node_or_null(pair[0])
+			runner.check(header != null and header.text == pair[1], "N20 %s reads %s at %s" % [pair[0], pair[1], size])
+		var indexes: Array[int] = []
+		for name in LAUNCHER_ORDER:
+			var node: Node = box.get_node_or_null(name)
+			indexes.append(node.get_index() if node != null else -1)
+		var in_order: bool = not indexes.has(-1)
+		for i in range(1, indexes.size()):
+			in_order = in_order and indexes[i - 1] < indexes[i]
+		runner.check(in_order, "N20 sections are in order at %s, got %s" % [size, indexes])
+		runner.check(box.get_node_or_null("OfflineRow/Opponent") != null and box.get_node_or_null("OfflineRow/Offline") != null and box.get_node_or_null("MatchRow/Own") != null and box.get_node_or_null("MatchRow/Map") != null, "N20 row children at %s" % size)
+		var advanced: Button = box.get_node_or_null("Advanced")
+		var relay: LineEdit = box.get_node_or_null("RelayUrl")
+		if advanced != null and relay != null:
+			runner.check(not advanced.button_pressed and not relay.visible and advanced.text == "Advanced ▸", "N20 Advanced starts closed at %s" % size)
+			runner.check(relay.text == "wss://relay.pdstuber.dev/ws", "N20 closed fold keeps the default relay URL at %s" % size)
+			launcher._set_busy(true)
+			runner.check(not relay.editable and not relay.visible, "N20 busy locks the hidden relay field at %s" % size)
+			launcher._set_busy(false)
+			runner.check(relay.editable, "N20 idle unlocks the relay field at %s" % size)
+			advanced.button_pressed = true
+			runner.check(relay.visible and advanced.text == "Advanced ▾", "N20 opening Advanced shows the relay field at %s" % size)
+			await runner.process_frame
+			await runner.process_frame
+			var view := Rect2(Vector2.ZERO, Vector2(size))
+			var rects: Array[Rect2] = []
+			for path in LAUNCHER_PATHS:
+				var control: Control = box.get_node_or_null(path)
+				runner.check(control != null and control.visible and view.encloses(control.get_global_rect()), "N20 %s inside %s" % [path, size])
+				if control != null: rects.append(control.get_global_rect())
+			for i in rects.size():
+				for j in range(i + 1, rects.size()):
+					runner.check(not rects[i].intersects(rects[j]), "N20 controls %d and %d do not overlap at %s" % [i, j, size])
+			print("N20 Center/Box height at %s: %s" % [size, box.get_global_rect().size.y])
+		var status: Label = box.get_node("Status")
+		for text in ["Match code: ABC234 — waiting for player 2", "Connection to relay lost"] + MatchSettings.PLAY_MAPS.values().map(func(label: String) -> String: return "Your copy of %s differs from the host's" % label):
+			status.text = text
+			await runner.process_frame
+			runner.check(status.get_line_count() == 1, "N20 Status stays one line at %s: %s" % [size, text])
+		launcher.free()
+		port.free()
+	AudioSettings.path = saved_settings
+	DirAccess.remove_absolute(scratch)
+	return true
+
 func test_launcher_layout(runner) -> bool:
 	var saved_settings: String = AudioSettings.path
 	var scratch: String = "user://test-launcher-settings-%d.cfg" % OS.get_process_id()
@@ -226,10 +291,11 @@ func test_launcher_layout(runner) -> bool:
 		port.add_child(launcher)
 		launcher.get_node("Center/Box/WaitRow").visible = true
 		launcher.get_node("Center/Box/ThisBuild").visible = true
+		launcher.get_node("Center/Box/Advanced").button_pressed = true
 		await runner.process_frame
 		await runner.process_frame
 		var rects: Array[Rect2] = []
-		for path in ["Title", "Offline", "ThisBuild", "Map", "RelayUrl", "Create", "JoinRow/Code", "JoinRow/Join", "PlaytestSwitch", "Credits", "WaitRow/Copy", "WaitRow/Cancel", "Volume/MusicLabel", "Volume/Music", "Volume/EffectsLabel", "Volume/Effects", "Volume/VoiceLabel", "Volume/Voice", "Volume/MuteLabel", "Volume/Mute", "Status", "Legal"]:
+		for path in LAUNCHER_PATHS:
 			var control: Control = launcher.get_node("Center/Box/" + path)
 			rects.append(control.get_global_rect())
 			runner.check(Rect2(Vector2.ZERO, Vector2(size)).encloses(control.get_global_rect()), "N5 %s inside %s" % [path, size])
@@ -289,13 +355,13 @@ func test_launcher_faction_selectors_fit(runner) -> bool:
 		await runner.process_frame
 		await runner.process_frame
 		var box: Control = launcher.get_node("Center/Box")
-		var own: OptionButton = launcher.get_node("Center/Box/FactionRow/Own")
-		var opponent: OptionButton = launcher.get_node("Center/Box/FactionRow/Opponent")
+		var own: OptionButton = launcher.get_node("Center/Box/MatchRow/Own")
+		var opponent: OptionButton = launcher.get_node("Center/Box/OfflineRow/Opponent")
 		runner.check(box.get_global_rect().encloses(own.get_global_rect()) and box.get_global_rect().encloses(opponent.get_global_rect()), "F5 selectors inside the box at %s" % size)
 		runner.check(not own.get_global_rect().intersects(opponent.get_global_rect()), "F5 selectors do not overlap at %s" % size)
-		for path in ["Offline", "Map", "RelayUrl", "Create", "JoinRow", "Status"]:
-			runner.check(not launcher.get_node("Center/Box/FactionRow").get_global_rect().intersects(launcher.get_node("Center/Box/" + path).get_global_rect()), "F5 row clear of %s at %s" % [path, size])
-		runner.check(launcher.get_node("Center/Box/FactionRow").get_global_rect().size.x <= 520.0, "F5 faction row stays compact at %s" % size)
+		for path in ["OfflineRow", "Create", "JoinRow", "Status"]:
+			runner.check(not launcher.get_node("Center/Box/MatchRow").get_global_rect().intersects(launcher.get_node("Center/Box/" + path).get_global_rect()), "F5 row clear of %s at %s" % [path, size])
+		runner.check(launcher.get_node("Center/Box/MatchRow").get_global_rect().size.x <= 520.0, "F5 match row stays compact at %s" % size)
 		runner.check(own.item_count == 3 and own.get_item_text(0) == "China" and own.get_item_text(1) == "Free Resistance Coalition" and own.get_item_text(own.selected) == "United States", "F5 selector lists faction display names and defaults to the United States")
 		launcher.free()
 		port.free()
@@ -334,7 +400,7 @@ func test_offline_uses_chosen_map(runner) -> bool:
 	var launcher = Launcher.instantiate()
 	runner.root.add_child(launcher)
 	await runner.process_frame
-	var map_row: OptionButton = launcher.get_node("Center/Box/Map")
+	var map_row: OptionButton = launcher.get_node("Center/Box/MatchRow/Map")
 	var labels: Array = MatchSettings.PLAY_MAPS.values()
 	runner.check(map_row.item_count == 3 and launcher._map_id() == "dry_wells", "N11 three maps, Dry Wells selected by default")
 	for i in map_row.item_count:
@@ -432,14 +498,14 @@ func test_cancel_and_copy_while_waiting(runner) -> bool:
 	launcher.set_process(true)
 	var wait: Control = launcher.get_node("Center/Box/WaitRow")
 	launcher._handle('{"type":"welcome","seat":1,"match":"ABC234"}')
-	runner.check(wait.visible and launcher.get_node("Center/Box/Offline").disabled and launcher.get_node("Center/Box/Create").disabled and not launcher.get_node("Center/Box/WaitRow/Copy").disabled and not launcher.get_node("Center/Box/WaitRow/Cancel").disabled, "N17 waiting shows Copy and Cancel, launcher stays busy")
+	runner.check(wait.visible and launcher.get_node("Center/Box/OfflineRow/Offline").disabled and launcher.get_node("Center/Box/Create").disabled and not launcher.get_node("Center/Box/WaitRow/Copy").disabled and not launcher.get_node("Center/Box/WaitRow/Cancel").disabled, "N17 waiting shows Copy and Cancel, launcher stays busy")
 	runner.check(launcher._code == "ABC234", "N18 welcome stores the match code for Copy")
 	if DisplayServer.has_feature(DisplayServer.FEATURE_CLIPBOARD):
 		launcher.get_node("Center/Box/WaitRow/Copy").pressed.emit()
 		runner.check(DisplayServer.clipboard_get() == "ABC234", "N18 Copy puts the match code on the clipboard")
 	launcher.get_node("Center/Box/WaitRow/Cancel").pressed.emit()
 	var enabled: bool = true
-	for path in ["Offline", "Create", "JoinRow/Join", "Map", "FactionRow/Own", "FactionRow/Opponent"]:
+	for path in ["OfflineRow/Offline", "Create", "JoinRow/Join", "MatchRow/Map", "MatchRow/Own", "OfflineRow/Opponent"]:
 		enabled = enabled and not launcher.get_node("Center/Box/" + path).disabled
 	runner.check(transport.close_calls == 1 and not wait.visible and enabled, "N17 Cancel restores the launcher")
 	runner.check(launcher.get_node("Center/Box/Status").text == "Match cancelled" and not launcher.is_processing(), "N17 Cancel says so and stops polling")

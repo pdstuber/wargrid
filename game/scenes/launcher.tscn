@@ -18,7 +18,7 @@ anchor_bottom = 1.0
 [node name="Box" type="VBoxContainer" parent="Center"]
 custom_minimum_size = Vector2(520, 0)
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 6
 
 [node name="Title" type="Label" parent="Center/Box"]
 layout_mode = 2
@@ -26,31 +26,40 @@ text = "Wargrid"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 40
 
-[node name="Offline" type="Button" parent="Center/Box"]
-layout_mode = 2
-text = "Play offline"
-
-[node name="FactionRow" type="HBoxContainer" parent="Center/Box"]
+[node name="MatchRow" type="HBoxContainer" parent="Center/Box"]
 layout_mode = 2
 
-[node name="Own" type="OptionButton" parent="Center/Box/FactionRow"]
+[node name="Own" type="OptionButton" parent="Center/Box/MatchRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 tooltip_text = "Your faction"
 
-[node name="Opponent" type="OptionButton" parent="Center/Box/FactionRow"]
+[node name="Map" type="OptionButton" parent="Center/Box/MatchRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Map for Play offline and Create match; Join plays the host's map"
+
+[node name="OfflineHeader" type="Label" parent="Center/Box"]
+layout_mode = 2
+text = "Play offline"
+theme_override_font_sizes/font_size = 14
+
+[node name="OfflineRow" type="HBoxContainer" parent="Center/Box"]
+layout_mode = 2
+
+[node name="Opponent" type="OptionButton" parent="Center/Box/OfflineRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 tooltip_text = "Opponent faction (offline only)"
 
-[node name="Map" type="OptionButton" parent="Center/Box"]
+[node name="Offline" type="Button" parent="Center/Box/OfflineRow"]
 layout_mode = 2
-tooltip_text = "Map for Play offline and Create match; Join plays the host's map"
+text = "Start"
 
-[node name="RelayUrl" type="LineEdit" parent="Center/Box"]
+[node name="OnlineHeader" type="Label" parent="Center/Box"]
 layout_mode = 2
-text = "wss://relay.pdstuber.dev/ws"
-placeholder_text = "Relay URL"
+text = "Play online"
+theme_override_font_sizes/font_size = 14
 
 [node name="Create" type="Button" parent="Center/Box"]
 layout_mode = 2
@@ -69,10 +78,6 @@ max_length = 6
 layout_mode = 2
 text = "Join"
 
-[node name="Credits" type="Button" parent="Center/Box"]
-layout_mode = 2
-text = "Credits"
-
 [node name="WaitRow" type="HBoxContainer" parent="Center/Box"]
 visible = false
 layout_mode = 2
@@ -87,10 +92,32 @@ layout_mode = 2
 size_flags_horizontal = 3
 text = "Cancel"
 
+[node name="Advanced" type="Button" parent="Center/Box"]
+layout_mode = 2
+toggle_mode = true
+flat = true
+text = "Advanced ▸"
+alignment = 0
+
+[node name="RelayUrl" type="LineEdit" parent="Center/Box"]
+visible = false
+layout_mode = 2
+text = "wss://relay.pdstuber.dev/ws"
+placeholder_text = "Relay URL"
+
 [node name="Status" type="Label" parent="Center/Box"]
-custom_minimum_size = Vector2(520, 48)
+custom_minimum_size = Vector2(520, 24)
 layout_mode = 2
 autowrap_mode = 3
+
+[node name="SettingsHeader" type="Label" parent="Center/Box"]
+layout_mode = 2
+text = "Settings"
+theme_override_font_sizes/font_size = 14
+
+[node name="Credits" type="Button" parent="Center/Box"]
+layout_mode = 2
+text = "Credits"
 
 [node name="Legal" type="Label" parent="Center/Box"]
 custom_minimum_size = Vector2(520, 0)

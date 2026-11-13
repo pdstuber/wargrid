@@ -166,7 +166,7 @@ func test_launcher_focus_card(runner) -> bool:
 		runner.check(button != null and button.visible, "PT6 ThisBuild shows with the helper on at %s" % label)
 		if button != null:
 			_clear_of_siblings(runner, box, button, view, "ThisBuild " + label)
-			runner.check(box.get_child(box.get_node("Offline").get_index() + 1) == button, "PT6 ThisBuild sits right after Offline")
+			runner.check(box.get_child(box.get_node("OfflineRow").get_index() + 1) == button, "PT6 ThisBuild sits right after OfflineRow")
 			button.pressed.emit()
 			await runner.process_frame
 			await runner.process_frame
