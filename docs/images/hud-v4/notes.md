@@ -30,4 +30,6 @@ What is real and what is not:
 - The typeface is Inter (SIL Open Font License); the game has no font file yet.
 - The card above the dock belongs to the cell under the drawn pointer.
 
+Decided after these pictures and not drawn (design answers, "Questionnaire after round 3"): the refusal line above the dock, a selected enemy unit in the selection panel, the game's own owner colours on the panel edge and progress bars, the forecast in the top strip while a building is armed, an Unload button.
+
 Not tested: anything in Godot, a real Steam Deck, colour-vision deficiencies. The pages, the build spec, the survey of other games and the recorded picks are working files in the private notes repository (`hud-v4/`).
