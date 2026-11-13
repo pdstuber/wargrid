@@ -79,7 +79,7 @@ static func _build_parts(role_name: StringName, detail: int, variant: int) -> Ar
 		&"infantry":
 			found.append(_part(&"body", &"heading", _soldier() + [_prim(&"box", Vector3(0.12, 0.1, 2.2), Vector3(0.22, 0.04, 0.4), SLOT_MACHINE)]))
 		&"laborer":
-			found.append(_part(&"body", &"heading", _soldier() + [_prim(&"box", Vector3(-0.15, 0, 2.2), Vector3(0.14, 0.14, 0.5), SLOT_ROOF_DARK)]))
+			found.append(_part(&"body", &"heading", _soldier() + [_prim(&"box", Vector3(-0.1, 0, 2.45), Vector3(0.06, 0.09, 0.45), SLOT_ROOF_DARK), _prim(&"box", Vector3(-0.1, 0, 2.9), Vector3(0.05, 0.11, 0.3), SLOT_SKIN)]))
 		&"rocket_infantry":
 			found.append(_part(&"body", &"heading", _soldier() + [_prim(&"box", Vector3(0, 0.11, 2.4), Vector3(0.3, 0.07, 0.7), SLOT_MACHINE)]))
 		&"bulldozer":
