@@ -629,7 +629,7 @@ func test_both_seats_share_map_and_starts(runner) -> bool:
 	return true
 
 func test_host_told_opponent_left_before_start(runner) -> bool:
-	var notice: String = "Opponent left before the start (different map files or version)"
+	var notice: String = "Opponent left before the start (a different map or version, or their game tab was hidden)"
 	var early: Dictionary = await _online(runner, 1)
 	early.lockstep.receive('{"type":"left","seat":2,"after_tick":3}')
 	_run(early.main, 12)

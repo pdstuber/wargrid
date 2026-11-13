@@ -38,7 +38,7 @@ func _ready() -> void:
 	add_child(music)
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
-	music.play_list(MusicPlayer.shuffled(MusicPlayer.PLAYLIST, rng), MusicPlayer.GAP_SECONDS)
+	music.play_match(rng, MusicPlayer.GAP_SECONDS)
 	_add_playtest()
 
 func _add_playtest() -> void:

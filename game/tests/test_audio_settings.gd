@@ -11,7 +11,7 @@ const REAL := "user://settings.cfg"
 var scratch: String = "user://test-settings-%d.cfg" % OS.get_process_id() # shards and worktrees share user://
 
 func cases() -> Array[Callable]:
-	return [test_settings_missing_and_corrupt, test_settings_round_trip, test_slider_sets_bus_and_saves, test_bus_levels, test_tests_use_scratch_settings, test_playlist_order_and_gap, test_menu_track_repeats, test_match_playlist_is_shuffled, test_scene_plays_a_shuffled_playlist, test_mute_toggle, test_mute_key_in_match, test_mute_key_in_launcher_and_text_field]
+	return [test_settings_missing_and_corrupt, test_settings_round_trip, test_slider_sets_bus_and_saves, test_bus_levels, test_tests_use_scratch_settings, test_playlist_order_and_gap, test_menu_track_repeats, test_match_playlist_is_shuffled, test_scene_plays_a_shuffled_playlist, test_match_never_repeats_first_track, test_match_reshuffles_every_round, test_mute_toggle, test_mute_key_in_match, test_mute_key_in_launcher_and_text_field]
 
 func _begin() -> String:
 	var saved: String = AudioSettings.path
@@ -181,6 +181,61 @@ func test_scene_plays_a_shuffled_playlist(runner) -> bool:
 	var menu = _music_of(launcher)
 	runner.check(menu != null and menu._paths == [MusicPlayer.MENU], "MU2 the launcher plays the menu track only")
 	launcher.free()
+	return true
+
+func _advance_to_next(music: Node) -> void:
+	music.finished.emit()
+	music.advance(MusicPlayer.GAP_SECONDS)
+
+func _played(music: Node) -> String:
+	return music._paths[music.track_index()]
+
+func test_match_never_repeats_first_track(runner) -> bool:
+	var repeats := 0
+	var complete := true
+	var last_played := ""
+	for i in 15:
+		var started: Array = await _match_music(runner)
+		var music = started[1]
+		if _played(music) == last_played: repeats += 1
+		if _sorted(music._paths) != _sorted(MusicPlayer.PLAYLIST): complete = false
+		for step in i % 3: _advance_to_next(music)
+		last_played = _played(music)
+		started[0].free()
+	runner.check(repeats == 0, "MU3 a new match never starts on the track the previous match last played, repeats %d of 14" % repeats)
+	runner.check(complete, "MU3 every match playlist holds the five tracks")
+	return true
+
+func _round_played(music: Node) -> Array[String]:
+	var round_tracks: Array[String] = [_played(music)]
+	for step in 4:
+		_advance_to_next(music)
+		round_tracks.append(_played(music))
+	return round_tracks
+
+func test_match_reshuffles_every_round(runner) -> bool:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 3
+	var music := MusicPlayer.new()
+	music.play_match(rng, MusicPlayer.GAP_SECONDS)
+	var one := _round_played(music)
+	_advance_to_next(music)
+	var two := _round_played(music)
+	runner.check(_sorted(one) == _sorted(MusicPlayer.PLAYLIST) and _sorted(two) == _sorted(MusicPlayer.PLAYLIST), "MU4 each round plays the five tracks once, got %s then %s" % [one, two])
+	runner.check(one != two, "MU4 round two is a reshuffle, not the same order")
+	var repeats := 0
+	for seed_value in 20:
+		rng.seed = seed_value
+		var long_run := MusicPlayer.new()
+		long_run.play_match(rng, MusicPlayer.GAP_SECONDS)
+		var previous := _played(long_run)
+		for step in 14:
+			_advance_to_next(long_run)
+			if _played(long_run) == previous: repeats += 1
+			previous = _played(long_run)
+		long_run.free()
+	runner.check(repeats == 0, "MU4 no track plays twice in a row across three rounds, repeats %d" % repeats)
+	music.free()
 	return true
 
 func test_mute_toggle(runner) -> bool:

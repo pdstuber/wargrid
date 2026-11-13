@@ -136,7 +136,7 @@ func _ms(microseconds: PackedInt64Array) -> PackedFloat64Array:
 func notice() -> String:
 	match _lockstep.status():
 		"waiting": return "Waiting for player %d" % _lockstep.waiting_for()[0]
-		"ended_left": return "Opponent left before the start (different map files or version)" if _lockstep.left_before_start() else "Player %d disconnected" % _lockstep.left_seat()
+		"ended_left": return "Opponent left before the start (a different map or version, or their game tab was hidden)" if _lockstep.left_before_start() else "Player %d disconnected" % _lockstep.left_seat()
 		"ended_relay": return "Connection to relay lost" if _lockstep.end_reason() == "connection to relay lost" else "Relay: " + _lockstep.end_reason()
 		"ended_desync": return ("Desync — report downloaded as %s" if web else "Desync — report saved to %s") % _report_path
 		"ended_protocol": return "Protocol error: " + _lockstep.end_reason()
