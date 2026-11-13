@@ -8,6 +8,10 @@ var checks: int = 0
 var failures: int = 0
 var case_count: int = 0
 var _active_case: String = "startup"
+const WATCHDOG_SECONDS: int = 480 # real time, not frames: a case that blocks between frames must still be caught
+var _watchdog := Thread.new()
+var _watchdog_stop: bool = false
+var _case_lock := Mutex.new()
 
 func check(condition: bool, message: String) -> void:
 	checks += 1
@@ -47,13 +51,14 @@ func _run() -> void:
 	PlaytestSession.dir = "user://test-runner-playtests-%d" % OS.get_process_id() # scene tests resume and write sittings; the player's real one must stay untouched
 	if current_scene != null: # exported builds also load the main scene (the launcher), whose UI swallows test clicks
 		current_scene.free()
-	create_timer(180.0).timeout.connect(_timeout) # a slow case on a host shared with other agents must not look hung
+	_watchdog.start(_watch.bind(Time.get_ticks_msec() + WATCHDOG_SECONDS * 1000))
 	var suites: Array = [] # a Callable does not keep its RefCounted suite alive
 	var tests: Array[Callable] = []
 	var only: String = only_filter(OS.get_cmdline_user_args())
 	for suite_script in SUITES:
 		if not suite_script.can_instantiate():
 			print("FAIL: suite failed to load ", suite_script.resource_path)
+			_stop_watchdog()
 			quit(1)
 			return
 		var suite = suite_script.new()
@@ -67,7 +72,9 @@ func _run() -> void:
 				tests.append(test)
 	for i in shard(tests.size(), OS.get_cmdline_user_args()):
 		var test: Callable = tests[i]
+		_case_lock.lock()
 		_active_case = test.get_method()
+		_case_lock.unlock()
 		case_count += 1
 		var before: int = checks
 		var completed: Variant = await test.call(self)
@@ -82,6 +89,7 @@ func _run() -> void:
 	print("CASES ", case_count, " CHECKS ", checks, " FAILURES ", failures)
 	if failures == 0:
 		print("TESTS PASSED ", checks)
+	_stop_watchdog()
 	quit(0 if failures == 0 else 1)
 
 static func remove_dir(path: String) -> void:
@@ -89,7 +97,18 @@ static func remove_dir(path: String) -> void:
 	for file in DirAccess.get_files_at(path): DirAccess.remove_absolute(path.path_join(file))
 	DirAccess.remove_absolute(path)
 
-func _timeout() -> void:
-	print("FAIL: watchdog timeout in ", _active_case)
+func _stop_watchdog() -> void:
+	_watchdog_stop = true
+	_watchdog.wait_to_finish()
+
+func _watch(deadline_ms: int) -> void:
+	while not _watchdog_stop and Time.get_ticks_msec() < deadline_ms:
+		OS.delay_msec(200)
+	if _watchdog_stop:
+		return
+	_case_lock.lock()
+	var active: String = _active_case
+	_case_lock.unlock()
+	print("FAIL: watchdog timeout in ", active)
 	remove_dir(PlaytestSession.dir)
-	quit(1)
+	OS.kill(OS.get_process_id())

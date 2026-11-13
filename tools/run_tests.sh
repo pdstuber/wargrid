@@ -1,7 +1,9 @@
 #!/bin/sh
 repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd) || exit 1
 log_dir=$(mktemp -d) || exit 1
-trap 'rm -rf "$log_dir"' EXIT HUP INT TERM
+pids=""
+trap 'rm -rf "$log_dir"' EXIT
+trap 'kill $pids 2>/dev/null; exit 1' HUP INT TERM
 engine=${GODOT_BIN:-godot}
 exe=${WARGRID_TEST_EXE:-} # an exported tests build runs the suite itself and needs no import
 stamp="$repo_root/game/.godot/wargrid-imported"
@@ -19,7 +21,6 @@ shards=${WARGRID_TEST_SHARDS:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1)
 [ "$shards" -ge 1 ] 2>/dev/null || { echo "FAIL: WARGRID_TEST_SHARDS must be a number >= 1"; exit 1; }
 [ "$shards" -gt 4 ] && shards=4 # measured: 8 shards are no faster than 4, the slowest case bounds the run
 [ -n "$only" ] && shards=1 # a filtered run is short; one process boots fastest
-pids=""
 i=0
 while [ "$i" -lt "$shards" ]; do
 	if [ -n "$exe" ]; then
