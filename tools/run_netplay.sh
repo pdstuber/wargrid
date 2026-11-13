@@ -131,7 +131,14 @@ PY
     [ $? -eq 1 ] || fail "desync_diff should exit 1"
     case "$diff_out" in *players*) ;; *) fail "desync_diff did not name players: $diff_out" ;; esac
     case "$diff_out" in *"ring diverges at tick 41"*) ;; *) fail "desync_diff did not name ring tick 41: $diff_out" ;; esac
-    echo "$diff_out" ;;
+    echo "$diff_out"
+    bisect_out=$(${PYTHON:-python3} "$repo_root/tools/desync_bisect.py" "$out/desync-seat1.json" "$out/desync-seat2.json" --out "$out/bisect")
+    [ $? -eq 1 ] || fail "desync_bisect should exit 1: $bisect_out"
+    for line in "RINGS DIVERGE AT TICK 41" "SEAT 1 MATCHES LOCAL REPLAY" "SEAT 2 DIVERGES FROM LOCAL REPLAY AT TICK 41"; do
+      case "$bisect_out" in *"$line"*) ;; *) fail "desync_bisect missing '$line': $bisect_out" ;; esac
+    done
+    case "$bisect_out" in *"SEAT 2 FIRST FIELD"*players*) ;; *) fail "desync_bisect did not name players: $bisect_out" ;; esac
+    echo "$bisect_out" ;;
   version)
     start_relay; start_pair "" "--build other"
     wait_exit "$pid2" 30

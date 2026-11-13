@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from compare_replays import compare_traces
+from compare_replays import compare_traces, first_divergence
 
 
 class ReplayComparisonTests(unittest.TestCase):
@@ -42,6 +42,10 @@ class ReplayComparisonTests(unittest.TestCase):
                 self.paths[1].write_text("\n".join(changed))
                 with self.assertRaises(ValueError):
                     compare_traces(self.paths)
+
+    def test_first_divergence_index(self):
+        self.assertIsNone(first_divergence([["a", "b"], ["a", "b"]]))
+        self.assertEqual(first_divergence([["a", "b", "c"], ["a", "x", "c"], ["a", "b", "y"]]), 1)
 
     def test_accepts_two_platforms(self):
         compare_traces(self.paths[:2])

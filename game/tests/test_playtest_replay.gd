@@ -20,7 +20,7 @@ class OracleClient extends Client:
 		pass
 
 func cases() -> Array[Callable]:
-	return [test_recorder_logs_accepted_commands, test_bot_through_recorder_keeps_memory, test_log_lines_format, test_offline_scene_replays_to_same_digest, test_restart_starts_new_record, test_oracle_factions_arg, test_oracle_state_rows]
+	return [test_recorder_logs_accepted_commands, test_bot_through_recorder_keeps_memory, test_log_lines_format, test_offline_scene_replays_to_same_digest, test_restart_starts_new_record, test_oracle_factions_arg, test_oracle_state_rows, test_oracle_ring_log]
 
 func _stop(sim, sequence: int, tick: int = 0) -> Dictionary:
 	var builder: int = sim.snapshot().entities.filter(func(unit: Dictionary) -> bool: return unit.owner == 1)[0].id
@@ -177,5 +177,15 @@ func test_oracle_state_rows(runner) -> bool:
 	runner.check(summary is Dictionary and summary.has("match") and summary.has("players") and summary.has("units") and summary.has("buildings"), "RP7 summary has match, players, units, buildings")
 	for file_name in ["tick-0.json", "tick-30.json", "tick-31.json"]: DirAccess.remove_absolute("%s/%s" % [dir, file_name])
 	DirAccess.remove_absolute(dir)
+	client.free()
+	return true
+
+func test_oracle_ring_log(runner) -> bool:
+	var path := "user://rp-ring-%d.tsv" % OS.get_process_id()
+	var client = _replay(PackedStringArray(), {"ring-log": path, "oracle-ticks": "5"})
+	var rows: PackedStringArray = FileAccess.get_file_as_string(path).split("\n", false)
+	runner.check(rows.size() == 5, "RP8 one ring row per tick, got %d" % rows.size())
+	runner.check(rows.size() == 5 and rows[0].begins_with("1\t") and rows[4] == client._sim.hash_ring()[-1], "RP8 rows run from tick 1 to the live ring's last row")
+	DirAccess.remove_absolute(path)
 	client.free()
 	return true

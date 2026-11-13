@@ -233,14 +233,17 @@ func _replay_oracle() -> void:
 	var sim: Simulation = _oracle_sim()
 	_sim = sim
 	var rows := PackedStringArray(["0\t" + StateHash.digest(sim.snapshot())])
+	var ring_rows := PackedStringArray()
 	var state_ticks: PackedStringArray = str(_args.get("state-ticks", "")).split(",", false)
 	while not sim.match_over() and sim.tick() < max_ticks:
 		if state_ticks.has(str(sim.tick())): _state_row(sim)
 		for command: Variant in by_tick.get(sim.tick(), []): sim.issue_command(command)
 		sim.step()
+		if _args.has("ring-log"): ring_rows.append(sim.hash_ring()[-1])
 		if sim.tick() % every == 0: rows.append("%d\t%s" % [sim.tick(), StateHash.digest(sim.snapshot())])
 	if state_ticks.has(str(sim.tick())): _state_row(sim)
 	if _args.has("hash-log"): _write_lines(_args["hash-log"], rows)
+	if _args.has("ring-log"): _write_lines(_args["ring-log"], ring_rows)
 	_status = "match_over" if sim.match_over() else "oracle_overrun"
 	print("ORACLE FINAL %d %s" % [sim.tick(), StateHash.digest(sim.snapshot())])
 	_exit()
@@ -254,7 +257,7 @@ func _state_row(sim: Simulation) -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(_args["snapshot-dir"]))
 	var file := FileAccess.open("%s/tick-%d.json" % [_args["snapshot-dir"], state.tick], FileAccess.WRITE)
 	if file == null: return
-	file.store_string(JSON.stringify(state))
+	file.store_string(JSON.stringify(state, "", true, true))
 	file.close()
 
 static func state_summary(snapshot: Dictionary) -> String:

@@ -26,6 +26,10 @@ def read_trace(path: Path, interval: int, rows: int) -> tuple[list[str], int]:
     return digests, width
 
 
+def first_divergence(traces: list[list[str]]) -> int | None:
+    return next((i for i, values in enumerate(zip(*traces, strict=False)) if len(set(values)) != 1), None)
+
+
 def compare_traces(paths: list[Path], interval: int = 1, rows: int = 1200) -> int:
     if len(paths) < 2:
         raise ValueError("Expected at least two platform traces")
@@ -35,11 +39,11 @@ def compare_traces(paths: list[Path], interval: int = 1, rows: int = 1200) -> in
     traces = [digests for digests, _ in read]
     if len({len(t) for t in traces}) != 1:
         raise ValueError("traces have different numbers of rows")
-    for i, values in enumerate(zip(*traces, strict=True)):
-        if len(set(values)) != 1:
-            tick = _tick(i, interval)
-            detail = ", ".join(f"{path.name}={value}" for path, value in zip(paths, values, strict=True))
-            raise ValueError(f"Replay diverged at tick {tick}: {detail}")
+    i = first_divergence(traces)
+    if i is not None:
+        tick = _tick(i, interval)
+        detail = ", ".join(f"{path.name}={trace[i]}" for path, trace in zip(paths, traces, strict=True))
+        raise ValueError(f"Replay diverged at tick {tick}: {detail}")
     return len(traces[0])
 
 
