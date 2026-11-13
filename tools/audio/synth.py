@@ -4,6 +4,7 @@
 Ported unchanged (numerics and operation order) from the heard prototypes; tools write only into OUT_DIR.
 """
 
+import functools
 import itertools
 import subprocess
 import sys
@@ -264,8 +265,8 @@ def load_line(src_dir: Path, line: str, voice: str = "kristin") -> Arr:
     return np.concatenate([np.zeros(int(0.02 * SR)), x, np.zeros(int(0.15 * SR))])
 
 
-def c1n(x: Arr, rng: Rng, bands: int = 32, env_hz: float = 80, sib: float = 0.35) -> Arr:
-    tone, hiss = carrier(len(x), rng, (110,), 0.0, 1.0)
+def c1n(x: Arr, rng: Rng, bands: int = 32, env_hz: float = 80, sib: float = 0.35, pitch: float = 110.0) -> Arr:
+    tone, hiss = carrier(len(x), rng, (pitch,), 0.0, 1.0)
     out = np.zeros_like(x)
     edges = band_edges(bands)
     for lo, hi in itertools.pairwise(edges):
@@ -279,7 +280,13 @@ def radio(x: Arr, rng: Rng) -> Arr:
     return sat(filt(x, "band", [300, 3400]), 1.5) + 0.003 * rng.standard_normal(len(x))
 
 
-TREATMENTS: dict[str, Callable[[Arr, Rng], Arr]] = {"clean": lambda x, rng: x, "radio": radio, "c1n": c1n}
+TREATMENTS: dict[str, Callable[[Arr, Rng], Arr]] = {
+    "clean": lambda x, rng: x,
+    "radio": radio,
+    "c1n": c1n,
+    "c1n90": functools.partial(c1n, pitch=90.0),
+    "c1n140": functools.partial(c1n, pitch=140.0),
+}
 UNIT_LINES = {"infantry": ["move", "attack"], "vehicle": ["move", "attack"], "worker": ["move", "work"]}
 UNIT_VARIANTS = 2
 UNIT_PICKS: dict[str, tuple[str, str]] = {}

@@ -98,7 +98,7 @@ class SynthTest(unittest.TestCase):
         self.assertLess(power[freqs < 200].sum() / power.sum(), 0.01)
 
     def test_treatments_known(self) -> None:
-        self.assertEqual(set(synth.TREATMENTS), {"clean", "radio", "c1n"})
+        self.assertEqual(set(synth.TREATMENTS), {"clean", "radio", "c1n", "c1n90", "c1n140"})
         for voice, treatment in synth.UNIT_PICKS.values():
             self.assertIn(treatment, synth.TREATMENTS)
             self.assertIn(voice, {"john", "norman", "bryce"})
@@ -110,6 +110,16 @@ class SynthTest(unittest.TestCase):
         self.assertEqual(len(a), len(x))
         self.assertTrue(np.all(np.isfinite(a)))
         self.assertTrue(np.array_equal(a, b))
+
+    def test_c1n_pitched_variants(self) -> None:
+        x = np.random.default_rng(1).standard_normal(synth.SR // 2)
+        base = synth.TREATMENTS["c1n"](x, np.random.default_rng(5))
+        self.assertTrue(np.array_equal(base, synth.c1n(x, np.random.default_rng(5), pitch=110.0)))
+        for name in ("c1n90", "c1n140"):
+            y = synth.TREATMENTS[name](x, np.random.default_rng(5))
+            self.assertEqual(len(y), len(x))
+            self.assertTrue(np.all(np.isfinite(y)))
+            self.assertFalse(np.array_equal(y, base), name)
 
     def test_refuses_src_in_repo(self) -> None:
         with tempfile.TemporaryDirectory() as d:
