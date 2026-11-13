@@ -29,4 +29,4 @@ Rebuild with the harness doc's command (about 15 min); commit in the fork only w
 - **F3: idle wait and `pid` in `/healthz`.** While paused with no pending step the loop waits on the request queue (timeout 33 ms) instead of spinning; `GEN_API_IDLE_EXIT=<s>` exits after s seconds without requests. Verify: idle paused CPU under 5 % at `GEN_FPS_CAP=0`, `record()` still about 6 ms per frame, an orphaned game exits, the harness checks the pid against its child.
 - F4 (`/units?ids=` filter) only if a profile shows `/units` JSON dominates the 6.3 ms; unverified gain.
 
-Also waiting for the user: deleting `probe_patriot.py`; the Wargrid supply script (`wg_supply2.gd`) is still scratch-only.
+Also waiting for the user: the Wargrid supply script (`wg_supply2.gd`) is still scratch-only. `probe_patriot.py` was deleted 2026-11-13 with Tighter gates.

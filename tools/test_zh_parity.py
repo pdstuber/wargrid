@@ -2,14 +2,17 @@
 
 import base64
 import inspect
+import io
 import json
 import signal
 import subprocess
 import sys
 import tempfile
 import unittest
+import urllib.error
 from pathlib import Path
 from typing import Any, ClassVar
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).parent / "zh_parity"))
 
@@ -414,7 +417,7 @@ class Sweep(unittest.TestCase):
     def test_pending_skips_finished(self) -> None:
         with tempfile.TemporaryDirectory() as t:
             out = Path(t)
-            put_trace(out / "rep1", "move_ranger", [])
+            put_trace(out / "rep1", "move_ranger", [], code=parity.CODE)
             jobs = parity.pending(out, ["move_ranger", "turn_ranger"], 2)
             self.assertEqual(jobs, [(1, "turn_ranger"), (2, "move_ranger"), (2, "turn_ranger")])
 
@@ -456,6 +459,105 @@ class Sweep(unittest.TestCase):
             failed = parity.sweep(out, [(1, "a")], 1, 3, lambda job, port: ("fail", 2))
             self.assertEqual(failed, 1)
             self.assertEqual(len((out / "runs.jsonl").read_text().splitlines()), 1)
+
+    def test_interrupt_stops_children_and_queued_jobs(self) -> None:
+        launched: list[tuple[int, str]] = []
+
+        def launch(job: tuple[int, str], port: int) -> tuple[str, int]:
+            launched.append(job)
+            raise KeyboardInterrupt
+
+        with tempfile.TemporaryDirectory() as t:
+            out = Path(t)
+            (out / "pids").mkdir()
+            (out / "pids" / "424242").write_text("sweep")
+            with mock.patch.object(parity, "stop_group") as stop, self.assertRaises(KeyboardInterrupt):
+                parity.sweep(out, [(1, "a"), (1, "b"), (1, "c")], 1, 0, launch)
+        self.assertEqual(launched, [(1, "a")])
+        stop.assert_called_once_with(424242)
+
+    def test_stopped_by_hand_not_retried(self) -> None:
+        with tempfile.TemporaryDirectory() as t:
+            out = Path(t)
+            failed = parity.sweep(out, [(1, "a")], 1, 1, lambda job, port: ("fail", 143))
+            self.assertEqual(failed, 1)
+            self.assertEqual(len((out / "runs.jsonl").read_text().splitlines()), 1)
+
+    def test_trace_from_other_code_is_pending(self) -> None:
+        with tempfile.TemporaryDirectory() as t:
+            out = Path(t)
+            put_trace(out / "rep1", "old", [])
+            put_trace(out / "rep1", "other", [], code="0" * 12)
+            put_trace(out / "rep1", "current", [], code=parity.CODE)
+            jobs = parity.pending(out, ["old", "other", "current"], 1)
+            self.assertEqual(jobs, [(1, "old"), (1, "other")])
+
+    def test_write_stamps_the_code(self) -> None:
+        with tempfile.TemporaryDirectory() as t:
+            parity.write(Path(t), "s", [], {})
+            self.assertEqual(analyze.load(Path(t) / "s.tsv")[0]["code"], parity.CODE)
+
+    def test_failed_job_keeps_its_output(self) -> None:
+        with tempfile.TemporaryDirectory() as t:
+            out = Path(t)
+            script = out / "child.py"
+            script.write_text("import sys\nprint('boom')\nsys.exit(1)\n")
+            with mock.patch.object(parity, "__file__", str(script)):
+                launch = parity.child_launcher(out, 30)
+            status, code = launch((1, "x"), 9000)
+            self.assertEqual((status, code), ("fail", 1))
+            self.assertIn("boom", (out / "rep1" / "x.out").read_text())
+            failed = parity.sweep(out, [(1, "x")], 1, 0, launch)
+            self.assertEqual(failed, 1)
+            line = json.loads((out / "runs.jsonl").read_text().splitlines()[0])
+            self.assertEqual(line["output"], str(out / "rep1" / "x.out"))
+
+
+class Boot(unittest.TestCase):
+    def test_boot_retries_http_503(self) -> None:
+        answers = {
+            "/healthz": {"inGame": True, "frame": 7},
+            "/session": {"headless": True, "seed": 1},
+            "/control": None,
+            "/players": [
+                {"index": 1, "controller": "external", "side": "USA", "name": "me"},
+                {"index": 2, "controller": "human", "side": "China", "name": "en"},
+                {"index": 3, "controller": "x", "side": "Civilian", "name": "c"},
+                {"index": 4, "controller": "computer", "side": "Neutral", "name": ""},
+            ],
+        }
+        seen = {"healthz": 0}
+
+        class Resp:
+            def __init__(self, body: Any) -> None:
+                self.body = body
+
+            def __enter__(self) -> "Resp":
+                return self
+
+            def __exit__(self, *a: Any) -> None:
+                return None
+
+            def read(self) -> bytes:
+                return json.dumps(self.body).encode()
+
+        def urlopen(req: Any, timeout: float) -> Resp:
+            path = req.full_url[len(parity.API) :]
+            if path == "/healthz":
+                seen["healthz"] += 1
+                if seen["healthz"] <= 2:
+                    raise urllib.error.HTTPError(req.full_url, 503, "busy", {}, io.BytesIO(b"busy"))  # type: ignore[arg-type]
+            return Resp(answers[path])
+
+        g = parity.Game.__new__(parity.Game)
+        g.proc = mock.Mock(poll=lambda: None)
+        with (
+            mock.patch.object(parity, "git_rev", return_value="x"),
+            mock.patch.object(parity.time, "sleep"),
+            mock.patch.object(parity.urllib.request, "urlopen", urlopen),
+        ):
+            g.boot(Path("unused.log"), {"GEN_FPS_CAP": "0"})
+        self.assertEqual((g.me, g.enemy, g.civilian, g.neutral), (1, 2, 3, 4))
 
 
 class FakeGame:

@@ -13,6 +13,7 @@ import base64
 import concurrent.futures
 import difflib
 import fnmatch
+import hashlib
 import json
 import math
 import os
@@ -22,6 +23,7 @@ import socket
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import urllib.request
 from collections.abc import Callable
@@ -44,6 +46,12 @@ FORK = HOME / "projects/GeneralsGameCode-macOS"
 SCHEMA = 1
 MAX_LANES = 6  # uncapped games spin one core each; more lanes only slow every run
 FIELDS = ("frame", "id", "template", "x", "y", "angle", "speed", "lastShotFrame", "health")
+
+
+class ApiError(RuntimeError):
+    def __init__(self, code: int, message: str) -> None:
+        super().__init__(message)
+        self.code = code
 
 
 class Game:
@@ -91,6 +99,9 @@ class Game:
                     break
             except OSError:
                 pass
+            except ApiError as e:
+                if e.code != 503:
+                    raise
             if time.time() > deadline:
                 raise RuntimeError("game not in-game after 180 s")
             time.sleep(0.5)
@@ -130,7 +141,7 @@ class Game:
             with urllib.request.urlopen(req, timeout=10) as r:
                 return json.loads(r.read() or "null")
         except urllib.error.HTTPError as e:
-            raise RuntimeError(f"{path} {e.code}: {e.read().decode()}") from None
+            raise ApiError(e.code, f"{path} {e.code}: {e.read().decode()}") from None
 
     def command(self, verb, ids=(), **params):
         r = self.call("/command", {"player": self.me, "ids": list(ids), "verb": verb, "params": params})
@@ -691,10 +702,13 @@ def run_once(scenario, log):
         g.close()
 
 
+CODE = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()[:12]
+
+
 def write(out, name, rows, meta, fields=FIELDS):
     tmp = out / f"{name}.tsv.tmp"  # a partial trace must never look finished to the sweep resume
     with open(tmp, "w") as f:
-        f.write("# " + json.dumps({"scenario": name, **meta}) + "\n" + "\t".join(fields) + "\n")
+        f.write("# " + json.dumps({"scenario": name, "code": CODE, **meta}) + "\n" + "\t".join(fields) + "\n")
         f.writelines("\t".join(map(str, r)) + "\n" for r in rows)
     os.replace(tmp, out / f"{name}.tsv")
 
@@ -757,7 +771,16 @@ def run_scenario(out: Path, name: str) -> str:
 
 def pending(out: Path, names: list[str], repeats: int) -> list[tuple[int, str]]:
     """Jobs without a finished trace; a trace counts as finished only after its atomic rename."""
-    return [(r, n) for r in range(1, repeats + 1) for n in names if not (out / f"rep{r}" / f"{n}.tsv").exists()]
+    return [(r, n) for r in range(1, repeats + 1) for n in names if not finished(out / f"rep{r}" / f"{n}.tsv")]
+
+
+def finished(path: Path) -> bool:
+    """A trace written by other code is rerun: its numbers may not match today's scenarios."""
+    try:
+        with open(path) as f:
+            return json.loads(f.readline()[2:]).get("code") == CODE
+    except (OSError, ValueError):
+        return False
 
 
 Launch = Callable[[tuple[int, str], int], tuple[str, int]]
@@ -770,26 +793,43 @@ def sweep(out: Path, jobs: list[tuple[int, str]], lanes: int, retries: int, laun
         free.put(lane)
     log = out / "runs.jsonl"
 
+    stop = threading.Event()
+
     def work(job: tuple[int, str]) -> bool:
         for attempt in range(1, retries + 2):
+            if stop.is_set():
+                return False
             lane = free.get()
             t0 = time.time()
             try:
                 status, code = launch(job, PORT + 2 * lane)
+            except BaseException:
+                stop.set()  # a worker thread would otherwise pick up the next job
+                raise
             finally:
                 free.put(lane)
             line = {"scenario": job[1], "rep": job[0], "attempt": attempt, "lane": lane, "port": PORT + 2 * lane}
             line |= {"status": status, "seconds": round(time.time() - t0, 1), "exit": code}
+            if status != "ok":
+                line["output"] = str(log.parent / f"rep{job[0]}" / f"{job[1]}.out")
             with open(log, "a") as f:
                 f.write(json.dumps(line) + "\n")
             if status == "ok":
                 return True
-            if code == 2:  # config error; a retry cannot help
+            if code in (2, 143):  # config error or stopped by hand; a retry cannot help
                 return False
         return False
 
     with concurrent.futures.ThreadPoolExecutor(lanes) as pool:
-        return sum(not ok for ok in pool.map(work, jobs))
+        try:
+            return sum(not ok for ok in pool.map(work, jobs))
+        except BaseException:
+            stop.set()
+            pool.shutdown(wait=False, cancel_futures=True)
+            for pid in read_pidfiles(out):
+                if pid != os.getpid():
+                    stop_group(pid)
+            raise
 
 
 def child_launcher(out: Path, timeout: float) -> Launch:
@@ -799,12 +839,15 @@ def child_launcher(out: Path, timeout: float) -> Launch:
         rep, name = job
         (out / f"rep{rep}").mkdir(parents=True, exist_ok=True)
         env = dict(os.environ, ZH_PARITY_PORT=str(port), ZH_PARITY_PIDDIR=str(out / "pids"))
-        proc = subprocess.Popen(
-            [sys.executable, "-I", script, "--out", str(out / f"rep{rep}"), name],
-            env=env,
-            start_new_session=True,
-            preexec_fn=lambda: os.nice(5),  # noqa: PLW1509 - keep the Mac usable while lanes spin
-        )
+        with open(out / f"rep{rep}" / f"{name}.out", "ab") as output:
+            proc = subprocess.Popen(
+                [sys.executable, "-I", script, "--out", str(out / f"rep{rep}"), name],
+                env=env,
+                stdout=output,
+                stderr=subprocess.STDOUT,
+                start_new_session=True,
+                preexec_fn=lambda: os.nice(5),  # noqa: PLW1509 - keep the Mac usable while lanes spin
+            )
         pidfile = Path(env["ZH_PARITY_PIDDIR"]) / str(proc.pid)
         pidfile.parent.mkdir(parents=True, exist_ok=True)
         pidfile.write_text("sweep")
