@@ -1,12 +1,14 @@
 import io
 import json
 import struct
+import subprocess
 import sys
 import tarfile
 import tempfile
 import unittest
 from pathlib import Path
 from typing import Any
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import check_reference as ref
@@ -227,6 +229,20 @@ End
                 info.size = len(data)
                 tar.addfile(info, io.BytesIO(data))
             self.assertIn("data\\ini\\weapon.ini", ref.load_archive(str(path), check_hash=False))
+
+    def test_godot_failure_raises_with_stderr_tail(self):
+        failed = subprocess.CompletedProcess([], 1, stdout="", stderr="SCRIPT ERROR: boom")
+        with (
+            mock.patch.object(ref.subprocess, "run", return_value=failed),
+            self.assertRaisesRegex(RuntimeError, "boom"),
+        ):
+            ref.wargrid_definitions()
+
+    def test_godot_call_has_a_timeout(self):
+        ok = subprocess.CompletedProcess([], 0, stdout='WARGRID_DEFINITIONS {"a": 1}\n', stderr="")
+        with mock.patch.object(ref.subprocess, "run", return_value=ok) as run:
+            self.assertEqual(ref.wargrid_definitions(), {"a": 1})
+        self.assertEqual(run.call_args.kwargs["timeout"], 300)
 
 
 if __name__ == "__main__":

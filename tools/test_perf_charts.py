@@ -2,6 +2,7 @@ import contextlib
 import csv
 import io
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -613,6 +614,14 @@ class RunBenchmarkTest(unittest.TestCase):
         before = self.csv.read_bytes()
         self.assertNotEqual(self.run_script(PERF_LABEL="x").returncode, 0)
         self.assertEqual(self.csv.read_bytes(), before)
+
+    def test_output_is_bracketed_by_uptime_on_pass_and_early_failure(self) -> None:
+        load = re.compile(r"load averages?:")
+        passed = self.run_script(PERF_RECORD="0").stdout.splitlines()
+        self.assertRegex(passed[0], load)
+        self.assertRegex(passed[-1], load)
+        failed = self.run_script(GODOT_BIN="false").stdout.splitlines()
+        self.assertEqual(len([line for line in failed if load.search(line)]), 2)
 
     def test_failed_benchmark_never_records(self) -> None:
         (self.stub / "combat.out").write_text("ERROR: boom\n")

@@ -176,7 +176,12 @@ PY
   relay-down|relay-term)
     drain_ms=500
     start_relay WARGRID_DRAIN_MS=$drain_ms; start_pair "" ""
-    sleep 2
+    i=0
+    until grep -q '^NETCLIENT MAP' "$out/s1.log" 2>/dev/null && grep -q '^NETCLIENT MAP' "$out/s2.log" 2>/dev/null; do
+      i=$((i + 1)); [ $i -lt 100 ] || fail "match did not start"
+      sleep 0.2
+    done
+    sleep 1
     if [ "$scenario" = relay-down ]; then kill -9 "$relay_pid"; stop_limit=2000; else kill -TERM "$relay_pid"; stop_limit=$((drain_ms + 2000)); fi
     down=$(ms)
     wait_exit "$pid1" 20; wait_exit "$pid2" 20
@@ -193,3 +198,4 @@ PY
   *) fail "unknown scenario" ;;
 esac
 echo "NETPLAY PASSED $scenario $(${PYTHON:-python3} -c "import time;print(round(time.time()-$started,1))") s"
+[ -n "$NETPLAY_OUT" ] || rm -rf "$out"

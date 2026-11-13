@@ -203,7 +203,11 @@ def wargrid_definitions() -> dict:
         "--script",
         "res://scripts/debug/dump_definitions.gd",
     ]
-    output = subprocess.run(command, capture_output=True, text=True, check=True).stdout
+    done = subprocess.run(command, capture_output=True, text=True, check=False, timeout=300)
+    if done.returncode != 0:
+        tail = "\n".join(done.stderr.splitlines()[-20:])
+        raise RuntimeError("Godot exited %d:\n%s" % (done.returncode, tail))
+    output = done.stdout
     for line in output.splitlines():
         if line.startswith("WARGRID_DEFINITIONS "):
             return json.loads(line[len("WARGRID_DEFINITIONS ") :])

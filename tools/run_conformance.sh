@@ -37,3 +37,4 @@ for p in default: delay:WARGRID_TEST_DELAY_MS=250 silence:WARGRID_SILENCE_MS=300
   kill "$relay_pid"; wait "$relay_pid" 2>/dev/null; relay_pid=""
 done
 echo "CONFORMANCE PASSED $total"
+rm -rf "$out"
