@@ -1,9 +1,9 @@
 ```text
-Resume record (updated 2026-11-13 Task 9 implemented, uncommitted)
-Branch / base commit / working-tree state: p2-you-clicked / 26eb7e5 / worktree ~/projects/wargrid-wt-p2, Task 9 changes uncommitted
-Last green task / next incomplete task: Task 8 (committed); Task 9 (all gates green, awaiting the coordinator's commit) / rest of gate (a) (test deploy, F5 repro, web bench, rendered rerun), then Task 10
-Changed paths since last commit: tools/audio/synth.py, tools/audio/test_synth.py, tools/test_audio_assets.py, game/audio/voice/units/*.wav (12), game/audio/CREDITS.md, game/scripts/presentation/credits.gd, game/tests/test_credits.gd, docs/reference/p2-verification.md
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 827 / 142233 / 0 / 0 / TESTS PASSED 142233
+Resume record (updated 2026-11-13 Task 10a implemented, uncommitted)
+Branch / base commit / working-tree state: p2-you-clicked / 917b4bd / worktree ~/projects/wargrid-wt-p2, Task 10a changes uncommitted
+Last green task / next incomplete task: Task 9 (committed); Task 10a (all gates green, awaiting the coordinator's commit) / Task 10b, then rest of gate (a) (test deploy, F5 repro, web bench, rendered rerun), then Task 10
+Changed paths since last commit: game/scripts/join_link.gd (+uid), game/tests/test_join_link.gd (+uid), game/tests/run_tests.gd, game/scripts/playtest/playtest_settings.gd, docs/reference/p2-verification.md
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 833 / 142277 / 0 / 0 / TESTS PASSED 142277
 Known red case or blocker: none (tools/test_audio_assets.py fixed in Task 9: layout lists voice/units, 12 credit rows)
 Approved decisions, pre-authorizations used, deferred gates: spec decisions (user, 2026-11-13) in docs/superpowers/specs/2026-11-13-p2-you-clicked-we-heard-design.md; Piper re-download approved (user, 2026-11-13); local commit per GREEN task (milestone prompt); stop gates (a), (b), (c) not reached
 Usage so far (python3 tools/session_usage.py <session files>): n/a
@@ -26,7 +26,10 @@ Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicke
 | 8 | P2 focus card and docs | done (uncommitted) |
 | gate (a) | A/B pick, F5 repro on the test app, web bench both builds, rendered rerun | A/B pick done (user, 2026-11-13); rest not started |
 | 9 | Picked voices into the game | done (uncommitted) |
-| 10 | F5 outcome | not started |
+| 10a | Pure rules: JoinLink and PlaytestSettings.prerelease | done (uncommitted) |
+| 10b | Launcher: prerelease-only fold, ?code=/?relay=, Copy link | not started |
+| 10c | Paste shim (after the user's check C in Firefox) | not started |
+| 10d | F5 outcome and docs | not started |
 | 11 | Exit checks and ledger row | not started |
 | 12 | Gate review and lean pass | not started |
 | gate (b) | Focus card playtest | not started |
@@ -86,3 +89,6 @@ Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicke
 | 9 | invariant: `cmp` of 10 `sfx/*.wav` and 8 `voice/*.wav` against `synth-main-out`; `godot --headless --path game --import` exit 0; `git diff --stat game/audio/voice/units/*.import` | 26eb7e5 + uncommitted (stash tree 5956a0235eb9) | 18 of 18 identical, only the 12 unit WAVs changed, `.import` diff empty |
 | 9 | GREEN: `WARGRID_TEST_ONLY=test_credits` 13/200, `=test_order_voice` 12/88 (CASES/CHECKS), FAILURES 0; `sh tools/run_python_checks.sh` | 26eb7e5 + uncommitted (stash tree 5956a0235eb9) | exit 0, exit 0, `PYTHON TESTS PASSED` |
 | 9 | full `sh tools/run_tests.sh` GREEN; `run_lint.sh`, `run_warnings.sh`, `check_public.sh` exit 0; `git diff main -- game/scripts/simulation game/scripts/net` empty; `git ls-files game/audio` size 13986476 bytes (<= 20000000) | 26eb7e5 + uncommitted (stash tree 5956a0235eb9) | CASES 827 CHECKS 142233 FAILURES 0, exit 0 |
+| 10a | `Godot uri_encode` check before the tests: `"wss://x.example/ws".uri_encode()` | 917b4bd | `wss%3A%2F%2Fx.example%2Fws` (matches the plan), `uri_decode` inverts it |
+| 10a | `WARGRID_TEST_ONLY=test_join_link` RED (stubs, `prerelease` returns false) | 917b4bd + uncommitted | CASES 6 CHECKS 42 FAILURES 18 (JL1-JL6), no SCRIPT ERROR, exit 1 |
+| 10a | `test_join_link` GREEN; `WARGRID_TEST_ONLY=test_playtest.gd` unchanged; full `sh tools/run_tests.sh`; `run_lint.sh`, `run_warnings.sh`, `check_public.sh` exit 0; `git diff main -- game/scripts/simulation game/scripts/net` empty | 917b4bd + uncommitted (index tree 330609078ffe) | join_link CASES 6 CHECKS 42 FAILURES 0; test_playtest CASES 14 CHECKS 217 FAILURES 0; full CASES 833 CHECKS 142277 FAILURES 0, exit 0 |

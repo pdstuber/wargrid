@@ -4,10 +4,13 @@ const AudioSettings = preload("res://scripts/presentation/audio_settings.gd")
 const COMMIT_PATH := "res://build_commit.txt"
 const SECTION := "playtest"
 
+static func prerelease(version: String = str(ProjectSettings.get_setting("application/config/version"))) -> bool:
+	return version.ends_with("-dev")
+
 static func enabled(version: String = str(ProjectSettings.get_setting("application/config/version"))) -> bool:
 	var config := ConfigFile.new()
 	var stored: Variant = config.get_value(SECTION, "enabled") if config.load(AudioSettings.path) == OK and config.has_section_key(SECTION, "enabled") else null
-	return stored if stored is bool else version.ends_with("-dev")
+	return stored if stored is bool else prerelease(version)
 
 static func save_enabled(on: bool) -> void:
 	var config := ConfigFile.new()
