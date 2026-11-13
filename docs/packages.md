@@ -38,16 +38,16 @@ Engine packages, in order, at most one between two day packages. Headless, unatt
 
 One line each; scope in blueprint §7. In this order (approved with the packages design, 2026-11-11):
 
-1. Order controls, "Orders that feel yours": control groups (Zero Hour layout), Shift-queued move points, Shift-placed building queue, Ctrl force-attack, idle-builder key. Rider: forward budget table from P2's measurement.
-2. Movement packages after P5, until the toggle becomes the default; then the golden scenarios, with browser digests (simulation review X7).
-3. Minimal real HUD (credits and power, production buttons with hotkeys, minimap rectangle, base-under-attack alert), with controller flattening (FIX-6) and the `SimPump` seam (worker thread stage 1). The worker thread itself only after a browser measurement shows a main-thread win ([worker thread design](superpowers/specs/2026-11-12-worker-thread-design.md)).
-4. Unit avoidance behind a toggle.
-5. Fog of war and one targetability predicate, both before ground batch A.
-6. Ground batch A, in packages of two or three units; the roster stays at four per faction until three recorded 1v1 matches are reviewed.
-7. Art pass (F6 docks and piles, F7 Chinook look).
-8. Ground batch B.
-9. Bots.
-10. 3v3 online.
+1. **Order controls:** "Orders that feel yours": control groups (Zero Hour layout), Shift-queued move points, Shift-placed building queue, Ctrl force-attack, idle-builder key. Rider: forward budget table from P2's measurement.
+2. **Movement packages:** after P5, until the toggle becomes the default; then the golden scenarios, with browser digests (simulation review X7).
+3. **Minimal real HUD:** credits and power, production buttons with hotkeys, minimap rectangle, base-under-attack alert, with controller flattening (FIX-6) and the `SimPump` seam (worker thread stage 1). The worker thread itself only after a browser measurement shows a main-thread win ([worker thread design](superpowers/specs/2026-11-12-worker-thread-design.md)).
+4. **Unit avoidance:** behind a toggle.
+5. **Fog of war:** fog of war plus one targetability predicate, both before ground batch A.
+6. **Ground batch A:** in packages of two or three units; the roster stays at four per faction until three recorded 1v1 matches are reviewed.
+7. **Art pass:** F6 docks and piles, F7 Chinook look.
+8. **Ground batch B**
+9. **Bots**
+10. **3v3 online**
 
 Not ordered yet (placed 2026-11-12): map pack, Is Wargrid healthy, What's new, Steam Deck controls spike (after P3).
 

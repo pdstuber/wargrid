@@ -45,10 +45,10 @@ Wargrid is an isometric RTS written in Godot 4 and typed GDScript. Its design fo
 
 Early development; the latest build is on the [Releases](https://github.com/pdstuber/wargrid/releases) page. Playable today: three factions, skirmish against a bot and online 1v1 on Dry Wells, Broken Crown or Ashfall. The long-term target is 3v3 online, friends against bots; scope and milestones are in the [blueprint](docs/blueprint.md).
 
-What is done, what comes next and what is only an idea (generated from `docs/roadmap.toml`):
+What is done and what comes next (generated from [packages](docs/packages.md) and [STATUS](docs/STATUS.md)):
 
 <!-- roadmap:begin -->
-**7 of 15 parts done**
+**10 of 25 parts done**
 
 | | What | State |
 | --- | --- | --- |
@@ -59,14 +59,24 @@ What is done, what comes next and what is only an idea (generated from `docs/roa
 | ✅ | Teams and big maps | Done |
 | ✅ | Choose your faction | Done |
 | ✅ | Releases and sound | Done |
-| ⏭ | Better graphics and art style | Next |
-| 📋 | A faster, steadier engine core | Planned |
-| 📋 | Smarter unit movement | Planned |
-| 📋 | Better controls | Planned |
-| 💡 | A Generals-style HUD and fog of war | Idea |
-| 💡 | More units, aircraft and superweapons | Idea |
-| 💡 | Bots worth playing, with difficulty levels | Idea |
-| 💡 | 3v3 online matches | Idea |
+| ✅ | Tell us what you see | Done |
+| ✅ | Laborers that pay | Done |
+| ✅ | You clicked, we heard | Done |
+| ⏭ | New launcher | Next |
+| 📋 | Quick rematch | Planned |
+| 📋 | Camera that follows you | Planned |
+| 📋 | Smooth motion | Planned |
+| 📋 | Smarter paths (toggle) | Planned |
+| 💡 | Order controls | Later |
+| 💡 | Movement packages | Later |
+| 💡 | Minimal real HUD | Later |
+| 💡 | Unit avoidance | Later |
+| 💡 | Fog of war | Later |
+| 💡 | Ground batch A | Later |
+| 💡 | Art pass | Later |
+| 💡 | Ground batch B | Later |
+| 💡 | Bots | Later |
+| 💡 | 3v3 online | Later |
 <!-- roadmap:end -->
 
 <!-- perf-table:begin -->
