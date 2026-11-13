@@ -7,31 +7,31 @@ Status: **UPDATE 2026-11-11 (PERFORMANCE NEXT, see the History rows at the end):
 
 | Area | Status | Budget used | vs last run | As of |
 | --- | --- | --- | --- | --- |
-| **Combat, huge battles** | 🔴 Over | ██████████▶ 154% | 🔻 1% better (busy host) | 2026-11-13 |
+| **Combat, huge battles** | 🔴 Over | ██████████▶ 155% | ➖ same | 2026-11-13 |
 | **Background upkeep, huge crowds** | 🔴 Over | ██████████▶ 144% | 🆕 first run | 2026-11-08 |
 | Background upkeep, armies on the move | 🟡 Close | █████████░ 98% | 🆕 first run | 2026-11-08 |
-| Combat, normal fights | 🟢 OK | ███████░░░ 71% | 🔺 1% worse (busy host) | 2026-11-13 |
+| Combat, normal fights | 🟢 OK | ███████░░░ 70% | ➖ same | 2026-11-13 |
 | Drawing the screen | 🟢 OK | ███████░░░ 70% | 🔺 9% worse | 2026-11-13 |
 | Drawing the screen, big map (Ashfall) | 🟢 OK | ██████░░░░ 67% | 🔻 1% better | 2026-11-13 |
-| Combat, normal fights, slowest moments | 🟢 OK | █████░░░░░ 56% | ➖ same (busy host) | 2026-11-13 |
-| Unit movement | 🟢 OK | ███░░░░░░░ 37% | 🔻 2% better (busy host) | 2026-11-13 |
-| Unit movement, slowest moments | 🟢 OK | ██░░░░░░░░ 24% | 🔺 2% worse (busy host) | 2026-11-13 |
-| Online play overhead | 🟢 OK | █░░░░░░░░░ 11% | 🔺 2% worse (busy host) | 2026-11-13 |
+| Combat, normal fights, slowest moments | 🟢 OK | █████░░░░░ 57% | 🔺 1% worse | 2026-11-13 |
+| Unit movement | 🟢 OK | ███░░░░░░░ 38% | 🔺 1% worse | 2026-11-13 |
+| Unit movement, slowest moments | 🟢 OK | ██░░░░░░░░ 25% | 🔺 3% worse | 2026-11-13 |
+| Online play overhead | 🟢 OK | █░░░░░░░░░ 10% | 🔻 3% better | 2026-11-13 |
 
 Percent of the limit for a low-end device, estimated from this Mac (see the ledger for how). 🔺 = used more of the limit than last run. Small changes can be run-to-run noise. As of = when that area was last measured; areas drawn from rendered runs update only at milestone gates.
 
 Details:
 
-- movement p95: 37% of budget (Tighter gates, 2026-11-13), 2% faster than auto c88ba13 (worst vs worst); run-to-run spread up to 50%, busy host (load 2.6)
-- movement p99: 24% of budget (Tighter gates, 2026-11-13), 2% slower than auto c88ba13 (worst vs worst); run-to-run spread up to 50%, busy host (load 2.6)
-- combat gated p95: 71% of budget (Tighter gates, 2026-11-13), 1% slower than auto c88ba13 (worst vs worst); run-to-run spread up to 58%, busy host (load 2.6)
-- combat gated p99: 56% of budget (Tighter gates, 2026-11-13), unchanged vs auto c88ba13 (worst vs worst); run-to-run spread up to 58%, busy host (load 2.6)
-- combat stress p95: 154% of budget, exceeded (Tighter gates, 2026-11-13), 1% faster than auto c88ba13 (worst vs worst); run-to-run spread up to 41%, busy host (load 2.6)
+- movement p95: 38% of budget (auto 0df5592, 2026-11-13), 1% slower than Tighter gates (worst vs worst); run-to-run spread up to 50%
+- movement p99: 25% of budget (auto 0df5592, 2026-11-13), 3% slower than Tighter gates (worst vs worst); run-to-run spread up to 50%
+- combat gated p95: 70% of budget (auto 0df5592, 2026-11-13), unchanged vs Tighter gates (worst vs worst); run-to-run spread up to 58%
+- combat gated p99: 57% of budget (auto 0df5592, 2026-11-13), 1% slower than Tighter gates (worst vs worst); run-to-run spread up to 58%
+- combat stress p95: 155% of budget, exceeded (auto 0df5592, 2026-11-13), unchanged vs Tighter gates (worst vs worst); run-to-run spread up to 41%
 - plumbing, movement layouts: 98% of budget (perf spike T2, 2026-11-08), no previous run; run-to-run spread not measured
 - plumbing, horde: 144% of budget, exceeded (perf spike T2, 2026-11-08), no previous run; run-to-run spread not measured
 - rendered tick-frame p95: 70% of budget (P2 gate, 2026-11-13), 9% slower than P1 gate (worst vs worst); run-to-run spread not measured
 - Ashfall tick-frame p95: 67% of budget (P2 gate, 2026-11-13), 1% faster than P1 gate (worst vs worst); run-to-run spread not measured
-- lockstep p99: 11% of budget (Tighter gates, 2026-11-13), 2% slower than auto c88ba13 (worst vs worst); run-to-run spread not measured, busy host (load 2.6)
+- lockstep p99: 10% of budget (auto 0df5592, 2026-11-13), 3% faster than Tighter gates (worst vs worst); run-to-run spread not measured
 <!-- perf-charts:end -->
 
 ## Target device (measured 2026-11-06)
