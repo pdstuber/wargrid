@@ -32,6 +32,12 @@ def first_difference(first: dict, second: dict) -> str | None:
     return None
 
 
+def ring_divergence(first: dict, second: dict) -> int | None:
+    a = dict(row.split("\t") for row in first.get("hash_ring", []))
+    b = dict(row.split("\t") for row in second.get("hash_ring", []))
+    return next((int(t) for t in sorted(set(a) & set(b), key=int) if a[t] != b[t]), None)
+
+
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         print("usage: desync_diff.py A.json B.json", file=sys.stderr)
@@ -40,6 +46,9 @@ if __name__ == "__main__":
     for path in sys.argv[1:]:
         with open(path) as handle:
             reports.append(json.load(handle))
+    tick = ring_divergence(*reports)
+    if tick is not None:
+        print(f"ring diverges at tick {tick}")
     difference = first_difference(*reports)
     if difference is None:
         print("IDENTICAL")

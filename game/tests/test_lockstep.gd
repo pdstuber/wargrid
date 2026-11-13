@@ -252,6 +252,13 @@ func test_desync_detected(runner) -> bool:
 		runner.check(report.tick == 60 and report.snapshot.tick == 60, "L6 seat %d report is for hash tick 60" % c.seat)
 	runner.check(net.clients[0].ls.command_log() == net.clients[1].ls.command_log(), "L6 report command logs equal")
 	runner.check(net.clients[0].ls.desync_report().hash_rows.size() == 3, "L6 hash rows 0, 30, 60")
+	var rings: Array = net.clients.map(func(c) -> Array: return c.ls.desync_report(c.sim).hash_ring)
+	var first_diff: int = -1
+	for i in mini(rings[0].size(), rings[1].size()):
+		if rings[0][i] != rings[1][i]:
+			first_diff = int(rings[0][i].split("\t")[0])
+			break
+	runner.check(first_diff == 41, "L6 rings first differ at tick %d (want 41)" % first_diff)
 	return true
 
 func test_left_after_tick(runner) -> bool:

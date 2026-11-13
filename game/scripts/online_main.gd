@@ -106,7 +106,7 @@ func _write_report() -> String:
 	return ProjectSettings.globalize_path(path)
 
 func _report() -> Dictionary:
-	var report: Dictionary = _lockstep.desync_report()
+	var report: Dictionary = _lockstep.desync_report(simulation)
 	report.merge(MatchSettings.report_fields(map_path.get_file().get_basename(), match_seed, starts))
 	return report
 

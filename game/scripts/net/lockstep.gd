@@ -173,8 +173,10 @@ func command_log() -> Array[Dictionary]:
 func latency_samples() -> PackedInt64Array:
 	return _latency
 
-func desync_report() -> Dictionary:
-	return {"seat": _seat, "tick": _desync_tick, "hash_rows": hash_rows(), "command_log": _command_log, "snapshot": _hash_snapshot}
+func desync_report(sim: Simulation = null) -> Dictionary:
+	var report := {"seat": _seat, "tick": _desync_tick, "hash_rows": hash_rows(), "command_log": _command_log, "snapshot": _hash_snapshot}
+	if sim != null: report.hash_ring = sim.hash_ring()
+	return report
 
 func _ended() -> bool:
 	return _status.begins_with("ended")

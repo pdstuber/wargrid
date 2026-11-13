@@ -213,7 +213,7 @@ func _write_logs() -> void:
 	if _status == "ended_desync" and _args.has("report-dir"):
 		var file := FileAccess.open("%s/desync-seat%d.json" % [_args["report-dir"], _seat], FileAccess.WRITE)
 		if file == null: return
-		var report: Dictionary = _lockstep.desync_report()
+		var report: Dictionary = _lockstep.desync_report(_sim)
 		report.merge(MatchSettings.report_fields(_match_map, _match_seed, _chosen))
 		file.store_string(JSON.stringify(report, "", true, true))
 		file.close()

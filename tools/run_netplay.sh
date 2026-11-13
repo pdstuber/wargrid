@@ -125,10 +125,12 @@ for seat in (1, 2):
     report = json.load(open(f"{sys.argv[1]}/desync-seat{seat}.json"))
     assert report["tick"] == 60
     assert report["map"] == "skirmish" and isinstance(report["seed"], int) and report["starts"] == []
+    assert len(report["hash_ring"]) > 0
 PY
     diff_out=$(${PYTHON:-python3} "$repo_root/tools/desync_diff.py" "$out/desync-seat1.json" "$out/desync-seat2.json")
     [ $? -eq 1 ] || fail "desync_diff should exit 1"
     case "$diff_out" in *players*) ;; *) fail "desync_diff did not name players: $diff_out" ;; esac
+    case "$diff_out" in *"ring diverges at tick 41"*) ;; *) fail "desync_diff did not name ring tick 41: $diff_out" ;; esac
     echo "$diff_out" ;;
   version)
     start_relay; start_pair "" "--build other"
