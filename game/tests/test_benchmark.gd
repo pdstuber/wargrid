@@ -5,6 +5,7 @@ const Stats = preload("res://scripts/debug/timing_stats.gd")
 const Workload = preload("res://scripts/debug/movement_workload.gd")
 const CombatWorkload = preload("res://scripts/debug/combat_workload.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
+const TeamMatch = preload("res://scripts/debug/team_match.gd")
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Navigation = preload("res://scripts/simulation/grid_navigation.gd")
 const Economy = preload("res://tests/economy_fixture.gd")
@@ -14,7 +15,7 @@ const Probe = preload("res://scenes/movement_benchmark.tscn")
 const MovementBenchmark = preload("res://scripts/debug/movement_benchmark.gd")
 
 func cases() -> Array[Callable]:
-	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_transports_fixture, test_defences_fixture, test_skirmish3v3_fixture, test_combat_work_ceiling, test_volley_retaliation_work, test_horde_render_layout, test_horde_render_500_counts, test_workload_asserts_pure, test_settled_matches_snapshot_predicate, test_gate_values, test_draw_call_ceiling, test_cpu_frame_pairs_draw_with_its_tick, test_web_run_is_report_only, test_interpolation_arg, test_benchmark_runs_without_interpolation, test_units_reported_are_units_run, test_horde_camera_follows_army_when_zoomed, test_worst_tick, test_over_budget_line]
+	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_transports_fixture, test_defences_fixture, test_skirmish3v3_fixture, test_combat_work_ceiling, test_volley_retaliation_work, test_horde_render_layout, test_horde_render_500_counts, test_workload_asserts_pure, test_settled_matches_snapshot_predicate, test_gate_values, test_draw_call_ceiling, test_cpu_frame_pairs_draw_with_its_tick, test_web_run_is_report_only, test_interpolation_arg, test_benchmark_runs_without_interpolation, test_units_reported_are_units_run, test_horde_camera_follows_army_when_zoomed, test_worst_tick, test_over_budget_line, test_late_game_layout]
 
 func test_statistics(runner) -> bool:
 	runner.check(Stats.summary(PackedFloat64Array()) == {"n": 0, "p50": 0.0, "p95": 0.0, "p99": 0.0, "max": 0.0}, "BM1 empty")
@@ -372,4 +373,33 @@ func test_over_budget_line(runner) -> bool:
 	runner.check(Stats.over_budget_line("open", {"p95": 1.82, "p99": 3.64}) == "", "BM20 at the budget prints nothing")
 	runner.check(Stats.over_budget_line("open", {"p95": 2.0, "p99": 3.0}) == "OVER BUDGET open p95=2.000 p99=3.000 budget=1.82/3.64", "BM20 p95 over the budget")
 	runner.check(Stats.over_budget_line("dense", {"p95": 1.0, "p99": 3.65}).begins_with("OVER BUDGET dense "), "BM20 p99 over the budget")
+	return true
+
+func test_late_game_layout(runner) -> bool:
+	var sim: RefCounted = CombatWorkload.create("late_game_3v3")
+	var view: Dictionary = sim.view_state()
+	var teams := {}
+	var factions := {}
+	for player: Dictionary in view.players:
+		teams[player.team] = teams.get(player.team, 0) + 1
+		factions[player.faction] = factions.get(player.faction, 0) + 1
+	runner.check(view.players.size() == 6 and teams == {1: 3, 2: 3} and factions == {"usa": 2, "china": 2, "frc": 2}, "BM22 six seats, two teams, usa china frc twice")
+	var units := {}
+	var completed := {}
+	for unit: Dictionary in sim.snapshot().entities:
+		if not unit.kind.ends_with("_builder"): units[unit.owner] = units.get(unit.owner, 0) + 1
+	for building: Dictionary in sim.snapshot().buildings:
+		if building.completed: completed[[building.owner, building.kind]] = true
+	var buildings_ok: bool = true
+	for entry: Dictionary in TeamMatch.SEATS:
+		var wanted: Array[String] = ["barracks", "factory", "supply_center", "defence"]
+		if entry.faction != "frc": wanted.append("power_plant")
+		for suffix: String in wanted: buildings_ok = buildings_ok and completed.has([entry.seat, entry.faction + "_" + suffix])
+		runner.check(units.get(entry.seat, 0) == 35, "BM22 seat %d starts with 35 army units" % entry.seat)
+	runner.check(buildings_ok, "BM22 every seat has its completed base buildings")
+	var shots: int = 0
+	for tick in range(60):
+		TeamMatch.step(sim)
+		shots += sim.combat_events().filter(func(event: Dictionary) -> bool: return event.type == "shot").size()
+	runner.check(shots > 0, "BM22 shots land inside 60 ticks")
 	return true

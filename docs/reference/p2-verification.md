@@ -1,13 +1,13 @@
 ```text
-Resume record (updated 2026-11-13 Task 4 implemented, uncommitted)
-Branch / base commit / working-tree state: p2-you-clicked / cbb8fc3 / worktree ~/projects/wargrid-wt-p2, Task 4 changes uncommitted
-Last green task / next incomplete task: Task 3 (committed cbb8fc3); Task 4 (green, awaiting the coordinator's commit) / Task 5
-Changed paths since last commit: game/scripts/presentation/music_player.gd, game/scripts/skirmish_main.gd, game/scripts/playtest/session_form.gd, game/tests/test_audio_settings.gd, game/tests/test_playtest_overlay.gd, docs/guide/05-presentation.md, docs/reference/p2-verification.md
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 824 / 142193 / 0 / 0 / TESTS PASSED 142193
+Resume record (updated 2026-11-13 Task 5 implemented, uncommitted)
+Branch / base commit / working-tree state: p2-you-clicked / b483f99 / worktree ~/projects/wargrid-wt-p2, Task 5 changes uncommitted
+Last green task / next incomplete task: Task 4 (committed b483f99); Task 5 (green, awaiting the coordinator's commit) / Task 6
+Changed paths since last commit: game/scripts/debug/combat_workload.gd, game/benchmarks/run_late_game.gd (+ .uid), game/tests/test_benchmark.gd, docs/reference/p2-verification.md
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 825 / 142202 / 0 / 0 / TESTS PASSED 142202
 Known red case or blocker: none
 Approved decisions, pre-authorizations used, deferred gates: spec decisions (user, 2026-11-13) in docs/superpowers/specs/2026-11-13-p2-you-clicked-we-heard-design.md; Piper re-download approved (user, 2026-11-13); local commit per GREEN task (milestone prompt); stop gates (a), (b), (c) not reached
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: coordinator commits Task 4, then Task 5
+Next exact action: coordinator commits Task 5, then Task 6
 ```
 
 Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicked-we-heard.md). Spec: [design](../superpowers/specs/2026-11-13-p2-you-clicked-we-heard-design.md). Scratch and logs: `~/projects/wargrid-p2-work/`.
@@ -20,7 +20,7 @@ Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicke
 | 2 | Order voice in the game: player, hooks, placeholder WAVs | done (uncommitted) |
 | 3 | Launcher sections and Advanced fold | done (uncommitted) |
 | 4 | F4 music shuffle, F1 scale legend | done (uncommitted) |
-| 5 | Late-game 3v3 canary (report-only) | not started |
+| 5 | Late-game 3v3 canary (report-only) | done (uncommitted) |
 | 6 | Browser rider prep: bench lines, two web exports, native run | not started |
 | 7 | Voice pipeline and A/B page | not started |
 | 8 | P2 focus card and docs | not started |
@@ -59,3 +59,7 @@ Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicke
 | 4 | `WARGRID_TEST_ONLY=test_audio_settings` and `=test_scale_legend` RED with stubs (`shuffled` returns a copy, `SCALE_LEGEND` const, no label); without stubs the suites fail to parse | cbb8fc3 + uncommitted | audio 12/40 FAILURES 1 (MU1 seeds differ); legend 1/1 FAILURES 1 (PO18); MU2 holds under the identity stub (its checks are order-agnostic), exit 1 |
 | 4 | `test_audio_settings` 12/40, `test_scale_legend` 1/2, `test_sound` 24/179, FAILURES 0 | cbb8fc3 + uncommitted | exit 0 |
 | 4 | full `sh tools/run_tests.sh` GREEN; `run_lint.sh`, `run_warnings.sh`, `check_public.sh` exit 0; `git diff main -- game/scripts/simulation game/scripts/net` empty | cbb8fc3 + uncommitted | CASES 824 CHECKS 142193 FAILURES 0, exit 0 |
+| 5 | `WARGRID_TEST_ONLY=test_late_game_layout` RED (unknown layout) | b483f99 + uncommitted | CASES 1 CHECKS 0 FAILURES 2 (assertion on the layout name, `view_state` on Nil), exit 1 |
+| 5 | `WARGRID_TEST_ONLY=test_late_game_layout` GREEN | b483f99 + uncommitted | CASES 1 CHECKS 9 FAILURES 0, exit 0 |
+| 5 | full `sh tools/run_tests.sh` GREEN; `run_lint.sh`, `run_warnings.sh`, `check_public.sh` exit 0; `git diff main -- game/scripts/simulation game/scripts/net` empty; `test_team_match`, `test_replay`, `test_state_hash`, `test_view_rows` unchanged | b483f99 + uncommitted | CASES 825 CHECKS 142202 FAILURES 0, exit 0 |
+| 5 | late-game 3v3 canary, one run alone (headless, `run_late_game.gd`, report-only, no budget); no godot or generalszh process before; uptime load averages 2.25 2.33 2.35 before, 2.15 2.31 2.34 after (host under load) | b483f99 + uncommitted | exit 0, `LATE GAME CANARY DONE`; `LATE GAME 3v3 tick_ms={"max":7.575,"n":1800,"p50":1.475,"p95":3.362,"p99":5.581} mean_ms=1.809 shots_window=1666 deaths_window=52 bot_commands_window=94 alive_start=216 alive_end=203` (216 = 210 army + 6 builders); `WORST TICK late_game late_game_3v3 ms=7.575 tick=1560`; PROFILE top five: `step` mean 1.6905 ms (100%), `step.advance` 0.5562 (32.9%), `step.combat_plan` 0.5077 (30.0%), `step.combat_fire` 0.3334 (19.7%), `step.production` 0.1522 (9.0%) |
