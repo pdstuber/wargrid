@@ -80,7 +80,7 @@ func _pair(_runner, max_delay: int = 0) -> Net:
 	return net
 
 func cases() -> Array[Callable]:
-	return [test_delay_and_prefill, test_two_clients_equal_hashes, test_own_command_uses_wire_form, test_cross_seat_same_tick, test_many_commands_one_tick, test_desync_detected, test_left_after_tick, test_protocol_errors, test_latency_samples, test_left_with_missing_packets, test_rejections_reported, test_submit_before_start, test_relay_lost_keeps_earlier_end, test_left_before_start]
+	return [test_delay_and_prefill, test_two_clients_equal_hashes, test_own_command_uses_wire_form, test_cross_seat_same_tick, test_many_commands_one_tick, test_desync_detected, test_left_after_tick, test_protocol_errors, test_latency_samples, test_left_with_missing_packets, test_rejections_reported, test_submit_before_start, test_relay_lost_keeps_earlier_end, test_left_before_start, test_hash_ring_names_injected_tick, test_hash_ring_shape, test_hash_ring_outside_snapshot]
 
 func _scripts(net: Net) -> void:
 	net.clients[0].behavior = func(c) -> void: ScriptedHuman.issue(c.seat_sim)
@@ -370,4 +370,81 @@ func test_left_before_start(runner) -> bool:
 	var edge: Array = _fresh()
 	edge[1].receive('{"type":"left","seat":2,"after_tick":4}')
 	runner.check(not edge[1].left_before_start(), "L14 after_tick 4 with delay 4 is not before the start")
+	return true
+
+func _ring_world(ticks: int) -> RefCounted:
+	var sim = Skirmish.create(true, "ai")
+	for i in ticks:
+		Skirmish.issue_opponents(sim, [1, 2])
+		sim.step()
+	return sim
+
+func _enqueue_unit(sim: RefCounted) -> void:
+	for building: Dictionary in sim._buildings.values():
+		if building.completed and building.queue.is_empty() and building.kind == "usa_command_center":
+			building.queue.append({"id": sim._next_production_id, "kind": "usa_builder", "paid_cost": 0, "work": 0})
+			sim._next_production_id += 1
+			return
+
+func _first_with(items: Dictionary, field: String) -> Dictionary:
+	for item: Dictionary in items.values():
+		if item.has(field) and not (item[field] is Array and item[field].is_empty()): return item
+	return {}
+
+func _ring_mutations() -> Dictionary:
+	return {
+		"unit position by 1e-9": func(s) -> bool: s._entities.values()[0].position[0] += 1e-9; return true,
+		"unit hp": func(s) -> bool: s._entities.values()[0].hp -= 1; return true,
+		"unit owner": func(s) -> bool: s._entities.values()[0].owner = 3 - s._entities.values()[0].owner; return true,
+		"building hp": func(s) -> bool: s._buildings.values()[0].hp -= 1; return true,
+		"building work": func(s) -> bool: s._buildings.values()[0].work += 1; return true,
+		"production head work": func(s) -> bool:
+			var building: Dictionary = _first_with(s._buildings, "queue")
+			if building.is_empty(): return false
+			building.queue[0].work += 1
+			return true,
+		"source boxes": func(s) -> bool: s._sources.values()[0].boxes -= 1; return true,
+		"player credits": func(s) -> bool: s._players[2].credits += 1; return true,
+		"rng": func(s) -> bool: s._rng ^= 1; return true,
+	}
+
+func test_hash_ring_names_injected_tick(runner) -> bool:
+	var mutations: Dictionary = _ring_mutations()
+	for name: String in mutations:
+		var a = _ring_world(50)
+		var b = _ring_world(50)
+		_enqueue_unit(a)
+		_enqueue_unit(b)
+		runner.check(mutations[name].call(b), "HR1 %s: something to mutate at tick 50" % name)
+		for i in 10:
+			Skirmish.issue_opponents(a, [1, 2])
+			Skirmish.issue_opponents(b, [1, 2])
+			a.step()
+			b.step()
+		var ra: PackedStringArray = a.hash_ring()
+		var rb: PackedStringArray = b.hash_ring()
+		runner.check(ra.size() == 60 and rb.size() == 60 and ra.slice(0, 50) == rb.slice(0, 50) and ra[50] != rb[50], "HR1 %s change at tick 50 shows first at ring row 51" % name)
+	return true
+
+func test_hash_ring_shape(runner) -> bool:
+	var a = _ring_world(100)
+	var b = _ring_world(100)
+	var rows: PackedStringArray = a.hash_ring()
+	var pattern := RegEx.create_from_string("^\\d+\t[0-9a-f]{16}$")
+	var ordered: bool = rows.size() == 64
+	for i in rows.size():
+		ordered = ordered and rows[i].get_slice("\t", 0) == str(37 + i) and pattern.search(rows[i]) != null
+	runner.check(ordered, "HR2 ring holds the last 64 ticks, oldest first")
+	runner.check(rows == b.hash_ring(), "HR2 identical sims give identical rings")
+	var short: PackedStringArray = _ring_world(10).hash_ring()
+	runner.check(short.size() == 10 and short[0].begins_with("1\t") and short[9].begins_with("10\t"), "HR2 a young sim holds rows 1..10")
+	return true
+
+func test_hash_ring_outside_snapshot(runner) -> bool:
+	var a = _ring_world(70)
+	var b = _ring_world(70)
+	a.hash_ring()
+	var keys: Array = a.snapshot().keys().filter(func(key: String) -> bool: return "ring" in key or "hash" in key)
+	runner.check(keys.is_empty(), "HR3 the ring is not state (snapshot keys %s)" % str(keys))
+	runner.check(StateHash.digest(a.snapshot()) == StateHash.digest(b.snapshot()), "HR3 digest equal with rings computed")
 	return true

@@ -16,6 +16,8 @@ const Allocation = preload("res://scripts/simulation/destination_allocation.gd")
 const Navigation = preload("res://scripts/simulation/grid_navigation.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
 const ViewRows = preload("res://scripts/simulation/view_rows.gd")
+const StateHash = preload("res://scripts/simulation/state_hash.gd")
+const HASH_RING_SIZE: int = 64
 const PATH_REQUESTS_PER_TICK: int = 8
 const START_DELAY_TICKS: int = 2
 var _navigation: RefCounted
@@ -49,8 +51,10 @@ var _navigation_local: int = 0
 var _map: Dictionary = {}
 const RNG_SEED: int = 0x2545F491
 var _rng: int = RNG_SEED
+var _hash_ring := PackedInt64Array()
 
 func _init(blocked_cells: Array[Vector2i] = [], size: Vector2i = Navigation.SIZE) -> void:
+	_hash_ring.resize(HASH_RING_SIZE)
 	_navigation = Navigation.new(blocked_cells, size)
 	for cell: Variant in _navigation.snapshot().blocked_cells:
 		_terrain_cells.append(Vector2i(cell[0],cell[1]))
@@ -575,7 +579,41 @@ func step() -> void:
 	if _match != null and _match.status == "ongoing": _evaluate_match()
 	Profiler.end(&"step.evaluate_match", zone)
 	_tick += 1
+	zone = Profiler.begin()
+	_hash_ring[_tick % HASH_RING_SIZE] = _tick_hash()
+	Profiler.end(&"step.hash_ring", zone)
 	Profiler.end(&"step", total)
+
+# Live state, never the snapshot; floats by raw bits so a change below core_check's 1/1024 shows at its tick.
+func _tick_hash() -> int:
+	var words := PackedInt64Array([_tick, _rng])
+	var floats := PackedFloat64Array()
+	for unit: Dictionary in _entities.values():
+		words.append(unit.id)
+		words.append(unit.owner)
+		words.append(unit.hp)
+		floats.append(unit.position[0] + 0.0)
+		floats.append(unit.position[1] + 0.0)
+	for building: Dictionary in _buildings.values():
+		words.append(building.id)
+		words.append(building.hp)
+		words.append(building.get("work", 0))
+		var queue: Array = building.get("queue", [])
+		words.append(queue[0].work if not queue.is_empty() else -1)
+	for source: Dictionary in _sources.values():
+		words.append(source.id)
+		words.append(source.boxes)
+	for player: Dictionary in _players.values():
+		words.append(player.id)
+		words.append(player.credits)
+	return (hash(words) << 32) | hash(floats.to_byte_array().to_int64_array())
+
+func hash_ring() -> PackedStringArray:
+	var rows := PackedStringArray()
+	for t in range(maxi(1, _tick - HASH_RING_SIZE + 1), _tick + 1):
+		var h: int = _hash_ring[t % HASH_RING_SIZE]
+		rows.append("%d\t%08x%08x" % [t, (h >> 32) & StateHash.MASK, h & StateHash.MASK])
+	return rows
 
 func _assign_route(unit: Dictionary) -> void:
 	var from := Vector2(unit.position[0], unit.position[1])
