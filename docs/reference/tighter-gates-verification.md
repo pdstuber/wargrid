@@ -1,13 +1,13 @@
 ```text
-Resume record (updated 2026-11-13, plan written; no task started)
+Resume record (updated 2026-11-13, Task 0 green)
 Branch / base commit / working-tree state: tighter-gates / 10b9423 / plan and this file uncommitted (the preparation commits them)
-Last green task / next incomplete task: none / Task 0
+Last green task / next incomplete task: Task 0 / Task 1
 Changed paths since last commit: docs/superpowers/plans/2026-11-13-tighter-gates.md, docs/reference/tighter-gates-verification.md
-Last command / cases / checks / failures / exit / marker: none (plan writing ran only read-only checks, see evidence rows)
+Last command / cases / checks / failures / exit / marker: full suite with four traces / 849 / 144207 / 0 / 0 / TESTS PASSED 144207
 Known red case or blocker: none
 Approved decisions, pre-authorizations used, deferred gates: questionnaire 2026-11-13 (plan "Decisions"); one local commit per GREEN task (never push); CI run, Windows behaviour, CI timing and the cancel rule deferred to a pushed branch (morning)
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: Task 0 Step 1
+Next exact action: Task 1 Step 1
 ```
 
 Plan: [tighter gates](../superpowers/plans/2026-11-13-tighter-gates.md). Spec: [tooling audit](tooling-audit.md). Logs: `~/projects/wargrid-overnight-work/tighter-gates/logs/` (outside the repository).
@@ -16,7 +16,7 @@ Plan: [tighter gates](../superpowers/plans/2026-11-13-tighter-gates.md). Spec: [
 
 | Task | What | Model | Status |
 |---|---|---|---|
-| 0 | Baseline: timed suite, traces, load | Sonnet | not started |
+| 0 | Baseline: timed suite, traces, load | Sonnet | GREEN |
 | 1 | Real-time watchdog, killed runs stop their children (2, 3) | Sonnet | not started |
 | 2 | One team match run plus a 3000-tick pair (5) | Sonnet | not started |
 | 3 | Cases dealt by cost; timed suite after 5 and 6 (6) | Sonnet | not started |
@@ -33,20 +33,20 @@ Plan: [tighter gates](../superpowers/plans/2026-11-13-tighter-gates.md). Spec: [
 
 | Item | Value |
 |---|---|
-| Tree | |
-| `uptime` at start / end | |
-| Full four-process suite: wall seconds, CASES, CHECKS, exit | |
+| Tree | `tighter-gates` `11e8174` (descends from `10b9423`), clean |
+| `uptime` at start / end | load 1.68 1.69 1.53 (20:32) / 2.17 1.92 1.63 (20:34) |
+| Full four-process suite: wall seconds, CASES, CHECKS, exit | 85 s, CASES 849, CHECKS 144207, FAILURES 0, exit 0, `TESTS PASSED 144207` |
 | Per-process times | not printed by the runner |
-| Trace files (`replay`, `economy`, `combat`, `team` `-before.tsv`), line counts | |
+| Trace files (`replay`, `economy`, `combat`, `team` `-before.tsv`), line counts | replay 1200, economy 1200, combat 1200, team 100 |
 
 ## Measurements after findings 5 and 6 (Task 3)
 
 | Item | Before (Task 0) | After (Task 3) |
 |---|---|---|
-| Wall seconds, full suite | | |
-| `uptime` at start / end | | |
+| Wall seconds, full suite | 85 | |
+| `uptime` at start / end | 1.68 1.69 1.53 / 2.17 1.92 1.63 | |
 | Traces `cmp` against `*-before.tsv` | — | |
-| `test_team_match` suite alone, seconds (Task 0 Step 4 / Task 2 Step 4) | | |
+| `test_team_match` suite alone, seconds (Task 0 Step 4 / Task 2 Step 4) | 104 (CASES 4, CHECKS 13, exit 0) | |
 | Static gates: five alone (sum) / `run_checks.sh` (Task 9) | about 17 s (audit) | |
 
 ## Pinned values (V1-V6, checked at Tasks 2 and 10)
@@ -73,3 +73,4 @@ Plan: [tighter gates](../superpowers/plans/2026-11-13-tighter-gates.md). Spec: [
 
 - 2026-11-13, plan writing, tree `tighter-gates` `10b9423` clean, read-only checks (no suite, no benchmark): every audit line anchor re-read; drift: `docs/development.md` lint note is line 66 (audit: 65), the other cited lines match. `sh tools/run_warnings.sh` on this fresh worktree (no `game/.godot`): exit 1, 244 `ERROR` lines, mostly `Identifier "PlaytestSession" not declared` and `Could not resolve class "res://scripts/main.gd"` (no global class cache); after `godot --headless --path game --import` (exit 0, 1.5 s): `run_warnings.sh` exit 0, `WARNINGS CHECKED 161 FILES`. So this worktree now has `game/.godot` but no `wargrid-imported` stamp; Task 8 reproduces extra b in a scratch worktree. `actionlint` 1.7.12 exit 0 and `shellcheck` 0.11.0 exit 0 on all tracked `*.sh`. `python3 tools/test_install_godot.py` OK (every `urlretrieve` mocked, writes only into its temp dir); `python3 tools/test_perf_charts.py`, `tools/test_zh_parity.py`, `tools/test_check_reference.py` exit 0 with the system Python (the touched tools import only the standard library). `rg -n probe_patriot` outside the audit: the file itself and archive or status docs only. GitHub docs read for finding 14: a new run cancels an older pending run in the same group even without `cancel-in-progress`; in a called workflow the `github` context is the caller's.
 - 2026-11-13, plan revised after the user's rulings and the readiness review (no suite run): extra a uses the pathspec `game tools/run_benchmark.sh tools/perf_record.py tools/perf_chart.py` (on `10b9423`: `c88ba13`, equal to the newest `auto` row); delta sign Wargrid minus Zero Hour, so the non-`credits_per_min` rows flip (`analyze.py:626`) and `:628` stays; review fixes applied to Tasks 0-10 (sweep stop event in the worker, code hash in `write()`, a full fake for the boot test, text anchors in Task 3, `RunBenchmarkTest` as the benchmark guard, denied-command rule, protection-check morning item).
+- 2026-11-13, Task 0, tree `tighter-gates` `11e8174` clean: import run (`test_runner`) exit 0, 4 cases 7 checks; timed full suite exit 0, 85 s, CASES 849 CHECKS 144207 FAILURES 0, `TESTS PASSED 144207`, load 1.68 -> 2.17 (1 min); `test_team_match` alone exit 0, 104 s, 13 checks; traces 1200/1200/1200/100 lines in the logs directory. No repository file changed besides this one.
