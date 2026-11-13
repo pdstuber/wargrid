@@ -180,6 +180,14 @@ Lean: about 45 lines and one CI job less (findings 7, 8, 9, 19).
 
 Every code claim in this note was checked a second time by an independent reviewer before it was committed; its corrections are included.
 
+## Review 2026-11-13
+
+The claims behind each fix were checked again on `main` at `b766258`; none of the cited lines had changed. Placed by the user (questionnaire, 2026-11-13):
+
+- Finding 1: done at the review (tracked plus untracked files in all four gates).
+- Findings 2 to 17, 19 and the six "left out" points: night package Tighter gates, first in the night lane ([packages](../packages.md#package-notes)). Finding 5: one full run plus a short side-by-side pair instead of one run only. Finding 14: branches only.
+- Finding 18: deferred; decided after findings 5 to 7 have landed and CI time is measured again.
+
 ## Not checked
 
 - The relay's Go code and `protocol/conformance` (only how CI and the scripts drive them).

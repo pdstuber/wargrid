@@ -12,10 +12,11 @@ Where Wargrid stands: packages first, then finished work. Plans for packages: [p
 | P3 | Camera that follows you | Planned | [packages](packages.md#day-lane) | none yet |
 | P4 | Smooth motion | Planned | [packages](packages.md#day-lane) | none yet |
 | P5 | Smarter paths (toggle) | Planned | [packages](packages.md#day-lane) | none yet |
-| night 1 | Sim quick wins | Placed 2026-11-13 (user), no plan yet; no trace re-pin | [packages](packages.md#night-lane) | [simulation review](reference/simulation-reference-review.md#review-2026-11-13) |
-| night 2 | Flatter worst ticks | Placed 2026-11-13 (user), no plan yet; one trace re-pin | [packages](packages.md#night-lane) | [simulation review](reference/simulation-reference-review.md#review-2026-11-13) |
-| night 3 | Relay guards | Placed 2026-11-13 (user), no plan yet; no trace re-pin | [packages](packages.md#night-lane) | [netplay review](reference/netplay-reference-review.md#review-2026-11-13) |
-| night 4 | Adaptive input delay | Placed 2026-11-13 (user), no plan yet; adopted only on a measured gain, then one online friend session with card 2 (user, 2026-11-13) | [packages](packages.md#night-lane) | [netplay review](reference/netplay-reference-review.md#review-2026-11-13) |
+| night 1 | Tighter gates | Placed 2026-11-13 (user), no plan yet; no trace re-pin | [packages](packages.md#night-lane) | [tooling audit](reference/tooling-audit.md#review-2026-11-13) |
+| night 2 | Sim quick wins | Placed 2026-11-13 (user), no plan yet; no trace re-pin | [packages](packages.md#night-lane) | [simulation review](reference/simulation-reference-review.md#review-2026-11-13) |
+| night 3 | Flatter worst ticks | Placed 2026-11-13 (user), no plan yet; one trace re-pin | [packages](packages.md#night-lane) | [simulation review](reference/simulation-reference-review.md#review-2026-11-13) |
+| night 4 | Relay guards | Placed 2026-11-13 (user), no plan yet; no trace re-pin | [packages](packages.md#night-lane) | [netplay review](reference/netplay-reference-review.md#review-2026-11-13) |
+| night 5 | Adaptive input delay | Placed 2026-11-13 (user), no plan yet; adopted only on a measured gain, then one online friend session with card 2 (user, 2026-11-13) | [packages](packages.md#night-lane) | [netplay review](reference/netplay-reference-review.md#review-2026-11-13) |
 
 ## Findings list
 
