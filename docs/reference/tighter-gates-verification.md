@@ -1,13 +1,13 @@
 ```text
-Resume record (updated 2026-11-13, Task 3 green)
+Resume record (updated 2026-11-13, Task 4 green)
 Branch / base commit / working-tree state: tighter-gates / 10b9423 / plan and this file uncommitted (the preparation commits them)
-Last green task / next incomplete task: Task 3 / Task 4
-Changed paths since last commit: game/tests/run_tests.gd, game/tests/test_runner.gd, docs/reference/tighter-gates-verification.md
+Last green task / next incomplete task: Task 4 / Task 5
+Changed paths since last commit: .github/workflows/ci.yml, tools/run_lint.sh, tools/run_python_tests.sh, docs/reference/tighter-gates-verification.md
 Last command / cases / checks / failures / exit / marker: full suite (trace env vars set) / 850 / 144212 / 0 / 0 / TESTS PASSED 144212
 Known red case or blocker: none
 Approved decisions, pre-authorizations used, deferred gates: questionnaire 2026-11-13 (plan "Decisions"); one local commit per GREEN task (never push); CI run, Windows behaviour, CI timing and the cancel rule deferred to a pushed branch (morning)
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: Task 4 Step 1
+Next exact action: Task 5 Step 1
 ```
 
 Plan: [tighter gates](../superpowers/plans/2026-11-13-tighter-gates.md). Spec: [tooling audit](tooling-audit.md). Logs: `~/projects/wargrid-overnight-work/tighter-gates/logs/` (outside the repository).
@@ -20,7 +20,7 @@ Plan: [tighter gates](../superpowers/plans/2026-11-13-tighter-gates.md). Spec: [
 | 1 | Real-time watchdog, killed runs stop their children (2, 3) | Sonnet | GREEN |
 | 2 | One team match run plus a 3000-tick pair (5) | Sonnet | GREEN |
 | 3 | Cases dealt by cost; timed suite after 5 and 6 (6) | Sonnet | GREEN |
-| 4 | CI: relay in the export job, tool tests once, pinned gdlint, branch-only cancel (7, 8, 9, 14) | Sonnet | not started |
+| 4 | CI: relay in the export job, tool tests once, pinned gdlint, branch-only cancel (7, 8, 9, 14) | Sonnet | GREEN |
 | 5 | Shell and tool cleanups (13, 16, 17, 19, left-out 6) | Sonnet | not started |
 | 6 | Parity report fixes (4, 10, 11, left-out 4) | Sonnet | not started |
 | 7 | Parity sweep fixes, `probe_patriot.py` deleted (12, left-out 1, 2, 3, 5) | Sonnet | not started |
@@ -77,3 +77,4 @@ Plan: [tighter gates](../superpowers/plans/2026-11-13-tighter-gates.md). Spec: [
 - 2026-11-13, Task 1, tree `tighter-gates` `436ed43` plus the two changed paths: red A (timer 10 s, `test_team_match_prefix`): no watchdog line, exit 0; red B: `alive=4`. After the change: green A (`WATCHDOG_SECONDS` 10): `FAIL: watchdog timeout in test_team_match_prefix`, `FAIL: 1 of 1 shards did not finish`, exit 1; green B: `alive=0`, runner exit 1, no probe process left (SIGTERM was enough, no KILL needed); `test_runner` exit 0 (4 cases, 7 checks); full suite exit 0, CASES 849 CHECKS 144200 FAILURES 0, `TESTS PASSED 144200`, no Thread or WARNING lines; `run_lint.sh`, `run_warnings.sh`, `run_shell_checks.sh` exit 0. CHECKS 144200 vs Task 0's 144207: the unchanged tree (stashed) also gives 144200, so the 7 are run-to-run variation or Task 0's run, not this change; Task 2 should recheck the baseline count. Logs `t1-*.log`.
 - 2026-11-13, Task 2, tree `tighter-gates` `f591ef8` plus `game/tests/test_team_match.gd`: `test_team_core_series` and the second 20000-tick sim removed; `test_team_match_prefix` is the one run (trace, TB3, TB4); new `test_team_match_pair` (3000 ticks, 16 comparisons, TB5). Red by mutation: extra step of `b` at tick 1000 -> `FAIL: TB5 ... first divergence 1200`, exit 1; series line moved above `step` -> `FAIL: TB4 ... got 2575876620437009839`, exit 1; both reverted (file identical to the good copy). Green: `WARGRID_TEST_ONLY=test_team_match` exit 0, 48 s, CASES 4 CHECKS 15 (trace env set; Task 0's 13 had none: the trace-open check adds 1, TB5 adds 2, the dropped agree check removes 1), team trace `cmp` silent. Full suite (trace env vars set, load 1.52 at start) exit 0, 72 s, CASES 849 CHECKS 144204 FAILURES 0, `TESTS PASSED 144204`, team `cmp` silent; `run_lint.sh`, `run_warnings.sh`, `run_shell_checks.sh` exit 0. Logs `t2-*.log`. No permission denials.
 - 2026-11-13, Task 3, tree `tighter-gates` `6346515` plus `game/tests/run_tests.gd`, `game/tests/test_runner.gd`: one-process timing run exit 0 (849 cases, 15 cases of 1 s or more, `t3-slow.txt`; `test_team_match_prefix` 44.8 s, next 11.7 s). Red: stub `shard(..., _costs)` -> `WARGRID_TEST_ONLY=test_runner` exit 1, R5 slow-case and rest checks FAIL, equal-cost checks pass (the plan's first R5 check is split into two). Green: cost-descending deal to the least loaded process (ties lower index, lower process), `CASE_SECONDS` table, default 0.1; `test_runner` exit 0 (5 cases, 11 checks); timed full suite (trace env vars set) exit 0, 53 s (Task 0: 85 s), CASES 850 (849 + new R5 case) CHECKS 144212 FAILURES 0, `TESTS PASSED 144212`, all four traces `cmp` silent, V1/V2 pass in the suite; load 2.16 -> 3.37 (1 min), so the speed-up is measured under heavier load than the baseline. `run_lint.sh`, `run_warnings.sh`, `run_shell_checks.sh` exit 0. Logs `t3-*.log`. No permission denials.
+- 2026-11-13, Task 4, tree `tighter-gates` `a39bc9c` plus `ci.yml`, `run_lint.sh`, `run_python_tests.sh`: red 8 (`assert False` in `test_cached_archive_skips_download`): `run_python_tests.sh` exit 0; red 9 (`env PATH=/usr/bin:/bin:/opt/homebrew/bin run_lint.sh`): exit 127, `gdlint: not found`. Green: probe 8 prints `FAIL: tools/test_install_godot.py`, exit 1, reverted -> exit 0 `PYTHON TESTS PASSED`; probe 9 exit 0 (`Success: no problems found`); `actionlint` exit 0; `run_shell_checks.sh` exit 0; `run_python_checks.sh` exit 0. `rg relay-bin .github/workflows` lists only the new build line and the netplay step. Not run: the optional local relay build plus `run_netplay.sh match` (V4); no Godot, CI, Windows or concurrency check (morning). Docs still naming the old job/exclusion (`docs/guide/13-testing-and-tooling.md:141,169`, development notes lint note) are left for Task 10. Logs `t4-*.log`. No permission denials.

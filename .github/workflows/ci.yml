@@ -13,21 +13,13 @@ on:
   workflow_call:
 permissions:
   contents: read
+concurrency: # only branch pushes share a group; main, tags, pull requests and the release call get one group per run
+  group: ci-${{ startsWith(github.ref, 'refs/heads/') && github.ref != 'refs/heads/main' && github.ref || github.run_id }}
+  cancel-in-progress: true
 env:
   GODOT_VERSION: 4.7.2-stable
   TEMPLATES_SHA256: f298490b8d44d934be425a5a65a51bf15f422428b229a06a6e11d9ffea248011
 jobs:
-  godot-lint:
-    name: Godot / Lint
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
-        with:
-          python-version: "3.12"
-      - run: pip install -r tools/requirements-dev.txt
-      - run: sh tools/run_lint.sh
   godot-tests:
     name: Godot / Tests (${{ matrix.platform }})
     strategy:
@@ -97,7 +89,6 @@ jobs:
           path: test-results.log
   godot-export:
     name: Godot / Exported build (${{ matrix.platform }})
-    needs: relay-test
     strategy:
       fail-fast: false
       matrix:
@@ -114,10 +105,13 @@ jobs:
       PYTHON: ${{ matrix.python }}
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v8
+      - uses: actions/setup-go@v7
         with:
-          name: relay-bin
-          path: relay-bin
+          go-version-file: relay/go.mod
+          cache-dependency-path: relay/go.sum
+      - name: Build relay for the netplay step
+        working-directory: relay
+        run: CGO_ENABLED=0 go build -trimpath -o "../relay-bin/relay-${{ matrix.platform }}${{ matrix.platform == 'windows' && '.exe' || '' }}" .
       - uses: actions/cache@v6
         with:
           path: ${{ runner.temp }}/${{ matrix.zip }}
@@ -229,19 +223,9 @@ jobs:
       - run: go vet ./... && go test -race ./...
       - run: go vet ./...
         working-directory: protocol/conformance
-      - name: Build relay for the Godot export jobs
-        run: |
-          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -o ../relay-bin/relay-linux .
-          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -o ../relay-bin/relay-windows.exe .
       - name: Conformance
         working-directory: .
-        run: WARGRID_RELAY_BIN=$PWD/relay-bin/relay-linux sh tools/run_conformance.sh
-      - uses: actions/upload-artifact@v7
-        with:
-          name: relay-bin
-          path: relay-bin/
-          retention-days: 1
-          if-no-files-found: error
+        run: sh tools/run_conformance.sh
   docker:
     name: Docker / Build images
     runs-on: ubuntu-latest
@@ -281,27 +265,8 @@ jobs:
           python-version: "3.12"
       - run: pip install uv # tools/ensure_venv.sh builds tools/.venv from requirements-dev.txt
       - run: sh tools/run_python_checks.sh
-      - run: echo "$PWD/tools/.venv/bin" >> "$GITHUB_PATH" # Tool tests need the venv's numpy and scipy
+      - run: sh tools/run_lint.sh
       - run: sh tools/run_shell_checks.sh
-      - name: Tool tests
-        run: |
-          python3 tools/test_compare_replays.py
-          python3 tools/test_desync_diff.py
-          python3 tools/test_check_reference.py
-          python3 tools/test_session_usage.py
-          python3 tools/test_sim_math.py
-          python3 tools/test_release_version.py
-          python3 tools/test_install_godot.py
-          python3 tools/test_install_export_templates.py
-          python3 tools/test_package_release.py
-          python3 tools/test_deploy_web.py
-          python3 tools/test_check_public.py
-          python3 tools/zh_map/test_zh_map.py
-          python3 tools/zh_parity/analyze.py --self-test
-          python3 tools/test_zh_parity.py
-          python3 tools/audio/test_synth.py
-          python3 tools/audio/test_process.py
-          python3 tools/test_audio_assets.py
   workflows-lint:
     name: Workflows / Lint
     runs-on: ubuntu-latest
