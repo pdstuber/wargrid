@@ -34,7 +34,6 @@ func test_shards_by_cost(runner) -> bool:
 	runner.check(Runner.shard(6, PackedStringArray(["--shard=0/2"]), costs) == [0], "R5 the slow case gets a process to itself")
 	runner.check(Runner.shard(6, PackedStringArray(["--shard=1/2"]), costs) == [1, 2, 3, 4, 5], "R5 the rest share the other process")
 	var equal := PackedFloat64Array([1.0, 1, 1, 1, 1])
-	for i in range(2):
-		var arg := PackedStringArray(["--shard=%d/2" % i])
-		runner.check(Runner.shard(5, arg, equal) == Runner.shard(5, arg), "R5 equal costs keep the modulo deal")
+	runner.check(Runner.shard(5, PackedStringArray(["--shard=0/2"]), equal) == [0, 2, 4], "R5 equal costs keep the modulo deal, shard 0")
+	runner.check(Runner.shard(5, PackedStringArray(["--shard=1/2"]), equal) == [1, 3], "R5 equal costs keep the modulo deal, shard 1")
 	return true
