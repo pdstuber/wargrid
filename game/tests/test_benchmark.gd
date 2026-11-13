@@ -15,7 +15,7 @@ const Probe = preload("res://scenes/movement_benchmark.tscn")
 const MovementBenchmark = preload("res://scripts/debug/movement_benchmark.gd")
 
 func cases() -> Array[Callable]:
-	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_transports_fixture, test_defences_fixture, test_skirmish3v3_fixture, test_combat_work_ceiling, test_volley_retaliation_work, test_horde_render_layout, test_horde_render_500_counts, test_workload_asserts_pure, test_settled_matches_snapshot_predicate, test_gate_values, test_draw_call_ceiling, test_cpu_frame_pairs_draw_with_its_tick, test_web_run_is_report_only, test_interpolation_arg, test_benchmark_runs_without_interpolation, test_units_reported_are_units_run, test_horde_camera_follows_army_when_zoomed, test_worst_tick, test_over_budget_line, test_late_game_layout]
+	return [test_statistics, test_fixtures, test_progression, test_rendered_probe_ticks, test_snapshot_size_ceiling, test_combat_fixtures, test_transports_fixture, test_defences_fixture, test_skirmish3v3_fixture, test_combat_work_ceiling, test_volley_retaliation_work, test_horde_render_layout, test_horde_render_500_counts, test_workload_asserts_pure, test_settled_matches_snapshot_predicate, test_gate_values, test_draw_call_ceiling, test_cpu_frame_pairs_draw_with_its_tick, test_web_run_is_report_only, test_interpolation_arg, test_benchmark_runs_without_interpolation, test_units_reported_are_units_run, test_horde_camera_follows_army_when_zoomed, test_worst_tick, test_stats_mean, test_over_budget_line, test_late_game_layout]
 
 func test_statistics(runner) -> bool:
 	runner.check(Stats.summary(PackedFloat64Array()) == {"n": 0, "p50": 0.0, "p95": 0.0, "p99": 0.0, "max": 0.0}, "BM1 empty")
@@ -367,6 +367,11 @@ func test_worst_tick(runner) -> bool:
 	runner.check(Stats.worst(PackedFloat64Array([1.0, 3.0, 3.0, 2.0])) == {"ms": 3.0, "index": 1}, "BM19 worst tick keeps the first index on ties")
 	runner.check(Stats.worst(PackedFloat64Array()) == {"ms": 0.0, "index": -1}, "BM19 empty samples have no worst tick")
 	runner.check(Stats.worst(PackedFloat64Array([5.0])) == {"ms": 5.0, "index": 0}, "BM19 single sample")
+	return true
+
+func test_stats_mean(runner) -> bool:
+	runner.check(Stats.mean(PackedFloat64Array([1.0, 2.0, 6.0])) == 3.0, "BM21 mean of three samples")
+	runner.check(Stats.mean(PackedFloat64Array()) == 0.0, "BM21 empty samples have mean 0")
 	return true
 
 func test_over_budget_line(runner) -> bool:

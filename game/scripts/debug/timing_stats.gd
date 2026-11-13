@@ -15,6 +15,14 @@ static func summary(samples: PackedFloat64Array) -> Dictionary:
 	return {"n": n, "p50": sorted[ceili(0.50 * n) - 1], "p95": sorted[ceili(0.95 * n) - 1],
 		"p99": sorted[ceili(0.99 * n) - 1], "max": sorted[n - 1]}
 
+static func mean(samples: PackedFloat64Array) -> float:
+	if samples.is_empty():
+		return 0.0
+	var total: float = 0.0
+	for sample in samples:
+		total += sample
+	return total / samples.size()
+
 static func worst(samples: PackedFloat64Array) -> Dictionary:
 	var result := {"ms": 0.0, "index": -1}
 	for i in samples.size():

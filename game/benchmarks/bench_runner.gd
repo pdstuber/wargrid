@@ -80,6 +80,8 @@ func _team() -> void:
 	Profiler.enabled = false
 	_emit("TEAM MATCH %s tick=%d" % [status, sim.tick()])
 	_emit("TEAM TIMING %s" % JSON.stringify(Stats.summary(samples)))
+	_emit("TEAM MEAN ms=%.3f" % Stats.mean(samples))
+	_emit(Stats.worst_tick_line("bench", "team", samples, 0))
 
 func _emit(line: String) -> void:
 	print(line)

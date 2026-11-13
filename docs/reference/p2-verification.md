@@ -1,13 +1,13 @@
 ```text
-Resume record (updated 2026-11-13 Task 5 implemented, uncommitted)
-Branch / base commit / working-tree state: p2-you-clicked / b483f99 / worktree ~/projects/wargrid-wt-p2, Task 5 changes uncommitted
-Last green task / next incomplete task: Task 4 (committed b483f99); Task 5 (green, awaiting the coordinator's commit) / Task 6
-Changed paths since last commit: game/scripts/debug/combat_workload.gd, game/benchmarks/run_late_game.gd (+ .uid), game/tests/test_benchmark.gd, docs/reference/p2-verification.md
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 825 / 142202 / 0 / 0 / TESTS PASSED 142202
+Resume record (updated 2026-11-13 Task 6 implemented, uncommitted)
+Branch / base commit / working-tree state: p2-you-clicked / b483f99 / worktree ~/projects/wargrid-wt-p2, Task 6 changes uncommitted
+Last green task / next incomplete task: Task 5 (committed 238451d); Task 6 (green, awaiting the coordinator's commit) / Task 7
+Changed paths since last commit: game/scripts/debug/timing_stats.gd, game/benchmarks/bench_runner.gd, game/tests/test_benchmark.gd, docs/reference/p2-verification.md
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 826 / 142204 / 0 / 0 / TESTS PASSED 142204
 Known red case or blocker: none
 Approved decisions, pre-authorizations used, deferred gates: spec decisions (user, 2026-11-13) in docs/superpowers/specs/2026-11-13-p2-you-clicked-we-heard-design.md; Piper re-download approved (user, 2026-11-13); local commit per GREEN task (milestone prompt); stop gates (a), (b), (c) not reached
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: coordinator commits Task 5, then Task 6
+Next exact action: coordinator commits Task 6, then Task 7
 ```
 
 Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicked-we-heard.md). Spec: [design](../superpowers/specs/2026-11-13-p2-you-clicked-we-heard-design.md). Scratch and logs: `~/projects/wargrid-p2-work/`.
@@ -21,7 +21,7 @@ Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicke
 | 3 | Launcher sections and Advanced fold | done (uncommitted) |
 | 4 | F4 music shuffle, F1 scale legend | done (uncommitted) |
 | 5 | Late-game 3v3 canary (report-only) | done (uncommitted) |
-| 6 | Browser rider prep: bench lines, two web exports, native run | not started |
+| 6 | Browser rider prep: bench lines, two web exports, native run | done (uncommitted) |
 | 7 | Voice pipeline and A/B page | not started |
 | 8 | P2 focus card and docs | not started |
 | gate (a) | A/B pick, F5 repro on the test app, web bench both builds, rendered rerun | not started |
@@ -63,3 +63,9 @@ Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicke
 | 5 | `WARGRID_TEST_ONLY=test_late_game_layout` GREEN | b483f99 + uncommitted | CASES 1 CHECKS 9 FAILURES 0, exit 0 |
 | 5 | full `sh tools/run_tests.sh` GREEN; `run_lint.sh`, `run_warnings.sh`, `check_public.sh` exit 0; `git diff main -- game/scripts/simulation game/scripts/net` empty; `test_team_match`, `test_replay`, `test_state_hash`, `test_view_rows` unchanged | b483f99 + uncommitted | CASES 825 CHECKS 142202 FAILURES 0, exit 0 |
 | 5 | late-game 3v3 canary, one run alone (headless, `run_late_game.gd`, report-only, no budget); no godot or generalszh process before; uptime load averages 2.25 2.33 2.35 before, 2.15 2.31 2.34 after (host under load) | b483f99 + uncommitted | exit 0, `LATE GAME CANARY DONE`; `LATE GAME 3v3 tick_ms={"max":7.575,"n":1800,"p50":1.475,"p95":3.362,"p99":5.581} mean_ms=1.809 shots_window=1666 deaths_window=52 bot_commands_window=94 alive_start=216 alive_end=203` (216 = 210 army + 6 builders); `WORST TICK late_game late_game_3v3 ms=7.575 tick=1560`; PROFILE top five: `step` mean 1.6905 ms (100%), `step.advance` 0.5562 (32.9%), `step.combat_plan` 0.5077 (30.0%), `step.combat_fire` 0.3334 (19.7%), `step.production` 0.1522 (9.0%) |
+| 6 | `WARGRID_TEST_ONLY=test_benchmark` RED (`Stats.mean` absent) | 238451d + uncommitted | parse error `Static function "mean()" not found`, suite failed to load, exit 1 |
+| 6 | `WARGRID_TEST_ONLY=test_benchmark` GREEN (BM21 registered in `cases()`) | 238451d + uncommitted | CASES 27 CHECKS 1985 FAILURES 0, exit 0 |
+| 6 | full `sh tools/run_tests.sh` GREEN; `run_lint.sh`, `run_warnings.sh`, `check_public.sh` exit 0; `git diff main -- game/scripts/simulation game/scripts/net` empty; tracked `game/export_presets.cfg` unchanged | 238451d + uncommitted | CASES 826 CHECKS 142204 FAILURES 0, exit 0 |
+| 6 | headless export `Web Bench`, single-threaded, to `~/projects/wargrid-p2-work/web-bench/` | 238451d + uncommitted | exit 0; `index.wasm` 39514754 bytes, `index.pck` 13386340 bytes |
+| 6 | headless export `Web Bench`, threaded (`variant/thread_support=true` in the scratch copy `~/projects/wargrid-p2-work/threaded-tree` only: `git archive HEAD` plus the three uncommitted game files), to `~/projects/wargrid-p2-work/web-bench-threads/` | 238451d + uncommitted | exit 0, no template error; `index.wasm` 38820072 bytes, `index.pck` 13386268 bytes (pck 72 bytes smaller: scratch tree has no git, so no `build_commit.txt`) |
+| 6 | native `bench_runner.gd` run alone (headless; no godot or generalszh process before; uptime load averages 2.50 2.37 2.35 before, 1.64 2.07 2.23 after, host under load) | 238451d + uncommitted | exit 0; `TEAM MATCH won tick=39497`; `TEAM TIMING {"max":16.009,"n":39497,"p50":1.278,"p95":2.317,"p99":7.839}`; `TEAM MEAN ms=1.428`; `WORST TICK bench team ms=16.009 tick=9540`; Firefox runs wait for gate (a) |
