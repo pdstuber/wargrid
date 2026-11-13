@@ -1,6 +1,6 @@
 # Packages and the playtest helper: design
 
-Status: approved by the user 2026-11-11 (night); questionnaire complete. User answers are recorded in [design answers](../../reference/design-answers-2026-11-08.md#planning-overhaul-packages-and-playtest-tooling-user-2026-11-11-night); this document marks everything else as the agent's call.
+Status: approved by the user 2026-11-11 (night); questionnaire complete. User answers are recorded in [design answers](../../reference/design-answers-2026-11-08.md#planning-overhaul-packages-and-playtest-tooling-user-2026-11-11-night); this document marks everything else as the agent's call. Updated by the package review (user, 2026-11-13): P1.1 added, P2 and P5 rescoped, canary moved to P2, a night lane for engine packages; the current order lives in [packages](../../packages.md), not in the table below.
 
 ## Intent
 

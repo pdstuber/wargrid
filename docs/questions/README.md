@@ -17,7 +17,7 @@ Researched questions for the user's design wizard: one short question at a time,
 | [next-bot-attack-reach.md](next-bot-attack-reach.md) | Bot attack reach | open, partly overtaken by the 2026-11-09 wave fix |
 | [next-m81-styles.md](next-m81-styles.md) | Difficulty and play styles (M8.1) | open |
 | [next-m9-lobby.md](next-m9-lobby.md) | Lobby (M9) | open |
-| [next-m9-drops.md](next-m9-drops.md) | Dropped players (M9) | open |
+| [next-m9-drops.md](next-m9-drops.md) | Dropped players (M9) | Q11 answered 2026-11-13; rest open |
 | [zh-defaults-followup.md](zh-defaults-followup.md) | Zero Hour defaults follow-up | Q12, Q13 open |
 | [upcoming-milestones.md](upcoming-milestones.md) | Upcoming milestones | Q8 open |
 | [playtest-repair-bots.md](playtest-repair-bots.md) | Playtest: repair, bots | Q13 open |
