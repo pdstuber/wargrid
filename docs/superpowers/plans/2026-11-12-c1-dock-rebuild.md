@@ -46,7 +46,7 @@ Regenerate each with the command given; the failure line prints the new value (`
 | P6 | same file `TEAM_CORE_SERIES` | 1748824102688385527 | — | `WARGRID_TEST_ONLY=test_team_core_series` ("TB4 … got …") |
 | P7 | `game/tests/test_view_rows.gd` `EXPECTED_DIGEST` | 6882f9ca…0880 | fixture unchanged | `WARGRID_TEST_ONLY=test_view_reads_digest_is_pinned` ("VR1 view reads digest, got …") |
 | P8 | `game/tests/test_skirmish_scene.gd` `HUD_TEXTS` | 6 strings | "HUD1 fixture: every case has its unit" passes unedited | `WARGRID_TEST_ONLY=test_hud_summaries_are_pinned` ("HUD1 pinned summary texts, got …") |
-| P9 | `tools/run_team_match.sh` line 13 `units_peak=261` | 261 | `cap tick=45000 winner=null` | `sh tools/run_team_match.sh > LOG 2>&1` (prints `TEAM MATCH …`) |
+| P9 | `tools/run_team_match.sh` line 13 `units_peak=261` | 261 | `won tick=39497 winner=2 units_peak=271`: won inside the 45000 cap, winner 2 (user, 2026-11-13) | `sh tools/run_team_match.sh > LOG 2>&1` (prints `TEAM MATCH …`) |
 | P10 | `tools/run_netplay.sh` line 91 `9024` | 9024 | both peers and the oracle agree, `match_over` | `sh tools/run_netplay.sh match > LOG 2>&1` ("terminal tick X, pinned 9024"; night run approved (user, 2026-11-12)) |
 
 Expected unchanged (a change parks): `test_state_hash.gd` `PINNED` (no collector in that world), `test_world_batch.gd` `GOLDEN_*` (static state), `test_start_spots.gd` `SS6_PINNED`, `test_map.gd` MP3, `test_replay.gd` (repeatability only, no stored trace), single-collector `TARGETS` rows in `test_supply_parity.gd` (rates identical to the digit). Cross-OS CI traces compare one commit with itself; they need a CI run after push (user, morning).

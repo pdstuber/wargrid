@@ -1,13 +1,13 @@
 ```text
-Resume record (updated 2026-11-12 night, Task 4 PARKED at P9, P1-P8 re-pinned, uncommitted)
-Branch / base commit / working-tree state: c1-dock-rebuild / c155d1d (Task 3 commit) / Task 4 P1-P8 edits uncommitted
-Last green task / next incomplete task: Task 3 (c155d1d) / Task 4 (P9 parked, P10 not run)
-Changed paths since last commit: game/tests/test_skirmish_match.gd, test_team_match.gd, test_view_rows.gd, test_skirmish_scene.gd, this file
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 807 / 140928 / 0 / exit 0 / TESTS PASSED (tree c155d1d + P1-P8 re-pins)
-Known red case or blocker: P9 parked: `run_team_match.sh` now ends `TEAM MATCH won tick=39497 winner=2 units_peak=271` (was cap, winner null; stop condition, line 13 not edited); P10 not run; tools/audio/test_synth.py in run_python_checks.sh fails on missing numpy (environment); HUD1 fixture risk is a stop condition in Task 4
+Resume record (updated 2026-11-13, Task 4 GREEN, P1-P10 re-pinned; Tasks 5-8 open)
+Branch / base commit / working-tree state: c1-dock-rebuild / 305380c / P9, P10 committed after this record
+Last green task / next incomplete task: Task 4 / Task 5 (headless benchmark and ledger row)
+Changed paths since 305380c: tools/run_team_match.sh, tools/run_netplay.sh, the plan's P9 row, this file
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 807 / 140928 / 0 / exit 0 / TESTS PASSED (tree 305380c + P9, P10); run_lint, run_warnings, check_public, run_shell_checks exit 0; run_team_match.sh and run_netplay.sh match exit 0
+Known red case or blocker: tools/audio/test_synth.py in run_python_checks.sh fails on missing numpy (no tools/.venv in this worktree; merge main into c1 before Task 7); HUD1 fixture risk is a stop condition
 Approved decisions, pre-authorizations used, deferred gates: c1 chosen, USA overshoot up to +5 %, frc7 rows reported not judged, MULTI targets to the steady window, trace rule (only P1-P10 regenerated) (user, 2026-11-12 night); plan decisions 1-6: same-tick tie to the lower id, lead-standing collectors neither docked nor waiting, dock-hold note and two design-answer sections brought over, one local commit per GREEN task (never push), run_netplay.sh match at night, FRC bot collector count stays 5 (user, 2026-11-12); rendered benchmark, CI, compare_local_traces and playtest deferred to the user
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: decide P9 (team match now has a winner), then P10; Task 4 edits P1-P8 are uncommitted
+Next exact action: Task 5 (headless benchmark only; stop and ask if `git diff main --stat -- game/scripts/presentation game/scenes` is not empty), then Task 6; merge main into c1 before Task 7
 ```
 
 Plan: [c1 dock rebuild](../superpowers/plans/2026-11-12-c1-dock-rebuild.md). Work folder for logs: `~/projects/wargrid-dock-work/c1/` (outside the repository). Expected rows: `~/projects/wargrid-dock-work/c/wargrid-c1.txt`.
@@ -19,7 +19,7 @@ Plan: [c1 dock rebuild](../superpowers/plans/2026-11-12-c1-dock-rebuild.md). Wor
 | 1 | Baseline, docs from `dock-hold`, lone-cycle pin (DL0) | Sonnet | GREEN (96dd9b9) |
 | 2 | c1 lock data and rule, spec tests DL1-DL9, hold-timing checks rewritten | Opus (high) | GREEN (ddacce1) |
 | 3 | MULTI targets on the steady window | Sonnet | GREEN (uncommitted) |
-| 4 | Re-pin P1-P10 | Sonnet | PARKED (P1-P8 done, uncommitted; P9 team match got a winner) |
+| 4 | Re-pin P1-P10 | Sonnet | GREEN (P1-P8 305380c; P9, P10 committed after) |
 | 5 | Headless benchmark and ledger row | Sonnet | open |
 | 6 | Docs: economy guide, status, note | Sonnet | open |
 | 7 | Exit checks on the final tree | Sonnet | open |
@@ -37,8 +37,8 @@ Plan: [c1 dock rebuild](../superpowers/plans/2026-11-12-c1-dock-rebuild.md). Wor
 | P6 | `TEAM_CORE_SERIES` | 1748824102688385527 | 8513092129969516499 | none (no check beyond the pin) |
 | P7 | `EXPECTED_DIGEST` (view rows) | 6882f9cad3a49db67034c1f7467c3d93670ccb1a542f7071cf082371de4c0880 | 7c7fbc8d27b1683f96f27525ac6f66c24a851a581dbf5433223ed2b09348a9e7 | fixture unchanged, both VR1 checks only differ in digest: held |
 | P8 | `HUD_TEXTS` | 6 strings at c2ea952 | third string `lead_source` where it read `unloading` (Chinook #11); the other five unchanged | 'HUD1 fixture: every case has its unit' passes unedited: held |
-| P9 | `run_team_match.sh` `units_peak` (cap, winner null) | 261 | PARKED: run prints `TEAM MATCH won tick=39497 winner=2 units_peak=271` | FAILED: expected `cap tick=45000 winner=null`; stop condition, line 13 untouched |
-| P10 | `run_netplay.sh` match terminal tick | 9024 | not run (parked after P9) | - |
+| P9 | `run_team_match.sh` `units_peak` (cap, winner null) | 261 | `TEAM MATCH won tick=39497 winner=2 units_peak=271` (user accepted the win, 2026-11-13) | won inside the 45000 cap, winner 2; rerun with the new pin exit 0: held |
+| P10 | `run_netplay.sh` match terminal tick | 9024 | 9129 | both peers `match_over`, equal terminal ticks, oracle hashes agree; rerun `NETPLAY PASSED match` exit 0: held |
 
 ## Evidence rows (append-only)
 
