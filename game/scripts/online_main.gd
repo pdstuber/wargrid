@@ -14,10 +14,10 @@ var download: Callable = JavaScriptBridge.download_buffer
 var _finished: bool = false
 var _credit: int = 0
 var _rejections_seen: int = 0
-var _faction: String = Skirmish.default_faction()
+var _own_faction: String = Skirmish.default_faction()
 
 func setup(transport: RefCounted, lockstep: RefCounted, seat: int, faction: String = Skirmish.default_faction()) -> void:
-	_faction = faction
+	_own_faction = faction
 	_transport = transport
 	_lockstep = lockstep
 	local_player = seat
@@ -26,7 +26,7 @@ func _ready() -> void:
 	super._ready()
 	_perf.extra = _net_line
 	_lockstep.send = _transport.send_text
-	_lockstep.submit({"type": "choose_faction", "faction": _faction})
+	_lockstep.submit({"type": "choose_faction", "faction": _own_faction})
 	_lockstep.start(simulation.snapshot())
 
 func _exit_tree() -> void:
@@ -80,6 +80,7 @@ func _submit(payload: Dictionary) -> void:
 	_lockstep.submit(payload)
 	_playtest.observe_command(payload)
 	_refresh()
+	_sound.order(payload)
 
 func _restart() -> void:
 	pass
@@ -135,7 +136,7 @@ func _ms(microseconds: PackedInt64Array) -> PackedFloat64Array:
 func notice() -> String:
 	match _lockstep.status():
 		"waiting": return "Waiting for player %d" % _lockstep.waiting_for()[0]
-		"ended_left": return "Opponent left before the start (different map files or version)" if _lockstep.left_before_start() else "Player %d disconnected" % _lockstep.left_seat()
+		"ended_left": return "Opponent left before the start (a different map or version, or their game tab was hidden)" if _lockstep.left_before_start() else "Player %d disconnected" % _lockstep.left_seat()
 		"ended_relay": return "Connection to relay lost" if _lockstep.end_reason() == "connection to relay lost" else "Relay: " + _lockstep.end_reason()
 		"ended_desync": return ("Desync — report downloaded as %s" if web else "Desync — report saved to %s") % _report_path
 		"ended_protocol": return "Protocol error: " + _lockstep.end_reason()

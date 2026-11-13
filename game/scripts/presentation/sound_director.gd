@@ -5,6 +5,7 @@ const Announcer = preload("res://scripts/presentation/announcer.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const Shared = preload("res://scripts/simulation/definitions/shared.gd")
 const ViewRows = preload("res://scripts/simulation/view_rows.gd")
+const UnitVoice = preload("res://scripts/presentation/unit_voice.gd")
 const MAX_PENDING := 120
 const MAX_CONSUMED := 64
 const FUNDS_ERROR := "Insufficient credits"
@@ -79,6 +80,16 @@ func update(state: Dictionary) -> Array[Dictionary]:
 	_previous_status = status
 	_has_previous = true
 	return requests
+
+func order_voice(payload: Dictionary, busy: bool) -> String:
+	var line: String = UnitVoice.ORDER_LINE.get(payload.get("type"), "")
+	if busy or line.is_empty(): return ""
+	for id: int in UnitVoice.speakers(payload):
+		var i: int = _rows.index_of(id)
+		if i == -1 or _rows.owner[i] != _local_player: continue
+		var role: String = UnitVoice.role(_rows.kinds[_rows.kind[i]])
+		if line in UnitVoice.LINES[role]: return UnitVoice.path(role, line, _rng.randi_range(1, UnitVoice.VARIANTS))
+	return ""
 
 func reset() -> void:
 	_pending.clear()

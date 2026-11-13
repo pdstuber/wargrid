@@ -36,7 +36,9 @@ func _ready() -> void:
 	$HUD/Restart.pressed.connect(_restart)
 	var music := MusicPlayer.new()
 	add_child(music)
-	music.play_list(MusicPlayer.PLAYLIST, MusicPlayer.GAP_SECONDS)
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	music.play_match(rng, MusicPlayer.GAP_SECONDS)
 	_add_playtest()
 
 func _add_playtest() -> void:
@@ -90,6 +92,7 @@ func _submit(payload: Dictionary) -> void:
 	super._submit(payload)
 	if not _error.is_empty(): _sound.rejected(_error)
 	else: _playtest.observe_command(payload)
+	if _last_issue_ok: _sound.order(payload)
 
 func _collect_sound() -> void:
 	_ensure_sound()
@@ -148,6 +151,7 @@ func _restart() -> void:
 	simulation = _create_simulation()
 	_clock = PresentationClock.new()
 	_sound.director.reset()
+	_sound._unit_voice.stop()
 	_visuals.reset()
 	selected_ids.clear()
 	selected_building_id = -1

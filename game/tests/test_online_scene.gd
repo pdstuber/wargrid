@@ -8,6 +8,7 @@ const AudioSettings = preload("res://scripts/presentation/audio_settings.gd")
 const MatchSettings = preload("res://scripts/match_settings.gd")
 const PlaytestSettings = preload("res://scripts/playtest/playtest_settings.gd")
 const SkirmishMain = preload("res://scripts/skirmish_main.gd")
+const JoinLink = preload("res://scripts/join_link.gd")
 const Lockstep = preload("res://scripts/net/lockstep.gd")
 const Wire = preload("res://scripts/net/wire.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
@@ -33,7 +34,7 @@ class FakeTransport extends RefCounted:
 	func rtt_samples() -> PackedInt64Array: return PackedInt64Array([40000])
 
 func cases() -> Array[Callable]:
-	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_rejection_line, test_funds_rejection_is_announced, test_overlay_net_line, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_stall_frames_are_not_step_frames, test_notices_reach_the_hud_while_processing, test_launcher_layout, test_launcher_faction_selectors_fit, test_plays_dry_wells_from_each_seat, test_offline_uses_chosen_map, test_restart_keeps_map_and_starts, test_restart_drops_old_stepped_results, test_joiner_refuses_other_map, test_old_relay_mismatch_is_shown, test_cancel_and_copy_while_waiting, test_start_without_settings_is_a_protocol_error, test_both_seats_share_map_and_starts, test_host_told_opponent_left_before_start, test_credits_panel_layout, test_online_playtest_record]
+	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_rejection_line, test_funds_rejection_is_announced, test_overlay_net_line, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_stall_frames_are_not_step_frames, test_notices_reach_the_hud_while_processing, test_launcher_layout, test_launcher_sections, test_launcher_faction_selectors_fit, test_launcher_faction_rows, test_plays_dry_wells_from_each_seat, test_offline_uses_chosen_map, test_restart_keeps_map_and_starts, test_restart_drops_old_stepped_results, test_joiner_refuses_other_map, test_old_relay_mismatch_is_shown, test_cancel_and_copy_while_waiting, test_start_without_settings_is_a_protocol_error, test_both_seats_share_map_and_starts, test_host_told_opponent_left_before_start, test_credits_panel_layout, test_online_playtest_record, test_launcher_release_hides_relay, test_launcher_prefills_from_page, test_launcher_relay_help, test_copy_link_on_web, test_launcher_reads_no_page_off_web]
 
 func _online(runner, seat: int) -> Dictionary:
 	var transport := FakeTransport.new()
@@ -213,6 +214,73 @@ func test_notices_reach_the_hud_while_processing(runner) -> bool:
 	waiting.main.free()
 	return true
 
+const LAUNCHER_PATHS: Array[String] = ["Title", "MatchRow/MapLabel", "MatchRow/Map", "OfflineHeader", "OfflineRow/YouLabel", "OfflineRow/Own", "OfflineRow/BotLabel", "OfflineRow/Opponent", "OfflineRow/Offline", "ThisBuild", "OnlineHeader", "OnlineRow/YouLabel", "OnlineRow/Own", "OnlineRow/Create", "JoinRow/Code", "JoinRow/Join", "WaitRow/Copy", "WaitRow/Cancel", "Advanced", "RelayHelp", "RelayUrl", "Status", "SettingsHeader", "Volume/MusicLabel", "Volume/Music", "Volume/EffectsLabel", "Volume/Effects", "Volume/VoiceLabel", "Volume/Voice", "Volume/MuteLabel", "Volume/Mute", "PlaytestSwitch", "Credits", "Legal"]
+const LAUNCHER_ORDER: Array[String] = ["MatchRow", "OfflineHeader", "OfflineRow", "OnlineHeader", "OnlineRow", "JoinRow", "Advanced", "RelayHelp", "RelayUrl", "SettingsHeader", "Volume", "PlaytestSwitch", "Credits", "Legal"]
+
+func test_launcher_sections(runner) -> bool:
+	var saved_settings: String = AudioSettings.path
+	var scratch: String = "user://test-launcher-sections-%d.cfg" % OS.get_process_id()
+	AudioSettings.path = scratch
+	DirAccess.remove_absolute(scratch)
+	for size in [Vector2i(1280, 720), Vector2i(1920, 1080)]:
+		var port := SubViewport.new()
+		port.size = size
+		runner.root.add_child(port)
+		var launcher = Launcher.instantiate()
+		launcher.prerelease = true
+		port.add_child(launcher)
+		launcher.get_node("Center/Box/WaitRow").visible = true
+		launcher.get_node("Center/Box/ThisBuild").visible = true
+		await runner.process_frame
+		await runner.process_frame
+		var box: Control = launcher.get_node("Center/Box")
+		for pair in [["OfflineHeader", "Play offline"], ["OnlineHeader", "Play online"], ["SettingsHeader", "Settings"]]:
+			var header: Label = box.get_node_or_null(pair[0])
+			runner.check(header != null and header.text == pair[1], "N20 %s reads %s at %s" % [pair[0], pair[1], size])
+		var indexes: Array[int] = []
+		for name in LAUNCHER_ORDER:
+			var node: Node = box.get_node_or_null(name)
+			indexes.append(node.get_index() if node != null else -1)
+		var in_order: bool = not indexes.has(-1)
+		for i in range(1, indexes.size()):
+			in_order = in_order and indexes[i - 1] < indexes[i]
+		runner.check(in_order, "N20 sections are in order at %s, got %s" % [size, indexes])
+		runner.check(box.get_node_or_null("OfflineRow/Opponent") != null and box.get_node_or_null("OfflineRow/Offline") != null and box.get_node_or_null("OfflineRow/Own") != null and box.get_node_or_null("OnlineRow/Own") != null and box.get_node_or_null("OnlineRow/Create") != null and box.get_node_or_null("MatchRow/Map") != null, "N20 row children at %s" % size)
+		var advanced: Button = box.get_node_or_null("Advanced")
+		var relay: LineEdit = box.get_node_or_null("RelayUrl")
+		if advanced != null and relay != null:
+			runner.check(not advanced.button_pressed and not relay.visible and advanced.text == "Show advanced settings" and not advanced.flat, "N20 Advanced starts closed, as a visible button, at %s" % size)
+			runner.check(relay.text == "wss://relay.pdstuber.dev/ws", "N20 closed fold keeps the default relay URL at %s" % size)
+			launcher._set_busy(true)
+			runner.check(not relay.editable and not relay.visible, "N20 busy locks the hidden relay field at %s" % size)
+			launcher._set_busy(false)
+			runner.check(relay.editable, "N20 idle unlocks the relay field at %s" % size)
+			advanced.button_pressed = true
+			runner.check(relay.visible and advanced.text == "Hide advanced settings", "N20 opening Advanced shows the relay field at %s" % size)
+			runner.check(advanced.text.to_utf8_buffer().size() == advanced.text.length(), "N20 toggle text is plain ASCII, the default font has no arrow glyphs, at %s" % size)
+			await runner.process_frame
+			await runner.process_frame
+			var view := Rect2(Vector2.ZERO, Vector2(size))
+			var rects: Array[Rect2] = []
+			for path in LAUNCHER_PATHS:
+				var control: Control = box.get_node_or_null(path)
+				runner.check(control != null and control.visible and view.encloses(control.get_global_rect()), "N20 %s inside %s" % [path, size])
+				if control != null: rects.append(control.get_global_rect())
+			for i in rects.size():
+				for j in range(i + 1, rects.size()):
+					runner.check(not rects[i].intersects(rects[j]), "N20 controls %d and %d do not overlap at %s" % [i, j, size])
+			print("N20 Center/Box height at %s: %s" % [size, box.get_global_rect().size.y])
+		var status: Label = box.get_node("Status")
+		for text in ["Match code: ABC234 — waiting for player 2", "Connection to relay lost"] + MatchSettings.PLAY_MAPS.values().map(func(label: String) -> String: return "Your copy of %s differs from the host's" % label):
+			status.text = text
+			await runner.process_frame
+			runner.check(status.get_line_count() == 1, "N20 Status stays one line at %s: %s" % [size, text])
+		launcher.free()
+		port.free()
+	AudioSettings.path = saved_settings
+	DirAccess.remove_absolute(scratch)
+	return true
+
 func test_launcher_layout(runner) -> bool:
 	var saved_settings: String = AudioSettings.path
 	var scratch: String = "user://test-launcher-settings-%d.cfg" % OS.get_process_id()
@@ -223,13 +291,15 @@ func test_launcher_layout(runner) -> bool:
 		port.size = size
 		runner.root.add_child(port)
 		var launcher = Launcher.instantiate()
+		launcher.prerelease = true
 		port.add_child(launcher)
 		launcher.get_node("Center/Box/WaitRow").visible = true
 		launcher.get_node("Center/Box/ThisBuild").visible = true
+		launcher.get_node("Center/Box/Advanced").button_pressed = true
 		await runner.process_frame
 		await runner.process_frame
 		var rects: Array[Rect2] = []
-		for path in ["Title", "Offline", "ThisBuild", "Map", "RelayUrl", "Create", "JoinRow/Code", "JoinRow/Join", "PlaytestSwitch", "Credits", "WaitRow/Copy", "WaitRow/Cancel", "Volume/MusicLabel", "Volume/Music", "Volume/EffectsLabel", "Volume/Effects", "Volume/VoiceLabel", "Volume/Voice", "Volume/MuteLabel", "Volume/Mute", "Status", "Legal"]:
+		for path in LAUNCHER_PATHS:
 			var control: Control = launcher.get_node("Center/Box/" + path)
 			rects.append(control.get_global_rect())
 			runner.check(Rect2(Vector2.ZERO, Vector2(size)).encloses(control.get_global_rect()), "N5 %s inside %s" % [path, size])
@@ -289,16 +359,80 @@ func test_launcher_faction_selectors_fit(runner) -> bool:
 		await runner.process_frame
 		await runner.process_frame
 		var box: Control = launcher.get_node("Center/Box")
-		var own: OptionButton = launcher.get_node("Center/Box/FactionRow/Own")
-		var opponent: OptionButton = launcher.get_node("Center/Box/FactionRow/Opponent")
+		var own: OptionButton = launcher.get_node("Center/Box/OfflineRow/Own")
+		var opponent: OptionButton = launcher.get_node("Center/Box/OfflineRow/Opponent")
 		runner.check(box.get_global_rect().encloses(own.get_global_rect()) and box.get_global_rect().encloses(opponent.get_global_rect()), "F5 selectors inside the box at %s" % size)
 		runner.check(not own.get_global_rect().intersects(opponent.get_global_rect()), "F5 selectors do not overlap at %s" % size)
-		for path in ["Offline", "Map", "RelayUrl", "Create", "JoinRow", "Status"]:
-			runner.check(not launcher.get_node("Center/Box/FactionRow").get_global_rect().intersects(launcher.get_node("Center/Box/" + path).get_global_rect()), "F5 row clear of %s at %s" % [path, size])
-		runner.check(launcher.get_node("Center/Box/FactionRow").get_global_rect().size.x <= 520.0, "F5 faction row stays compact at %s" % size)
+		for path in ["OfflineRow", "OnlineRow", "JoinRow", "Status"]:
+			runner.check(not launcher.get_node("Center/Box/MatchRow").get_global_rect().intersects(launcher.get_node("Center/Box/" + path).get_global_rect()), "F5 row clear of %s at %s" % [path, size])
+		runner.check(box.get_global_rect().size.x <= 600.0, "F5 launcher box stays under 600 px wide at %s" % size)
 		runner.check(own.item_count == 3 and own.get_item_text(0) == "China" and own.get_item_text(1) == "Free Resistance Coalition" and own.get_item_text(own.selected) == "United States", "F5 selector lists faction display names and defaults to the United States")
 		launcher.free()
 		port.free()
+	return true
+
+func _row_texts(row: Node) -> Array:
+	return row.get_children().map(func(node: Node) -> String: return node.text if node is Label else node.name)
+
+func _faction_row_controls(box: Control) -> Array[Control]:
+	var controls: Array[Control] = []
+	for path in ["MatchRow/MapLabel", "MatchRow/Map", "OfflineRow/YouLabel", "OfflineRow/Own", "OfflineRow/BotLabel", "OfflineRow/Opponent", "OfflineRow/Offline", "OnlineRow/YouLabel", "OnlineRow/Own", "OnlineRow/Create"]:
+		controls.append(box.get_node(path))
+	return controls
+
+func test_launcher_faction_rows(runner) -> bool:
+	var before := [SkirmishMain.factions, SkirmishMain.map_path, SkirmishMain.starts, SkirmishMain.match_seed]
+	for size in [Vector2i(1280, 720), Vector2i(1920, 1080)]:
+		var port := SubViewport.new()
+		port.size = size
+		runner.root.add_child(port)
+		var launcher = Launcher.instantiate()
+		port.add_child(launcher)
+		await runner.process_frame
+		await runner.process_frame
+		var box: Control = launcher.get_node("Center/Box")
+		runner.check(_row_texts(box.get_node("OfflineRow")) == ["You", "Own", "Bot", "Opponent", "Offline"], "N25 OfflineRow children at %s, got %s" % [size, _row_texts(box.get_node("OfflineRow"))])
+		runner.check(_row_texts(box.get_node("OnlineRow")) == ["You", "Own", "Create"], "N25 OnlineRow children at %s, got %s" % [size, _row_texts(box.get_node("OnlineRow"))])
+		runner.check(_row_texts(box.get_node("MatchRow")) == ["Map", "Map"] and box.get_node_or_null("MatchRow/Own") == null, "N25 MatchRow is Map label and Map only at %s" % size)
+		runner.check(box.get_node("OnlineRow/Create").text == "Create match" and box.get_node("OfflineRow/Offline").text == "Start", "N25 button texts kept at %s" % size)
+		var controls: Array[Control] = _faction_row_controls(box)
+		var inside: bool = true
+		var clear: bool = true
+		for i in controls.size():
+			inside = inside and Rect2(Vector2.ZERO, Vector2(size)).encloses(controls[i].get_global_rect()) and box.get_global_rect().encloses(controls[i].get_global_rect())
+			for j in range(i + 1, controls.size()):
+				clear = clear and not controls[i].get_global_rect().intersects(controls[j].get_global_rect())
+		runner.check(inside and clear, "N25 row controls inside the viewport and clear of each other at %s" % size)
+		for path in ["OfflineRow/YouLabel", "OfflineRow/BotLabel", "OnlineRow/YouLabel", "MatchRow/MapLabel"]:
+			var label: Label = box.get_node(path)
+			runner.check(label.mouse_filter == Control.MOUSE_FILTER_IGNORE and label.text.to_utf8_buffer().size() == label.text.length(), "N25 %s is plain ASCII and ignores the mouse at %s" % [path, size])
+		var offline_own: OptionButton = box.get_node("OfflineRow/Own")
+		var online_own: OptionButton = box.get_node("OnlineRow/Own")
+		runner.check(offline_own.selected == online_own.selected and offline_own.item_count == 3 and online_own.item_count == 3, "N25 both Own selectors list the factions and start equal at %s" % size)
+		var default_index: int = offline_own.selected
+		online_own.select(0)
+		runner.check(default_index != 0 and offline_own.selected == default_index, "N25 OnlineRow/Own leaves OfflineRow/Own alone at %s" % size)
+		offline_own.select(1)
+		runner.check(online_own.selected == 0, "N25 OfflineRow/Own leaves OnlineRow/Own alone at %s" % size)
+		var second: String = offline_own.get_item_metadata(1)
+		var third: String = offline_own.get_item_metadata(2)
+		offline_own.select(1)
+		box.get_node("OfflineRow/Opponent").select(2)
+		launcher._offline_setup()
+		runner.check(SkirmishMain.factions == {1: second, 2: third}, "N25 offline Start passes OfflineRow/Own and Opponent at %s, got %s" % [size, SkirmishMain.factions])
+		online_own.select(2)
+		launcher._transport = FakeTransport.new()
+		launcher._seat = 1
+		launcher._start(_start_message("dry_wells", 3))
+		var main = runner.root.get_tree().current_scene
+		runner.check(main._own_faction == third, "N25 online match carries OnlineRow/Own's faction at %s, got %s" % [size, main._own_faction])
+		main.free()
+		await runner.process_frame
+		port.free()
+	SkirmishMain.factions = before[0]
+	SkirmishMain.map_path = before[1]
+	SkirmishMain.starts = before[2]
+	SkirmishMain.match_seed = before[3]
 	return true
 
 func _start_message(id: String, match_seed: int) -> Dictionary:
@@ -334,7 +468,7 @@ func test_offline_uses_chosen_map(runner) -> bool:
 	var launcher = Launcher.instantiate()
 	runner.root.add_child(launcher)
 	await runner.process_frame
-	var map_row: OptionButton = launcher.get_node("Center/Box/Map")
+	var map_row: OptionButton = launcher.get_node("Center/Box/MatchRow/Map")
 	var labels: Array = MatchSettings.PLAY_MAPS.values()
 	runner.check(map_row.item_count == 3 and launcher._map_id() == "dry_wells", "N11 three maps, Dry Wells selected by default")
 	for i in map_row.item_count:
@@ -403,7 +537,7 @@ func test_joiner_refuses_other_map(runner) -> bool:
 	runner.check(not launcher._handle(Wire.encode(message)), "N13 the joiner refuses a different map before the simulation exists")
 	runner.check(runner.root.get_tree().current_scene == scene_before and transport.close_calls == 1, "N13 no online scene, transport closed once")
 	runner.check(launcher.get_node("Center/Box/Status").text == "Your copy of Ashfall differs from the host's", "N13 the reason is shown")
-	runner.check(not launcher.get_node("Center/Box/Create").disabled, "N13 Create usable again")
+	runner.check(not launcher.get_node("Center/Box/OnlineRow/Create").disabled, "N13 Create usable again")
 	launcher._process(0.0)
 	launcher.free()
 	SkirmishMain.map_path = before_path
@@ -418,7 +552,7 @@ func test_old_relay_mismatch_is_shown(runner) -> bool:
 	launcher._transport = FakeTransport.new()
 	launcher._set_busy(true)
 	launcher._handle('{"type":"error","reason":"protocol mismatch"}')
-	runner.check(launcher.get_node("Center/Box/Status").text == "protocol mismatch" and not launcher.get_node("Center/Box/Create").disabled, "N14 a protocol mismatch from an old relay is shown")
+	runner.check(launcher.get_node("Center/Box/Status").text == "protocol mismatch" and not launcher.get_node("Center/Box/OnlineRow/Create").disabled, "N14 a protocol mismatch from an old relay is shown")
 	launcher.free()
 	return true
 
@@ -432,14 +566,14 @@ func test_cancel_and_copy_while_waiting(runner) -> bool:
 	launcher.set_process(true)
 	var wait: Control = launcher.get_node("Center/Box/WaitRow")
 	launcher._handle('{"type":"welcome","seat":1,"match":"ABC234"}')
-	runner.check(wait.visible and launcher.get_node("Center/Box/Offline").disabled and launcher.get_node("Center/Box/Create").disabled and not launcher.get_node("Center/Box/WaitRow/Copy").disabled and not launcher.get_node("Center/Box/WaitRow/Cancel").disabled, "N17 waiting shows Copy and Cancel, launcher stays busy")
+	runner.check(wait.visible and launcher.get_node("Center/Box/OfflineRow/Offline").disabled and launcher.get_node("Center/Box/OnlineRow/Create").disabled and not launcher.get_node("Center/Box/WaitRow/Copy").disabled and not launcher.get_node("Center/Box/WaitRow/Cancel").disabled, "N17 waiting shows Copy and Cancel, launcher stays busy")
 	runner.check(launcher._code == "ABC234", "N18 welcome stores the match code for Copy")
 	if DisplayServer.has_feature(DisplayServer.FEATURE_CLIPBOARD):
 		launcher.get_node("Center/Box/WaitRow/Copy").pressed.emit()
 		runner.check(DisplayServer.clipboard_get() == "ABC234", "N18 Copy puts the match code on the clipboard")
 	launcher.get_node("Center/Box/WaitRow/Cancel").pressed.emit()
 	var enabled: bool = true
-	for path in ["Offline", "Create", "JoinRow/Join", "Map", "FactionRow/Own", "FactionRow/Opponent"]:
+	for path in ["OfflineRow/Offline", "OnlineRow/Create", "JoinRow/Join", "MatchRow/Map", "OfflineRow/Own", "OnlineRow/Own", "OfflineRow/Opponent"]:
 		enabled = enabled and not launcher.get_node("Center/Box/" + path).disabled
 	runner.check(transport.close_calls == 1 and not wait.visible and enabled, "N17 Cancel restores the launcher")
 	runner.check(launcher.get_node("Center/Box/Status").text == "Match cancelled" and not launcher.is_processing(), "N17 Cancel says so and stops polling")
@@ -460,7 +594,7 @@ func test_start_without_settings_is_a_protocol_error(runner) -> bool:
 	message.erase("settings")
 	runner.check(not launcher._handle(JSON.stringify(message)), "N15 a start without settings is not accepted")
 	runner.check(launcher.get_node("Center/Box/Status").text.begins_with("Protocol error"), "N15 protocol error shown")
-	runner.check(transport.close_calls == 1 and not launcher.get_node("Center/Box/Create").disabled, "N15 transport closed once, Create usable")
+	runner.check(transport.close_calls == 1 and not launcher.get_node("Center/Box/OnlineRow/Create").disabled, "N15 transport closed once, Create usable")
 	var other := FakeTransport.new()
 	launcher._transport = other
 	runner.check(not launcher._handle('{"type":"tick","seat":1,"tick":0}') and other.close_calls == 1, "N15 an unexpected message type closes the transport")
@@ -495,7 +629,7 @@ func test_both_seats_share_map_and_starts(runner) -> bool:
 	return true
 
 func test_host_told_opponent_left_before_start(runner) -> bool:
-	var notice: String = "Opponent left before the start (different map files or version)"
+	var notice: String = "Opponent left before the start (a different map or version, or their game tab was hidden)"
 	var early: Dictionary = await _online(runner, 1)
 	early.lockstep.receive('{"type":"left","seat":2,"after_tick":3}')
 	_run(early.main, 12)
@@ -573,4 +707,168 @@ func test_online_playtest_record(runner) -> bool:
 	runner.check(record.commands == Lockstep.log_lines(online.lockstep.command_log()) and record.commands.size() >= 1, "N-PT1 the record holds the lockstep command lines")
 	runner.check(main.playtest_context().over == false, "N-PT1 a running online match is not over")
 	main.free()
+	return true
+
+func _launcher(runner, parent: Node, prerelease: bool, search: String = "", page: String = "", first_visit: bool = true):
+	if first_visit: LauncherScript.code_applied = false
+	var launcher = Launcher.instantiate()
+	launcher.prerelease = prerelease
+	launcher.search = search
+	launcher.page = page
+	parent.add_child(launcher)
+	await runner.process_frame
+	await runner.process_frame
+	return launcher
+
+func test_launcher_release_hides_relay(runner) -> bool:
+	var saved_settings: String = AudioSettings.path
+	var scratch: String = "user://test-launcher-release-%d.cfg" % OS.get_process_id()
+	AudioSettings.path = scratch
+	DirAccess.remove_absolute(scratch)
+	for size in [Vector2i(1280, 720), Vector2i(1920, 1080)]:
+		var port := SubViewport.new()
+		port.size = size
+		runner.root.add_child(port)
+		var launcher = await _launcher(runner, port, false)
+		launcher.get_node("Center/Box/WaitRow").visible = true
+		launcher.get_node("Center/Box/ThisBuild").visible = true
+		await runner.process_frame
+		await runner.process_frame
+		var box: Control = launcher.get_node("Center/Box")
+		var relay: LineEdit = box.get_node("RelayUrl")
+		runner.check(not box.get_node("Advanced").visible and not relay.visible, "N21 release hides the fold and the relay field at %s" % size)
+		runner.check(relay.text == JoinLink.DEFAULT_RELAY, "N21 release keeps the default relay at %s" % size)
+		launcher._set_busy(true)
+		runner.check(not relay.editable, "N21 busy locks the hidden relay field at %s" % size)
+		launcher._set_busy(false)
+		runner.check(relay.editable, "N21 idle unlocks the hidden relay field at %s" % size)
+		var view := Rect2(Vector2.ZERO, Vector2(size))
+		var rects: Array[Rect2] = []
+		for path in LAUNCHER_PATHS:
+			if path == "Advanced" or path == "RelayUrl" or path == "RelayHelp": continue
+			var control: Control = box.get_node_or_null(path)
+			runner.check(control != null and control.visible and view.encloses(control.get_global_rect()), "N21 %s inside %s" % [path, size])
+			if control != null: rects.append(control.get_global_rect())
+		for i in rects.size():
+			for j in range(i + 1, rects.size()):
+				runner.check(not rects[i].intersects(rects[j]), "N21 controls %d and %d do not overlap at %s" % [i, j, size])
+		print("N21 Center/Box height at %s: %s" % [size, box.get_global_rect().size.y])
+		launcher.free()
+		port.free()
+	AudioSettings.path = saved_settings
+	DirAccess.remove_absolute(scratch)
+	return true
+
+func _page_case(runner, prerelease: bool, search: String, label: String) -> Dictionary:
+	var launcher = await _launcher(runner, runner.root, prerelease, search)
+	var box: Control = launcher.get_node("Center/Box")
+	runner.check(launcher._transport == null and not launcher.is_processing(), "N22 page address never connects: %s" % label)
+	var result := {"code": box.get_node("JoinRow/Code").text, "relay": box.get_node("RelayUrl").text, "relay_visible": box.get_node("RelayUrl").visible, "open": box.get_node("Advanced").button_pressed}
+	launcher.free()
+	return result
+
+func test_launcher_prefills_from_page(runner) -> bool:
+	var saved_settings: String = AudioSettings.path
+	var scratch: String = "user://test-launcher-prefill-%d.cfg" % OS.get_process_id()
+	AudioSettings.path = scratch
+	DirAccess.remove_absolute(scratch)
+	var both: String = "?code=abc234&relay=wss%3A%2F%2Fx.example%2Fws"
+	var release: Dictionary = await _page_case(runner, false, both, "release")
+	runner.check(release.code == "ABC234" and release.relay == JoinLink.DEFAULT_RELAY and not release.relay_visible, "N22 release takes the code and ignores ?relay=")
+	var dev: Dictionary = await _page_case(runner, true, both, "prerelease")
+	runner.check(dev.code == "ABC234" and dev.relay == "wss://x.example/ws" and dev.relay_visible and dev.open, "N22 prerelease takes the code and the relay and opens the fold")
+	var bad_relay: Dictionary = await _page_case(runner, true, "?relay=https%3A%2F%2Fx.example%2Fws&code=ABC2345", "bad relay and code")
+	runner.check(bad_relay.relay == JoinLink.DEFAULT_RELAY and not bad_relay.open and bad_relay.code == "", "N22 a bad relay and a 7-character code are ignored")
+	var oversize: Dictionary = await _page_case(runner, true, "?code=" + "A".repeat(3000), "oversize")
+	runner.check(oversize.code == "", "N22 an oversize query is ignored")
+	var first = await _launcher(runner, runner.root, true, both)
+	var back = await _launcher(runner, runner.root, true, both, "", false)
+	var back_box: Control = back.get_node("Center/Box")
+	runner.check(first.get_node("Center/Box/JoinRow/Code").text == "ABC234", "N22 the first visit takes the code")
+	runner.check(back_box.get_node("JoinRow/Code").text == "" and back_box.get_node("RelayUrl").text == "wss://x.example/ws" and back_box.get_node("Advanced").button_pressed, "N22 a return to the launcher drops the code and keeps the relay")
+	first.free()
+	back.free()
+	AudioSettings.path = saved_settings
+	DirAccess.remove_absolute(scratch)
+	return true
+
+const RELAY_HELP := "Relay server: matches players online. Test builds only; leave it unless you are trying another relay."
+
+func test_launcher_relay_help(runner) -> bool:
+	var saved_settings: String = AudioSettings.path
+	var scratch: String = "user://test-launcher-relay-help-%d.cfg" % OS.get_process_id()
+	AudioSettings.path = scratch
+	DirAccess.remove_absolute(scratch)
+	for size in [Vector2i(1280, 720), Vector2i(1920, 1080)]:
+		var port := SubViewport.new()
+		port.size = size
+		runner.root.add_child(port)
+		var launcher = await _launcher(runner, port, true)
+		launcher.get_node("Center/Box/WaitRow").visible = true
+		launcher.get_node("Center/Box/ThisBuild").visible = true
+		await runner.process_frame
+		var box: Control = launcher.get_node("Center/Box")
+		var help: Label = box.get_node_or_null("RelayHelp")
+		runner.check(help != null and not help.visible, "N26 RelayHelp exists and is hidden while the fold is closed at %s" % size)
+		if help == null:
+			launcher.free()
+			port.free()
+			continue
+		box.get_node("Advanced").button_pressed = true
+		await runner.process_frame
+		await runner.process_frame
+		var relay: LineEdit = box.get_node("RelayUrl")
+		runner.check(help.visible and help.text == RELAY_HELP, "N26 opening the fold shows the exact caption at %s" % size)
+		runner.check(help.get_index() == relay.get_index() - 1, "N26 caption sits directly above the relay field at %s" % size)
+		var view := Rect2(Vector2.ZERO, Vector2(size))
+		runner.check(view.encloses(help.get_global_rect()), "N26 caption inside %s" % size)
+		for path in LAUNCHER_PATHS:
+			var control: Control = box.get_node_or_null(path)
+			if control == null or control == help or not control.visible: continue
+			runner.check(not control.get_global_rect().intersects(help.get_global_rect()), "N26 caption does not overlap %s at %s" % [path, size])
+		var height: float = box.get_global_rect().size.y
+		print("N26 prerelease fold-open worst-case Center/Box at %s: %s x %s, separation %s" % [size, box.get_global_rect().size.x, height, box.get_theme_constant("separation")])
+		runner.check(height <= 720.0 and box.get_global_rect().size.x < 600.0, "N26 worst-case box %s fits 720 high and under 600 wide at %s" % [box.get_global_rect().size, size])
+		launcher._fail("A very long relay reason that wraps over many lines. ".repeat(8))
+		await runner.process_frame
+		await runner.process_frame
+		runner.check(box.get_global_rect().size.y <= 720.0, "N26 a long Status keeps the worst-case box inside 720 high at %s, got %s" % [size, box.get_global_rect().size.y])
+		launcher.free()
+		var opened = await _launcher(runner, port, true, "?relay=wss%3A%2F%2Fx.example%2Fws")
+		runner.check(opened.get_node("Center/Box/RelayHelp").visible, "N26 ?relay= opens the fold with the caption at %s" % size)
+		opened.free()
+		var release = await _launcher(runner, port, false, "?relay=wss%3A%2F%2Fx.example%2Fws")
+		runner.check(not release.get_node("Center/Box/RelayHelp").visible, "N26 release hides the caption on load and ignores ?relay= at %s" % size)
+		runner.check(release.get_node("Center/Box").get_global_rect().size.y <= 720.0 or size.y > 720, "N26 release box fits at %s" % size)
+		print("N26 release Center/Box at %s: %s" % [size, release.get_node("Center/Box").get_global_rect().size])
+		release.free()
+		port.free()
+	AudioSettings.path = saved_settings
+	DirAccess.remove_absolute(scratch)
+	return true
+
+func test_copy_link_on_web(runner) -> bool:
+	var saved_settings: String = AudioSettings.path
+	var scratch: String = "user://test-launcher-copy-%d.cfg" % OS.get_process_id()
+	AudioSettings.path = scratch
+	DirAccess.remove_absolute(scratch)
+	var launcher = await _launcher(runner, runner.root, true, "", "https://wargrid-web-test.fly.dev/")
+	launcher._code = "ABC234"
+	runner.check(launcher.get_node("Center/Box/WaitRow/Copy").text == "Copy link", "N23 Copy reads Copy link on the web")
+	runner.check(launcher._copy_text() == "https://wargrid-web-test.fly.dev/?code=ABC234", "N23 the link carries the code only for the default relay")
+	launcher.get_node("Center/Box/RelayUrl").text = "wss://x.example/ws"
+	runner.check(launcher._copy_text().ends_with("&relay=wss%3A%2F%2Fx.example%2Fws"), "N23 a non-default relay rides along")
+	launcher.free()
+	var desktop = await _launcher(runner, runner.root, true)
+	desktop._code = "ABC234"
+	runner.check(desktop.get_node("Center/Box/WaitRow/Copy").text == "Copy code" and desktop._copy_text() == "ABC234", "N23 off the web Copy copies the bare code")
+	desktop.free()
+	AudioSettings.path = saved_settings
+	DirAccess.remove_absolute(scratch)
+	return true
+
+func test_launcher_reads_no_page_off_web(runner) -> bool:
+	var launcher = Launcher.instantiate()
+	runner.check(launcher.get("page") == "" and launcher.get("search") == "", "N24 a headless launcher reads no page address")
+	launcher.free()
 	return true

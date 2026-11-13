@@ -12,7 +12,7 @@ const COMPONENTS: Array = [
 const LICENSES: Dictionary = {"Expat": "EXPAT-LICENCE-TEXT", "Zlib": "ZLIB-LICENCE-TEXT"}
 
 func cases() -> Array[Callable]:
-	return [test_every_music_row, test_new_row_appears, test_macleod_block, test_voice_line, test_maps_notice, test_godot_license, test_wargrid_line, test_third_party_components, test_third_party_engine_data, test_macleod_ignores_earlier_fence, test_crlf_credits]
+	return [test_every_music_row, test_new_row_appears, test_macleod_block, test_voice_line, test_unit_voice_rows, test_maps_notice, test_godot_license, test_wargrid_line, test_third_party_components, test_third_party_engine_data, test_macleod_ignores_earlier_fence, test_crlf_credits]
 
 func _credits() -> String:
 	return FileAccess.get_file_as_string(CREDITS_PATH).replace("\r\n", "\n")
@@ -61,6 +61,21 @@ func _block(text: String) -> String:
 func test_voice_line(runner) -> bool:
 	var panel := _panel(_credits())
 	runner.check("Piper en_US-kristin-medium (public-domain LibriVox recordings)" in panel and "huggingface.co/rhasspy/piper-voices" in panel, "CR4 voice line")
+	runner.check("unit order lines: Piper en_US-bryce-medium (public domain), https://huggingface.co/rhasspy/piper-voices/blob/e7229f7d33a10e145e109b886d661984201ac3c4/en/en_US/bryce/medium/MODEL_CARD" in panel, "CR4 unit voice line")
+	return true
+
+func test_unit_voice_rows(runner) -> bool:
+	var text := _credits()
+	var lines := {"infantry": ["move", "attack"], "vehicle": ["move", "attack"], "worker": ["move", "work"]}
+	for role: String in lines:
+		for line: String in lines[role]:
+			for n in [1, 2]:
+				var file := "voice/units/%s_%s_%d.wav" % [role, line, n]
+				var row := ""
+				for l in text.split("\n"):
+					if l.begins_with("| `%s` |" % file): row = l
+				runner.check(row != "", "CR-U a credits row for %s" % file)
+				runner.check("huggingface.co/rhasspy/piper-voices/blob/e7229f7d33a10e145e109b886d661984201ac3c4/en/en_US/bryce/medium/MODEL_CARD" in row, "CR-U %s names the pinned bryce model card" % file)
 	return true
 
 func test_maps_notice(runner) -> bool:

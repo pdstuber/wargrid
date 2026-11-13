@@ -6,7 +6,7 @@ const MarkerCapture = preload("res://scripts/playtest/marker_capture.gd")
 const PlaytestSettings = preload("res://scripts/playtest/playtest_settings.gd")
 const FocusCards = preload("res://scripts/playtest/focus_cards.gd")
 const Launcher = preload("res://scenes/launcher.tscn")
-const SHIPPED := ["p1-frc-economy", "p1-frc-tunnels-online", "p1-look-and-m6-fixes"]
+const SHIPPED := ["p2-you-clicked", "p1-frc-economy", "p1-frc-tunnels-online", "p1-look-and-m6-fixes"]
 var scratch: String = "user://test-playtest-settings-%d.cfg" % OS.get_process_id()
 var commit_scratch: String = "user://test-playtest-commit-%d.txt" % OS.get_process_id()
 var sessions: String = "user://test-playtests-%d" % OS.get_process_id()
@@ -166,7 +166,7 @@ func test_launcher_focus_card(runner) -> bool:
 		runner.check(button != null and button.visible, "PT6 ThisBuild shows with the helper on at %s" % label)
 		if button != null:
 			_clear_of_siblings(runner, box, button, view, "ThisBuild " + label)
-			runner.check(box.get_child(box.get_node("Offline").get_index() + 1) == button, "PT6 ThisBuild sits right after Offline")
+			runner.check(box.get_child(box.get_node("OfflineRow").get_index() + 1) == button, "PT6 ThisBuild sits right after OfflineRow")
 			button.pressed.emit()
 			await runner.process_frame
 			await runner.process_frame
@@ -176,10 +176,10 @@ func test_launcher_focus_card(runner) -> bool:
 				runner.check(view.encloses(panel.get_global_rect()), "PT6 FocusPanel inside the viewport at %s" % label)
 				_labels_inside(runner, panel, view, label)
 				var picker: OptionButton = panel.find_child("Picker", true, false)
-				runner.check(picker.item_count == 3, "PT6 Picker lists 3 cards, got %d" % picker.item_count)
+				runner.check(picker.item_count == 4, "PT6 Picker lists 4 cards, got %d" % picker.item_count)
 				picker.select(1)
 				picker.item_selected.emit(1)
-				runner.check(FocusCards.chosen == "p1-frc-tunnels-online", "PT6 choosing item 2 sets the chosen card, got %s" % FocusCards.chosen)
+				runner.check(FocusCards.chosen == "p1-frc-economy", "PT6 choosing item 2 sets the chosen card, got %s" % FocusCards.chosen)
 				panel.find_child("Close", true, false).pressed.emit()
 				runner.check(not panel.visible and launcher.get_node("Center").visible, "PT6 Close returns to the launcher at %s" % label)
 		launcher.free()

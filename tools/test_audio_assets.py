@@ -27,6 +27,16 @@ VOICE = {
     "unit_ready",
     "victory",
 }
+UNITS = {
+    f"{role}_{line}_{n}"
+    for role, names in {
+        "infantry": ("move", "attack"),
+        "vehicle": ("move", "attack"),
+        "worker": ("move", "work"),
+    }.items()
+    for line in names
+    for n in (1, 2)
+}
 MUSIC = {"conflict", "enemy_spotted", "hitman", "mammoth", "stay_the_course"}
 BUDGET = 20_000_000
 
@@ -78,7 +88,8 @@ class AudioAssetsTest(unittest.TestCase):
             for d in ("sfx", "voice", "music")
         }
         self.assertEqual(names["sfx"], SFX)
-        self.assertEqual(names["voice"], VOICE)
+        self.assertEqual(names["voice"], VOICE | {"units"})
+        self.assertEqual({p.stem for p in (AUDIO / "voice" / "units").iterdir() if p.suffix == ".wav"}, UNITS)
         self.assertEqual(names["music"], MUSIC)
         for p in audio_files():
             self.assertIn(p.relative_to(AUDIO).parts[0], ("sfx", "voice", "music"), str(p))
@@ -99,7 +110,8 @@ class AudioAssetsTest(unittest.TestCase):
                 self.assertTrue(source.startswith("https://"), path)
             else:
                 self.assertEqual(licence, "GPL-3.0-or-later", path)
-                self.assertIn("en_US-kristin-medium", source + " ".join(credit_rows()[path]), path)
+                voice = "bryce" if path.startswith("voice/units/") else "kristin"
+                self.assertIn(f"en_US-{voice}-medium", source + " ".join(credit_rows()[path]), path)
 
     def test_music_attribution_text(self) -> None:
         text = CREDITS.read_text(encoding="utf-8")

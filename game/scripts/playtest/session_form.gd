@@ -8,6 +8,7 @@ signal closed
 const WIDTH: float = 420.0
 const MARGIN: float = 16.0
 const SCORES: int = 5
+const SCALE_LEGEND := "1 strongly disagree … 5 strongly agree"
 var _content: VBoxContainer
 var _buttons: HBoxContainer
 var _session: PlaytestSession
@@ -51,6 +52,7 @@ func open_questions(session: PlaytestSession, card: Dictionary) -> void:
 	_reset(session, "How was it?")
 	for question: Dictionary in card.get("questions", []):
 		_add_question(question)
+	_add_label(SCALE_LEGEND).name = "ScaleLegend"
 	for m: int in session.data.matches.size():
 		_add_label("Match %d" % (m + 1))
 		_add_markers(m)

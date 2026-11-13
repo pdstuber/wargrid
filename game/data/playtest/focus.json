@@ -1,4 +1,18 @@
 [
+ {"id": "p2-you-clicked", "title": "Every order heard",
+  "new": ["Units answer every order with a short voice line.", "The menu has sections; the relay URL sits under Advanced.", "Match music is shuffled each match."],
+  "try": [
+   {"id": "move", "text": "Move infantry, a vehicle and a worker with a right-click", "trigger": "move"},
+   {"id": "attack", "text": "Attack an enemy with a right-click", "trigger": "attack"},
+   {"id": "work", "text": "Send workers to collect supplies", "trigger": "gather"},
+   {"id": "online", "text": "Give orders in an online match"},
+   {"id": "music", "text": "Start a second match and listen to the first track"},
+   {"id": "paste", "text": "Online: Copy the join link, open it in a second tab, and paste a code into the join field"}],
+  "questions": [
+   {"id": "heard", "text": "Every order I gave felt heard"},
+   {"id": "not_chatty", "text": "The voices stayed out of the way when I clicked fast"},
+   {"id": "menu", "text": "The menu sections made it easy to find things"},
+   {"id": "music", "text": "The match music felt varied between matches"}]},
  {"id": "p1-frc-economy", "title": "FRC economy",
   "new": ["Playtest helper: ` shows this checklist, N drops a note with a screenshot.", "FRC Laborers collect supplies; small piles are separate sources."],
   "try": [

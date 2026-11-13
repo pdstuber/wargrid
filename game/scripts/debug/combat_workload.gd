@@ -2,9 +2,11 @@ extends RefCounted
 
 const Simulation = preload("res://scripts/simulation/simulation.gd")
 const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.gd")
+const MapData = preload("res://scripts/simulation/map_data.gd")
+const TeamMatch = preload("res://scripts/debug/team_match.gd")
 
 static func create(layout: String) -> Simulation:
-	assert(layout == "open" or layout == "dense" or layout == "contact" or layout == "skirmish3v3" or layout == "transports" or layout == "defences" or layout == "docks" or layout == "hordes300" or layout == "horde_render" or layout == "horde_render_500" or layout == "ramp" or layout == "frc")
+	assert(layout == "open" or layout == "dense" or layout == "contact" or layout == "skirmish3v3" or layout == "transports" or layout == "defences" or layout == "docks" or layout == "hordes300" or layout == "horde_render" or layout == "horde_render_500" or layout == "ramp" or layout == "frc" or layout == "late_game_3v3")
 	if layout == "skirmish3v3": return _skirmish3v3()
 	if layout == "transports": return _transports()
 	if layout == "defences": return _defences()
@@ -14,6 +16,7 @@ static func create(layout: String) -> Simulation:
 	if layout == "horde_render_500": return _horde_render(25, 16)
 	if layout == "ramp": return _ramp()
 	if layout == "frc": return _frc()
+	if layout == "late_game_3v3": return _late_game_3v3()
 	var solids: Array[Vector2i] = []
 	if layout == "dense":
 		for x: int in [26, 34, 42]:
@@ -220,11 +223,11 @@ static func _attack_move(sim: Simulation, army: Array[int], target: Array) -> vo
 	var marched: Dictionary = sim.issue_command({"tick": 0, "player": 1, "sequence": 0, "type": "attack_move", "entity_ids": army, "target": target})
 	assert(marched.ok, marched.error)
 
-static func _building(sim: Simulation, kind: String, origin: Vector2i) -> void:
+static func _building(sim: Simulation, kind: String, origin: Vector2i, owner: int = 1) -> void:
 	var id: int = sim._next_entity_id
 	sim._next_entity_id += 1
 	var hp: int = CombatDefinitions.profile(kind).max_hp
-	sim._buildings[id] = {"id": id, "owner": 1, "kind": kind, "hp": hp, "max_hp": hp, "origin": [origin.x, origin.y], "completed": true, "work": 0, "paid_cost": 0, "builder_id": null, "approach": null, "queue": [], "active_collector_id": null}
+	sim._buildings[id] = {"id": id, "owner": owner, "kind": kind, "hp": hp, "max_hp": hp, "origin": [origin.x, origin.y], "completed": true, "work": 0, "paid_cost": 0, "builder_id": null, "approach": null, "queue": [], "active_collector_id": null}
 	var combat: Variant = CombatDefinitions.initial_combat(kind)
 	if combat != null: sim._buildings[id].combat = combat
 	sim._replace_union(sim._union_cells())
@@ -281,3 +284,80 @@ static func create_large() -> Simulation:
 			var result: Dictionary = sim.issue_command({"tick": 0, "player": player, "sequence": index, "type": "attack_move", "entity_ids": ids, "target": target})
 			assert(result.ok, result.error)
 	return sim
+
+const LATE_ARMY: Array[Array] = [["rifle_infantry", 12], ["rocket_infantry", 8], ["light_vehicle", 8], ["tank", 7]]
+const LATE_BASE: Array[String] = ["power_plant", "supply_center", "barracks", "factory", "defence"]
+
+# Six seats on Ashfall with built bases and 35 units each, in 5-row blocks either side of the midpoint between the teams so contact starts at once.
+static func _late_game_3v3() -> Simulation:
+	var sim: Simulation = TeamMatch.create()
+	var map: Dictionary = MapData.load(TeamMatch.MAP_PATH)
+	var builders := {}
+	for unit: Dictionary in sim.snapshot().entities: builders[unit.owner] = unit.id
+	var centroids: Array[Vector2] = [_team_centroid(map, 1), _team_centroid(map, 2)]
+	var middle: Vector2 = (centroids[0] + centroids[1]) / 2.0
+	var armies := {}
+	var slots := {1: 0, 2: 0}
+	for entry: Dictionary in TeamMatch.SEATS:
+		_late_base(sim, entry, MapData.start_cell(map, entry.seat), builders[entry.seat])
+		armies[entry.seat] = _late_army(sim, entry, middle, slots[entry.team])
+		slots[entry.team] += 1
+	var total: int = 0
+	for entry: Dictionary in TeamMatch.SEATS:
+		total += armies[entry.seat].size()
+		_late_attack(sim, entry, map, armies[entry.seat])
+	assert(total == 210, "army %d mid %s" % [total, middle])
+	return sim
+
+static func _team_centroid(map: Dictionary, team: int) -> Vector2:
+	var sum := Vector2.ZERO
+	var count: int = 0
+	for entry: Dictionary in TeamMatch.SEATS:
+		if entry.team != team: continue
+		sum += Vector2(MapData.start_cell(map, entry.seat)) + Vector2(0.5, 0.5)
+		count += 1
+	return sum / count
+
+static func _late_base(sim: Simulation, entry: Dictionary, start: Vector2i, builder: int) -> void:
+	for suffix: String in LATE_BASE:
+		if suffix == "power_plant" and entry.faction == "frc": continue
+		var kind: String = entry.faction + "_" + suffix
+		var origin: Vector2i = _free_origin(sim, entry.seat, builder, kind, start)
+		assert(origin.x >= 0, "no base cell for " + kind)
+		_building(sim, kind, origin, entry.seat)
+
+static func _free_origin(sim: Simulation, seat: int, builder: int, kind: String, start: Vector2i) -> Vector2i:
+	for radius in range(4, 15):
+		for dy in range(-radius, radius + 1):
+			for dx in range(-radius, radius + 1):
+				if maxi(absi(dx), absi(dy)) != radius: continue
+				var origin: Vector2i = start + Vector2i(dx, dy)
+				if sim.preview_build(seat, builder, kind, origin).ok: return origin
+	return Vector2i(-1, -1)
+
+static func _late_army(sim: Simulation, entry: Dictionary, middle: Vector2, slot: int) -> Array[int]:
+	var kinds: Array[String] = []
+	for row: Array in LATE_ARMY:
+		for count in range(row[1]): kinds.append(entry.faction + "_" + row[0])
+	var ids: Array[int] = []
+	var side: int = -1 if entry.team == 1 else 1
+	var occupied: Dictionary = sim.occupied_cells()
+	for index in range(kinds.size()):
+		@warning_ignore("integer_division")
+		var column: int = 7 * slot + index / 5
+		var cell := Vector2i(floori(middle.x) + (column if side > 0 else -column - 1), floori(middle.y) - 5 + index % 5)
+		var id: int = sim.spawn(entry.seat, Vector2(cell) + Vector2(0.5, 0.5), kinds[index], occupied)
+		if id <= 0: continue
+		occupied[cell] = true
+		ids.append(id)
+	return ids
+
+static func _late_attack(sim: Simulation, entry: Dictionary, map: Dictionary, ids: Array[int]) -> void:
+	var start: Vector2 = Vector2(MapData.start_cell(map, entry.seat))
+	var best: Vector2 = Vector2.INF
+	for other: Dictionary in TeamMatch.SEATS:
+		if other.team == entry.team: continue
+		var target: Vector2 = Vector2(MapData.start_cell(map, other.seat)) + Vector2(0.5, 0.5)
+		if start.distance_squared_to(target) < start.distance_squared_to(best): best = target
+	var result: Dictionary = sim.issue_command({"tick": 0, "player": entry.seat, "sequence": 0, "type": "attack_move", "entity_ids": ids, "target": [best.x, best.y]})
+	assert(result.ok, result.error)

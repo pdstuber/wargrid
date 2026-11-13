@@ -425,3 +425,31 @@ Questionnaire over the packages after two days of additions; result in [packages
 - **Roadmap page:** `docs/packages.md` becomes the one-screen "what comes when" page (now, day lane, night lane, later); scope stays in the blueprint and the reviews.
 - **Blueprint:** a small pass later in its own session: take order and status out of §7 (they live in packages and STATUS) and check every done or not-done claim against its evidence; no full renumbering.
 - **README roadmap** (branch `spike-visualization`): kept next to packages; its check is re-keyed from blueprint §7 headings to package names and its rows refreshed, merged in its own session after this one.
+
+## Play with a friend (user, 2026-11-13)
+
+Questionnaire after a research pass on simple ways to play 1:1 with a friend (research note private). Placements: the P2.2 row and a line under "Not ordered yet" in [packages](../packages.md).
+
+- **Channel-neutral:** Discord was only an example of where a link gets sent (chat, SMS or a phone call do as well). Nothing is optimised for or integrated with a chat or storefront service: no Discord Activity or bot, no Steam features.
+- **Target flow now: link only.** Host: Create, Copy link, send it by any channel; friend: click, pick a faction, Join (built in P2). A second, simpler round of questions the same day replaced the first round's "easy codes now" and "code before room" answers.
+- **Hidden tab while sending the link (P2.2):** a lobby still waiting for its second player tolerates minutes of silence instead of the 10 s read deadline; the 10 s rule stays for started matches; the client's 5 s silence rule (`RelayTransport.silent`) gets the same lobby tolerance. Checked before deciding: the lobby phase ends before the relay's `start` message, from which replays, seeds and traces begin, so the wait does not touch replays or determinism; it fits the Relay guards package (hello deadline before `hello`, unstarted-lobby expiry of about 15 min as the upper bound, [netplay reference review](netplay-reference-review.md) S3/S4); the open M9 question of pausing or continuing while a seat is away in a running match ([dropped players](../questions/next-m9-drops.md) Q1) is unaffected. Whether browsers keep a hidden tab's WebSocket open for minutes: unverified, observed at P2's playtest with the hidden-tab check.
+- **Rematch (P2.2):** a "Play again" button after a match: the room stays open, both press it, a new match starts with the same opponent and no new link.
+- **Word codes:** only if reading a 6-character code to a friend on a call proves painful.
+- **Permanent friend link, quick match:** the friend link is re-explored with the M9 lobby, together with other modern, easy ways to match up with friends; quick match comes after M9.
+
+## New launcher (user, 2026-11-13)
+
+Every screen is drawn in two sets with one layout, kept in [launcher mockups](../images/launcher-mockups/): `minimal-*` is P2.1, `fancy-*` is for later packages. Placement: P2.1 in [packages](../packages.md).
+
+- **First round:** light tabs on top (Vs. Bot, With Friend, Settings; mockups deleted) in the dark game look, own package right after P2; superseded the same day by the sidebar decision below.
+- **Second round: sidebar** with separate Vs. Bot and Play with Friend pages, drawn by ChatGPT in a primitive grey and a rich dark version (mockups deleted). The sidebar stays; its pages and the rich skin were superseded the same day by the picks below, made on labelled A/B pages.
+- **Structure: one Play page.** Sidebar: Play, Join, Settings, Credits, version at the bottom. [Play](../images/launcher-mockups/minimal-play-bot.webp) holds your faction, an opponent slot switched between Bot and [Friend](../images/launcher-mockups/minimal-play-friend.webp), and the map; [Join](../images/launcher-mockups/minimal-join.webp) takes a match code. The Vs. Bot and Play with Friend pages are dropped: a 3v3 with friends and bots fits neither, so that split would have changed again at M9.
+- **Two sets, one layout:** the minimal set keeps today's grey; the [fancy set](../images/launcher-mockups/fancy-play-bot.webp) uses the flat look of the [art direction](../art-direction/ART_DIRECTION.md): matte fills, square slabs, owner blue and red on the chosen faction, cyan for selected only, amber for the one start button, no icons, no backdrop. The ChatGPT skin (gradients, painted backdrop, painted map) is dropped.
+- **Factions and map: dropdowns** in both sets. The fancy set adds the faction emblem and a map preview panel (thumbnail, start positions, supply sources).
+- **Waiting for the friend: its own view** ([minimal](../images/launcher-mockups/minimal-waiting.webp), [fancy](../images/launcher-mockups/fancy-waiting.webp)): invite link with Copy, both player slots, the map, Cancel match. Part of P2.1.
+- **Fast bot start:** the launcher opens on Play with Bot selected and the last settings preselected; no quick-match button. Part of P2.1.
+- **Bot level and play style:** hidden in the minimal set until they exist (supersedes "shown, only Normal enabled" from the same day); the fancy set shows levels 1 to 5 and the play style.
+- **No Back button** (every page is one sidebar click away) and **no mode-card start screen** (a dark start screen with two mode cards, mockup deleted); the launcher opens on a page directly.
+- **Starting resources, game speed, Expert:** left out until the features exist; each control comes with its feature.
+- **Emblems:** Wargrid's own, not the Zero Hour faction emblems the ChatGPT mockups resembled (EA trademarks). Single-colour, so each works in any owner colour (colour is ownership, art direction §6); abstract badge shapes, no machines: [USA](../images/launcher-mockups/emblem-usa.svg) a split arrowhead, [China](../images/launcher-mockups/emblem-china.svg) two chamfered plates with the lower one wider, [FRC](../images/launcher-mockups/emblem-frc.svg) a broken ring of three unequal pieces. Stars, wings, national symbols and letters are out. No search against existing logos was done (agent note: the arrowhead is the one to check before the fancy set ships).
+- **Fancy set notes (agent assessment, for its planning):** the map picture is a thumbnail rendered from the real map data in Wargrid's look, not painted art; the thumbnails in the fancy mockups are sketches.
