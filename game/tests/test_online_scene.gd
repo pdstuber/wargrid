@@ -8,6 +8,7 @@ const AudioSettings = preload("res://scripts/presentation/audio_settings.gd")
 const MatchSettings = preload("res://scripts/match_settings.gd")
 const PlaytestSettings = preload("res://scripts/playtest/playtest_settings.gd")
 const SkirmishMain = preload("res://scripts/skirmish_main.gd")
+const JoinLink = preload("res://scripts/join_link.gd")
 const Lockstep = preload("res://scripts/net/lockstep.gd")
 const Wire = preload("res://scripts/net/wire.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
@@ -33,7 +34,7 @@ class FakeTransport extends RefCounted:
 	func rtt_samples() -> PackedInt64Array: return PackedInt64Array([40000])
 
 func cases() -> Array[Callable]:
-	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_rejection_line, test_funds_rejection_is_announced, test_overlay_net_line, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_stall_frames_are_not_step_frames, test_notices_reach_the_hud_while_processing, test_launcher_layout, test_launcher_sections, test_launcher_faction_selectors_fit, test_plays_dry_wells_from_each_seat, test_offline_uses_chosen_map, test_restart_keeps_map_and_starts, test_restart_drops_old_stepped_results, test_joiner_refuses_other_map, test_old_relay_mismatch_is_shown, test_cancel_and_copy_while_waiting, test_start_without_settings_is_a_protocol_error, test_both_seats_share_map_and_starts, test_host_told_opponent_left_before_start, test_credits_panel_layout, test_online_playtest_record]
+	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_rejection_line, test_funds_rejection_is_announced, test_overlay_net_line, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_stall_frames_are_not_step_frames, test_notices_reach_the_hud_while_processing, test_launcher_layout, test_launcher_sections, test_launcher_faction_selectors_fit, test_plays_dry_wells_from_each_seat, test_offline_uses_chosen_map, test_restart_keeps_map_and_starts, test_restart_drops_old_stepped_results, test_joiner_refuses_other_map, test_old_relay_mismatch_is_shown, test_cancel_and_copy_while_waiting, test_start_without_settings_is_a_protocol_error, test_both_seats_share_map_and_starts, test_host_told_opponent_left_before_start, test_credits_panel_layout, test_online_playtest_record, test_launcher_release_hides_relay, test_launcher_prefills_from_page, test_copy_link_on_web, test_launcher_reads_no_page_off_web]
 
 func _online(runner, seat: int) -> Dictionary:
 	var transport := FakeTransport.new()
@@ -226,6 +227,7 @@ func test_launcher_sections(runner) -> bool:
 		port.size = size
 		runner.root.add_child(port)
 		var launcher = Launcher.instantiate()
+		launcher.prerelease = true
 		port.add_child(launcher)
 		launcher.get_node("Center/Box/WaitRow").visible = true
 		launcher.get_node("Center/Box/ThisBuild").visible = true
@@ -289,6 +291,7 @@ func test_launcher_layout(runner) -> bool:
 		port.size = size
 		runner.root.add_child(port)
 		var launcher = Launcher.instantiate()
+		launcher.prerelease = true
 		port.add_child(launcher)
 		launcher.get_node("Center/Box/WaitRow").visible = true
 		launcher.get_node("Center/Box/ThisBuild").visible = true
@@ -640,4 +643,105 @@ func test_online_playtest_record(runner) -> bool:
 	runner.check(record.commands == Lockstep.log_lines(online.lockstep.command_log()) and record.commands.size() >= 1, "N-PT1 the record holds the lockstep command lines")
 	runner.check(main.playtest_context().over == false, "N-PT1 a running online match is not over")
 	main.free()
+	return true
+
+func _launcher(runner, parent: Node, prerelease: bool, search: String = "", page: String = ""):
+	var launcher = Launcher.instantiate()
+	launcher.prerelease = prerelease
+	launcher.search = search
+	launcher.page = page
+	parent.add_child(launcher)
+	await runner.process_frame
+	await runner.process_frame
+	return launcher
+
+func test_launcher_release_hides_relay(runner) -> bool:
+	var saved_settings: String = AudioSettings.path
+	var scratch: String = "user://test-launcher-release-%d.cfg" % OS.get_process_id()
+	AudioSettings.path = scratch
+	DirAccess.remove_absolute(scratch)
+	for size in [Vector2i(1280, 720), Vector2i(1920, 1080)]:
+		var port := SubViewport.new()
+		port.size = size
+		runner.root.add_child(port)
+		var launcher = await _launcher(runner, port, false)
+		launcher.get_node("Center/Box/WaitRow").visible = true
+		launcher.get_node("Center/Box/ThisBuild").visible = true
+		await runner.process_frame
+		await runner.process_frame
+		var box: Control = launcher.get_node("Center/Box")
+		var relay: LineEdit = box.get_node("RelayUrl")
+		runner.check(not box.get_node("Advanced").visible and not relay.visible, "N21 release hides the fold and the relay field at %s" % size)
+		runner.check(relay.text == JoinLink.DEFAULT_RELAY, "N21 release keeps the default relay at %s" % size)
+		launcher._set_busy(true)
+		runner.check(not relay.editable, "N21 busy locks the hidden relay field at %s" % size)
+		launcher._set_busy(false)
+		runner.check(relay.editable, "N21 idle unlocks the hidden relay field at %s" % size)
+		var view := Rect2(Vector2.ZERO, Vector2(size))
+		var rects: Array[Rect2] = []
+		for path in LAUNCHER_PATHS:
+			if path == "Advanced" or path == "RelayUrl": continue
+			var control: Control = box.get_node_or_null(path)
+			runner.check(control != null and control.visible and view.encloses(control.get_global_rect()), "N21 %s inside %s" % [path, size])
+			if control != null: rects.append(control.get_global_rect())
+		for i in rects.size():
+			for j in range(i + 1, rects.size()):
+				runner.check(not rects[i].intersects(rects[j]), "N21 controls %d and %d do not overlap at %s" % [i, j, size])
+		print("N21 Center/Box height at %s: %s" % [size, box.get_global_rect().size.y])
+		launcher.free()
+		port.free()
+	AudioSettings.path = saved_settings
+	DirAccess.remove_absolute(scratch)
+	return true
+
+func _page_case(runner, prerelease: bool, search: String, label: String) -> Dictionary:
+	var launcher = await _launcher(runner, runner.root, prerelease, search)
+	var box: Control = launcher.get_node("Center/Box")
+	runner.check(launcher._transport == null and not launcher.is_processing(), "N22 page address never connects: %s" % label)
+	var result := {"code": box.get_node("JoinRow/Code").text, "relay": box.get_node("RelayUrl").text, "relay_visible": box.get_node("RelayUrl").visible, "open": box.get_node("Advanced").button_pressed}
+	launcher.free()
+	return result
+
+func test_launcher_prefills_from_page(runner) -> bool:
+	var saved_settings: String = AudioSettings.path
+	var scratch: String = "user://test-launcher-prefill-%d.cfg" % OS.get_process_id()
+	AudioSettings.path = scratch
+	DirAccess.remove_absolute(scratch)
+	var both: String = "?code=abc234&relay=wss%3A%2F%2Fx.example%2Fws"
+	var release: Dictionary = await _page_case(runner, false, both, "release")
+	runner.check(release.code == "ABC234" and release.relay == JoinLink.DEFAULT_RELAY and not release.relay_visible, "N22 release takes the code and ignores ?relay=")
+	var dev: Dictionary = await _page_case(runner, true, both, "prerelease")
+	runner.check(dev.code == "ABC234" and dev.relay == "wss://x.example/ws" and dev.relay_visible and dev.open, "N22 prerelease takes the code and the relay and opens the fold")
+	var bad_relay: Dictionary = await _page_case(runner, true, "?relay=https%3A%2F%2Fx.example%2Fws&code=ABC2345", "bad relay and code")
+	runner.check(bad_relay.relay == JoinLink.DEFAULT_RELAY and not bad_relay.open and bad_relay.code == "", "N22 a bad relay and a 7-character code are ignored")
+	var oversize: Dictionary = await _page_case(runner, true, "?code=" + "A".repeat(3000), "oversize")
+	runner.check(oversize.code == "", "N22 an oversize query is ignored")
+	AudioSettings.path = saved_settings
+	DirAccess.remove_absolute(scratch)
+	return true
+
+func test_copy_link_on_web(runner) -> bool:
+	var saved_settings: String = AudioSettings.path
+	var scratch: String = "user://test-launcher-copy-%d.cfg" % OS.get_process_id()
+	AudioSettings.path = scratch
+	DirAccess.remove_absolute(scratch)
+	var launcher = await _launcher(runner, runner.root, true, "", "https://wargrid-web-test.fly.dev/")
+	launcher._code = "ABC234"
+	runner.check(launcher.get_node("Center/Box/WaitRow/Copy").text == "Copy link", "N23 Copy reads Copy link on the web")
+	runner.check(launcher._copy_text() == "https://wargrid-web-test.fly.dev/?code=ABC234", "N23 the link carries the code only for the default relay")
+	launcher.get_node("Center/Box/RelayUrl").text = "wss://x.example/ws"
+	runner.check(launcher._copy_text().ends_with("&relay=wss%3A%2F%2Fx.example%2Fws"), "N23 a non-default relay rides along")
+	launcher.free()
+	var desktop = await _launcher(runner, runner.root, true)
+	desktop._code = "ABC234"
+	runner.check(desktop.get_node("Center/Box/WaitRow/Copy").text == "Copy code" and desktop._copy_text() == "ABC234", "N23 off the web Copy copies the bare code")
+	desktop.free()
+	AudioSettings.path = saved_settings
+	DirAccess.remove_absolute(scratch)
+	return true
+
+func test_launcher_reads_no_page_off_web(runner) -> bool:
+	var launcher = Launcher.instantiate()
+	runner.check(launcher.get("page") == "" and launcher.get("search") == "", "N24 a headless launcher reads no page address")
+	launcher.free()
 	return true

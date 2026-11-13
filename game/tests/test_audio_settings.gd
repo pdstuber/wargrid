@@ -208,6 +208,7 @@ func test_mute_key_in_match(runner) -> bool:
 
 func test_mute_key_in_launcher_and_text_field(runner) -> bool:
 	var launcher = Launcher.instantiate()
+	launcher.prerelease = true
 	runner.root.add_child(launcher)
 	await runner.process_frame
 	await runner.process_frame

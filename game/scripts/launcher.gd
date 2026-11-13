@@ -12,6 +12,7 @@ const SkirmishMain = preload("res://scripts/skirmish_main.gd")
 const MatchSettings = preload("res://scripts/match_settings.gd")
 const Credits = preload("res://scripts/presentation/credits.gd")
 const PlaytestSettings = preload("res://scripts/playtest/playtest_settings.gd")
+const JoinLink = preload("res://scripts/join_link.gd")
 const FocusCards = preload("res://scripts/playtest/focus_cards.gd")
 const FocusCardView = preload("res://scripts/playtest/focus_card_view.gd")
 const OFFLINE_SCENE: String = "res://scenes/skirmish.tscn"
@@ -22,6 +23,9 @@ var _seat: int = 0
 var _code: String = ""
 var _hello_sent: bool = false
 var _lockstep: RefCounted
+var prerelease: bool = PlaytestSettings.prerelease()
+var page: String = _page_value("location.origin + location.pathname")
+var search: String = _page_value("location.search")
 @onready var _status: Label = $Center/Box/Status
 
 func _ready() -> void:
@@ -42,11 +46,29 @@ func _ready() -> void:
 	$Center/Box/JoinRow/Join.pressed.connect(func() -> void: _connect($Center/Box/JoinRow/Code.text.strip_edges().to_upper()))
 	$Center/Box/Credits.pressed.connect(_show_credits.bind(true))
 	$CreditsPanel/Box/Close.pressed.connect(_show_credits.bind(false))
-	$Center/Box/WaitRow/Copy.pressed.connect(func() -> void: DisplayServer.clipboard_set(_code))
+	$Center/Box/WaitRow/Copy.pressed.connect(func() -> void: DisplayServer.clipboard_set(_copy_text()))
 	$Center/Box/WaitRow/Cancel.pressed.connect(func() -> void:
 		_transport.close()
 		_fail("Match cancelled"))
 	set_process(false)
+	_apply_page()
+
+static func _page_value(expression: String) -> String:
+	return str(JavaScriptBridge.eval(expression)) if OS.has_feature("web") else ""
+
+func _copy_text() -> String:
+	return _code if page.is_empty() else JoinLink.link(page, _code, $Center/Box/RelayUrl.text.strip_edges())
+
+func _apply_page() -> void:
+	var query: Dictionary = JoinLink.parse(search)
+	$Center/Box/RelayUrl.text = JoinLink.DEFAULT_RELAY
+	$Center/Box/Advanced.visible = prerelease
+	$Center/Box/JoinRow/Code.text = JoinLink.code(query.get("code", ""))
+	var relay: String = JoinLink.relay(query.get("relay", "")) if prerelease else ""
+	if not relay.is_empty():
+		$Center/Box/RelayUrl.text = relay
+		$Center/Box/Advanced.button_pressed = true
+	$Center/Box/WaitRow/Copy.text = "Copy link" if not page.is_empty() else "Copy code"
 
 func _set_advanced(open: bool) -> void:
 	$Center/Box/RelayUrl.visible = open

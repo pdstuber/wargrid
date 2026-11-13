@@ -1,9 +1,9 @@
 ```text
-Resume record (updated 2026-11-13 Task 10a implemented, uncommitted)
-Branch / base commit / working-tree state: p2-you-clicked / 917b4bd / worktree ~/projects/wargrid-wt-p2, Task 10a changes uncommitted
-Last green task / next incomplete task: Task 9 (committed); Task 10a (all gates green, awaiting the coordinator's commit) / Task 10b, then rest of gate (a) (test deploy, F5 repro, web bench, rendered rerun), then Task 10
-Changed paths since last commit: game/scripts/join_link.gd (+uid), game/tests/test_join_link.gd (+uid), game/tests/run_tests.gd, game/scripts/playtest/playtest_settings.gd, docs/reference/p2-verification.md
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 833 / 142277 / 0 / 0 / TESTS PASSED 142277
+Resume record (updated 2026-11-13 Task 10b implemented, uncommitted)
+Branch / base commit / working-tree state: p2-you-clicked / a86ea6a / worktree ~/projects/wargrid-wt-p2, Task 10b changes uncommitted
+Last green task / next incomplete task: Task 10a (committed a86ea6a); Task 10b (all gates green, awaiting the coordinator's commit) / Task 10c (after the user's check C in Firefox), then rest of gate (a) (test deploy, F5 repro, web bench, rendered rerun), then Task 10
+Changed paths since last commit: game/scripts/launcher.gd, game/scenes/launcher.tscn, game/tests/test_online_scene.gd, game/tests/test_audio_settings.gd, docs/reference/p2-verification.md
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 837 / 143000 / 0 / 0 / TESTS PASSED 143000
 Known red case or blocker: none (tools/test_audio_assets.py fixed in Task 9: layout lists voice/units, 12 credit rows)
 Approved decisions, pre-authorizations used, deferred gates: spec decisions (user, 2026-11-13) in docs/superpowers/specs/2026-11-13-p2-you-clicked-we-heard-design.md; Piper re-download approved (user, 2026-11-13); local commit per GREEN task (milestone prompt); stop gates (a), (b), (c) not reached
 Usage so far (python3 tools/session_usage.py <session files>): n/a
@@ -26,8 +26,8 @@ Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicke
 | 8 | P2 focus card and docs | done (uncommitted) |
 | gate (a) | A/B pick, F5 repro on the test app, web bench both builds, rendered rerun | A/B pick done (user, 2026-11-13); rest not started |
 | 9 | Picked voices into the game | done (uncommitted) |
-| 10a | Pure rules: JoinLink and PlaytestSettings.prerelease | done (uncommitted) |
-| 10b | Launcher: prerelease-only fold, ?code=/?relay=, Copy link | not started |
+| 10a | Pure rules: JoinLink and PlaytestSettings.prerelease | done (a86ea6a) |
+| 10b | Launcher: prerelease-only fold, ?code=/?relay=, Copy link | done (uncommitted) |
 | 10c | Paste shim (after the user's check C in Firefox) | not started |
 | 10d | F5 outcome and docs | not started |
 | 11 | Exit checks and ledger row | not started |
@@ -92,3 +92,7 @@ Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicke
 | 10a | `Godot uri_encode` check before the tests: `"wss://x.example/ws".uri_encode()` | 917b4bd | `wss%3A%2F%2Fx.example%2Fws` (matches the plan), `uri_decode` inverts it |
 | 10a | `WARGRID_TEST_ONLY=test_join_link` RED (stubs, `prerelease` returns false) | 917b4bd + uncommitted | CASES 6 CHECKS 42 FAILURES 18 (JL1-JL6), no SCRIPT ERROR, exit 1 |
 | 10a | `test_join_link` GREEN; `WARGRID_TEST_ONLY=test_playtest.gd` unchanged; full `sh tools/run_tests.sh`; `run_lint.sh`, `run_warnings.sh`, `check_public.sh` exit 0; `git diff main -- game/scripts/simulation game/scripts/net` empty | 917b4bd + uncommitted (index tree 330609078ffe) | join_link CASES 6 CHECKS 42 FAILURES 0; test_playtest CASES 14 CHECKS 217 FAILURES 0; full CASES 833 CHECKS 142277 FAILURES 0, exit 0 |
+| 10b | `WARGRID_TEST_ONLY=test_online_scene` RED: first with no members (`launcher.prerelease` assignment is a SCRIPT ERROR on the old script, 6 incomplete cases), then with member and `_copy_text` stubs only | a86ea6a + uncommitted | stubs run: CASES 29 CHECKS 2519 FAILURES 7 (N21 x2, N22 x2, N23 x3), no SCRIPT ERROR, exit 1 |
+| 10b | `test_online_scene` 29/2519, `test_join_link` 6/42, `test_playtest.gd` 14/217, `test_pause_menu` 8/332, `test_audio_settings` 12/40 (CASES/CHECKS), FAILURES 0 (AS9 gets an explicit `prerelease = true`, same meaning) | a86ea6a + uncommitted | all exit 0 |
+| 10b | measured `Center/Box` height (N21 and N20 prints), WaitRow and ThisBuild visible: release (Advanced and RelayUrl hidden) 1280x720 and 1920x1080; prerelease with the fold open at both sizes | a86ea6a + uncommitted | release 640 px; prerelease fold open 714 px (viewport 720; closed prerelease not measured); release layout keeps every `_set_busy` path in the tree |
+| 10b | full `sh tools/run_tests.sh` GREEN; `run_lint.sh`, `run_warnings.sh`, `check_public.sh` exit 0; `git diff main -- game/scripts/simulation game/scripts/net` empty; `rg JavaScriptBridge game/scripts/launcher.gd` only `_page_value`; no browser, window or JavaScriptBridge call run (web branch untested here) | a86ea6a + uncommitted (index tree 4d7a63a2e3c0, taken before this row) | CASES 837 CHECKS 143000 FAILURES 0, exit 0, TESTS PASSED 143000 |

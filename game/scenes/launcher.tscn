@@ -100,7 +100,6 @@ text = "Show advanced settings"
 [node name="RelayUrl" type="LineEdit" parent="Center/Box"]
 visible = false
 layout_mode = 2
-text = "wss://relay.pdstuber.dev/ws"
 placeholder_text = "Relay URL"
 
 [node name="Status" type="Label" parent="Center/Box"]
