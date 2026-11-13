@@ -1,13 +1,13 @@
 ```text
-Resume record (updated 2026-11-13, Task 4 GREEN, P1-P10 re-pinned; Tasks 5-8 open)
-Branch / base commit / working-tree state: c1-dock-rebuild / 305380c / P9, P10 committed after this record
-Last green task / next incomplete task: Task 4 / Task 5 (headless benchmark and ledger row)
-Changed paths since 305380c: tools/run_team_match.sh, tools/run_netplay.sh, the plan's P9 row, this file
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 807 / 140928 / 0 / exit 0 / TESTS PASSED (tree 305380c + P9, P10); run_lint, run_warnings, check_public, run_shell_checks exit 0; run_team_match.sh and run_netplay.sh match exit 0
-Known red case or blocker: tools/audio/test_synth.py in run_python_checks.sh fails on missing numpy (no tools/.venv in this worktree; merge main into c1 before Task 7); HUD1 fixture risk is a stop condition
+Resume record (updated 2026-11-13, Task 5 GREEN; Tasks 6-8 open)
+Branch / base commit / working-tree state: c1-dock-rebuild / 5cdc6b9 (main merged in) / Task 5 committed after this record
+Last green task / next incomplete task: Task 5 / Task 6 (docs: economy guide, status, note)
+Changed paths since 5cdc6b9: docs/reference/performance.md (one History row), this file
+Last command / cases / checks / failures / exit / marker: sh tools/run_benchmark.sh (twice, tree 5cdc6b9) / BENCHMARK PASSED 2, COMBAT BENCHMARK PASSED 10, LOCKSTEP BENCHMARK PASSED 1 / exit 0 both; last line BUDGET EXCEEDED open hordes300 (regression ceilings held); COMBAT DOCKS waiting_ticks_window=1800; earlier, sh tools/run_tests.sh CASES 807 CHECKS 140928 FAILURES 0 TESTS PASSED (tree 305380c + P9, P10)
+Known red case or blocker: none known; python checks not yet run on the merged tree (main's ensure-venv should create tools/.venv on first run); HUD1 fixture risk is a stop condition
 Approved decisions, pre-authorizations used, deferred gates: c1 chosen, USA overshoot up to +5 %, frc7 rows reported not judged, MULTI targets to the steady window, trace rule (only P1-P10 regenerated) (user, 2026-11-12 night); plan decisions 1-6: same-tick tie to the lower id, lead-standing collectors neither docked nor waiting, dock-hold note and two design-answer sections brought over, one local commit per GREEN task (never push), run_netplay.sh match at night, FRC bot collector count stays 5 (user, 2026-11-12); rendered benchmark, CI, compare_local_traces and playtest deferred to the user
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: Task 5 (headless benchmark only; stop and ask if `git diff main --stat -- game/scripts/presentation game/scenes` is not empty), then Task 6; merge main into c1 before Task 7
+Next exact action: Task 6 (docs: economy guide, status, note); main already merged (5cdc6b9)
 ```
 
 Plan: [c1 dock rebuild](../superpowers/plans/2026-11-12-c1-dock-rebuild.md). Work folder for logs: `~/projects/wargrid-dock-work/c1/` (outside the repository). Expected rows: `~/projects/wargrid-dock-work/c/wargrid-c1.txt`.
@@ -20,7 +20,7 @@ Plan: [c1 dock rebuild](../superpowers/plans/2026-11-12-c1-dock-rebuild.md). Wor
 | 2 | c1 lock data and rule, spec tests DL1-DL9, hold-timing checks rewritten | Opus (high) | GREEN (ddacce1) |
 | 3 | MULTI targets on the steady window | Sonnet | GREEN (uncommitted) |
 | 4 | Re-pin P1-P10 | Sonnet | GREEN (P1-P8 305380c; P9, P10 committed after) |
-| 5 | Headless benchmark and ledger row | Sonnet | open |
+| 5 | Headless benchmark and ledger row | Sonnet | GREEN (uncommitted; `docs/reference/performance.md` row) |
 | 6 | Docs: economy guide, status, note | Sonnet | open |
 | 7 | Exit checks on the final tree | Sonnet | open |
 | 8 | Fresh-context review and lean pass | Opus (high) | open |
@@ -61,3 +61,4 @@ Plan: [c1 dock rebuild](../superpowers/plans/2026-11-12-c1-dock-rebuild.md). Wor
 - 2026-11-12 night, Task 3, tree c1-dock-rebuild ddacce1 clean: baseline `sh tools/run_tests.sh` CASES 805 CHECKS 140926 FAILURES 11 (the Task 2 set: `test_multi_collector_rates` and P1-P8), exit 1. Red: `test_steady_rate_window` and `test_steady_rate_stops_at_empty_pile` added with the `boxes` parameter first; `WARGRID_TEST_ONLY=test_supply_parity` fails to load, `SCRIPT ERROR: Parse Error: Function "steady_rate()" not found in base self.`, exit 1.
 - 2026-11-12 night, Task 3, tree ddacce1 + Task 3 changes (`steady_rate`, `pile_is_empty`, MULTI and `FOUR_HELICOPTERS_GAP_9` on the steady window): `WARGRID_TEST_ONLY=test_supply_parity` CASES 6 CHECKS 17 FAILURES 0, TESTS PASSED, exit 0. Steady values equal `wargrid-c1.txt` `DOCK c1 multi` lines exactly: 2 x usa 2880.0, 2 x frc 870.0, 4 x frc 1650.0, 2 x china 1680.0, 4 x china 2880.0, 4 x usa (Chinooks, reported) 2880.0. Full suite CASES 807 CHECKS 140928 FAILURES 9, exit 1: failing checks exactly P1 (S1 core series), P2 (S1 outcome 8753), P3 (Cs1 11578), P4 (Fm1 48321), P5 (TB3 3958ceaab11986af), P6 (TB4 8513092129969516499), P7 (VR1, two checks, 7c7fbc8d...9e7), P8 (HUD1); `test_multi_collector_rates` green. `run_lint.sh` exit 0, `run_warnings.sh` exit 0, `tools/test_sim_boundary.py` OK, `check_public.sh` PASSED. Logs `~/projects/wargrid-dock-work/c1/t3-*.log`.
 - 2026-11-12 night, Task 4, tree c155d1d clean: baseline `sh tools/run_tests.sh` CASES 807 CHECKS 140928 FAILURES 9 (P1-P8 set), exit 1. Each pin regenerated by its single-case run, reason "collector stands overlap under c1"; winners unchanged (P2 1, P3 2, P4 1), P2-P4 inside windows. Full suite after P1-P8: CASES 807 CHECKS 140928 FAILURES 0, TESTS PASSED, exit 0. `run_lint.sh` 0, `run_warnings.sh` 0, `check_public.sh` 0. `sh tools/run_team_match.sh` exit 1 (pinned line mismatch): `TEAM MATCH won tick=39497 winner=2 units_peak=271` against the pinned cap line, so P9 is parked and P10 (`run_netplay.sh match`) was not run. Logs `~/projects/wargrid-dock-work/c1/t4-*.log`.
+- 2026-11-13, Task 5, tree c1-dock-rebuild 5cdc6b9 clean: `git diff main --stat -- game/scripts/presentation game/scenes` empty; no godot or generalszh process. `sh tools/run_benchmark.sh` first run load 2.22 / 1.90 / 1.61 at start (tagged host under load), exit 0; rerun right after at 1.57 / 1.77 / 1.58, exit 0. Both: `BENCHMARK PASSED 2`, `COMBAT BENCHMARK PASSED 10`, `LOCKSTEP BENCHMARK PASSED 1`, `BUDGET EXCEEDED open hordes300 (regression ceilings held)`; `COMBAT DOCKS credits_window=4800 waiting_ticks_window=1800 stacked_ticks_window=0`. One History row in `docs/reference/performance.md`; no budget, ceiling or F changed. Logs `~/projects/wargrid-dock-work/c1/t5-bench.log`, `t5-bench-rerun.log`.
