@@ -37,6 +37,7 @@ Developed with AI coding agents (Claude Code). [AGENTS.md](../AGENTS.md), the [b
   - Avoidance round 4: [plan](superpowers/plans/2026-11-10-avoidance-round4-spike.md). Pathing timing: [plan](superpowers/plans/2026-11-10-pathing-timing-spike.md).
   - Small tasks: [static checks plan](superpowers/plans/2026-11-05-gdscript-static-checks.md), [test environment plan](superpowers/plans/2026-11-07-test-environment.md), [logo plan](superpowers/plans/2026-11-07-logo.md).
   - P1: [design](superpowers/specs/2026-11-11-packages-and-playtest-helper-design.md), [plan](superpowers/plans/2026-11-11-packages-and-playtest-helper.md), [verification](reference/p1-playtest-helper-verification.md).
+  - P2: [design](superpowers/specs/2026-11-13-p2-you-clicked-we-heard-design.md), [plan](superpowers/plans/2026-11-13-p2-you-clicked-we-heard.md), [F5 addendum](superpowers/plans/2026-11-13-p2-f5-paste-and-links.md), [verification](reference/p2-verification.md).
 
 The blueprint owns design and milestone decisions; milestone execution plans own their detailed implementation contracts. These development notes own current setup and runnable commands. Reference notes record evidence; original behavior does not override deliberate Wargrid fixes.
 

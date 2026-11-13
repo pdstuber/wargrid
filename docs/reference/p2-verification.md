@@ -1,13 +1,13 @@
 ```text
-Resume record (updated 2026-11-13 Task 13 done)
-Branch / base commit / working-tree state: p2-you-clicked / main d0cc99d / worktree ~/projects/wargrid-wt-p2, clean after the Task 13 commit
-Last green task / next incomplete task: Task 13 (playtest fixes) / gate (c): push the branch, CI on Linux and Windows, `sh tools/compare_local_traces.sh <run id>`, merge (each needs the user's approval); then Task 14
+Resume record (updated 2026-11-13 wrap-up)
+Branch / base commit / working-tree state: main / P2 merged as 6aadb55, Task 14 278480b / worktree ~/projects/wargrid-wt-p2 removed, branch p2-you-clicked deleted locally (origin/p2-you-clicked kept)
+Last green task / next incomplete task: Task 14 / none: P2 done
 Changed paths since last commit: none
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 849 / 144200 / 0 / 0 / TESTS PASSED
+Last command / cases / checks / failures / exit / marker: CI run 43448490382 on 278480b green; local suite 849 / 144200 / 0 / 0 / TESTS PASSED
 Known red case or blocker: none
 Approved decisions, pre-authorizations used, deferred gates: spec decisions (user, 2026-11-13) in docs/superpowers/specs/2026-11-13-p2-you-clicked-we-heard-design.md; Piper re-download approved (user, 2026-11-13); local commit per GREEN task (milestone prompt); stop gates (a), (b), (c) not reached
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: ask the user to approve pushing `p2-you-clicked`, then watch CI and run compare_local_traces
+Next exact action: none for P2; next package P2.1 New launcher (design and plan)
 ```
 
 Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicked-we-heard.md). Spec: [design](../superpowers/specs/2026-11-13-p2-you-clicked-we-heard-design.md). Scratch and logs: `~/projects/wargrid-p2-work/`.
@@ -35,9 +35,9 @@ Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicke
 | 11 | Exit checks and ledger row | done: all checks green after the `_own_faction` rename (see evidence); ledger row written |
 | 12 | Gate review and lean pass | review done, fix wave uncommitted |
 | gate (b) | Focus card playtest, plus browser checks M1-M9 of the [F5 addendum](../superpowers/plans/2026-11-13-p2-f5-paste-and-links.md#manual-browser-checks-stop-gate-b-test-deploy-of-the-final-tree-firefox-first-then-chrome) (Firefox, then Chrome), including M8 right-click Paste and M9 Advanced toggle and You/Bot labels. Residual risks to check there: (a) Chrome firing `paste` while the non-editable canvas has focus (check C passed only in Firefox); (b) focus staying on the LineEdit after Firefox's own Paste confirmation (M8); (c) the engine popup keeping the edited context menu (4.7.2 source not read); (d) non-Latin layouts, where the keydown now also matches `e.code === 'KeyV'` | done (user, 2026-11-13, test app build 0.12.0-dev+12ecc73). Card: one offline match, answers heard 5, not_chatty 5, music 5, menu sections 2 (session `session-2026-11-13T14-24-15.json`; the 2 is the reason for the planned launcher P2.1, not a P2 fix). M1/M2 join link Copy and paste pass, cross-browser online match (Firefox and Safari windows side by side) passes; M4/M5/M8 paste (Cmd+V, right-click Paste) pass in Firefox and Safari; M3 relay override and M6/M7/M9 not reported. Findings: music repeated the first track in a second match started via back to main menu (each match shuffles anew, 1 in 5 chance; fixed on owner decision "shuffle all the time": reshuffle after every round of five, no track twice in a row also across matches, MU3 and MU4); two tabs in one Safari window showed "Opponent left before the start" with an empty map (hidden tab stops pinging, relay drops it after 10 s; message text fixed, F11 for the cause). Coordinator ruling: no rendered rerun at gate (b); the changes after gate (a) touch launcher, sound and Restart code, not the movement benchmark scene |
-| 13 | Playtest fixes and findings | done (uncommitted) |
-| gate (c) | Push, deploy, merge (each approved) | not started |
-| 14 | Recorded playtest match row (after the exit, own commit) | done (uncommitted) |
+| 13 | Playtest fixes and findings | done (`81e2517`) |
+| gate (c) | Push, deploy, merge (each approved) | done: branch pushed, CI run 43445394876 green, local traces matched, merged into `main` as `6aadb55` and pushed (user, 2026-11-13); CI run 43447156807 on `main` green |
+| 14 | Recorded playtest match row (after the exit, own commit) | done (`278480b`, CI run 43448490382 green) |
 
 ## Gates
 
@@ -133,3 +133,4 @@ Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicke
 | 13 | `python3 tools/playtest_session.py` and `sh tools/replay_session.sh` on `session-2026-11-13T14-24-15.json` (log `t13-replay.log`) | 12ecc73 + uncommitted (stash tree af1f83a8) | answers heard 5, not_chatty 5, music 5, menu 2; 1 offline match dry_wells seed 1167188034, end_tick 6694; `REPLAY MATCHED 1`, exit 0 |
 | 14 | `game/benchmarks/p2_playtest_match.json` from `session-2026-11-13T14-24-15.json` (keys build, map, seed, factions, seat, end_tick, end_digest, result, commands only); `run_recorded_match.gd` run alone (log `~/projects/wargrid-p2-work/t14-recorded.log`), `uptime` load 1.40 / 1.58 / 1.91 before and after | 6aadb55 + uncommitted | exit 0; `RECORDED MATCH map=dry_wells seed=1167188034 ticks=6694 commands=109 digest=matched`; `RECORDED TIMING` p50 / p95 / p99 / max 0.117 / 0.295 / 0.433 / 1.051 ms, `RECORDED MEAN` 0.127 ms, `WORST TICK` 1.051 ms at tick 5400 (report-only, ledger row written) |
 | 14 | full `sh tools/run_tests.sh` (log `t14-tests.log`); `run_lint.sh`, `run_warnings.sh`, `check_public.sh` (logs `t14-*.log`); `run_benchmark.sh` untouched | 6aadb55 + uncommitted | CASES 849 CHECKS 144200 FAILURES 0, TESTS PASSED 144200; all exit 0; `WARNINGS CHECKED 160 FILES`; `PUBLIC CHECK PASSED` |
+| gate (c) | `git push -u origin p2-you-clicked`; `gh run watch 43445394876`; `sh tools/compare_local_traces.sh 43445394876`; merge `--no-ff` into `main` (`6aadb55`), push; `gh run watch 43447156807`; push `278480b`, `gh run watch 43448490382` (each push approved by the user, 2026-11-13) | 81e2517, 6aadb55, 278480b | CI green 11/11 on all three runs; traces: replay 1200, economy 1200, combat 1200, team 100, netplay 305 all `REPLAYS MATCHED` |

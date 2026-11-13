@@ -7,6 +7,7 @@ What comes when. Work after M7 ships as small packages: player packages run by d
 ### Now
 
 - **P1.1 Laborers that pay:** done: the c1 dock rebuild is merged, card 1 replayed fine and F2 (Laborer back pack) is done (state in [STATUS](STATUS.md#packages)).
+- **P2 You clicked, we heard:** done and merged 2026-11-13 (state in [STATUS](STATUS.md#packages)); next day package P2.1 New launcher (design and plan not written yet).
 - **Card 3 sitting:** P1's card 3 (`p1-look-and-m6-fixes`) in any free 15 minutes on 0.11.0, helper switched on in the launcher.
 
 ### Day lane
