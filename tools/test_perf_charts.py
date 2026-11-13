@@ -599,6 +599,13 @@ class RunBenchmarkTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertIn("perf: WARNING", result.stdout)
 
+    def test_missing_worst_tick_line_still_fails_the_gate(self) -> None:
+        lockstep = self.stub / "lockstep.out"
+        lockstep.write_text(lockstep.read_text().replace("WORST TICK lockstep contact ms=1.000 tick=1\n", ""))
+        before = self.csv.read_bytes()
+        self.assertNotEqual(self.run_script(PERF_LABEL="x").returncode, 0)
+        self.assertEqual(self.csv.read_bytes(), before)
+
     def test_failed_benchmark_never_records(self) -> None:
         (self.stub / "combat.out").write_text("ERROR: boom\n")
         before = self.csv.read_bytes()
