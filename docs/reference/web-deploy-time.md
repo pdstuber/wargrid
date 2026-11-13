@@ -76,6 +76,13 @@ Quality 9 for every file needs no cache and is one changed number, but the wasm 
 
 The export, the licence dump, the health check and the build context. A `.dockerignore` would save nothing: `site/` is nearly the whole 53 MB context.
 
+## Review 2026-11-13
+
+Claims rechecked on `main` at `b766258`: `web/Dockerfile` was unchanged since `3ecdd3c`. Placed by the user (questionnaire, 2026-11-13):
+
+- The recommendation was applied the same day: the wasm gets its own layer at quality 11, the other files use quality 9. Local check (Apple `container` CLI, a copy of `web/`): after a changed pack and page and a touched wasm, the wasm layer stayed `CACHED`, the quality 9 loop took 3.6 s and the build 5.5 s; the file set matches today's, `index.wasm.br` 6,902,599 bytes. No fly deploy was run.
+- Verification: time `fly deploy` in P2.1's first two `sh tools/deploy_web.sh test` runs (local output; test deploys have no CI step), then the release workflow's `Deploy web` step at the next release, and whether `wargrid-web-test` shares the builder cache with `wargrid-web`. One slow wasm pass per app per engine version is accepted.
+
 ## Open points
 
 - **The gain depends on the builder's layer cache.** The CI log shows the `apk add` layer as `CACHED`, so the cache persists between deploys of `wargrid-web`. Whether `wargrid-web-test` shares that cache is unverified; if not, each app pays the slow pass once per Godot version.
