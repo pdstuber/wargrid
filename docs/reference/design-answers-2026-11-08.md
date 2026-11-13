@@ -389,3 +389,18 @@ Evidence: [simulation reference review](simulation-reference-review.md). Package
 - **Split rates scope** (refines the [split rates decision](#performance-next-user-2026-11-11)): slower cadence applies to target rescans, retaliation joins and return-home scans; keeping the current target (lookup, hostility, range, engage or chase) stays per tick, because it decides how fast a unit reacts. The per-unit cost is expected to fall from packed storage, not from cadence.
 - **Browser digests (review X7):** the golden scenarios run in the Firefox web bench and their digest lines are compared with native, as part of the golden scenarios work after the movement milestone; a CI job later only if cheap.
 - **Rejected (agreed with the review's §8, among them):** fixed-point maths now (the 2026-11-09 decision stands: only with a native port); an ECS or component framework (packed columns per system instead); parallel work inside a tick (the compute-then-apply-in-order shape stays for kernels); a lower global simulation rate; GPU movement; path caches kept across ticks; hard cell occupancy for movers; a bot thread with a state copy; a whole port to Rust or C++ now (the native spike's conditional verdict is unchanged); a `streflop`-style libm (nothing to fix: only `sqrt` is allowed); diff-based range queries everywhere.
+
+## Package review (user, 2026-11-13)
+
+Questionnaire over the packages after two days of additions; result in [packages](../packages.md).
+
+- **c1 dock rebuild:** tracked as package P1.1 "Laborers that pay" before P2, without renumbering P2 to P5; its card is a replay of card 1 (`p1-frc-economy`); F2 (Laborer back pack) rides on it.
+- **P2 scope:** widened with menu quick wins (including the F5 paste fix) and F1 (scale legend), because the order sound alone is thin for a session.
+- **P5:** P3's rider, the movement design, ends with movement cut into packages of 2 to 3 days each; P5 is the first of them.
+- **Canary:** the late-game 3v3 canary and the recorded playtest match row move from P5 to P2's rider, so they feed the movement design (the audit answer wanted the canary before that design).
+- **Engine packages:** a night lane: headless, unattended, no focus card, at most one between two day packages. Order: Sim quick wins, Flatter worst ticks, Relay guards, Adaptive input delay.
+- **Adaptive input delay:** if a measured gain adopts it, one online session with a friend before it becomes the default; P1's card 2 is played in that session.
+- **Card 3:** played soon in a free sitting on 0.11.0 with the helper switched on.
+- **Roadmap page:** `docs/packages.md` becomes the one-screen "what comes when" page (now, day lane, night lane, later); scope stays in the blueprint and the reviews.
+- **Blueprint:** a small pass later in its own session: take order and status out of §7 (they live in packages and STATUS) and check every done or not-done claim against its evidence; no full renumbering.
+- **README roadmap** (branch `spike-visualization`): kept next to packages; its check is re-keyed from blueprint §7 headings to package names and its rows refreshed, merged in its own session after this one.
