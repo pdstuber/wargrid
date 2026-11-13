@@ -50,7 +50,7 @@ func _ready() -> void:
 
 func _set_advanced(open: bool) -> void:
 	$Center/Box/RelayUrl.visible = open
-	$Center/Box/Advanced.text = "Advanced ▾" if open else "Advanced ▸"
+	$Center/Box/Advanced.text = "Hide advanced settings" if open else "Show advanced settings"
 
 func _show_credits(open: bool) -> void:
 	var text: RichTextLabel = $CreditsPanel/Box/Text

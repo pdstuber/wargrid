@@ -95,9 +95,7 @@ text = "Cancel"
 [node name="Advanced" type="Button" parent="Center/Box"]
 layout_mode = 2
 toggle_mode = true
-flat = true
-text = "Advanced ▸"
-alignment = 0
+text = "Show advanced settings"
 
 [node name="RelayUrl" type="LineEdit" parent="Center/Box"]
 visible = false

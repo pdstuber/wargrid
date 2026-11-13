@@ -247,14 +247,15 @@ func test_launcher_sections(runner) -> bool:
 		var advanced: Button = box.get_node_or_null("Advanced")
 		var relay: LineEdit = box.get_node_or_null("RelayUrl")
 		if advanced != null and relay != null:
-			runner.check(not advanced.button_pressed and not relay.visible and advanced.text == "Advanced ▸", "N20 Advanced starts closed at %s" % size)
+			runner.check(not advanced.button_pressed and not relay.visible and advanced.text == "Show advanced settings" and not advanced.flat, "N20 Advanced starts closed, as a visible button, at %s" % size)
 			runner.check(relay.text == "wss://relay.pdstuber.dev/ws", "N20 closed fold keeps the default relay URL at %s" % size)
 			launcher._set_busy(true)
 			runner.check(not relay.editable and not relay.visible, "N20 busy locks the hidden relay field at %s" % size)
 			launcher._set_busy(false)
 			runner.check(relay.editable, "N20 idle unlocks the relay field at %s" % size)
 			advanced.button_pressed = true
-			runner.check(relay.visible and advanced.text == "Advanced ▾", "N20 opening Advanced shows the relay field at %s" % size)
+			runner.check(relay.visible and advanced.text == "Hide advanced settings", "N20 opening Advanced shows the relay field at %s" % size)
+			runner.check(advanced.text.to_utf8_buffer().size() == advanced.text.length(), "N20 toggle text is plain ASCII, the default font has no arrow glyphs, at %s" % size)
 			await runner.process_frame
 			await runner.process_frame
 			var view := Rect2(Vector2.ZERO, Vector2(size))
