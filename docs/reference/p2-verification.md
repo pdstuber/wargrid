@@ -1,13 +1,13 @@
 ```text
-Resume record (updated 2026-11-13 Task 7 implemented, uncommitted)
-Branch / base commit / working-tree state: p2-you-clicked / b483f99 / worktree ~/projects/wargrid-wt-p2, Task 7 changes uncommitted
-Last green task / next incomplete task: Task 6 (committed 7e9a588); Task 7 (test_synth green, awaiting the coordinator's commit; run_python_checks red only on test_audio_assets, see evidence) / Task 8
-Changed paths since last commit: tools/audio/synth.py, tools/audio/test_synth.py, docs/reference/p2-verification.md
-Last command / cases / checks / failures / exit / marker: sh tools/run_python_checks.sh / test_synth 13 tests OK / n/a / test_audio_assets 3 failures (pre-existing from Task 2 placeholders) / 1 / n/a
+Resume record (updated 2026-11-13 Task 8 implemented, uncommitted)
+Branch / base commit / working-tree state: p2-you-clicked / 066ee03 / worktree ~/projects/wargrid-wt-p2, Task 8 changes uncommitted
+Last green task / next incomplete task: Task 7 (committed); Task 8 (full suite green, awaiting the coordinator's commit) / gate (a), then Task 9
+Changed paths since last commit: game/data/playtest/focus.json, game/tests/test_playtest.gd, docs/guide/05-presentation.md, docs/STATUS.md, docs/packages.md, docs/reference/p2-verification.md
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 826 / 142208 / 0 / 0 / TESTS PASSED 142208
 Known red case or blocker: tools/test_audio_assets.py fails 3 tests (test_layout, test_every_file_credited, test_dotfiles_ignored) since Task 2: game/audio/voice/units/ has 12 placeholder WAVs that the test layout and CREDITS.md do not list; fix belongs to Task 9 (CREDITS.md rows, test layout) or an earlier decision by the coordinator
 Approved decisions, pre-authorizations used, deferred gates: spec decisions (user, 2026-11-13) in docs/superpowers/specs/2026-11-13-p2-you-clicked-we-heard-design.md; Piper re-download approved (user, 2026-11-13); local commit per GREEN task (milestone prompt); stop gates (a), (b), (c) not reached
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: coordinator commits Task 7, then Task 8; A/B page is built in ~/projects/wargrid-sound-work/p2-ab/ and waits for gate (a)
+Next exact action: coordinator commits Task 8, then stop gate (a); A/B page is built in ~/projects/wargrid-sound-work/p2-ab/ and waits for gate (a)
 ```
 
 Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicked-we-heard.md). Spec: [design](../superpowers/specs/2026-11-13-p2-you-clicked-we-heard-design.md). Scratch and logs: `~/projects/wargrid-p2-work/`.
@@ -23,7 +23,7 @@ Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicke
 | 5 | Late-game 3v3 canary (report-only) | done (uncommitted) |
 | 6 | Browser rider prep: bench lines, two web exports, native run | done (uncommitted) |
 | 7 | Voice pipeline and A/B page | done (uncommitted; python checks red only on pre-existing test_audio_assets) |
-| 8 | P2 focus card and docs | not started |
+| 8 | P2 focus card and docs | done (uncommitted) |
 | gate (a) | A/B pick, F5 repro on the test app, web bench both builds, rendered rerun | not started |
 | 9 | Picked voices into the game | not started |
 | 10 | F5 outcome | not started |
@@ -76,3 +76,6 @@ Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicke
 | 7 | model cards at the pinned revision, licence lines | n/a (outside repo) | john, norman and bryce: `* License: public domain` |
 | 7 | raw renders `render.py --units` (six texts) for john, norman, bryce; A/B build script: 3 voices x 3 treatments x 6 lines through `TREATMENTS` at `VOICE_LUFS` | n/a (outside repo) | 18 raw WAVs; 54 A/B WAVs, no peak error; `index.html` served on 8061 by `serve_web_bench.py`: `/` 200, a WAV 200, POST `/result` 204; server stopped; page not opened |
 | 7 | `sh tools/check_public.sh` | 7e9a588 + uncommitted | exit 0 |
+| 8 | `WARGRID_TEST_ONLY=test_playtest` RED (new `SHIPPED`, picker count 4, item 1 `p1-frc-economy`, before the json edit) | 066ee03 + uncommitted | CASES 39 CHECKS 896 FAILURES 6 (PT1, PT2, PT6 x2 sizes), no SCRIPT ERROR, exit 1 |
+| 8 | `WARGRID_TEST_ONLY=test_playtest` GREEN after prepending the `p2-you-clicked` card | 066ee03 + uncommitted | CASES 39 CHECKS 900 FAILURES 0, exit 0 |
+| 8 | full `sh tools/run_tests.sh` GREEN; `run_lint.sh`, `run_warnings.sh`, `check_public.sh` exit 0; `git diff main -- game/scripts/simulation game/scripts/net` empty; doc links in the changed docs resolve | 066ee03 + uncommitted (tree 493148536853) | CASES 826 CHECKS 142208 FAILURES 0, exit 0 |
