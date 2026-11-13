@@ -16,6 +16,15 @@ func _init() -> void:
 	bus = &"Music"
 	finished.connect(func() -> void: _wait = _gap)
 
+static func shuffled(paths: Array[String], rng: RandomNumberGenerator) -> Array[String]:
+	var order := paths.duplicate()
+	for i in range(order.size() - 1, 0, -1):
+		var j: int = rng.randi_range(0, i)
+		var held: String = order[i]
+		order[i] = order[j]
+		order[j] = held
+	return order
+
 func play_list(paths: Array[String], gap: float) -> void:
 	_paths = paths
 	_gap = gap

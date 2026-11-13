@@ -36,7 +36,9 @@ func _ready() -> void:
 	$HUD/Restart.pressed.connect(_restart)
 	var music := MusicPlayer.new()
 	add_child(music)
-	music.play_list(MusicPlayer.PLAYLIST, MusicPlayer.GAP_SECONDS)
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	music.play_list(MusicPlayer.shuffled(MusicPlayer.PLAYLIST, rng), MusicPlayer.GAP_SECONDS)
 	_add_playtest()
 
 func _add_playtest() -> void:

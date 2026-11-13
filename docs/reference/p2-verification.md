@@ -1,13 +1,13 @@
 ```text
-Resume record (updated 2026-11-13 Task 3 implemented, uncommitted)
-Branch / base commit / working-tree state: p2-you-clicked / f94bb08 / worktree ~/projects/wargrid-wt-p2, Task 3 changes uncommitted
-Last green task / next incomplete task: Task 2 (committed f94bb08); Task 3 (green, awaiting the coordinator's commit) / Task 4
-Changed paths since last commit: game/scenes/launcher.tscn, game/scripts/launcher.gd, game/tests/test_online_scene.gd, game/tests/test_playtest.gd, game/tests/test_audio_settings.gd, docs/reference/p2-verification.md
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 821 / 142184 / 0 / 0 / TESTS PASSED 142184
-Known red case or blocker: none (Status minimum height 48 -> 24, user ruling 2026-11-13, brought Center/Box to 714 px at 1280x720)
+Resume record (updated 2026-11-13 Task 4 implemented, uncommitted)
+Branch / base commit / working-tree state: p2-you-clicked / cbb8fc3 / worktree ~/projects/wargrid-wt-p2, Task 4 changes uncommitted
+Last green task / next incomplete task: Task 3 (committed cbb8fc3); Task 4 (green, awaiting the coordinator's commit) / Task 5
+Changed paths since last commit: game/scripts/presentation/music_player.gd, game/scripts/skirmish_main.gd, game/scripts/playtest/session_form.gd, game/tests/test_audio_settings.gd, game/tests/test_playtest_overlay.gd, docs/guide/05-presentation.md, docs/reference/p2-verification.md
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 824 / 142193 / 0 / 0 / TESTS PASSED 142193
+Known red case or blocker: none
 Approved decisions, pre-authorizations used, deferred gates: spec decisions (user, 2026-11-13) in docs/superpowers/specs/2026-11-13-p2-you-clicked-we-heard-design.md; Piper re-download approved (user, 2026-11-13); local commit per GREEN task (milestone prompt); stop gates (a), (b), (c) not reached
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: coordinator commits Task 3, then Task 4
+Next exact action: coordinator commits Task 4, then Task 5
 ```
 
 Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicked-we-heard.md). Spec: [design](../superpowers/specs/2026-11-13-p2-you-clicked-we-heard-design.md). Scratch and logs: `~/projects/wargrid-p2-work/`.
@@ -19,7 +19,7 @@ Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicke
 | 1 | Order voice rule: table and director | done (5c258d7) |
 | 2 | Order voice in the game: player, hooks, placeholder WAVs | done (uncommitted) |
 | 3 | Launcher sections and Advanced fold | done (uncommitted) |
-| 4 | F4 music shuffle, F1 scale legend | not started |
+| 4 | F4 music shuffle, F1 scale legend | done (uncommitted) |
 | 5 | Late-game 3v3 canary (report-only) | not started |
 | 6 | Browser rider prep: bench lines, two web exports, native run | not started |
 | 7 | Voice pipeline and A/B page | not started |
@@ -56,3 +56,6 @@ Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicke
 | 3 | full `sh tools/run_tests.sh` | f94bb08 + uncommitted | CASES 821 CHECKS 142174 FAILURES 4 (N5 and N20 Title/Legal inside 1280x720 only), exit 1; `test_playtest.gd` 14/213, `test_pause_menu` 8/332 FAILURES 0; lint, warnings, check_public exit 0; sim/net diff empty |
 | 3 | Status `custom_minimum_size` height 48 -> 24 (user ruling 2026-11-13); measured `Center/Box` at 1280x720 and 1920x1080, fold open, WaitRow and ThisBuild visible | f94bb08 + uncommitted | 714 px (viewport 720), N5 and N20 inside and no overlap; closed fold about 677 px (derived, not measured); Status one-line checks added to N20 (code line, relay lost, three map differ lines) pass |
 | 3 | full `sh tools/run_tests.sh` GREEN; `run_lint.sh`, `run_warnings.sh`, `check_public.sh` exit 0; `git diff main -- game/scripts/simulation game/scripts/net` empty | f94bb08 + uncommitted | CASES 821 CHECKS 142184 FAILURES 0, exit 0 |
+| 4 | `WARGRID_TEST_ONLY=test_audio_settings` and `=test_scale_legend` RED with stubs (`shuffled` returns a copy, `SCALE_LEGEND` const, no label); without stubs the suites fail to parse | cbb8fc3 + uncommitted | audio 12/40 FAILURES 1 (MU1 seeds differ); legend 1/1 FAILURES 1 (PO18); MU2 holds under the identity stub (its checks are order-agnostic), exit 1 |
+| 4 | `test_audio_settings` 12/40, `test_scale_legend` 1/2, `test_sound` 24/179, FAILURES 0 | cbb8fc3 + uncommitted | exit 0 |
+| 4 | full `sh tools/run_tests.sh` GREEN; `run_lint.sh`, `run_warnings.sh`, `check_public.sh` exit 0; `git diff main -- game/scripts/simulation game/scripts/net` empty | cbb8fc3 + uncommitted | CASES 824 CHECKS 142193 FAILURES 0, exit 0 |

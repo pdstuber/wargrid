@@ -7,6 +7,7 @@ const SkirmishRules = preload("res://scripts/simulation/skirmish.gd")
 const AudioSettings = preload("res://scripts/presentation/audio_settings.gd")
 const PlaytestSettings = preload("res://scripts/playtest/playtest_settings.gd")
 const FocusCards = preload("res://scripts/playtest/focus_cards.gd")
+const SessionForm = preload("res://scripts/playtest/session_form.gd")
 const Lockstep = preload("res://scripts/net/lockstep.gd")
 const StateHash = preload("res://scripts/simulation/state_hash.gd")
 const MarkerCapture = preload("res://scripts/playtest/marker_capture.gd")
@@ -38,7 +39,7 @@ class Camera extends RefCounted:
 		return image
 
 func cases() -> Array[Callable]:
-	return [test_marker_pauses_offline, test_marker_does_not_pause_online, test_capture_before_dialog, test_note_typing_is_not_a_hotkey, test_marker_ignored_when_menu_or_over, test_checklist_triggers, test_helper_off_changes_nothing, test_overlay_layout, test_leave_flow, test_match_end_opens_review_once, test_leave_after_closed_sitting, test_two_match_session_file, test_web_save_downloads, test_desktop_write_error_keeps_session, test_form_layout, test_resume_uses_stored_card, test_restart_drops_pending_markers]
+	return [test_marker_pauses_offline, test_marker_does_not_pause_online, test_capture_before_dialog, test_note_typing_is_not_a_hotkey, test_marker_ignored_when_menu_or_over, test_checklist_triggers, test_helper_off_changes_nothing, test_overlay_layout, test_leave_flow, test_match_end_opens_review_once, test_leave_after_closed_sitting, test_two_match_session_file, test_web_save_downloads, test_desktop_write_error_keeps_session, test_form_layout, test_resume_uses_stored_card, test_restart_drops_pending_markers, test_scale_legend]
 
 func _begin(helper_on: bool = true, card: String = CARD_ECONOMY) -> String:
 	var saved: String = AudioSettings.path
@@ -650,5 +651,26 @@ func test_restart_drops_pending_markers(runner) -> bool:
 	overlay.set_active(true)
 	runner.check(PlaytestSession.current.pending_markers().is_empty(), "PO17 a restart with the helper off drops them too, got %d" % PlaytestSession.current.pending_markers().size())
 	main.free()
+	_end(saved)
+	return true
+
+func test_scale_legend(runner) -> bool:
+	var saved: String = _begin()
+	var session := PlaytestSession.resume_or_open(CARD_ECONOMY, "0.11.0-dev+abc")
+	session.finish_match({"mode": "offline", "end_tick": 10})
+	var card: Dictionary = FocusCards.card(CARD_ECONOMY, FocusCards.load_cards())
+	var form := SessionForm.new()
+	runner.root.add_child(form)
+	form.open_questions(session, card)
+	var legends: Array[Node] = form.find_children("ScaleLegend", "Label", true, false)
+	runner.check(legends.size() == 1 and (legends[0] as Label).text == SessionForm.SCALE_LEGEND, "PO18 one ScaleLegend with the exact text, got %d" % legends.size())
+	if legends.size() == 1:
+		var box: Node = legends[0].get_parent()
+		var last: Control = box.find_child("%s_5" % card.questions[card.questions.size() - 1].id, true, false)
+		var match_label: int = -1
+		for child in box.get_children():
+			if child is Label and child.text == "Match 1": match_label = child.get_index()
+		runner.check(last != null and legends[0].get_index() > last.get_parent().get_index() and legends[0].get_index() < match_label, "PO18 the legend sits after the last question and before Match 1")
+	form.free()
 	_end(saved)
 	return true

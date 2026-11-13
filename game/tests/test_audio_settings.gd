@@ -11,7 +11,7 @@ const REAL := "user://settings.cfg"
 var scratch: String = "user://test-settings-%d.cfg" % OS.get_process_id() # shards and worktrees share user://
 
 func cases() -> Array[Callable]:
-	return [test_settings_missing_and_corrupt, test_settings_round_trip, test_slider_sets_bus_and_saves, test_bus_levels, test_tests_use_scratch_settings, test_playlist_order_and_gap, test_menu_track_repeats, test_mute_toggle, test_mute_key_in_match, test_mute_key_in_launcher_and_text_field]
+	return [test_settings_missing_and_corrupt, test_settings_round_trip, test_slider_sets_bus_and_saves, test_bus_levels, test_tests_use_scratch_settings, test_playlist_order_and_gap, test_menu_track_repeats, test_match_playlist_is_shuffled, test_scene_plays_a_shuffled_playlist, test_mute_toggle, test_mute_key_in_match, test_mute_key_in_launcher_and_text_field]
 
 func _begin() -> String:
 	var saved: String = AudioSettings.path
@@ -123,6 +123,51 @@ func test_menu_track_repeats(runner) -> bool:
 	player.advance(0.0)
 	runner.check(player.track_index() == 0 and not player.waiting(), "AS6 menu track repeats at once")
 	player.free()
+	return true
+
+func _shuffled_with(seed_value: int) -> Array[String]:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_value
+	return MusicPlayer.shuffled(MusicPlayer.PLAYLIST, rng)
+
+func _sorted(paths: Array[String]) -> Array[String]:
+	var copy := paths.duplicate()
+	copy.sort()
+	return copy
+
+func test_match_playlist_is_shuffled(runner) -> bool:
+	var first := _shuffled_with(1)
+	runner.check(first.size() == 5 and _sorted(first) == _sorted(MusicPlayer.PLAYLIST), "MU1 the shuffle keeps the same five tracks, got %s" % [first])
+	runner.check(first == _shuffled_with(1), "MU1 one seed gives one order")
+	runner.check(first != _shuffled_with(2), "MU1 seeds 1 and 2 give different orders")
+	var literal: Array[String] = ["res://audio/music/conflict.ogg", "res://audio/music/enemy_spotted.ogg", "res://audio/music/mammoth.ogg", "res://audio/music/stay_the_course.ogg", "res://audio/music/hitman.ogg"]
+	runner.check(MusicPlayer.PLAYLIST == literal, "MU1 PLAYLIST keeps its source order")
+	return true
+
+func _music_of(scene: Node) -> Node:
+	for child in scene.get_children():
+		if child.get_script() == MusicPlayer: return child
+	return null
+
+func test_scene_plays_a_shuffled_playlist(runner) -> bool:
+	var main = Skirmish.instantiate()
+	runner.root.add_child(main)
+	main.set_process(false)
+	main.set_physics_process(false)
+	await runner.process_frame
+	var music = _music_of(main)
+	runner.check(music != null and _sorted(music._paths) == _sorted(MusicPlayer.PLAYLIST), "MU2 the match plays the five tracks")
+	var before: Array[String] = music._paths.duplicate()
+	var index: int = music.track_index()
+	main._restart()
+	runner.check(music._paths == before and music.track_index() == index, "MU2 Restart keeps the running playlist")
+	main.free()
+	var launcher = Launcher.instantiate()
+	runner.root.add_child(launcher)
+	await runner.process_frame
+	var menu = _music_of(launcher)
+	runner.check(menu != null and menu._paths == [MusicPlayer.MENU], "MU2 the launcher plays the menu track only")
+	launcher.free()
 	return true
 
 func test_mute_toggle(runner) -> bool:
