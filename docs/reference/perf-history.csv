@@ -272,3 +272,123 @@ date,commit,label,machine,metric,scenario,run,p95_ms,p99_ms,mean_ms,method,load,
 2026-11-10,6e0a9f5+dirty,perf charts T7,dev,combat_tick,ramp,1,0.681,1.237,,P1,1.56,log sha256:da6e8321f406
 2026-11-10,6e0a9f5+dirty,perf charts T7,dev,combat_tick,frc,1,0.839,1.173,,P1,1.56,log sha256:da6e8321f406
 2026-11-10,6e0a9f5+dirty,perf charts T7,dev,lockstep_overhead,contact,1,0.016,0.067,,P1,1.56,log sha256:da6e8321f406
+2026-11-10,96f89e8,art lab exit,dev,tick_frame,open,1,2.99,,,tick-frame,2.17,"performance.md@83a3c7b:87 (High 0.5, median of 3)"
+2026-11-10,96f89e8,art lab exit,dev,tick_frame,dense,1,3.07,,,tick-frame,2.17,"performance.md@83a3c7b:87 (High 0.5, median of 3)"
+2026-11-10,96f89e8,art lab exit,dev,tick_frame,ashfall,1,2.97,,,tick-frame,2.17,"performance.md@83a3c7b:87 (High 0.5, median of 3)"
+2026-11-10,96f89e8,art lab exit,dev,tick_frame,open,2,3.24,,,tick-frame,2.17,"performance.md@83a3c7b:87 (High 0.5, worst of 3, range from linked section)"
+2026-11-10,96f89e8,art lab exit,dev,tick_frame,dense,2,3.34,,,tick-frame,2.17,"performance.md@83a3c7b:87 (High 0.5, worst of 3, range from linked section)"
+2026-11-10,96f89e8,art lab exit,dev,tick_frame,ashfall,2,3.40,,,tick-frame,2.17,"performance.md@83a3c7b:87 (High 0.5, worst of 3, range from linked section)"
+2026-11-10,96f89e8,art lab exit,dev,tick_frame,open,3,2.97,,,tick-frame,2.17,"performance.md@83a3c7b:87 (Low 0.5, median of 3)"
+2026-11-10,96f89e8,art lab exit,dev,tick_frame,dense,3,3.06,,,tick-frame,2.17,"performance.md@83a3c7b:87 (Low 0.5, median of 3)"
+2026-11-10,96f89e8,art lab exit,dev,tick_frame,ashfall,3,3.12,,,tick-frame,2.17,"performance.md@83a3c7b:87 (Low 0.5, median of 3)"
+2026-11-10,96f89e8,art lab exit,dev,tick_frame,open,4,3.18,,,tick-frame,2.17,"performance.md@83a3c7b:87 (Low 0.5, worst of 3, range from linked section)"
+2026-11-10,96f89e8,art lab exit,dev,tick_frame,dense,4,3.12,,,tick-frame,2.17,"performance.md@83a3c7b:87 (Low 0.5, worst of 3, range from linked section)"
+2026-11-10,96f89e8,art lab exit,dev,tick_frame,ashfall,4,3.27,,,tick-frame,2.17,"performance.md@83a3c7b:87 (Low 0.5, worst of 3, range from linked section)"
+2026-11-10,96f89e8,art lab exit,dev,frame_interval,open,1,0.59,,,P1,2.17,"performance.md@83a3c7b:87 (High 0.5, top of range from linked section)"
+2026-11-10,96f89e8,art lab exit,dev,frame_interval,dense,1,0.63,,,P1,2.17,"performance.md@83a3c7b:87 (High 0.5, top of range from linked section)"
+2026-11-10,96f89e8,art lab exit,dev,frame_interval,ashfall,1,1.14,,,P1,2.17,"performance.md@83a3c7b:87 (High 0.5, top of range from linked section)"
+2026-11-10,96f89e8,art lab exit,dev,frame_interval,open,2,0.72,,,P1,2.17,"performance.md@83a3c7b:87 (Low 0.5, top of range from linked section)"
+2026-11-10,96f89e8,art lab exit,dev,frame_interval,dense,2,0.63,,,P1,2.17,"performance.md@83a3c7b:87 (Low 0.5, top of range from linked section)"
+2026-11-10,96f89e8,art lab exit,dev,frame_interval,ashfall,2,1.16,,,P1,2.17,"performance.md@83a3c7b:87 (Low 0.5, top of range from linked section)"
+2026-11-10,ab698df,art lab winners,dev,tick_frame,open,1,3.22,,,tick-frame,2.8,"performance.md@83a3c7b:88 (High 0.5, median of 3)"
+2026-11-10,ab698df,art lab winners,dev,tick_frame,dense,1,3.22,,,tick-frame,2.8,"performance.md@83a3c7b:88 (High 0.5, median of 3)"
+2026-11-10,ab698df,art lab winners,dev,tick_frame,ashfall,1,3.21,,,tick-frame,2.8,"performance.md@83a3c7b:88 (High 0.5, median of 3)"
+2026-11-10,ab698df,art lab winners,dev,tick_frame,open,2,3.24,,,tick-frame,2.8,"performance.md@83a3c7b:88 (High 0.5, worst of 3, range from linked section)"
+2026-11-10,ab698df,art lab winners,dev,tick_frame,dense,2,10.92,,,tick-frame,2.8,"performance.md@83a3c7b:88 (High 0.5, worst of 3, range from linked section)"
+2026-11-10,ab698df,art lab winners,dev,tick_frame,ashfall,2,3.30,,,tick-frame,2.8,"performance.md@83a3c7b:88 (High 0.5, worst of 3, range from linked section)"
+2026-11-10,ab698df,art lab winners,dev,tick_frame,open,3,2.87,,,tick-frame,2.8,"performance.md@83a3c7b:88 (Low 0.5, median of 3)"
+2026-11-10,ab698df,art lab winners,dev,tick_frame,dense,3,2.87,,,tick-frame,2.8,"performance.md@83a3c7b:88 (Low 0.5, median of 3)"
+2026-11-10,ab698df,art lab winners,dev,tick_frame,ashfall,3,2.81,,,tick-frame,2.8,"performance.md@83a3c7b:88 (Low 0.5, median of 3)"
+2026-11-10,ab698df,art lab winners,dev,tick_frame,open,4,3.07,,,tick-frame,2.8,"performance.md@83a3c7b:88 (Low 0.5, worst of 3, range from linked section)"
+2026-11-10,ab698df,art lab winners,dev,tick_frame,dense,4,3.33,,,tick-frame,2.8,"performance.md@83a3c7b:88 (Low 0.5, worst of 3, range from linked section)"
+2026-11-10,ab698df,art lab winners,dev,tick_frame,ashfall,4,3.04,,,tick-frame,2.8,"performance.md@83a3c7b:88 (Low 0.5, worst of 3, range from linked section)"
+2026-11-10,ab698df,art lab winners,dev,frame_interval,open,1,3.96,,,P1,2.8,"performance.md@83a3c7b:88 (High 0.5, median of 3)"
+2026-11-10,ab698df,art lab winners,dev,frame_interval,dense,1,4.23,,,P1,2.8,"performance.md@83a3c7b:88 (High 0.5, median of 3)"
+2026-11-10,ab698df,art lab winners,dev,frame_interval,ashfall,1,4.32,,,P1,2.8,"performance.md@83a3c7b:88 (High 0.5, median of 3)"
+2026-11-10,ab698df,art lab winners,dev,frame_interval,open,2,4.14,,,P1,2.8,"performance.md@83a3c7b:88 (High 0.5, worst of 3, range from linked section)"
+2026-11-10,ab698df,art lab winners,dev,frame_interval,dense,2,14.72,,,P1,2.8,"performance.md@83a3c7b:88 (High 0.5, worst of 3, range from linked section)"
+2026-11-10,ab698df,art lab winners,dev,frame_interval,ashfall,2,4.76,,,P1,2.8,"performance.md@83a3c7b:88 (High 0.5, worst of 3, range from linked section)"
+2026-11-10,ab698df,art lab winners,dev,frame_interval,open,3,0.37,,,P1,2.8,"performance.md@83a3c7b:88 (Low 0.5, median of 3)"
+2026-11-10,ab698df,art lab winners,dev,frame_interval,dense,3,0.52,,,P1,2.8,"performance.md@83a3c7b:88 (Low 0.5, median of 3)"
+2026-11-10,ab698df,art lab winners,dev,frame_interval,ashfall,3,0.69,,,P1,2.8,"performance.md@83a3c7b:88 (Low 0.5, median of 3)"
+2026-11-10,ab698df,art lab winners,dev,frame_interval,open,4,0.55,,,P1,2.8,"performance.md@83a3c7b:88 (Low 0.5, worst of 3, range from linked section)"
+2026-11-10,ab698df,art lab winners,dev,frame_interval,dense,4,0.61,,,P1,2.8,"performance.md@83a3c7b:88 (Low 0.5, worst of 3, range from linked section)"
+2026-11-10,ab698df,art lab winners,dev,frame_interval,ashfall,4,0.77,,,P1,2.8,"performance.md@83a3c7b:88 (Low 0.5, worst of 3, range from linked section)"
+2026-11-10,ec1daf1+dirty,art lab exit review,dev,movement_tick,open,1,0.691,0.855,,P1,2.35,performance.md@83a3c7b:89
+2026-11-10,ec1daf1+dirty,art lab exit review,dev,movement_tick,dense,1,0.676,0.874,,P1,2.35,performance.md@83a3c7b:89
+2026-11-10,ec1daf1+dirty,art lab exit review,dev,lockstep_overhead,contact,1,,0.067,,P1,2.35,performance.md@83a3c7b:89
+2026-11-10,fdf3e49+dirty,art lab smooth toggle,dev,tick_frame,open,1,3.387,,,tick-frame,3.02,"performance.md@83a3c7b:90 (gated run g1, interpolation off, values from linked section)"
+2026-11-10,fdf3e49+dirty,art lab smooth toggle,dev,tick_frame,dense,1,3.161,,,tick-frame,3.02,"performance.md@83a3c7b:90 (gated run g1, interpolation off, values from linked section)"
+2026-11-10,fdf3e49+dirty,art lab smooth toggle,dev,tick_frame,ashfall,1,12.926,,,tick-frame,3.02,"performance.md@83a3c7b:90 (gated run g1, interpolation off, values from linked section)"
+2026-11-10,fdf3e49+dirty,art lab smooth toggle,dev,frame_interval,open,1,0.331,,,P1,3.02,"performance.md@83a3c7b:90 (gated run g1, interpolation off, values from linked section)"
+2026-11-10,fdf3e49+dirty,art lab smooth toggle,dev,frame_interval,dense,1,0.325,,,P1,3.02,"performance.md@83a3c7b:90 (gated run g1, interpolation off, values from linked section)"
+2026-11-10,fdf3e49+dirty,art lab smooth toggle,dev,frame_interval,ashfall,1,7.753,,,P1,3.02,"performance.md@83a3c7b:90 (gated run g1, interpolation off, values from linked section)"
+2026-11-10,fdf3e49+dirty,art lab smooth toggle,dev,tick_frame,open,2,14.48,,,tick-frame,3.02,"performance.md@83a3c7b:90 (gated run g2, interpolation off, values from linked section)"
+2026-11-10,fdf3e49+dirty,art lab smooth toggle,dev,tick_frame,dense,2,11.045,,,tick-frame,3.02,"performance.md@83a3c7b:90 (gated run g2, interpolation off, values from linked section)"
+2026-11-10,fdf3e49+dirty,art lab smooth toggle,dev,tick_frame,ashfall,2,13.104,,,tick-frame,3.02,"performance.md@83a3c7b:90 (gated run g2, interpolation off, values from linked section)"
+2026-11-10,fdf3e49+dirty,art lab smooth toggle,dev,frame_interval,open,2,20.665,,,P1,3.02,"performance.md@83a3c7b:90 (gated run g2, interpolation off, values from linked section)"
+2026-11-10,fdf3e49+dirty,art lab smooth toggle,dev,frame_interval,dense,2,0.422,,,P1,3.02,"performance.md@83a3c7b:90 (gated run g2, interpolation off, values from linked section)"
+2026-11-10,fdf3e49+dirty,art lab smooth toggle,dev,frame_interval,ashfall,2,19.144,,,P1,3.02,"performance.md@83a3c7b:90 (gated run g2, interpolation off, values from linked section)"
+2026-11-12,eb84fa2,P1 gate,dev,movement_tick,open,1,0.687,0.836,,P1,2.14,performance.md@83a3c7b:98
+2026-11-12,eb84fa2,P1 gate,dev,movement_tick,dense,1,0.675,0.871,,P1,2.14,performance.md@83a3c7b:98
+2026-11-12,eb84fa2,P1 gate,dev,combat_tick,open,1,1.868,2.227,,P1,2.14,performance.md@83a3c7b:98
+2026-11-12,eb84fa2,P1 gate,dev,combat_tick,dense,1,1.791,2.101,,P1,2.14,performance.md@83a3c7b:98
+2026-11-12,eb84fa2,P1 gate,dev,combat_tick,hordes300,1,2.834,3.420,,P1,2.14,performance.md@83a3c7b:98
+2026-11-12,eb84fa2,P1 gate,dev,lockstep_overhead,contact,1,,0.066,,P1,2.14,performance.md@83a3c7b:98
+2026-11-12,eb84fa2,P1 gate,dev,tick_frame,open,1,1.863,,,tick-frame,2.82,"performance.md@83a3c7b:99 (rendered gate, zoom 0.5 High, interpolation off)"
+2026-11-12,eb84fa2,P1 gate,dev,tick_frame,dense,1,1.964,,,tick-frame,2.82,"performance.md@83a3c7b:99 (rendered gate, zoom 0.5 High, interpolation off)"
+2026-11-12,eb84fa2,P1 gate,dev,tick_frame,ashfall,1,2.073,,,tick-frame,2.82,"performance.md@83a3c7b:99 (rendered gate, zoom 0.5 High, interpolation off)"
+2026-11-12,eb84fa2,P1 gate,dev,frame_interval,open,1,0.683,,,P1,2.82,"performance.md@83a3c7b:99 (rendered gate, zoom 0.5 High, interpolation off)"
+2026-11-12,eb84fa2,P1 gate,dev,frame_interval,dense,1,0.501,,,P1,2.82,"performance.md@83a3c7b:99 (rendered gate, zoom 0.5 High, interpolation off)"
+2026-11-12,eb84fa2,P1 gate,dev,frame_interval,ashfall,1,0.663,,,P1,2.82,"performance.md@83a3c7b:99 (rendered gate, zoom 0.5 High, interpolation off)"
+2026-11-13,5cdc6b9,c1 gate,dev,movement_tick,open,1,0.682,0.838,,P1,2.22,"performance.md@83a3c7b:100 (first run, partial figures in ledger)"
+2026-11-13,5cdc6b9,c1 gate,dev,movement_tick,dense,1,0.675,0.864,,P1,2.22,"performance.md@83a3c7b:100 (first run, partial figures in ledger)"
+2026-11-13,5cdc6b9,c1 gate,dev,combat_tick,open,1,1.854,2.165,,P1,2.22,"performance.md@83a3c7b:100 (first run, partial figures in ledger)"
+2026-11-13,5cdc6b9,c1 gate,dev,combat_tick,dense,1,1.783,2.089,,P1,2.22,"performance.md@83a3c7b:100 (first run, partial figures in ledger)"
+2026-11-13,5cdc6b9,c1 gate,dev,combat_tick,hordes300,1,2.818,3.357,,P1,2.22,"performance.md@83a3c7b:100 (first run, partial figures in ledger)"
+2026-11-13,5cdc6b9,c1 gate,dev,lockstep_overhead,contact,1,,0.065,,P1,2.22,"performance.md@83a3c7b:100 (first run, partial figures in ledger)"
+2026-11-13,5cdc6b9,c1 gate,dev,movement_tick,open,2,0.687,0.841,,P1,1.57,performance.md@83a3c7b:100 (rerun)
+2026-11-13,5cdc6b9,c1 gate,dev,movement_tick,dense,2,0.674,0.872,,P1,1.57,performance.md@83a3c7b:100 (rerun)
+2026-11-13,5cdc6b9,c1 gate,dev,combat_tick,open,2,1.852,2.161,,P1,1.57,performance.md@83a3c7b:100 (rerun)
+2026-11-13,5cdc6b9,c1 gate,dev,combat_tick,dense,2,1.774,2.096,,P1,1.57,performance.md@83a3c7b:100 (rerun)
+2026-11-13,5cdc6b9,c1 gate,dev,combat_tick,contact,2,1.145,1.604,,P1,1.57,performance.md@83a3c7b:100 (rerun)
+2026-11-13,5cdc6b9,c1 gate,dev,combat_tick,skirmish3v3,2,1.288,1.431,,P1,1.57,performance.md@83a3c7b:100 (rerun)
+2026-11-13,5cdc6b9,c1 gate,dev,combat_tick,transports,2,1.063,1.159,,P1,1.57,performance.md@83a3c7b:100 (rerun)
+2026-11-13,5cdc6b9,c1 gate,dev,combat_tick,defences,2,0.777,2.060,,P1,1.57,performance.md@83a3c7b:100 (rerun)
+2026-11-13,5cdc6b9,c1 gate,dev,combat_tick,docks,2,0.555,0.575,,P1,1.57,performance.md@83a3c7b:100 (rerun)
+2026-11-13,5cdc6b9,c1 gate,dev,combat_tick,hordes300,2,2.815,3.308,,P1,1.57,performance.md@83a3c7b:100 (rerun)
+2026-11-13,5cdc6b9,c1 gate,dev,combat_tick,ramp,2,0.654,1.199,,P1,1.57,performance.md@83a3c7b:100 (rerun)
+2026-11-13,5cdc6b9,c1 gate,dev,combat_tick,frc,2,0.822,1.143,,P1,1.57,performance.md@83a3c7b:100 (rerun)
+2026-11-13,5cdc6b9,c1 gate,dev,lockstep_overhead,contact,2,,0.069,,P1,1.57,performance.md@83a3c7b:100 (rerun)
+2026-11-13,444ff0c,P2 gate,dev,movement_tick,open,1,0.678,0.848,,P1,2.61,performance.md@83a3c7b:101 (first run)
+2026-11-13,444ff0c,P2 gate,dev,movement_tick,dense,1,0.680,0.876,,P1,2.61,performance.md@83a3c7b:101 (first run)
+2026-11-13,444ff0c,P2 gate,dev,combat_tick,open,1,1.889,2.234,,P1,2.61,performance.md@83a3c7b:101 (first run)
+2026-11-13,444ff0c,P2 gate,dev,combat_tick,dense,1,1.799,2.086,,P1,2.61,performance.md@83a3c7b:101 (first run)
+2026-11-13,444ff0c,P2 gate,dev,combat_tick,contact,1,1.143,1.583,,P1,2.61,performance.md@83a3c7b:101 (first run)
+2026-11-13,444ff0c,P2 gate,dev,combat_tick,skirmish3v3,1,1.289,1.443,,P1,2.61,performance.md@83a3c7b:101 (first run)
+2026-11-13,444ff0c,P2 gate,dev,combat_tick,transports,1,1.069,1.159,,P1,2.61,performance.md@83a3c7b:101 (first run)
+2026-11-13,444ff0c,P2 gate,dev,combat_tick,defences,1,0.784,2.075,,P1,2.61,performance.md@83a3c7b:101 (first run)
+2026-11-13,444ff0c,P2 gate,dev,combat_tick,docks,1,0.571,0.628,,P1,2.61,performance.md@83a3c7b:101 (first run)
+2026-11-13,444ff0c,P2 gate,dev,combat_tick,hordes300,1,2.854,3.433,,P1,2.61,performance.md@83a3c7b:101 (first run)
+2026-11-13,444ff0c,P2 gate,dev,combat_tick,ramp,1,0.650,1.204,,P1,2.61,performance.md@83a3c7b:101 (first run)
+2026-11-13,444ff0c,P2 gate,dev,combat_tick,frc,1,0.826,1.142,,P1,2.61,performance.md@83a3c7b:101 (first run)
+2026-11-13,444ff0c,P2 gate,dev,lockstep_overhead,contact,1,,0.072,,P1,2.61,performance.md@83a3c7b:101 (first run)
+2026-11-13,444ff0c,P2 gate,dev,movement_tick,open,2,0.717,0.866,,P1,2.66,performance.md@83a3c7b:101 (rerun)
+2026-11-13,444ff0c,P2 gate,dev,movement_tick,dense,2,0.690,0.889,,P1,2.66,performance.md@83a3c7b:101 (rerun)
+2026-11-13,444ff0c,P2 gate,dev,combat_tick,open,2,1.882,2.201,,P1,2.66,performance.md@83a3c7b:101 (rerun)
+2026-11-13,444ff0c,P2 gate,dev,combat_tick,dense,2,1.814,2.162,,P1,2.66,performance.md@83a3c7b:101 (rerun)
+2026-11-13,444ff0c,P2 gate,dev,combat_tick,contact,2,1.151,1.596,,P1,2.66,performance.md@83a3c7b:101 (rerun)
+2026-11-13,444ff0c,P2 gate,dev,combat_tick,skirmish3v3,2,1.299,1.449,,P1,2.66,performance.md@83a3c7b:101 (rerun)
+2026-11-13,444ff0c,P2 gate,dev,combat_tick,transports,2,1.079,1.180,,P1,2.66,performance.md@83a3c7b:101 (rerun)
+2026-11-13,444ff0c,P2 gate,dev,combat_tick,defences,2,0.804,2.056,,P1,2.66,performance.md@83a3c7b:101 (rerun)
+2026-11-13,444ff0c,P2 gate,dev,combat_tick,docks,2,0.560,0.583,,P1,2.66,performance.md@83a3c7b:101 (rerun)
+2026-11-13,444ff0c,P2 gate,dev,combat_tick,hordes300,2,2.845,3.412,,P1,2.66,performance.md@83a3c7b:101 (rerun)
+2026-11-13,444ff0c,P2 gate,dev,combat_tick,ramp,2,0.661,1.214,,P1,2.66,performance.md@83a3c7b:101 (rerun)
+2026-11-13,444ff0c,P2 gate,dev,combat_tick,frc,2,0.847,1.175,,P1,2.66,performance.md@83a3c7b:101 (rerun)
+2026-11-13,444ff0c,P2 gate,dev,lockstep_overhead,contact,2,,0.067,,P1,2.66,performance.md@83a3c7b:101 (rerun)
+2026-11-13,444ff0c,P2 gate,dev,tick_frame,open,1,2.138,,,tick-frame,2.31,"performance.md@83a3c7b:101 (rendered rerun, zoom 0.5 High, interpolation off)"
+2026-11-13,444ff0c,P2 gate,dev,tick_frame,dense,1,1.953,,,tick-frame,2.31,"performance.md@83a3c7b:101 (rendered rerun, zoom 0.5 High, interpolation off)"
+2026-11-13,444ff0c,P2 gate,dev,tick_frame,ashfall,1,2.050,,,tick-frame,2.31,"performance.md@83a3c7b:101 (rendered rerun, zoom 0.5 High, interpolation off)"
+2026-11-13,444ff0c,P2 gate,dev,frame_interval,open,1,0.311,,,P1,2.31,"performance.md@83a3c7b:101 (rendered rerun, zoom 0.5 High, interpolation off)"
+2026-11-13,444ff0c,P2 gate,dev,frame_interval,dense,1,0.707,,,P1,2.31,"performance.md@83a3c7b:101 (rendered rerun, zoom 0.5 High, interpolation off)"
+2026-11-13,444ff0c,P2 gate,dev,frame_interval,ashfall,1,2.232,,,P1,2.31,"performance.md@83a3c7b:101 (rendered rerun, zoom 0.5 High, interpolation off)"

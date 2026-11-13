@@ -7,31 +7,31 @@ Status: **UPDATE 2026-11-11 (PERFORMANCE NEXT, see the History rows at the end):
 
 | Area | Status | Budget used | vs last run | As of |
 | --- | --- | --- | --- | --- |
-| **Combat, huge battles** | 🔴 Over | ██████████▶ 155% | 🔻 1% better | 2026-11-10 |
+| **Combat, huge battles** | 🔴 Over | ██████████▶ 157% | 🔺 1% worse (busy host) | 2026-11-13 |
 | **Background upkeep, huge crowds** | 🔴 Over | ██████████▶ 144% | 🆕 first run | 2026-11-08 |
 | Background upkeep, armies on the move | 🟡 Close | █████████░ 98% | 🆕 first run | 2026-11-08 |
-| Drawing the screen, big map (Ashfall) | 🟡 Close | █████████░ 96% | 🔺 8% worse | 2026-11-09 |
-| Drawing the screen | 🟢 OK | ███████░░░ 71% | 🔺 12% worse | 2026-11-09 |
-| Combat, normal fights | 🟢 OK | ███████░░░ 70% | ➖ same | 2026-11-10 |
-| Combat, normal fights, slowest moments | 🟢 OK | █████░░░░░ 56% | 🔻 1% better | 2026-11-10 |
-| Unit movement | 🟢 OK | ███░░░░░░░ 37% | 🔺 1% worse | 2026-11-10 |
-| Unit movement, slowest moments | 🟢 OK | ██░░░░░░░░ 24% | 🔻 1% better | 2026-11-10 |
-| Online play overhead | 🟢 OK | █░░░░░░░░░ 11% | 🔻 1% better | 2026-11-10 |
+| Combat, normal fights | 🟢 OK | ███████░░░ 71% | 🔺 1% worse (busy host) | 2026-11-13 |
+| Drawing the screen | 🟢 OK | ███████░░░ 70% | 🔺 9% worse | 2026-11-13 |
+| Drawing the screen, big map (Ashfall) | 🟢 OK | ██████░░░░ 67% | 🔻 1% better | 2026-11-13 |
+| Combat, normal fights, slowest moments | 🟢 OK | █████░░░░░ 57% | 🔺 1% worse (busy host) | 2026-11-13 |
+| Unit movement | 🟢 OK | ███░░░░░░░ 39% | 🔺 4% worse (busy host) | 2026-11-13 |
+| Unit movement, slowest moments | 🟢 OK | ██░░░░░░░░ 24% | 🔺 2% worse (busy host) | 2026-11-13 |
+| Online play overhead | 🟢 OK | █░░░░░░░░░ 12% | 🔺 4% worse (busy host) | 2026-11-13 |
 
 Percent of the limit for a low-end device, estimated from this Mac (see the ledger for how). 🔺 = used more of the limit than last run. Small changes can be run-to-run noise. As of = when that area was last measured; areas drawn from rendered runs update only at milestone gates.
 
 Details:
 
-- movement p95: 37% of budget (perf charts T7, 2026-11-10), 1% slower than converted maps final (worst vs worst); run-to-run spread up to 50%
-- movement p99: 24% of budget (perf charts T7, 2026-11-10), 1% faster than sound spike T7 (worst vs worst); run-to-run spread up to 50%
-- combat gated p95: 70% of budget (perf charts T7, 2026-11-10), unchanged vs perf spike T15 (worst vs worst); run-to-run spread up to 58%
-- combat gated p99: 56% of budget (perf charts T7, 2026-11-10), 1% faster than perf spike T15 (worst vs worst); run-to-run spread up to 58%
-- combat stress p95: 155% of budget, exceeded (perf charts T7, 2026-11-10), 1% faster than converted maps final (worst vs worst); run-to-run spread up to 41%
+- movement p95: 39% of budget (P2 gate, 2026-11-13), 4% slower than c1 gate (worst vs worst); run-to-run spread up to 50%, busy host (load 2.7)
+- movement p99: 24% of budget (P2 gate, 2026-11-13), 2% slower than c1 gate (worst vs worst); run-to-run spread up to 50%, busy host (load 2.7)
+- combat gated p95: 71% of budget (P2 gate, 2026-11-13), 1% slower than c1 gate (worst vs worst); run-to-run spread up to 58%, busy host (load 2.7)
+- combat gated p99: 57% of budget (P2 gate, 2026-11-13), 1% slower than c1 gate (worst vs worst); run-to-run spread up to 58%, busy host (load 2.7)
+- combat stress p95: 157% of budget, exceeded (P2 gate, 2026-11-13), 1% slower than c1 gate (worst vs worst); run-to-run spread up to 41%, busy host (load 2.7)
 - plumbing, movement layouts: 98% of budget (perf spike T2, 2026-11-08), no previous run; run-to-run spread not measured
 - plumbing, horde: 144% of budget, exceeded (perf spike T2, 2026-11-08), no previous run; run-to-run spread not measured
-- rendered frame p95: 71% of budget (converted maps T9, 2026-11-09), 12% slower than sound spike T7 (worst vs worst); run-to-run spread not measured
-- Ashfall frame p95: 96% of budget (converted maps T9, 2026-11-09), 8% slower than sound spike T7 (worst vs worst); run-to-run spread not measured
-- lockstep p99: 11% of budget (perf charts T7, 2026-11-10), 1% faster than converted maps final (worst vs worst); run-to-run spread not measured
+- rendered frame p95: 70% of budget (P2 gate, 2026-11-13), 9% slower than P1 gate (worst vs worst); run-to-run spread not measured
+- Ashfall frame p95: 67% of budget (P2 gate, 2026-11-13), 1% faster than P1 gate (worst vs worst); run-to-run spread not measured
+- lockstep p99: 12% of budget (P2 gate, 2026-11-13), 4% slower than c1 gate (worst vs worst); run-to-run spread not measured, busy host (load 2.7)
 <!-- perf-charts:end -->
 
 ## Target device (measured 2026-11-06)
