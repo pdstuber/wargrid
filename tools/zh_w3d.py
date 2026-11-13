@@ -122,6 +122,12 @@ def walk(data: bytes, start: int, end: int) -> Iterator[tuple[int, int, int]]:
         pos = stop
 
 
+def unpack(layout: struct.Struct, data: bytes, start: int, end: int) -> tuple:
+    if start + layout.size > end:
+        raise ValueError(f"record at {start} overruns {end}")
+    return layout.unpack_from(data, start)
+
+
 def text(raw: bytes) -> str:
     return raw.split(b"\0", 1)[0].decode("latin-1")
 
@@ -150,9 +156,9 @@ def compose(parent: Transform, translation: Vec3, rotation: Quat) -> Transform:
 
 
 def parse_mesh(data: bytes, start: int, end: int) -> RawMesh:
-    for kind, payload, _ in walk(data, start, end):
+    for kind, payload, stop in walk(data, start, end):
         if kind == MESH_HEADER3:
-            f = MESH_HEADER.unpack_from(data, payload)
+            f = unpack(MESH_HEADER, data, payload, stop)
             container, name = text(f[3]), text(f[2])
             return RawMesh(
                 f"{container}.{name}" if container else name, f[1], (f[13], f[14], f[15]), (f[16], f[17], f[18])
@@ -164,7 +170,7 @@ def parse_pivots(data: bytes, start: int, end: int, count: int) -> RawHierarchy:
     bones: list[tuple[str, int]] = []
     world: list[Transform] = []
     for i in range(count):
-        f = PIVOT.unpack_from(data, start + i * PIVOT.size)
+        f = unpack(PIVOT, data, start + i * PIVOT.size, end)
         parent = -1 if f[1] == NO_PARENT else f[1]
         if parent >= i:
             raise ValueError(f"pivot {i} has parent {parent}")
@@ -195,9 +201,9 @@ def parse_hlod(data: bytes, start: int, end: int) -> RawHlod:
         elif kind == HLOD_LOD_ARRAY and not seen_array:
             # shortcut: only LOD 0 of the HLOD is read; every retail HLOD has one LOD (2026-11-12 probe).
             seen_array = True
-            for sub_kind, sub_payload, _ in walk(data, payload, stop):
+            for sub_kind, sub_payload, sub_stop in walk(data, payload, stop):
                 if sub_kind == HLOD_SUB_OBJECT:
-                    bone, raw = SUB_OBJECT.unpack_from(data, sub_payload)
+                    bone, raw = unpack(SUB_OBJECT, data, sub_payload, sub_stop)
                     subs.append((bone, text(raw)))
     return RawHlod(name, hierarchy, subs)
 

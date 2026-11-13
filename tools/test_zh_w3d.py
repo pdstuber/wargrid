@@ -92,6 +92,27 @@ class WalkTest(unittest.TestCase):
             list(zh_w3d.walk(struct.pack("<II", 0x0, 99) + b"x", 0, 9))
 
 
+class BoundsTest(unittest.TestCase):
+    def test_mesh_header_bounded_by_chunk(self):
+        short = chunk(0x000, chunk(0x01F, b"\0" * 4) + chunk(0x999, b"\0" * 200), sub=True)
+        with self.assertRaises(ValueError):
+            zh_w3d.parse_entry(short)
+
+    def test_pivot_count_bounded_by_chunk(self):
+        head = struct.pack("<I16sI3f", 0x40001, b"BAD", 3, 0, 0, 0)
+        pivot = struct.pack("<16sI3f3f4f", b"ROOT", 0xFFFFFFFF, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)
+        data = chunk(0x100, chunk(0x101, head) + chunk(0x102, pivot) + chunk(0x999, b"\0" * 200), sub=True)
+        with self.assertRaises(ValueError):
+            zh_w3d.parse_entry(data)
+
+    def test_sub_object_bounded_by_chunk(self):
+        lods = chunk(0x704, b"\0" * 4) + chunk(0x999, b"\0" * 100)
+        head = struct.pack("<II16s16s", 0x10000, 1, b"BAD", b"BAD")
+        data = chunk(0x700, chunk(0x701, head) + chunk(0x702, lods, sub=True), sub=True)
+        with self.assertRaises(ValueError):
+            zh_w3d.parse_entry(data)
+
+
 class RowsTest(unittest.TestCase):
     def test_bone_positions_compose_rotation(self):
         pivots = [(b["name"], b["parent"], b["position"]) for b in tank_row()["pivots"]]
@@ -139,6 +160,14 @@ class RowsTest(unittest.TestCase):
         self.assertEqual(skin["body"]["size"], [2.0, 3.0, 4.0])
         self.assertEqual((skeleton["meshes"], skeleton["body"], skeleton["hlod"]), ([], None, None))
         self.assertEqual(skeleton["hierarchy"], "SOLDIER_SKL")
+
+    def test_skin_box_ignores_nonidentity_bone(self):
+        skin = mesh("SOLDIER_SKN", "BODY", (-1, -1, 0), (1, 1, 4), 0x20000) + hlod(
+            "SOLDIER_SKN", "SOLDIER_SKL", [(1, "SOLDIER_SKN.BODY")]
+        )
+        rows, _ = zh_w3d.build_rows([("W3D.big", "soldier_skl.w3d", SKELETON), ("W3D.big", "soldier_skn.w3d", skin)])
+        body = mesh_by_name(rows[1], "SOLDIER_SKN.BODY")
+        self.assertEqual((body["bone"], body["min"], body["max"]), (1, [-1.0, -1.0, 0.0], [1.0, 1.0, 4.0]))
 
     def test_missing_hierarchy_rigid_unresolved(self):
         rows, _ = zh_w3d.build_rows([("W3D.big", "soldier_skn.w3d", SKIN)])
