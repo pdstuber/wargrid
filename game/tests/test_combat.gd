@@ -10,9 +10,10 @@ const Combat = preload("res://scripts/simulation/combat.gd")
 const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 const Fixture = preload("res://tests/combat_fixture.gd")
 const EconomyFixture = preload("res://tests/economy_fixture.gd")
+const Profiler = preload("res://scripts/debug/profiler.gd")
 
 func cases() -> Array[Callable]:
-	return [test_leash_square_matches_pow, test_combat_definitions, test_definitions_shared, test_health_snapshot_isolation, test_weapon_range_boundary, test_ranger_fires_at_edge_max, test_crusader_fires_at_edge_max, test_rifle_cycle_30, test_firing_cell_uses_edge, test_building_edge_range, test_damage_armor_matrix, test_weapon_cooldown, test_guard_priority, test_attack_validation_atomic, test_combat_intent_order, test_orders_preserve_reload, test_acquisition_throttle, test_mutual_lethal_fire, test_target_removed_cleanup, test_destroyed_unit_no_actions, test_destroyed_producer_accounting, test_same_tick_attack_and_cancel, test_removed_target_rescans, test_controller_and_scan_radius, test_scan_acquires_beyond_weapon_range, test_scan_radius_by_controller, test_scan_radius_boundary, test_removed_chaser_clears_chase, test_scan_keeps_target_leaving_radius, test_attack_move_resumes_after_chase, test_scan_same_tick_orders, test_scan_includes_buildings, test_human_guard_in_range_only, test_human_guard_holds_against_kiting, test_ai_guard_unchanged, test_human_attack_move_marches_in_range, test_human_attack_move_post_kill_rescan, test_human_attack_move_follows_retreat, test_rescan_same_tick_orders, test_human_attack_move_drops_target_out_of_range, test_human_attack_move_first_approach_has_no_leash, test_retarget_only_for_attack_move, test_missing_id_skipped, test_due_tick_death_skips_member, test_foreign_id_rejects, test_attack_move_mixed_selection, test_retaliate_trigger_distance, test_retaliate_joiners, test_retaliate_leash_and_return, test_retaliate_return_scan_and_rehit, test_retaliate_same_tick_cases, test_retaliate_go_home_queues_once, test_rng_sequence, test_splash_victims_boundary, test_splash_cluster, test_splash_mask, test_splash_last_builder_same_tick, test_splash_event_flag, test_rocket_splash_and_scatter, test_damage_table_new_types, test_damage_table_gattling, test_damage_table_frc_weapons, test_nearest_matches_oracle, test_radius_cache]
+	return [test_leash_square_matches_pow, test_combat_definitions, test_definitions_shared, test_health_snapshot_isolation, test_weapon_range_boundary, test_ranger_fires_at_edge_max, test_crusader_fires_at_edge_max, test_rifle_cycle_30, test_firing_cell_uses_edge, test_building_edge_range, test_damage_armor_matrix, test_weapon_cooldown, test_guard_priority, test_attack_validation_atomic, test_combat_intent_order, test_orders_preserve_reload, test_acquisition_throttle, test_mutual_lethal_fire, test_target_removed_cleanup, test_destroyed_unit_no_actions, test_destroyed_producer_accounting, test_same_tick_attack_and_cancel, test_removed_target_rescans, test_controller_and_scan_radius, test_scan_acquires_beyond_weapon_range, test_scan_radius_by_controller, test_scan_radius_boundary, test_removed_chaser_clears_chase, test_scan_keeps_target_leaving_radius, test_attack_move_resumes_after_chase, test_scan_same_tick_orders, test_scan_includes_buildings, test_human_guard_in_range_only, test_human_guard_holds_against_kiting, test_ai_guard_unchanged, test_human_attack_move_marches_in_range, test_human_attack_move_post_kill_rescan, test_human_attack_move_follows_retreat, test_rescan_same_tick_orders, test_human_attack_move_drops_target_out_of_range, test_human_attack_move_first_approach_has_no_leash, test_retarget_only_for_attack_move, test_missing_id_skipped, test_due_tick_death_skips_member, test_foreign_id_rejects, test_attack_move_mixed_selection, test_retaliate_trigger_distance, test_retaliate_joiners, test_retaliate_leash_and_return, test_retaliate_return_scan_and_rehit, test_retaliate_same_tick_cases, test_retaliate_go_home_queues_once, test_rng_sequence, test_splash_victims_boundary, test_splash_cluster, test_splash_mask, test_splash_last_builder_same_tick, test_splash_event_flag, test_rocket_splash_and_scatter, test_damage_table_new_types, test_damage_table_gattling, test_damage_table_frc_weapons, test_nearest_matches_oracle, test_radius_cache, test_splash_index_matches_oracle, test_splash_hits_passenger_unloaded_this_tick, test_splash_index_built_only_on_splash_ticks]
 
 func test_combat_definitions(runner) -> bool:
 	runner.check(Definitions.profile("usa_rifle_infantry") == {"max_hp": 180000, "armor": "human", "weapon": "rifle"}, "D1 infantry")
@@ -1511,3 +1512,102 @@ func _oracle_nearest(sim: Simulation, unit: Dictionary, grid: Dictionary, radius
 					best = target.id
 					best_distance = distance
 	return best
+
+func _oracle_splash(sim: Simulation, impact: Vector2, radius: float, affects: Array, attacker: Dictionary) -> Array[Dictionary]:
+	var victims: Array[Dictionary] = []
+	for pool: Variant in [sim._entities, sim._buildings]:
+		for victim: Variant in pool.values():
+			if victim.id == attacker.id or Registry.air_kinds.has(victim.kind) or victim.has("container_id") or Combat.masked(victim): continue
+			if (Combat._victim_centre(victim).distance_to(impact) - Definitions.radius(victim.kind)) > radius + Combat.EDGE_EPS: continue
+			if affects.has("enemies" if Combat.hostile(sim, attacker.owner, victim.owner) else "allies"): victims.append(victim)
+	victims.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.id < b.id)
+	return victims
+
+func _ids(victims: Array[Dictionary]) -> Array:
+	return victims.map(func(victim: Dictionary) -> int: return victim.id)
+
+func _impacts(sim: Simulation, rng: RandomNumberGenerator) -> Array[Vector2]:
+	var points: Array[Vector2] = []
+	for i in range(10): points.append(Vector2(rng.randf_range(0.0, 32.0), rng.randf_range(0.0, 32.0)))
+	var buildings: Array = sim._buildings.values()
+	var units: Array = sim._entities.values()
+	for i in range(5):
+		points.append(Combat._victim_centre(buildings[rng.randi() % buildings.size()]))
+		var unit: Dictionary = units[rng.randi() % units.size()]
+		points.append(Vector2(unit.position[0], unit.position[1]))
+	return points
+
+func test_splash_index_matches_oracle(runner) -> bool:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 20261113
+	var queries: int = 0
+	var mismatches: int = 0
+	var radii: Array[float] = [0.2, 0.52, 1.0, 1.8533333333333333]
+	for state in range(50):
+		var sim = _oracle_world(rng)
+		var attackers: Array[Dictionary] = [sim._entities.values()[0], sim._buildings.values()[0], {"id": -1, "owner": 1 + rng.randi() % 3}]
+		var index: Dictionary = Combat._splash_index(sim, {})
+		var first: bool = true
+		for impact in _impacts(sim, rng):
+			for radius in radii:
+				for attacker in attackers:
+					var affects: Array = ["enemies"] if rng.randi() % 2 == 0 else ["allies", "enemies", "neutrals"]
+					queries += 1
+					var actual: Array[Dictionary] = Combat.splash_victims(sim, impact, radius, affects, attacker) if first else Combat.splash_victims(sim, impact, radius, affects, attacker, index)
+					first = false
+					if _ids(actual) != _ids(_oracle_splash(sim, impact, radius, affects, attacker)): mismatches += 1
+	runner.check(queries >= 10000 and mismatches == 0, "SI1 indexed splash equals the full scan (%d queries, %d mismatches)" % [queries, mismatches])
+	return true
+
+func _splash_kinds() -> void:
+	var row: Dictionary = Registry.kind("usa_rifle_infantry").duplicate(true)
+	row.radius = 0.45
+	Registry.add_test_kind("si_wide_infantry", row)
+
+func test_splash_hits_passenger_unloaded_this_tick(runner) -> bool:
+	_splash_kinds()
+	var sim = Fixture.world()
+	sim.add_player(1, 10000)
+	sim.add_player(2, 0)
+	var car: int = sim.spawn(2, Vector2(16.5, 15.5), "usa_light_vehicle")
+	var passenger: int = sim.spawn(2, Vector2(18.5, 15.5), "si_wide_infantry")
+	Fixture.send(sim, {"type": "enter", "player": 2, "entity_ids": [passenger], "target_id": car})
+	for i in range(100): sim.step()
+	runner.check(Fixture.object(sim, passenger).get("container_id", 0) == car, "SI2 setup: the passenger boarded")
+	var target: int = sim.spawn(2, Vector2(15.99, 14.5), "usa_builder")
+	var tank: int = sim.spawn(1, Vector2(10.5, 14.5), "usa_tank")
+	runner.check(Fixture.send(sim, {"type": "attack", "entity_ids": [tank], "target_id": target}).ok, "SI2 attack accepted")
+	var first: int = -1
+	while first < 0 and sim.tick() < 200:
+		sim.step()
+		for shot in _shots(sim):
+			if shot.attacker_id == tank and first < 0: first = shot.tick
+	var next_shot: int = first + Definitions.weapon("cannon").delay_ticks
+	while sim.tick() < next_shot: sim.step()
+	runner.check(Fixture.send(sim, {"type": "unload", "player": 2, "target_id": car}).ok, "SI2 unload accepted")
+	sim.step()
+	var hits: Array = _shots(sim).filter(func(shot: Dictionary) -> bool: return shot.attacker_id == tank and shot.target_id == passenger)
+	runner.check(first >= 0 and hits.size() == 1 and hits[0].splash and hits[0].tick == next_shot, "SI2 a passenger unloaded on the firing tick inside the blast is hit once, got %s" % str(_shots(sim)))
+	Registry.clear_test_kinds()
+	return true
+
+func test_splash_index_built_only_on_splash_ticks(runner) -> bool:
+	var sim = Fixture.world()
+	sim.add_player(1, 0)
+	sim.add_player(2, 0)
+	sim.spawn(1, Vector2(10.5, 10.5), "usa_tank")
+	sim.spawn(2, Vector2(15.5, 10.5), "usa_tank")
+	Profiler.reset()
+	Profiler.enabled = true
+	var splash_ticks: int = 0
+	for i in range(200):
+		sim.step()
+		var splashing: bool = false
+		for shot in _shots(sim):
+			if not shot.splash and Definitions.weapon(Definitions.profile(Combat.record(sim, shot.attacker_id).kind).weapon).primary_radius > 0.0: splashing = true
+		splash_ticks += 1 if splashing else 0
+	var builds: int = Profiler.calls(&"combat.splash_index")
+	Profiler.enabled = false
+	Profiler.reset()
+	runner.check(splash_ticks > 0 and builds == splash_ticks, "SI3 one index build per tick with a splash-weapon shot, none otherwise (%d ticks, %d builds)" % [splash_ticks, builds])
+	return true

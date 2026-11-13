@@ -353,6 +353,7 @@ static func fire(sim: Simulation, unit_ids: Array[int], moved_ids: Array[int]) -
 	var shots: Array[Dictionary] = []
 	var damage: Dictionary = {}
 	var moved: Dictionary = {}
+	var splash_box: Dictionary = {}
 	for unit_id in moved_ids: moved[unit_id] = true
 	for unit_id in unit_ids:
 		if moved.has(unit_id) or not sim._entities.has(unit_id): continue
@@ -363,7 +364,7 @@ static func fire(sim: Simulation, unit_ids: Array[int], moved_ids: Array[int]) -
 		if not valid_target(sim, unit.owner, combat.target_id) or not _in_range(sim, unit, target): continue
 		var weapon: Dictionary = weapon_of(unit)
 		_hit(shots, damage, sim, unit_id, target, weapon, false)
-		if weapon.primary_radius > 0.0: _splash(shots, damage, sim, unit, target, weapon)
+		if weapon.primary_radius > 0.0: _splash(shots, damage, sim, unit, target, weapon, splash_box)
 		_reload(sim, combat, weapon)
 		_ramp_after_shot(sim, combat, weapon)
 	sim._combat_events.append_array(shots)
@@ -395,6 +396,7 @@ static func fire_defences(sim: Simulation) -> void:
 	var shots: Array[Dictionary] = []
 	var damage: Dictionary = {}
 	var dark: Dictionary = {}
+	var splash_box: Dictionary = {}
 	for id: int in ids:
 		var building: Dictionary = sim._buildings[id]
 		if _is_dark(sim, building, dark): continue
@@ -407,7 +409,7 @@ static func fire_defences(sim: Simulation) -> void:
 				combat.scan_tick = sim._tick + DEFENCE_SCAN_TICKS
 		if combat.target_id == null or sim._tick < combat.next_fire_tick: continue
 		_hit(shots, damage, sim, id, record(sim, combat.target_id), weapon, false)
-		if weapon.primary_radius > 0.0: _splash(shots, damage, sim, building, record(sim, combat.target_id), weapon)
+		if weapon.primary_radius > 0.0: _splash(shots, damage, sim, building, record(sim, combat.target_id), weapon, splash_box)
 		_reload(sim, combat, weapon)
 		_ramp_after_shot(sim, combat, weapon)
 	sim._combat_events.append_array(shots)
@@ -492,14 +494,14 @@ static func _hit(shots: Array[Dictionary], damage: Dictionary, sim: Simulation, 
 	damage[target.id] = damage.get(target.id, 0) + amount
 
 # Against infantry the shell lands at a seeded point (uniform angle and radius) and blasts a wider radius.
-static func _splash(shots: Array[Dictionary], damage: Dictionary, sim: Simulation, unit: Dictionary, target: Dictionary, weapon: Dictionary) -> void:
+static func _splash(shots: Array[Dictionary], damage: Dictionary, sim: Simulation, unit: Dictionary, target: Dictionary, weapon: Dictionary, box: Dictionary) -> void:
 	var impact: Vector2 = _victim_centre(target)
 	var radius: float = weapon.primary_radius
 	if Registry.kind(target.kind).get("class", "") == "infantry":
 		if weapon.get("infantry_scatter", true): impact += _scatter(sim) * CombatDefinitions.SCATTER_VS_INFANTRY * sim.next_random() / 4294967296.0
 		radius = weapon.get("infantry_blast", CombatDefinitions.INFANTRY_BLAST)
 	var zone: int = Profiler.begin()
-	var victims: Array[Dictionary] = splash_victims(sim, impact, radius, weapon.affects, unit)
+	var victims: Array[Dictionary] = splash_victims(sim, impact, radius, weapon.affects, unit, _splash_index(sim, box))
 	Profiler.end(&"combat.splash", zone)
 	for victim in victims:
 		if victim.id != target.id: _hit(shots, damage, sim, unit.id, victim, weapon, true)
@@ -511,14 +513,45 @@ static func _scatter(sim: Simulation) -> Vector2:
 		if squared > 1e-12 and squared <= 1.0: return d / sqrt(squared)
 	return Vector2.ZERO
 
-# shortcut: scans every object per cannon shot; grid it if cannon shots x objects shows in the ledger.
-static func splash_victims(sim: Simulation, impact: Vector2, radius: float, affects: Array, attacker: Dictionary) -> Array[Dictionary]:
+# Cell keys are float64 while _victim_centre rounds to float32; the slack keeps every candidate.
+const SPLASH_SLACK: float = 0.01
+
+# Built once per fire pass from live positions, so units moved, spawned or unloaded this tick are in it.
+static func _splash_index(sim: Simulation, box: Dictionary) -> Dictionary:
+	if not box.is_empty(): return box
+	var zone: int = Profiler.begin()
+	var cells: Dictionary = {}
+	var reach: float = 0.0
+	for pool: Dictionary in [sim._entities, sim._buildings]:
+		for victim: Dictionary in pool.values():
+			if Registry.air_kinds.has(victim.kind) or victim.has("container_id") or masked(victim): continue
+			var key: Vector2i = _centre_cell(victim)
+			if not cells.has(key): cells[key] = []
+			cells[key].append(victim)
+			reach = maxf(reach, CombatDefinitions.radius(victim.kind))
+	box.cells = cells
+	box.reach = reach
+	Profiler.end(&"combat.splash_index", zone)
+	return box
+
+static func _centre_cell(victim: Dictionary) -> Vector2i:
+	if not victim.has("origin"): return Vector2i(floori(victim.position[0] / GRID_CELL), floori(victim.position[1] / GRID_CELL))
+	var size: Vector2i = Definitions.building(victim.kind).footprint
+	return Vector2i(floori((victim.origin[0] + size.x * 0.5) / GRID_CELL), floori((victim.origin[1] + size.y * 0.5) / GRID_CELL))
+
+static func splash_victims(sim: Simulation, impact: Vector2, radius: float, affects: Array, attacker: Dictionary, index: Dictionary = {}) -> Array[Dictionary]:
+	if index.is_empty(): index = _splash_index(sim, {})
+	var cells: Dictionary = index.cells
+	var window: float = radius + index.reach + EDGE_EPS + SPLASH_SLACK
 	var victims: Array[Dictionary] = []
-	for pool: Variant in [sim._entities, sim._buildings]:
-		for victim: Variant in pool.values():
-			if victim.id == attacker.id or Registry.air_kinds.has(victim.kind) or victim.has("container_id") or masked(victim): continue
-			if (_victim_centre(victim).distance_to(impact) - CombatDefinitions.radius(victim.kind)) > radius + EDGE_EPS: continue
-			if affects.has("enemies" if hostile(sim, attacker.owner, victim.owner) else "allies"): victims.append(victim)
+	for y in range(floori((impact.y - window) / GRID_CELL), floori((impact.y + window) / GRID_CELL) + 1):
+		for x in range(floori((impact.x - window) / GRID_CELL), floori((impact.x + window) / GRID_CELL) + 1):
+			var key := Vector2i(x, y)
+			if not cells.has(key): continue
+			for victim: Dictionary in cells[key]:
+				if victim.id == attacker.id: continue
+				if (_victim_centre(victim).distance_to(impact) - CombatDefinitions.radius(victim.kind)) > radius + EDGE_EPS: continue
+				if affects.has("enemies" if hostile(sim, attacker.owner, victim.owner) else "allies"): victims.append(victim)
 	victims.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.id < b.id)
 	return victims
 

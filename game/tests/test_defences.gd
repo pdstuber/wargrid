@@ -9,7 +9,7 @@ const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.g
 const Skirmish = preload("res://scripts/simulation/skirmish.gd")
 
 func cases() -> Array[Callable]:
-	return [test_defence_fires_edge_range, test_defence_clip_and_reload, test_defence_picks_nearest_hostile, test_powered_defence_dark_when_low_power, test_bot_does_not_build_defence, test_defence_shots_trigger_retaliation, test_defence_keeps_current_target, test_defence_splash, test_defence_ignores_air_and_contained, test_defence_deaths_after_all_shots, test_idle_defence_scans_on_interval, test_defence_keeps_target_without_scanning, test_defence_scan_deterministic, test_defence_attack_overrides_nearest, test_defence_attack_rejections, test_defence_attack_same_tick_cases, test_defence_attack_edge_cases]
+	return [test_defence_fires_edge_range, test_defence_clip_and_reload, test_defence_picks_nearest_hostile, test_powered_defence_dark_when_low_power, test_bot_does_not_build_defence, test_defence_shots_trigger_retaliation, test_defence_keeps_current_target, test_defence_splash, test_defence_ignores_air_and_contained, test_defence_deaths_after_all_shots, test_idle_defence_scans_on_interval, test_defence_keeps_target_without_scanning, test_defence_scan_deterministic, test_defence_attack_overrides_nearest, test_defence_attack_rejections, test_defence_attack_same_tick_cases, test_defence_attack_edge_cases, test_defence_splash_sees_objects_fire_added]
 
 func _world() -> RefCounted:
 	var sim = Fixture.world()
@@ -336,4 +336,23 @@ func test_defence_attack_edge_cases(runner) -> bool:
 	runner.check(_last_result(sim).ok and _shots(sim, ids.defence).is_empty(), "DA4 a dark defence accepts the order and holds fire")
 	var target: Variant = sim.snapshot().buildings.filter(func(b: Dictionary) -> bool: return b.id == ids.defence)[0].combat.target_id
 	runner.check(target == ids.far, "DA4 a dark defence keeps its target")
+	return true
+
+func test_defence_splash_sees_objects_fire_added(runner) -> bool:
+	var sim = _world()
+	var battery: int = EconomyFixture.add_completed(sim, 1, "usa_defence", Vector2i(10, 4))
+	var barracks: int = EconomyFixture.add_completed(sim, 2, "frc_barracks", Vector2i(10, 10))
+	sim._buildings[barracks].hp = 1
+	var target: int = sim.spawn(2, Vector2(12.5, 11.0), "usa_builder")
+	var tank: int = sim.spawn(1, Vector2(6.5, 11.5), "usa_tank")
+	runner.check(Fixture.send(sim, {"type": "attack", "entity_ids": [tank], "target_id": barracks}).ok, "SI4 attack accepted")
+	runner.check(_order(sim, battery, target).ok, "SI4 battery order accepted")
+	sim.step()
+	var events: Array = sim.snapshot().combat_events
+	var hole: Array = sim.snapshot().buildings.filter(func(b: Dictionary) -> bool: return b.has("rebuild"))
+	var died: bool = events.any(func(e: Dictionary) -> bool: return e.type == "death" and e.object_id == barracks)
+	runner.check(died and hole.size() == 1, "SI4 setup: the barracks dies in fire and leaves a hole")
+	var battery_shots: Array = _shots(sim, battery)
+	runner.check(not hole.is_empty() and battery_shots.any(func(e: Dictionary) -> bool: return e.splash and e.target_id == hole[0].id), "SI4 a battery splash hits the rebuild hole fire opened this tick, got %s" % str(battery_shots))
+	runner.check(not battery_shots.any(func(e: Dictionary) -> bool: return e.target_id == barracks), "SI4 no battery shot names the removed barracks")
 	return true
