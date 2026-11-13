@@ -8,7 +8,7 @@ Where Wargrid stands: packages first, then finished work. Plans for packages: [p
 |---|---|---|---|---|
 | P1 | Tell us what you see | Done: card 1 playtested 2026-11-12, merged to `main` (`c2013d1`) | [plan](superpowers/plans/2026-11-11-packages-and-playtest-helper.md), [design](superpowers/specs/2026-11-11-packages-and-playtest-helper-design.md) | [verification](reference/p1-playtest-helper-verification.md) |
 | P1.1 | Laborers that pay | Done (user, 2026-11-13): c1 dock rebuild merged to `main` 2026-11-13, card 1 replayed fine (income feel 5), F2 Laborer back pack done | `docs/superpowers/plans/2026-11-12-c1-dock-rebuild.md` | `docs/reference/c1-dock-rebuild-verification.md` |
-| P2 | You clicked, we heard | Planned; scope widened 2026-11-13 (user) | [packages](packages.md#day-lane) | none yet |
+| P2 | You clicked, we heard | Design and plan approved 2026-11-13 (user); run not started | [design](superpowers/specs/2026-11-13-p2-you-clicked-we-heard-design.md), [plan](superpowers/plans/2026-11-13-p2-you-clicked-we-heard.md) | [P2 verification](reference/p2-verification.md) |
 | P3 | Camera that follows you | Planned | [packages](packages.md#day-lane) | none yet |
 | P4 | Smooth motion | Planned | [packages](packages.md#day-lane) | none yet |
 | P5 | Smarter paths (toggle) | Planned | [packages](packages.md#day-lane) | none yet |
