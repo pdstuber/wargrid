@@ -28,9 +28,10 @@ class CheckPublicTest(unittest.TestCase):
         shutil.copy(SCRIPT, self.root / "tools/check_public.sh")
         subprocess.run(["git", "init", "-q", str(self.root)], check=True)
 
-    def check(self, name: str, text: str) -> subprocess.CompletedProcess[str]:
+    def check(self, name: str, text: str, add: bool = True) -> subprocess.CompletedProcess[str]:
         (self.root / name).write_text(text)
-        subprocess.run(["git", "-C", str(self.root), "add", "-A"], check=True)
+        if add:
+            subprocess.run(["git", "-C", str(self.root), "add", "-A"], check=True)
         return subprocess.run(
             ["sh", str(self.root / "tools/check_public.sh")],
             env={**os.environ, "WARGRID_PRIVATE_WORDS": str(self.words)},
@@ -59,6 +60,25 @@ class CheckPublicTest(unittest.TestCase):
                 self.assertEqual(result.returncode, 1, result.stdout)
                 self.assertIn(name, result.stdout)
                 (self.root / name).unlink()
+
+    def test_untracked_files_are_checked(self) -> None:
+        self.words.write_text("secretword\n")
+        for name, text in (
+            ("docs/new.md", f"{LEAKS['home path']}\n"),
+            ("docs/m9-prompt.txt", CLEAN),
+            ("docs/word.md", "a secretword\n"),
+        ):
+            with self.subTest(name=name):
+                result = self.check(name, text, add=False)
+                self.assertEqual(result.returncode, 1, result.stdout)
+                self.assertIn(name, result.stdout)
+                (self.root / name).unlink()
+
+    def test_ignored_files_are_skipped(self) -> None:
+        self.check(".gitignore", "local/\n")
+        (self.root / "local").mkdir()
+        result = self.check("local/note.md", f"{LEAKS['home path']}\n", add=False)
+        self.assertEqual(result.returncode, 0, result.stdout)
 
     def test_word_from_the_private_list_fails(self) -> None:
         self.words.write_text("secretword\n")

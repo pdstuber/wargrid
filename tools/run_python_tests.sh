@@ -3,7 +3,7 @@ cd "$(dirname -- "$0")/.." || exit 1
 sh tools/ensure_venv.sh || exit 1
 py=tools/.venv/bin/python3
 status=0
-tests=$(git ls-files 'tools/test_*.py' 'tools/*/test_*.py' | grep -v 'test_install_godot.py') # that one downloads Godot; CI runs it
+tests=$(git ls-files -co --exclude-standard 'tools/test_*.py' 'tools/*/test_*.py' | grep -v 'test_install_godot.py') # that one downloads Godot; CI runs it
 [ -n "$tests" ] || { echo "FAIL: no Python tests found"; exit 1; }
 for t in $tests; do
 	out=$("$py" "$t" 2>&1) || { echo "FAIL: $t"; echo "$out"; status=1; }
