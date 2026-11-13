@@ -20,7 +20,7 @@ What is real and what is not:
 - The base scenes are composed by hand. Tanks, defence buildings, the Laborer, the supply truck and rubble are today's shapes.
 - The HUD is the [HUD v4](../hud-v4/notes.md) mock-up layer; its glyphs here are silhouettes baked from the shapes, not the HUD's own drawings.
 - In the "today" placeholder picture the pile and construction text uses the mock-up's typeface, not the game's font; the fill amounts are examples.
-- The salvage crate's colours are an agent choice made after the cargo colour was picked (grey crate, dark drum, cream mat); the outline is the picked one.
+- The salvage crate's colours were an agent choice made after the cargo colour was picked (grey crate, dark drum, cream mat) and accepted afterwards (user, 2026-11-13).
 - In the big-pile row neighbouring footprints touch at the corners; five do not fit side by side at zoom 1.
 
 Not drawn: damage states of the picked buildings, the paused construction case, wrecks, anything moving. Not tested: anything in Godot, the rendered benchmark, Neon colours and the dark ground on the picked set. The pages, the build spec and the candidate data are working files in the private notes repository (`art-spike/`).

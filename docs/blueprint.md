@@ -643,7 +643,7 @@ A pushed `v*` tag runs the full test suite on that commit, builds Linux, Windows
 
 ### M7.5 — Art pass (placement decided by the user 2026-11-05; scope proposed, not approved)
 
-**Delivered as packages (user, 2026-11-13):** the shapes picked in the map art spike land as three day packages right after the HUD core package (P2.4 to P2.6 in [packages](packages.md)), before ground batch A. Proposed with it (agent, not approved one by one): each package carries its own gate (rendered benchmark row), and the unpicked half (tank outlines, detail per zoom step, wrecks, terrain and colours) is cut into packages when picked. Where this section, the order line above or the decision log in §14 says otherwise, [packages](packages.md) decides the order.
+**Delivered as packages (user, 2026-11-13):** the shapes picked in the map art spike land as three day packages right after the HUD core package (P2.4 to P2.6 in [packages](packages.md)), before ground batch A; P2.4 goes before it if ready first. Proposed with it (agent, not approved one by one): each package carries its own gate (rendered benchmark row), and the unpicked half (tank outlines, detail per zoom step, wrecks, terrain and colours) is cut into packages when picked. Where this section, the order line above or the decision log in §14 says otherwise, [packages](packages.md) decides the order.
 
 Give the game a deliberate look instead of placeholder rectangles and text labels. Placed after ground batch A so most units are styled once (superseded 2026-11-13: the picked half comes before ground batch A, see above), and before M8 so the bot playtests are played on the real look.
 
