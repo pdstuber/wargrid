@@ -81,6 +81,15 @@ class RowsTest(unittest.TestCase):
         rows, _ = self.rows()
         self.assertEqual(rows[-2:], [("Order controls", "later"), ("Fog of war", "later")])
 
+    def test_only_the_first_table_of_a_section_counts(self) -> None:
+        extra = "| P3 | Camera | Edge scroll. | none |\n\nNote.\n\n| A | B |\n|---|---|\n| x | y |\n"
+        packages = PACKAGES.replace("| P3 | Camera | Edge scroll. | none |\n", extra)
+        self.assertEqual(self.rows(packages), self.rows())
+
+    def test_night_rows_are_ignored_in_any_case(self) -> None:
+        status = STATUS.replace("| night 1 | Tighter gates | Placed |", "| Night 1 | Tighter gates | Done |")
+        self.assertEqual(self.rows(status=status), self.rows())
+
     def test_later_name_may_stand_alone_without_colon(self) -> None:
         rows, errors = self.rows(PACKAGES.replace("**Fog of war:** both before batch A.", "**Fog of war**"))
         self.assertEqual((rows[-1], errors), (("Fog of war", "later"), []))

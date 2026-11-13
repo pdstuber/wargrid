@@ -123,7 +123,7 @@ class PerfChartTest(unittest.TestCase):
         rows = [calm, busy_rendered]
         self.assertNotIn("busy", self.summary(rows))
         self.assertNotIn("busy host", self.table_row(rows, "Unit movement"))
-        self.assertIn("busy host (load 4.0)", self.summary(rows, "rendered frame p95"))
+        self.assertIn("busy host (load 4.0)", self.summary(rows, "rendered tick-frame p95"))
 
     def test_table_shows_row_date(self) -> None:
         old = self.table_row([mv("a", "1.0", date="2026-10-01")], "Unit movement")
@@ -339,12 +339,19 @@ class PerfRecordTest(unittest.TestCase):
 
     def test_tick_frame_rows_get_their_own_method(self) -> None:
         log = RENDERED_PROFILE_LOG
-        self.assertEqual(self.record(self.write_log("a.log", log), "--method", "P1"), 0)
+        self.assertEqual(self.record(self.write_log("h.log", HEADLESS_LOG), "--method", "P1"), 0)
+        self.assertEqual(self.record(self.write_log("a.log", log)), 0)
         by_metric = {r["metric"]: r["method"] for r in read_rows(self.csv)}
         self.assertEqual(by_metric["tick_frame"], "tick-frame")
         self.assertEqual({by_metric["frame_interval"], by_metric["plumbing"]}, {"P1"})
         self.assertEqual(self.record(self.write_log("b.log", log.replace("1.868", "1.9"))), 0)
         self.assertEqual({r["method"] for r in read_rows(self.csv) if r["metric"] != "tick_frame"}, {"P1"})
+
+    def test_explicit_method_also_marks_tick_frame_rows(self) -> None:
+        log = RENDERED_PROFILE_LOG
+        self.assertEqual(self.record(self.write_log("a.log", log), "--method", "P9"), 0)
+        self.assertEqual(self.record(self.write_log("b.log", log.replace("1.868", "1.9"))), 0)
+        self.assertEqual({r["method"] for r in read_rows(self.csv)}, {"P9"})
 
     def test_current_main_log_lines_parse(self) -> None:
         extra = (
@@ -534,8 +541,9 @@ class RunBenchmarkTest(unittest.TestCase):
             shutil.copy(tools / name, self.repo / "tools" / name)
         ref = self.repo / "docs" / "reference"
         ref.mkdir(parents=True)
-        shutil.copy(tools.parent / "docs" / "reference" / "performance.md", ref / "performance.md")
-        shutil.copy(tools.parent / "README.md", self.repo / "README.md")
+        # Fixtures, not the real files: an edit to README or the ledger must never fail CI.
+        (ref / "performance.md").write_text(f"# Ledger\n\n{perf_chart.BEGIN}\n{perf_chart.END}\n\nProse.\n")
+        (self.repo / "README.md").write_text(f"# Readme\n\n{perf_chart.PT_BEGIN}\n{perf_chart.PT_END}\n")
         self.csv = ref / "perf-history.csv"
         with self.csv.open("w", newline="") as handle:
             writer = csv.DictWriter(handle, perf_record.COLUMNS, lineterminator="\n")

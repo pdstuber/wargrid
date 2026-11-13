@@ -197,6 +197,10 @@ def main(argv: list[str] | None = None) -> int:
     if not method:
         print("FAIL: no --method and no earlier row to inherit it from", file=sys.stderr)
         return 1
+    tick_method = args.method or next(
+        (r["method"] for r in reversed(existing) if r["machine"] == args.machine and r["metric"] == TICK_FRAME),
+        TICK_FRAME_METHOD,
+    )
     common = {
         "date": today(),
         "commit": commit_id(),
@@ -211,7 +215,7 @@ def main(argv: list[str] | None = None) -> int:
         args.csv,
         [
             {**common, "metric": s.metric, "scenario": s.scenario}
-            | ({"method": TICK_FRAME_METHOD} if s.metric == TICK_FRAME else {})
+            | ({"method": tick_method} if s.metric == TICK_FRAME else {})
             | {"p95_ms": _cell(s.p95_ms), "p99_ms": _cell(s.p99_ms), "mean_ms": _cell(s.mean_ms)}
             for s in samples
         ],

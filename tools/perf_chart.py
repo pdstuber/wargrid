@@ -69,8 +69,8 @@ LINES = (
         ("horde:profile", "large_196:profile"),
         "Background upkeep, huge crowds",
     ),
-    Line("rendered frame p95", RENDERED_METRICS, FRAME, ("open", "dense"), "Drawing the screen"),
-    Line("Ashfall frame p95", RENDERED_METRICS, FRAME, ("ashfall",), "Drawing the screen, big map (Ashfall)"),
+    Line("rendered tick-frame p95", RENDERED_METRICS, FRAME, ("open", "dense"), "Drawing the screen"),
+    Line("Ashfall tick-frame p95", RENDERED_METRICS, FRAME, ("ashfall",), "Drawing the screen, big map (Ashfall)"),
     Line("lockstep p99", ("lockstep_overhead",), LOCKSTEP, ("contact",), "Online play overhead"),
 )
 _REF = Path(__file__).resolve().parent.parent / "docs" / "reference"

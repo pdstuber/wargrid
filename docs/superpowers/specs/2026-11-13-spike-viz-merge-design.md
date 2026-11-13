@@ -34,7 +34,7 @@ No change to benchmarks, budgets or ledger verdicts; no new perf areas beyond th
 ## Agent's calls
 
 - `tools/perf_record.py` parses the current main benchmark logs (new `WORST TICK`, `OVER BUDGET`, `BUDGET EXCEEDED` lines, extra combat rows); checked against a fresh `run_benchmark.sh` log, unmapped scenarios are ignored, not errors.
-- `tools/test_roadmap.py` rewritten first (test first), against fixture copies of `packages.md` and `STATUS.md` fragments; it also checks the real files.
+- `tools/test_roadmap.py` rewritten first (test first), against fixture copies of `packages.md` and `STATUS.md` fragments; no real-files test (see Goals).
 - A `P…` package in STATUS that is neither Done nor in the Day lane is a check error (keeps the two files honest); `night N` rows are ignored.
 
 ## Gates

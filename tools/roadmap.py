@@ -1,4 +1,5 @@
 import argparse
+import itertools
 import re
 import sys
 from pathlib import Path
@@ -36,7 +37,12 @@ def section(text: str, heading: str) -> list[str]:
 
 
 def table_rows(lines: list[str]) -> list[list[str]]:
-    cells = [[c.strip() for c in line.strip().strip("|").split("|")] for line in lines if line.startswith("|")]
+    table = list(
+        itertools.takewhile(
+            lambda line: line.startswith("|"), itertools.dropwhile(lambda line: not line.startswith("|"), lines)
+        )
+    )
+    cells = [[c.strip() for c in line.strip().strip("|").split("|")] for line in table]
     return [row for row in cells[1:] if not set(row[0]) <= set("-: ")]
 
 
@@ -44,7 +50,7 @@ def status_packages(text: str) -> list[tuple[str, str, bool]]:
     return [
         (row[0], row[1], row[2].startswith("Done"))
         for row in table_rows(section(text, "## Packages"))
-        if len(row) >= 3 and not row[0].startswith("night")
+        if len(row) >= 3 and not row[0].lower().startswith("night")
     ]
 
 
