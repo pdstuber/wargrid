@@ -4,6 +4,10 @@ log_dir=$(mktemp -d) || exit 1
 trap 'rm -rf "$log_dir"' EXIT HUP INT TERM
 export LOG_DIR="$log_dir" GODOT_ENGINE="${GODOT_BIN:-godot}"
 cd "$repo_root" || exit 1
+# --check-only resolves class_name only through the import's class cache.
+if [ ! -f game/.godot/global_script_class_cache.cfg ]; then
+	"$GODOT_ENGINE" --headless --path game --import >"$log_dir/import.log" 2>&1 || { cat "$log_dir/import.log"; exit 1; }
+fi
 count=$(git ls-files -co --exclude-standard 'game/*.gd' | wc -l | tr -d ' ')
 [ "$count" -gt 0 ] || { echo "no .gd files found" >&2; exit 1; }
 # shellcheck disable=SC2016 # the sh -c body expands its own variables

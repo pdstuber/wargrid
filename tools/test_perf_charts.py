@@ -441,6 +441,8 @@ class AutoRecordTest(unittest.TestCase):
             writer.writerow(row(label="seed", metric="movement_tick", scenario="open", p95_ms="1.0", source="seed"))
         (self.repo / "README.md").write_text("r")
         (self.repo / "docs" / "reference" / "performance.md").write_text("p")
+        (self.repo / "game").mkdir()
+        (self.repo / "game" / "x").write_text("x")
         self.log = self.repo.parent / f"{self.repo.name}.log"
         self.log.write_text(HEADLESS_LOG)
         self.addCleanup(self.log.unlink)
@@ -466,6 +468,31 @@ class AutoRecordTest(unittest.TestCase):
     def test_records_on_clean_main_with_auto_label(self) -> None:
         self.assertEqual(self.auto()[0], 0)
         self.assertEqual(len([x for x in self.labels() if x.startswith("auto ")]), 1)
+
+    def test_label_is_last_commit_touching_the_benchmark(self) -> None:
+        def commit(rel: str) -> str:
+            (self.repo / rel).parent.mkdir(parents=True, exist_ok=True)
+            (self.repo / rel).write_text(rel + "1")
+            env = {
+                **os.environ,
+                "GIT_AUTHOR_NAME": "t",
+                "GIT_AUTHOR_EMAIL": "t@t",
+                "GIT_COMMITTER_NAME": "t",
+                "GIT_COMMITTER_EMAIL": "t@t",
+            }
+            subprocess.run(["git", "add", "."], cwd=self.repo, env=env, check=True)
+            subprocess.run(["git", "commit", "-qm", rel], cwd=self.repo, env=env, check=True)
+            return perf_record._git("rev-parse", "--short", "HEAD")
+
+        init = perf_record._git("rev-parse", "--short", "HEAD")
+        commit("README.md")
+        commit("docs/a.md")
+        self.assertEqual(self.auto()[0], 0)
+        self.assertIn(f"auto {init}", self.labels())
+        subprocess.run(["git", "checkout", "-q", "--", "."], cwd=self.repo, check=True)
+        game = commit("game/x")
+        self.assertEqual(self.auto()[0], 0)
+        self.assertIn(f"auto {game}", self.labels())
 
     def test_skips_off_main(self) -> None:
         subprocess.run(["git", "checkout", "-qb", "spike-x"], cwd=self.repo, check=True)

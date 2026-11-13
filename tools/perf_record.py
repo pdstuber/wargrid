@@ -130,6 +130,9 @@ GENERATED = (
 )
 
 
+MEASURED = ("game", "tools/run_benchmark.sh", "tools/perf_record.py", "tools/perf_chart.py")
+
+
 def commit_id() -> str:
     dirty = _git("status", "--porcelain", "--", ".", *GENERATED)
     return _git("rev-parse", "--short", "HEAD") + ("+dirty" if dirty else "")
@@ -139,7 +142,7 @@ def auto_label() -> str | None:
     branch = _git("rev-parse", "--abbrev-ref", "HEAD")
     tree = "dirty" if _git("status", "--porcelain", "--", ".", *GENERATED) else "clean"
     if branch == "main" and tree == "clean":
-        return f"auto {_git('rev-parse', '--short', 'HEAD')}"
+        return f"auto {_git('log', '-1', '--format=%h', 'HEAD', '--', *MEASURED)}"
     print(f"perf: not recording (branch {branch}, tree {tree})")
     return None
 
