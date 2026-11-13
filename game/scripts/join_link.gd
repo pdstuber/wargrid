@@ -26,7 +26,7 @@ static func code(value: String) -> String:
 	return upper
 
 static func relay(value: String) -> String:
-	var valid := value.begins_with("wss://") and value.length() > 6 and value.length() <= MAX_RELAY and value[6] != "/"
+	var valid := value.begins_with("wss://") and value.length() > 6 and value.length() <= MAX_RELAY and value[6] != "/" and not value.contains("@")
 	return value if valid and not _has_whitespace(value) else ""
 
 static func code_from(text: String) -> String:
@@ -35,9 +35,10 @@ static func code_from(text: String) -> String:
 	var tagged := RegEx.create_from_string("(?i)code=([A-Z0-9]+)").search(text)
 	if tagged != null and not code(tagged.get_string(1)).is_empty():
 		return code(tagged.get_string(1))
-	for token in RegEx.create_from_string("(?i)(?<![A-Z0-9])[A-Z0-9]{6}(?![A-Z0-9])").search_all(text):
-		if not code(token.get_string()).is_empty():
-			return code(token.get_string())
+	for pattern: String in ["(?<![A-Za-z0-9])[A-Z0-9]{6}(?![A-Za-z0-9])", "(?i)(?<![A-Z0-9])[A-Z0-9]{6}(?![A-Z0-9])"]:
+		for token in RegEx.create_from_string(pattern).search_all(text):
+			if not code(token.get_string()).is_empty():
+				return code(token.get_string())
 	return ""
 
 static func link(base: String, match_code: String, relay_url: String) -> String:

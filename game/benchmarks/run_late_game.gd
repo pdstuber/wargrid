@@ -48,7 +48,7 @@ func _count(sim: Simulation, tick: int, seats: Array[int], counters: Dictionary)
 		if result.ok and seats.has(result.player): counters.commands += 1
 
 func _print_report(sim: Simulation, samples: PackedFloat64Array, counters: Dictionary, alive_start: int) -> void:
-	print("LATE GAME 3v3 tick_ms=", JSON.stringify(Stats.summary(samples)), " mean_ms=%.3f" % _mean(samples),
+	print("LATE GAME 3v3 tick_ms=", JSON.stringify(Stats.summary(samples)), " mean_ms=%.3f" % Stats.mean(samples),
 		" shots_window=%d deaths_window=%d bot_commands_window=%d alive_start=%d alive_end=%d" % [counters.shots, counters.deaths, counters.commands, alive_start, sim.snapshot().entities.size()])
 	print(Stats.worst_tick_line("late_game", "late_game_3v3", samples, WARMUP))
 	for line in Profiler.report("late_game"): print(line)
@@ -60,8 +60,3 @@ func _valid(counters: Dictionary) -> bool:
 		return false
 	print("LATE GAME CANARY DONE")
 	return true
-
-func _mean(samples: PackedFloat64Array) -> float:
-	var total: float = 0.0
-	for value: float in samples: total += value
-	return total / maxi(samples.size(), 1)

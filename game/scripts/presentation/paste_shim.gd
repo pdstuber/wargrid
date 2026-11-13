@@ -3,7 +3,7 @@ extends Node
 const JoinLink = preload("res://scripts/join_link.gd")
 const MENU_PASTE_ID := 1000
 # The capture listener stops the keydown before Godot's canvas listener cancels it, so the browser fires `paste`.
-const JS := "if (!window.wargridPasteInstalled) { window.wargridPasteInstalled = true; window.addEventListener('keydown', e => { if (window.wargridPaste && (e.metaKey || e.ctrlKey) && !e.altKey && e.key.toLowerCase() === 'v') e.stopImmediatePropagation(); }, true); window.addEventListener('paste', e => { if (window.wargridPaste) window.wargridPaste(e.clipboardData.getData('text')); }, true); }"
+const JS := "if (!window.wargridPasteInstalled) { window.wargridPasteInstalled = true; window.addEventListener('keydown', e => { if (window.wargridPaste && (e.metaKey || e.ctrlKey) && !e.altKey && (e.key.toLowerCase() === 'v' || e.code === 'KeyV')) e.stopImmediatePropagation(); }, true); window.addEventListener('paste', e => { if (window.wargridPaste) window.wargridPaste(e.clipboardData.getData('text')); }, true); }"
 const READ_JS := "navigator.clipboard.readText().then(t => window.wargridPaste && window.wargridPaste(t)).catch(() => {})"
 var _callback: JavaScriptObject
 

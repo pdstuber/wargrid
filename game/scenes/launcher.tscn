@@ -143,6 +143,7 @@ placeholder_text = "Relay URL"
 custom_minimum_size = Vector2(520, 24)
 layout_mode = 2
 autowrap_mode = 3
+max_lines_visible = 3
 
 [node name="SettingsHeader" type="Label" parent="Center/Box"]
 layout_mode = 2

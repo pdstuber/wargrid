@@ -149,18 +149,31 @@ func _music_of(scene: Node) -> Node:
 		if child.get_script() == MusicPlayer: return child
 	return null
 
-func test_scene_plays_a_shuffled_playlist(runner) -> bool:
+func _match_music(runner) -> Array:
 	var main = Skirmish.instantiate()
 	runner.root.add_child(main)
 	main.set_process(false)
 	main.set_physics_process(false)
 	await runner.process_frame
-	var music = _music_of(main)
+	return [main, _music_of(main)]
+
+func test_scene_plays_a_shuffled_playlist(runner) -> bool:
+	var orders: Array = []
+	for i in 6:
+		var started: Array = await _match_music(runner)
+		if started[1] != null and not orders.has(started[1]._paths): orders.append(started[1]._paths.duplicate())
+		started[0].free()
+	runner.check(orders.size() >= 2, "MU2 six matches play at least two different orders, got %d" % orders.size())
+	var started: Array = await _match_music(runner)
+	var main = started[0]
+	var music = started[1]
 	runner.check(music != null and _sorted(music._paths) == _sorted(MusicPlayer.PLAYLIST), "MU2 the match plays the five tracks")
+	music.finished.emit()
+	music.advance(MusicPlayer.GAP_SECONDS)
 	var before: Array[String] = music._paths.duplicate()
-	var index: int = music.track_index()
+	runner.check(music.track_index() == 1 and music.stream.resource_path == before[1], "MU2 fixture: the match is on track 1")
 	main._restart()
-	runner.check(music._paths == before and music.track_index() == index, "MU2 Restart keeps the running playlist")
+	runner.check(music._paths == before and music.track_index() == 1 and not music.waiting() and music.stream.resource_path == before[1], "MU2 Restart keeps the running track and playlist")
 	main.free()
 	var launcher = Launcher.instantiate()
 	runner.root.add_child(launcher)

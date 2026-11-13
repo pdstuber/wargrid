@@ -14,7 +14,7 @@ const SILENT := ["stop", "set_rally", "produce", "cancel_build", "cancel_product
 const PREFIX := "res://audio/voice/units/"
 
 func cases() -> Array[Callable]:
-	return [test_order_roles_cover_every_unit, test_order_line_per_command, test_first_unit_with_a_line_speaks, test_order_voice_skips_while_busy, test_order_variant_is_presentation_random, test_order_lines_exist, test_offline_order_speaks, test_offline_rejected_order_only_errors, test_online_order_speaks_on_submit, test_headless_playback_off, test_valid_order_speaks_despite_older_rejection, test_restart_then_order_speaks]
+	return [test_order_roles_cover_every_unit, test_order_line_per_command, test_first_unit_with_a_line_speaks, test_order_voice_skips_while_busy, test_order_variant_is_presentation_random, test_order_lines_exist, test_offline_order_speaks, test_offline_rejected_order_only_errors, test_online_order_speaks_on_submit, test_headless_playback_off, test_valid_order_speaks_despite_older_rejection, test_restart_then_order_speaks, test_restart_stops_a_playing_unit_line, test_unit_line_blocks_orders_announcer_does_not]
 
 func _unit(id: int, kind: String, owner: int) -> Dictionary:
 	return {"id": id, "owner": owner, "kind": kind, "position": [float(id), 1.0], "combat": {"tier": 0}}
@@ -74,9 +74,8 @@ func test_order_voice_skips_while_busy(runner) -> bool:
 	runner.check(busy.order_voice(_order("move", [2]), true) == "", "OV4 busy order is skipped")
 	var fresh = _director()
 	runner.check(busy.order_voice(_order("move", [2]), false) != "", "OV4 order after a skip speaks")
-	var skipped_then: String = busy.order_voice(_order("move", [2]), false)
 	fresh.order_voice(_order("move", [2]), false)
-	runner.check(skipped_then == fresh.order_voice(_order("move", [2]), false), "OV4 a skipped order spent a random number")
+	runner.check(_twenty(busy) == _twenty(fresh), "OV4 a skipped order spent a random number")
 	return true
 
 func _twenty(director) -> Array:
@@ -115,6 +114,10 @@ func _builder(main, owner: int) -> int:
 		if rows.owner[i] == owner and rows.kinds[rows.kind[i]].ends_with("_builder"): return rows.id[i]
 	return -1
 
+func _own_center_origin(main) -> Array:
+	var center: Dictionary = main.simulation.snapshot().buildings.filter(func(building: Dictionary) -> bool: return building.owner == 1 and building.kind.ends_with("command_center"))[0]
+	return [center.origin[0], center.origin[1]]
+
 func _move(main, unit: int) -> Dictionary:
 	var at: Dictionary = main.simulation.snapshot().entities.filter(func(entity: Dictionary) -> bool: return entity.id == unit)[0]
 	return {"type": "move", "entity_ids": [unit], "target": [at.position[0] + 6.0, at.position[1]]}
@@ -150,6 +153,9 @@ func test_offline_rejected_order_only_errors(runner) -> bool:
 	runner.check(_unit_line(skirmish) == "", "OV8 rejected order stays silent, got '%s'" % _unit_line(skirmish))
 	skirmish._refresh()
 	runner.check(_cues(skirmish).has("error"), "OV8 rejected order beeps, got %s" % [_cues(skirmish)])
+	skirmish._submit({"type": "build", "builder_id": builder, "building_kind": "usa_barracks", "origin": _own_center_origin(skirmish)})
+	runner.check(skirmish._error != "", "OV8 fixture: blocked build fails, got '%s'" % skirmish._error)
+	runner.check(_unit_line(skirmish) == "", "OV8 rejected build by a speaker with a line stays silent, got '%s'" % _unit_line(skirmish))
 	skirmish.free()
 	return true
 
@@ -193,5 +199,39 @@ func test_restart_then_order_speaks(runner) -> bool:
 	skirmish._restart()
 	skirmish._submit(_move(skirmish, _builder(skirmish, 1)))
 	runner.check(_unit_line(skirmish).begins_with("worker_move_"), "OV12 first order after restart speaks, got '%s'" % _unit_line(skirmish))
+	skirmish.free()
+	return true
+
+func test_restart_stops_a_playing_unit_line(runner) -> bool:
+	var skirmish = await _scene(runner)
+	var unit_voice: AudioStreamPlayer = skirmish._sound._unit_voice
+	unit_voice.stream = load(UnitVoice.path("infantry", "move", 1))
+	unit_voice.play()
+	runner.check(unit_voice.playing, "OV12 fixture: the unit line plays")
+	skirmish._restart()
+	runner.check(not unit_voice.playing, "OV12 Restart stops a playing unit line")
+	skirmish._submit(_move(skirmish, _builder(skirmish, 1)))
+	runner.check(_unit_line(skirmish).begins_with("worker_move_"), "OV12 first order after a mid-line Restart speaks, got '%s'" % _unit_line(skirmish))
+	unit_voice.stop()
+	skirmish.free()
+	return true
+
+func test_unit_line_blocks_orders_announcer_does_not(runner) -> bool:
+	var skirmish = await _scene(runner)
+	var unit_voice: AudioStreamPlayer = skirmish._sound._unit_voice
+	var infantry_move: String = UnitVoice.path("infantry", "move", 1)
+	unit_voice.stream = load(infantry_move)
+	unit_voice.play()
+	runner.check(unit_voice.playing, "OV13 fixture: the unit line plays")
+	skirmish._submit(_move(skirmish, _builder(skirmish, 1)))
+	runner.check(unit_voice.stream.resource_path == infantry_move, "OV13 an order during a unit line is skipped, got '%s'" % _unit_line(skirmish))
+	unit_voice.stop()
+	var announcer: AudioStreamPlayer = skirmish._sound._voice
+	announcer.stream = load(infantry_move)
+	announcer.play()
+	runner.check(announcer.playing, "OV13 fixture: the announcer plays")
+	skirmish._submit(_move(skirmish, _builder(skirmish, 1)))
+	runner.check(_unit_line(skirmish).begins_with("worker_move_"), "OV13 a playing announcer does not block a unit line, got '%s'" % _unit_line(skirmish))
+	announcer.stop()
 	skirmish.free()
 	return true

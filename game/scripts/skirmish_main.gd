@@ -151,6 +151,7 @@ func _restart() -> void:
 	simulation = _create_simulation()
 	_clock = PresentationClock.new()
 	_sound.director.reset()
+	_sound._unit_voice.stop()
 	_visuals.reset()
 	selected_ids.clear()
 	selected_building_id = -1

@@ -36,7 +36,7 @@ func test_code_accepts_only_relay_codes(runner) -> bool:
 func test_relay_accepts_only_wss(runner) -> bool:
 	for good: String in [EXP_RELAY, "wss://wargrid-relay-exp.fly.dev/ws"]:
 		runner.check(JoinLink.relay(good) == good, "JL3 accepts %s" % good)
-	for bad: String in ["ws://x.example/ws", "https://x.example/ws", "javascript:alert(1)", "wss://", "wss:///ws", "wss://x.example/ws extra", "wss://" + "a".repeat(260)]:
+	for bad: String in ["ws://x.example/ws", "https://x.example/ws", "javascript:alert(1)", "wss://", "wss:///ws", "wss://x.example/ws extra", "wss://relay.pdstuber.dev@evil.example/ws", "wss://" + "a".repeat(260)]:
 		runner.check(JoinLink.relay(bad) == "", "JL3 rejects '%s'" % bad.left(40))
 	return true
 
@@ -47,6 +47,8 @@ func test_code_from_pasted_text(runner) -> bool:
 		"join me: https://x.example/?code=QRS234&relay=wss%3A%2F%2Fy.example%2Fws thanks": "QRS234",
 		"https://player.example/?code=ABC234": "ABC234",
 		"my code is QRS234 ok": "QRS234",
+		"thanks, code QRS234": "QRS234",
+		"please join QRS234": "QRS234",
 		"hello": "",
 		"ABC2345": "",
 		"ABCI34": "",

@@ -24,6 +24,7 @@ var _seat: int = 0
 var _code: String = ""
 var _hello_sent: bool = false
 var _lockstep: RefCounted
+static var code_applied: bool = false
 var prerelease: bool = PlaytestSettings.prerelease()
 var page: String = _page_value("location.origin + location.pathname")
 var search: String = _page_value("location.search")
@@ -73,7 +74,8 @@ func _apply_page() -> void:
 	var query: Dictionary = JoinLink.parse(search)
 	$Center/Box/RelayUrl.text = JoinLink.DEFAULT_RELAY
 	$Center/Box/Advanced.visible = prerelease
-	$Center/Box/JoinRow/Code.text = JoinLink.code(query.get("code", ""))
+	if not code_applied: $Center/Box/JoinRow/Code.text = JoinLink.code(query.get("code", ""))
+	code_applied = true # a stale link must not refill the field after "back to menu"
 	var relay: String = JoinLink.relay(query.get("relay", "")) if prerelease else ""
 	if not relay.is_empty():
 		$Center/Box/RelayUrl.text = relay

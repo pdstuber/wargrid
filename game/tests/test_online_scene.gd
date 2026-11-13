@@ -709,7 +709,8 @@ func test_online_playtest_record(runner) -> bool:
 	main.free()
 	return true
 
-func _launcher(runner, parent: Node, prerelease: bool, search: String = "", page: String = ""):
+func _launcher(runner, parent: Node, prerelease: bool, search: String = "", page: String = "", first_visit: bool = true):
+	if first_visit: LauncherScript.code_applied = false
 	var launcher = Launcher.instantiate()
 	launcher.prerelease = prerelease
 	launcher.search = search
@@ -780,6 +781,13 @@ func test_launcher_prefills_from_page(runner) -> bool:
 	runner.check(bad_relay.relay == JoinLink.DEFAULT_RELAY and not bad_relay.open and bad_relay.code == "", "N22 a bad relay and a 7-character code are ignored")
 	var oversize: Dictionary = await _page_case(runner, true, "?code=" + "A".repeat(3000), "oversize")
 	runner.check(oversize.code == "", "N22 an oversize query is ignored")
+	var first = await _launcher(runner, runner.root, true, both)
+	var back = await _launcher(runner, runner.root, true, both, "", false)
+	var back_box: Control = back.get_node("Center/Box")
+	runner.check(first.get_node("Center/Box/JoinRow/Code").text == "ABC234", "N22 the first visit takes the code")
+	runner.check(back_box.get_node("JoinRow/Code").text == "" and back_box.get_node("RelayUrl").text == "wss://x.example/ws" and back_box.get_node("Advanced").button_pressed, "N22 a return to the launcher drops the code and keeps the relay")
+	first.free()
+	back.free()
 	AudioSettings.path = saved_settings
 	DirAccess.remove_absolute(scratch)
 	return true
@@ -821,6 +829,10 @@ func test_launcher_relay_help(runner) -> bool:
 		var height: float = box.get_global_rect().size.y
 		print("N26 prerelease fold-open worst-case Center/Box at %s: %s x %s, separation %s" % [size, box.get_global_rect().size.x, height, box.get_theme_constant("separation")])
 		runner.check(height <= 720.0 and box.get_global_rect().size.x < 600.0, "N26 worst-case box %s fits 720 high and under 600 wide at %s" % [box.get_global_rect().size, size])
+		launcher._fail("A very long relay reason that wraps over many lines. ".repeat(8))
+		await runner.process_frame
+		await runner.process_frame
+		runner.check(box.get_global_rect().size.y <= 720.0, "N26 a long Status keeps the worst-case box inside 720 high at %s, got %s" % [size, box.get_global_rect().size.y])
 		launcher.free()
 		var opened = await _launcher(runner, port, true, "?relay=wss%3A%2F%2Fx.example%2Fws")
 		runner.check(opened.get_node("Center/Box/RelayHelp").visible, "N26 ?relay= opens the fold with the caption at %s" % size)
