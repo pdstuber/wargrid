@@ -4,13 +4,15 @@ extends RefCounted
 const JoinLink = preload("res://scripts/join_link.gd")
 const PlaytestSettings = preload("res://scripts/playtest/playtest_settings.gd")
 const AudioSettings = preload("res://scripts/presentation/audio_settings.gd")
+const PasteShim = preload("res://scripts/presentation/paste_shim.gd")
+const Launcher = preload("res://scenes/launcher.tscn")
 
 const BASE := "https://wargrid-web-test.fly.dev/"
 const EXP_RELAY := "wss://x.example/ws"
 var scratch: String = "user://test-join-link-%d.cfg" % OS.get_process_id()
 
 func cases() -> Array[Callable]:
-	return [test_query_parses_like_the_browser, test_code_accepts_only_relay_codes, test_relay_accepts_only_wss, test_code_from_pasted_text, test_link_carries_relay_only_when_not_default, test_prerelease_is_the_dev_suffix]
+	return [test_query_parses_like_the_browser, test_code_accepts_only_relay_codes, test_relay_accepts_only_wss, test_code_from_pasted_text, test_link_carries_relay_only_when_not_default, test_prerelease_is_the_dev_suffix, test_paste_join_field_takes_the_code, test_paste_inserts_at_caret, test_paste_refuses_unusable_targets, test_paste_cannot_reach_release_relay, test_shim_only_on_web, test_context_menu_paste_is_replaced]
 
 func test_query_parses_like_the_browser(runner) -> bool:
 	runner.check(JoinLink.parse("").is_empty(), "JL1 empty search is {}")
@@ -73,4 +75,95 @@ func test_prerelease_is_the_dev_suffix(runner) -> bool:
 		runner.check(PlaytestSettings.enabled(version) == PlaytestSettings.prerelease(version), "JL6 enabled follows prerelease for %s" % version)
 	DirAccess.remove_absolute(scratch)
 	AudioSettings.path = saved
+	return true
+
+func _edit(runner, text: String = "") -> LineEdit:
+	var edit := LineEdit.new()
+	edit.text = text
+	runner.root.add_child(edit)
+	return edit
+
+func test_paste_join_field_takes_the_code(runner) -> bool:
+	var edit: LineEdit = _edit(runner, "XY")
+	edit.max_length = 6
+	edit.add_to_group("join_code")
+	runner.check(PasteShim.insert(edit, "join me https://x.example/?code=qrs234 pls"), "PS1 a link with a code is taken")
+	runner.check(edit.text == "QRS234" and edit.caret_column == 6, "PS1 the code replaces the text, got '%s' caret %d" % [edit.text, edit.caret_column])
+	runner.check(not PasteShim.insert(edit, "hello"), "PS1 text without a code is refused")
+	runner.check(edit.text == "QRS234", "PS1 refused text leaves the field alone")
+	edit.free()
+	return true
+
+func test_paste_inserts_at_caret(runner) -> bool:
+	var edit: LineEdit = _edit(runner, "wss://old")
+	edit.select(6, 9)
+	var seen: Array[String] = []
+	edit.text_changed.connect(func(value: String) -> void: seen.append(value))
+	runner.check(PasteShim.insert(edit, "x.example/ws\n"), "PS2 plain text is taken")
+	runner.check(edit.text == "wss://x.example/ws", "PS2 the selection is replaced, got '%s'" % edit.text)
+	runner.check(seen == ["wss://x.example/ws"], "PS2 text_changed fires once with the new text, got %s" % [seen])
+	edit.free()
+	return true
+
+func test_paste_refuses_unusable_targets(runner) -> bool:
+	runner.check(not PasteShim.insert(null, "abc"), "PS3 no focus owner")
+	var button := Button.new()
+	runner.check(not PasteShim.insert(button, "abc"), "PS3 a Button")
+	button.free()
+	var locked: LineEdit = _edit(runner, "keep")
+	locked.editable = false
+	var hidden: LineEdit = _edit(runner, "keep")
+	hidden.visible = false
+	var plain: LineEdit = _edit(runner, "keep")
+	runner.check(not PasteShim.insert(locked, "abc"), "PS3 non-editable")
+	runner.check(not PasteShim.insert(hidden, "abc"), "PS3 hidden")
+	runner.check(not PasteShim.insert(plain, "a".repeat(2049)), "PS3 oversize")
+	runner.check(locked.text == "keep" and hidden.text == "keep" and plain.text == "keep", "PS3 refused targets keep their text")
+	for edit: LineEdit in [locked, hidden, plain]:
+		edit.free()
+	return true
+
+func test_paste_cannot_reach_release_relay(runner) -> bool:
+	var launcher = Launcher.instantiate()
+	launcher.prerelease = false
+	runner.root.add_child(launcher)
+	await runner.process_frame
+	await runner.process_frame
+	var relay: LineEdit = launcher.get_node("Center/Box/RelayUrl")
+	runner.check(not PasteShim.insert(relay, "wss://evil.example/ws"), "PS4 the hidden relay field refuses a paste")
+	runner.check(relay.text == JoinLink.DEFAULT_RELAY, "PS4 the relay stays the default, got '%s'" % relay.text)
+	launcher.free()
+	return true
+
+func test_shim_only_on_web(runner) -> bool:
+	var launcher = Launcher.instantiate()
+	runner.root.add_child(launcher)
+	await runner.process_frame
+	await runner.process_frame
+	runner.check(launcher.get_node("Center/Box/JoinRow/Code").is_in_group("join_code"), "PS5 the join field is in group join_code")
+	runner.check(not runner.root.has_node("PasteShim"), "PS5 no shim off web")
+	launcher.free()
+	return true
+
+func test_context_menu_paste_is_replaced(runner) -> bool:
+	var edit: LineEdit = _edit(runner)
+	edit.add_to_group("join_code")
+	var reads: Array[int] = []
+	var reader := func() -> void:
+		reads.append(1)
+		PasteShim.insert(edit, "QRS234")
+	PasteShim.adopt(edit, reader)
+	PasteShim.adopt(edit, reader)
+	var menu: PopupMenu = edit.get_menu()
+	runner.check(menu.get_item_index(LineEdit.MENU_PASTE) == -1, "PS6 the stock Paste item is gone")
+	var custom := 0
+	for i in menu.item_count:
+		if menu.get_item_text(i) == "Paste" and menu.get_item_id(i) == PasteShim.MENU_PASTE_ID:
+			custom += 1
+	runner.check(custom == 1, "PS6 exactly one custom Paste item after two adopts, got %d" % custom)
+	menu.id_pressed.emit(LineEdit.MENU_COPY)
+	runner.check(reads.is_empty(), "PS6 another item does not read the clipboard")
+	menu.id_pressed.emit(PasteShim.MENU_PASTE_ID)
+	runner.check(reads.size() == 1 and edit.text == "QRS234", "PS6 the custom item reads once and fills the field, got %d '%s'" % [reads.size(), edit.text])
+	edit.free()
 	return true

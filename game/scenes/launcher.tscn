@@ -96,7 +96,7 @@ text = "Create match"
 [node name="JoinRow" type="HBoxContainer" parent="Center/Box"]
 layout_mode = 2
 
-[node name="Code" type="LineEdit" parent="Center/Box/JoinRow"]
+[node name="Code" type="LineEdit" parent="Center/Box/JoinRow" groups=["join_code"]]
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Match code"

@@ -1,9 +1,9 @@
 ```text
-Resume record (updated 2026-11-13 Task 3c implemented, uncommitted)
-Branch / base commit / working-tree state: p2-you-clicked / a86ea6a / worktree ~/projects/wargrid-wt-p2, Task 10b changes uncommitted
-Last green task / next incomplete task: Task 10a (committed a86ea6a); Task 10b (all gates green, awaiting the coordinator's commit) / Task 10c (after the user's check C in Firefox), then rest of gate (a) (test deploy, F5 repro, web bench, rendered rerun), then Task 10
-Changed paths since last commit: game/scripts/launcher.gd, game/scenes/launcher.tscn, game/tests/test_online_scene.gd, game/tests/test_audio_settings.gd, docs/reference/p2-verification.md
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 837 / 143000 / 0 / 0 / TESTS PASSED 143000
+Resume record (updated 2026-11-13 Task 10c implemented, uncommitted)
+Branch / base commit / working-tree state: p2-you-clicked / efbf545 / worktree ~/projects/wargrid-wt-p2, Task 10c changes uncommitted
+Last green task / next incomplete task: Task 10b and prior committed (efbf545); Task 10c (all gates green, awaiting the coordinator's commit) / Task 10d, then rest of gate (a) (test deploy, F5 repro, web bench, rendered rerun), then Task 10
+Changed paths since last commit: game/scripts/presentation/paste_shim.gd (+ .gd.uid, new), game/scripts/launcher.gd, game/scenes/launcher.tscn, game/tests/test_join_link.gd, docs/reference/p2-verification.md
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 845 / 144177 / 0 / 0 / TESTS PASSED 144177
 Known red case or blocker: none (tools/test_audio_assets.py fixed in Task 9: layout lists voice/units, 12 credit rows)
 Approved decisions, pre-authorizations used, deferred gates: spec decisions (user, 2026-11-13) in docs/superpowers/specs/2026-11-13-p2-you-clicked-we-heard-design.md; Piper re-download approved (user, 2026-11-13); local commit per GREEN task (milestone prompt); stop gates (a), (b), (c) not reached
 Usage so far (python3 tools/session_usage.py <session files>): n/a
@@ -30,7 +30,7 @@ Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicke
 | 10b | Launcher: prerelease-only fold, ?code=/?relay=, Copy link | done (uncommitted) |
 | 3b | Launcher faction rows | done (uncommitted) |
 | 3c | Relay caption | done (uncommitted) |
-| 10c | Paste shim (after the user's check C in Firefox) | not started |
+| 10c | Paste shim (Step 0 gate passed: owner report 2026-11-13, Firefox, prompts not mentioned; plus context-menu Paste replacement) | done (uncommitted) |
 | 10d | F5 outcome and docs | not started |
 | 11 | Exit checks and ledger row | not started |
 | 12 | Gate review and lean pass | not started |
@@ -98,6 +98,10 @@ Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicke
 | 10b | `test_online_scene` 29/2519, `test_join_link` 6/42, `test_playtest.gd` 14/217, `test_pause_menu` 8/332, `test_audio_settings` 12/40 (CASES/CHECKS), FAILURES 0 (AS9 gets an explicit `prerelease = true`, same meaning) | a86ea6a + uncommitted | all exit 0 |
 | 10b | measured `Center/Box` height (N21 and N20 prints), WaitRow and ThisBuild visible: release (Advanced and RelayUrl hidden) 1280x720 and 1920x1080; prerelease with the fold open at both sizes | a86ea6a + uncommitted | release 640 px; prerelease fold open 714 px (viewport 720; closed prerelease not measured); release layout keeps every `_set_busy` path in the tree |
 | 10b | full `sh tools/run_tests.sh` GREEN; `run_lint.sh`, `run_warnings.sh`, `check_public.sh` exit 0; `git diff main -- game/scripts/simulation game/scripts/net` empty; `rg JavaScriptBridge game/scripts/launcher.gd` only `_page_value`; no browser, window or JavaScriptBridge call run (web branch untested here) | a86ea6a + uncommitted (index tree 4d7a63a2e3c0, taken before this row) | CASES 837 CHECKS 143000 FAILURES 0, exit 0, TESTS PASSED 143000 |
+| 10c | Step 0 stop gate (check C, Firefox): the console showed the paste text | owner report 2026-11-13, Firefox, prompts not mentioned | passed; shim built |
+| 10c | `WARGRID_TEST_ONLY=test_join_link` RED (`insert` stub false, `adopt` no-op, no group) | efbf545 + uncommitted | CASES 12 CHECKS 63 FAILURES 10 (PS1 x3, PS2 x3, PS5, PS6 x3), exit 1, no SCRIPT ERROR |
+| 10c | GREEN: `test_join_link` 12/63, `test_online_scene` 31/3675, `test_playtest.gd` 14/217, `test_audio_settings` 12/40 (CASES/CHECKS), FAILURES 0. PS1-PS5 as the plan; PS6 `test_context_menu_paste_is_replaced`: stock item gone, one custom "Paste" id 1000 after two `adopt` calls, another id does not read, id 1000 reads once and fills the field. Menu replacement used (no fallback) | efbf545 + uncommitted | all exit 0 |
+| 10c | full `sh tools/run_tests.sh`, `run_lint.sh`, `run_warnings.sh`, `check_public.sh`; `git diff main -- game/scripts/simulation game/scripts/net` empty; every `JavaScriptBridge` use in the shim and launcher sits behind `OS.has_feature("web")` (shim `_ready`, `_exit_tree`, `_read_clipboard`; launcher `_install_paste_shim`). No layout edit, no browser or window. Not verified headless: the JS half (keydown capture, `paste` event, `readText()` from the menu item) and that the engine popup keeps the edited menu when opened (engine source not read here); needs manual checks M6 and M7 plus right-click Paste in Firefox | efbf545 + uncommitted | CASES 845 CHECKS 144177 FAILURES 0, exit 0, TESTS PASSED 144177; lint, warnings, check_public exit 0 |
 | 3b | Owner decision 2026-11-13: the spec's "Match row" (faction and map above both sections) becomes a Map row plus one "You" faction selector per play section (`OfflineRow/Own`, `OnlineRow/Own`), independent, plus "Bot" on the offline row; Create moves into `OnlineRow` | 71fb2f3 + uncommitted | spec change recorded here |
 | 3b | `WARGRID_TEST_ONLY=test_online_scene` RED (new paths absent; N25 and path-based cases fail with SCRIPT ERROR on null nodes) | 71fb2f3 + uncommitted | exit 1 |
 | 3b | `WARGRID_TEST_ONLY=test_online_scene` GREEN with N25 `test_launcher_faction_rows` at 1280x720 and 1920x1080; F5 width check now "box under 600 px" (the Box is 587 px wide, was 520, because the offline row holds two selectors) | 71fb2f3 + uncommitted | CASES 30 CHECKS 3457 FAILURES 0, exit 0 |

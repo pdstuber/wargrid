@@ -15,6 +15,7 @@ const PlaytestSettings = preload("res://scripts/playtest/playtest_settings.gd")
 const JoinLink = preload("res://scripts/join_link.gd")
 const FocusCards = preload("res://scripts/playtest/focus_cards.gd")
 const FocusCardView = preload("res://scripts/playtest/focus_card_view.gd")
+const PasteShim = preload("res://scripts/presentation/paste_shim.gd")
 const OFFLINE_SCENE: String = "res://scenes/skirmish.tscn"
 const HEADLESS_FLAGS: Array[String] = ["--netclient", "--relay", "--replay-log", "--probe-relay"]
 var _transport: RefCounted
@@ -52,6 +53,15 @@ func _ready() -> void:
 		_fail("Match cancelled"))
 	set_process(false)
 	_apply_page()
+	_install_paste_shim()
+
+func _install_paste_shim() -> void:
+	if not OS.has_feature("web"):
+		return
+	PasteShim.adopt($Center/Box/JoinRow/Code)
+	PasteShim.adopt($Center/Box/RelayUrl)
+	if not get_tree().root.has_node("PasteShim"):
+		get_tree().root.add_child.call_deferred(PasteShim.new())
 
 static func _page_value(expression: String) -> String:
 	return str(JavaScriptBridge.eval(expression)) if OS.has_feature("web") else ""
