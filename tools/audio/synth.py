@@ -258,8 +258,8 @@ def carrier(n: int, rng: Rng, freqs: tuple[float, ...], detune: float, noise: fl
     return c, rng.standard_normal(n) * noise
 
 
-def load_line(src_dir: Path, line: str) -> Arr:
-    sr, x = wavfile.read(src_dir / "voice" / "raw" / "kristin" / f"{line}.wav")
+def load_line(src_dir: Path, line: str, voice: str = "kristin") -> Arr:
+    sr, x = wavfile.read(src_dir / "voice" / "raw" / voice / f"{line}.wav")
     x = resample_poly(x.astype(np.float64) / 32768, SR, sr)
     return np.concatenate([np.zeros(int(0.02 * SR)), x, np.zeros(int(0.15 * SR))])
 
@@ -273,6 +273,23 @@ def c1n(x: Arr, rng: Rng, bands: int = 32, env_hz: float = 80, sib: float = 0.35
         c = sosfilt(sos, hiss if lo >= 2800 else tone)
         out += c / (np.sqrt(np.mean(c**2)) + 1e-9) * env(sosfilt(sos, x), env_hz)
     return out + sib * filt(x, "high", 2500)
+
+
+def radio(x: Arr, rng: Rng) -> Arr:
+    return sat(filt(x, "band", [300, 3400]), 1.5) + 0.003 * rng.standard_normal(len(x))
+
+
+TREATMENTS: dict[str, Callable[[Arr, Rng], Arr]] = {"clean": lambda x, rng: x, "radio": radio, "c1n": c1n}
+UNIT_LINES = {"infantry": ["move", "attack"], "vehicle": ["move", "attack"], "worker": ["move", "work"]}
+UNIT_VARIANTS = 2
+UNIT_PICKS: dict[str, tuple[str, str]] = {}
+
+
+def unit_line(src: Path, role: str, line: str, n: int) -> Arr:
+    voice, treatment = UNIT_PICKS[role]
+    x = load_line(src, f"unit_{line}_{n}", voice)
+    x = TREATMENTS[treatment](x, rng_for(f"unit-{role}-{line}-{n}"))
+    return tail_fade(scale_to(x, VOICE_LUFS, lufs, f"{role}_{line}_{n}"), 0.03)
 
 
 EFFECTS: dict[str, tuple[str, Callable[[Rng], Arr]]] = {
@@ -352,6 +369,13 @@ def main(argv: list[str]) -> int:
         x = tail_fade(scale_to(c1n(load_line(src, line), rng_for(f"voice-{line}")), VOICE_LUFS, lufs, line), 0.03)
         write_wav(out / "voice" / f"{line}.wav", x)
         print(f"voice/{line} lufs {lufs(x):.1f} peak {peak_db(x):.1f} dBFS")
+    for role, names in UNIT_LINES.items():
+        if role not in UNIT_PICKS:
+            continue
+        for line, n in itertools.product(names, range(1, UNIT_VARIANTS + 1)):
+            x = unit_line(src, role, line, n)
+            write_wav(out / "voice" / "units" / f"{role}_{line}_{n}.wav", x)
+            print(f"voice/units/{role}_{line}_{n} lufs {lufs(x):.1f} peak {peak_db(x):.1f} dBFS")
     return 0
 
 

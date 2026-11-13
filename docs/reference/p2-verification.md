@@ -1,13 +1,13 @@
 ```text
-Resume record (updated 2026-11-13 Task 6 implemented, uncommitted)
-Branch / base commit / working-tree state: p2-you-clicked / b483f99 / worktree ~/projects/wargrid-wt-p2, Task 6 changes uncommitted
-Last green task / next incomplete task: Task 5 (committed 238451d); Task 6 (green, awaiting the coordinator's commit) / Task 7
-Changed paths since last commit: game/scripts/debug/timing_stats.gd, game/benchmarks/bench_runner.gd, game/tests/test_benchmark.gd, docs/reference/p2-verification.md
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 826 / 142204 / 0 / 0 / TESTS PASSED 142204
-Known red case or blocker: none
+Resume record (updated 2026-11-13 Task 7 implemented, uncommitted)
+Branch / base commit / working-tree state: p2-you-clicked / b483f99 / worktree ~/projects/wargrid-wt-p2, Task 7 changes uncommitted
+Last green task / next incomplete task: Task 6 (committed 7e9a588); Task 7 (test_synth green, awaiting the coordinator's commit; run_python_checks red only on test_audio_assets, see evidence) / Task 8
+Changed paths since last commit: tools/audio/synth.py, tools/audio/test_synth.py, docs/reference/p2-verification.md
+Last command / cases / checks / failures / exit / marker: sh tools/run_python_checks.sh / test_synth 13 tests OK / n/a / test_audio_assets 3 failures (pre-existing from Task 2 placeholders) / 1 / n/a
+Known red case or blocker: tools/test_audio_assets.py fails 3 tests (test_layout, test_every_file_credited, test_dotfiles_ignored) since Task 2: game/audio/voice/units/ has 12 placeholder WAVs that the test layout and CREDITS.md do not list; fix belongs to Task 9 (CREDITS.md rows, test layout) or an earlier decision by the coordinator
 Approved decisions, pre-authorizations used, deferred gates: spec decisions (user, 2026-11-13) in docs/superpowers/specs/2026-11-13-p2-you-clicked-we-heard-design.md; Piper re-download approved (user, 2026-11-13); local commit per GREEN task (milestone prompt); stop gates (a), (b), (c) not reached
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: coordinator commits Task 6, then Task 7
+Next exact action: coordinator commits Task 7, then Task 8; A/B page is built in ~/projects/wargrid-sound-work/p2-ab/ and waits for gate (a)
 ```
 
 Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicked-we-heard.md). Spec: [design](../superpowers/specs/2026-11-13-p2-you-clicked-we-heard-design.md). Scratch and logs: `~/projects/wargrid-p2-work/`.
@@ -22,7 +22,7 @@ Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicke
 | 4 | F4 music shuffle, F1 scale legend | done (uncommitted) |
 | 5 | Late-game 3v3 canary (report-only) | done (uncommitted) |
 | 6 | Browser rider prep: bench lines, two web exports, native run | done (uncommitted) |
-| 7 | Voice pipeline and A/B page | not started |
+| 7 | Voice pipeline and A/B page | done (uncommitted; python checks red only on pre-existing test_audio_assets) |
 | 8 | P2 focus card and docs | not started |
 | gate (a) | A/B pick, F5 repro on the test app, web bench both builds, rendered rerun | not started |
 | 9 | Picked voices into the game | not started |
@@ -69,3 +69,10 @@ Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicke
 | 6 | headless export `Web Bench`, single-threaded, to `~/projects/wargrid-p2-work/web-bench/` | 238451d + uncommitted | exit 0; `index.wasm` 39514754 bytes, `index.pck` 13386340 bytes |
 | 6 | headless export `Web Bench`, threaded (`variant/thread_support=true` in the scratch copy `~/projects/wargrid-p2-work/threaded-tree` only: `git archive HEAD` plus the three uncommitted game files), to `~/projects/wargrid-p2-work/web-bench-threads/` | 238451d + uncommitted | exit 0, no template error; `index.wasm` 38820072 bytes, `index.pck` 13386268 bytes (pck 72 bytes smaller: scratch tree has no git, so no `build_commit.txt`) |
 | 6 | native `bench_runner.gd` run alone (headless; no godot or generalszh process before; uptime load averages 2.50 2.37 2.35 before, 1.64 2.07 2.23 after, host under load) | 238451d + uncommitted | exit 0; `TEAM MATCH won tick=39497`; `TEAM TIMING {"max":16.009,"n":39497,"p50":1.278,"p95":2.317,"p99":7.839}`; `TEAM MEAN ms=1.428`; `WORST TICK bench team ms=16.009 tick=9540`; Firefox runs wait for gate (a) |
+| 7 | `sh tools/run_python_checks.sh` RED (mypy: no `UNIT_LINES`, `UNIT_VARIANTS`, `radio`, `TREATMENTS`, `UNIT_PICKS`, no `voice` argument) | 7e9a588 + uncommitted | 8 mypy errors, exit 1 |
+| 7 | `sh tools/run_python_checks.sh` after the code: ruff format, ruff check, mypy clean; `test_synth.py` 13 tests OK; `tools/test_audio_assets.py` 3 failures (`units` folder under `voice`, 12 uncredited files) that also occur with Task 7 stashed (log `t7-base.log`): from the Task 2 placeholders, not Task 7 | 7e9a588 + uncommitted | exit 1 (only that file) |
+| 7 | invariant: `main`'s `synth.py`/`process.py` and the branch's `synth.py` run on the same SRC, `cmp` of 10 `sfx/*.wav` and 8 `voice/*.wav` | 7e9a588 + uncommitted | 18 of 18 byte-identical; no `voice/units` output while `UNIT_PICKS` is empty |
+| 7 | Piper: venv `~/projects/wargrid-sound-work/venv-piper` (Python 3.14), `pip install piper-tts==1.8.0` (onnxruntime 1.32.0); `en_US-{john,norman,bryce}-medium.onnx` at HF revision `e7229f7d33a10e145e109b886d661984201ac3c4` | n/a (outside repo) | exit 0; each `.onnx` 63531379 bytes |
+| 7 | model cards at the pinned revision, licence lines | n/a (outside repo) | john, norman and bryce: `* License: public domain` |
+| 7 | raw renders `render.py --units` (six texts) for john, norman, bryce; A/B build script: 3 voices x 3 treatments x 6 lines through `TREATMENTS` at `VOICE_LUFS` | n/a (outside repo) | 18 raw WAVs; 54 A/B WAVs, no peak error; `index.html` served on 8061 by `serve_web_bench.py`: `/` 200, a WAV 200, POST `/result` 204; server stopped; page not opened |
+| 7 | `sh tools/check_public.sh` | 7e9a588 + uncommitted | exit 0 |

@@ -72,6 +72,37 @@ class SynthTest(unittest.TestCase):
             wavfile.write(raw / "x.wav", 22050, np.full(2205, 1000, dtype=np.int16))
             self.assertEqual(len(synth.load_line(Path(d), "x")), 4410 + 882 + 6615)
 
+    def test_unit_lines(self) -> None:
+        self.assertEqual(
+            synth.UNIT_LINES,
+            {"infantry": ["move", "attack"], "vehicle": ["move", "attack"], "worker": ["move", "work"]},
+        )
+        self.assertEqual(synth.UNIT_VARIANTS, 2)
+
+    def test_load_line_reads_voice_folder(self) -> None:
+        with tempfile.TemporaryDirectory() as d:
+            raw = Path(d) / "voice" / "raw" / "john"
+            raw.mkdir(parents=True)
+            wavfile.write(raw / "x.wav", 22050, np.full(2205, 1000, dtype=np.int16))
+            self.assertEqual(len(synth.load_line(Path(d), "x", voice="john")), 4410 + 882 + 6615)
+
+    def test_radio_band_limited(self) -> None:
+        x = 0.1 * np.random.default_rng(1).standard_normal(synth.SR)
+        a = synth.radio(x, np.random.default_rng(5))
+        b = synth.radio(x, np.random.default_rng(5))
+        self.assertEqual(len(a), len(x))
+        self.assertTrue(np.all(np.isfinite(a)))
+        self.assertTrue(np.array_equal(a, b))
+        power = np.abs(np.fft.rfft(a)) ** 2
+        freqs = np.fft.rfftfreq(len(a), 1 / synth.SR)
+        self.assertLess(power[freqs < 200].sum() / power.sum(), 0.01)
+
+    def test_treatments_known(self) -> None:
+        self.assertEqual(set(synth.TREATMENTS), {"clean", "radio", "c1n"})
+        for voice, treatment in synth.UNIT_PICKS.values():
+            self.assertIn(treatment, synth.TREATMENTS)
+            self.assertIn(voice, {"john", "norman", "bryce"})
+
     def test_c1n_deterministic(self) -> None:
         x = np.random.default_rng(1).standard_normal(synth.SR // 2)
         a = synth.c1n(x, np.random.default_rng(5))
