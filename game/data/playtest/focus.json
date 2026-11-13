@@ -7,7 +7,7 @@
    {"id": "work", "text": "Send workers to collect supplies", "trigger": "gather"},
    {"id": "online", "text": "Give orders in an online match"},
    {"id": "music", "text": "Start a second match and listen to the first track"},
-   {"id": "paste", "text": "Online: Create, Copy the code, then paste a relay URL under Advanced"}],
+   {"id": "paste", "text": "Online: Copy the join link, open it in a second tab, and paste a code into the join field"}],
   "questions": [
    {"id": "heard", "text": "Every order I gave felt heard"},
    {"id": "not_chatty", "text": "The voices stayed out of the way when I clicked fast"},

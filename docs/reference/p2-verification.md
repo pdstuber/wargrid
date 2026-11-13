@@ -1,7 +1,7 @@
 ```text
-Resume record (updated 2026-11-13 Task 10c implemented, uncommitted)
-Branch / base commit / working-tree state: p2-you-clicked / efbf545 / worktree ~/projects/wargrid-wt-p2, Task 10c changes uncommitted
-Last green task / next incomplete task: Task 10b and prior committed (efbf545); Task 10c (all gates green, awaiting the coordinator's commit) / Task 10d, then rest of gate (a) (test deploy, F5 repro, web bench, rendered rerun), then Task 10
+Resume record (updated 2026-11-13 Task 10d implemented, uncommitted)
+Branch / base commit / working-tree state: p2-you-clicked / a3d91dd / worktree ~/projects/wargrid-wt-p2, Task 10d changes uncommitted
+Last green task / next incomplete task: Task 10c and prior committed (a3d91dd); Task 10d (docs, gates green, awaiting the coordinator's commit) / rest of gate (a) (test deploy, F5 repro, web bench, rendered rerun), then Task 10
 Changed paths since last commit: game/scripts/presentation/paste_shim.gd (+ .gd.uid, new), game/scripts/launcher.gd, game/scenes/launcher.tscn, game/tests/test_join_link.gd, docs/reference/p2-verification.md
 Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 845 / 144177 / 0 / 0 / TESTS PASSED 144177
 Known red case or blocker: none (tools/test_audio_assets.py fixed in Task 9: layout lists voice/units, 12 credit rows)
@@ -24,17 +24,17 @@ Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicke
 | 6 | Browser rider prep: bench lines, two web exports, native run | done (uncommitted) |
 | 7 | Voice pipeline and A/B page | done (uncommitted; python checks red only on pre-existing test_audio_assets) |
 | 8 | P2 focus card and docs | done (uncommitted) |
-| gate (a) | A/B pick, F5 repro on the test app, web bench both builds, rendered rerun | A/B pick done (user, 2026-11-13); rest not started |
+| gate (a) | A/B pick, F5 repro on the test app, web bench both builds, rendered rerun | A/B pick done (user, 2026-11-13); F5 reproduced by the user on the test app (user, 2026-11-13): Create, Copy the room code, then paste into the relay field; the field could not take the pasted URL and paste gave the room code; check C (Firefox console: the browser fired its paste event with Godot's keydown suppressed) passed per the user's report; web bench and rendered rerun not started |
 | 9 | Picked voices into the game | done (uncommitted) |
 | 10a | Pure rules: JoinLink and PlaytestSettings.prerelease | done (a86ea6a) |
 | 10b | Launcher: prerelease-only fold, ?code=/?relay=, Copy link | done (uncommitted) |
 | 3b | Launcher faction rows | done (uncommitted) |
 | 3c | Relay caption | done (uncommitted) |
 | 10c | Paste shim (Step 0 gate passed: owner report 2026-11-13, Firefox, prompts not mentioned; plus context-menu Paste replacement) | done (uncommitted) |
-| 10d | F5 outcome and docs | not started |
+| 10d | F5 outcome and docs | done (uncommitted) |
 | 11 | Exit checks and ledger row | not started |
 | 12 | Gate review and lean pass | not started |
-| gate (b) | Focus card playtest | not started |
+| gate (b) | Focus card playtest, plus browser checks M1-M9 of the [F5 addendum](../superpowers/plans/2026-11-13-p2-f5-paste-and-links.md#manual-browser-checks-stop-gate-b-test-deploy-of-the-final-tree-firefox-first-then-chrome) (Firefox, then Chrome), including M8 right-click Paste and M9 Advanced toggle and You/Bot labels | not started |
 | 13 | Playtest fixes and findings | not started |
 | gate (c) | Push, deploy, merge (each approved) | not started |
 | 14 | Recorded playtest match row (after the exit, own commit) | not started |
@@ -113,3 +113,6 @@ Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicke
 | 3c | `WARGRID_TEST_ONLY=test_launcher_relay_help` GREEN (N26) at separation 4 | c8238cf + uncommitted | CASES 1 CHECKS 82 FAILURES 0, exit 0; `Center/Box` prerelease fold open, WaitRow and ThisBuild visible 587 x 703 px (was 714); release with WaitRow and ThisBuild visible 612 px (N21; was 640), 577 px without them; width 587 px |
 | 3c | `test_online_scene` 31/3675, `test_playtest.gd` 14/217, `test_pause_menu` 8/332, `test_audio_settings` 12/40, `test_join_link` 6/42 | c8238cf + uncommitted | FAILURES 0, exit 0 |
 | 3c | full `sh tools/run_tests.sh` GREEN; `run_lint.sh`, `run_warnings.sh`, `check_public.sh` exit 0; `git diff main -- game/scripts/simulation game/scripts/net` empty | c8238cf + uncommitted | CASES 839 CHECKS 144156 FAILURES 0, exit 0 |
+| 10d | Owner decisions 2026-11-13: F5 reproduced on the test app (steps in the gate (a) row); check C passed per the user's report; the shim also replaces the context-menu Paste on web (Firefox shows its own Paste confirmation for `navigator.clipboard.readText()` and Godot pastes a stale cache first); manual checks M8 (right-click Paste) and M9 (Advanced toggle text, caption, You/Bot labels) added to the addendum and gate (b); finding F10 (browser shortcuts blocked while the canvas has focus, engine behaviour, open) added to `STATUS.md` | a3d91dd + uncommitted | recorded here |
+| 10d | docs claims checked against code: `JoinLink` (`link`, `parse`, `DEFAULT_RELAY`), `PlaytestSettings.prerelease`, launcher `_apply_page` (`?code=`, `?relay=` only when prerelease), `_copy_text`, `_set_advanced` text, `PasteShim.adopt`/`insert`, `Center/Box` separation 4, `OfflineRow` (You, Bot, Start), `OnlineRow` (You, Create), `MatchRow` (Map); `rg -n paste game/tests` shows no test pinning the `focus.json` `paste` text | a3d91dd + uncommitted | claims match |
+| 10d | `WARGRID_TEST_ONLY=test_playtest.gd` (focus.json text changed); full `sh tools/run_tests.sh`; `check_public.sh`, `run_lint.sh`, `run_warnings.sh` exit 0; `git diff main -- game/scripts/simulation game/scripts/net` empty; every relative link in the changed docs resolves | a3d91dd + uncommitted | test_playtest CASES 14 CHECKS 217 FAILURES 0; full CASES 845 CHECKS 144177 FAILURES 0, exit 0, TESTS PASSED 144177 |

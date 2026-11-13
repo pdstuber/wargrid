@@ -62,7 +62,7 @@ Riskiest contract first: the order hook's timing and its rejected-order rule (Ta
 | 8 | P2 focus card and docs | Sonnet |
 | — | **Stop gate (a)** | user |
 | 9 | Picked voices into the game | Sonnet |
-| 10 | F5 outcome | Sonnet (Opus if reproduced) |
+| 10 | Replaced by [the F5 addendum](2026-11-13-p2-f5-paste-and-links.md): reproduced by the user on the test app, cause in Godot's web clipboard, fixed by 10a-10c | Sonnet |
 | 11 | Exit checks and ledger row | Sonnet |
 | 12 | Gate review and lean pass | **Opus (high)** reviewer |
 | — | **Stop gate (b)**, then fixes in Task 13 | user |
@@ -316,15 +316,7 @@ Stop: a rendered line peaks over -1 dBFS at -24 LUFS (scale_to raises); raw comm
 
 ### Task 10: F5 outcome
 
-```text
-Task: record the F5 repro result; fix only a reproduced bug at its root cause.
-Owns: docs/STATUS.md (F5 row), the verification file; if reproduced: game/scripts/launcher.gd and a test in game/tests/test_online_scene.gd
-Invariant: no speculative fix.
-Stop: the root cause is outside the launcher (engine or browser), or the fix needs a design choice: report to the user.
-```
-
-- [ ] **Not reproduced:** F5 row in `STATUS.md` and the verification file say "not reproduced (user, <date>, test app, build <id>)", with the exact steps tried; the session notes (private) get the same line. No code change.
-- [ ] **Reproduced:** superpowers:systematic-debugging from the user's steps. Before investing in the clipboard-buffer hypothesis (spec, unverified), run its kill check: in the test app's browser console after Copy, compare `navigator.clipboard.readText()` with what the field receives on paste; if the system clipboard holds the URL and the field gets the room code, the hypothesis stands. Write a failing headless test for the part that is scriptable (e.g. the launcher no longer keeps or re-sets the clipboard after Copy), fix, green; the user re-checks by hand at stop gate (b).
+Replaced by [the F5 addendum](2026-11-13-p2-f5-paste-and-links.md): reproduced by the user on the test app, cause in Godot's web clipboard, fixed by 10a-10c.
 
 ---
 
@@ -351,7 +343,7 @@ Task: one substantive fresh-context review of the branch and one lean-only pass.
 Stop: a critical or important finding that changes a spec decision parks for the user; others are fixed test-first by a Sonnet fix task, then Task 11 reruns.
 ```
 
-- [ ] **Step 1:** Fresh Opus (high) reviewer, no implementation context. Brief: `git -C ~/projects/wargrid-wt-p2 diff main...HEAD`, the spec, this plan's Global Constraints and Review Focus, the verification file; it names, per new test (OV1-OV12, N20, MU1-MU2, PO18, BM21-BM22, CR-U, the synth tests), the production change that makes it fail; checks docs claims against the code; no repo-wide search.
+- [ ] **Step 1:** Fresh Opus (high) reviewer, no implementation context. Brief: `git -C ~/projects/wargrid-wt-p2 diff main...HEAD`, the spec, this plan's Global Constraints and Review Focus, the verification file; it names, per new test (OV1-OV12, N20-N26, JL1-JL6, PS1-PS6, MU1-MU2, PO18, BM21-BM22, CR-U, the synth tests), the production change that makes it fail; checks docs claims against the code; no repo-wide search.
 - [ ] **Step 2:** `/ponytail-review` on the same diff (over-engineering only); apply cuts that keep every test green and remove no test or check.
 - [ ] **Step 3:** Findings and rulings in the verification file; fixes test-first; Task 11 again.
 

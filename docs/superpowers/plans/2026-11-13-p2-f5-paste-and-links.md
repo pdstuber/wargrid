@@ -175,3 +175,5 @@ The test app is a `-dev` build: release behaviour (N21, N22, PS4) is covered hea
 - [ ] **M5 Paste elsewhere:** relay field: paste a URL; select part of it, paste again: the selection is replaced.
 - [ ] **M6 Double install:** start offline, back to the menu, again; paste once into the relay field: the text appears once.
 - [ ] **M7 Freed launcher:** start an online match (launcher freed); with the playtest helper on, paste into its note field: inserted; paste with nothing focused: nothing, no console error.
+- [ ] **M8 Right-click Paste:** reload, copy new text in another app, right-click the join field, Paste: Firefox shows its own Paste button once, then the new text is inserted without a second try.
+- [ ] **M9 Advanced:** in the test build the toggle reads Show/Hide advanced settings, the caption explains the relay field; You/Bot labels are visible in both rows.
