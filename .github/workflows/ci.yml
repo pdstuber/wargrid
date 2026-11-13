@@ -281,6 +281,7 @@ jobs:
           python-version: "3.12"
       - run: pip install uv # tools/ensure_venv.sh builds tools/.venv from requirements-dev.txt
       - run: sh tools/run_python_checks.sh
+      - run: echo "$PWD/tools/.venv/bin" >> "$GITHUB_PATH" # Tool tests need the venv's numpy and scipy
       - run: sh tools/run_shell_checks.sh
       - name: Tool tests
         run: |
