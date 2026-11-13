@@ -439,8 +439,11 @@ Questionnaire after a research pass on simple ways to play 1:1 with a friend (re
 
 ## New launcher (user, 2026-11-13)
 
-AI-drawn mockups the user likes, kept in [launcher mockups](../images/launcher-mockups/): tabs Vs. Bot / With Friend / Settings ([vs-bot](../images/launcher-mockups/vs-bot.png), [with-friend](../images/launcher-mockups/with-friend.png), [settings](../images/launcher-mockups/settings.png)) and a later dark start screen with mode cards ([mode-select-dark](../images/launcher-mockups/mode-select-dark.png)). Placement: P2.1 in [packages](../packages.md).
+AI-drawn mockups the user likes, kept in [launcher mockups](../images/launcher-mockups/). Placement: P2.1 in [packages](../packages.md).
 
-- **When:** its own day package right after P2; P2 finishes as built.
-- **Look:** the tab layout, in the dark game look of the mode-card mockup (not the light panels as drawn); the mode cards with illustrations come later.
-- **Bot difficulty:** shown with Easy, Normal and Hard, only Normal enabled until bot levels exist.
+- **First round:** tabs on top ([vs-bot](../images/launcher-mockups/vs-bot.png), [with-friend](../images/launcher-mockups/with-friend.png), [settings](../images/launcher-mockups/settings.png)) in the dark game look, own package right after P2; superseded the same day by the sidebar decision below.
+- **Navigation model: sidebar.** Settled now so the launcher does not change its UX twice: P2.1 builds the [primitive sidebar](../images/launcher-mockups/sidebar-primitive.png) in today's grey look; later packages grow it into the [rich sidebar](../images/launcher-mockups/sidebar-vs-bot.png) ([with friend](../images/launcher-mockups/sidebar-with-friend.png)): map panel, faction cards, dark theme.
+- **No Back button** (every page is one sidebar click away) and **no mode-card start screen** ([dropped mockup](../images/launcher-mockups/mode-select-dark.png)); the launcher opens on a page directly.
+- **Bot difficulty:** shown, only Normal enabled until bot levels exist.
+- **Starting resources, game speed, Expert:** left out until the features exist; each control comes with its feature.
+- **Rich version notes (agent assessment, for its planning):** emblems are Wargrid's own geometric shapes, not the Zero Hour faction emblems the mockups resemble (EA trademarks); the map picture is a thumbnail rendered from the real map data in Wargrid's look, not painted art.
