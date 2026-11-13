@@ -38,9 +38,11 @@ MARKERS = {
 HEADLESS = re.compile(r"^HEADLESS (\S+) tick_ms=(\{[^}]*\})", re.M)
 COMBAT = re.compile(r"^COMBAT ([a-z0-9_]+) tick_ms=(\{[^}]*\})", re.M)
 LOCKSTEP = re.compile(r"^LOCKSTEP overhead_ms=(\{[^}]*\})", re.M)
-RENDERED = re.compile(r"^RENDERED SAMPLE (\S+) .*?frame_interval_ms=(\{[^}]*\})", re.M)
+RENDERED = re.compile(r"^RENDERED SAMPLE (\S+) .*? tick_ms=(\{[^}]*\}).*? frame_interval_ms=(\{[^}]*\})", re.M)
 PROFILE = re.compile(r"^PROFILE rendered_(\S+) zone=(\S+) mean_ms=([\d.]+)", re.M)
 PLUMBING_ZONES = ("snapshot", "view.copy", "view.sort")
+TICK_FRAME = "tick_frame"
+TICK_FRAME_METHOD = "tick-frame"
 
 
 class Sample(NamedTuple):
@@ -87,10 +89,11 @@ def parse_log(text: str) -> list[Sample]:
         found.add("lockstep")
         samples.append(_percentiles("lockstep_overhead", "contact", raw))
     profile, profiled = _profile_samples(text)
-    for layout, raw in RENDERED.findall(text):
+    for layout, tick_raw, frame_raw in RENDERED.findall(text):
         found.add("rendered")
         suffix = ":profile" if layout in profiled else ""
-        samples.append(_percentiles("frame_interval", layout + suffix, raw))
+        samples.append(_percentiles("frame_interval", layout + suffix, frame_raw))
+        samples.append(_percentiles(TICK_FRAME, layout + suffix, tick_raw))
     samples += profile
     if not found:
         raise ValueError("no benchmark samples found")
@@ -188,7 +191,9 @@ def main(argv: list[str] | None = None) -> int:
     if any(r["source"] == source for r in existing):
         print(f"FAIL: {source} already recorded", file=sys.stderr)
         return 1
-    method = args.method or next((r["method"] for r in reversed(existing) if r["machine"] == args.machine), "")
+    method = args.method or next(
+        (r["method"] for r in reversed(existing) if r["machine"] == args.machine and r["metric"] != TICK_FRAME), ""
+    )
     if not method:
         print("FAIL: no --method and no earlier row to inherit it from", file=sys.stderr)
         return 1
@@ -206,6 +211,7 @@ def main(argv: list[str] | None = None) -> int:
         args.csv,
         [
             {**common, "metric": s.metric, "scenario": s.scenario}
+            | ({"method": TICK_FRAME_METHOD} if s.metric == TICK_FRAME else {})
             | {"p95_ms": _cell(s.p95_ms), "p99_ms": _cell(s.p99_ms), "mean_ms": _cell(s.mean_ms)}
             for s in samples
         ],

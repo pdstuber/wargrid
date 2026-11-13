@@ -22,7 +22,7 @@ class Budget(NamedTuple):
 
 class Line(NamedTuple):
     title: str
-    metric: str
+    metrics: tuple[str, ...]
     budget: Budget
     scenarios: tuple[str, ...]
     name: str
@@ -48,29 +48,30 @@ FRAME = Budget(16.7, 3.04, "p95")
 LOCKSTEP = Budget(3.3, 0.6, "p99")
 GATED = ("contact", "skirmish3v3", "transports", "defences", "docks", "ramp", "frc")
 
+RENDERED_METRICS = ("tick_frame", "frame_interval")
 LINES = (
-    Line("movement p95", "movement_tick", SIM_P95, ("open", "dense"), "Unit movement"),
-    Line("movement p99", "movement_tick", SIM_P99, ("open", "dense"), "Unit movement, slowest moments"),
-    Line("combat gated p95", "combat_tick", SIM_P95, GATED, "Combat, normal fights"),
-    Line("combat gated p99", "combat_tick", SIM_P99, GATED, "Combat, normal fights, slowest moments"),
-    Line("combat stress p95", "combat_tick", SIM_P95, ("open", "dense", "hordes300"), "Combat, huge battles"),
+    Line("movement p95", ("movement_tick",), SIM_P95, ("open", "dense"), "Unit movement"),
+    Line("movement p99", ("movement_tick",), SIM_P99, ("open", "dense"), "Unit movement, slowest moments"),
+    Line("combat gated p95", ("combat_tick",), SIM_P95, GATED, "Combat, normal fights"),
+    Line("combat gated p99", ("combat_tick",), SIM_P99, GATED, "Combat, normal fights, slowest moments"),
+    Line("combat stress p95", ("combat_tick",), SIM_P95, ("open", "dense", "hordes300"), "Combat, huge battles"),
     Line(
         "plumbing, movement layouts",
-        "plumbing",
+        ("plumbing",),
         PLUMBING,
         ("ashfall:profile", "open:profile", "dense:profile"),
         "Background upkeep, armies on the move",
     ),
     Line(
         "plumbing, horde",
-        "plumbing",
+        ("plumbing",),
         PLUMBING,
         ("horde:profile", "large_196:profile"),
         "Background upkeep, huge crowds",
     ),
-    Line("rendered frame p95", "frame_interval", FRAME, ("open", "dense"), "Drawing the screen"),
-    Line("Ashfall frame p95", "frame_interval", FRAME, ("ashfall",), "Drawing the screen, big map (Ashfall)"),
-    Line("lockstep p99", "lockstep_overhead", LOCKSTEP, ("contact",), "Online play overhead"),
+    Line("rendered frame p95", RENDERED_METRICS, FRAME, ("open", "dense"), "Drawing the screen"),
+    Line("Ashfall frame p95", RENDERED_METRICS, FRAME, ("ashfall",), "Drawing the screen, big map (Ashfall)"),
+    Line("lockstep p99", ("lockstep_overhead",), LOCKSTEP, ("contact",), "Online play overhead"),
 )
 _REF = Path(__file__).resolve().parent.parent / "docs" / "reference"
 DEFAULT_CSV = _REF / "perf-history.csv"
@@ -87,18 +88,27 @@ def _value(rows: list[dict[str, str]], line: Line) -> float | None:
     values = [
         float(r[line.budget.stat + "_ms"])
         for r in rows
-        if r["metric"] == line.metric and r["scenario"] in line.scenarios and r[line.budget.stat + "_ms"]
+        if r["scenario"] in line.scenarios and r[line.budget.stat + "_ms"]
     ]
     return max(values) if values else None
+
+
+def _preferred(group: list[dict[str, str]], line: Line) -> list[dict[str, str]]:
+    for metric in line.metrics:
+        rows = [r for r in group if r["metric"] == metric]
+        if rows:
+            return rows
+    return []
 
 
 def series(rows: list[dict[str, str]], line: Line) -> list[Point]:
     groups: dict[str, list[dict[str, str]]] = {}
     for r in rows:
-        if r["machine"] == DEV and r["metric"] == line.metric and r["scenario"] in line.scenarios:
+        if r["machine"] == DEV and r["metric"] in line.metrics and r["scenario"] in line.scenarios:
             groups.setdefault(r["label"], []).append(r)
     points = []
-    for label, group in groups.items():
+    for label, all_rows in groups.items():
+        group = _preferred(all_rows, line)
         runs: dict[str, list[dict[str, str]]] = {}
         for r in group:
             runs.setdefault(r["run"], []).append(r)

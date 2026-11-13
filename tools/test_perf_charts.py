@@ -241,6 +241,23 @@ class PerfChartTest(unittest.TestCase):
         self.assertEqual(vs("1.0", "1.001"), "\u2796 same")
         self.assertEqual(vs("1.0", "1.0", method="pre-P1"), "\u26a0\ufe0f method changed")
 
+    def test_area_prefers_tick_frame_within_a_label(self) -> None:
+        rows = [
+            row(label="lab", metric="tick_frame", scenario="open", p95_ms="2.9", method="tick-frame"),
+            row(label="lab", metric="frame_interval", scenario="open", p95_ms="0.6", method="tick-frame"),
+        ]
+        line = next(x for x in perf_chart.LINES if x.name == "Drawing the screen")
+        (point,) = perf_chart.series(rows, line)
+        self.assertAlmostEqual(point.worst_pct, 2.9 / 3.04 * 100)
+
+    def test_switch_to_tick_frame_reads_as_method_change(self) -> None:
+        rows = [
+            row(label="a", date="2026-11-01", metric="frame_interval", scenario="open", p95_ms="0.6", method="post-P1"),
+            row(label="b", date="2026-11-02", metric="tick_frame", scenario="open", p95_ms="2.9", method="tick-frame"),
+        ]
+        table = perf_chart.status_table(rows)
+        self.assertIn("method changed", next(x for x in table.splitlines() if "Drawing the screen" in x))
+
     def test_zero_previous_counts_as_new(self) -> None:
         rows = [mv("a", "0", date="2026-11-01"), mv("b", "1.0", date="2026-11-02")]
         self.assertIn("\U0001f195 first run", self.table_row(rows, "Unit movement"))
@@ -298,6 +315,8 @@ class PerfRecordTest(unittest.TestCase):
     def test_profiled_rendered_rows_suffixed(self) -> None:
         s = {(x.metric, x.scenario): x for x in perf_record.parse_log(RENDERED_PROFILE_LOG)}
         self.assertIn(("frame_interval", "ashfall:profile"), s)
+        self.assertIn(("tick_frame", "ashfall:profile"), s)
+        self.assertNotIn(("tick_frame", "ashfall"), s)
         self.assertAlmostEqual(s["plumbing", "ashfall:profile"].mean_ms or 0, 0.7354 + 0.0830 + 0.0525)
         self.assertIsNone(s["plumbing", "ashfall:profile"].p95_ms)
         self.assertEqual(s["step", "ashfall:profile"].mean_ms, 0.4936)
@@ -306,7 +325,37 @@ class PerfRecordTest(unittest.TestCase):
     def test_unprofiled_rendered_rows_plain(self) -> None:
         lines = [x for x in RENDERED_PROFILE_LOG.splitlines() if not x.startswith("PROFILE")]
         s = {(x.metric, x.scenario) for x in perf_record.parse_log("\n".join(lines))}
-        self.assertEqual(s, {("frame_interval", "ashfall")})
+        self.assertEqual(s, {("frame_interval", "ashfall"), ("tick_frame", "ashfall")})
+
+    def test_rendered_sample_records_tick_frame(self) -> None:
+        line = (
+            'RENDERED SAMPLE open wall_seconds=60.0 physics_ticks=1800 tick_ms={"max":4.0,"n":1800,"p50":1.0,'
+            '"p95":2.9,"p99":3.5} frame_interval_ms={"max":9.0,"n":6000,"p50":0.3,"p95":0.6,"p99":1.2}\n'
+        )
+        log = line + "RENDERED BENCHMARK PASSED 4\n"
+        s = {(x.metric, x.scenario): x for x in perf_record.parse_log(log)}
+        self.assertEqual(s["tick_frame", "open"], perf_record.Sample("tick_frame", "open", 2.9, 3.5, None))
+        self.assertEqual(s["frame_interval", "open"].p95_ms, 0.6)
+
+    def test_tick_frame_rows_get_their_own_method(self) -> None:
+        log = RENDERED_PROFILE_LOG
+        self.assertEqual(self.record(self.write_log("a.log", log), "--method", "P1"), 0)
+        by_metric = {r["metric"]: r["method"] for r in read_rows(self.csv)}
+        self.assertEqual(by_metric["tick_frame"], "tick-frame")
+        self.assertEqual({by_metric["frame_interval"], by_metric["plumbing"]}, {"P1"})
+        self.assertEqual(self.record(self.write_log("b.log", log.replace("1.868", "1.9"))), 0)
+        self.assertEqual({r["method"] for r in read_rows(self.csv) if r["metric"] != "tick_frame"}, {"P1"})
+
+    def test_current_main_log_lines_parse(self) -> None:
+        extra = (
+            "WORST TICK tests open ms=3.443 tick=412\n"
+            "OVER BUDGET dense p95=2.000 p99=3.000 budget=1.82/3.64\n"
+            "BUDGET EXCEEDED dense (regression ceilings held)\n"
+        )
+        lines = HEADLESS_LOG.splitlines(keepends=True)
+        log = "".join(lines[:2]) + extra + "".join(lines[2:])
+        s = {(x.metric, x.scenario) for x in perf_record.parse_log(log)}
+        self.assertEqual(s, {x[:2] for x in perf_record.parse_log(HEADLESS_LOG)})
 
     def test_incomplete_log_refused(self) -> None:
         truncated = HEADLESS_LOG.replace("COMBAT BENCHMARK PASSED 10\n", "")
