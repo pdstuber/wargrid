@@ -51,11 +51,11 @@ Take a China supply truck (`china_collector`: 4 boxes per load, 75 credits a box
 
 **Phase 5, later ticks: dock, load, haul, unload.**
 
-5. Each tick the supply step checks whether the truck stands exactly on its arrival point. When it does, the truck is admitted. If the pile has no active collector and nobody who arrived earlier is waiting, the truck becomes the pile's `active_collector_id` and starts loading. Otherwise it waits and stores the tick it began waiting, so ground trucks are served in arrival order.  
+5. Each tick the supply step checks whether the truck stands exactly on its arrival point. When it does, the truck first stands a 5-tick lead (`lead_source`) that does not lock the pile. Then it is admitted: if the pile has no active collector and nobody who arrived earlier is waiting, the truck becomes the pile's `active_collector_id` and starts loading. Otherwise it waits and stores the tick it began waiting, so ground trucks are served in arrival order.  
    `Supply.step → _admit → _ahead`
-6. Loading counts down 38 ticks per box and moves one box from pile to cargo each time. After the fourth box the truck waits one more 38-tick delay, then releases the pile: 190 ticks in all. The next tick it seeks again, this time with cargo, so it chooses a depot.  
+6. Loading counts down 37 ticks per box and moves one box from pile to cargo each time. After the fourth box the truck waits one more 37-tick delay, then releases the pile: the 185-tick lock plus the 5-tick lead is 190 ticks standing still. The next tick it seeks again, this time with cargo, so it chooses a depot. (Laborer: lead 38, then 46. Chinook: lead 18, then 369.)  
    `Supply.step → _load_box → release`
-7. The same admit logic runs at the depot. Unloading takes 37 ticks, and then all cargo is paid at once: 4 boxes at 75 is 300 credits.  
+7. The same admit logic runs at the depot (lead, then lock). Lead and lock for the depot: truck 0 + 37, Laborer 6 + 39, Chinook 60 + 153. When the truck's 37 ticks end, all cargo is paid at once: 4 boxes at 75 is 300 credits.  
    `Supply.step: credits += cargo * box_value`
 8. The truck releases the depot and seeks the pile again on the next tick. One cycle ends.
 
@@ -63,7 +63,7 @@ How long a cycle takes depends on the distance. The pinned case is a depot and a
 
 | | Ticks per cycle | Of which at the docks |
 |---|---|---|
-| Wargrid | about 647 (derived: 300 credits per trip at 834.6 credits per minute) | 227 (190 pile, 37 depot) |
+| Wargrid | about 647 (derived: 300 credits per trip at 834.6 credits per minute) | 227 (190 pile, 37 depot; lock 222: 185 pile, 37 depot) |
 | Zero Hour | 650 (measured) | 238 (188 pile, 50 depot) |
 
 The Wargrid rate is measured by `test_supply_parity.gd` ([economy verification archive](../reference/m7-verification-archive-economy.md); layout and constants in [rework plan](../reference/m7-economy-rework-plan.md)), the Zero Hour phases are in the [measured supply cycle](../reference/m7-supply-parity-measured.md). The 420 ticks left on Wargrid's side are driving, plus a few ticks per leg for the seek, the path queue and the start delay.
@@ -87,15 +87,16 @@ A collector's `collection` record carries a phase and a few numbers; the supply 
 |---|---|---|
 | `seeking`, `idle` | no target; `idle` is a seek that found nothing, or a switched-off collector | `retry_tick` reached, then `_seek` |
 | `flying_source`, `flying_depot` | moving to the arrival point of a pile or depot | position equals the arrival point, then `_admit` |
+| `lead_source`, `lead_depot` | arrived, standing before the lock window; does not hold the dock | timer ends, then `_admit` |
 | `waiting_source`, `waiting_depot` | arrived, another collector holds the dock | released by `_admit` on a later tick |
 | `loading`, `unloading` | holds the dock, counting `remaining_ticks` | timer ends |
 
-**One collector per source and per depot.** `active_collector_id` on the target is the lock. The queue among waiters is in `_ahead`: helicopters first (lowest id first), then ground units in the order they began waiting, then ground arrivals by id. The comment in the code gives the aim: no truck starves.
+**One collector per lock window, per source and per depot.** `active_collector_id` on the target is the lock; the lead before it is not exclusive. The queue among waiters is in `_ahead`: helicopters first (lowest id first), then ground units in the order they began waiting, then ground arrivals by id. The comment in the code gives the aim: no truck starves.
 
 **Release is the single exit.** `release` clears the target, the dock and the timer, and clears `active_collector_id` if this unit held it. It runs after a finished load or unload, when a route is blocked, when the pile or depot is removed, and when a player gives the unit any other order. That last case also switches the loop off until the next `gather`. Cargo survives all of these except the unit's own death.  
 `Supply.step, object_removed, Simulation._detach_task → Supply.release`
 
-**Only some kinds collect.** The row key `collects` (boxes, load ticks, unload ticks, box value) turns a unit into a collector. Helicopters skip the dock-cell and path steps: they fly straight to the target centre. A `gather` command sets the preferred pile and starts the loop. `_validate` rejects a `gather` on an empty pile only for collectors that carry nothing.
+**Only some kinds collect.** The row key `collects` (boxes, load ticks, unload ticks, box value, and `lock`: lead and box or work ticks per target) turns a unit into a collector. Helicopters skip the dock-cell and path steps: they fly straight to the target centre. A `gather` command sets the preferred pile and starts the loop. `_validate` rejects a `gather` on an empty pile only for collectors that carry nothing.
 
 **Small piles vanish.** A source the map flags `delete_when_empty` is removed in the tick that takes its last box, through the normal `remove_object`, so the navigation grid is rebuilt and waiting collectors are released. Unflagged sources stay on the map empty. (Why the map has both: [world chapter](02-world.md) and the [small piles design](../superpowers/specs/2026-11-08-small-supply-piles-design.md).)
 
@@ -155,15 +156,13 @@ The economy has the most Zero Hour measurement behind it. The method had three s
 
 A later measurement shows where this fit is weakest. The [faction income comparison](../reference/faction-income-parity.md) plays whole openings (depot order, free collector, trained collectors, 600 s) in Zero Hour and in Wargrid. In net at 600 s, USA and China match within 3 percent, but their rows already sit on Wargrid's per-pile cap, so a larger opening would fall short. The FRC openings at the close depot fall 25 to 46 percent short.
 
-The leading candidate cause (not tested) is the exclusive hold. One collector holds a pile for (boxes + 1) times `load_ticks`, which caps the pile at one visit per that time: about 2790 credits a minute for supply helicopters, 2840 for supply trucks and 1600 for laborers. The depot unload hold is the next cap. Zero Hour's dock lets approaches overlap. The same note finds that the old four-laborer Zero Hour target in `test_supply_parity.gd` came from a window that included the ramp-in of the trained workers and is probably too low.
-
-This is evidence, not a number change. Decided (user, 2026-11-12): a measured dock-hold experiment on both holds with no number change until its rows are in, and a re-measure of the four-laborer target first.
+Adopted (c1, user 2026-11-12 night): the pile and the depot are locked only for the lock window, the lead before it overlaps other collectors, as Zero Hour's dock grants do. Rebuilt on `c1-dock-rebuild`, not merged; rows in the [c1 dock rebuild verification](../reference/c1-dock-rebuild-verification.md). Measured close-depot steady rates (credits per minute): frc5 2085 (Zero Hour 2085), frc7 2550 (Zero Hour 2850), reported not judged. The experiment behind the choice: [dock-hold experiment](../reference/dock-hold-experiment.md).
 
 What Wargrid takes over directly:
 
 | Rule | Zero Hour (evidence) | Wargrid |
 |---|---|---|
-| One collector holds a dock at a time | `DockUpdate`, [rework plan](../reference/m7-economy-rework-plan.md) | `active_collector_id` |
+| Only the lock window is exclusive | `DockUpdate`, [rework plan](../reference/m7-economy-rework-plan.md) | `active_collector_id` |
 | Last box costs one more delay | `AIDock`, [M3 economy](../reference/m3-economy.md) | loading waits once more with a full load |
 | Pay everything at once at the depot | `SupplyCenterDockUpdate`, [M3 economy](../reference/m3-economy.md) | `unload` pays `cargo * box_value` |
 | Cost charged at queueing or placing, refund in full | `ProductionUpdate`, `GameLogicDispatch`, [M3 economy](../reference/m3-economy.md) | `paid_cost` on the record |
