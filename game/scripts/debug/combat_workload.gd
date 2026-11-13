@@ -5,7 +5,7 @@ const CombatDefinitions = preload("res://scripts/simulation/combat_definitions.g
 const MapData = preload("res://scripts/simulation/map_data.gd")
 const TeamMatch = preload("res://scripts/debug/team_match.gd")
 
-static func create(layout: String) -> Simulation:
+static func create(layout: String, per_side: int = 150) -> Simulation:
 	assert(layout == "open" or layout == "dense" or layout == "contact" or layout == "skirmish3v3" or layout == "transports" or layout == "defences" or layout == "docks" or layout == "hordes300" or layout == "horde_render" or layout == "horde_render_500" or layout == "ramp" or layout == "frc" or layout == "late_game_3v3")
 	if layout == "skirmish3v3": return _skirmish3v3()
 	if layout == "transports": return _transports()
@@ -31,8 +31,8 @@ static func create(layout: String) -> Simulation:
 	var left_front: int = 31 if contact else 18
 	var right_front: int = 33 if contact else 45
 	var top: int = 7 if contact else 20
-	_block(sim, 1, left_front, -1, columns, top, contact)
-	_block(sim, 2, right_front, 1, columns, top, contact)
+	_block(sim, 1, left_front, -1, columns, top, contact, per_side)
+	_block(sim, 2, right_front, 1, columns, top, contact, per_side)
 	if layout != "contact":
 		for player: int in [1, 2]:
 			var ids: Array[int] = []
@@ -43,13 +43,14 @@ static func create(layout: String) -> Simulation:
 			assert(result.ok, result.error)
 	return sim
 
-static func _block(sim: Simulation, player: int, front_x: int, direction: int, columns: int, top: int, interleave: bool) -> void:
-	@warning_ignore("integer_division")
-	var rows: int = 150 / columns
+static func _block(sim: Simulation, player: int, front_x: int, direction: int, columns: int, top: int, interleave: bool, per_side: int = 150) -> void:
+	var rows: int = ceili(per_side / float(columns))
 	var placed: int = 0
 	for column in range(columns):
 		for row in range(rows):
-			var tank: bool = placed % 3 == 0 if interleave else placed < 50
+			if placed == per_side: return
+			@warning_ignore("integer_division")
+			var tank: bool = placed % 3 == 0 if interleave else placed < per_side / 3
 			var id: int = sim.spawn(player, Vector2(front_x + direction * column + 0.5, top + row + 0.5), "usa_tank" if tank else "usa_rifle_infantry")
 			assert(id > 0)
 			placed += 1

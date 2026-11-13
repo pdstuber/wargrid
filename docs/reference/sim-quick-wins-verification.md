@@ -1,15 +1,15 @@
 # Sim quick wins verification
 
 ```text
-Resume record (updated 2026-11-13 night: Task 1 green)
-Branch / base commit / working-tree state: sim-quick-wins / 4227325 (Task 0 commit on 4ed3534 main) / Task 1 edits uncommitted
-Last green task / next incomplete task: Task 1 / Task 2
-Changed paths since last commit: game/scripts/simulation/simulation.gd, game/scripts/simulation/combat.gd, docs/reference/sim-quick-wins-verification.md
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh (traces to *-t1.tsv) / 850 / 144212 / 0 / exit 0, TESTS PASSED 144212; run_checks.sh CHECKS PASSED 5; run_profile.sh PROFILE COMPLETE 10
+Resume record (updated 2026-11-13 night: Task 2 green)
+Branch / base commit / working-tree state: sim-quick-wins / eabf59c (Task 1 commit) / Task 2 edits uncommitted
+Last green task / next incomplete task: Task 2 / Task 3
+Changed paths since last commit: game/scripts/debug/combat_workload.gd, game/scripts/debug/profiler.gd, game/benchmarks/run_scaling.gd (+ .uid, new), tools/run_scaling.sh (new), docs/reference/sim-quick-wins-verification.md
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh (traces to *-t2.tsv) / 850 / 144212 / 0 / exit 0, TESTS PASSED 144212; run_checks.sh CHECKS PASSED 5; run_scaling.sh SCALING COMPLETE 5
 Known red case or blocker: none; plan approved 2026-11-13 (user, all seven questions answered, see the plan)
 Approved decisions, pre-authorizations used, deferred gates: package note "Sim quick wins" (user, 2026-11-13); local commits per GREEN task only if the night run handoff grants them
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: Task 2 (scaling row runner), in the worktree ~/projects/wargrid-wt-simwins
+Next exact action: Task 3 (splash index, SI1-SI4 first), in the worktree ~/projects/wargrid-wt-simwins
 ```
 
 Plan: [Sim quick wins plan](../superpowers/plans/2026-11-13-sim-quick-wins.md). Spec: `docs/packages.md` package note "Sim quick wins"; `docs/reference/simulation-reference-review.md` §5.1, §5.4 (a), §6, "Review 2026-11-13". Logs: `~/projects/wargrid-overnight-work/sim-quick-wins/logs/` (outside the repository).
@@ -20,7 +20,7 @@ Plan: [Sim quick wins plan](../superpowers/plans/2026-11-13-sim-quick-wins.md). 
 |---|---|---|---|
 | 0 | Baseline: worktree, import, suite and traces, pins, profile and benchmark before | Sonnet | green |
 | 1 | Profiler zones: `step.advance` split, `combat.splash` | Sonnet | green |
-| 2 | Scaling row runner; "before" run | Sonnet | not started |
+| 2 | Scaling row runner; "before" run | Sonnet | green |
 | 3 | Splash index (SI1-SI4 first) | Sonnet | not started |
 | 4 | After the index: profile and scaling rerun | Sonnet | not started |
 | 5 | Per-tick hash ring (HR1-HR3) | Sonnet | not started |
@@ -47,11 +47,11 @@ Plan: [Sim quick wins plan](../superpowers/plans/2026-11-13-sim-quick-wins.md). 
 
 | # | Pin | Expected (on `4bd8711`) | Task 0 (base tree) | Task 1 | Task 3 | Task 5 | Task 8 |
 |---|---|---|---|---|---|---|---|
-| V1 | `FINAL_DIGEST` | `3958ceaab11986af` | `3958ceaab11986af` (matches) | unchanged (suite green) | | | |
-| V2 | `TEAM_CORE_SERIES` | `8513092129969516499` | `8513092129969516499` (matches) | unchanged (suite green) | | | |
-| V3 | `S1_CORE_SERIES` | `4004499097874677431` | `4004499097874677431` (matches) | unchanged (suite green) | | | |
-| V4 | `PINNED`, `EXPECTED_DIGEST`, `SS6_PINNED` | unchanged | `01e256834bdd4dfb`, `7c7fbc8d…48a9e7`, `SS6_PINNED` unchanged (suite green) | unchanged (suite green) | | | |
-| V5 | four traces | byte-identical to `*-before.tsv` | four `-before.tsv` recorded (1200/1200/1200/100 lines) | `cmp` silent for all four against `*-before.tsv` (`*-t1.tsv`, same line counts) | | | |
+| V1 | `FINAL_DIGEST` | `3958ceaab11986af` | `3958ceaab11986af` (matches) | unchanged (suite green) | unchanged (suite green) | | |
+| V2 | `TEAM_CORE_SERIES` | `8513092129969516499` | `8513092129969516499` (matches) | unchanged (suite green) | unchanged (suite green) | | |
+| V3 | `S1_CORE_SERIES` | `4004499097874677431` | `4004499097874677431` (matches) | unchanged (suite green) | unchanged (suite green) | | |
+| V4 | `PINNED`, `EXPECTED_DIGEST`, `SS6_PINNED` | unchanged | `01e256834bdd4dfb`, `7c7fbc8d…48a9e7`, `SS6_PINNED` unchanged (suite green) | unchanged (suite green) | unchanged (suite green) | | |
+| V5 | four traces | byte-identical to `*-before.tsv` | four `-before.tsv` recorded (1200/1200/1200/100 lines) | `cmp` silent for all four against `*-before.tsv` (`*-t1.tsv`, same line counts) | `cmp` silent for all four against `*-before.tsv` after Task 2 (`*-t2.tsv`, 1200/1200/1200/100) | | |
 | V6 | netplay match terminal tick | `9129` | `9129` present in `run_netplay.sh:91` (not run) | — | — | — | |
 | V7 | `run_team_match.sh` | `won tick=39497 winner=2 units_peak=271` | `won tick=39497 winner=2 units_peak=271` present in `run_team_match.sh:13` (not run) | — | — | — | |
 | V8 | `git diff main -- game/tests \| rg '^-\s*const'` | empty | — | — | — | — | |
@@ -87,17 +87,17 @@ Means in ms from `$L/t1-profile.log`. The four parts sum to 82-95 % of `step.adv
 
 | Units (total) | step mean / p99 / max before | after | shots in window | `combat.splash` mean before / after |
 |---|---|---|---|---|
-| 50 | | | | |
-| 100 | | | | |
-| 200 | | | | |
-| 400 | | | | |
-| 800 | | | | |
+| 50 | 0.1505 / 0.3440 / 0.477 | | 1330 (114 splash calls) | 0.0016 |
+| 100 | 0.3861 / 0.7070 / 0.998 | | 1702 (253) | 0.0066 |
+| 200 | 0.7579 / 1.3550 / 1.646 | | 3473 (467) | 0.0248 |
+| 400 | 1.4613 / 2.9280 / 3.577 | | 9624 (989) | 0.0918 |
+| 800 | 3.7858 / 6.6310 / 9.480 | | 15709 (2547) | 0.5040 |
 
 | | Before | After |
 |---|---|---|
-| `SCALING_SUPERLINEAR` | | |
-| `combat.splash` growth ratios | | |
-| 800-unit size alone, seconds (long sweep check) | | — |
+| `SCALING_SUPERLINEAR` | `combat.retaliate,combat.nearest,step.combat_fire,combat.splash` | |
+| `combat.splash` growth ratios | 4.05, 3.74, 3.70, 5.49 (per doubling, 50 to 800 units; ideal 2.0) | |
+| 800-unit size alone, seconds (long sweep check) | 8.2 s wall (whole sweep of five sizes: a few seconds more; far from the 15-minute rule) | — |
 
 ## Hash ring (Task 5)
 
@@ -114,9 +114,10 @@ Means in ms from `$L/t1-profile.log`. The four parts sum to 82-95 % of `step.adv
 - Browser: the ring's engine `hash()` on wasm against native (reported only, never compared live, so no match can end on it); one browser-against-native session or the web bench is a morning item.
 - Rendered benchmark: not needed (presentation unchanged); confirm `git diff main -- game/scripts/presentation game/scenes` is empty.
 - The hordes300 fix goes to Flatter worst ticks (plan Question 6, user 2026-11-13); evidence in [hordes300 combat_fire](hordes300-combat-fire.md).
-- Commands the night permissions refused, each with its exact text (filled in by the run). Task 1: none.
+- Commands the night permissions refused, each with its exact text (filled in by the run). Tasks 1 and 2: none.
 
 ## Evidence rows (append-only)
 
 - 2026-11-13 night, plan writing (backup 1 of the Tighter gates run), tree `~/projects/wargrid` `main` `4bd8711` clean, read-only (no suite, no benchmark, no profile, no Godot run). Read: `docs/packages.md` package note; simulation review §3.3, §5.1, §5.4, §6, "Review 2026-11-13"; `AGENTS.md`; `docs/milestone-prompt.md`; `docs/night-run.md` coordinator rules; `docs/reference/sim-interface.md`; `docs/reference/determinism-rules.md`. Code anchors checked on `4bd8711`: `combat.gd` `fire` `:352-385`, `fire_defences` `:389-421`, `_splash` `:495-502`, `splash_victims` `:511-521`, `_build_grid` `:295`, `GRID_CELL` 8, `MAX_TARGET_RADIUS` 2.2; `simulation.gd` `step` `:503-570` (advance zone `:548-561`, `fire` and `fire_defences` `:563-564`), `remove_object` `:772-792`; `containers.gd` `_release` `:174-190`; `rebuild_holes.gd` `_open` `:48-53`; `state_hash.gd` `core_check` `:16-27`; `lockstep.gd` `desync_report` `:176-177`; `headless_client.gd` desync write `:216`, `_replay_oracle` `:221-246`, `_state_row` `:248-258` (`JSON.stringify(state)` at `:257`, not full precision); `online_main.gd` `_report` `:108-111`; `run_netplay.sh` `perturb` `:118-132`; `combat_workload.gd` `create` `:8-44`, `_block` `:46-56`; `test_lockstep.gd` harness `:52-66`, L6 `:240-255`. Findings: (1) removals in `fire` can add splash victims before `fire_defences` (ejected passengers, opened rebuild holes), so the plan gives `fire_defences` its own index (Question 1); (2) largest victim radius today 2.12 (3 × 3 footprint), so the ±4.05 window holds, and the index takes the reach from the objects it holds; (3) `Lockstep.desync_report` callers: `headless_client.gd`, `online_main.gd`, `test_lockstep.gd`, `test_skirmish.gd` SK23 (no simulation; hence the optional parameter); (4) the hordes300 `combat_fire` worst-tick profiler pass was already done the same night (`~/projects/wargrid-overnight-work/tighter-gates/hordes300-combat-fire.md`). Not verified: whether `hash()` of packed arrays is content-based and stable across processes (Task 5 probe); the per-tick ring cost (estimate only); every SI2 / SI4 geometry (tuned in Task 3).
 - 2026-11-13 night, Task 1 (profiler zones), tree `~/projects/wargrid-wt-simwins` `sim-quick-wins` on `4227325`, edits to `simulation.gd` `step` (four `advance.*` zones) and `combat.gd` `_splash` (`combat.splash` zone around `splash_victims`). Red: `rg -c 'zone=(advance\.|combat\.splash)'` on `t0-profile.log` printed nothing. Full suite (traces to `*-t1.tsv`): CASES 850 CHECKS 144212 FAILURES 0, TESTS PASSED, exit 0, 53 s; four traces `cmp` silent against `*-before.tsv`. `run_lint.sh` exit 0, `run_warnings.sh` WARNINGS CHECKED 161 FILES, `run_checks.sh` CHECKS PASSED 5. `run_profile.sh` PROFILE COMPLETE 10, exit 0: `advance.move/containers/horde/salvage` in all scenarios, `combat.splash` in the splash scenarios (11 zone rows). Splash zone is 8.850 of 10.495 ms (contact sample) and 20.017 of 23.601 ms (warm-up), the same order as the probe in review §3.3. No other godot/generalszh process was running; nothing left running.
+- 2026-11-13 night, Task 2 (scaling row runner, "before"), tree `~/projects/wargrid-wt-simwins` `sim-quick-wins` on `eabf59c`, edits: `combat_workload.gd` (`create(layout, per_side = 150)`, `_block` takes `per_side`; 150 places today's units), `profiler.gd` (`zone_names()`; named so it does not shadow the local `zones` in `report`), new `game/benchmarks/run_scaling.gd` and `tools/run_scaling.sh`. 800 units alone: 8.2 s. Red: counting only shots with `tick < 0` made the runner exit 1 with `SCALING units=50: no shot inside the timed window (shots=0 splash_calls=114)`; reverted. Before run alone (`uptime` 1.71 at start, 1.70 at end, no other godot/generalszh process): exit 0, `SCALING COMPLETE 5`, `$L/t2-scaling.log`. Every size had shots and splash calls in the window. `assign_move.unavailable` did not appear (orders only at tick 0, inside the warm-up). Superlinear zones (last two doublings both above 2.2): `combat.retaliate`, `combat.nearest`, `step.combat_fire`, `combat.splash` (splash step mean 0.5040 ms at 800 units, 13 % of the step mean). Full suite with traces to `*-t2.tsv`: CASES 850 CHECKS 144212 FAILURES 0, TESTS PASSED, exit 0; four traces `cmp` silent against `*-before.tsv`. `run_checks.sh` CHECKS PASSED 5 (lint, warnings, Python, shell, public). `run_benchmark.sh` and `run_profile.sh` untouched.

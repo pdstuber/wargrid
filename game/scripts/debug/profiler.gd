@@ -45,6 +45,9 @@ static func ticks() -> int:
 static func calls(zone: StringName) -> int:
 	return _calls.get(zone, 0)
 
+static func zone_names() -> Array:
+	return _series.keys()
+
 static func series(zone: StringName) -> PackedFloat64Array:
 	return PackedFloat64Array(_series.get(zone, []))
 
