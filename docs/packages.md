@@ -17,7 +17,8 @@ Player packages, in order. Exit for each: its focus card playtested, problems in
 |---|---|---|---|
 | P1.1 | Laborers that pay | c1 dock rule: collectors at one pile overlap except for a short exclusive window, so FRC income is no longer capped per pile ([dock-hold note](reference/dock-hold-experiment.md)); F2 Laborer back pack shorter and wider. Card: replay card 1 (`p1-frc-economy`) | none |
 | P2 | You clicked, we heard | Acknowledgement sound per accepted order; F4 music shuffle; menu quick wins (launcher sections, You/Bot faction rows, relay URL and `?relay=` override in prerelease builds only, join link, paste fix for web text fields); F1 scale legend in the after-match form | Browser against native team-match measurement; late-game 3v3 canary (report-only); a recorded playtest match as a benchmark row |
-| P2.1 | Quick rematch | A lobby waiting for player 2 survives minutes of silence, so a host can switch apps to send the link (the 10 s rule stays for running matches); a "Play again" button after a match keeps both players in the same room with no new link. Relay change with conformance cases; relay deploy needs approval | P2's hidden-tab check as the before row; coordinate with Relay guards (lobby expiry caps the wait) (user, 2026-11-13) |
+| P2.1 | New launcher | Tabbed launcher in the dark game look: Vs. Bot (map, your faction, bot faction, bot difficulty shown with only Normal enabled until bot levels exist, Start match), With Friend (Create match and Join match sub-tabs, map, your faction), Settings (audio, prerelease relay field); labels above fields; [mockups](images/launcher-mockups/) (AI-drawn, user, 2026-11-13); the dark mode-select cards with illustrations come later | Headless layout tests at 1280x720 and 1920x1080 (user, 2026-11-13) |
+| P2.2 | Quick rematch | A lobby waiting for player 2 survives minutes of silence, so a host can switch apps to send the link (the 10 s rule stays for running matches); a "Play again" button after a match keeps both players in the same room with no new link. Relay change with conformance cases; relay deploy needs approval | P2's hidden-tab check as the before row; coordinate with Relay guards (lobby expiry caps the wait) (user, 2026-11-13) |
 | P3 | Camera that follows you | Edge scrolling, right-drag pan, Space to last alert, H to Command Center | Movement design, ending with movement cut into packages of 2 to 3 days each |
 | P4 | Smooth motion | Interpolation rework behind a toggle key | Seeded fuzz and invariant test, before movement; perf overlay `split %` in Safari against Firefox |
 | P5 | Smarter paths (toggle) | First movement package as cut by P3's design, behind a toggle key | Set by P3's design |
@@ -48,7 +49,7 @@ One line each; scope in blueprint §7. In this order (approved with the packages
 
 Not ordered yet (placed 2026-11-12): map pack, Is Wargrid healthy, What's new, Steam Deck controls spike (after P3).
 
-Matching with friends beyond P2.1 (user, 2026-11-13): a permanent friend link and other modern, easy ways to meet a friend are re-explored with the M9 lobby; quick match for strangers comes after M9. No integration with any chat or storefront service (Discord, Steam): the link and code work through any channel.
+Matching with friends beyond P2.2 (user, 2026-11-13): a permanent friend link and other modern, easy ways to meet a friend are re-explored with the M9 lobby; quick match for strangers comes after M9. No integration with any chat or storefront service (Discord, Steam): the link and code work through any channel.
 
 ## How a package runs
 

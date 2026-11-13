@@ -428,11 +428,19 @@ Questionnaire over the packages after two days of additions; result in [packages
 
 ## Play with a friend (user, 2026-11-13)
 
-Questionnaire after a research pass on simple ways to play 1:1 with a friend (research note private). Placements: the P2.1 row and a line under "Not ordered yet" in [packages](../packages.md).
+Questionnaire after a research pass on simple ways to play 1:1 with a friend (research note private). Placements: the P2.2 row and a line under "Not ordered yet" in [packages](../packages.md).
 
 - **Channel-neutral:** Discord was only an example of where a link gets sent (chat, SMS or a phone call do as well). Nothing is optimised for or integrated with a chat or storefront service: no Discord Activity or bot, no Steam features.
 - **Target flow now: link only.** Host: Create, Copy link, send it by any channel; friend: click, pick a faction, Join (built in P2). A second, simpler round of questions the same day replaced the first round's "easy codes now" and "code before room" answers.
-- **Hidden tab while sending the link (P2.1):** a lobby still waiting for its second player tolerates minutes of silence instead of the 10 s read deadline; the 10 s rule stays for started matches; the client's 5 s silence rule (`RelayTransport.silent`) gets the same lobby tolerance. Checked before deciding: the lobby phase ends before the relay's `start` message, from which replays, seeds and traces begin, so the wait does not touch replays or determinism; it fits the Relay guards package (hello deadline before `hello`, unstarted-lobby expiry of about 15 min as the upper bound, [netplay reference review](netplay-reference-review.md) S3/S4); the open M9 question of pausing or continuing while a seat is away in a running match ([dropped players](../questions/next-m9-drops.md) Q1) is unaffected. Whether browsers keep a hidden tab's WebSocket open for minutes: unverified, observed at P2's playtest with the hidden-tab check.
-- **Rematch (P2.1):** a "Play again" button after a match: the room stays open, both press it, a new match starts with the same opponent and no new link.
+- **Hidden tab while sending the link (P2.2):** a lobby still waiting for its second player tolerates minutes of silence instead of the 10 s read deadline; the 10 s rule stays for started matches; the client's 5 s silence rule (`RelayTransport.silent`) gets the same lobby tolerance. Checked before deciding: the lobby phase ends before the relay's `start` message, from which replays, seeds and traces begin, so the wait does not touch replays or determinism; it fits the Relay guards package (hello deadline before `hello`, unstarted-lobby expiry of about 15 min as the upper bound, [netplay reference review](netplay-reference-review.md) S3/S4); the open M9 question of pausing or continuing while a seat is away in a running match ([dropped players](../questions/next-m9-drops.md) Q1) is unaffected. Whether browsers keep a hidden tab's WebSocket open for minutes: unverified, observed at P2's playtest with the hidden-tab check.
+- **Rematch (P2.2):** a "Play again" button after a match: the room stays open, both press it, a new match starts with the same opponent and no new link.
 - **Word codes:** only if reading a 6-character code to a friend on a call proves painful.
 - **Permanent friend link, quick match:** the friend link is re-explored with the M9 lobby, together with other modern, easy ways to match up with friends; quick match comes after M9.
+
+## New launcher (user, 2026-11-13)
+
+AI-drawn mockups the user likes, kept in [launcher mockups](../images/launcher-mockups/): tabs Vs. Bot / With Friend / Settings ([vs-bot](../images/launcher-mockups/vs-bot.png), [with-friend](../images/launcher-mockups/with-friend.png), [settings](../images/launcher-mockups/settings.png)) and a later dark start screen with mode cards ([mode-select-dark](../images/launcher-mockups/mode-select-dark.png)). Placement: P2.1 in [packages](../packages.md).
+
+- **When:** its own day package right after P2; P2 finishes as built.
+- **Look:** the tab layout, in the dark game look of the mode-card mockup (not the light panels as drawn); the mode cards with illustrations come later.
+- **Bot difficulty:** shown with Easy, Normal and Hard, only Normal enabled until bot levels exist.
