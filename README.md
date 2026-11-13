@@ -48,7 +48,7 @@ Early development; the latest build is on the [Releases](https://github.com/pdst
 What is done and what comes next (generated from [packages](docs/packages.md) and [STATUS](docs/STATUS.md)):
 
 <!-- roadmap:begin -->
-**10 of 26 parts done**
+**10 of 29 parts done**
 
 | | What | State |
 | --- | --- | --- |
@@ -65,6 +65,9 @@ What is done and what comes next (generated from [packages](docs/packages.md) an
 | ⏭ | New launcher | Next |
 | 📋 | Quick rematch | Planned |
 | 📋 | HUD core | Planned |
+| 📋 | Three armies | Planned |
+| 📋 | Supplies you can read | Planned |
+| 📋 | Three kinds of base | Planned |
 | 📋 | Camera that follows you | Planned |
 | 📋 | Smooth motion | Planned |
 | 📋 | Smarter paths (toggle) | Planned |
@@ -74,7 +77,7 @@ What is done and what comes next (generated from [packages](docs/packages.md) an
 | 💡 | Unit avoidance | Later |
 | 💡 | Fog of war | Later |
 | 💡 | Ground batch A | Later |
-| 💡 | Art pass | Later |
+| 💡 | Tanks, terrain and colours | Later |
 | 💡 | Ground batch B | Later |
 | 💡 | Bots | Later |
 | 💡 | 3v3 online | Later |
