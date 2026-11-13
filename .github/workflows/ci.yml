@@ -279,7 +279,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      - run: pip install uv -r tools/requirements-dev.txt # tools/ensure_venv.sh needs uv
+      - run: pip install uv # tools/ensure_venv.sh builds tools/.venv from requirements-dev.txt
       - run: sh tools/run_python_checks.sh
       - run: sh tools/run_shell_checks.sh
       - name: Tool tests
