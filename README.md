@@ -45,6 +45,53 @@ Wargrid is an isometric RTS written in Godot 4 and typed GDScript. Its design fo
 
 Early development; the latest build is on the [Releases](https://github.com/pdstuber/wargrid/releases) page. Playable today: three factions, skirmish against a bot and online 1v1 on Dry Wells, Broken Crown or Ashfall. The long-term target is 3v3 online, friends against bots; scope and milestones are in the [blueprint](docs/blueprint.md).
 
+What is done, what comes next and what is only an idea (generated from `docs/roadmap.toml`):
+
+<!-- roadmap:begin -->
+**7 of 15 parts done**
+
+| | What | State |
+| --- | --- | --- |
+| ✅ | Move and select units | Done |
+| ✅ | Build a base and mine supplies | Done |
+| ✅ | Fight with infantry and tanks | Done |
+| ✅ | Play online with a friend | Done |
+| ✅ | Teams and big maps | Done |
+| ✅ | Choose your faction | Done |
+| ✅ | Releases and sound | Done |
+| ⏭ | Better graphics and art style | Next |
+| 📋 | A faster, steadier engine core | Planned |
+| 📋 | Smarter unit movement | Planned |
+| 📋 | Better controls | Planned |
+| 💡 | A Generals-style HUD and fog of war | Idea |
+| 💡 | More units, aircraft and superweapons | Idea |
+| 💡 | Bots worth playing, with difficulty levels | Idea |
+| 💡 | 3v3 online matches | Idea |
+<!-- roadmap:end -->
+
+<!-- perf-table:begin -->
+Performance against the low-end budget (generated):
+
+**2 of 10 areas over budget**
+
+| Area | Status | Budget used | vs last run | As of |
+| --- | --- | --- | --- | --- |
+| **Combat, huge battles** | 🔴 Over | ██████████▶ 155% | 🔻 1% better | 2026-11-10 |
+| **Background upkeep, huge crowds** | 🔴 Over | ██████████▶ 144% | 🆕 first run | 2026-11-08 |
+| Background upkeep, armies on the move | 🟡 Close | █████████░ 98% | 🆕 first run | 2026-11-08 |
+| Drawing the screen, big map (Ashfall) | 🟡 Close | █████████░ 96% | 🔺 8% worse | 2026-11-09 |
+| Drawing the screen | 🟢 OK | ███████░░░ 71% | 🔺 12% worse | 2026-11-09 |
+| Combat, normal fights | 🟢 OK | ███████░░░ 70% | ➖ same | 2026-11-10 |
+| Combat, normal fights, slowest moments | 🟢 OK | █████░░░░░ 56% | 🔻 1% better | 2026-11-10 |
+| Unit movement | 🟢 OK | ███░░░░░░░ 37% | 🔺 1% worse | 2026-11-10 |
+| Unit movement, slowest moments | 🟢 OK | ██░░░░░░░░ 24% | 🔻 1% better | 2026-11-10 |
+| Online play overhead | 🟢 OK | █░░░░░░░░░ 11% | 🔻 1% better | 2026-11-10 |
+
+Percent of the limit for a low-end device, estimated from this Mac (see the ledger for how). 🔺 = used more of the limit than last run. Small changes can be run-to-run noise. As of = when that area was last measured; areas drawn from rendered runs update only at milestone gates.
+
+Details: [performance ledger](docs/reference/performance.md).
+<!-- perf-table:end -->
+
 ## How it's built
 
 - **Deterministic simulation.** Tick-based and kept apart from rendering and wall-clock time, so builds on different platforms produce identical replay traces (Linux and Windows compared in CI, macOS locally). See the [determinism rules](docs/reference/determinism-rules.md) and the [simulation interface](docs/reference/sim-interface.md).

@@ -2,6 +2,38 @@
 
 Status: **UPDATE 2026-11-11 (PERFORMANCE NEXT, see the History rows at the end): AFTER THE VIEW ROWS CHANGE THE HAND-OFF SUM PASSES THE 0.91 MS PLUMBING BUDGET ON skirmish3v3 ONLY; team_match, hordes300 AND THE MOVEMENT LAYOUTS STILL EXCEED IT; NO BUDGET CHANGED; THE SENTENCES BELOW ARE THE EARLIER STATUS.** **BUDGETS DERIVED FROM MEASURED F = 5.5 (2026-11-06); F RE-MEASURED 2026-11-08 (BROWSER 5.0-5.2 ON SIM ROWS), 5.5 RETAINED PENDING THE USER; ONE OF THE SIX BUDGET ROWS PARTLY EXCEEDED (PLUMBING, ON THE COMBAT LAYOUTS); COMBAT STRESS `open` AND `hordes300` EXCEED THE SIMULATION BUDGET, `dense` SITS AT IT (MEDIAN 1.811 OF 13) (ACCEPTED BY THE USER 2026-11-07 UNTIL THE POST-M7 PERFORMANCE SPIKE, NOT LOOSENED); THE TEAM MATCH PASSES SINCE THE SPIKE; EXISTING GATES UNCHANGED (T3 PROPOSALS NOT YET APPLIED); ART LAB (2026-11-10, gate 2): PLUMBING IS NOW ABOUT 1.9-2.2 MS ON EVERY LAYOUT (EXCEEDED, ASHFALL NO LONGER PASSES), THE NATIVE TICK-FRAME ROWS AND THE WEB ROW ARE EXCEEDED (RE-MEASURED AFTER THE SPEED-UPS)**. One place to track performance across milestones for a low-end target, including a browser (WebAssembly) build. Measurements on this Mac are weak evidence for that target; this note makes the assumption explicit and replaceable.
 
+<!-- perf-charts:begin -->
+**2 of 10 areas over budget**
+
+| Area | Status | Budget used | vs last run | As of |
+| --- | --- | --- | --- | --- |
+| **Combat, huge battles** | 🔴 Over | ██████████▶ 155% | 🔻 1% better | 2026-11-10 |
+| **Background upkeep, huge crowds** | 🔴 Over | ██████████▶ 144% | 🆕 first run | 2026-11-08 |
+| Background upkeep, armies on the move | 🟡 Close | █████████░ 98% | 🆕 first run | 2026-11-08 |
+| Drawing the screen, big map (Ashfall) | 🟡 Close | █████████░ 96% | 🔺 8% worse | 2026-11-09 |
+| Drawing the screen | 🟢 OK | ███████░░░ 71% | 🔺 12% worse | 2026-11-09 |
+| Combat, normal fights | 🟢 OK | ███████░░░ 70% | ➖ same | 2026-11-10 |
+| Combat, normal fights, slowest moments | 🟢 OK | █████░░░░░ 56% | 🔻 1% better | 2026-11-10 |
+| Unit movement | 🟢 OK | ███░░░░░░░ 37% | 🔺 1% worse | 2026-11-10 |
+| Unit movement, slowest moments | 🟢 OK | ██░░░░░░░░ 24% | 🔻 1% better | 2026-11-10 |
+| Online play overhead | 🟢 OK | █░░░░░░░░░ 11% | 🔻 1% better | 2026-11-10 |
+
+Percent of the limit for a low-end device, estimated from this Mac (see the ledger for how). 🔺 = used more of the limit than last run. Small changes can be run-to-run noise. As of = when that area was last measured; areas drawn from rendered runs update only at milestone gates.
+
+Details:
+
+- movement p95: 37% of budget (perf charts T7, 2026-11-10), 1% slower than converted maps final (worst vs worst); run-to-run spread up to 50%
+- movement p99: 24% of budget (perf charts T7, 2026-11-10), 1% faster than sound spike T7 (worst vs worst); run-to-run spread up to 50%
+- combat gated p95: 70% of budget (perf charts T7, 2026-11-10), unchanged vs perf spike T15 (worst vs worst); run-to-run spread up to 58%
+- combat gated p99: 56% of budget (perf charts T7, 2026-11-10), 1% faster than perf spike T15 (worst vs worst); run-to-run spread up to 58%
+- combat stress p95: 155% of budget, exceeded (perf charts T7, 2026-11-10), 1% faster than converted maps final (worst vs worst); run-to-run spread up to 41%
+- plumbing, movement layouts: 98% of budget (perf spike T2, 2026-11-08), no previous run; run-to-run spread not measured
+- plumbing, horde: 144% of budget, exceeded (perf spike T2, 2026-11-08), no previous run; run-to-run spread not measured
+- rendered frame p95: 71% of budget (converted maps T9, 2026-11-09), 12% slower than sound spike T7 (worst vs worst); run-to-run spread not measured
+- Ashfall frame p95: 96% of budget (converted maps T9, 2026-11-09), 8% slower than sound spike T7 (worst vs worst); run-to-run spread not measured
+- lockstep p99: 11% of budget (perf charts T7, 2026-11-10), 1% faster than converted maps final (worst vs worst); run-to-run spread not measured
+<!-- perf-charts:end -->
+
 ## Target device (measured 2026-11-06)
 
 - **Slowdown factor F = 5.5** relative to the development machine (Apple M6, 12 cores, editor build as run by `run_benchmark.sh`). User decision 2026-11-06: the browser is a target next to desktop, so F comes from the browser run on a Steam Deck (Firefox, WebAssembly: 4.9–5.45 across rows); the Deck runs natively at 3.4–4.2. Re-measured 2026-11-08 on the post-spike tree: browser 5.02–5.21 on the sim rows, 6.20–6.55 on the pre-P1 movement rows, native 3.50–4.37; 5.5 retained ([F re-check](#f-re-check-2026-11-08)). Replaces the chosen F = 6 (and the M6 Steam-survey/PassMark proxy of about 4.2). Every derived budget below is `target budget ÷ F`. Measurements and caveats (Chrome and rendering not measured): [target factor measurement](#target-factor-measurement-2026-11-06).
@@ -129,6 +161,8 @@ Tree: `m4.1-polish` after the Task 7 commits plus the Task 8 working tree (commi
 ## Rule per milestone
 
 A milestone exit gate is not met until: `sh tools/run_benchmark.sh` passes, the rendered benchmark was rerun if presentation changed (`sh tools/run_game.sh res://scenes/movement_benchmark.tscn`, header must show `vsync=off`), and this ledger has a new History row with measured values against the budget table, with the machine named. Missing or exceeded rows are reported as exceeded, never as passed.
+
+`sh tools/run_benchmark.sh` records itself on a clean `main` and regenerates the status table (here and in `README.md`) after every run; at a milestone gate on another branch run it with `PERF_LABEL="<milestone task>"` (`PERF_RECORD=0` disables). Redirect its log with `mkdir -p build && sh tools/run_benchmark.sh > build/bench.log 2>&1` (`build/` is gitignored), never the repo root. After a harness change, set `--method` by hand on the first new rows (the hook inherits the previous epoch), then regenerate. After a merge (`docs/reference/perf-history.csv` merges as a union of lines), rerun `python3 tools/perf_chart.py` to regenerate the table and the block above. `load` is the 1-minute load average read after the benchmark finished, so it includes the benchmark's own load. Rendered logs are recorded by hand at gates with `python3 tools/perf_record.py <log> --label "…"` then `python3 tools/perf_chart.py`. The History row stays required for prose and caveats; the CSV holds numbers only ([chart spike](perf-chart-spike.md)).
 
 **While iterating** (spikes and milestone tasks before their exit gate; user, 2026-11-12). Quiet rendered runs agree within about 2 %. A covered window makes every metric about 5× slower (2026-11-12 noise check row), so nothing may overlap the window; focus elsewhere is fine. Blind 3× repeats of all 4 layouts cost 45-60 min per batch.
 - Rendered: run only the layout(s) the change touches (`-- --layout=<open|dense|ashfall|horde>`), once. Repeat only when the result is within 3× the quiet spread of the line it is judged against, or when it looks throttled (tick p50 over 1.5× that layout's last quiet row here). A rerun replaces a throttled result; never average it in.

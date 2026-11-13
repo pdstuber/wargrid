@@ -70,9 +70,11 @@ python3 tools/zh_ini.py dump   # Zero Hour INI blocks to build/zh_ini/inizh.json
 python3 tools/zh_w3d.py dump   # Zero Hour model sizes (mesh boxes, body box, bone positions) to build/zh_w3d/w3d.jsonl (gitignored, never committed); needs the local retail archives
 sh tools/run_python_checks.sh   # ruff format + lint, mypy, Python tests; creates `tools/.venv` with uv on the first run and updates it when `tools/requirements-dev.txt` changes (`tools/ensure_venv.sh`)
 sh tools/run_shell_checks.sh   # ShellCheck on every tracked *.sh (shellcheck-py from the same venv; .shellcheckrc)
+python3 tools/roadmap.py   # regenerate the README roadmap from docs/roadmap.toml (--check only verifies; the Python tests do the same)
 actionlint   # GitHub workflows, with shellcheck on run: blocks; needs: brew install actionlint shellcheck
 sh tools/check_public.sh   # no home paths, hostnames, LAN addresses, session ids or working files in tracked files (AGENTS.md, public repository rule)
 sh tools/run_benchmark.sh
+mkdir -p build && sh tools/run_benchmark.sh > build/bench.log 2>&1   # on a clean main it records itself in docs/reference/perf-history.csv (PERF_LABEL="…" forces a record on any branch, PERF_RECORD=0 disables); the status table in the ledger and README is regenerated after every passing benchmark run unless PERF_RECORD=0
 sh tools/run_team_match.sh   # three-faction 3v3 bots-only match on Ashfall, pinned cap line at tick 45000, about 2 min
 ```
 
