@@ -80,6 +80,7 @@ func _submit(payload: Dictionary) -> void:
 	_lockstep.submit(payload)
 	_playtest.observe_command(payload)
 	_refresh()
+	_sound.order(payload)
 
 func _restart() -> void:
 	pass

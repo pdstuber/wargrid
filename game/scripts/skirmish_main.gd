@@ -90,6 +90,7 @@ func _submit(payload: Dictionary) -> void:
 	super._submit(payload)
 	if not _error.is_empty(): _sound.rejected(_error)
 	else: _playtest.observe_command(payload)
+	if _last_issue_ok: _sound.order(payload)
 
 func _collect_sound() -> void:
 	_ensure_sound()

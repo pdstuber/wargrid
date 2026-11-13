@@ -16,6 +16,7 @@ var local_player: int = 1
 var stepped_results: Array = []
 var _sequence: int = 0
 var _error: String = ""
+var _last_issue_ok: bool = false
 var _shown_note: String = ""
 var _selecting: bool = false
 var _dragged: bool = false
@@ -292,6 +293,7 @@ func _submit(payload: Dictionary) -> void:
 		if entry.player == local_player: _sequence = maxi(_sequence,entry.sequence + 1)
 	command.sequence = _sequence
 	var result: Dictionary = _issue(command)
+	_last_issue_ok = result.ok
 	if result.ok: _sequence += 1
 	_error = result.error
 	_refresh()

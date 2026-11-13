@@ -1,13 +1,13 @@
 ```text
-Resume record (updated 2026-11-13 Task 1 implemented, uncommitted)
-Branch / base commit / working-tree state: p2-you-clicked / d0cc99d / worktree ~/projects/wargrid-wt-p2, Task 1 changes uncommitted
-Last green task / next incomplete task: Task 1 (green, awaiting the coordinator's commit) / Task 2
-Changed paths since last commit: game/scripts/presentation/unit_voice.gd (+ .uid), game/scripts/presentation/sound_director.gd, game/tests/test_order_voice.gd (+ .uid), game/tests/run_tests.gd, docs/reference/p2-verification.md
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 813 / 141002 / 0 / 0 / TESTS PASSED 141002
+Resume record (updated 2026-11-13 Task 2 implemented, uncommitted)
+Branch / base commit / working-tree state: p2-you-clicked / 5c258d7 / worktree ~/projects/wargrid-wt-p2, Task 2 changes uncommitted
+Last green task / next incomplete task: Task 2 (green, awaiting the coordinator's commit) / Task 3
+Changed paths since last commit: game/scripts/presentation/sound_player.gd, game/scripts/main.gd, game/scripts/skirmish_main.gd, game/scripts/online_main.gd, game/audio/voice/units/ (12 placeholder WAVs + .import), game/tests/test_order_voice.gd, docs/reference/p2-verification.md
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 820 / 141028 / 0 / 0 / TESTS PASSED 141028
 Known red case or blocker: none
 Approved decisions, pre-authorizations used, deferred gates: spec decisions (user, 2026-11-13) in docs/superpowers/specs/2026-11-13-p2-you-clicked-we-heard-design.md; Piper re-download approved (user, 2026-11-13); local commit per GREEN task (milestone prompt); stop gates (a), (b), (c) not reached
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: coordinator commits Task 1, then Task 2 Step 1
+Next exact action: coordinator commits Task 2, then Task 3
 ```
 
 Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicked-we-heard.md). Spec: [design](../superpowers/specs/2026-11-13-p2-you-clicked-we-heard-design.md). Scratch and logs: `~/projects/wargrid-p2-work/`.
@@ -16,8 +16,8 @@ Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicke
 
 | Task | What | Status |
 |---|---|---|
-| 1 | Order voice rule: table and director | done (uncommitted) |
-| 2 | Order voice in the game: player, hooks, placeholder WAVs | not started |
+| 1 | Order voice rule: table and director | done (5c258d7) |
+| 2 | Order voice in the game: player, hooks, placeholder WAVs | done (uncommitted) |
 | 3 | Launcher sections and Advanced fold | not started |
 | 4 | F4 music shuffle, F1 scale legend | not started |
 | 5 | Late-game 3v3 canary (report-only) | not started |
@@ -47,3 +47,7 @@ Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicke
 | 1 | `sh tools/run_tests.sh` baseline before the task | d0cc99d | CASES 808 CHECKS 140940 FAILURES 0, exit 0 |
 | 1 | `WARGRID_TEST_ONLY=test_order_voice` RED with the empty table | d0cc99d + uncommitted | assertion failures only (OV1-OV5), no SCRIPT ERROR, exit 1 |
 | 1 | full `sh tools/run_tests.sh` GREEN; `run_lint.sh`, `run_warnings.sh`, `check_public.sh` exit 0; `git diff main -- game/scripts/simulation game/scripts/net` empty | d0cc99d + uncommitted | CASES 813 CHECKS 141002 FAILURES 0, exit 0 |
+| 2 | `WARGRID_TEST_ONLY=test_order_voice` RED (placeholders present, no `_unit_voice`, no hook) | 5c258d7 + uncommitted | CASES 12 CHECKS 88 FAILURES 7 (OV7, OV9-OV12; OV6 and OV8 hold before the code), no parse error, exit 1 |
+| 2 | `WARGRID_TEST_ONLY=test_order_voice` GREEN | 5c258d7 + uncommitted | CASES 12 CHECKS 88 FAILURES 0, exit 0 |
+| 2 | `test_sound.gd`, `test_announcer`, `test_online_scene`, `test_playtest_overlay` unchanged | 5c258d7 + uncommitted | 24/179, 20/64, 24/650, 17/649 cases/checks, FAILURES 0, exit 0 |
+| 2 | full `sh tools/run_tests.sh` GREEN; `run_lint.sh`, `run_warnings.sh`, `check_public.sh` exit 0; `git diff main -- game/scripts/simulation game/scripts/net` empty | 5c258d7 + uncommitted | CASES 820 CHECKS 141028 FAILURES 0, exit 0 |

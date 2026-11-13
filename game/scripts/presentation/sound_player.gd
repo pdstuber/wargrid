@@ -17,6 +17,7 @@ var _ui: Array[AudioStreamPlayer] = []
 var _world_cues: Array[String] = []
 var _ui_cues: Array[String] = []
 var _voice := AudioStreamPlayer.new()
+var _unit_voice := AudioStreamPlayer.new()
 var _streams: Dictionary = {}
 var _last: Array[Dictionary] = []
 
@@ -28,6 +29,9 @@ func _ready() -> void:
 	AudioSettings.apply(AudioSettings.load_volumes())
 	_voice.bus = &"Voice"
 	add_child(_voice)
+	_unit_voice.name = "UnitVoice"
+	_unit_voice.bus = &"Voice"
+	add_child(_unit_voice)
 	for i in WORLD_VOICES:
 		var player := AudioStreamPlayer2D.new()
 		player.bus = &"Effects"
@@ -54,6 +58,12 @@ func update(state: Dictionary) -> void:
 	if line.is_empty(): return
 	_voice.stream = load(Announcer.path(line))
 	if DisplayServer.get_name() != "headless": _voice.play() # a headless Dummy-driver playback is reported as a leaked resource at exit
+
+func order(payload: Dictionary) -> void:
+	var path: String = director.order_voice(payload, _unit_voice.playing)
+	if path.is_empty(): return
+	_unit_voice.stream = load(path)
+	if DisplayServer.get_name() != "headless": _unit_voice.play()
 
 func rejected(error: String) -> void:
 	director.rejected(error)
