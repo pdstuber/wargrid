@@ -2,7 +2,7 @@
 
 Mock-ups of the in-match HUD as picked on A/B pages (user, 2026-11-13); decisions with their reasons are in the [design answers](../../reference/design-answers-2026-11-08.md#hud-m76). Static pictures of clickable HTML pages, not screenshots of the game. All at 1280x800; the game scales the same layout to larger screens.
 
-| State | Full | Core (package P2.3) |
+| State | Full | Core (packages P2.3a and P2.3b) |
 |---|---|---|
 | Nothing selected | [full-none](full-none.webp) | [core-none](core-none.webp) |
 | One unit | [full-one](full-one.webp) | [core-one](core-one.webp) |

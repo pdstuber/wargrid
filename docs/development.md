@@ -11,7 +11,7 @@ Developed with AI coding agents (Claude Code). [AGENTS.md](../AGENTS.md), the [b
 ## Start here
 
 - [Codebase guide](guide/README.md): how Wargrid works and why, one-page TL;DR then 13 chapters from the big picture to testing.
-- [Status](STATUS.md): package and milestone state, the findings list and finished work. [Packages](packages.md): the plan for P1 to P5 and the rough rest.
+- [Status](STATUS.md): package and milestone state, the findings list and finished work. [Packages](packages.md): the plan for P1 to P6 and the rough rest.
 - [Kickoff](kickoff.md) and [wrap-up](wrapup.md): `/kickoff` and `/wrapup` in Claude Code; portable instructions for any agent.
 - Session notes and handoff prompts: working files, kept in a private notes repository. Documents here mention them by file name, marked "private".
 - [Blueprint](blueprint.md): scope, architecture and milestone gates; the M0 task plan (old §7.1) is archived in [blueprint archive](reference/blueprint-archive.md).
@@ -38,7 +38,7 @@ Developed with AI coding agents (Claude Code). [AGENTS.md](../AGENTS.md), the [b
   - Small tasks: [static checks plan](superpowers/plans/2026-11-05-gdscript-static-checks.md), [test environment plan](superpowers/plans/2026-11-07-test-environment.md), [logo plan](superpowers/plans/2026-11-07-logo.md).
   - P1: [design](superpowers/specs/2026-11-11-packages-and-playtest-helper-design.md), [plan](superpowers/plans/2026-11-11-packages-and-playtest-helper.md), [verification](reference/p1-playtest-helper-verification.md).
   - P2: [design](superpowers/specs/2026-11-13-p2-you-clicked-we-heard-design.md), [plan](superpowers/plans/2026-11-13-p2-you-clicked-we-heard.md), [F5 addendum](superpowers/plans/2026-11-13-p2-f5-paste-and-links.md), [verification](reference/p2-verification.md).
-  - HUD v4 (decisions for P2.3 HUD core and the rest of M7.6): [pictures](images/hud-v4/notes.md), [decisions](reference/design-answers-2026-11-08.md#hud-m76).
+  - HUD v4 (decisions for the HUD packages P2.3a and P2.3b and the rest of M7.6): [pictures](images/hud-v4/notes.md), [decisions](reference/design-answers-2026-11-08.md#hud-m76).
   - Map art spike (decisions for P2.4 to P2.6 and the rest of M7.5): [pictures](images/map-art/notes.md), [decisions](reference/design-answers-2026-11-08.md#map-art-faction-shapes-m75-user-2026-11-13).
 
 The blueprint owns design and milestone decisions; milestone execution plans own their detailed implementation contracts. These development notes own current setup and runnable commands. Reference notes record evidence; original behavior does not override deliberate Wargrid fixes.

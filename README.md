@@ -48,7 +48,7 @@ Early development; the latest build is on the [Releases](https://github.com/pdst
 What is done and what comes next (generated from [packages](docs/packages.md) and [STATUS](docs/STATUS.md)):
 
 <!-- roadmap:begin -->
-**10 of 29 parts done**
+**10 of 31 parts done**
 
 | | What | State |
 | --- | --- | --- |
@@ -64,17 +64,19 @@ What is done and what comes next (generated from [packages](docs/packages.md) an
 | ✅ | You clicked, we heard | Done |
 | ⏭ | New launcher | Next |
 | 📋 | Quick rematch | Planned |
-| 📋 | HUD core | Planned |
+| 📋 | See your selection | Planned |
+| 📋 | Build from the dock | Planned |
+| 📋 | Units that find their way | Planned |
 | 📋 | Three armies | Planned |
+| 📋 | Units that make room | Planned |
 | 📋 | Supplies you can read | Planned |
 | 📋 | Three kinds of base | Planned |
 | 📋 | Camera that follows you | Planned |
 | 📋 | Smooth motion | Planned |
-| 📋 | Smarter paths (toggle) | Planned |
 | 💡 | Order controls | Later |
-| 💡 | Movement packages | Later |
-| 💡 | Minimal real HUD | Later |
-| 💡 | Unit avoidance | Later |
+| 💡 | Smoother big moves | Later |
+| 💡 | Minimap and attack alerts | Later |
+| 💡 | Crowds that sort themselves | Later |
 | 💡 | Fog of war | Later |
 | 💡 | Ground batch A | Later |
 | 💡 | Tanks, terrain and colours | Later |
