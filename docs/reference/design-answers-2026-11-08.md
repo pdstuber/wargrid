@@ -441,9 +441,9 @@ Questionnaire after a research pass on simple ways to play 1:1 with a friend (re
 
 AI-drawn mockups the user likes, kept in [launcher mockups](../images/launcher-mockups/). Placement: P2.1 in [packages](../packages.md).
 
-- **First round:** tabs on top ([vs-bot](../images/launcher-mockups/vs-bot.png), [with-friend](../images/launcher-mockups/with-friend.png), [settings](../images/launcher-mockups/settings.png)) in the dark game look, own package right after P2; superseded the same day by the sidebar decision below.
+- **First round:** tabs on top ([vs-bot](../images/launcher-mockups/vs-bot.png), [with-friend](../images/launcher-mockups/with-friend.png), a settings tab) in the dark game look, own package right after P2; superseded the same day by the sidebar decision below.
 - **Navigation model: sidebar.** Settled now so the launcher does not change its UX twice: P2.1 builds the [primitive sidebar](../images/launcher-mockups/sidebar-primitive.png) in today's grey look; later packages grow it into the [rich sidebar](../images/launcher-mockups/sidebar-vs-bot.png) ([with friend](../images/launcher-mockups/sidebar-with-friend.png)): map panel, faction cards, dark theme.
-- **No Back button** (every page is one sidebar click away) and **no mode-card start screen** ([dropped mockup](../images/launcher-mockups/mode-select-dark.png)); the launcher opens on a page directly.
+- **No Back button** (every page is one sidebar click away) and **no mode-card start screen** (a dark start screen with two mode cards, mockup deleted); the launcher opens on a page directly.
 - **Bot difficulty:** shown, only Normal enabled until bot levels exist.
 - **Starting resources, game speed, Expert:** left out until the features exist; each control comes with its feature.
 - **Rich version notes (agent assessment, for its planning):** emblems are Wargrid's own geometric shapes, not the Zero Hour faction emblems the mockups resemble (EA trademarks); the map picture is a thumbnail rendered from the real map data in Wargrid's look, not painted art.
