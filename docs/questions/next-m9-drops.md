@@ -15,6 +15,7 @@ Sources. **ZH src** = ~/projects/CnC_Generals_Zero_Hour @ 0a05454, paths under `
 Q1. When one player's connection stalls, what should the others see?
    a) The game freezes for everyone and a "waiting for player" screen appears after 5 s — ZH default (gamedata.ini:458)   b) The game keeps running; the stalled player's units stand still   c) The game freezes with no screen
    Recommendation: a, because lockstep must freeze anyway and players need to know why. Why it matters: Wargrid's netplay already stalls; this is the screen on top.
+   Note (netplay reference review, 2026-11-13): b is also deterministic if the relay fills empty frames for the away seat (Recoil keeps its server clock); fairer to those present, harsher to the one away. The same choice applies during M9's seat-resume grace period and to a hidden browser tab.
 
 Q2. How long until a silent player is dropped automatically?
    a) 60 s without any contact — ZH default (gamedata.ini:459)   b) 30 s   c) Never automatically; only by vote
@@ -55,3 +56,4 @@ Q10. Should everyone get a message when a player is defeated or drops?
 Q11. Should a dropped player be able to rejoin the running match?
    a) No rejoin — ZH (none found)   b) Yes, by replaying the match's commands (proposed relay design)   c) Later, after M9's exit gate
    Recommendation: c, because the 3v3 exit gate does not need it and replaying a long match in the browser may be slow. Why it matters: changes what the relay must store per room.
+   **Answered c (user, 2026-11-13, netplay reference review):** rejoin after a lost client process comes after M9; short connection drops are covered by M9's seat resume, where the client keeps its simulation.
