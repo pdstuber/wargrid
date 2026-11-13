@@ -42,7 +42,7 @@ func _ready() -> void:
 		_offline_setup()
 		get_tree().change_scene_to_file(OFFLINE_SCENE))
 	$Center/Box/Advanced.toggled.connect(_set_advanced)
-	$Center/Box/Create.pressed.connect(_connect.bind(""))
+	$Center/Box/OnlineRow/Create.pressed.connect(_connect.bind(""))
 	$Center/Box/JoinRow/Join.pressed.connect(func() -> void: _connect($Center/Box/JoinRow/Code.text.strip_edges().to_upper()))
 	$Center/Box/Credits.pressed.connect(_show_credits.bind(true))
 	$CreditsPanel/Box/Close.pressed.connect(_show_credits.bind(false))
@@ -121,7 +121,7 @@ func _add_audio() -> void:
 func _fill_factions() -> void:
 	var ids: Array = Registry.Factions.FACTIONS.keys()
 	ids.sort()
-	for selector: OptionButton in [$Center/Box/MatchRow/Own, $Center/Box/OfflineRow/Opponent]:
+	for selector: OptionButton in [$Center/Box/OfflineRow/Own, $Center/Box/OfflineRow/Opponent, $Center/Box/OnlineRow/Own]:
 		for id: String in ids:
 			selector.add_item(Registry.faction(id).display_name)
 			selector.set_item_metadata(selector.item_count - 1, id)
@@ -142,7 +142,7 @@ func _map_id() -> String:
 
 func _offline_setup() -> void:
 	var id: String = _map_id()
-	SkirmishMain.factions = {1: _faction($Center/Box/MatchRow/Own), 2: _faction($Center/Box/OfflineRow/Opponent)}
+	SkirmishMain.factions = {1: _faction($Center/Box/OfflineRow/Own), 2: _faction($Center/Box/OfflineRow/Opponent)}
 	SkirmishMain.map_path = MatchSettings.map_path(id)
 	SkirmishMain.match_seed = randi()
 	SkirmishMain.starts = MatchSettings.starts(id, SkirmishMain.match_seed)
@@ -160,7 +160,7 @@ func _connect(code: String) -> void:
 	set_process(true)
 
 func _set_busy(busy: bool) -> void:
-	for path: String in ["OfflineRow/Offline", "Create", "RelayUrl", "JoinRow/Code", "JoinRow/Join", "MatchRow/Own", "OfflineRow/Opponent", "MatchRow/Map"]:
+	for path: String in ["OfflineRow/Offline", "OnlineRow/Create", "RelayUrl", "JoinRow/Code", "JoinRow/Join", "OfflineRow/Own", "OnlineRow/Own", "OfflineRow/Opponent", "MatchRow/Map"]:
 		var control: Control = get_node("Center/Box/" + path)
 		if control is BaseButton: control.disabled = busy
 		else: control.editable = not busy
@@ -224,7 +224,7 @@ func _start(message: Dictionary) -> bool:
 	SkirmishMain.starts = MatchSettings.starts(id, message.seed)
 	$Center/Box/WaitRow.hide()
 	var game: Node = OnlineScene.instantiate()
-	game.setup(_transport, _lockstep, _seat, _faction($Center/Box/MatchRow/Own))
+	game.setup(_transport, _lockstep, _seat, _faction($Center/Box/OnlineRow/Own))
 	get_tree().root.add_child(game)
 	get_tree().current_scene = game
 	queue_free()

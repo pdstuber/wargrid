@@ -1,5 +1,5 @@
 ```text
-Resume record (updated 2026-11-13 Task 10b implemented, uncommitted)
+Resume record (updated 2026-11-13 Task 3b implemented, uncommitted)
 Branch / base commit / working-tree state: p2-you-clicked / a86ea6a / worktree ~/projects/wargrid-wt-p2, Task 10b changes uncommitted
 Last green task / next incomplete task: Task 10a (committed a86ea6a); Task 10b (all gates green, awaiting the coordinator's commit) / Task 10c (after the user's check C in Firefox), then rest of gate (a) (test deploy, F5 repro, web bench, rendered rerun), then Task 10
 Changed paths since last commit: game/scripts/launcher.gd, game/scenes/launcher.tscn, game/tests/test_online_scene.gd, game/tests/test_audio_settings.gd, docs/reference/p2-verification.md
@@ -28,6 +28,7 @@ Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicke
 | 9 | Picked voices into the game | done (uncommitted) |
 | 10a | Pure rules: JoinLink and PlaytestSettings.prerelease | done (a86ea6a) |
 | 10b | Launcher: prerelease-only fold, ?code=/?relay=, Copy link | done (uncommitted) |
+| 3b | Launcher faction rows | done (uncommitted) |
 | 10c | Paste shim (after the user's check C in Firefox) | not started |
 | 10d | F5 outcome and docs | not started |
 | 11 | Exit checks and ledger row | not started |
@@ -96,3 +97,9 @@ Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicke
 | 10b | `test_online_scene` 29/2519, `test_join_link` 6/42, `test_playtest.gd` 14/217, `test_pause_menu` 8/332, `test_audio_settings` 12/40 (CASES/CHECKS), FAILURES 0 (AS9 gets an explicit `prerelease = true`, same meaning) | a86ea6a + uncommitted | all exit 0 |
 | 10b | measured `Center/Box` height (N21 and N20 prints), WaitRow and ThisBuild visible: release (Advanced and RelayUrl hidden) 1280x720 and 1920x1080; prerelease with the fold open at both sizes | a86ea6a + uncommitted | release 640 px; prerelease fold open 714 px (viewport 720; closed prerelease not measured); release layout keeps every `_set_busy` path in the tree |
 | 10b | full `sh tools/run_tests.sh` GREEN; `run_lint.sh`, `run_warnings.sh`, `check_public.sh` exit 0; `git diff main -- game/scripts/simulation game/scripts/net` empty; `rg JavaScriptBridge game/scripts/launcher.gd` only `_page_value`; no browser, window or JavaScriptBridge call run (web branch untested here) | a86ea6a + uncommitted (index tree 4d7a63a2e3c0, taken before this row) | CASES 837 CHECKS 143000 FAILURES 0, exit 0, TESTS PASSED 143000 |
+| 3b | Owner decision 2026-11-13: the spec's "Match row" (faction and map above both sections) becomes a Map row plus one "You" faction selector per play section (`OfflineRow/Own`, `OnlineRow/Own`), independent, plus "Bot" on the offline row; Create moves into `OnlineRow` | 71fb2f3 + uncommitted | spec change recorded here |
+| 3b | `WARGRID_TEST_ONLY=test_online_scene` RED (new paths absent; N25 and path-based cases fail with SCRIPT ERROR on null nodes) | 71fb2f3 + uncommitted | exit 1 |
+| 3b | `WARGRID_TEST_ONLY=test_online_scene` GREEN with N25 `test_launcher_faction_rows` at 1280x720 and 1920x1080; F5 width check now "box under 600 px" (the Box is 587 px wide, was 520, because the offline row holds two selectors) | 71fb2f3 + uncommitted | CASES 30 CHECKS 3457 FAILURES 0, exit 0 |
+| 3b | `test_playtest.gd` 14/217, `test_pause_menu` 8/332, `test_audio_settings` 12/40, `test_join_link` 6/42 | 71fb2f3 + uncommitted | FAILURES 0, exit 0 |
+| 3b | measured `Center/Box` height at 1280x720, WaitRow and ThisBuild visible: release (Advanced closed) and prerelease with the fold open | 71fb2f3 + uncommitted | 640 px and 714 px (viewport 720), both unchanged from 10b |
+| 3b | full `sh tools/run_tests.sh` GREEN; `run_lint.sh`, `run_warnings.sh`, `check_public.sh` exit 0; `git diff main -- game/scripts/simulation game/scripts/net` empty | 71fb2f3 + uncommitted | CASES 838 CHECKS 143938 FAILURES 0, exit 0 |

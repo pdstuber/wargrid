@@ -29,10 +29,10 @@ theme_override_font_sizes/font_size = 40
 [node name="MatchRow" type="HBoxContainer" parent="Center/Box"]
 layout_mode = 2
 
-[node name="Own" type="OptionButton" parent="Center/Box/MatchRow"]
+[node name="MapLabel" type="Label" parent="Center/Box/MatchRow"]
 layout_mode = 2
-size_flags_horizontal = 3
-tooltip_text = "Your faction"
+mouse_filter = 2
+text = "Map"
 
 [node name="Map" type="OptionButton" parent="Center/Box/MatchRow"]
 layout_mode = 2
@@ -46,6 +46,21 @@ theme_override_font_sizes/font_size = 14
 
 [node name="OfflineRow" type="HBoxContainer" parent="Center/Box"]
 layout_mode = 2
+
+[node name="YouLabel" type="Label" parent="Center/Box/OfflineRow"]
+layout_mode = 2
+mouse_filter = 2
+text = "You"
+
+[node name="Own" type="OptionButton" parent="Center/Box/OfflineRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Your faction"
+
+[node name="BotLabel" type="Label" parent="Center/Box/OfflineRow"]
+layout_mode = 2
+mouse_filter = 2
+text = "Bot"
 
 [node name="Opponent" type="OptionButton" parent="Center/Box/OfflineRow"]
 layout_mode = 2
@@ -61,7 +76,20 @@ layout_mode = 2
 text = "Play online"
 theme_override_font_sizes/font_size = 14
 
-[node name="Create" type="Button" parent="Center/Box"]
+[node name="OnlineRow" type="HBoxContainer" parent="Center/Box"]
+layout_mode = 2
+
+[node name="YouLabel" type="Label" parent="Center/Box/OnlineRow"]
+layout_mode = 2
+mouse_filter = 2
+text = "You"
+
+[node name="Own" type="OptionButton" parent="Center/Box/OnlineRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Your faction"
+
+[node name="Create" type="Button" parent="Center/Box/OnlineRow"]
 layout_mode = 2
 text = "Create match"
 
