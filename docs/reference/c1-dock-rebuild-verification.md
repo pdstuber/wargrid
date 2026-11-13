@@ -1,13 +1,13 @@
 ```text
-Resume record (updated 2026-11-12 night, Task 3 GREEN, uncommitted)
-Branch / base commit / working-tree state: c1-dock-rebuild / ddacce1 (Task 2 commit) / Task 3 changes uncommitted
-Last green task / next incomplete task: Task 3 (uncommitted) / Task 4 (Re-pin P1-P10)
-Changed paths since last commit: game/tests/test_supply_parity.gd, this file
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 807 / 140928 / 9 / exit 1 / no TESTS PASSED (expected red: P1-P8 only; tree ddacce1 + Task 3 changes)
-Known red case or blocker: P1-P8 (Task 4); tools/audio/test_synth.py in run_python_checks.sh fails on missing numpy (environment); HUD1 fixture risk is a stop condition in Task 4
+Resume record (updated 2026-11-12 night, Task 4 PARKED at P9, P1-P8 re-pinned, uncommitted)
+Branch / base commit / working-tree state: c1-dock-rebuild / c155d1d (Task 3 commit) / Task 4 P1-P8 edits uncommitted
+Last green task / next incomplete task: Task 3 (c155d1d) / Task 4 (P9 parked, P10 not run)
+Changed paths since last commit: game/tests/test_skirmish_match.gd, test_team_match.gd, test_view_rows.gd, test_skirmish_scene.gd, this file
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 807 / 140928 / 0 / exit 0 / TESTS PASSED (tree c155d1d + P1-P8 re-pins)
+Known red case or blocker: P9 parked: `run_team_match.sh` now ends `TEAM MATCH won tick=39497 winner=2 units_peak=271` (was cap, winner null; stop condition, line 13 not edited); P10 not run; tools/audio/test_synth.py in run_python_checks.sh fails on missing numpy (environment); HUD1 fixture risk is a stop condition in Task 4
 Approved decisions, pre-authorizations used, deferred gates: c1 chosen, USA overshoot up to +5 %, frc7 rows reported not judged, MULTI targets to the steady window, trace rule (only P1-P10 regenerated) (user, 2026-11-12 night); plan decisions 1-6: same-tick tie to the lower id, lead-standing collectors neither docked nor waiting, dock-hold note and two design-answer sections brought over, one local commit per GREEN task (never push), run_netplay.sh match at night, FRC bot collector count stays 5 (user, 2026-11-12); rendered benchmark, CI, compare_local_traces and playtest deferred to the user
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: coordinator commits Task 3 locally; dispatch Task 4 from docs/superpowers/plans/2026-11-12-c1-dock-rebuild.md
+Next exact action: decide P9 (team match now has a winner), then P10; Task 4 edits P1-P8 are uncommitted
 ```
 
 Plan: [c1 dock rebuild](../superpowers/plans/2026-11-12-c1-dock-rebuild.md). Work folder for logs: `~/projects/wargrid-dock-work/c1/` (outside the repository). Expected rows: `~/projects/wargrid-dock-work/c/wargrid-c1.txt`.
@@ -19,7 +19,7 @@ Plan: [c1 dock rebuild](../superpowers/plans/2026-11-12-c1-dock-rebuild.md). Wor
 | 1 | Baseline, docs from `dock-hold`, lone-cycle pin (DL0) | Sonnet | GREEN (96dd9b9) |
 | 2 | c1 lock data and rule, spec tests DL1-DL9, hold-timing checks rewritten | Opus (high) | GREEN (ddacce1) |
 | 3 | MULTI targets on the steady window | Sonnet | GREEN (uncommitted) |
-| 4 | Re-pin P1-P10 | Sonnet | open |
+| 4 | Re-pin P1-P10 | Sonnet | PARKED (P1-P8 done, uncommitted; P9 team match got a winner) |
 | 5 | Headless benchmark and ledger row | Sonnet | open |
 | 6 | Docs: economy guide, status, note | Sonnet | open |
 | 7 | Exit checks on the final tree | Sonnet | open |
@@ -29,16 +29,16 @@ Plan: [c1 dock rebuild](../superpowers/plans/2026-11-12-c1-dock-rebuild.md). Wor
 
 | # | Pin | Old | New | Must still hold, checked |
 |---|---|---|---|---|
-| P1 | `S1_CORE_SERIES` | 6600229479106917126 | | |
-| P2 | `TERMINAL_TICK` (winner 1, 7000-17999) | 8569 | | |
-| P3 | `CHINA_TERMINAL_TICK` (winner 2, cap 45000) | 11220 | | |
-| P4 | `FRC_TERMINAL_TICK` (winner 1, cap 50000) | 48051 | | |
-| P5 | `FINAL_DIGEST` | 91106ae278c29044 | | |
-| P6 | `TEAM_CORE_SERIES` | 1748824102688385527 | | |
-| P7 | `EXPECTED_DIGEST` (view rows) | 6882f9cad3a49db67034c1f7467c3d93670ccb1a542f7071cf082371de4c0880 | | |
-| P8 | `HUD_TEXTS` | 6 strings at c2ea952 | | |
-| P9 | `run_team_match.sh` `units_peak` (cap, winner null) | 261 | | |
-| P10 | `run_netplay.sh` match terminal tick | 9024 | | |
+| P1 | `S1_CORE_SERIES` | 6600229479106917126 | 4004499097874677431 | none (no check beyond the pin); recomputed after P2, both terminal range 0..8753 |
+| P2 | `TERMINAL_TICK` (winner 1, 7000-17999) | 8569 | 8753 | winner 1, 7000 <= 8753 <= 17999: held |
+| P3 | `CHINA_TERMINAL_TICK` (winner 2, cap 45000) | 11220 | 11578 | winner 2, status won, 11578 < 45000; Cs1 horde/ramp/truck/quantity check passes (case 3 checks, 1 failure = the pin): held |
+| P4 | `FRC_TERMINAL_TICK` (winner 1, cap 50000) | 48051 | 48321 | winner 1, status won, 48321 < 50000: held |
+| P5 | `FINAL_DIGEST` | 91106ae278c29044 | 3958ceaab11986af | TB3 two runs agree, 100 rows, four buildings per seat, tank produced: all pass, only the digest check failed: held |
+| P6 | `TEAM_CORE_SERIES` | 1748824102688385527 | 8513092129969516499 | none (no check beyond the pin) |
+| P7 | `EXPECTED_DIGEST` (view rows) | 6882f9cad3a49db67034c1f7467c3d93670ccb1a542f7071cf082371de4c0880 | 7c7fbc8d27b1683f96f27525ac6f66c24a851a581dbf5433223ed2b09348a9e7 | fixture unchanged, both VR1 checks only differ in digest: held |
+| P8 | `HUD_TEXTS` | 6 strings at c2ea952 | third string `lead_source` where it read `unloading` (Chinook #11); the other five unchanged | 'HUD1 fixture: every case has its unit' passes unedited: held |
+| P9 | `run_team_match.sh` `units_peak` (cap, winner null) | 261 | PARKED: run prints `TEAM MATCH won tick=39497 winner=2 units_peak=271` | FAILED: expected `cap tick=45000 winner=null`; stop condition, line 13 untouched |
+| P10 | `run_netplay.sh` match terminal tick | 9024 | not run (parked after P9) | - |
 
 ## Evidence rows (append-only)
 
@@ -60,3 +60,4 @@ Plan: [c1 dock rebuild](../superpowers/plans/2026-11-12-c1-dock-rebuild.md). Wor
 - 2026-11-12 night, Task 2 full suite, tree 96dd9b9 + Task 2 changes: CASES 805 CHECKS 140926 FAILURES 11, exit 1. Failing cases exactly the allowed set: `test_multi_collector_rates` (Ep4 2 x usa_collector gap 9 got 2922.9 vs 2770; 4 x frc_builder gap 3 got 1736.3 vs 1590), P1 S1 core series (got 3617151610679531047), P2 S1 outcome (8753, winner 1), P3 Cs1 (11578, winner 2, won), P4 Fm1 (48321, winner 1, won), P5 TB3 final digest (3958ceaab11986af at tick 20000), P6 TB4 (8513092129969516499), P7 VR1 (7c7fbc8d27b1683f96f27525ac6f66c24a851a581dbf5433223ed2b09348a9e7, both checks), P8 HUD1 texts (a Chinook shows `lead_source`; "HUD1 fixture: every case has its unit" passes). Not re-pinned here (Task 4). Expected-unchanged pins (`test_state_hash` PINNED, `test_world_batch` GOLDEN, SS6, MP3, replay, single TARGETS) green. `run_lint.sh` exit 0, `run_warnings.sh` exit 0 (154 files), `tools/test_sim_boundary.py` OK, `check_public.sh` PASSED; `run_python_checks.sh` exit 1 only on `tools/audio/test_synth.py` missing numpy (ruff and mypy pass). Logs `~/projects/wargrid-dock-work/c1/t2-*.log`.
 - 2026-11-12 night, Task 3, tree c1-dock-rebuild ddacce1 clean: baseline `sh tools/run_tests.sh` CASES 805 CHECKS 140926 FAILURES 11 (the Task 2 set: `test_multi_collector_rates` and P1-P8), exit 1. Red: `test_steady_rate_window` and `test_steady_rate_stops_at_empty_pile` added with the `boxes` parameter first; `WARGRID_TEST_ONLY=test_supply_parity` fails to load, `SCRIPT ERROR: Parse Error: Function "steady_rate()" not found in base self.`, exit 1.
 - 2026-11-12 night, Task 3, tree ddacce1 + Task 3 changes (`steady_rate`, `pile_is_empty`, MULTI and `FOUR_HELICOPTERS_GAP_9` on the steady window): `WARGRID_TEST_ONLY=test_supply_parity` CASES 6 CHECKS 17 FAILURES 0, TESTS PASSED, exit 0. Steady values equal `wargrid-c1.txt` `DOCK c1 multi` lines exactly: 2 x usa 2880.0, 2 x frc 870.0, 4 x frc 1650.0, 2 x china 1680.0, 4 x china 2880.0, 4 x usa (Chinooks, reported) 2880.0. Full suite CASES 807 CHECKS 140928 FAILURES 9, exit 1: failing checks exactly P1 (S1 core series), P2 (S1 outcome 8753), P3 (Cs1 11578), P4 (Fm1 48321), P5 (TB3 3958ceaab11986af), P6 (TB4 8513092129969516499), P7 (VR1, two checks, 7c7fbc8d...9e7), P8 (HUD1); `test_multi_collector_rates` green. `run_lint.sh` exit 0, `run_warnings.sh` exit 0, `tools/test_sim_boundary.py` OK, `check_public.sh` PASSED. Logs `~/projects/wargrid-dock-work/c1/t3-*.log`.
+- 2026-11-12 night, Task 4, tree c155d1d clean: baseline `sh tools/run_tests.sh` CASES 807 CHECKS 140928 FAILURES 9 (P1-P8 set), exit 1. Each pin regenerated by its single-case run, reason "collector stands overlap under c1"; winners unchanged (P2 1, P3 2, P4 1), P2-P4 inside windows. Full suite after P1-P8: CASES 807 CHECKS 140928 FAILURES 0, TESTS PASSED, exit 0. `run_lint.sh` 0, `run_warnings.sh` 0, `check_public.sh` 0. `sh tools/run_team_match.sh` exit 1 (pinned line mismatch): `TEAM MATCH won tick=39497 winner=2 units_peak=271` against the pinned cap line, so P9 is parked and P10 (`run_netplay.sh match`) was not run. Logs `~/projects/wargrid-dock-work/c1/t4-*.log`.

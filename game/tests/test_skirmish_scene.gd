@@ -640,7 +640,7 @@ func test_auto_pick_samples_present_time(runner) -> bool:
 	main.free()
 	return true
 
-const HUD_TEXTS: Array[String] = ["Rifleman #50 HP 156/180 | attack -> #31\n", "Supply Helicopter #45 HP 300/300 | waiting_source (3rd in line)\n", "Supply Helicopter #11 HP 300/300 | unloading\n", "Bulldozer #1 HP 250/250\n", "Enemy (P2) Rifleman #20 HP 180/180 | guard\n", "Enemy (P2) Headquarters #4 HP 5000/5000\n"]
+const HUD_TEXTS: Array[String] = ["Rifleman #50 HP 156/180 | attack -> #31\n", "Supply Helicopter #45 HP 300/300 | waiting_source (3rd in line)\n", "Supply Helicopter #11 HP 300/300 | lead_source\n", "Bulldozer #1 HP 250/250\n", "Enemy (P2) Rifleman #20 HP 180/180 | guard\n", "Enemy (P2) Headquarters #4 HP 5000/5000\n"]
 
 func _ids_where(units: Array, test: Callable) -> Array[int]:
 	var ids: Array[int] = []
