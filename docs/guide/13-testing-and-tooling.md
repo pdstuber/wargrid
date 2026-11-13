@@ -51,10 +51,10 @@ The label prefix (`C3`) is a convention: a short id for the rule a check pins, s
 
 - **Zero tests is a failure.** A suite with no cases, a run with no cases, and a run with zero checks each add a failure. A suite that fails to load quits with exit 1.
 - **A case must prove it ran.** Returns anything but `true`, or makes no check: failure.
-- **A watchdog.** One 180 second timer per runner process (one per shard) prints `FAIL: watchdog timeout in <case>`, naming the case running at that moment, and quits, so a hung case cannot hang CI. Its comment gives the reason: a slow case on a shared host must not look hung.
+- **A watchdog.** A real-time thread per runner process (one per shard), 480 seconds, prints `FAIL: watchdog timeout in <case>`, naming the case running at that moment, and kills its own process, so a hung case cannot hang CI. It counts wall time, not frames, so a case that blocks between frames is still caught.
 - **A final line.** `CASES n CHECKS n FAILURES n`, then `TESTS PASSED n` only when there are no failures. Exit code is 0 only then.
 
-Two user arguments select cases. `--only=<text>` runs the cases whose suite path or function name contains the text. `--shard=i/n` takes every n-th case of the (filtered) list. The `run_tests.sh` wrapper maps `WARGRID_TEST_ONLY=<text>` to `--only` and runs one process. A full run starts up to four shards, one Godot process each (`WARGRID_TEST_SHARDS` overrides; the script caps it at 4 with a comment saying 8 shards measured no faster). `test_runner.gd` tests the shard and filter functions themselves.
+Two user arguments select cases. `--only=<text>` runs the cases whose suite path or function name contains the text. `--shard=i/n` takes the i-th share of the (filtered) list, dealt by cost: cases go slowest first to the least loaded process, using the `CASE_SECONDS` table in `run_tests.gd` (default 0.1 s), so no shard gets the long team match alongside the rest. The `run_tests.sh` wrapper maps `WARGRID_TEST_ONLY=<text>` to `--only` and runs one process. A full run starts up to four shards, one Godot process each (`WARGRID_TEST_SHARDS` overrides; the script caps it at 4 with a comment saying 8 shards measured no faster). `test_runner.gd` tests the shard and filter functions themselves.
 
 The wrapper is where "success" is decided, because a Godot process can exit 0 after a script error:
 
@@ -136,11 +136,13 @@ The in-game playtest helper (chapter 5) saves a JSON session file with answers, 
 
 ## Static checks
 
-- **`sh tools/run_lint.sh`** runs `gdlint game` (gdtoolkit 4.5.0, pinned in `tools/requirements-dev.txt`). `.gdlintrc` turns off five rules, mainly line length, which the code base ignores. `gdformat` was tried and not adopted.
-- **`sh tools/run_warnings.sh`** runs each tracked `.gd` file through Godot `--check-only`, four at a time. `project.godot` sets six warnings to error level: untyped declaration, unused parameter, three kinds of shadowing and integer division. The script takes its file list from `git ls-files`, so a new file cannot escape the check; it fails on any `ERROR:`. Tests are exempt only from `untyped_declaration`, through `@warning_ignore_start` at the top of each test file. The plan's third step (the `unsafe_*` warnings) was skipped because the count was over its stop rule ([static checks plan](../superpowers/plans/2026-11-05-gdscript-static-checks.md)).
-- **`sh tools/run_python_checks.sh`** runs `ruff format --check`, `ruff check`, `mypy`, then `run_python_tests.sh`, which runs every tracked `test_*.py` in `tools/` and its subfolders (the glob is `tools/test_*.py` plus `tools/*/test_*.py`) except `test_install_godot.py` (it downloads Godot) as its own process, plus the harness self-test. Configuration is `tools/pyproject.toml`.
+- **`sh tools/run_lint.sh`** runs `gdlint game` from the tools venv (gdtoolkit 4.5.0, pinned in `tools/requirements-dev.txt`, built by `tools/ensure_venv.sh`). `.gdlintrc` turns off five rules, mainly line length, which the code base ignores. `gdformat` was tried and not adopted.
+- **`sh tools/run_warnings.sh`** runs each tracked `.gd` file through Godot `--check-only`, four at a time; on a fresh worktree without `game/.godot` it runs the editor import first, so the global classes resolve. `project.godot` sets six warnings to error level: untyped declaration, unused parameter, three kinds of shadowing and integer division. The script takes its file list from `git ls-files`, so a new file cannot escape the check; it fails on any `ERROR:`. Tests are exempt only from `untyped_declaration`, through `@warning_ignore_start` at the top of each test file. The plan's third step (the `unsafe_*` warnings) was skipped because the count was over its stop rule ([static checks plan](../superpowers/plans/2026-11-05-gdscript-static-checks.md)).
+- **`sh tools/run_python_checks.sh`** runs `ruff format --check`, `ruff check`, `mypy`, then `run_python_tests.sh`, which runs every tracked `test_*.py` in `tools/` and its subfolders (the glob is `tools/test_*.py` plus `tools/*/test_*.py`) (including `test_install_godot.py`, which mocks every download) as its own process, plus the harness self-test. Configuration is `tools/pyproject.toml`.
 - **`sh tools/run_shell_checks.sh`** runs ShellCheck (shellcheck-py, pinned in `tools/requirements-dev.txt`) on every tracked `*.sh`. `.shellcheckrc` turns off SC1007, which misreads the `CDPATH= cd --` idiom; deliberate word splitting carries a `disable` comment at the spot.
 - **`sh tools/check_public.sh`** exists because the repository is public and tracked files are engineering records. It fails when private working notes are tracked, and when tracked text matches patterns for a home path, a local hostname or LAN address, a tool session id or a personal mail address. A further word list lives outside the repository because the words would themselves be a leak; CI runs without it, and the script uses the list when present. `tools/test_check_public.py` tests the script against throwaway repositories. The fix for a hit is rewording, never loosening the pattern (`AGENTS.md`).
+
+- **`sh tools/run_checks.sh`** runs the five gates above (lint, warnings, Python, shell, public) in parallel, prints one `PASS` or `FAIL` line each and `CHECKS PASSED 5`; a failed gate's log follows. Use it before reporting done.
 
 These checks are all text-level: lint and warnings find style and typing problems, the guards find forbidden patterns, and `check_public.sh` finds leaks. None proves a behaviour. The suite does.
 
@@ -153,10 +155,11 @@ flowchart TD
     P["push or pull request<br/>code paths only"] --> A
     P --> B
     P --> C
+    P --> E
     A["Godot / Tests<br/>Linux, Windows<br/>suite, warnings"]
     B["Relay / Go tests,<br/>conformance"]
-    C["Tools / check_public,<br/>Python checks"]
-    B --> E["Godot / Exported build<br/>tests build, netplay"]
+    C["Tools / check_public,<br/>Python checks, lint"]
+    E["Godot / Exported build<br/>tests build, netplay"]
     A --> D
     E --> D["Compare replays<br/>across platforms"]
     classDef ext fill:#4a4f57,stroke:#a0a7b1,color:#ffffff
@@ -166,12 +169,14 @@ flowchart TD
     linkStyle default stroke:#9aa4b2,stroke-width:2px
 ```
 
-- **Godot / Tests** runs `run_tests.sh` on Linux and Windows with the four trace variables set, then, on Linux only, `run_warnings.sh`. It uploads the traces, and the log on failure. A separate **Godot / Lint** job runs `run_lint.sh`.
+- **Godot / Tests** runs `run_tests.sh` on Linux and Windows with the four trace variables set, then, on Linux only, `run_warnings.sh`. It uploads the traces, and the log on failure.
 - **Relay / Test and conformance** runs `go vet` and `go test -race`, builds the relay for both platforms, and runs `run_conformance.sh`, the black-box protocol suite (chapter 11). **Relay / Lint** runs golangci-lint. **Docker** builds both images.
-- **Godot / Exported build** (needs the relay job) exports the tests build and the game for each platform, runs the suite from the exported tests binary, and runs five netplay scenarios (`run_netplay.sh`: a real match, perturbation, relay down, maps, map mismatch) with the real game binary and the freshly built relay.
+- **Godot / Exported build** builds the relay itself for the netplay step (it does not wait for the relay job), exports the tests build and the game for each platform, runs the suite from the exported tests binary, and runs five netplay scenarios (`run_netplay.sh`: a real match, perturbation, relay down, maps, map mismatch) with the real game binary and the freshly built relay.
 - **Compare replays** needs the test and export jobs and runs `tools/compare_replays.py` over the traces: Linux against Windows, then all four traces of one scenario together (editor and exported builds, both platforms), then the netplay trace pair. A platform difference in float behaviour shows up here as a first differing tick ([chapter 10](10-determinism-and-replays.md)). macOS is compared locally with `tools/compare_local_traces.sh RUN_ID`, because the hosted macOS runners were dropped from CI on 2026-11-03 ([development notes](../development.md#setup-and-commands)).
-- **Tools / Python and shell lint, tests** runs `check_public.sh`, `run_python_checks.sh`, `run_shell_checks.sh`, and then an explicit list of tool tests. That list overlaps with `run_python_tests.sh` (which already runs every tracked tool test except `test_install_godot.py`); the explicit list is what also covers that one.
+- **Tools / Python and shell lint, tests** runs `check_public.sh`, `run_python_checks.sh` (every tracked tool test, once), `run_lint.sh` and `run_shell_checks.sh`.
 - **Workflows / Lint** runs a pinned actionlint, with shellcheck on the `run:` blocks.
+
+A concurrency rule cancels a superseded run on the same branch; `main`, tags, pull requests and the release call each get their own group, so every `main` commit keeps a result.
 
 Every job has a timeout, since the blueprint's CI contract relies on timeouts instead of GNU `timeout`.
 
@@ -231,4 +236,4 @@ Pushing a release tag and approving the `production` environment are manual step
 - Previous: [12. Performance and platforms](12-performance-and-platforms.md).
 
 ---
-Checked against `e9d79b4`. Files: `game/tests/run_tests.gd`, `game/tests/test_simulation.gd`, `game/tests/test_runner.gd`, `game/tests/economy_fixture.gd`, `game/tests/test_supply_parity.gd`, `game/tests/test_state_hash.gd`, `tools/run_tests.sh`, `tools/test_sim_boundary.py`, `tools/test_sim_math.py`, `tools/test_faction_guard.py`, `tools/zh_ini.py`, `tools/check_reference.py`, `tools/zh_parity/parity.py`, `tools/zh_parity/analyze.py`, `tools/run_lint.sh`, `tools/run_warnings.sh`, `tools/run_python_checks.sh`, `tools/run_python_tests.sh`, `tools/check_public.sh`, `.github/workflows/ci.yml`, `.github/workflows/release.yml`, `.github/workflows/godot-release.yml`, `game/project.godot`, `game/export_presets.cfg`, `game/tests/test_playtest.gd`, `game/tests/test_playtest_overlay.gd`, `game/tests/test_playtest_replay.gd`, `game/tests/test_income_openings.gd`, `tools/playtest_session.py`, `tools/replay_session.sh`, `tools/test_playtest_session.py`, `tools/run_benchmark.sh`, `game/scripts/debug/timing_stats.gd`, `docs/reference/faction-income-parity.md`
+Checked against `1456270`. Files: `game/tests/run_tests.gd`, `game/tests/test_simulation.gd`, `game/tests/test_runner.gd`, `game/tests/economy_fixture.gd`, `game/tests/test_supply_parity.gd`, `game/tests/test_state_hash.gd`, `tools/run_tests.sh`, `tools/test_sim_boundary.py`, `tools/test_sim_math.py`, `tools/test_faction_guard.py`, `tools/zh_ini.py`, `tools/check_reference.py`, `tools/zh_parity/parity.py`, `tools/zh_parity/analyze.py`, `tools/run_lint.sh`, `tools/run_warnings.sh`, `tools/run_python_checks.sh`, `tools/run_python_tests.sh`, `tools/check_public.sh`, `.github/workflows/ci.yml`, `.github/workflows/release.yml`, `.github/workflows/godot-release.yml`, `game/project.godot`, `game/export_presets.cfg`, `game/tests/test_playtest.gd`, `game/tests/test_playtest_overlay.gd`, `game/tests/test_playtest_replay.gd`, `game/tests/test_income_openings.gd`, `tools/playtest_session.py`, `tools/replay_session.sh`, `tools/test_playtest_session.py`, `tools/run_benchmark.sh`, `game/scripts/debug/timing_stats.gd`, `docs/reference/faction-income-parity.md`

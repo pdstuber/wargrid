@@ -65,7 +65,7 @@ godot --version
 sh tools/run_tests.sh
 WARGRID_TEST_ONLY=test_supply.gd sh tools/run_tests.sh   # only suites/cases whose file or name contains the text, one process, seconds; the full suite stays the gate. The editor import is skipped while nothing under game/ is newer than game/.godot/wargrid-imported (delete it to force one)
 WARGRID_TEST_EXE=build/WargridTests.app/Contents/MacOS/Wargrid sh tools/run_tests.sh   # same suite, 4 shards, in an exported "macOS Tests" build (the binary, not the .app)
-sh tools/run_lint.sh   # needs: uv tool install gdtoolkit==4.5.0
+sh tools/run_lint.sh   # gdlint from the tools venv
 sh tools/run_warnings.sh   # typing, shadowing, unused-parameter and integer-division warnings as errors
 sh tools/run_checks.sh   # the five static gates at once, one PASS/FAIL line each
 python3 -m unittest discover -s tools -p 'test_*.py'

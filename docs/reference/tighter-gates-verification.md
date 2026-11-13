@@ -1,13 +1,13 @@
 ```text
-Resume record (updated 2026-11-13, Task 9 green)
-Branch / base commit / working-tree state: tighter-gates / f63ff70 / Task 9 changes uncommitted (coordinator commits)
-Last green task / next incomplete task: Task 9 / Task 10
-Changed paths since last commit: tools/run_checks.sh (new), AGENTS.md, docs/development.md, docs/reference/tighter-gates-verification.md
-Last command / cases / checks / failures / exit / marker: run_checks.sh / exit 0 / CHECKS PASSED 5
+Resume record (updated 2026-11-13, Task 10 green)
+Branch / base commit / working-tree state: tighter-gates / f63ff70 / Task 10 changes uncommitted (coordinator commits)
+Last green task / next incomplete task: Task 10 / Task 11
+Changed paths since last commit: docs/guide/13-testing-and-tooling.md, docs/development.md, docs/STATUS.md, docs/reference/tooling-audit.md, docs/reference/perf-history.csv, docs/reference/performance.md, README.md (generated), docs/reference/tighter-gates-verification.md
+Last command / cases / checks / failures / exit / marker: run_benchmark.sh / exit 0 / BENCHMARK PASSED 2, COMBAT 10, LOCKSTEP 1
 Known red case or blocker: none
 Approved decisions, pre-authorizations used, deferred gates: questionnaire 2026-11-13 (plan "Decisions"); one local commit per GREEN task (never push); CI run, Windows behaviour, CI timing and the cancel rule deferred to a pushed branch (morning)
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: Task 10
+Next exact action: Task 11. Morning items: push-dependent checks in "Unverifiable tonight"; rendered benchmark not run (presentation unchanged)
 ```
 
 Plan: [tighter gates](../superpowers/plans/2026-11-13-tighter-gates.md). Spec: [tooling audit](tooling-audit.md). Logs: `~/projects/wargrid-overnight-work/tighter-gates/logs/` (outside the repository).
@@ -26,7 +26,7 @@ Plan: [tighter gates](../superpowers/plans/2026-11-13-tighter-gates.md). Spec: [
 | 7 | Parity sweep fixes, `probe_patriot.py` deleted (12, left-out 1, 2, 3, 5) | Sonnet | GREEN |
 | 8 | Extras: wrap-up benchmark rule, warnings on a fresh worktree | Sonnet | GREEN |
 | 9 | One checks command (15) | Sonnet | GREEN |
-| 10 | Docs and package gate | Sonnet | not started |
+| 10 | Docs and package gate | Sonnet | GREEN |
 | 11 | Fresh-context branch review, one fix round | Opus (high) | not started |
 
 ## Baseline (Task 0; filled in by the run)
@@ -53,12 +53,12 @@ Plan: [tighter gates](../superpowers/plans/2026-11-13-tighter-gates.md). Spec: [
 
 | # | Pin | Expected | Task 2 | Task 10 |
 |---|---|---|---|---|
-| V1 | `FINAL_DIGEST` | `3958ceaab11986af` | unchanged (TB3 final digest check passes) | |
-| V2 | `TEAM_CORE_SERIES` | `8513092129969516499` | unchanged (TB4 passes, now in the single run) | |
-| V3 | four traces | byte-identical to Task 0 | team only: `cmp` silent | all four (Task 3: all four `cmp` silent) |
-| V4 | netplay match terminal tick | 9129 | — | |
-| V5 | `run_team_match.sh` line | `won tick=39497 winner=2 units_peak=271` | — | |
-| V6 | other `game/tests` pins | only `run_tests.gd`, `test_runner.gd`, `test_team_match.gd` differ from `main` | | |
+| V1 | `FINAL_DIGEST` | `3958ceaab11986af` | unchanged (TB3 final digest check passes) | unchanged (full suite passes) |
+| V2 | `TEAM_CORE_SERIES` | `8513092129969516499` | unchanged (TB4 passes, now in the single run) | unchanged (full suite passes) |
+| V3 | four traces | byte-identical to Task 0 | team only: `cmp` silent | all four `cmp` silent against `*-before.tsv` |
+| V4 | netplay match terminal tick | 9129 | — | `match terminal tick 9129` |
+| V5 | `run_team_match.sh` line | `won tick=39497 winner=2 units_peak=271` | — | same line |
+| V6 | other `game/tests` pins | only `run_tests.gd`, `test_runner.gd`, `test_team_match.gd` differ from `main` | | confirmed: `git diff --stat main -- game/tests` lists exactly those three; `game/scripts relay protocol game/data game/scenes` diff empty |
 
 ## Unverifiable tonight (for the morning)
 
@@ -83,3 +83,4 @@ Plan: [tighter gates](../superpowers/plans/2026-11-13-tighter-gates.md). Spec: [
 - 2026-11-13, Task 7, tree `tighter-gates` `56fc867` plus the parity paths: baseline suite exit 0, CASES 850 CHECKS 144205 FAILURES 0 (`t7-base.log`). Red: 5 new tests fail (interrupt, exit 143 retried, error text) or error (`CODE` missing, 503 as RuntimeError) on today's code. Green: `test_zh_parity.py` 51 tests OK, `analyze.py --self-test` exit 0, `run_python_checks.sh` exit 0 `PYTHON TESTS PASSED` (ruff import order fixed once), `check_public.sh` exit 0. `probe_patriot.py` removed with `git rm`; remaining mentions: audit and plan, packages and parity-improvements docs (updated), archives. Packages line is 83 now (plan said 73). Not run against the real game, no Zero Hour launch; fake launchers and stubs only. Logs `t7-*.log`. No permission denials.
 - 2026-11-13, Task 8, tree `tighter-gates` `f63ff70` plus `perf_record.py`, `test_perf_charts.py`, `run_warnings.sh`, `wrapup.md`: red: new `AutoRecordTest` case fails (label was HEAD sha); fresh detached worktree `run_warnings.sh` exit 1, `Identifier "PlaytestSession" not declared`. Green: `test_perf_charts.py` 56 tests OK; fixed script in the fresh worktree exit 0, `WARNINGS CHECKED 161 FILES`; scratch worktree removed; `run_warnings.sh` on this tree exit 0, 161 files; `run_python_checks.sh` exit 0 (ruff format applied once); `run_shell_checks.sh` exit 0; `check_public.sh` exit 0. Not run: Godot suite (no GDScript touched), benchmark. Logs `t8-*.log`. No permission denials.
 - 2026-11-13, Task 9, tree `tighter-gates` `4ded75d` plus `tools/run_checks.sh`, `AGENTS.md`, `docs/development.md`: baseline suite exit 0, CASES 850 CHECKS 144205 FAILURES 0. Red: `GODOT_BIN=false sh tools/run_checks.sh` exit 1, `FAIL run_warnings`, four PASS lines. First green run exit 1: `run_shell_checks` flagged SC2086 on `set -- $pids`; fixed with a disable directive. Green: exit 0, 9 s wall, five PASS lines, `CHECKS PASSED 5`; the five alone (3+8+7+0+1 s) sum 19 s. `run_shell_checks.sh`, `run_python_checks.sh`, `check_public.sh` exit 0. Not run: Ctrl-C/TERM boundary by hand. Logs `t9-*.log`. No permission denials.
+- 2026-11-13, Task 10, tree `tighter-gates` `1456270` plus the docs paths and benchmark records: docs updated (guide ch. 13 watchdog, shard, static checks, `run_checks.sh`, CI diagram and bullets, footer `1456270`; development notes lint line; STATUS night 1 row; tooling-audit line); `roadmap.py` and `--check` exit 0, `check_public.sh` exit 0. Gates: full suite (four trace vars) exit 0, CASES 850 CHECKS 144212 FAILURES 0, all four traces `cmp` silent; `run_checks.sh` exit 0 `CHECKS PASSED 5`; `run_conformance.sh` `CONFORMANCE PASSED 41`; netplay `match` (tick 9129), `relay-down`, `relay-term` passed; `run_team_match.sh` exit 0, `won tick=39497 winner=2 units_peak=271`; `actionlint` exit 0. Benchmark (`PERF_LABEL="Tighter gates"`, load 2.31 at start, 2.58 at end, no Godot of other sessions at start): exit 0, `BENCHMARK PASSED 2`, `COMBAT BENCHMARK PASSED 10`, `LOCKSTEP BENCHMARK PASSED 1`, `BUDGET EXCEEDED open hordes300` (accepted), `recorded 13 rows, run 1`. Rendered benchmark not run (no window; presentation and scenes unchanged). Logs `t10-*.log`. No permission denials.
