@@ -9,13 +9,14 @@ const Fixture = preload("res://tests/combat_fixture.gd")
 const Economy = preload("res://tests/economy_fixture.gd")
 
 const PREFIX_TICKS: int = 20000
+const PAIR_TICKS: int = 3000
 const TRACE_INTERVAL: int = 200
 const FINAL_DIGEST: String = "3958ceaab11986af"
 const BUILD_CHECK_TICK: int = 3000
 const TEAM_CORE_SERIES: int = 8513092129969516499
 
 func cases() -> Array[Callable]:
-	return [test_bot_never_targets_ally, test_dead_seat_bot_is_silent, test_team_match_prefix, test_team_core_series]
+	return [test_bot_never_targets_ally, test_dead_seat_bot_is_silent, test_team_match_prefix, test_team_match_pair]
 
 func _bot_world() -> RefCounted:
 	var sim = Fixture.world()
@@ -58,41 +59,45 @@ func test_dead_seat_bot_is_silent(runner) -> bool:
 	return true
 
 func test_team_match_prefix(runner) -> bool:
-	var a = TeamMatch.create()
-	var b = TeamMatch.create()
+	var sim = TeamMatch.create()
 	var rows: PackedStringArray = []
-	var diverged: int = -1
+	var series: int = 0
 	var tanks: bool = false
 	var built: Dictionary = {}
 	for tick in range(PREFIX_TICKS):
 		if tick % TRACE_INTERVAL == 0:
-			var state: Dictionary = a.snapshot()
-			var digest: String = StateHash.digest(state)
-			if digest != StateHash.digest(b.snapshot()) and diverged == -1: diverged = tick
-			rows.append("%d\t%s" % [tick, digest])
+			var state: Dictionary = sim.snapshot()
+			rows.append("%d\t%s" % [tick, StateHash.digest(state)])
 			if state.entities.any(func(unit: Dictionary) -> bool: return unit.kind == "usa_tank"): tanks = true
-		if tick == BUILD_CHECK_TICK: built = _completed_buildings(a)
-		TeamMatch.step(a)
-		TeamMatch.step(b)
+		if tick == BUILD_CHECK_TICK: built = _completed_buildings(sim)
+		TeamMatch.step(sim)
+		series = (series * 31 + StateHash.core_check(sim.snapshot())) & 0x7fffffffffffffff
 		if tick % 600 == 599: await runner.process_frame
-	runner.check(diverged == -1, "TB3 two runs agree every 200 ticks")
 	runner.check(rows.size() == 100, "TB3 trace has 100 rows")
-	var state: Dictionary = a.snapshot()
+	var state: Dictionary = sim.snapshot()
 	for entry in TeamMatch.SEATS:
 		runner.check(built.get(entry.seat, 0) == 5, "TB3 seat %d completes four buildings beside its command center" % entry.seat)
 	runner.check(tanks, "TB3 a tank was produced")
 	runner.check(StateHash.digest(state) == FINAL_DIGEST, "TB3 final digest %s at tick %d" % [StateHash.digest(state), PREFIX_TICKS])
+	runner.check(series == TEAM_CORE_SERIES, "TB4 team core series pinned, got " + str(series))
 	_write_trace(runner, rows)
 	return true
 
-func test_team_core_series(runner) -> bool:
-	var sim = TeamMatch.create()
-	var series: int = 0
-	for tick in range(PREFIX_TICKS):
-		TeamMatch.step(sim)
-		series = (series * 31 + StateHash.core_check(sim.snapshot())) & 0x7fffffffffffffff
+func test_team_match_pair(runner) -> bool:
+	var a = TeamMatch.create()
+	var b = TeamMatch.create()
+	var diverged: int = -1
+	var compared: int = 0
+	for tick in range(PAIR_TICKS + 1):
+		if tick % TRACE_INTERVAL == 0:
+			compared += 1
+			if StateHash.digest(a.snapshot()) != StateHash.digest(b.snapshot()) and diverged == -1: diverged = tick
+		if tick == PAIR_TICKS: break
+		TeamMatch.step(a)
+		TeamMatch.step(b)
 		if tick % 600 == 599: await runner.process_frame
-	runner.check(series == TEAM_CORE_SERIES, "TB4 team core series pinned, got " + str(series))
+	runner.check(diverged == -1, "TB5 two runs in one process agree every 200 ticks up to tick %d, first divergence %d" % [PAIR_TICKS, diverged])
+	runner.check(compared == 16, "TB5 compared %d times" % compared)
 	return true
 
 func _write_trace(runner, rows: PackedStringArray) -> void:

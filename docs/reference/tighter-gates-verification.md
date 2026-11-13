@@ -1,13 +1,13 @@
 ```text
-Resume record (updated 2026-11-13, Task 1 green)
+Resume record (updated 2026-11-13, Task 2 green)
 Branch / base commit / working-tree state: tighter-gates / 10b9423 / plan and this file uncommitted (the preparation commits them)
-Last green task / next incomplete task: Task 1 / Task 2
-Changed paths since last commit: game/tests/run_tests.gd, tools/run_tests.sh, docs/reference/tighter-gates-verification.md
-Last command / cases / checks / failures / exit / marker: full suite / 849 / 144200 / 0 / 0 / TESTS PASSED 144200
+Last green task / next incomplete task: Task 2 / Task 3
+Changed paths since last commit: game/tests/test_team_match.gd, docs/reference/tighter-gates-verification.md
+Last command / cases / checks / failures / exit / marker: full suite (trace env vars set) / 849 / 144204 / 0 / 0 / TESTS PASSED 144204
 Known red case or blocker: none
 Approved decisions, pre-authorizations used, deferred gates: questionnaire 2026-11-13 (plan "Decisions"); one local commit per GREEN task (never push); CI run, Windows behaviour, CI timing and the cancel rule deferred to a pushed branch (morning)
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: Task 2 Step 1
+Next exact action: Task 3 Step 1
 ```
 
 Plan: [tighter gates](../superpowers/plans/2026-11-13-tighter-gates.md). Spec: [tooling audit](tooling-audit.md). Logs: `~/projects/wargrid-overnight-work/tighter-gates/logs/` (outside the repository).
@@ -18,7 +18,7 @@ Plan: [tighter gates](../superpowers/plans/2026-11-13-tighter-gates.md). Spec: [
 |---|---|---|---|
 | 0 | Baseline: timed suite, traces, load | Sonnet | GREEN |
 | 1 | Real-time watchdog, killed runs stop their children (2, 3) | Sonnet | GREEN |
-| 2 | One team match run plus a 3000-tick pair (5) | Sonnet | not started |
+| 2 | One team match run plus a 3000-tick pair (5) | Sonnet | GREEN |
 | 3 | Cases dealt by cost; timed suite after 5 and 6 (6) | Sonnet | not started |
 | 4 | CI: relay in the export job, tool tests once, pinned gdlint, branch-only cancel (7, 8, 9, 14) | Sonnet | not started |
 | 5 | Shell and tool cleanups (13, 16, 17, 19, left-out 6) | Sonnet | not started |
@@ -46,16 +46,16 @@ Plan: [tighter gates](../superpowers/plans/2026-11-13-tighter-gates.md). Spec: [
 | Wall seconds, full suite | 85 | |
 | `uptime` at start / end | 1.68 1.69 1.53 / 2.17 1.92 1.63 | |
 | Traces `cmp` against `*-before.tsv` | — | |
-| `test_team_match` suite alone, seconds (Task 0 Step 4 / Task 2 Step 4) | 104 (CASES 4, CHECKS 13, exit 0) | |
+| `test_team_match` suite alone, seconds (Task 0 Step 4 / Task 2 Step 4) | 104 (CASES 4, CHECKS 13, exit 0) | Task 2: 48 (CASES 4, CHECKS 15, exit 0, trace env set) |
 | Static gates: five alone (sum) / `run_checks.sh` (Task 9) | about 17 s (audit) | |
 
 ## Pinned values (V1-V6, checked at Tasks 2 and 10)
 
 | # | Pin | Expected | Task 2 | Task 10 |
 |---|---|---|---|---|
-| V1 | `FINAL_DIGEST` | `3958ceaab11986af` | | |
-| V2 | `TEAM_CORE_SERIES` | `8513092129969516499` | | |
-| V3 | four traces | byte-identical to Task 0 | team only | all four |
+| V1 | `FINAL_DIGEST` | `3958ceaab11986af` | unchanged (TB3 final digest check passes) | |
+| V2 | `TEAM_CORE_SERIES` | `8513092129969516499` | unchanged (TB4 passes, now in the single run) | |
+| V3 | four traces | byte-identical to Task 0 | team only: `cmp` silent | all four |
 | V4 | netplay match terminal tick | 9129 | — | |
 | V5 | `run_team_match.sh` line | `won tick=39497 winner=2 units_peak=271` | — | |
 | V6 | other `game/tests` pins | only `run_tests.gd`, `test_runner.gd`, `test_team_match.gd` differ from `main` | | |
@@ -75,3 +75,4 @@ Plan: [tighter gates](../superpowers/plans/2026-11-13-tighter-gates.md). Spec: [
 - 2026-11-13, plan revised after the user's rulings and the readiness review (no suite run): extra a uses the pathspec `game tools/run_benchmark.sh tools/perf_record.py tools/perf_chart.py` (on `10b9423`: `c88ba13`, equal to the newest `auto` row); delta sign Wargrid minus Zero Hour, so the non-`credits_per_min` rows flip (`analyze.py:626`) and `:628` stays; review fixes applied to Tasks 0-10 (sweep stop event in the worker, code hash in `write()`, a full fake for the boot test, text anchors in Task 3, `RunBenchmarkTest` as the benchmark guard, denied-command rule, protection-check morning item).
 - 2026-11-13, Task 0, tree `tighter-gates` `11e8174` clean: import run (`test_runner`) exit 0, 4 cases 7 checks; timed full suite exit 0, 85 s, CASES 849 CHECKS 144207 FAILURES 0, `TESTS PASSED 144207`, load 1.68 -> 2.17 (1 min); `test_team_match` alone exit 0, 104 s, 13 checks; traces 1200/1200/1200/100 lines in the logs directory. No repository file changed besides this one.
 - 2026-11-13, Task 1, tree `tighter-gates` `436ed43` plus the two changed paths: red A (timer 10 s, `test_team_match_prefix`): no watchdog line, exit 0; red B: `alive=4`. After the change: green A (`WATCHDOG_SECONDS` 10): `FAIL: watchdog timeout in test_team_match_prefix`, `FAIL: 1 of 1 shards did not finish`, exit 1; green B: `alive=0`, runner exit 1, no probe process left (SIGTERM was enough, no KILL needed); `test_runner` exit 0 (4 cases, 7 checks); full suite exit 0, CASES 849 CHECKS 144200 FAILURES 0, `TESTS PASSED 144200`, no Thread or WARNING lines; `run_lint.sh`, `run_warnings.sh`, `run_shell_checks.sh` exit 0. CHECKS 144200 vs Task 0's 144207: the unchanged tree (stashed) also gives 144200, so the 7 are run-to-run variation or Task 0's run, not this change; Task 2 should recheck the baseline count. Logs `t1-*.log`.
+- 2026-11-13, Task 2, tree `tighter-gates` `f591ef8` plus `game/tests/test_team_match.gd`: `test_team_core_series` and the second 20000-tick sim removed; `test_team_match_prefix` is the one run (trace, TB3, TB4); new `test_team_match_pair` (3000 ticks, 16 comparisons, TB5). Red by mutation: extra step of `b` at tick 1000 -> `FAIL: TB5 ... first divergence 1200`, exit 1; series line moved above `step` -> `FAIL: TB4 ... got 2575876620437009839`, exit 1; both reverted (file identical to the good copy). Green: `WARGRID_TEST_ONLY=test_team_match` exit 0, 48 s, CASES 4 CHECKS 15 (trace env set; Task 0's 13 had none: the trace-open check adds 1, TB5 adds 2, the dropped agree check removes 1), team trace `cmp` silent. Full suite (trace env vars set, load 1.52 at start) exit 0, 72 s, CASES 849 CHECKS 144204 FAILURES 0, `TESTS PASSED 144204`, team `cmp` silent; `run_lint.sh`, `run_warnings.sh`, `run_shell_checks.sh` exit 0. Logs `t2-*.log`. No permission denials.
