@@ -425,3 +425,12 @@ Questionnaire over the packages after two days of additions; result in [packages
 - **Roadmap page:** `docs/packages.md` becomes the one-screen "what comes when" page (now, day lane, night lane, later); scope stays in the blueprint and the reviews.
 - **Blueprint:** a small pass later in its own session: take order and status out of §7 (they live in packages and STATUS) and check every done or not-done claim against its evidence; no full renumbering.
 - **README roadmap** (branch `spike-visualization`): kept next to packages; its check is re-keyed from blueprint §7 headings to package names and its rows refreshed, merged in its own session after this one.
+
+## Play with a friend (user, 2026-11-13)
+
+Questionnaire after a research pass on simple ways to play 1:1 with a friend (research note private). Placements: the P2.1 row and a line under "Not ordered yet" in [packages](../packages.md).
+
+- **Channel-neutral:** Discord was only an example of where a link gets sent (chat, SMS or a phone call do as well). Nothing is optimised for or integrated with a chat or storefront service: no Discord Activity or bot, no Steam features.
+- **Easy codes (P2.1):** say-able word codes now; not a permanent friend code.
+- **Code before room:** a code is issued by a separate call and the room is created only when the host connects. This keeps a host who switches apps to send the code from losing the lobby to the relay's 10 s silence rule while the tab is hidden. Design open: who generates the code (the relay on a small reserve call, or the client), and what a friend who arrives first sees ("waiting for the host"); a relay protocol change with conformance vectors; the hidden-tab behaviour is observed at P2's playtest first (decision of 2026-11-13, [netplay reference review](#netplay-reference-review-user-2026-11-13)).
+- **Permanent friend link, quick match:** the friend link is re-explored with the M9 lobby, together with other modern, easy ways to match up with friends; quick match comes after M9.
