@@ -6,7 +6,7 @@ What comes when. Work after M7 ships as small packages: player packages run by d
 
 ### Now
 
-- **P1.1 Laborers that pay:** the c1 dock rebuild is finishing on branch `c1-dock-rebuild` (state in [STATUS](STATUS.md#packages)).
+- **P1.1 Laborers that pay:** the c1 dock rebuild is merged and card 1 replayed fine; F2 (Laborer back pack) is left (state in [STATUS](STATUS.md#packages)).
 - **Card 3 sitting:** P1's card 3 (`p1-look-and-m6-fixes`) in any free 15 minutes on 0.11.0, helper switched on in the launcher.
 
 ### Day lane
@@ -59,7 +59,7 @@ Not ordered yet (placed 2026-11-12): map pack, Is Wargrid healthy, What's new, S
 Scope cuts agreed when each package was placed. Numbers and their sources stay in the linked reviews.
 
 - **P1 (done):** three focus cards in [`game/data/playtest/focus.json`](../game/data/playtest/focus.json). Card 1 (`p1-frc-economy`) was the blocking focus; cards 2 (`p1-frc-tunnels-online`) and 3 (`p1-look-and-m6-fixes`) feed the findings list unless they block play. [Plan](superpowers/plans/2026-11-11-packages-and-playtest-helper.md), [verification](reference/p1-playtest-helper-verification.md).
-- **P1.1 Laborers that pay (user, 2026-11-13):** c1 plan and resume record on branch `c1-dock-rebuild` (`docs/superpowers/plans/2026-11-12-c1-dock-rebuild.md`, `docs/reference/c1-dock-rebuild-verification.md`). F2 lands as its own commit after the c1 tasks, because the c1 plan stops on any presentation change. The extra-cell re-measure follows the merge.
+- **P1.1 Laborers that pay (user, 2026-11-13):** c1 merged to `main` 2026-11-13; plan and resume record (`docs/superpowers/plans/2026-11-12-c1-dock-rebuild.md`, `docs/reference/c1-dock-rebuild-verification.md`). F2 lands as its own commit after the c1 tasks, because the c1 plan stops on any presentation change. The extra-cell re-measure follows the merge.
 - **P2 additions (user, 2026-11-13):** the order hook is new (today only buttons play the `click` cue, `sound_player.gd`); menu quick wins (user, 2026-11-12) is a grouping, not a redesign; the canary and the recorded match row moved here from P5 because they feed P3's movement design (audit answer: canary before the movement design).
 - **Map pack (user, 2026-11-12):** two or three more maps through `tools/zh_map/convert.py` ([more maps](reference/more-maps.md)), the user picks from a short list; tech buildings stay skipped.
 - **Is Wargrid healthy (user, 2026-11-12):** relay `/metrics` (rooms, players, round trip, desyncs) into fly's hosted Grafana, plus a small public traffic light on the web page. Rider (user, 2026-11-13): deploys (manual and release workflow) wait until the relay reports 0 rooms, with a timeout and an override.

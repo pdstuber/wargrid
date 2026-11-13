@@ -156,7 +156,7 @@ The economy has the most Zero Hour measurement behind it. The method had three s
 
 A later measurement shows where this fit is weakest. The [faction income comparison](../reference/faction-income-parity.md) plays whole openings (depot order, free collector, trained collectors, 600 s) in Zero Hour and in Wargrid. In net at 600 s, USA and China match within 3 percent, but their rows already sit on Wargrid's per-pile cap, so a larger opening would fall short. The FRC openings at the close depot fall 25 to 46 percent short.
 
-Adopted (c1, user 2026-11-12 night): the pile and the depot are locked only for the lock window, the lead before it overlaps other collectors, as Zero Hour's dock grants do. Rebuilt on `c1-dock-rebuild`, not merged; rows in the [c1 dock rebuild verification](../reference/c1-dock-rebuild-verification.md). Measured close-depot steady rates (credits per minute): frc5 2085 (Zero Hour 2085), frc7 2550 (Zero Hour 2850), reported not judged. The experiment behind the choice: [dock-hold experiment](../reference/dock-hold-experiment.md).
+Adopted (c1, user 2026-11-12 night): the pile and the depot are locked only for the lock window, the lead before it overlaps other collectors, as Zero Hour's dock grants do. Merged to `main` 2026-11-13; rows in the [c1 dock rebuild verification](../reference/c1-dock-rebuild-verification.md). Measured close-depot steady rates (credits per minute): frc5 2085 (Zero Hour 2085), frc7 2550 (Zero Hour 2850), reported not judged. The experiment behind the choice: [dock-hold experiment](../reference/dock-hold-experiment.md).
 
 What Wargrid takes over directly:
 
