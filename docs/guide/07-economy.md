@@ -51,7 +51,7 @@ Take a China supply truck (`china_collector`: 4 boxes per load, 75 credits a box
 
 **Phase 5, later ticks: dock, load, haul, unload.**
 
-5. Each tick the supply step checks whether the truck stands exactly on its arrival point. When it does, the truck first stands a 5-tick lead (`lead_source`) that does not lock the pile. Then it is admitted: if the pile has no active collector and nobody who arrived earlier is waiting, the truck becomes the pile's `active_collector_id` and starts loading. Otherwise it waits and stores the tick it began waiting, so ground trucks are served in arrival order.  
+5. Each tick the supply step checks whether the truck stands exactly on its arrival point. When it does, the truck first stands a 5-tick lead (`lead_source`) that does not lock the pile. Then it is admitted: if the pile has no active collector and nobody who arrived earlier is waiting, the truck becomes the pile's `active_collector_id` and starts loading. Otherwise it waits and stores the tick its lead ended, so ground waiters are served in that order.  
    `Supply.step → _admit → _ahead`
 6. Loading counts down 37 ticks per box and moves one box from pile to cargo each time. After the fourth box the truck waits one more 37-tick delay, then releases the pile: the 185-tick lock plus the 5-tick lead is 190 ticks standing still. The next tick it seeks again, this time with cargo, so it chooses a depot. (Laborer: lead 38, then 46. Chinook: lead 18, then 369.)  
    `Supply.step → _load_box → release`
@@ -91,7 +91,7 @@ A collector's `collection` record carries a phase and a few numbers; the supply 
 | `waiting_source`, `waiting_depot` | arrived, another collector holds the dock | released by `_admit` on a later tick |
 | `loading`, `unloading` | holds the dock, counting `remaining_ticks` | timer ends |
 
-**One collector per lock window, per source and per depot.** `active_collector_id` on the target is the lock; the lead before it is not exclusive. The queue among waiters is in `_ahead`: helicopters first (lowest id first), then ground units in the order they began waiting, then ground arrivals by id. The comment in the code gives the aim: no truck starves.
+**One collector per lock window, per source and per depot.** `active_collector_id` on the target is the lock; the lead before it is not exclusive. The queue among waiters is in `_ahead`: helicopters first (lowest id first), then ground units in the order they began waiting, then ground arrivals by id. When two leads end on the same tick the lower id wins, also over a Chinook. The comment in the code gives the aim: no truck starves.
 
 **Release is the single exit.** `release` clears the target, the dock and the timer, and clears `active_collector_id` if this unit held it. It runs after a finished load or unload, when a route is blocked, when the pile or depot is removed, and when a player gives the unit any other order. That last case also switches the loop off until the next `gather`. Cargo survives all of these except the unit's own death.  
 `Supply.step, object_removed, Simulation._detach_task → Supply.release`

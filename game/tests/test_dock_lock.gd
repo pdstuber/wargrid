@@ -30,7 +30,7 @@ const COMMAND_ROWS := ["move", "stop", "attack_move", "enter", "build", "resume_
 const LEAVES := ["move", "stop", "attack_move", "enter", "build", "resume_build"]
 
 func cases() -> Array[Callable]:
-	return [test_lone_cycles_pinned, test_lock_data_follows_the_rule, test_lone_lock_window, test_lead_is_not_exclusive, test_two_leads_end_on_one_tick, test_stop_during_lead, test_removal_while_locked, test_pile_empties_during_lead, test_commands_in_lead_and_lock, test_lead_is_not_queued_in_view]
+	return [test_lone_cycles_pinned, test_lock_data_follows_the_rule, test_lone_lock_window, test_lead_is_not_exclusive, test_two_leads_end_on_one_tick, test_lead_end_joins_the_queue, test_stop_during_lead, test_removal_while_locked, test_pile_empties_during_lead, test_commands_in_lead_and_lock, test_lead_is_not_queued_in_view]
 
 func deposit_ticks(kind: String, gap: int, count: int) -> Array:
 	var sim = Parity.new().layout(kind, gap, 1).sim
@@ -183,6 +183,35 @@ func test_two_leads_end_on_one_tick(runner) -> bool:
 	ends = lead_ends(sim, [laborer, chinook], 100)
 	runner.check(ends.left.size() == 2 and ends.left[laborer] == ends.left[chinook], "DL4 mixed pile: both leads end on one tick, got %s" % [ends.left])
 	runner.check(ends.after.get(laborer) == "loading" and ends.after.get(chinook) == "waiting_source", "DL4 mixed pile: the lower id takes the lock, not air first, got %s" % [ends.after])
+	return true
+
+# DL10: waiting begins the tick a lead ends, so the longer waiter takes the lock even with the higher id.
+func test_lead_end_joins_the_queue(runner) -> bool:
+	var sim = Fixture.make_world(10000, Vector2i(48, 24))
+	Fixture.add_completed(sim, 1, "frc_supply_center", Vector2i(2, 10))
+	var source: int = sim.add_supply_source(Vector2i(8, 9), 400, Vector2i(4, 5), false)
+	var holder: int = sim.spawn(1, Vector2(7.5, 10.5), "frc_builder")
+	var newer: int = sim.spawn(1, Vector2(7.5, 12.5), "frc_builder")
+	var older: int = sim.spawn(1, Vector2(7.5, 14.5), "frc_builder")
+	var sends: Dictionary = {0: holder, 8: older, 20: newer}
+	var left: Dictionary = {}
+	var leading: Dictionary = {}
+	var holder_loading: bool = false
+	var taker: int = -1
+	for index in range(600):
+		if sends.has(index): Fixture.send(sim, {"type": "gather", "entity_ids": [sends[index]], "source_id": source})
+		sim.step()
+		var phases: Dictionary = phases_of(sim.view_state())
+		for id in [older, newer]:
+			if phases.get(id) == "lead_source": leading[id] = true
+			elif leading.has(id) and not left.has(id) and holder_loading: left[id] = sim.tick()
+		holder_loading = holder_loading or phases.get(holder) == "loading"
+		if holder_loading and phases.get(holder) != "loading":
+			taker = older if phases.get(older) == "loading" else newer if phases.get(newer) == "loading" else -1
+			break
+	runner.check(holder < newer and newer < older, "DL10 ids: holder < newer < older, got %s" % [[holder, newer, older]])
+	runner.check(left.size() == 2 and left[older] < left[newer], "DL10 both leads end while the holder has the lock, older first, got %s" % [left])
+	runner.check(taker == older, "DL10 a collector whose lead ends joins the queue behind earlier waiters: took %d, older %d, newer %d" % [taker, older, newer])
 	return true
 
 func test_stop_during_lead(runner) -> bool:
