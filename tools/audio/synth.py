@@ -276,13 +276,7 @@ def c1n(x: Arr, rng: Rng, bands: int = 32, env_hz: float = 80, sib: float = 0.35
     return out + sib * filt(x, "high", 2500)
 
 
-def radio(x: Arr, rng: Rng) -> Arr:
-    return sat(filt(x, "band", [300, 3400]), 1.5) + 0.003 * rng.standard_normal(len(x))
-
-
 TREATMENTS: dict[str, Callable[[Arr, Rng], Arr]] = {
-    "clean": lambda x, rng: x,
-    "radio": radio,
     "c1n": c1n,
     "c1n90": functools.partial(c1n, pitch=90.0),
     "c1n140": functools.partial(c1n, pitch=140.0),
