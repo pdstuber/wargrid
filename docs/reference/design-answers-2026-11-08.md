@@ -102,6 +102,7 @@ HUD v4 mock-ups, round 1 on a labelled A/B page (user, 2026-11-13; picks as reco
   - *Forecast in the top strip too:* while a building is armed for placement, the credits and power figures themselves show the values after the purchase, with the low-power warning; the card stays for hovering.
   - Confirmed as drawn: Sell only on a selected building; no rally button, with the rally line in the factory panel; key letters in Core queue slots (against a list of names, and against bringing glyphs into Core); build cells 100 px wide.
   - Next for the HUD: a headless check whether the game's shape parts can be drawn into a UI control, because it decides what glyphs cost; evidence only. The P2.3 design follows it.
+- **Edge scrolling against the dock** (user, 2026-11-13, P2.3 planning): P3's edge scrolling works in a band at every screen edge, also where a dock slab touches it, as in Zero Hour (a 3 px band at all four edges with no HUD exception, `GeneralsGameCode` @ `afc2a103f` `LookAtXlat.cpp:80,358`).
 
 
 ## Unit avoidance: scope

@@ -48,7 +48,7 @@ Early development; the latest build is on the [Releases](https://github.com/pdst
 What is done and what comes next (generated from [packages](docs/packages.md) and [STATUS](docs/STATUS.md)):
 
 <!-- roadmap:begin -->
-**10 of 25 parts done**
+**10 of 26 parts done**
 
 | | What | State |
 | --- | --- | --- |
@@ -64,6 +64,7 @@ What is done and what comes next (generated from [packages](docs/packages.md) an
 | ✅ | You clicked, we heard | Done |
 | ⏭ | New launcher | Next |
 | 📋 | Quick rematch | Planned |
+| 📋 | HUD core | Planned |
 | 📋 | Camera that follows you | Planned |
 | 📋 | Smooth motion | Planned |
 | 📋 | Smarter paths (toggle) | Planned |
