@@ -4,7 +4,7 @@ extends RefCounted
 const Runner = preload("res://tests/run_tests.gd")
 
 func cases() -> Array[Callable]:
-	return [test_shards_cover_every_suite_once, test_no_shard_runs_everything, test_bad_shard_runs_nothing, test_only_filter]
+	return [test_shards_cover_every_suite_once, test_no_shard_runs_everything, test_bad_shard_runs_nothing, test_only_filter, test_shards_by_cost]
 
 func test_shards_cover_every_suite_once(runner) -> bool:
 	var seen: Array[int] = []
@@ -27,4 +27,14 @@ func test_bad_shard_runs_nothing(runner) -> bool:
 func test_only_filter(runner) -> bool:
 	runner.check(Runner.only_filter(PackedStringArray(["--shard=0/4", "--only=test_supply"])) == "test_supply", "R4 --only picks the filter text")
 	runner.check(Runner.only_filter(PackedStringArray(["--shard=0/4"])).is_empty(), "R4 no --only means no filter")
+	return true
+
+func test_shards_by_cost(runner) -> bool:
+	var costs := PackedFloat64Array([5.0, 1, 1, 1, 1, 1])
+	runner.check(Runner.shard(6, PackedStringArray(["--shard=0/2"]), costs) == [0], "R5 the slow case gets a process to itself")
+	runner.check(Runner.shard(6, PackedStringArray(["--shard=1/2"]), costs) == [1, 2, 3, 4, 5], "R5 the rest share the other process")
+	var equal := PackedFloat64Array([1.0, 1, 1, 1, 1])
+	for i in range(2):
+		var arg := PackedStringArray(["--shard=%d/2" % i])
+		runner.check(Runner.shard(5, arg, equal) == Runner.shard(5, arg), "R5 equal costs keep the modulo deal")
 	return true

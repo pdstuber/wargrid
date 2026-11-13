@@ -12,6 +12,8 @@ const WATCHDOG_SECONDS: int = 480 # real time, not frames: a case that blocks be
 var _watchdog := Thread.new()
 var _watchdog_stop: bool = false
 var _case_lock := Mutex.new()
+# The slowest process bounds the run, so the long cases are dealt first and spread.
+const CASE_SECONDS := {"test_team_match_prefix": 44.8, "test_frc_skirmish_match": 11.7, "test_mirror_match_script": 8.2, "test_china_skirmish_match": 4.7, "test_horde_render_layout": 4.2, "test_skirmish_core_series": 4.2, "test_settled_matches_snapshot_predicate": 4.2, "test_rows_equal_snapshot": 3.8, "test_openings_deposit": 3.0, "test_report_rows": 2.9, "test_multi_collector_rates": 2.8, "test_combat_fixtures": 1.9, "test_bot_counts_queued_collectors": 1.9, "test_team_match_pair": 1.1, "test_view_reads_digest_is_pinned": 1.1}
 
 func check(condition: bool, message: String) -> void:
 	checks += 1
@@ -19,7 +21,7 @@ func check(condition: bool, message: String) -> void:
 		failures += 1
 		print("FAIL: ", message)
 
-static func shard(count: int, args: PackedStringArray) -> Array[int]:
+static func shard(count: int, args: PackedStringArray, costs: PackedFloat64Array = PackedFloat64Array()) -> Array[int]:
 	var index: int = 0
 	var total: int = 1
 	for arg in args:
@@ -32,10 +34,24 @@ static func shard(count: int, args: PackedStringArray) -> Array[int]:
 	var picked: Array[int] = []
 	if total < 1 or index < 0 or index >= total:
 		return picked
-	for i in range(count):
-		if i % total == index:
+	var order: Array[int] = []
+	order.assign(range(count))
+	order.sort_custom(func(a: int, b: int) -> bool: return _cost(costs, a) > _cost(costs, b) or (_cost(costs, a) == _cost(costs, b) and a < b))
+	var busy: PackedFloat64Array = PackedFloat64Array()
+	busy.resize(total)
+	for i in order:
+		var lightest: int = 0
+		for p in range(1, total):
+			if busy[p] < busy[lightest]:
+				lightest = p
+		busy[lightest] += _cost(costs, i)
+		if lightest == index:
 			picked.append(i)
+	picked.sort()
 	return picked
+
+static func _cost(costs: PackedFloat64Array, i: int) -> float:
+	return costs[i] if i < costs.size() else 1.0
 
 static func only_filter(args: PackedStringArray) -> String:
 	for arg in args:
@@ -70,7 +86,10 @@ func _run() -> void:
 		for test in selected:
 			if only.is_empty() or suite_script.resource_path.contains(only) or test.get_method().contains(only):
 				tests.append(test)
-	for i in shard(tests.size(), OS.get_cmdline_user_args()):
+	var costs: PackedFloat64Array = PackedFloat64Array()
+	for test in tests:
+		costs.append(CASE_SECONDS.get(test.get_method(), 0.1))
+	for i in shard(tests.size(), OS.get_cmdline_user_args(), costs):
 		var test: Callable = tests[i]
 		_case_lock.lock()
 		_active_case = test.get_method()
