@@ -1,13 +1,13 @@
 ```text
-Resume record (updated 2026-11-13 Task 8 implemented, uncommitted)
-Branch / base commit / working-tree state: p2-you-clicked / 066ee03 / worktree ~/projects/wargrid-wt-p2, Task 8 changes uncommitted
-Last green task / next incomplete task: Task 7 (committed); Task 8 (full suite green, awaiting the coordinator's commit) / gate (a), then Task 9
-Changed paths since last commit: game/data/playtest/focus.json, game/tests/test_playtest.gd, docs/guide/05-presentation.md, docs/STATUS.md, docs/packages.md, docs/reference/p2-verification.md
-Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 826 / 142208 / 0 / 0 / TESTS PASSED 142208
-Known red case or blocker: tools/test_audio_assets.py fails 3 tests (test_layout, test_every_file_credited, test_dotfiles_ignored) since Task 2: game/audio/voice/units/ has 12 placeholder WAVs that the test layout and CREDITS.md do not list; fix belongs to Task 9 (CREDITS.md rows, test layout) or an earlier decision by the coordinator
+Resume record (updated 2026-11-13 Task 9 implemented, uncommitted)
+Branch / base commit / working-tree state: p2-you-clicked / 26eb7e5 / worktree ~/projects/wargrid-wt-p2, Task 9 changes uncommitted
+Last green task / next incomplete task: Task 8 (committed); Task 9 (all gates green, awaiting the coordinator's commit) / rest of gate (a) (test deploy, F5 repro, web bench, rendered rerun), then Task 10
+Changed paths since last commit: tools/audio/synth.py, tools/audio/test_synth.py, tools/test_audio_assets.py, game/audio/voice/units/*.wav (12), game/audio/CREDITS.md, game/scripts/presentation/credits.gd, game/tests/test_credits.gd, docs/reference/p2-verification.md
+Last command / cases / checks / failures / exit / marker: sh tools/run_tests.sh / 827 / 142233 / 0 / 0 / TESTS PASSED 142233
+Known red case or blocker: none (tools/test_audio_assets.py fixed in Task 9: layout lists voice/units, 12 credit rows)
 Approved decisions, pre-authorizations used, deferred gates: spec decisions (user, 2026-11-13) in docs/superpowers/specs/2026-11-13-p2-you-clicked-we-heard-design.md; Piper re-download approved (user, 2026-11-13); local commit per GREEN task (milestone prompt); stop gates (a), (b), (c) not reached
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: coordinator commits Task 8, then stop gate (a); A/B page is built in ~/projects/wargrid-sound-work/p2-ab/ and waits for gate (a)
+Next exact action: coordinator commits Task 9, then the rest of gate (a)
 ```
 
 Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicked-we-heard.md). Spec: [design](../superpowers/specs/2026-11-13-p2-you-clicked-we-heard-design.md). Scratch and logs: `~/projects/wargrid-p2-work/`.
@@ -24,8 +24,8 @@ Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicke
 | 6 | Browser rider prep: bench lines, two web exports, native run | done (uncommitted) |
 | 7 | Voice pipeline and A/B page | done (uncommitted; python checks red only on pre-existing test_audio_assets) |
 | 8 | P2 focus card and docs | done (uncommitted) |
-| gate (a) | A/B pick, F5 repro on the test app, web bench both builds, rendered rerun | not started |
-| 9 | Picked voices into the game | not started |
+| gate (a) | A/B pick, F5 repro on the test app, web bench both builds, rendered rerun | A/B pick done (user, 2026-11-13); rest not started |
+| 9 | Picked voices into the game | done (uncommitted) |
 | 10 | F5 outcome | not started |
 | 11 | Exit checks and ledger row | not started |
 | 12 | Gate review and lean pass | not started |
@@ -80,3 +80,9 @@ Plan: [P2 "You clicked, we heard"](../superpowers/plans/2026-11-13-p2-you-clicke
 | 8 | `WARGRID_TEST_ONLY=test_playtest` RED (new `SHIPPED`, picker count 4, item 1 `p1-frc-economy`, before the json edit) | 066ee03 + uncommitted | CASES 39 CHECKS 896 FAILURES 6 (PT1, PT2, PT6 x2 sizes), no SCRIPT ERROR, exit 1 |
 | 8 | `WARGRID_TEST_ONLY=test_playtest` GREEN after prepending the `p2-you-clicked` card | 066ee03 + uncommitted | CASES 39 CHECKS 900 FAILURES 0, exit 0 |
 | 8 | full `sh tools/run_tests.sh` GREEN; `run_lint.sh`, `run_warnings.sh`, `check_public.sh` exit 0; `git diff main -- game/scripts/simulation game/scripts/net` empty; doc links in the changed docs resolve | 066ee03 + uncommitted (tree 493148536853) | CASES 826 CHECKS 142208 FAILURES 0, exit 0 |
+| 9 | gate (a) A/B pick: every role voice `bryce`; treatments infantry `c1n140`, vehicle `c1n90`, worker `c1n`; wording unchanged (user, 2026-11-13) | n/a | `UNIT_PICKS` set from it |
+| 9 | RED: `sh tools/run_python_checks.sh` (`test_unit_picks_cover_roles`, `test_every_file_credited`, `test_dotfiles_ignored`); `WARGRID_TEST_ONLY=test_credits` (CR-U, 24 FAIL lines) | 26eb7e5 + uncommitted | both exit 1, no SCRIPT ERROR |
+| 9 | `synth.py` render of the 12 unit lines (peak limit not hit): infantry_move_1 -24.0 LUFS / -11.1 dBFS, infantry_move_2 -24.0 / -10.6, infantry_attack_1 -24.0 / -9.4, infantry_attack_2 -24.0 / -7.6, vehicle_move_1 -24.0 / -9.9, vehicle_move_2 -24.0 / -8.3, vehicle_attack_1 -24.0 / -9.7, vehicle_attack_2 -24.0 / -5.1, worker_move_1 -24.0 / -10.9, worker_move_2 -24.0 / -9.7, worker_work_1 -24.0 / -7.6, worker_work_2 -24.0 / -8.5 | 26eb7e5 + uncommitted (stash tree 5956a0235eb9) | exit 0 |
+| 9 | invariant: `cmp` of 10 `sfx/*.wav` and 8 `voice/*.wav` against `synth-main-out`; `godot --headless --path game --import` exit 0; `git diff --stat game/audio/voice/units/*.import` | 26eb7e5 + uncommitted (stash tree 5956a0235eb9) | 18 of 18 identical, only the 12 unit WAVs changed, `.import` diff empty |
+| 9 | GREEN: `WARGRID_TEST_ONLY=test_credits` 13/200, `=test_order_voice` 12/88 (CASES/CHECKS), FAILURES 0; `sh tools/run_python_checks.sh` | 26eb7e5 + uncommitted (stash tree 5956a0235eb9) | exit 0, exit 0, `PYTHON TESTS PASSED` |
+| 9 | full `sh tools/run_tests.sh` GREEN; `run_lint.sh`, `run_warnings.sh`, `check_public.sh` exit 0; `git diff main -- game/scripts/simulation game/scripts/net` empty; `git ls-files game/audio` size 13986476 bytes (<= 20000000) | 26eb7e5 + uncommitted (stash tree 5956a0235eb9) | CASES 827 CHECKS 142233 FAILURES 0, exit 0 |

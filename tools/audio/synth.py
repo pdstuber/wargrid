@@ -289,7 +289,11 @@ TREATMENTS: dict[str, Callable[[Arr, Rng], Arr]] = {
 }
 UNIT_LINES = {"infantry": ["move", "attack"], "vehicle": ["move", "attack"], "worker": ["move", "work"]}
 UNIT_VARIANTS = 2
-UNIT_PICKS: dict[str, tuple[str, str]] = {}
+UNIT_PICKS: dict[str, tuple[str, str]] = {
+    "infantry": ("bryce", "c1n140"),
+    "vehicle": ("bryce", "c1n90"),
+    "worker": ("bryce", "c1n"),
+}
 
 
 def unit_line(src: Path, role: str, line: str, n: int) -> Arr:

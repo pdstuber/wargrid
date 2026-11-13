@@ -49,4 +49,6 @@ static func _macleod(credits_md: String) -> String:
 static func _voice(credits_md: String) -> String:
 	var rows := _rows(credits_md, "voice/")
 	var url: String = rows[0][3] if not rows.is_empty() else ""
-	return "Voice: Piper en_US-kristin-medium (public-domain LibriVox recordings), %s; announcer lines vocoded by Wargrid" % url
+	var unit_rows := _rows(credits_md, "voice/units/")
+	var unit_url: String = unit_rows[0][3] if not unit_rows.is_empty() else ""
+	return "Voice: Piper en_US-kristin-medium (public-domain LibriVox recordings), %s; announcer lines vocoded by Wargrid; unit order lines: Piper en_US-bryce-medium (public domain), %s" % [url, unit_url]

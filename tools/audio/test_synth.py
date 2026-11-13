@@ -97,6 +97,9 @@ class SynthTest(unittest.TestCase):
         freqs = np.fft.rfftfreq(len(a), 1 / synth.SR)
         self.assertLess(power[freqs < 200].sum() / power.sum(), 0.01)
 
+    def test_unit_picks_cover_roles(self) -> None:
+        self.assertEqual(set(synth.UNIT_PICKS), set(synth.UNIT_LINES))
+
     def test_treatments_known(self) -> None:
         self.assertEqual(set(synth.TREATMENTS), {"clean", "radio", "c1n", "c1n90", "c1n140"})
         for voice, treatment in synth.UNIT_PICKS.values():
