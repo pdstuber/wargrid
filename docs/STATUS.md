@@ -11,6 +11,10 @@ Where Wargrid stands: packages first, then finished work. Plans for packages: [p
 | P3 | Camera that follows you | Planned | [packages](packages.md#the-next-five) | none yet |
 | P4 | Smooth motion | Planned | [packages](packages.md#the-next-five) | none yet |
 | P5 | Smarter paths (toggle) | Planned | [packages](packages.md#the-next-five) | none yet |
+| rough rest | Relay guards | Placed 2026-11-13 (user), no plan yet; no trace re-pin | [packages](packages.md#rough-rest) | [netplay review](reference/netplay-reference-review.md#review-2026-11-13) |
+| rough rest | Adaptive input delay | Placed 2026-11-13 (user), no plan yet; adopted only on a measured gain | [packages](packages.md#rough-rest) | [netplay review](reference/netplay-reference-review.md#review-2026-11-13) |
+| rough rest | Sim quick wins | Placed 2026-11-13 (user), no plan yet; no trace re-pin | [packages](packages.md#rough-rest) | [simulation review](reference/simulation-reference-review.md#review-2026-11-13) |
+| rough rest | Flatter worst ticks | Placed 2026-11-13 (user), no plan yet; one trace re-pin | [packages](packages.md#rough-rest) | [simulation review](reference/simulation-reference-review.md#review-2026-11-13) |
 
 ## Findings list
 
