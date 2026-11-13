@@ -14,10 +14,10 @@ var download: Callable = JavaScriptBridge.download_buffer
 var _finished: bool = false
 var _credit: int = 0
 var _rejections_seen: int = 0
-var _faction: String = Skirmish.default_faction()
+var _own_faction: String = Skirmish.default_faction()
 
 func setup(transport: RefCounted, lockstep: RefCounted, seat: int, faction: String = Skirmish.default_faction()) -> void:
-	_faction = faction
+	_own_faction = faction
 	_transport = transport
 	_lockstep = lockstep
 	local_player = seat
@@ -26,7 +26,7 @@ func _ready() -> void:
 	super._ready()
 	_perf.extra = _net_line
 	_lockstep.send = _transport.send_text
-	_lockstep.submit({"type": "choose_faction", "faction": _faction})
+	_lockstep.submit({"type": "choose_faction", "faction": _own_faction})
 	_lockstep.start(simulation.snapshot())
 
 func _exit_tree() -> void:

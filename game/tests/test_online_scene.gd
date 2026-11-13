@@ -425,7 +425,7 @@ func test_launcher_faction_rows(runner) -> bool:
 		launcher._seat = 1
 		launcher._start(_start_message("dry_wells", 3))
 		var main = runner.root.get_tree().current_scene
-		runner.check(main._faction == third, "N25 online match carries OnlineRow/Own's faction at %s, got %s" % [size, main._faction])
+		runner.check(main._own_faction == third, "N25 online match carries OnlineRow/Own's faction at %s, got %s" % [size, main._own_faction])
 		main.free()
 		await runner.process_frame
 		port.free()
