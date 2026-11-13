@@ -87,6 +87,56 @@ class Pooling(unittest.TestCase):
             self.assertEqual(pooled["credits_per_min"]["n"], 2)
 
 
+def shot_trace_rows(shot_frames: list[int]) -> list[tuple[Any, ...]]:
+    rows = []
+    for f in range(1, 41):
+        last = max((s for s in shot_frames if s < f), default=0)
+        rows.append((f, 7, "u", 0, 0, 0, 0, last, 10))
+    return rows
+
+
+class PoolKeys(unittest.TestCase):
+    def pooled_keys(self, shot_lists: list[list[int]]) -> set[str]:
+        with tempfile.TemporaryDirectory() as t:
+            root = Path(t)
+            for i, frames in enumerate(shot_lists, 1):
+                put_trace(root / f"rep{i}", "fire_x", shot_trace_rows(frames), unit=7, target=8, order_frame=0)
+            return set(analyze.pooled_metrics("fire_x", analyze.runs_of("fire_x", [root])))
+
+    def test_first_run_without_a_metric_keeps_every_key(self) -> None:
+        good, short = [5, 15, 25], [5]
+        self.assertIn("shot_interval", self.pooled_keys([short, good, good]))
+        self.assertEqual(self.pooled_keys([short, good, good]), self.pooled_keys([good, good, short]))
+
+
+class StuckUnit(unittest.TestCase):
+    def test_zero_speed_does_not_raise(self) -> None:
+        with tempfile.TemporaryDirectory() as t:
+            put_trace(Path(t), "move_ranger", move_rows(7, 0.0), unit=7, order_frame=100)
+            meta, rows = analyze.load(Path(t) / "move_ranger.tsv")
+        moved = analyze.movement(meta, rows)
+        self.assertEqual((moved["top_speed"], moved["start_delay_frames"]), (0.0, None))
+        self.assertIsNone(analyze.turning(meta, rows)["start_delay_frames"])
+        self.assertEqual(analyze.verdict(moved["top_speed"], 30, 3), "FAIL")
+
+    def test_zero_speed_gives_a_fail_row(self) -> None:
+        with tempfile.TemporaryDirectory() as t:
+            root = Path(t)
+            put_trace(root / "rep1", "move_ranger", move_rows(7, 0.0), unit=7, order_frame=100)
+            md = analyze.md_report([root], expect={"move_ranger": [("top_speed", 30, 3, "")]})
+            self.assertIn("FAIL", next(x for x in md.splitlines() if x.startswith("| move_ranger | top_speed")))
+
+
+class EmptyFolder(unittest.TestCase):
+    def test_json_and_report_fail_on_no_traces(self) -> None:
+        script = Path(__file__).parent / "zh_parity" / "analyze.py"
+        with tempfile.TemporaryDirectory() as t:
+            for args in (["--json", t], ["--report", "md", t]):
+                done = subprocess.run([sys.executable, str(script), *args], check=False, capture_output=True, text=True)
+                self.assertNotEqual(done.returncode, 0, args)
+                self.assertIn("no traces under", done.stderr)
+
+
 class Opening(unittest.TestCase):
     ORDER = 100
     DEPOSITS = ((1000, 11), (1200, 12), (1400, 13), (1600, 11), (1800, 12), (2000, 13), (3600, 11), (3601, 12))
@@ -298,6 +348,22 @@ class Report(unittest.TestCase):
             self.assertIn("| 2 |", row)
             self.assertIn("| 20 |", row)
             self.assertIn("PASS", row)
+
+    def test_delta_reads_wargrid_minus_zero_hour(self) -> None:
+        with tempfile.TemporaryDirectory() as t:
+            root = Path(t)
+            put_trace(root / "rep1", "move_ranger", move_rows(7, 20 / 30), unit=7, order_frame=100)
+            meta = {"unit": 7, "collectors": 1, "dist": 10, "pile": [10, 0], "depot": [0, 0], "order_frame": 0}
+            put_trace(root / "rep1", "collect_truck_6", money_rows(100, 75), **meta)
+            md = analyze.md_report(
+                [root],
+                expect={"move_ranger": [("top_speed", 22, 5, "")]},
+                wargrid={"collect_truck_6": {"credits_per_min": 1485}},
+            )
+            move = next(x for x in md.splitlines() if x.startswith("| move_ranger | top_speed"))
+            self.assertIn("| 22 | 2 |", move)
+            collect = next(x for x in md.splitlines() if x.startswith("| collect_truck_6 | credits_per_min"))
+            self.assertIn("| +10 % |", collect)
 
     def test_accepted_verdict(self) -> None:
         self.assertEqual(analyze.verdict(115, 100, 10, accepted=120), "ACCEPTED")

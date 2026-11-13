@@ -162,7 +162,16 @@ def death_frame(rows, uid):
 
 def movement(meta, rows):
     sp = series(rows, meta["unit"], "speed")
-    start = next(f for f, v in sp if v > 0)
+    start = next((f for f, v in sp if v > 0), None)
+    if start is None:
+        return {
+            "start_delay_frames": None,
+            "top_speed": 0.0,
+            "peak_speed": 0.0,
+            "accel": None,
+            "frames_to_top": None,
+            "braking": None,
+        }
     peak = max(v for _, v in sp)
     top = statistics.median(v for _, v in sp if v > 0)  # cruise speed; peak can be a one-frame lurch
     rising = [b - a for (_, a), (_, b) in itertools.pairwise(sp) if b - a > 1e-3]
@@ -181,10 +190,11 @@ def turning(meta, rows):
     ang = [v for _, v in series(rows, meta["unit"], "angle")]
     deltas = [math.remainder(b - a, 2 * math.pi) for a, b in itertools.pairwise(ang)]
     turning_deltas = [abs(d) for d in deltas if abs(d) > 1e-3]
+    start = next((f for f, v in series(rows, meta["unit"], "speed") if v > 0), None)
     return {
         "turn_rate": round(math.degrees(max(turning_deltas)) * FPS, 1) if turning_deltas else 0.0,
         "turn_frames": len(turning_deltas),
-        "start_delay_frames": next(f for f, v in series(rows, meta["unit"], "speed") if v > 0) - meta["order_frame"],
+        "start_delay_frames": None if start is None else start - meta["order_frame"],
     }
 
 
@@ -565,7 +575,7 @@ def pooled_metrics(name, runs):
     """Per metric across runs: numbers get n/median/min/max/spread, strings the most common value and distinct count."""
     per_run = [metrics(name, meta, rows) for meta, rows in runs]
     out: dict[str, Any] = {}
-    for key in per_run[0] if per_run else []:
+    for key in dict.fromkeys(k for m in per_run for k in m):
         vals = [m[key] for m in per_run if m.get(key) is not None]
         if key == "short_window":
             out[key] = any(vals)  # any rep short
@@ -623,7 +633,7 @@ def md_report(dirs, expect=None, wargrid=None):
                 v = "-" if exp is None else ("PASS" if abs(got / exp - 1) <= tol else "FAIL")
             else:
                 v = verdict(got, exp, tol, *acc)
-            delta = fmt(round(got - exp, 3)) if numeric else "-"
+            delta = fmt(round(exp - got, 3)) if numeric else "-"
             if key == "credits_per_min" and numeric:
                 delta = f"{(exp / got - 1) * 100:+.0f} %"
             spread = f"{s['spread'] * 100:.1f}%" if "spread" in s else f"{s['distinct']} distinct"
@@ -789,6 +799,8 @@ if __name__ == "__main__":
     ap.add_argument("--same", nargs=2, type=Path, metavar="TSV")
     ap.add_argument("dirs", nargs="*", type=Path)
     a = ap.parse_args()
+    if (a.json and not find_traces(a.json)) or (a.report and not find_traces(a.dirs)):
+        raise SystemExit(f"no traces under {', '.join(map(str, a.json or a.dirs))}")
     if a.json:
         print("\n".join(json_lines(a.json)))
     elif a.report:

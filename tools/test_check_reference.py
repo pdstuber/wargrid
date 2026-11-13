@@ -161,6 +161,17 @@ class ReferenceTests(unittest.TestCase):
             )
             self.assertIn("DIFFERS", out.getvalue())
 
+    def test_no_rows_fails(self):
+        with tempfile.TemporaryDirectory() as directory:
+            archive = Path(directory) / "INIZH.big"
+            archive.write_bytes(big(INI))
+            wargrid = Path(directory) / "wargrid.json"
+            wargrid.write_text("{}")
+            out = io.StringIO()
+            code = ref.main([str(archive), "--wargrid-json", str(wargrid), "--skip-hash", "--only"], out)
+            self.assertEqual(code, 1, out.getvalue())
+            self.assertIn("REFERENCE CHECK FAILED 0 rows", out.getvalue())
+
     def test_scout_car_weapon_is_compared(self):
         files = {
             "objects": """Object AmericaVehicleHumvee

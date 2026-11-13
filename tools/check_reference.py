@@ -231,11 +231,12 @@ def main(argv: list, out=sys.stdout) -> int:
     for note in notes:
         print("NOTE " + note, file=out)
     differing = sum(1 for row in results if row[3] == "DIFFERS")
+    ok = differing == 0 and results
     print(
-        "REFERENCE CHECK %s %d rows, %d differ" % ("PASSED" if differing == 0 else "FAILED", len(results), differing),
+        "REFERENCE CHECK %s %d rows, %d differ" % ("PASSED" if ok else "FAILED", len(results), differing),
         file=out,
     )
-    return 0 if differing == 0 else 1
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":

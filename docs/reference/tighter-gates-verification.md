@@ -1,13 +1,13 @@
 ```text
-Resume record (updated 2026-11-13, Task 5 green)
-Branch / base commit / working-tree state: tighter-gates / 10b9423 / plan and this file uncommitted (the preparation commits them)
-Last green task / next incomplete task: Task 5 / Task 6
-Changed paths since last commit: tools/run_netplay.sh, tools/run_conformance.sh, tools/run_benchmark.sh, tools/check_reference.py, tools/test_check_reference.py, tools/test_perf_charts.py, docs/reference/tighter-gates-verification.md
-Last command / cases / checks / failures / exit / marker: python checks (no Godot suite after the change; baseline suite 850 / 144205 / 0 / 0 / TESTS PASSED 144205) / exit 0 / PYTHON TESTS PASSED
+Resume record (updated 2026-11-13, Task 6 green)
+Branch / base commit / working-tree state: tighter-gates / 71a0102 / Task 6 changes uncommitted (coordinator commits)
+Last green task / next incomplete task: Task 6 / Task 7
+Changed paths since last commit: tools/zh_parity/analyze.py, tools/check_reference.py, tools/test_zh_parity.py, tools/test_check_reference.py, docs/reference/tighter-gates-verification.md
+Last command / cases / checks / failures / exit / marker: run_python_checks.sh (no Godot suite; no GDScript touched) / exit 0 / PYTHON TESTS PASSED
 Known red case or blocker: none
 Approved decisions, pre-authorizations used, deferred gates: questionnaire 2026-11-13 (plan "Decisions"); one local commit per GREEN task (never push); CI run, Windows behaviour, CI timing and the cancel rule deferred to a pushed branch (morning)
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: Task 6
+Next exact action: Task 7
 ```
 
 Plan: [tighter gates](../superpowers/plans/2026-11-13-tighter-gates.md). Spec: [tooling audit](tooling-audit.md). Logs: `~/projects/wargrid-overnight-work/tighter-gates/logs/` (outside the repository).
@@ -22,7 +22,7 @@ Plan: [tighter gates](../superpowers/plans/2026-11-13-tighter-gates.md). Spec: [
 | 3 | Cases dealt by cost; timed suite after 5 and 6 (6) | Sonnet | GREEN |
 | 4 | CI: relay in the export job, tool tests once, pinned gdlint, branch-only cancel (7, 8, 9, 14) | Sonnet | GREEN |
 | 5 | Shell and tool cleanups (13, 16, 17, 19, left-out 6) | Sonnet | GREEN |
-| 6 | Parity report fixes (4, 10, 11, left-out 4) | Sonnet | not started |
+| 6 | Parity report fixes (4, 10, 11, left-out 4) | Sonnet | GREEN |
 | 7 | Parity sweep fixes, `probe_patriot.py` deleted (12, left-out 1, 2, 3, 5) | Sonnet | not started |
 | 8 | Extras: wrap-up benchmark rule, warnings on a fresh worktree | Sonnet | not started |
 | 9 | One checks command (15) | Sonnet | not started |
@@ -79,3 +79,4 @@ Plan: [tighter gates](../superpowers/plans/2026-11-13-tighter-gates.md). Spec: [
 - 2026-11-13, Task 3, tree `tighter-gates` `6346515` plus `game/tests/run_tests.gd`, `game/tests/test_runner.gd`: one-process timing run exit 0 (849 cases, 15 cases of 1 s or more, `t3-slow.txt`; `test_team_match_prefix` 44.8 s, next 11.7 s). Red: stub `shard(..., _costs)` -> `WARGRID_TEST_ONLY=test_runner` exit 1, R5 slow-case and rest checks FAIL, equal-cost checks pass (the plan's first R5 check is split into two). Green: cost-descending deal to the least loaded process (ties lower index, lower process), `CASE_SECONDS` table, default 0.1; `test_runner` exit 0 (5 cases, 11 checks); timed full suite (trace env vars set) exit 0, 53 s (Task 0: 85 s), CASES 850 (849 + new R5 case) CHECKS 144212 FAILURES 0, `TESTS PASSED 144212`, all four traces `cmp` silent, V1/V2 pass in the suite; load 2.16 -> 3.37 (1 min), so the speed-up is measured under heavier load than the baseline. `run_lint.sh`, `run_warnings.sh`, `run_shell_checks.sh` exit 0. Logs `t3-*.log`. No permission denials.
 - 2026-11-13, Task 4, tree `tighter-gates` `a39bc9c` plus `ci.yml`, `run_lint.sh`, `run_python_tests.sh`: red 8 (`assert False` in `test_cached_archive_skips_download`): `run_python_tests.sh` exit 0; red 9 (`env PATH=/usr/bin:/bin:/opt/homebrew/bin run_lint.sh`): exit 127, `gdlint: not found`. Green: probe 8 prints `FAIL: tools/test_install_godot.py`, exit 1, reverted -> exit 0 `PYTHON TESTS PASSED`; probe 9 exit 0 (`Success: no problems found`); `actionlint` exit 0; `run_shell_checks.sh` exit 0; `run_python_checks.sh` exit 0. `rg relay-bin .github/workflows` lists only the new build line and the netplay step. Not run: the optional local relay build plus `run_netplay.sh match` (V4); no Godot, CI, Windows or concurrency check (morning). Docs still naming the old job/exclusion (`docs/guide/13-testing-and-tooling.md:141,169`, development notes lint note) are left for Task 10. Logs `t4-*.log`. No permission denials.
 - 2026-11-13, Task 5, tree `tighter-gates` `1d2abb8` plus the six tool paths: baseline suite before edits exit 0, CASES 850 CHECKS 144205 FAILURES 0 (`t5-base.log`). Red 13: the plan's `TMPDIR` probe does not work (`mktemp -d` here ignores `TMPDIR`), so the probe counted `tmp.*` folders in the real temp dir: old `run_conformance.sh` leaves 1, new leaves 0; `run_netplay.sh match` (exit 0, `NETPLAY PASSED match`, V4 not rechecked beyond pass) leaves 0. Red 16/19: `GODOT_BIN=false run_benchmark.sh` exit 1 with 0 `load average` lines; new `RunBenchmarkTest` case and two new `check_reference` tests failed before the fix. Green: same probe prints 2 load lines, exit 1; `test_perf_charts.py` exit 0; `test_check_reference.py` 12 tests OK; `relay-down` (2.6 s) and `relay-term` (3.0 s) `NETPLAY PASSED`, first try; `run_shell_checks.sh` exit 0; `run_python_checks.sh` exit 0 (after ruff import sort and format of the new tests). Not run: full benchmark (Task 10 gate), Godot suite after the change (no GDScript touched). Load 3.1-4.5 during the baseline (other sessions), 1.6 at the end. Logs `t5-*.log`. No permission denials.
+- 2026-11-13, Task 6, tree `tighter-gates` `71a0102` plus the four tool paths: red: `test_zh_parity.py` 5 new tests fail (pooled key set missing `shot_interval`, `movement` TypeError/StopIteration path on zero speed, empty folder exit 0, delta `-2`), `test_check_reference.py` `test_no_rows_fails` exit 0 != 1. Green: `test_zh_parity.py` 45 tests OK, `test_check_reference.py` OK, `analyze.py --self-test` exit 0, `run_python_checks.sh` exit 0 `PYTHON TESTS PASSED` (first run caught ruff PLW1510 in the new subprocess test, fixed). Delta now `exp - got` (Wargrid minus Zero Hour); `credits_per_min` unchanged. Not run: Godot suite (no GDScript touched), Zero Hour (never). Logs `t6-*.log`. No permission denials.
