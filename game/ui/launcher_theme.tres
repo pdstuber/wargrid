@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=32 format=3]
+[gd_resource type="Theme" load_steps=34 format=3]
 
 [ext_resource type="FontFile" path="res://fonts/PublicSans-Regular.ttf" id="font_regular"]
 [ext_resource type="FontFile" path="res://fonts/PublicSans-SemiBold.ttf" id="font_semibold"]
@@ -45,7 +45,7 @@ content_margin_left = 14.0
 content_margin_top = 12.0
 content_margin_right = 14.0
 content_margin_bottom = 12.0
-bg_color = Color(0.18, 0.43, 0.33, 1)
+bg_color = Color(0.4, 0.41568628, 0.42352942, 1)
 corner_radius_top_left = 5
 corner_radius_top_right = 5
 corner_radius_bottom_right = 5
@@ -73,7 +73,7 @@ content_margin_left = 34.0
 content_margin_top = 16.0
 content_margin_right = 34.0
 content_margin_bottom = 16.0
-bg_color = Color(0.18, 0.72, 0.55, 1)
+bg_color = Color(0.96862745, 0.78431374, 0.44313726, 1)
 corner_radius_top_left = 5
 corner_radius_top_right = 5
 corner_radius_bottom_right = 5
@@ -84,7 +84,29 @@ content_margin_left = 34.0
 content_margin_top = 16.0
 content_margin_right = 34.0
 content_margin_bottom = 16.0
-bg_color = Color(0.24, 0.8, 0.62, 1)
+bg_color = Color(0.98039216, 0.83137256, 0.5411765, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id="primary_pressed"]
+content_margin_left = 34.0
+content_margin_top = 16.0
+content_margin_right = 34.0
+content_margin_bottom = 16.0
+bg_color = Color(0.8627451, 0.68235296, 0.34509805, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id="primary_disabled"]
+content_margin_left = 34.0
+content_margin_top = 16.0
+content_margin_right = 34.0
+content_margin_bottom = 16.0
+bg_color = Color(0.6039216, 0.5058824, 0.3137255, 1)
 corner_radius_top_left = 5
 corner_radius_top_right = 5
 corner_radius_bottom_right = 5
@@ -117,7 +139,7 @@ content_margin_left = 10.0
 content_margin_top = 12.0
 content_margin_right = 10.0
 content_margin_bottom = 12.0
-bg_color = Color(0.18, 0.43, 0.33, 1)
+bg_color = Color(0.4, 0.41568628, 0.42352942, 1)
 corner_radius_top_left = 5
 corner_radius_top_right = 5
 corner_radius_bottom_right = 5
@@ -320,17 +342,20 @@ Tag/colors/font_color = Color(0.831, 0.831, 0.831, 1)
 Tag/font_sizes/font_size = 10
 Tag/styles/normal = SubResource("tag")
 PrimaryButton/base_type = &"Button"
-PrimaryButton/colors/font_color = Color(1, 1, 1, 1)
-PrimaryButton/colors/font_disabled_color = Color(0.75, 0.85, 0.8, 1)
-PrimaryButton/colors/font_hover_color = Color(1, 1, 1, 1)
+PrimaryButton/colors/font_color = Color(0.101960786, 0.078431375, 0.03137255, 1)
+PrimaryButton/colors/font_disabled_color = Color(0.101960786, 0.078431375, 0.03137255, 1)
+PrimaryButton/colors/font_focus_color = Color(0.101960786, 0.078431375, 0.03137255, 1)
+PrimaryButton/colors/font_hover_color = Color(0.101960786, 0.078431375, 0.03137255, 1)
+PrimaryButton/colors/font_hover_pressed_color = Color(0.101960786, 0.078431375, 0.03137255, 1)
+PrimaryButton/colors/font_pressed_color = Color(0.101960786, 0.078431375, 0.03137255, 1)
 PrimaryButton/fonts/font = ExtResource("font_extrabold")
 PrimaryButton/font_sizes/font_size = 17
-PrimaryButton/styles/disabled = SubResource("primary")
+PrimaryButton/styles/disabled = SubResource("primary_disabled")
 PrimaryButton/styles/focus = SubResource("primary_hover")
 PrimaryButton/styles/hover = SubResource("primary_hover")
-PrimaryButton/styles/hover_pressed = SubResource("primary_hover")
+PrimaryButton/styles/hover_pressed = SubResource("primary_pressed")
 PrimaryButton/styles/normal = SubResource("primary")
-PrimaryButton/styles/pressed = SubResource("primary_hover")
+PrimaryButton/styles/pressed = SubResource("primary_pressed")
 FooterLink/base_type = &"Button"
 FooterLink/colors/font_color = Color(0.831, 0.831, 0.831, 1)
 FooterLink/colors/font_focus_color = Color(0.831, 0.831, 0.831, 1)

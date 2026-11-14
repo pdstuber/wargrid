@@ -16,14 +16,19 @@ const PlaytestSettings = preload("res://scripts/playtest/playtest_settings.gd")
 const Credits = preload("res://scripts/presentation/credits.gd")
 const DashedPanel = preload("res://scripts/presentation/dashed_panel.gd")
 const REGULAR := "res://fonts/PublicSans-Regular.ttf"
-const SELECTED := Color(0.18, 0.43, 0.33)
+const SELECTED := Color("#666a6c")
+const ACTION := Color("#f7c871")
+const INK := Color("#1a1408")
+const SWITCH_DARK := Color("#2b2b2b")
+const SWITCH_GREY := Color("#808080")
+const SWITCH_LIGHT := Color("#d4d4d4")
 const FIELD := Color(0.165, 0.165, 0.165)
 const SIZES: Array[Vector2i] = [Vector2i(1280, 720), Vector2i(1920, 1080), Vector2i(2576, 1145)]
 # canvas_items + expand lays a window out at 720 logical px high; 2576x1145 becomes roundi(720 * 2576 / 1145) wide
 const STRETCHED: Array[Array] = [[Vector2i(1920, 1080), Vector2i(1280, 720)], [Vector2i(2576, 1145), Vector2i(1620, 720)]]
 
 func cases() -> Array[Callable]:
-	return [test_picks_defaults, test_picks_fallback_per_field, test_picks_keep_other_sections, test_fullscreen_target, test_fullscreen_switch, test_this_build_line, test_graphics_group, test_graphics_shows_stored, test_graphics_mirror_esc_menu, test_no_green_on_switches, test_mute_is_a_switch, test_public_sans_font, test_type_matches_mockups, test_font_rendering, test_dropdown_arrow, test_control_heights, test_round4_minors, test_long_dropdown_text_keeps_a_gap, test_footer_error_hugs_text, test_waiting_bold_codes_and_dashed_slots, test_sidebar_switches_pages, test_aspect_expand_and_restore, test_layout_every_page, test_opens_on_bot_with_picks, test_toggle_friend, test_map_info_and_summary, test_own_faction_shared, test_start_saves_picks, test_advanced_only_prerelease, test_link_opens_join, test_lock_while_connecting, test_waiting_view, test_join_error_footer, test_join_needs_code, test_relay_fields_follow, test_column_widths, test_player_rows_padded, test_footer_status_style, test_vertical_rhythm, test_waiting_two_columns]
+	return [test_picks_defaults, test_picks_fallback_per_field, test_picks_keep_other_sections, test_fullscreen_target, test_fullscreen_switch, test_this_build_line, test_graphics_group, test_graphics_shows_stored, test_graphics_mirror_esc_menu, test_no_selection_colour_on_switches, test_primary_button_is_amber_with_dark_ink, test_mute_is_a_switch, test_public_sans_font, test_type_matches_mockups, test_font_rendering, test_dropdown_arrow, test_control_heights, test_round4_minors, test_long_dropdown_text_keeps_a_gap, test_footer_error_hugs_text, test_waiting_bold_codes_and_dashed_slots, test_sidebar_switches_pages, test_aspect_expand_and_restore, test_layout_every_page, test_opens_on_bot_with_picks, test_toggle_friend, test_map_info_and_summary, test_own_faction_shared, test_start_saves_picks, test_advanced_only_prerelease, test_link_opens_join, test_lock_while_connecting, test_waiting_view, test_join_error_footer, test_join_needs_code, test_relay_fields_follow, test_column_widths, test_player_rows_padded, test_footer_status_style, test_vertical_rhythm, test_waiting_two_columns]
 
 func _picked(selector: OptionButton) -> String:
 	return selector.get_item_metadata(selector.selected)
@@ -219,7 +224,7 @@ func test_toggle_friend(runner) -> bool:
 	runner.check(play.get_node("Body/OpenSlot/Row/Hint").text == "Your friend picks their own faction.", "L9b open slot copy")
 	runner.check(play.get_node("Footer/Status").text == "You get a link to send to your friend.", "L9b footer hint, got '%s'" % play.get_node("Footer/Status").text)
 	runner.check(friend_toggle.button_pressed and not bot_toggle.button_pressed, "L9b the Friend toggle is pressed")
-	runner.check(friend_toggle.get_theme_stylebox("pressed").bg_color == SELECTED and bot_toggle.get_theme_stylebox("normal").bg_color == FIELD, "L9b selected side green, other side field colour")
+	runner.check(friend_toggle.get_theme_stylebox("pressed").bg_color == SELECTED and bot_toggle.get_theme_stylebox("normal").bg_color == FIELD, "L9b selected side grey, other side field colour")
 	bot_toggle.pressed.emit()
 	runner.check(launcher.opponent == "bot" and play.get_node("Body/Bot").visible and not play.get_node("Body/OpenSlot").visible and play.get_node("Footer/Start").visible, "L9b the Bot toggle returns to the bot")
 	launcher.free()
@@ -305,7 +310,7 @@ func _nav_disabled(launcher) -> Array[bool]:
 	for page_name: String in LauncherScript.NAV_PAGES: states.append(launcher.get_node("Sidebar/Nav/" + page_name).disabled)
 	return states
 
-func _drawn_green(button: Button) -> bool:
+func _drawn_selected(button: Button) -> bool:
 	var styles: Dictionary = {BaseButton.DRAW_NORMAL: "normal", BaseButton.DRAW_PRESSED: "pressed", BaseButton.DRAW_HOVER: "hover", BaseButton.DRAW_DISABLED: "disabled", BaseButton.DRAW_HOVER_PRESSED: "hover_pressed"}
 	var style: StyleBox = button.get_theme_stylebox(styles[button.get_draw_mode()])
 	return style is StyleBoxFlat and style.bg_color == SELECTED
@@ -351,7 +356,7 @@ func test_lock_while_connecting(runner) -> bool:
 	runner.check(_nav_disabled(launcher) == [true, true, true, true], "L11 Create locks every nav button, got %s" % [_nav_disabled(launcher)])
 	var friend_toggle: Button = launcher.get_node("Pages/Play/Body/Opponent/FriendToggle")
 	runner.check(launcher.get_node("Sidebar/Nav/Play").disabled and friend_toggle.disabled, "L11 the Friend toggle locks with the nav")
-	runner.check(_drawn_green(launcher.get_node("Sidebar/Nav/Play")) and _drawn_green(friend_toggle), "L17 while connecting the Play nav and the Friend toggle still draw green")
+	runner.check(_drawn_selected(launcher.get_node("Sidebar/Nav/Play")) and _drawn_selected(friend_toggle), "L17 while connecting the Play nav and the Friend toggle still draw the selection grey")
 	launcher._fail(reason)
 	var play_status: Label = launcher.get_node("Pages/Play/Footer/Status")
 	runner.check(_nav_disabled(launcher) == [false, false, false, false] and launcher.current_page == "Play" and play_status.text == reason and launcher.opponent == "friend", "L11 a failure before welcome unlocks the nav and shows the reason in Play's footer")
@@ -374,9 +379,9 @@ func test_waiting_view(runner) -> bool:
 	var waiting: Control = launcher.get_node("Pages/Waiting")
 	var own: String = Registry.faction("china").display_name
 	runner.check(launcher.current_page == "Waiting" and _nav_disabled(launcher) == [true, true, true, true], "L12a welcome shows Waiting with the nav locked")
-	runner.check(_drawn_green(launcher.get_node("Sidebar/Nav/Play")), "L17 Waiting draws the Play nav green")
+	runner.check(_drawn_selected(launcher.get_node("Sidebar/Nav/Play")), "L17 Waiting draws the Play nav in the selection grey")
 	for other: String in ["Join", "Settings", "Credits"]:
-		runner.check(not _drawn_green(launcher.get_node("Sidebar/Nav/" + other)), "L17 Waiting leaves %s idle" % other)
+		runner.check(not _drawn_selected(launcher.get_node("Sidebar/Nav/" + other)), "L17 Waiting leaves %s idle" % other)
 	runner.check(waiting.get_node("Body/Left/Invite/Link").text == launcher._copy_text() and "Or tell them the code: ABC234" in _texts(waiting), "L12a link and code line")
 	var one: Array[String] = _texts(waiting.get_node("Body/Left/One"))
 	runner.check("You" in one and own in one and "READY" in one, "L12a row 1 is You, %s, READY, got %s" % [own, one])
@@ -769,9 +774,9 @@ func test_waiting_two_columns(runner) -> bool:
 
 const BUTTON_STATES: Array[String] = ["normal", "hover", "pressed", "hover_pressed", "disabled", "focus"]
 
-func test_no_green_on_switches(runner) -> bool:
+func test_no_selection_colour_on_switches(runner) -> bool:
 	var saved: String = AudioSettings.path
-	var launcher = await _launcher_with(runner, "no-green", {}, true)
+	var launcher = await _launcher_with(runner, "no-selection-colour", {}, true)
 	_restore(saved)
 	var switches: Array[Node] = launcher.find_children("*", "CheckButton", true, false)
 	runner.check(switches.size() >= 6, "U1 fixture: Playtest, Mute, Fullscreen and three Graphics switches exist, got %d" % switches.size())
@@ -781,7 +786,7 @@ func test_no_green_on_switches(runner) -> bool:
 		for state: String in BUTTON_STATES:
 			var style: StyleBox = button.get_theme_stylebox(state)
 			checked += 1
-			runner.check(not (style is StyleBoxFlat and style.bg_color == SELECTED), "U1 %s draws no selection green in its %s state" % [button.get_path(), state])
+			runner.check(not (style is StyleBoxFlat and style.bg_color == SELECTED), "U1 %s draws no selection grey in its %s state" % [button.get_path(), state])
 	runner.check(checked > 100, "U1 the sweep covered the controls, got %d state checks" % checked)
 	for button: CheckButton in switches:
 		var hover: StyleBox = button.get_theme_stylebox("hover")
@@ -792,7 +797,10 @@ func test_no_green_on_switches(runner) -> bool:
 		var on: Texture2D = button.get_theme_icon("checked")
 		var off: Texture2D = button.get_theme_icon("unchecked")
 		runner.check(on != null and off != null and on != off and on.resource_path.begins_with("res://ui/") and off.resource_path.begins_with("res://ui/"), "U1 %s shows its state with the launcher's own knob icons" % button.name)
-		runner.check(_close(on.get_image().get_pixel(1, 1), SELECTED) and not _close(off.get_image().get_pixel(1, 1), SELECTED), "U1b %s draws its track in the selection green when on and not when off" % button.name)
+		var on_image: Image = on.get_image()
+		var off_image: Image = off.get_image()
+		runner.check(_close(on_image.get_pixel(1, 1), SWITCH_LIGHT) and _close(on_image.get_pixel(29, 11), SWITCH_DARK) and _close(on_image.get_pixel(11, 11), SWITCH_LIGHT), "U1b %s on: light track, dark knob on the right" % button.name)
+		runner.check(_close(off_image.get_pixel(1, 1), SWITCH_DARK) and _close(off_image.get_pixel(0, 0), SWITCH_GREY) and _close(off_image.get_pixel(11, 11), SWITCH_GREY) and _close(off_image.get_pixel(29, 11), SWITCH_DARK), "U1b %s off: dark track, grey outline, grey knob on the left" % button.name)
 	launcher.free()
 	return true
 
@@ -917,6 +925,19 @@ func test_round4_minors(runner) -> bool:
 	for pair: Array in [["Button", "normal"], ["OptionButton", "normal"], ["LineEdit", "normal"], ["Tag", "normal"]]:
 		var style: StyleBox = theme.get_stylebox(pair[1], pair[0])
 		runner.check(style is StyleBoxFlat and style.border_color.is_equal_approx(line) and style.border_width_left == 1, "M3 %s border is the CSS --line #808080, got %s" % [pair[0], style.border_color if style is StyleBoxFlat else "no flat style"])
+	return true
+
+func test_primary_button_is_amber_with_dark_ink(runner) -> bool:
+	var theme: Theme = _launcher_theme()
+	for state: String in BUTTON_STATES:
+		var style: StyleBox = theme.get_stylebox(state, "PrimaryButton")
+		runner.check(style is StyleBoxFlat and style.bg_color.h > 0.09 and style.bg_color.h < 0.13 and style.bg_color.s > 0.3, "P1 primary %s fill is amber, got %s" % [state, style.bg_color if style is StyleBoxFlat else "no flat style"])
+	runner.check(theme.get_stylebox("normal", "PrimaryButton").bg_color == ACTION, "P1 primary normal fill is #f7c871")
+	runner.check(theme.get_stylebox("hover", "PrimaryButton").bg_color.get_luminance() > ACTION.get_luminance(), "P1 primary hover is lighter")
+	runner.check(theme.get_stylebox("pressed", "PrimaryButton").bg_color.get_luminance() < ACTION.get_luminance(), "P1 primary pressed is darker")
+	runner.check(theme.get_stylebox("disabled", "PrimaryButton").bg_color.get_luminance() < ACTION.get_luminance() * 0.8, "P1 primary disabled is dimmed")
+	for colour: String in ["font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color", "font_focus_color", "font_disabled_color"]:
+		runner.check(theme.get_color(colour, "PrimaryButton") == INK, "P2 primary %s is the dark ink, got %s" % [colour, theme.get_color(colour, "PrimaryButton")])
 	return true
 
 func _close(a: Color, b: Color) -> bool:

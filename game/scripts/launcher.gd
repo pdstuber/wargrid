@@ -374,7 +374,7 @@ func _set_busy(busy: bool) -> void:
 		if control is BaseButton: _lock(control, busy)
 		else: control.editable = not busy
 
-# Godot draws a disabled button in its disabled style even when pressed; the selected item must stay green.
+# Godot draws a disabled button in its disabled style even when pressed; the selected item must stay grey.
 func _lock(button: BaseButton, busy: bool) -> void:
 	button.disabled = busy
 	if busy and button.button_pressed: button.add_theme_stylebox_override("disabled", button.get_theme_stylebox("pressed"))
