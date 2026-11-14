@@ -1,15 +1,15 @@
 # One controller verification
 
 ```text
-Resume record (updated 2026-11-14: Task 1 GREEN, not committed)
-Branch / base commit / working-tree state: one-controller (worktree ~/projects/wargrid-wt-onecontrol) / 05d0794 (Task 0 commit; game/ = 35d22b5) / Task 1 files uncommitted
-Last green task / next incomplete task: Task 1 / Task 2
-Changed paths since last commit: docs/reference/one-controller-verification.md, game/tests/input_script_rows.gd (new, with .uid), game/tests/test_skirmish_scene.gd, game/tests/test_online_scene.gd
-Last command / cases / checks / failures / exit / marker: full suite after Task 1 / 860 / 144276 / 0 / exit 0 / TESTS PASSED 144276 (static gates CHECKS PASSED 5)
+Resume record (updated 2026-11-14: Task 2 GREEN, not committed)
+Branch / base commit / working-tree state: one-controller (worktree ~/projects/wargrid-wt-onecontrol) / f1c6b78 (Task 1 commit) / Task 2 files uncommitted
+Last green task / next incomplete task: Task 2 / Task 3
+Changed paths since last commit: docs/reference/one-controller-verification.md, docs/superpowers/plans/2026-11-14-one-controller.md, game/scripts/skirmish_main.gd (null guard :282, amendment 1), game/tests/test_scene.gd, test_base_scene.gd, test_pause_menu.gd, test_perf_overlay.gd
+Last command / cases / checks / failures / exit / marker: full suite after Task 2 / 860 / 144276 / 0 / exit 0 / TESTS PASSED 144276 (static gates CHECKS PASSED 5)
 Known red case or blocker: none
-Approved decisions, pre-authorizations used, deferred gates: package note "One controller" (user, 2026-11-13); plan "Decisions (user, 2026-11-14)" 1-20; local commits as the night run handoff pre-authorizes (one per GREEN task, two in Task 9); benchmark only in Task 8, alone; Task 1 commit (V10 base): none yet; Task 9 re-pin commit (V10 base from Task 9): none yet
+Approved decisions, pre-authorizations used, deferred gates: package note "One controller" (user, 2026-11-13); plan "Decisions (user, 2026-11-14)" 1-20; local commits as the night run handoff pre-authorizes (one per GREEN task, two in Task 9); benchmark only in Task 8, alone; Task 1 commit (V10 base): f1c6b78; Task 9 re-pin commit (V10 base from Task 9): none yet
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: Task 2 Step 1 (port the M2 and M3 scene checks onto the match scene); the coordinator commits Task 1 first and records its hash in the Approved line and the Characterisation rows
+Next exact action: Task 3 Step 1 (delete the demo scenes and demo-only checks); the null guard `skirmish_main.gd:282` (Task 2 amendment 1) is carried byte for byte through Tasks 5 and 7
 ```
 
 Plan: [One controller plan](../superpowers/plans/2026-11-14-one-controller.md). Spec: `docs/packages.md` package note "One controller" (`:84`); design answers "Package review, second pass" (`:474-505`) and "Main branch audit" (`:363-378`); audit FIX-6 and A-1 (kept outside the repository, `~/projects/wargrid-overnight-work/audit-2026-11-11/`). Logs: `~/projects/wargrid-overnight-work/one-controller/logs/` (outside the repository; commands use the absolute path). A stop after any GREEN task resumes at the next row of the task table: the subagent reads this record, checks `git log --oneline -1` and `git status --short` in the worktree against it, and starts that task's Step 1.
@@ -20,7 +20,7 @@ Plan: [One controller plan](../superpowers/plans/2026-11-14-one-controller.md). 
 |---|---|---|---|
 | 0 | Baseline: worktree, import, suite and traces, pins, member and simulation censuses, pre-tree scan, check-id census | Sonnet | GREEN (uncommitted) |
 | 1 | Characterisation: IC1 offline and IC2 online input scripts | Sonnet | GREEN (uncommitted) |
-| 2 | Port the M2 and M3 scene checks onto the match scene (old chain) | Sonnet | not started |
+| 2 | Port the M2 and M3 scene checks onto the match scene (old chain) | Sonnet | GREEN (uncommitted) |
 | 3 | Delete the demo scenes and demo-only checks | Sonnet | not started |
 | 4 | Extract the driver (OD1, OD2); `main.driver.sim` rename (Decision 6) | Sonnet | not started |
 | 5 | One screen: merge the chain, delete the four scripts | Sonnet | not started |
@@ -126,7 +126,7 @@ Member and simulation counts at Task 0 equal the `35d22b5` expectations in every
 | Two runs identical | yes (captured logs `t1-cap1.log`, `t1-cap2.log` compare equal for both cases) |
 | Mutation (a) tick default: IC1 first failing row | row 1 (step 2, `"tick":1` instead of 0); reverted, `git diff --stat` shows no `game/scripts` change |
 | Mutation (b) `not is_selecting()` guard: IC1 / IC2 first failing row | IC1 row 5 (step 6, extra `stop`), IC2 row 3 (step 6, extra `stop`); reverted |
-| Task 1 commit (V10 base until Task 9; also in the resume record) | |
+| Task 1 commit (V10 base until Task 9; also in the resume record) | f1c6b78 |
 | Censuses after Task 1 (V11, V11b) | check ids 661 (659 plus `IC1`, `IC2`); labels 3104 (3070 plus 34 `IC1`/`IC2` labels); pre-tree scan exit 0, `NO-TREE` lines now `test_online_scene.gd:319` (N5, was `:317`: two preload lines added), `test_skirmish.gd:700`, `test_view.gd:99` |
 | Each step's intended effect checked before pinning (`IC1 step %d took effect`) | yes, every step has its check (IC1: 21 steps incl. a separate `IC1 step 8 opened the menu`; IC2 likewise); none was missing an effect |
 
@@ -136,10 +136,10 @@ Expected on `35d22b5` by reading (Task 2 confirms by running on the old chain):
 
 | File | Families | Fixture on `skirmish.tscn` | Outcome |
 |---|---|---|---|
-| `test_scene.gd` | S1-S7, G26 | `_m2_world()` (`main.gd:250-258` + `add_player(1, 0)`), `_reset_camera()` | ported |
-| `test_scene.gd` | S8 (eight labels: B adds, B removes, move onto toggle cell, occupied setup, occupied rejected, rejection reason, vacate, preserves next action) | — | demo-only, deleted in Task 3 |
-| `test_scene.gd` | S9 (move issued, status counts) | — | demo-only (M2 HUD), deleted in Task 3 |
-| `test_base_scene.gd` | Bs1-Bs6, H6, RF1, RF5, RF6, RF8, M1-M6 | `_m3_world()` (`Fixture.make_world()` + supply source) | ported |
+| `test_scene.gd` | S1-S7, G26 | `_m2_world()` (`main.gd:250-258` + `add_player(1, 0)`), `_reset_camera()` | ported; S2/S3 right-clicks on empty ground (amendment 2) |
+| `test_scene.gd` | S8 (eight labels: B adds, B removes, move onto toggle cell, occupied setup, occupied rejected, rejection reason, vacate, preserves next action) | — | demo-only, pending demo removal, deleted in Task 3 |
+| `test_scene.gd` | S9 (move issued, status counts) | — | demo-only (M2 HUD), pending demo removal, deleted in Task 3 |
+| `test_base_scene.gd` | Bs1-Bs6, H6, RF1, RF5, RF6, RF8, M1-M6 | `_m3_world()` (`Fixture.make_world()` + supply source) | ported; RF6 warm-up tick (amendment 3) |
 | `test_pause_menu.gd` | E1 (Base half, `:90`; `const Base` `:4`) | `_m3_world()` | ported |
 | `test_perf_overlay.gd` | PO cases on `Base` (`:39`, `:50`, `:66`, `:84`) | `_m3_world()` where the builder is read | ported |
 | `test_sound.gd` | SD22 demo row (`:331-337`) | — | demo-only, deleted in Task 3 |
@@ -148,9 +148,10 @@ Expected on `35d22b5` by reading (Task 2 confirms by running on the old chain):
 
 | Item | Value |
 |---|---|
-| Task 2: failing checks on the old chain (expected S8, S9 only) | |
-| Task 2: bot needed `add_player(2, 0)` on a fixture world (yes / no) | |
-| Task 2: mutations (G26 Ctrl, Bs3 building select) fail the ported check | |
+| Task 2: failing checks on the old chain (expected S8, S9 only) | Step 4 full suite after amendments 1-3 (`t2-suite-step4.log`): exit 1, CASES 860, CHECKS 144276, FAILURES 4: the three S8 labels and the S9 `status counts` label; nothing else. First attempt (no null guard, no amendments 2-3) had 16 failures from `_result_text(null)` SCRIPT ERRORs, then S2 (7 labels), S3 "rejection did not consume sequence" and RF6 once the guard was in; the user approved the fixes 2026-11-14 |
+| Task 2: bot needed `add_player(2, 0)` on a fixture world (yes / no) | no (a second player made `Bs1 authored economy` fail on `players.size() == 1` and still left the null match; reverted) |
+| Task 2: mutations (G26 Ctrl, Bs3 building select) fail the ported check | G26: `main.gd:191` `and not _ctrl` dropped: exit 1, `G26 Ctrl double click is a plain click`; reverted. Bs3 as written (`base_main.gd:220` `selected_ids.clear()` deleted): filtered `test_base_scene` exit 0, NOT red there (the check starts with `selected_ids` empty); the full suite catches it only through `IC1 row 11` (Task 1 characterisation). Substitute mutation `base_main.gd:219` `selected_building_id = building.id` deleted: filtered exit 1, `Bs3 building selection outline`; reverted. `git diff --stat game/scripts` shows only the null guard |
+| Task 2: amendments (user, 2026-11-14) | (1) null guard `skirmish_main.gd:282`: kept; carried verbatim by Tasks 5 and 7, told to the Task 11 reviewer. (2) S2/S3 clicks on empty ground (five `test_scene.gd` lines). (3) RF6 warm-up tick (`test_base_scene.gd`, one added line). Step 6 full suite: exit 0, CASES 860, CHECKS 144276, `TESTS PASSED 144276` (equals Task 1); static gates `CHECKS PASSED 5` |
 | Task 3: V11 diff equals the demo-only list | |
 
 ## Driver, screen, orders, HUD (Tasks 4-7)
@@ -174,6 +175,24 @@ Expected on `35d22b5` by reading (Task 2 confirms by running on the old chain):
 |---|---|---|---|
 | 1 | `game/tests/test_skirmish_scene.gd` | IC1 added to `cases()` | `return [test_skirmish_ready_and_tick, …, test_hud_summaries_are_pinned]` |
 | 1 | `game/tests/test_online_scene.gd` | IC2 added to `cases()` | `return [test_seat_two_controls_player_two, …, test_launcher_reads_no_page_off_web]` |
+| 2 | `game/tests/test_base_scene.gd` | port onto skirmish.tscn; S2/S3 clicks on empty ground (amendment 2, user 2026-11-14) | `const Base = preload("res://scenes/base.tscn")` |
+| 2 | `game/tests/test_pause_menu.gd` | port onto skirmish.tscn; S2/S3 clicks on empty ground (amendment 2, user 2026-11-14) | `const Base = preload("res://scenes/base.tscn")` |
+| 2 | `game/tests/test_pause_menu.gd` | port onto skirmish.tscn; S2/S3 clicks on empty ground (amendment 2, user 2026-11-14) | `main = await _scene(runner, Base)` |
+| 2 | `game/tests/test_perf_overlay.gd` | port onto skirmish.tscn; S2/S3 clicks on empty ground (amendment 2, user 2026-11-14) | `const Base = preload("res://scenes/base.tscn")` |
+| 2 | `game/tests/test_perf_overlay.gd` | port onto skirmish.tscn; S2/S3 clicks on empty ground (amendment 2, user 2026-11-14) | `var main = await _scene(runner, Base)` |
+| 2 | `game/tests/test_perf_overlay.gd` | port onto skirmish.tscn; S2/S3 clicks on empty ground (amendment 2, user 2026-11-14) | `var main = await _scene(runner, Base)` |
+| 2 | `game/tests/test_perf_overlay.gd` | port onto skirmish.tscn; S2/S3 clicks on empty ground (amendment 2, user 2026-11-14) | `var main = await _scene(runner, Base)` |
+| 2 | `game/tests/test_perf_overlay.gd` | port onto skirmish.tscn; S2/S3 clicks on empty ground (amendment 2, user 2026-11-14) | `var main = await _scene(runner, Base)` |
+| 2 | `game/tests/test_scene.gd` | port onto skirmish.tscn; S2/S3 clicks on empty ground (amendment 2, user 2026-11-14) | `const Main = preload("res://scenes/main.tscn")` |
+| 2 | `game/tests/test_scene.gd` | port onto skirmish.tscn; S2/S3 clicks on empty ground (amendment 2, user 2026-11-14) | `func setup(runner):` |
+| 2 | `game/tests/test_scene.gd` | port onto skirmish.tscn; S2/S3 clicks on empty ground (amendment 2, user 2026-11-14) | `var main = Main.instantiate()` |
+| 2 | `game/tests/test_scene.gd` | port onto skirmish.tscn; S2/S3 clicks on empty ground (amendment 2, user 2026-11-14) | `await click(runner, view, Iso.world_to_plane(Vector2(4.5, 3.5)), MOUSE_BUTTON_RIGHT)` |
+| 2 | `game/tests/test_scene.gd` | port onto skirmish.tscn; S2/S3 clicks on empty ground (amendment 2, user 2026-11-14) | `runner.check(Vector2(cmd.target[0], cmd.target[1]).distance_to(Vector2(4.5, 3.5)) <= 1e-5, "S2 inverse exact target")` |
+| 2 | `game/tests/test_scene.gd` | port onto skirmish.tscn; S2/S3 clicks on empty ground (amendment 2, user 2026-11-14) | `var target := Vector2(4.25, 3.1)` |
+| 2 | `game/tests/test_scene.gd` | port onto skirmish.tscn; S2/S3 clicks on empty ground (amendment 2, user 2026-11-14) | `await click(runner, view, Iso.world_to_plane(Vector2(4.5, 3.5)), MOUSE_BUTTON_RIGHT)` |
+| 2 | `game/tests/test_scene.gd` | port onto skirmish.tscn; S2/S3 clicks on empty ground (amendment 2, user 2026-11-14) | `await click(runner, view, Iso.world_to_plane(Vector2(5.5, 3.5)), MOUSE_BUTTON_RIGHT)` |
+| 2 | `game/tests/test_scene.gd` | port onto skirmish.tscn; S2/S3 clicks on empty ground (amendment 2, user 2026-11-14) | `var main = await setup(runner)` |
+| 2 | `game/tests/test_scene.gd` | port onto skirmish.tscn; S2/S3 clicks on empty ground (amendment 2, user 2026-11-14) | `var main = await setup(runner)` |
 
 ## Accepted reorders (plan R1-R4; reviewer verdict in Task 11)
 

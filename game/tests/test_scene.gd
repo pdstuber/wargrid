@@ -1,15 +1,35 @@
 @warning_ignore_start("untyped_declaration")
 extends RefCounted
 
-const Main = preload("res://scenes/main.tscn")
+const Main = preload("res://scenes/skirmish.tscn")
+const Demo = preload("res://scenes/main.tscn")
+const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 
 func cases() -> Array[Callable]:
 	return [test_ready, test_clicks, test_rejection, test_camera, test_driver, test_boxes, test_drag_rules, test_obstacle_toggle, test_status_counts, test_double_click_same_kind_on_screen, test_double_click_alt_whole_map, test_double_click_shift_keeps, test_double_click_ctrl_ignored, test_double_click_enemy_or_ground_plain]
 
-func setup(runner):
-	var main = Main.instantiate()
+func _m2_world() -> Simulation:
+	var blocked: Array[Vector2i] = []
+	for y in range(4, 10):
+		for x in range(6, 9):
+			blocked.append(Vector2i(x, y))
+	var sim := Simulation.new(blocked)
+	sim.add_player(1, 0)
+	for y in range(1, 5):
+		for x in range(1, 6):
+			sim.spawn(1, Vector2(x + 0.5, y + 0.5))
+	return sim
+
+func _install_world(main) -> void:
+	main.simulation = _m2_world()
+	main._reset_camera()
+	main._refresh()
+
+func setup(runner, packed = Main):
+	var main = packed.instantiate()
 	runner.root.add_child(main)
+	if packed == Main: _install_world(main)
 	main.set_physics_process(false)
 	main.set_process(false)
 	await runner.process_frame
@@ -68,15 +88,15 @@ func test_clicks(runner) -> bool:
 			await runner.process_frame
 			await select(runner, main)
 			runner.check(main.selected_ids == [1], "S2 transformed selection " + str([center, zoom]))
-			await click(runner, view, Iso.world_to_plane(Vector2(4.5, 3.5)), MOUSE_BUTTON_RIGHT)
+			await click(runner, view, Iso.world_to_plane(Vector2(4.5, 5.5)), MOUSE_BUTTON_RIGHT)
 			var state: Dictionary = main.simulation.snapshot()
 			runner.check(state.pending_commands.size() == sequence + 1, "S2 one command per press")
 			if state.pending_commands.size() > sequence:
 				var cmd: Dictionary = state.pending_commands[sequence]
-				runner.check(Vector2(cmd.target[0], cmd.target[1]).distance_to(Vector2(4.5, 3.5)) <= 1e-5, "S2 inverse exact target")
+				runner.check(Vector2(cmd.target[0], cmd.target[1]).distance_to(Vector2(4.5, 5.5)) <= 1e-5, "S2 inverse exact target")
 				runner.check(cmd.player == 1 and cmd.entity_ids == [1] and cmd.tick == state.tick and cmd.sequence == sequence, "S2 command envelope")
 			sequence += 1
-	var target := Vector2(4.25, 3.1)
+	var target := Vector2(4.25, 6.1)
 	await click(runner, view, Iso.world_to_plane(target), MOUSE_BUTTON_RIGHT)
 	var pending: Array = main.simulation.snapshot().pending_commands
 	runner.check(pending.size() == sequence + 1, "S2 non-center command queued")
@@ -90,13 +110,13 @@ func test_rejection(runner) -> bool:
 	var main = await setup(runner)
 	var view = main.get_node("WorldView")
 	await select(runner, main)
-	await click(runner, view, Iso.world_to_plane(Vector2(4.5, 3.5)), MOUSE_BUTTON_RIGHT)
+	await click(runner, view, Iso.world_to_plane(Vector2(4.5, 5.5)), MOUSE_BUTTON_RIGHT)
 	main._physics_process(0.0)
 	var active: Dictionary = main.simulation.snapshot()
 	await click(runner, view, Iso.world_to_plane(Vector2(7.5, 6.5)), MOUSE_BUTTON_RIGHT)
 	runner.check(main.simulation.snapshot() == active, "S3 rejected order preserves active destination and sequence")
 	runner.check(main.get_node("HUD/Status").text.contains("Target"), "S3 HUD rejection reason")
-	await click(runner, view, Iso.world_to_plane(Vector2(5.5, 3.5)), MOUSE_BUTTON_RIGHT)
+	await click(runner, view, Iso.world_to_plane(Vector2(5.5, 5.5)), MOUSE_BUTTON_RIGHT)
 	var queued: Dictionary = main.simulation.snapshot()
 	runner.check(queued.pending_commands.size() == 1 and queued.pending_commands[0].sequence == 1, "S3 rejection did not consume sequence")
 	runner.check(not main.get_node("HUD/Status").text.contains("Target"), "S3 accepted clears error")
@@ -150,6 +170,7 @@ func test_camera(runner) -> bool:
 func test_driver(runner) -> bool:
 	var main = Main.instantiate()
 	runner.root.add_child(main)
+	_install_world(main)
 	var before: int = main.simulation.snapshot().tick
 	await runner.physics_frame
 	await runner.process_frame
@@ -255,7 +276,7 @@ func test_drag_rules(runner) -> bool:
 	return true
 
 func test_obstacle_toggle(runner) -> bool:
-	var main = await setup(runner)
+	var main = await setup(runner, Demo)
 	await _key(runner, KEY_B, true)
 	runner.check(main.simulation.snapshot().map.blocked_cells.size() == 24, "S8 B adds authored obstacle")
 	await _key(runner, KEY_B, true)
@@ -281,7 +302,7 @@ func test_obstacle_toggle(runner) -> bool:
 	return true
 
 func test_status_counts(runner) -> bool:
-	var main = await setup(runner)
+	var main = await setup(runner, Demo)
 	var command := {"tick": 0, "player": 1, "sequence": 0, "type": "move", "entity_ids": [1, 2, 3], "target": [10.5, 3.5]}
 	runner.check(main.simulation.issue_command(command).ok, "S9 move issued")
 	for i in 3: main._physics_process(0.0)

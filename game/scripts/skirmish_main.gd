@@ -279,7 +279,7 @@ func _refresh_hud(state: Dictionary) -> void:
 	_ensure_sound()
 	super._refresh_hud(state)
 	_sound.update(state)
-	var result: String = _result_text(state.match)
+	var result: String = "" if state.match == null else _result_text(state.match)
 	var building: Dictionary = _building(state, selected_building_id)
 	if _inspected(state).is_empty(): inspected_id = -1
 	_view.set_inspected(inspected_id)

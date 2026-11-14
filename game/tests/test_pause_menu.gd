@@ -1,7 +1,7 @@
 @warning_ignore_start("untyped_declaration")
 extends RefCounted
 
-const Base = preload("res://scenes/base.tscn")
+const BaseScene = preload("res://tests/test_base_scene.gd")
 const Skirmish = preload("res://scenes/skirmish.tscn")
 const OnlineScene = preload("res://scenes/online_skirmish.tscn")
 const PauseMenu = preload("res://scripts/presentation/pause_menu.gd")
@@ -87,8 +87,9 @@ func test_esc_toggles_and_defers_to_cancel(runner) -> bool:
 	runner.check(not menu.visible, "E1 Esc in attack-move mode leaves the menu closed")
 	main._attack_move_mode = false
 	main.free()
-	main = await _scene(runner, Base)
+	main = await _scene(runner, Skirmish)
 	menu = main.get_node("HUD/PauseMenu")
+	BaseScene.new().install_world(main)
 	main.selected_ids.assign([main.simulation.snapshot().entities[0].id])
 	main._enter_placement("usa_barracks")
 	runner.check(not main._placement_kind.is_empty(), "E1 fixture: placement entered")

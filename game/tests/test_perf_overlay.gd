@@ -1,7 +1,6 @@
 @warning_ignore_start("untyped_declaration")
 extends RefCounted
 
-const Base = preload("res://scenes/base.tscn")
 const Skirmish = preload("res://scenes/skirmish.tscn")
 const Overlay = preload("res://scripts/presentation/perf_overlay.gd")
 
@@ -36,7 +35,7 @@ func test_summary_math(runner) -> bool:
 	return true
 
 func test_f3_toggles_hidden_default(runner) -> bool:
-	var main = await _scene(runner, Base)
+	var main = await _scene(runner, Skirmish)
 	var overlay: Label = main.get_node("HUD/PerfOverlay")
 	runner.check(not overlay.visible, "PO2 hidden by default")
 	_f3(main)
@@ -47,7 +46,7 @@ func test_f3_toggles_hidden_default(runner) -> bool:
 	return true
 
 func test_layout_clear_of_hud(runner) -> bool:
-	var main = await _scene(runner, Base)
+	var main = await _scene(runner, Skirmish)
 	main.get_node("HUD/PerfOverlay").set_counts(300, 12, 123456)
 	_f3(main)
 	await runner.process_frame
@@ -63,7 +62,7 @@ func test_layout_clear_of_hud(runner) -> bool:
 	return true
 
 func test_step_and_counts_shown(runner) -> bool:
-	var main = await _scene(runner, Base)
+	var main = await _scene(runner, Skirmish)
 	_f3(main)
 	main._physics_process(0.0)
 	var snapshot: Dictionary = main.simulation.snapshot()
@@ -81,7 +80,7 @@ func test_skirmish_wired(runner) -> bool:
 	return true
 
 func test_split_share_shown(runner) -> bool:
-	var main = await _scene(runner, Base)
+	var main = await _scene(runner, Skirmish)
 	var overlay: Label = main.get_node("HUD/PerfOverlay")
 	overlay.split_share = 0.97
 	overlay.refresh_text()

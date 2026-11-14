@@ -1,18 +1,30 @@
 @warning_ignore_start("untyped_declaration")
 extends RefCounted
 
-const Base = preload("res://scenes/base.tscn")
+const Base = preload("res://scenes/skirmish.tscn")
 const Fixture = preload("res://tests/economy_fixture.gd")
 const Iso = preload("res://scripts/presentation/isometric.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
+const Simulation = preload("res://scripts/simulation/simulation.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
 
 func cases() -> Array[Callable]:
 	return [test_base_ready,test_placement_input,test_production_ui,test_context_orders,test_execution_feedback,test_preview_hover_cost,test_resume_status,test_queue_label,test_one_snapshot_per_refresh,test_ticks_take_no_snapshot,test_refresh_waits_for_next_frame,test_rejection_survives_two_steps,test_build_menu_from_capabilities,test_build_menu_wraps_eleven,test_build_menu_quantity_label]
 
+func _m3_world() -> Simulation:
+	var sim: Simulation = Fixture.make_world()
+	sim.add_supply_source(Vector2i(24, 4), 200)
+	return sim
+
+func install_world(main) -> void:
+	main.simulation = _m3_world()
+	main._reset_camera()
+	main._refresh()
+
 func setup(runner):
 	var main = Base.instantiate()
 	runner.root.add_child(main)
+	install_world(main)
 	main.set_physics_process(false)
 	main.set_process(false)
 	await runner.process_frame
@@ -268,6 +280,7 @@ func test_one_snapshot_per_refresh(runner) -> bool:
 func test_ticks_take_no_snapshot(runner) -> bool:
 	var main = await setup(runner)
 	main.simulation = Fixture.make_world()
+	main._physics_process(0.0) # the bot's tick-0 decision takes one snapshot; RF6 counts the ticks between decisions
 	Profiler.reset()
 	Profiler.enabled = true
 	for i in 10: main._physics_process(0.0)
