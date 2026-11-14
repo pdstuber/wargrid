@@ -27,6 +27,7 @@ const FOLDS: Array[String] = ["Pages/Play/Body/Advanced", "Pages/Join/Body/Advan
 const BOT_ONLY: Array[String] = ["Body/BotLabel", "Body/Spacer2", "Body/Bot", "Body/Spacer3", "Footer/Start"]
 const FRIEND_ONLY: Array[String] = ["Body/OpenSlot", "Body/Spacer4", "Footer/Create"]
 const FRIEND_HINT := "You get a link to send to your friend."
+const CANCELLED := "Match cancelled"
 var _transport: RefCounted
 var _match: String = ""
 var _seat: int = 0
@@ -70,12 +71,12 @@ func _ready() -> void:
 	$Pages/Join/Footer/Join.pressed.connect(func() -> void:
 		_origin = "Join"
 		var code: String = JoinLink.code($Pages/Join/Body/Code.text.strip_edges())
-		if code.is_empty(): $Pages/Join/Footer/Status.text = "Enter the 6-character match code"
+		if code.is_empty(): _show_status($Pages/Join/Footer/Status, "Enter the 6-character match code", true)
 		else: _connect(code))
-	$Pages/Waiting/Body/Copy.pressed.connect(func() -> void: DisplayServer.clipboard_set(_copy_text()))
+	$Pages/Waiting/Body/Left/Invite/Copy.pressed.connect(func() -> void: DisplayServer.clipboard_set(_copy_text()))
 	$Pages/Waiting/Footer/Cancel.pressed.connect(func() -> void:
 		_transport.close()
-		_fail("Match cancelled"))
+		_fail(CANCELLED))
 	for page_name in NAV_PAGES:
 		get_node("Sidebar/Nav/" + page_name).toggled.connect(func(on: bool) -> void:
 			if on and _nav_of(current_page) != page_name: show_page(page_name))
@@ -112,7 +113,7 @@ func _apply_page() -> void:
 	if not relay.is_empty():
 		_set_relay(relay)
 		_set_advanced(true)
-	$Pages/Waiting/Body/Copy.text = "Copy link" if not page.is_empty() else "Copy code"
+	$Pages/Waiting/Body/Left/Invite/Copy.text = "Copy link" if not page.is_empty() else "Copy code"
 
 func _set_advanced(open: bool) -> void:
 	for fold in FOLDS:
@@ -141,7 +142,7 @@ func set_opponent(kind: String) -> void:
 
 func _refresh_play() -> void:
 	$Pages/Play/Body/MapInfo.text = _map_info(_map_id())
-	if not _play_error: $Pages/Play/Footer/Status.text = _summary() if opponent == "bot" else FRIEND_HINT
+	if not _play_error: _show_status($Pages/Play/Footer/Status, _summary() if opponent == "bot" else FRIEND_HINT)
 
 func _map_info(id: String) -> String:
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(MatchSettings.map_path(id)))
@@ -194,6 +195,10 @@ func _fill_credits() -> void:
 	var text: RichTextLabel = $Pages/Credits/Body/Text
 	if text.text.is_empty():
 		text.text = Credits.text(FileAccess.get_file_as_string("res://audio/CREDITS.md"), FileAccess.get_file_as_string("res://data/maps/NOTICE.md"), Engine.get_license_text(), Engine.get_copyright_info(), Engine.get_license_info())
+
+func _show_status(label: Label, text: String, error: bool = false) -> void:
+	label.text = text
+	label.theme_type_variation = &"FooterError" if error else &"FooterStatus"
 
 func _status_label() -> Label:
 	return get_node("Pages/%s/Footer/Status" % _origin)
@@ -263,6 +268,9 @@ func _add_audio() -> void:
 	music.play_list([MusicPlayer.MENU], 0.0)
 	var sliders := VolumeSliders.new()
 	sliders.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sliders.add_theme_constant_override("v_separation", 15)
+	for title: String in ["MusicLabel", "EffectsLabel", "VoiceLabel", "MuteLabel"]: sliders.get_node(title).custom_minimum_size.x = 104.0
+	sliders.get_node("Mute").size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	$Pages/Settings/Body/Audio.add_child(sliders)
 
 func _fill_factions() -> void:
@@ -303,7 +311,7 @@ func _connect(code: String) -> void:
 	if error != OK:
 		_fail("Cannot connect to relay")
 		return
-	_status_label().text = "Connecting…"
+	_show_status(_status_label(), "Connecting…")
 	_set_busy(true)
 	set_process(true)
 
@@ -321,7 +329,7 @@ func _lock(button: BaseButton, busy: bool) -> void:
 	else: button.remove_theme_stylebox_override("disabled")
 
 func _fail(reason: String) -> void:
-	_status_label().text = reason
+	_show_status(_status_label(), reason, reason != CANCELLED)
 	_play_error = _origin == "Play"
 	_transport = null
 	if current_page == "Waiting": show_page(_origin)
@@ -356,7 +364,7 @@ func _handle(text: String) -> bool:
 				_fill_waiting()
 				show_page("Waiting")
 			else:
-				_status_label().text = "Joined match %s" % message.match
+				_show_status(_status_label(), "Joined match %s" % message.match)
 		"start": return _start(message)
 		"error":
 			_transport.close()
@@ -372,11 +380,11 @@ func _fill_waiting() -> void:
 	var body: Control = $Pages/Waiting/Body
 	var own: OptionButton = $Pages/Play/Body/Own
 	var id: String = _map_id()
-	body.get_node("Link").text = _copy_text()
-	body.get_node("CodeHint").text = "Or tell them the code: %s" % _code
-	body.get_node("One/Row/Faction").text = own.get_item_text(own.selected)
-	body.get_node("Map/Name").text = MatchSettings.PLAY_MAPS[id]
-	body.get_node("Map/Info").text = _map_info(id)
+	body.get_node("Left/Invite/Link").text = _copy_text()
+	body.get_node("Left/CodeHint").text = "Or tell them the code: %s" % _code
+	body.get_node("Left/One/Row/Faction").text = own.get_item_text(own.selected)
+	body.get_node("Right/Map/Box/Name").text = MatchSettings.PLAY_MAPS[id]
+	body.get_node("Right/Map/Box/Info").text = _map_info(id)
 	$Pages/Waiting/Footer/Status.text = "Match code %s" % _code
 
 func _start(message: Dictionary) -> bool:

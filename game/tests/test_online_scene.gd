@@ -254,7 +254,7 @@ const LAUNCHER_PAGE_PATHS: Dictionary = {
 	"Join": ["Title", "Subtitle", "Body/CodeLabel", "Body/MapLabel", "Body/Code", "Body/MapHint", "Body/CodeHint", "Body/OwnLabel", "Body/Own", "Body/Advanced/Toggle", "Body/Advanced/RelayHelp", "Body/Advanced/RelayUrl", "Footer/Status", "Footer/Join"],
 	"Settings": ["Title", "Subtitle", "Body/Audio/AudioHeader", "Body/Audio/Volume/MusicLabel", "Body/Audio/Volume/Music", "Body/Audio/Volume/EffectsLabel", "Body/Audio/Volume/Effects", "Body/Audio/Volume/VoiceLabel", "Body/Audio/Volume/Voice", "Body/Audio/Volume/MuteLabel", "Body/Audio/Volume/Mute", "Body/Audio/DisplayHeader", "Body/Audio/Fullscreen", "Body/Playtest/PlaytestHeader", "Body/Playtest/PlaytestSwitch", "Body/Playtest/PlaytestHint", "Body/Playtest/ThisBuild"],
 	"Credits": ["Title", "Subtitle", "Body/Text", "Body/Legal"],
-	"Waiting": ["Title", "Subtitle", "Body/Link", "Body/Copy", "Footer/Status", "Footer/Cancel"],
+	"Waiting": ["Title", "Subtitle", "Body/Left/Invite/Link", "Body/Left/Invite/Copy", "Footer/Status", "Footer/Cancel"],
 }
 const LAUNCHER_NAV_ORDER: Array[String] = ["Play", "Join", "Divider", "Settings", "Credits"]
 const PAGE_TITLES: Dictionary = {"Play": "Play", "Join": "Join a match", "Settings": "Settings", "Credits": "Credits", "Waiting": "Waiting for your friend"}
@@ -597,10 +597,10 @@ func test_cancel_and_copy_while_waiting(runner) -> bool:
 	launcher.set_process(true)
 	var wait: Control = launcher.get_node("Pages/Waiting")
 	launcher._handle('{"type":"welcome","seat":1,"match":"ABC234"}')
-	runner.check(wait.visible and launcher.get_node("Pages/Play/Footer/Start").disabled and launcher.get_node("Pages/Play/Footer/Create").disabled and not launcher.get_node("Pages/Waiting/Body/Copy").disabled and not launcher.get_node("Pages/Waiting/Footer/Cancel").disabled, "N17 waiting shows Copy and Cancel, launcher stays busy")
+	runner.check(wait.visible and launcher.get_node("Pages/Play/Footer/Start").disabled and launcher.get_node("Pages/Play/Footer/Create").disabled and not launcher.get_node("Pages/Waiting/Body/Left/Invite/Copy").disabled and not launcher.get_node("Pages/Waiting/Footer/Cancel").disabled, "N17 waiting shows Copy and Cancel, launcher stays busy")
 	runner.check(launcher._code == "ABC234", "N18 welcome stores the match code for Copy")
 	if DisplayServer.has_feature(DisplayServer.FEATURE_CLIPBOARD):
-		launcher.get_node("Pages/Waiting/Body/Copy").pressed.emit()
+		launcher.get_node("Pages/Waiting/Body/Left/Invite/Copy").pressed.emit()
 		runner.check(DisplayServer.clipboard_get() == "ABC234", "N18 Copy puts the match code on the clipboard")
 	launcher.get_node("Pages/Waiting/Footer/Cancel").pressed.emit()
 	var enabled: bool = true
@@ -875,14 +875,14 @@ func test_copy_link_on_web(runner) -> bool:
 	DirAccess.remove_absolute(scratch)
 	var launcher = await _launcher(runner, runner.root, true, "", "https://wargrid-web-test.fly.dev/")
 	launcher._code = "ABC234"
-	runner.check(launcher.get_node("Pages/Waiting/Body/Copy").text == "Copy link", "N23 Copy reads Copy link on the web")
+	runner.check(launcher.get_node("Pages/Waiting/Body/Left/Invite/Copy").text == "Copy link", "N23 Copy reads Copy link on the web")
 	runner.check(launcher._copy_text() == "https://wargrid-web-test.fly.dev/?code=ABC234", "N23 the link carries the code only for the default relay")
 	launcher.get_node("Pages/Play/Body/Advanced/RelayUrl").text = "wss://x.example/ws"
 	runner.check(launcher._copy_text().ends_with("&relay=wss%3A%2F%2Fx.example%2Fws"), "N23 a non-default relay rides along")
 	launcher.free()
 	var desktop = await _launcher(runner, runner.root, true)
 	desktop._code = "ABC234"
-	runner.check(desktop.get_node("Pages/Waiting/Body/Copy").text == "Copy code" and desktop._copy_text() == "ABC234", "N23 off the web Copy copies the bare code")
+	runner.check(desktop.get_node("Pages/Waiting/Body/Left/Invite/Copy").text == "Copy code" and desktop._copy_text() == "ABC234", "N23 off the web Copy copies the bare code")
 	desktop.free()
 	AudioSettings.path = saved_settings
 	DirAccess.remove_absolute(scratch)

@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=13 format=3]
+[gd_resource type="Theme" load_steps=20 format=3]
 
 [sub_resource type="StyleBoxFlat" id="field"]
 content_margin_left = 14.0
@@ -98,6 +98,69 @@ corner_radius_top_right = 4
 corner_radius_bottom_right = 4
 corner_radius_bottom_left = 4
 
+[sub_resource type="StyleBoxFlat" id="open_slot_gap"]
+content_margin_left = 14.0
+content_margin_top = 28.0
+content_margin_right = 14.0
+content_margin_bottom = 12.0
+expand_margin_top = -16.0
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.5, 0.5, 0.5, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="player_row"]
+content_margin_left = 14.0
+content_margin_top = 12.0
+content_margin_right = 14.0
+content_margin_bottom = 12.0
+bg_color = Color(0.165, 0.165, 0.165, 1)
+border_width_left = 4
+border_color = Color(0.5, 0.5, 0.5, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="map_panel"]
+content_margin_left = 14.0
+content_margin_top = 12.0
+content_margin_right = 14.0
+content_margin_bottom = 12.0
+bg_color = Color(0.165, 0.165, 0.165, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="credits_panel"]
+content_margin_left = 26.0
+content_margin_top = 16.0
+content_margin_right = 26.0
+content_margin_bottom = 16.0
+bg_color = Color(0.165, 0.165, 0.165, 1)
+
+[sub_resource type="StyleBoxFlat" id="status_error"]
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
+bg_color = Color(0.38, 0.27, 0.27, 1)
+border_width_left = 4
+border_color = Color(0.6, 0.5, 0.5, 1)
+
+[sub_resource type="StyleBoxEmpty" id="field_label_margin"]
+content_margin_top = 16.0
+
+[sub_resource type="FontVariation" id="bold"]
+variation_embolden = 0.5
+
 [sub_resource type="StyleBoxFlat" id="tag"]
 content_margin_left = 6.0
 content_margin_right = 6.0
@@ -109,7 +172,7 @@ border_width_bottom = 1
 border_color = Color(0.6, 0.6, 0.6, 1)
 
 [sub_resource type="StyleBoxEmpty" id="spaced"]
-content_margin_bottom = 22.0
+content_margin_bottom = 5.0
 
 [sub_resource type="StyleBoxEmpty" id="logo_margin"]
 content_margin_left = 10.0
@@ -149,6 +212,14 @@ ToggleButton/base_type = &"Button"
 ToggleButton/styles/hover_pressed = SubResource("selected")
 OpenSlot/base_type = &"PanelContainer"
 OpenSlot/styles/panel = SubResource("open_slot")
+OpenSlotGap/base_type = &"PanelContainer"
+OpenSlotGap/styles/panel = SubResource("open_slot_gap")
+PlayerRow/base_type = &"PanelContainer"
+PlayerRow/styles/panel = SubResource("player_row")
+MapPanel/base_type = &"PanelContainer"
+MapPanel/styles/panel = SubResource("map_panel")
+CreditsText/base_type = &"RichTextLabel"
+CreditsText/styles/normal = SubResource("credits_panel")
 Tag/base_type = &"Label"
 Tag/colors/font_color = Color(0.8, 0.8, 0.8, 1)
 Tag/font_sizes/font_size = 10
@@ -164,7 +235,21 @@ PrimaryButton/styles/hover = SubResource("primary_hover")
 PrimaryButton/styles/normal = SubResource("primary")
 PrimaryButton/styles/pressed = SubResource("primary_hover")
 PageTitle/base_type = &"Label"
-PageTitle/font_sizes/font_size = 30
+PageTitle/fonts/font = SubResource("bold")
+PageTitle/font_sizes/font_size = 32
+FieldLabel/base_type = &"Label"
+FieldLabel/fonts/font = SubResource("bold")
+FieldLabel/font_sizes/font_size = 14
+FieldLabel/styles/normal = SubResource("field_label_margin")
+PanelTitle/base_type = &"Label"
+PanelTitle/fonts/font = SubResource("bold")
+PanelTitle/font_sizes/font_size = 14
+FooterStatus/base_type = &"Label"
+FooterStatus/colors/font_color = Color(0.8, 0.8, 0.8, 1)
+FooterStatus/font_sizes/font_size = 14
+FooterError/base_type = &"FooterStatus"
+FooterError/colors/font_color = Color(1, 0.87, 0.87, 1)
+FooterError/styles/normal = SubResource("status_error")
 Subtitle/base_type = &"Label"
 Subtitle/colors/font_color = Color(0.8, 0.8, 0.8, 1)
 Subtitle/font_sizes/font_size = 14

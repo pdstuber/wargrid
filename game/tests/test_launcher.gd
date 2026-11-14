@@ -17,7 +17,7 @@ const SIZES: Array[Vector2i] = [Vector2i(1280, 720), Vector2i(1920, 1080), Vecto
 const STRETCHED: Array[Array] = [[Vector2i(1920, 1080), Vector2i(1280, 720)], [Vector2i(2576, 1145), Vector2i(1620, 720)]]
 
 func cases() -> Array[Callable]:
-	return [test_picks_defaults, test_picks_fallback_per_field, test_picks_keep_other_sections, test_fullscreen_target, test_fullscreen_switch, test_this_build_line, test_sidebar_switches_pages, test_aspect_expand_and_restore, test_layout_every_page, test_opens_on_bot_with_picks, test_toggle_friend, test_map_info_and_summary, test_own_faction_shared, test_start_saves_picks, test_advanced_only_prerelease, test_link_opens_join, test_lock_while_connecting, test_waiting_view, test_join_error_footer, test_join_needs_code, test_relay_fields_follow]
+	return [test_picks_defaults, test_picks_fallback_per_field, test_picks_keep_other_sections, test_fullscreen_target, test_fullscreen_switch, test_this_build_line, test_sidebar_switches_pages, test_aspect_expand_and_restore, test_layout_every_page, test_opens_on_bot_with_picks, test_toggle_friend, test_map_info_and_summary, test_own_faction_shared, test_start_saves_picks, test_advanced_only_prerelease, test_link_opens_join, test_lock_while_connecting, test_waiting_view, test_join_error_footer, test_join_needs_code, test_relay_fields_follow, test_column_widths, test_player_rows_padded, test_footer_status_style, test_vertical_rhythm, test_waiting_two_columns]
 
 func _picked(selector: OptionButton) -> String:
 	return selector.get_item_metadata(selector.selected)
@@ -370,12 +370,12 @@ func test_waiting_view(runner) -> bool:
 	runner.check(_drawn_green(launcher.get_node("Sidebar/Nav/Play")), "L17 Waiting draws the Play nav green")
 	for other: String in ["Join", "Settings", "Credits"]:
 		runner.check(not _drawn_green(launcher.get_node("Sidebar/Nav/" + other)), "L17 Waiting leaves %s idle" % other)
-	runner.check(waiting.get_node("Body/Link").text == launcher._copy_text() and "Or tell them the code: ABC234" in _texts(waiting), "L12a link and code line")
-	var one: Array[String] = _texts(waiting.get_node("Body/One"))
+	runner.check(waiting.get_node("Body/Left/Invite/Link").text == launcher._copy_text() and "Or tell them the code: ABC234" in _texts(waiting), "L12a link and code line")
+	var one: Array[String] = _texts(waiting.get_node("Body/Left/One"))
 	runner.check("You" in one and own in one and "READY" in one, "L12a row 1 is You, %s, READY, got %s" % [own, one])
-	var two: Array[String] = _texts(waiting.get_node("Body/Two"))
+	var two: Array[String] = _texts(waiting.get_node("Body/Left/Two"))
 	runner.check("Open" in two and "waiting for your friend…" in two, "L12a row 2 is Open, got %s" % [two])
-	var map_texts: Array[String] = _texts(waiting.get_node("Body/Map"))
+	var map_texts: Array[String] = _texts(waiting.get_node("Body/Right/Map"))
 	runner.check(MatchSettings.PLAY_MAPS["ashfall"] in map_texts and launcher._map_info("ashfall") in map_texts, "L12a map name and info, got %s" % [map_texts])
 	runner.check(waiting.get_node("Footer/Status").text == "Match code ABC234", "L12a footer shows the match code")
 	await runner.process_frame
@@ -385,7 +385,7 @@ func test_waiting_view(runner) -> bool:
 	var inside: bool = true
 	for control in controls: inside = inside and launcher.get_node("Pages").get_global_rect().grow(0.5).encloses(control.get_global_rect())
 	runner.check(controls.size() > 10 and inside, "L12a every Waiting control lies inside the content area")
-	_overlap_free(runner, waiting.get_node("Body"), "Waiting")
+	_overlap_free(runner, waiting.get_node("Body/Left"), "Waiting")
 	waiting.get_node("Footer/Cancel").pressed.emit()
 	runner.check(transport.close_calls == 1 and launcher.current_page == "Play" and _nav_disabled(launcher) == [false, false, false, false], "L12b Cancel closes and returns to Play unlocked")
 	runner.check(launcher.get_node("Pages/Play/Footer/Status").text == "Match cancelled" and launcher.opponent == "friend", "L12b Play says Match cancelled and stays on Friend")
@@ -497,4 +497,163 @@ func test_this_build_line(runner) -> bool:
 	runner.check(not build.visible, "L15b ThisBuild hides again when switched off")
 	launcher.free()
 	_restore(saved)
+	return true
+
+func _port_with_launcher(runner, window: Vector2i, size: Vector2i) -> Array:
+	var port := SubViewport.new()
+	port.size = window
+	port.size_2d_override = size
+	port.size_2d_override_stretch = true
+	runner.root.add_child(port)
+	var launcher = Launcher.instantiate()
+	launcher.prerelease = true
+	port.add_child(launcher)
+	launcher._code = "K7Q2"
+	launcher._fill_waiting()
+	return [port, launcher]
+
+func _settle(runner, launcher, page_name: String, opponent: String = "bot") -> void:
+	launcher.set_opponent(opponent)
+	launcher.show_page(page_name)
+	await runner.process_frame
+	await runner.process_frame
+
+func test_column_widths(runner) -> bool:
+	var saved: String = AudioSettings.path
+	AudioSettings.path = scratch_for("columns")
+	var left: Dictionary = {"Play": "Body/Own", "Join": "Body/Code", "Settings": "Body/Audio", "Waiting": "Body/Left"}
+	var seen: Dictionary = {}
+	for pair in [[Vector2i(1280, 720), Vector2i(1280, 720)], STRETCHED[1]]:
+		var built: Array = _port_with_launcher(runner, pair[0], pair[1])
+		for page_name: String in left:
+			await _settle(runner, built[1], page_name)
+			var column: Control = built[1].get_node_or_null("Pages/%s/%s" % [page_name, left[page_name]])
+			var width: float = column.size.x if column != null else -1.0
+			runner.check(width >= 520.0 and width <= 570.0, "L19a %s left column is 520-570 px wide at %s, got %s" % [page_name, pair[1], width])
+			if seen.has(page_name): runner.check(absf(width - seen[page_name]) < 1.0, "L19a %s left column keeps its width at %s, got %s then %s" % [page_name, pair[1], seen[page_name], width])
+			seen[page_name] = width
+			var page: Control = built[1].get_node("Pages/" + page_name)
+			runner.check(page.size.x <= 961.0, "L19a %s page does not stretch with the window at %s, got %s" % [page_name, pair[1], page.size.x])
+		built[1].free()
+		built[0].free()
+	AudioSettings.path = saved
+	return true
+
+func _inner_margins(row: Control) -> Vector2:
+	var content: Control = row.get_child(0)
+	return Vector2(content.get_global_rect().position.x - row.get_global_rect().position.x, row.get_global_rect().end.x - content.get_global_rect().end.x)
+
+func test_player_rows_padded(runner) -> bool:
+	var saved: String = AudioSettings.path
+	AudioSettings.path = scratch_for("rows")
+	var built: Array = _port_with_launcher(runner, Vector2i(1280, 720), Vector2i(1280, 720))
+	var launcher = built[1]
+	await _settle(runner, launcher, "Waiting")
+	var one: Control = launcher.get_node_or_null("Pages/Waiting/Body/Left/One")
+	var two: Control = launcher.get_node_or_null("Pages/Waiting/Body/Left/Two")
+	runner.check(one != null and two != null, "L19b both player rows exist")
+	if one != null and two != null:
+		for row: Control in [one, two]:
+			var margins: Vector2 = _inner_margins(row)
+			runner.check(margins.x >= 10.0 and margins.y >= 10.0, "L19b row %s keeps 10 px inside left and right, got %s" % [row.name, margins])
+		runner.check(absf(one.size.y - two.size.y) < 1.0 and absf(one.size.x - two.size.x) < 1.0, "L19b both rows have the same size, got %s and %s" % [one.size, two.size])
+	await _settle(runner, launcher, "Play", "friend")
+	var slot: Control = launcher.get_node("Pages/Play/Body/OpenSlot")
+	var slot_margins: Vector2 = _inner_margins(slot)
+	runner.check(slot_margins.x >= 10.0 and slot_margins.y >= 10.0, "L19b the Play open slot keeps 10 px inside, got %s" % slot_margins)
+	built[1].free()
+	built[0].free()
+	AudioSettings.path = saved
+	return true
+
+func test_footer_status_style(runner) -> bool:
+	var saved: String = AudioSettings.path
+	var launcher = await _launcher_with(runner, "footer-style", {})
+	_restore(saved)
+	var info_size: int = launcher.get_node("Pages/Waiting/Footer/Status").get_theme_font_size("font_size")
+	runner.check(info_size <= 14, "L19c the footer text is at most 14 px, got %s" % info_size)
+	var seen: Dictionary = {}
+	for page_name: String in ["Play", "Join"]:
+		launcher.show_page(page_name)
+		launcher._origin = page_name
+		launcher._fail("Cannot connect to relay")
+		var status: Label = launcher.get_node("Pages/%s/Footer/Status" % page_name)
+		var style: StyleBox = status.get_theme_stylebox("normal")
+		runner.check(style is StyleBoxFlat and style.bg_color == Color(0.38, 0.27, 0.27) and style.border_width_left > 0, "L19c a %s error uses the error strip" % page_name)
+		runner.check(status.get_theme_font_size("font_size") <= info_size, "L19c a %s error text is no larger than the footer text, got %s" % [page_name, status.get_theme_font_size("font_size")])
+		seen[page_name] = status
+	launcher._fail("Match cancelled")
+	var plain: StyleBox = seen["Join"].get_theme_stylebox("normal")
+	runner.check(not (plain is StyleBoxFlat and plain.bg_color == Color(0.38, 0.27, 0.27)), "L19c Match cancelled is plain info text")
+	launcher.set_opponent("friend")
+	var hint: StyleBox = seen["Play"].get_theme_stylebox("normal")
+	runner.check(not (hint is StyleBoxFlat and hint.bg_color == Color(0.38, 0.27, 0.27)), "L19c the next Play action drops the strip")
+	launcher.show_page("Join")
+	launcher.get_node("Pages/Join/Body/Code").text = ""
+	launcher.get_node("Pages/Join/Footer/Join").pressed.emit()
+	var invalid: StyleBox = seen["Join"].get_theme_stylebox("normal")
+	runner.check(invalid is StyleBoxFlat and invalid.bg_color == Color(0.38, 0.27, 0.27), "L19c the missing-code line uses the error strip")
+	launcher.free()
+	return true
+
+func _text_top(label: Label) -> float:
+	return label.get_global_rect().position.y + label.get_theme_stylebox("normal").get_margin(SIDE_TOP)
+
+func test_vertical_rhythm(runner) -> bool:
+	var saved: String = AudioSettings.path
+	AudioSettings.path = scratch_for("rhythm")
+	var built: Array = _port_with_launcher(runner, Vector2i(1280, 720), Vector2i(1280, 720))
+	var launcher = built[1]
+	var rows: Array = [["Play", "bot", "Body/OwnLabel", "Body/Own", "Body/OpponentLabel"], ["Play", "bot", "Body/OpponentLabel", "Body/Opponent", "Body/BotLabel"], ["Join", "bot", "Body/CodeLabel", "Body/Code", "Body/CodeHint", 6.0, 10.0], ["Waiting", "bot", "Body/Left/InviteLabel", "Body/Left/Invite", "Body/Left/CodeHint", 6.0, 10.0]]
+	for row: Array in rows:
+		await _settle(runner, launcher, row[0], row[1])
+		var label: Label = launcher.get_node_or_null("Pages/%s/%s" % [row[0], row[2]])
+		var control: Control = launcher.get_node_or_null("Pages/%s/%s" % [row[0], row[3]])
+		var next: Label = launcher.get_node_or_null("Pages/%s/%s" % [row[0], row[4]])
+		var low: float = row[5] if row.size() > 5 else 20.0
+		var high: float = row[6] if row.size() > 6 else 26.0
+		runner.check(label != null and control != null and next != null, "L19d %s rows exist: %s" % [row[0], row])
+		if label == null or control == null or next == null: continue
+		var inner: float = control.get_global_rect().position.y - label.get_global_rect().end.y
+		var between: float = _text_top(next) - control.get_global_rect().end.y
+		runner.check(inner >= 6.0 and inner <= 10.0, "L19d %s: label to control is about 8 px, got %s (%s)" % [row[0], inner, row[2]])
+		runner.check(between >= low and between <= high, "L19d %s: control to next text is %s-%s px, got %s (%s)" % [row[0], low, high, between, row[4]])
+	await _settle(runner, launcher, "Waiting")
+	var players: Label = launcher.get_node("Pages/Waiting/Body/Left/PlayersLabel")
+	var waiting_gap: float = _text_top(players) - launcher.get_node("Pages/Waiting/Body/Left/CodeHint").get_global_rect().end.y
+	runner.check(waiting_gap >= 20.0 and waiting_gap <= 26.0, "L19d Waiting: the code line to the Players label text is 20-26 px, got %s" % waiting_gap)
+	await _settle(runner, launcher, "Join")
+	var hint: Control = launcher.get_node("Pages/Join/Body/CodeHint")
+	var gap: float = _text_top(launcher.get_node("Pages/Join/Body/OwnLabel")) - hint.get_global_rect().end.y
+	runner.check(gap >= 20.0 and gap <= 26.0, "L19d Join: the code hint to the You label text is 20-26 px, got %s" % gap)
+	await _settle(runner, launcher, "Play", "friend")
+	var toggles: Control = launcher.get_node("Pages/Play/Body/Opponent")
+	var slot: Control = launcher.get_node("Pages/Play/Body/OpenSlot")
+	var drawn_top: float = slot.get_global_rect().position.y - slot.get_theme_stylebox("panel").expand_margin_top
+	runner.check(drawn_top - toggles.get_global_rect().end.y >= 20.0, "L19d the open slot is drawn 20 px or more under the toggles, got %s" % (drawn_top - toggles.get_global_rect().end.y))
+	built[1].free()
+	built[0].free()
+	AudioSettings.path = saved
+	return true
+
+func test_waiting_two_columns(runner) -> bool:
+	var saved: String = AudioSettings.path
+	AudioSettings.path = scratch_for("waiting-columns")
+	var built: Array = _port_with_launcher(runner, Vector2i(1280, 720), Vector2i(1280, 720))
+	var launcher = built[1]
+	await _settle(runner, launcher, "Waiting")
+	var invite: Control = launcher.get_node_or_null("Pages/Waiting/Body/Left/Invite")
+	var link: Control = launcher.get_node_or_null("Pages/Waiting/Body/Left/Invite/Link")
+	var copy: Control = launcher.get_node_or_null("Pages/Waiting/Body/Left/Invite/Copy")
+	var map: Control = launcher.get_node_or_null("Pages/Waiting/Body/Right/Map")
+	var left: Control = launcher.get_node_or_null("Pages/Waiting/Body/Left")
+	runner.check(invite != null and link != null and copy != null and map != null and left != null, "L19e Waiting has the invite row and a right-hand map panel")
+	if invite != null and link != null and copy != null and map != null and left != null:
+		runner.check(link.get_global_rect().end.x <= copy.get_global_rect().position.x and absf(link.get_global_rect().get_center().y - copy.get_global_rect().get_center().y) < 2.0, "L19e Copy sits beside the link field on one row")
+		runner.check(map.get_global_rect().position.x >= left.get_global_rect().end.x + 30.0, "L19e the map panel is in a second column")
+		runner.check(map.size.x >= 370.0 and map.size.x <= 390.0, "L19e the map panel is about 380 px wide, got %s" % map.size.x)
+		runner.check(launcher.get_node("Pages/Waiting/Footer/Cancel").text == "Cancel match" and launcher.get_node("Pages/Waiting/Footer/Status").text == "Match code K7Q2", "L19e footer shows the match code and Cancel")
+	built[1].free()
+	built[0].free()
+	AudioSettings.path = saved
 	return true
