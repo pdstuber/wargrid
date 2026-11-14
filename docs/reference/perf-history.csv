@@ -483,3 +483,16 @@ date,commit,label,machine,metric,scenario,run,p95_ms,p99_ms,mean_ms,method,load,
 2026-11-14,4d59643,auto 9983818,dev,combat_tick,ramp,1,0.663,1.226,,P1,1.67,log sha256:5dda5b1d0b00
 2026-11-14,4d59643,auto 9983818,dev,combat_tick,frc,1,0.861,1.144,,P1,1.67,log sha256:5dda5b1d0b00
 2026-11-14,4d59643,auto 9983818,dev,lockstep_overhead,contact,1,0.017,0.068,,P1,1.67,log sha256:5dda5b1d0b00
+2026-11-14,07b0268,auto 4f0e5ec,dev,movement_tick,open,1,0.759,0.908,,P1,1.2,log sha256:a3c578fda352
+2026-11-14,07b0268,auto 4f0e5ec,dev,movement_tick,dense,1,0.742,0.968,,P1,1.2,log sha256:a3c578fda352
+2026-11-14,07b0268,auto 4f0e5ec,dev,combat_tick,open,1,1.841,2.143,,P1,1.2,log sha256:a3c578fda352
+2026-11-14,07b0268,auto 4f0e5ec,dev,combat_tick,dense,1,1.83,2.115,,P1,1.2,log sha256:a3c578fda352
+2026-11-14,07b0268,auto 4f0e5ec,dev,combat_tick,contact,1,1.177,1.56,,P1,1.2,log sha256:a3c578fda352
+2026-11-14,07b0268,auto 4f0e5ec,dev,combat_tick,skirmish3v3,1,1.343,1.446,,P1,1.2,log sha256:a3c578fda352
+2026-11-14,07b0268,auto 4f0e5ec,dev,combat_tick,transports,1,1.141,1.351,,P1,1.2,log sha256:a3c578fda352
+2026-11-14,07b0268,auto 4f0e5ec,dev,combat_tick,defences,1,0.788,2.118,,P1,1.2,log sha256:a3c578fda352
+2026-11-14,07b0268,auto 4f0e5ec,dev,combat_tick,docks,1,0.581,0.601,,P1,1.2,log sha256:a3c578fda352
+2026-11-14,07b0268,auto 4f0e5ec,dev,combat_tick,hordes300,1,2.895,3.436,,P1,1.2,log sha256:a3c578fda352
+2026-11-14,07b0268,auto 4f0e5ec,dev,combat_tick,ramp,1,0.664,1.217,,P1,1.2,log sha256:a3c578fda352
+2026-11-14,07b0268,auto 4f0e5ec,dev,combat_tick,frc,1,0.85,1.142,,P1,1.2,log sha256:a3c578fda352
+2026-11-14,07b0268,auto 4f0e5ec,dev,lockstep_overhead,contact,1,0.016,0.067,,P1,1.2,log sha256:a3c578fda352
