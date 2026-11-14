@@ -8,6 +8,7 @@ const LauncherScript = preload("res://scripts/launcher.gd")
 const MatchSettings = preload("res://scripts/match_settings.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const OnlineTests = preload("res://tests/test_online_scene.gd")
+const LOOPBACK := "wss://127.0.0.1:9/ws"
 const SELECTED := Color(0.18, 0.43, 0.33)
 const FIELD := Color(0.165, 0.165, 0.165)
 const SIZES: Array[Vector2i] = [Vector2i(1280, 720), Vector2i(1920, 1080), Vector2i(2576, 1145)]
@@ -300,6 +301,7 @@ func _nav_disabled(launcher) -> Array[bool]:
 	return states
 
 func _host(launcher) -> Object:
+	launcher._set_relay(LOOPBACK)
 	launcher.set_opponent("friend")
 	launcher.get_node("Pages/Play/Footer/Create").pressed.emit()
 	launcher.set_process(false)
@@ -332,6 +334,7 @@ func test_lock_while_connecting(runner) -> bool:
 	AudioSettings.path = saved
 	var reason := "Connection to relay lost"
 	_host(launcher)
+	runner.check(launcher._relay_url() == LOOPBACK, "L11 fixture: the relay is a loopback literal, so no DNS lookup starts")
 	runner.check(_nav_disabled(launcher) == [true, true, true, true], "L11 Create locks every nav button, got %s" % [_nav_disabled(launcher)])
 	launcher._fail(reason)
 	var play_status: Label = launcher.get_node("Pages/Play/Footer/Status")
@@ -406,6 +409,8 @@ func test_join_error_footer(runner) -> bool:
 	var launcher = await _launcher_with(runner, "join-error", {})
 	AudioSettings.path = saved
 	launcher.show_page("Join")
+	launcher._set_relay(LOOPBACK)
+	runner.check(launcher._relay_url() == LOOPBACK, "L14 fixture: the relay is a loopback literal, so no DNS lookup starts")
 	launcher.get_node("Pages/Join/Footer/Join").pressed.emit()
 	launcher.set_process(false)
 	runner.check(_nav_disabled(launcher) == [true, true, true, true], "L14 Join locks the nav")
