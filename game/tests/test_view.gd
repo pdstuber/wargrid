@@ -96,7 +96,7 @@ func test_build_preview(runner) -> bool:
 	runner.check(sim.snapshot() == before,"V4 preview no simulation mutation")
 	view.set_build_preview([],false)
 	runner.check(view.get("_preview_cells") == [],"V4 preview clear")
-	var main = preload("res://scripts/main.gd").new()
+	var main = preload("res://scripts/match/match_screen.gd").new()
 	var ids: Array[int] = [1]
 	main.selected_ids = ids
 	runner.check(main._view_selection() == [1],"V4 default selection hook")

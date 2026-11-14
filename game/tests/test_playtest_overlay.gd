@@ -2,7 +2,6 @@
 extends RefCounted
 
 const Skirmish = preload("res://scenes/skirmish.tscn")
-const OnlineScene = preload("res://scenes/online_skirmish.tscn")
 const SkirmishRules = preload("res://scripts/simulation/skirmish.gd")
 const AudioSettings = preload("res://scripts/presentation/audio_settings.gd")
 const PlaytestSettings = preload("res://scripts/playtest/playtest_settings.gd")
@@ -71,7 +70,7 @@ func _scene(runner, packed = Skirmish, parent = null):
 func _online(runner):
 	var transport := FakeTransport.new()
 	var seats: Array[int] = [1, 2]
-	var main = OnlineScene.instantiate()
+	var main = Skirmish.instantiate()
 	main.setup(transport, Lockstep.new(1, seats), 1)
 	runner.root.add_child(main)
 	main.set_process(false)

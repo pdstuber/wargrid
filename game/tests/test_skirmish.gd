@@ -15,7 +15,7 @@ const StartSpots = preload("res://scripts/simulation/start_spots.gd")
 const StateHash = preload("res://scripts/simulation/state_hash.gd")
 const MatchSettings = preload("res://scripts/match_settings.gd")
 const OnlineDriver = preload("res://scripts/match/online_driver.gd")
-const SkirmishMain = preload("res://scripts/skirmish_main.gd")
+const SkirmishMain = preload("res://scripts/match/match_screen.gd")
 
 const ASHFALL := "res://data/maps/ashfall.json"
 const CHOSEN: Array[int] = [5, 1]

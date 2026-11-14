@@ -25,10 +25,10 @@ func _install_world(main) -> void:
 	main._reset_camera()
 	main._refresh()
 
-func setup(runner, packed = Main):
-	var main = packed.instantiate()
+func setup(runner):
+	var main = Main.instantiate()
 	runner.root.add_child(main)
-	if packed == Main: _install_world(main)
+	_install_world(main)
 	main.set_physics_process(false)
 	main.set_process(false)
 	await runner.process_frame

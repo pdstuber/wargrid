@@ -9,7 +9,7 @@ const Lockstep = preload("res://scripts/net/lockstep.gd")
 const Wire = preload("res://scripts/net/wire.gd")
 const StateHash = preload("res://scripts/simulation/state_hash.gd")
 const MatchSettings = preload("res://scripts/match_settings.gd")
-const SkirmishMain = preload("res://scripts/skirmish_main.gd")
+const SkirmishMain = preload("res://scripts/match/match_screen.gd")
 const PlaytestSettings = preload("res://scripts/playtest/playtest_settings.gd")
 
 const STEPS: int = 600

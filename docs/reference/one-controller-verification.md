@@ -1,15 +1,15 @@
 # One controller verification
 
 ```text
-Resume record (updated 2026-11-14: Task 4 GREEN, not committed)
-Branch / base commit / working-tree state: one-controller (worktree ~/projects/wargrid-wt-onecontrol) / 1fc380c (Task 3 commit) / Task 4 files uncommitted
-Last green task / next incomplete task: Task 4 / Task 5
-Changed paths since last commit: docs/reference/one-controller-verification.md, game/scripts/main.gd, base_main.gd, skirmish_main.gd, online_main.gd, new game/scripts/match/offline_driver.gd and online_driver.gd (+ .uid), game/tests/test_skirmish_scene.gd, test_skirmish.gd, test_online_scene.gd and the access-path renames in test_announcer.gd, test_base_scene.gd, test_order_voice.gd, test_pause_menu.gd, test_perf_overlay.gd, test_playtest_overlay.gd, test_playtest_replay.gd, test_scene.gd, test_sound.gd
-Last command / cases / checks / failures / exit / marker: full suite with traces after Task 4 / 860 / 144273 (4 shards; 144266 with WARGRID_TEST_SHARDS=1, HEAD 144264 in both) / 0 / exit 0 / TESTS PASSED 144273 (static gates CHECKS PASSED 5; netplay match terminal tick 9129)
+Resume record (updated 2026-11-14: Task 5 GREEN, not committed)
+Branch / base commit / working-tree state: one-controller (worktree ~/projects/wargrid-wt-onecontrol) / 8c5d0d3 (Task 4 commit) / Task 5 files uncommitted
+Last green task / next incomplete task: Task 5 / Task 6
+Changed paths since last commit: docs/reference/one-controller-verification.md, new game/scripts/match/match_screen.gd (+ .uid); deleted game/scripts/main.gd, base_main.gd, skirmish_main.gd, online_main.gd (+ .uid) and game/scenes/online_skirmish.tscn; game/scenes/skirmish.tscn, game/scripts/launcher.gd; tests: test_base_scene.gd, test_online_scene.gd, test_pause_menu.gd, test_playtest_overlay.gd, test_playtest_replay.gd, test_scene.gd, test_skirmish.gd, test_view.gd
+Last command / cases / checks / failures / exit / marker: full suite with traces after Task 5 / 860 / 144273 / 0 / exit 0 / TESTS PASSED 144273 (static gates CHECKS PASSED 5; netplay match terminal tick 9129; four traces cmp exit 0)
 Known red case or blocker: none
 Approved decisions, pre-authorizations used, deferred gates: package note "One controller" (user, 2026-11-13); plan "Decisions (user, 2026-11-14)" 1-20; local commits as the night run handoff pre-authorizes (one per GREEN task, two in Task 9); benchmark only in Task 8, alone; Task 1 commit (V10 base): f1c6b78; Task 9 re-pin commit (V10 base from Task 9): none yet
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: Task 5 Step 1 (one screen: merge the chain into match_screen.gd); the null guard `skirmish_main.gd` `var result: String = "" if state.match == null ...` (Task 2 amendment 1) is carried byte for byte through Tasks 5 and 7
+Next exact action: Task 6 Step 1 (extract orders); the null guard `var result: String = "" if state.match == null else _result_text(state.match)` now lives in `match_screen.gd` `_match_hud` and is carried byte for byte through Task 7
 ```
 
 Plan: [One controller plan](../superpowers/plans/2026-11-14-one-controller.md). Spec: `docs/packages.md` package note "One controller" (`:84`); design answers "Package review, second pass" (`:474-505`) and "Main branch audit" (`:363-378`); audit FIX-6 and A-1 (kept outside the repository, `~/projects/wargrid-overnight-work/audit-2026-11-11/`). Logs: `~/projects/wargrid-overnight-work/one-controller/logs/` (outside the repository; commands use the absolute path). A stop after any GREEN task resumes at the next row of the task table: the subagent reads this record, checks `git log --oneline -1` and `git status --short` in the worktree against it, and starts that task's Step 1.
@@ -22,8 +22,8 @@ Plan: [One controller plan](../superpowers/plans/2026-11-14-one-controller.md). 
 | 1 | Characterisation: IC1 offline and IC2 online input scripts | Sonnet | GREEN (uncommitted) |
 | 2 | Port the M2 and M3 scene checks onto the match scene (old chain) | Sonnet | GREEN (committed 0437bdf) |
 | 3 | Delete the demo scenes and demo-only checks | Sonnet | GREEN (uncommitted) |
-| 4 | Extract the driver (OD1, OD2); `main.driver.sim` rename (Decision 6) | Sonnet | GREEN (uncommitted) |
-| 5 | One screen: merge the chain, delete the four scripts | Sonnet | not started |
+| 4 | Extract the driver (OD1, OD2); `main.driver.sim` rename (Decision 6) | Sonnet | GREEN (committed 8c5d0d3) |
+| 5 | One screen: merge the chain, delete the four scripts | Sonnet | GREEN (uncommitted) |
 | 6 | Extract orders (OR1) | Sonnet | not started |
 | 7 | Extract the HUD (HU1) | Sonnet | not started |
 | 8 | Docs and package gate (ledger row); end of "no behaviour change" | Sonnet | not started |
@@ -165,11 +165,11 @@ Expected on `35d22b5` by reading (Task 2 confirms by running on the old chain):
 | Task 4: pre-tree scan after the rename: exit, lines | exit 0, no `PRE-TREE`; `NO-TREE` `test_online_scene.gd:319` (N5) and `test_view.gd:99`; the third (`test_skirmish.gd` SK23) is gone because SK23 now builds a driver, not a screen |
 | Task 4: SK23 lines changed: `starts` right-hand side → `MatchSettings.starts("ashfall", 7)` (statics no longer set); `main.free()` removed (`RefCounted`); static save and restore removed (the driver does not read the statics) | done; `const SkirmishMain` in `test_skirmish.gd` stays (now unused; removing it would add a `-const` line outside V8's list) |
 | Task 4: netplay match terminal tick | 9129, `NETPLAY PASSED match 16.5 s`, exit 0 (`t4-match.log`) |
-| Task 5: `rg -n '^extends "res://scripts/' game/scripts` before / after | |
-| Task 5: IC1, IC2 unchanged | |
+| Task 5: `rg -n '^extends "res://scripts/' game/scripts` before / after | before: 3 lines (`base_main.gd:1`, `skirmish_main.gd:1`, `online_main.gd:1`, seen with `rg` before the deletion); after: no output (rg exit 1). `rg -n 'scripts/(main|base_main|skirmish_main|online_main)\.gd|scenes/(main|base|online_skirmish)\.tscn' game tools .github` prints nothing (docs and guide mentions are Task 8) |
+| Task 5: IC1, IC2 unchanged | yes: filtered `test_input_script` exit 0, `CASES 2 CHECKS 34 FAILURES 0`, rows file untouched (`git diff f1c6b78 -- game/tests/input_script_rows.gd` empty). Scene suites filtered, all exit 0 and 0 failures: test_scene 14/120, test_base_scene 15/139, test_skirmish_scene 29/173, test_online_scene 32/3692, test_pause_menu 8/332, test_playtest_overlay 18/651, test_perf_overlay 6/13, test_view 61/307 (cases/checks). Full suite with traces (`t5-suite.log`): exit 0, `CASES 860 CHECKS 144273 FAILURES 0`, `TESTS PASSED 144273` (HUD layout tests included, no `FAIL`); replay, economy, combat, team traces `cmp` exit 0; `run_checks.sh` `CHECKS PASSED 5`; netplay match tick 9129 `NETPLAY PASSED match`; pre-tree scan exit 0, `NO-TREE` `test_online_scene.gd:319` and `test_view.gd:99` (unchanged); V11 id census diff vs Task 4 empty; V11b labels diff vs Task 4 empty; V12 diff empty; V8 `-const` lines are only preload lines; V13 OK (removed=275 renamed=188 listed=87) |
 | Task 6: OR1 red, then green; rename script counts asserted | |
 | Task 7: HU1 red, then green; layout tests green; rename script counts asserted | |
-| Test lines changed other than access paths, ports and deletions (each with its reason) | Task 4: SK23 (see above); OD1, OD2 added to `cases()` and one `const OfflineDriver` preload; N5 `online.main.MAX_CATCH_UP_CREDIT` becomes `online.main.driver.MAX_CATCH_UP_CREDIT` (the const moved with the lockstep loop; not in the plan's rename tables, found by the filtered `test_online_scene` run) |
+| Test lines changed other than access paths, ports and deletions (each with its reason) | Task 5: script and scene path preloads repointed (`OnlineScene` in `test_online_scene.gd`, `SkirmishMain` in `test_online_scene.gd`, `test_skirmish.gd`, `test_playtest_replay.gd`; `test_view.gd:99`; `test_base_scene.gd:260`); N5 expected `resource_path` is `res://scripts/match/match_screen.gd` (the plan's one expected-value change); `OnlineScene` const in `test_pause_menu.gd` and `test_playtest_overlay.gd` removed and its use now `Skirmish.instantiate()` (gdlint `duplicated-load` once both consts point at `skirmish.tscn`); `test_scene.gd` `setup(runner, packed = Main)` loses its unused parameter (ledger). Task 4: SK23 (see above); OD1, OD2 added to `cases()` and one `const OfflineDriver` preload; N5 `online.main.MAX_CATCH_UP_CREDIT` becomes `online.main.driver.MAX_CATCH_UP_CREDIT` (the const moved with the lockstep loop; not in the plan's rename tables, found by the filtered `test_online_scene` run) |
 
 ## V13 reasons list (copied from `$L/v13-reasons.txt` after each `--add`)
 
@@ -200,6 +200,22 @@ Expected on `35d22b5` by reading (Task 2 confirms by running on the old chain):
 | 4 | `game/tests/test_skirmish.gd` | SK23 builds an OnlineDriver (starts from MatchSettings, no free, no statics) | 7 lines of `test_desync_report_names_map_seed_starts` (statics save and restore, `OnlineMain.new()`, `main._lockstep =`, `main._report()`, the check line with `SkirmishMain.starts`, `main.free()`) plus `const OnlineMain = preload("res://scripts/online_main.gd")` |
 | 4 | `game/tests/test_skirmish_scene.gd` | OD1, OD2 added to `cases()` | `return [test_skirmish_ready_and_tick, …, test_input_script_offline]` |
 | 4 | `game/tests/test_online_scene.gd` | N5 reads `MAX_CATCH_UP_CREDIT` from the online driver | `runner.check(tick > 24 and tick <= 24 + online.main.MAX_CATCH_UP_CREDIT, …)` |
+| 5 | `game/tests/test_base_scene.gd` | script and scene paths | `var BaseMain = load("res://scripts/base_main.gd")` |
+| 5 | `game/tests/test_online_scene.gd` | script and scene paths | `runner.check(offline.get_script().resource_path == "res://scripts/skirmish_main.gd", "N5 Play offline loads the offline skirmish")` |
+| 5 | `game/tests/test_scene.gd` | unused packed parameter of setup dropped (ledger) | `var main = packed.instantiate()` |
+| 5 | `game/tests/test_scene.gd` | unused packed parameter of setup dropped (ledger) | `if packed == Main: _install_world(main)` |
+| 5 | `game/tests/test_view.gd` | script and scene paths | `var main = preload("res://scripts/main.gd").new()` |
+| 5 | `game/tests/test_pause_menu.gd` | duplicate scene preload folded into Skirmish (gdlint duplicated-load) | `var main = OnlineScene.instantiate()` |
+| 5 | `game/tests/test_playtest_overlay.gd` | duplicate scene preload folded into Skirmish (gdlint duplicated-load) | `var main = OnlineScene.instantiate()` |
+| 5 | `game/tests/test_online_scene.gd` | script and scene paths | `const OnlineScene = preload("res://scenes/online_skirmish.tscn")` |
+| 5 | `game/tests/test_online_scene.gd` | script and scene paths | `const SkirmishMain = preload("res://scripts/skirmish_main.gd")` |
+| 5 | `game/tests/test_pause_menu.gd` | script and scene paths | `const OnlineScene = preload("res://scenes/online_skirmish.tscn")` |
+| 5 | `game/tests/test_playtest_overlay.gd` | script and scene paths | `const OnlineScene = preload("res://scenes/online_skirmish.tscn")` |
+| 5 | `game/tests/test_playtest_replay.gd` | script and scene paths | `const SkirmishMain = preload("res://scripts/skirmish_main.gd")` |
+| 5 | `game/tests/test_scene.gd` | unused packed parameter of setup dropped (ledger) | `func setup(runner, packed = Main):` |
+| 5 | `game/tests/test_skirmish.gd` | script and scene paths | `const SkirmishMain = preload("res://scripts/skirmish_main.gd")` |
+| 5 | `game/tests/test_pause_menu.gd` | duplicate scene preload folded into Skirmish (gdlint duplicated-load) | `const OnlineScene = preload("res://scenes/online_skirmish.tscn")` |
+| 5 | `game/tests/test_playtest_overlay.gd` | duplicate scene preload folded into Skirmish (gdlint duplicated-load) | `const OnlineScene = preload("res://scenes/online_skirmish.tscn")` |
 
 ## Accepted reorders (plan R1-R4; reviewer verdict in Task 11)
 

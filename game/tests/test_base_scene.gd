@@ -257,7 +257,7 @@ func test_resume_status(runner) -> bool:
 	return true
 
 func test_queue_label(runner) -> bool:
-	var BaseMain = load("res://scripts/base_main.gd")
+	var BaseMain = load("res://scripts/match/match_screen.gd")
 	runner.check(BaseMain.queue_label({"id":10,"kind":"usa_tank","work":270000}) == "Cancel Battle Tank (90%)","Bs5 started entry shows percent, no id or raw work")
 	runner.check(BaseMain.queue_label({"id":12,"kind":"usa_tank","work":0}) == "Cancel Battle Tank (queued)","Bs5 unstarted entry shows queued")
 	return true

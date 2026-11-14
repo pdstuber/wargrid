@@ -1,13 +1,13 @@
 @warning_ignore_start("untyped_declaration")
 extends RefCounted
 
-const OnlineScene = preload("res://scenes/online_skirmish.tscn")
+const OnlineScene = preload("res://scenes/skirmish.tscn")
 const Launcher = preload("res://scenes/launcher.tscn")
 const LauncherScript = preload("res://scripts/launcher.gd")
 const AudioSettings = preload("res://scripts/presentation/audio_settings.gd")
 const MatchSettings = preload("res://scripts/match_settings.gd")
 const PlaytestSettings = preload("res://scripts/playtest/playtest_settings.gd")
-const SkirmishMain = preload("res://scripts/skirmish_main.gd")
+const SkirmishMain = preload("res://scripts/match/match_screen.gd")
 const BaseScene = preload("res://tests/test_base_scene.gd")
 const IcRows = preload("res://tests/input_script_rows.gd")
 const JoinLink = preload("res://scripts/join_link.gd")
@@ -317,7 +317,7 @@ func test_launcher_layout(runner) -> bool:
 	AudioSettings.path = saved_settings
 	DirAccess.remove_absolute(scratch)
 	var offline = load(LauncherScript.OFFLINE_SCENE).instantiate()
-	runner.check(offline.get_script().resource_path == "res://scripts/skirmish_main.gd", "N5 Play offline loads the offline skirmish")
+	runner.check(offline.get_script().resource_path == "res://scripts/match/match_screen.gd", "N5 Play offline loads the offline skirmish")
 	offline.free()
 	return true
 
