@@ -7,7 +7,7 @@ const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const Combat = preload("res://scripts/simulation/combat.gd")
 
 func cases() -> Array[Callable]:
-	return [test_scout_car_holds_five, test_enter_and_unload, test_passengers_fire_while_moving, test_passengers_hold_fire_when_flag_off, test_passenger_damage_full_kills, test_passenger_damage_partial_survivors_exit, test_unload_same_tick_as_death, test_full_container_rejects, test_enter_rejections, test_passenger_commands_rejected, test_retaliation_targets_carrier, test_group_move_skips_passengers, test_group_move_skips_late_boarder, test_contained_not_target, test_container_same_tick_cases, test_unload_with_container_move, test_container_removed_while_approaching, test_passengers_stay_in_id_order, test_reissued_enter_accepted, test_pickup_passengers]
+	return [test_scout_car_holds_five, test_enter_and_unload, test_passengers_fire_while_moving, test_passengers_hold_fire_when_flag_off, test_passenger_damage_full_kills, test_passenger_damage_partial_survivors_exit, test_unload_same_tick_as_death, test_full_container_rejects, test_enter_rejections, test_passenger_commands_rejected, test_retaliation_targets_carrier, test_group_move_skips_passengers, test_group_move_skips_late_boarder, test_contained_not_target, test_container_same_tick_cases, test_unload_with_container_move, test_container_removed_while_approaching, test_passengers_stay_in_id_order, test_reissued_enter_accepted, test_pickup_passengers, test_passenger_cannot_build]
 
 func _world() -> RefCounted:
 	var sim = Fixture.world()
@@ -417,4 +417,29 @@ func test_pickup_passengers(runner) -> bool:
 		var unit: Dictionary = Fixture.object(sim, id)
 		if unit.hp == 162000 and not unit.has("container_id"): exited += 1
 	runner.check(exited == 5, "CT7 on the pickup's death each rider takes 10 percent of its max HP and exits")
+	return true
+
+func test_passenger_cannot_build(runner) -> bool:
+	_kind("test_ferry", 100, true, ["vehicle"])
+	var sim = _world()
+	var car: int = sim.spawn(1, Vector2(5.5, 5.5), "test_ferry")
+	var builder: int = sim.spawn(1, Vector2(9.5, 5.5), "usa_builder")
+	var other: int = sim.spawn(1, Vector2(9.5, 8.5), "usa_builder")
+	var late: int = sim.spawn(1, Vector2(9.5, 11.5), "usa_builder")
+	Fixture.send(sim, {"type": "build", "builder_id": other, "building_kind": "usa_power_plant", "origin": [20, 20]})
+	sim.step()
+	var site: int = sim.snapshot().buildings[0].id
+	var credits: int = sim.snapshot().players[1].credits
+	runner.check(_load(sim, car, [builder]), "CT10 setup: the builder boarded")
+	for payload in [{"type": "build", "builder_id": builder, "building_kind": "usa_power_plant", "origin": [24, 4]}, {"type": "resume_build", "builder_id": builder, "building_id": site}]:
+		var result: Dictionary = Fixture.send(sim, payload)
+		runner.check(not result.ok and result.error == "Unit is inside a transport", "CT10 " + payload.type + " by a passenger is rejected: " + str(result))
+	Fixture.send(sim, {"type": "enter", "entity_ids": [late], "target_id": car})
+	var due: int = sim.snapshot().tick + 300
+	var queued: Dictionary = Fixture.send(sim, {"type": "build", "builder_id": late, "building_kind": "usa_power_plant", "origin": [24, 4], "tick": due})
+	runner.check(queued.ok, "CT10 a build queued before boarding is accepted: " + str(queued))
+	while sim.snapshot().tick <= due: sim.step()
+	runner.check(_inside(sim, late) == car, "CT10 setup: the late builder boarded before its build was due")
+	runner.check(sim.snapshot().buildings.size() == 1 and sim.snapshot().players[1].credits == credits, "CT10 the due build of a passenger spends nothing and places nothing")
+	Registry.clear_test_kinds()
 	return true

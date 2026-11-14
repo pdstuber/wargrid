@@ -239,6 +239,7 @@ func _validate(command: Dictionary, due: bool = false) -> String:
 	if command.type == "build": return "" if due else preview_build(command.player,command.builder_id,command.building_kind,Vector2i(command.origin[0],command.origin[1])).error
 	if command.type == "resume_build":
 		if not _entities.has(command.builder_id) or _entities[command.builder_id].owner != command.player or not Registry.is_builder(_entities[command.builder_id].kind) or _entities[command.builder_id].has("hole_id"): return "Invalid builder"
+		if _entities[command.builder_id].has("container_id"): return "Unit is inside a transport"
 	if command.type in ["resume_build","cancel_build"]:
 		if not _buildings.has(command.building_id) or _buildings[command.building_id].owner != command.player or _buildings[command.building_id].completed: return "Missing owned foundation"
 		if command.type == "resume_build":

@@ -163,7 +163,7 @@ A **container** is a unit or building with a `contains` rule in its definition (
    `Containers.step → _walk → _board`
 3. Boarding sets `container_id` on the unit, status `contained` and speed 0, and inserts its id into the sorted passenger list (the player's shared tunnel list for hubs).  
    `Containers._board`
-4. From then on the unit is out of play. A command that names only passengers is rejected ("Unit is inside a transport"), and in a group command the passengers are skipped. Nothing can target them, the scan grid and splash skip them, and the horde ignores them.  
+4. From then on the unit is out of play. A command that names only passengers is rejected ("Unit is inside a transport"), a passenger builder cannot place or resume a building, also when the order was queued before boarding, and in a group command the passengers are skipped. Nothing can target them, the scan grid and splash skip them, and the horde ignores them.  
    `Simulation._commandable; Combat.valid_target`
 5. A passenger may fire if the rule allows it. Its position is the carrier's, the moved list leaves out contained units, and so `fire` treats a passenger as a unit that stood still. Scout Car passengers therefore fire while the car drives. When one shoots, retaliation targets its carrier.  
    `Combat._plan_passenger; Combat.fire`

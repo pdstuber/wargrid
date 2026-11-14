@@ -69,6 +69,9 @@ static func preview(sim: Simulation, player: int, builder_id: int, kind: String,
 	if definition.is_empty() or not sim._players.has(player) or not sim._entities.has(builder_id): return result
 	var builder: Dictionary = sim._entities[builder_id]
 	if builder.owner != player or builder.has("hole_id") or not Registry.kind(builder.kind).get("builds", []).has(kind): return result
+	if builder.has("container_id"):
+		result.error = "Unit is inside a transport"
+		return result
 	if not sim._has_prerequisite(player,definition.prerequisite):
 		result.error = "Missing completed prerequisite"
 		return result

@@ -133,7 +133,7 @@ The bridge into the suite is a test like `test_supply_parity.gd`: a harness resu
 The in-game playtest helper (chapter 5) saves a JSON session file with answers, markers and each match's command log. Two tools read it, and both write next to the session file.
 
 - **`tools/playtest_session.py`** prints the answers and markers and extracts the marker screenshots as JPGs. With `--replay-args` it writes one `.cmd` command log per match and prints one tab-separated replay row per match; a session format other than 1 is refused. `tools/test_playtest_session.py` tests it.
-- **`tools/replay_session.sh SESSION_FILE [--tick N]`** feeds those rows to the headless oracle ([chapter 10](10-determinism-and-replays.md)). It prints `REPLAY MATCHED` when the replayed final digest equals the recorded one, and otherwise `REPLAY DIFFERS` (with the build the match was recorded on) or `REPLAY FAILED`, and exits non-zero. It prints the state at each marker tick; `--tick N` prints tick N instead and writes snapshots next to the file.
+- **`tools/replay_session.sh SESSION_FILE [--tick N]`** feeds those rows to the headless oracle ([chapter 10](10-determinism-and-replays.md)). It prints `REPLAY MATCHED` when the replayed final digest equals the recorded one, and otherwise `REPLAY DIFFERS` (with the build the match was recorded on) or `REPLAY FAILED` (no final digest, a non-zero client exit or a logged `SCRIPT ERROR`, even when the digest matches), and exits non-zero. It prints the state at each marker tick; `--tick N` prints tick N instead and writes snapshots next to the file.
 
 ## Desync and scaling tools
 

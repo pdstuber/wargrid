@@ -70,8 +70,9 @@ func write(web: bool, download: Callable) -> String:
 	var json: String = JSON.stringify(data, "\t")
 	var result: String = file
 	if web:
-		_store(LAST, json) # the browser may block the download; this copy survives until the next save
+		var kept: bool = _store(LAST, json) # the browser may block the download; this copy survives until the next save
 		download.call(json.to_utf8_buffer(), file, "application/json")
+		if not kept: return "" # a blocked download would leave no copy, so keep the sitting open
 	else:
 		if not _store(file, json): return ""
 		result = ProjectSettings.globalize_path(dir.path_join(file))

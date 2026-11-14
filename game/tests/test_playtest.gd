@@ -13,7 +13,7 @@ var sessions: String = "user://test-playtests-%d" % OS.get_process_id()
 var saved_dir: String = ""
 
 func cases() -> Array[Callable]:
-	return [test_shipped_focus_file_valid, test_focus_validation, test_trigger_matching, test_switch_defaults_and_override, test_build_id, test_launcher_focus_card, test_switch_saves_without_cards, test_launcher_shows_open_sitting_card, test_capture_bounds, test_marker_fields, test_session_schema, test_session_web_download, test_session_desktop_write, test_session_resumes_after_restart, test_suite_playtest_dir_redirected]
+	return [test_shipped_focus_file_valid, test_focus_validation, test_trigger_matching, test_switch_defaults_and_override, test_build_id, test_launcher_focus_card, test_switch_saves_without_cards, test_launcher_shows_open_sitting_card, test_capture_bounds, test_marker_fields, test_session_schema, test_session_web_download, test_session_web_backup_fails, test_session_desktop_write, test_session_resumes_after_restart, test_suite_playtest_dir_redirected]
 
 func _begin() -> String:
 	var saved: String = AudioSettings.path
@@ -361,6 +361,18 @@ func test_session_web_download(runner) -> bool:
 	next.data.started = "2099-01-01T00:00:00"
 	next.write(true, func(_buffer: PackedByteArray, _file_name: String, _mime: String) -> void: pass)
 	runner.check(JSON.parse_string(FileAccess.get_file_as_string(sessions.path_join("last-session.json"))).started == "2099-01-01T00:00:00", "PT10 last-session.json is overwritten by the next save")
+	_end(saved)
+	return true
+
+func test_session_web_backup_fails(runner) -> bool:
+	var saved := _begin()
+	var session := _two_match_session()
+	DirAccess.make_dir_recursive_absolute(sessions.path_join("last-session.json"))
+	var downloads: Array = []
+	var name := session.write(true, func(buffer: PackedByteArray, _file_name: String, _mime: String) -> void: downloads.append(buffer))
+	DirAccess.remove_absolute(sessions.path_join("last-session.json"))
+	runner.check(name.is_empty() and downloads.size() == 1, "PT10b a failed backup still offers the download but reports failure, got %s" % [name])
+	runner.check(PlaytestSession.current == session and FileAccess.file_exists(sessions.path_join("current.json")), "PT10b the sitting stays open for another try")
 	_end(saved)
 	return true
 

@@ -2,6 +2,8 @@ import base64
 import contextlib
 import io
 import json
+import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -136,6 +138,26 @@ class PlaytestSessionTest(unittest.TestCase):
             code = ps.main([str(self.path)])
         self.assertEqual(code, 2)
         self.assertIn("unsupported session format", err.getvalue())
+
+    def _replay(self, client_exit, extra=""):
+        one = session()
+        one["matches"] = one["matches"][:1]
+        self.path.write_text(json.dumps(one))
+        fake = Path(self._tmp.name) / "fake_client.sh"
+        fake.write_text(f"#!/bin/sh\necho 'ORACLE FINAL 60 aa'\n{extra}exit {client_exit}\n")
+        fake.chmod(0o755)
+        script = Path(__file__).resolve().parent / "replay_session.sh"
+        env = {**os.environ, "WARGRID_CLIENT": str(fake), "PYTHON": sys.executable}
+        return subprocess.run(["sh", str(script), str(self.path)], env=env, capture_output=True, text=True, check=False)
+
+    def test_replay_wrapper_needs_client_success(self):
+        passed = self._replay(0)
+        self.assertEqual((passed.returncode, "REPLAY MATCHED 1" in passed.stdout), (0, True), passed.stdout)
+        crashed = self._replay(1)
+        self.assertNotEqual(crashed.returncode, 0, crashed.stdout)
+        self.assertNotIn("REPLAY MATCHED", crashed.stdout)
+        errored = self._replay(0, "echo 'SCRIPT ERROR: boom'\n")
+        self.assertEqual((errored.returncode, "REPLAY MATCHED" in errored.stdout), (1, False), errored.stdout)
 
 
 if __name__ == "__main__":

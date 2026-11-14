@@ -33,9 +33,14 @@ while IFS=$tab read -r k cmd mode map seed factions end_tick end_digest marker_t
 	fi
 	[ "$state_ticks" = "-" ] || set -- "$@" --state-ticks "$state_ticks"
 	run_client "$@" >"$log" 2>&1
+	client_status=$?
 	grep '^ORACLE STATE' "$log"
 	replayed=$(sed -n 's/^ORACLE FINAL [0-9]* //p' "$log")
-	if [ -z "$replayed" ]; then
+	if [ "$client_status" -ne 0 ] || grep -q 'SCRIPT ERROR' "$log"; then
+		echo "REPLAY FAILED $k ($mode): client exited $client_status or logged a script error"
+		grep -E 'ERROR|SCRIPT|Unknown|needs' "$log" | head -5
+		status=1
+	elif [ -z "$replayed" ]; then
 		echo "REPLAY FAILED $k ($mode): no ORACLE FINAL line"
 		grep -E 'ERROR|SCRIPT|Unknown|needs' "$log" | head -5
 		status=1
