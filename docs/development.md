@@ -38,7 +38,7 @@ Developed with AI coding agents (Claude Code). [AGENTS.md](../AGENTS.md), the [b
   - Small tasks: [static checks plan](superpowers/plans/2026-11-05-gdscript-static-checks.md), [test environment plan](superpowers/plans/2026-11-07-test-environment.md), [logo plan](superpowers/plans/2026-11-07-logo.md).
   - P1: [design](superpowers/specs/2026-11-11-packages-and-playtest-helper-design.md), [plan](superpowers/plans/2026-11-11-packages-and-playtest-helper.md), [verification](reference/p1-playtest-helper-verification.md).
   - P2: [design](superpowers/specs/2026-11-13-p2-you-clicked-we-heard-design.md), [plan](superpowers/plans/2026-11-13-p2-you-clicked-we-heard.md), [F5 addendum](superpowers/plans/2026-11-13-p2-f5-paste-and-links.md), [verification](reference/p2-verification.md).
-  - P2.1 (implemented on branch `p2.1-launcher`, the user's playtest and merge pending): [design](superpowers/specs/2026-11-14-p2.1-new-launcher-design.md), [plan](superpowers/plans/2026-11-14-p2.1-new-launcher.md), [verification](reference/p2.1-verification.md).
+  - P2.1 (merged 2026-11-14): [design](superpowers/specs/2026-11-14-p2.1-new-launcher-design.md), [plan](superpowers/plans/2026-11-14-p2.1-new-launcher.md), [verification](reference/p2.1-verification.md).
   - HUD v4 (decisions for the HUD packages P2.3a and P2.3b and the rest of M7.6): [pictures](images/hud-v4/notes.md), [decisions](reference/design-answers-2026-11-08.md#hud-m76).
   - Map art spike (decisions for P2.4 to P2.6 and the rest of M7.5): [pictures](images/map-art/notes.md), [decisions](reference/design-answers-2026-11-08.md#map-art-faction-shapes-m75-user-2026-11-13).
 
