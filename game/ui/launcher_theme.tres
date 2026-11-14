@@ -1,0 +1,147 @@
+[gd_resource type="Theme" load_steps=11 format=3]
+
+[sub_resource type="StyleBoxFlat" id="field"]
+content_margin_left = 14.0
+content_margin_top = 10.0
+content_margin_right = 14.0
+content_margin_bottom = 10.0
+bg_color = Color(0.165, 0.165, 0.165, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.42, 0.42, 0.42, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="field_hover"]
+content_margin_left = 14.0
+content_margin_top = 10.0
+content_margin_right = 14.0
+content_margin_bottom = 10.0
+bg_color = Color(0.22, 0.22, 0.22, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.6, 0.6, 0.6, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="selected"]
+content_margin_left = 14.0
+content_margin_top = 10.0
+content_margin_right = 14.0
+content_margin_bottom = 10.0
+bg_color = Color(0.18, 0.43, 0.33, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="nav_hover"]
+content_margin_left = 14.0
+content_margin_top = 10.0
+content_margin_right = 14.0
+content_margin_bottom = 10.0
+bg_color = Color(0.22, 0.22, 0.22, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxEmpty" id="nav_idle"]
+content_margin_left = 14.0
+content_margin_top = 10.0
+content_margin_right = 14.0
+content_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxFlat" id="primary"]
+content_margin_left = 20.0
+content_margin_top = 12.0
+content_margin_right = 20.0
+content_margin_bottom = 12.0
+bg_color = Color(0.18, 0.72, 0.55, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="primary_hover"]
+content_margin_left = 20.0
+content_margin_top = 12.0
+content_margin_right = 20.0
+content_margin_bottom = 12.0
+bg_color = Color(0.24, 0.8, 0.62, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxEmpty" id="spaced"]
+content_margin_bottom = 22.0
+
+[sub_resource type="StyleBoxEmpty" id="logo_margin"]
+content_margin_left = 10.0
+content_margin_top = 28.0
+content_margin_bottom = 20.0
+
+[sub_resource type="StyleBoxEmpty" id="version_margin"]
+content_margin_left = 10.0
+content_margin_top = 10.0
+content_margin_bottom = 24.0
+
+[resource]
+default_font_size = 15
+Button/styles/disabled = SubResource("field")
+Button/styles/focus = SubResource("field_hover")
+Button/styles/hover = SubResource("field_hover")
+Button/styles/normal = SubResource("field")
+Button/styles/pressed = SubResource("selected")
+Button/colors/font_disabled_color = Color(0.5, 0.5, 0.5, 1)
+OptionButton/styles/disabled = SubResource("field")
+OptionButton/styles/focus = SubResource("field_hover")
+OptionButton/styles/hover = SubResource("field_hover")
+OptionButton/styles/normal = SubResource("field")
+OptionButton/styles/pressed = SubResource("field_hover")
+OptionButton/colors/font_disabled_color = Color(0.5, 0.5, 0.5, 1)
+LineEdit/styles/focus = SubResource("field_hover")
+LineEdit/styles/normal = SubResource("field")
+LineEdit/styles/read_only = SubResource("field")
+NavButton/base_type = &"Button"
+NavButton/styles/disabled = SubResource("nav_idle")
+NavButton/styles/focus = SubResource("nav_hover")
+NavButton/styles/hover = SubResource("nav_hover")
+NavButton/styles/hover_pressed = SubResource("selected")
+NavButton/styles/normal = SubResource("nav_idle")
+NavButton/styles/pressed = SubResource("selected")
+PrimaryButton/base_type = &"Button"
+PrimaryButton/colors/font_color = Color(1, 1, 1, 1)
+PrimaryButton/colors/font_disabled_color = Color(0.75, 0.85, 0.8, 1)
+PrimaryButton/colors/font_hover_color = Color(1, 1, 1, 1)
+PrimaryButton/font_sizes/font_size = 17
+PrimaryButton/styles/disabled = SubResource("primary")
+PrimaryButton/styles/focus = SubResource("primary_hover")
+PrimaryButton/styles/hover = SubResource("primary_hover")
+PrimaryButton/styles/normal = SubResource("primary")
+PrimaryButton/styles/pressed = SubResource("primary_hover")
+PageTitle/base_type = &"Label"
+PageTitle/font_sizes/font_size = 30
+Subtitle/base_type = &"Label"
+Subtitle/colors/font_color = Color(0.8, 0.8, 0.8, 1)
+Subtitle/font_sizes/font_size = 14
+Subtitle/styles/normal = SubResource("spaced")
+Hint/base_type = &"Label"
+Hint/colors/font_color = Color(0.8, 0.8, 0.8, 1)
+Hint/font_sizes/font_size = 12
+Logo/base_type = &"Label"
+Logo/font_sizes/font_size = 22
+Logo/styles/normal = SubResource("logo_margin")
+SidebarVersion/base_type = &"Label"
+SidebarVersion/colors/font_color = Color(0.8, 0.8, 0.8, 1)
+SidebarVersion/font_sizes/font_size = 11
+SidebarVersion/styles/normal = SubResource("version_margin")

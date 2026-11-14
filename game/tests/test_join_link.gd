@@ -131,7 +131,7 @@ func test_paste_cannot_reach_release_relay(runner) -> bool:
 	runner.root.add_child(launcher)
 	await runner.process_frame
 	await runner.process_frame
-	var relay: LineEdit = launcher.get_node("Center/Box/RelayUrl")
+	var relay: LineEdit = launcher.get_node("Pages/Play/Body/Advanced/RelayUrl")
 	runner.check(not PasteShim.insert(relay, "wss://evil.example/ws"), "PS4 the hidden relay field refuses a paste")
 	runner.check(relay.text == JoinLink.DEFAULT_RELAY, "PS4 the relay stays the default, got '%s'" % relay.text)
 	launcher.free()
@@ -142,7 +142,7 @@ func test_shim_only_on_web(runner) -> bool:
 	runner.root.add_child(launcher)
 	await runner.process_frame
 	await runner.process_frame
-	runner.check(launcher.get_node("Center/Box/JoinRow/Code").is_in_group("join_code"), "PS5 the join field is in group join_code")
+	runner.check(launcher.get_node("Pages/Join/Body/Code").is_in_group("join_code"), "PS5 the join field is in group join_code")
 	runner.check(not runner.root.has_node("PasteShim"), "PS5 no shim off web")
 	launcher.free()
 	return true

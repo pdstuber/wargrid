@@ -247,8 +247,36 @@ func test_notices_reach_the_hud_while_processing(runner) -> bool:
 	waiting.main.free()
 	return true
 
-const LAUNCHER_PATHS: Array[String] = ["Title", "MatchRow/MapLabel", "MatchRow/Map", "OfflineHeader", "OfflineRow/YouLabel", "OfflineRow/Own", "OfflineRow/BotLabel", "OfflineRow/Opponent", "OfflineRow/Offline", "ThisBuild", "OnlineHeader", "OnlineRow/YouLabel", "OnlineRow/Own", "OnlineRow/Create", "JoinRow/Code", "JoinRow/Join", "WaitRow/Copy", "WaitRow/Cancel", "Advanced", "RelayHelp", "RelayUrl", "Status", "SettingsHeader", "Volume/MusicLabel", "Volume/Music", "Volume/EffectsLabel", "Volume/Effects", "Volume/VoiceLabel", "Volume/Voice", "Volume/MuteLabel", "Volume/Mute", "PlaytestSwitch", "Credits", "Legal"]
-const LAUNCHER_ORDER: Array[String] = ["MatchRow", "OfflineHeader", "OfflineRow", "OnlineHeader", "OnlineRow", "JoinRow", "Advanced", "RelayHelp", "RelayUrl", "SettingsHeader", "Volume", "PlaytestSwitch", "Credits", "Legal"]
+const LAUNCHER_PAGE_PATHS: Dictionary = {
+	"Play": ["Title", "Subtitle", "Body/OwnLabel", "Body/MapLabel", "Body/Own", "Body/Map", "Body/BotLabel", "Body/Bot", "Body/Advanced/Toggle", "Body/Advanced/RelayHelp", "Body/Advanced/RelayUrl", "Footer/Status", "Footer/Start", "Footer/Create"],
+	"Join": ["Title", "Subtitle", "Body/CodeLabel", "Body/MapLabel", "Body/Code", "Body/MapHint", "Body/CodeHint", "Footer/Status", "Footer/Join"],
+	"Settings": ["Title", "Subtitle", "Body/Audio/AudioHeader", "Body/Audio/Volume/MusicLabel", "Body/Audio/Volume/Music", "Body/Audio/Volume/EffectsLabel", "Body/Audio/Volume/Effects", "Body/Audio/Volume/VoiceLabel", "Body/Audio/Volume/Voice", "Body/Audio/Volume/MuteLabel", "Body/Audio/Volume/Mute", "Body/Playtest/PlaytestHeader", "Body/Playtest/PlaytestSwitch", "Body/Playtest/PlaytestHint", "Body/Playtest/ThisBuild"],
+	"Credits": ["Title", "Subtitle", "Body/Text", "Body/Legal"],
+	"Waiting": ["Title", "Subtitle", "Body/Link", "Body/Copy", "Footer/Status", "Footer/Cancel"],
+}
+const LAUNCHER_NAV_ORDER: Array[String] = ["Play", "Join", "Divider", "Settings", "Credits"]
+const PAGE_TITLES: Dictionary = {"Play": "Play", "Join": "Join a match", "Settings": "Settings", "Credits": "Credits", "Waiting": "Waiting for your friend"}
+
+func _force_visible(launcher: Node) -> void:
+	launcher.get_node("Pages/Play/Footer/Create").visible = true
+	launcher.get_node("Pages/Settings/Body/Playtest/ThisBuild").visible = true
+
+func _page_controls_ok(runner, launcher: Node, size: Vector2i, id: String, skip: Array = []) -> void:
+	var view := Rect2(Vector2.ZERO, Vector2(size))
+	var content: Control = launcher.get_node("Pages")
+	for page_name: String in LAUNCHER_PAGE_PATHS:
+		launcher.show_page(page_name)
+		await runner.process_frame
+		await runner.process_frame
+		var rects: Array[Rect2] = []
+		for path: String in LAUNCHER_PAGE_PATHS[page_name]:
+			if path in skip: continue
+			var control: Control = launcher.get_node_or_null("Pages/%s/%s" % [page_name, path])
+			runner.check(control != null and control.visible and view.encloses(control.get_global_rect()) and content.get_global_rect().grow(0.5).encloses(control.get_global_rect()), "%s %s/%s inside %s" % [id, page_name, path, size])
+			if control != null: rects.append(control.get_global_rect())
+		for i in rects.size():
+			for j in range(i + 1, rects.size()):
+				runner.check(not rects[i].intersects(rects[j]), "%s %s controls %d and %d do not overlap at %s" % [id, page_name, i, j, size])
 
 func test_launcher_sections(runner) -> bool:
 	var saved_settings: String = AudioSettings.path
@@ -262,25 +290,25 @@ func test_launcher_sections(runner) -> bool:
 		var launcher = Launcher.instantiate()
 		launcher.prerelease = true
 		port.add_child(launcher)
-		launcher.get_node("Center/Box/WaitRow").visible = true
-		launcher.get_node("Center/Box/ThisBuild").visible = true
+		_force_visible(launcher)
 		await runner.process_frame
 		await runner.process_frame
-		var box: Control = launcher.get_node("Center/Box")
-		for pair in [["OfflineHeader", "Play offline"], ["OnlineHeader", "Play online"], ["SettingsHeader", "Settings"]]:
-			var header: Label = box.get_node_or_null(pair[0])
-			runner.check(header != null and header.text == pair[1], "N20 %s reads %s at %s" % [pair[0], pair[1], size])
+		for page_name: String in PAGE_TITLES:
+			var header: Label = launcher.get_node_or_null("Pages/%s/Title" % page_name)
+			runner.check(header != null and header.text == PAGE_TITLES[page_name], "N20 %s page reads %s at %s" % [page_name, PAGE_TITLES[page_name], size])
+		var nav: Control = launcher.get_node("Sidebar/Nav")
 		var indexes: Array[int] = []
-		for name in LAUNCHER_ORDER:
-			var node: Node = box.get_node_or_null(name)
+		for name in LAUNCHER_NAV_ORDER:
+			var node: Node = nav.get_node_or_null(name)
 			indexes.append(node.get_index() if node != null else -1)
 		var in_order: bool = not indexes.has(-1)
 		for i in range(1, indexes.size()):
 			in_order = in_order and indexes[i - 1] < indexes[i]
 		runner.check(in_order, "N20 sections are in order at %s, got %s" % [size, indexes])
-		runner.check(box.get_node_or_null("OfflineRow/Opponent") != null and box.get_node_or_null("OfflineRow/Offline") != null and box.get_node_or_null("OfflineRow/Own") != null and box.get_node_or_null("OnlineRow/Own") != null and box.get_node_or_null("OnlineRow/Create") != null and box.get_node_or_null("MatchRow/Map") != null, "N20 row children at %s" % size)
-		var advanced: Button = box.get_node_or_null("Advanced")
-		var relay: LineEdit = box.get_node_or_null("RelayUrl")
+		var play: Control = launcher.get_node("Pages/Play")
+		runner.check(play.get_node_or_null("Body/Bot") != null and play.get_node_or_null("Footer/Start") != null and play.get_node_or_null("Body/Own") != null and play.get_node_or_null("Footer/Create") != null and play.get_node_or_null("Body/Map") != null, "N20 row children at %s" % size)
+		var advanced: Button = play.get_node_or_null("Body/Advanced/Toggle")
+		var relay: LineEdit = play.get_node_or_null("Body/Advanced/RelayUrl")
 		if advanced != null and relay != null:
 			runner.check(not advanced.button_pressed and not relay.visible and advanced.text == "Show advanced settings" and not advanced.flat, "N20 Advanced starts closed, as a visible button, at %s" % size)
 			runner.check(relay.text == "wss://relay.pdstuber.dev/ws", "N20 closed fold keeps the default relay URL at %s" % size)
@@ -291,19 +319,12 @@ func test_launcher_sections(runner) -> bool:
 			advanced.button_pressed = true
 			runner.check(relay.visible and advanced.text == "Hide advanced settings", "N20 opening Advanced shows the relay field at %s" % size)
 			runner.check(advanced.text.to_utf8_buffer().size() == advanced.text.length(), "N20 toggle text is plain ASCII, the default font has no arrow glyphs, at %s" % size)
+			await _page_controls_ok(runner, launcher, size, "N20")
+			launcher.show_page("Play")
 			await runner.process_frame
 			await runner.process_frame
-			var view := Rect2(Vector2.ZERO, Vector2(size))
-			var rects: Array[Rect2] = []
-			for path in LAUNCHER_PATHS:
-				var control: Control = box.get_node_or_null(path)
-				runner.check(control != null and control.visible and view.encloses(control.get_global_rect()), "N20 %s inside %s" % [path, size])
-				if control != null: rects.append(control.get_global_rect())
-			for i in rects.size():
-				for j in range(i + 1, rects.size()):
-					runner.check(not rects[i].intersects(rects[j]), "N20 controls %d and %d do not overlap at %s" % [i, j, size])
-			print("N20 Center/Box height at %s: %s" % [size, box.get_global_rect().size.y])
-		var status: Label = box.get_node("Status")
+			print("N20 Pages/Play/Body height at %s: %s" % [size, play.get_node("Body").get_global_rect().size.y])
+		var status: Label = play.get_node("Footer/Status")
 		for text in ["Match code: ABC234 — waiting for player 2", "Connection to relay lost"] + MatchSettings.PLAY_MAPS.values().map(func(label: String) -> String: return "Your copy of %s differs from the host's" % label):
 			status.text = text
 			await runner.process_frame
@@ -326,21 +347,16 @@ func test_launcher_layout(runner) -> bool:
 		var launcher = Launcher.instantiate()
 		launcher.prerelease = true
 		port.add_child(launcher)
-		launcher.get_node("Center/Box/WaitRow").visible = true
-		launcher.get_node("Center/Box/ThisBuild").visible = true
-		launcher.get_node("Center/Box/Advanced").button_pressed = true
+		_force_visible(launcher)
+		launcher.get_node("Pages/Play/Body/Advanced/Toggle").button_pressed = true
 		await runner.process_frame
 		await runner.process_frame
-		var rects: Array[Rect2] = []
-		for path in LAUNCHER_PATHS:
-			var control: Control = launcher.get_node("Center/Box/" + path)
-			rects.append(control.get_global_rect())
-			runner.check(Rect2(Vector2.ZERO, Vector2(size)).encloses(control.get_global_rect()), "N5 %s inside %s" % [path, size])
-		runner.check(launcher.get_node("Center/Box").get_global_rect().encloses(launcher.get_node("Center/Box/Volume").get_global_rect()), "N5 Volume inside the box at %s" % size)
-		for i in rects.size():
-			for j in range(i + 1, rects.size()):
-				runner.check(not rects[i].intersects(rects[j]), "N5 controls %d and %d do not overlap at %s" % [i, j, size])
-		var legal: String = launcher.get_node("Center/Box/Legal").text
+		await _page_controls_ok(runner, launcher, size, "N5")
+		launcher.show_page("Settings")
+		await runner.process_frame
+		await runner.process_frame
+		runner.check(launcher.get_node("Pages/Settings/Body/Audio").get_global_rect().encloses(launcher.get_node("Pages/Settings/Body/Audio/Volume").get_global_rect()), "N5 Volume inside the audio column at %s" % size)
+		var legal: String = launcher.get_node("Pages/Credits/Body/Legal").text
 		for part in ["Electronic Arts", "GNU GPL", "no warranty", "github.com/pdstuber/wargrid"]:
 			runner.check(part in legal, "N5 launcher legal notice names %s" % part)
 		launcher.free()
@@ -391,14 +407,14 @@ func test_launcher_faction_selectors_fit(runner) -> bool:
 		port.add_child(launcher)
 		await runner.process_frame
 		await runner.process_frame
-		var box: Control = launcher.get_node("Center/Box")
-		var own: OptionButton = launcher.get_node("Center/Box/OfflineRow/Own")
-		var opponent: OptionButton = launcher.get_node("Center/Box/OfflineRow/Opponent")
+		var box: Control = launcher.get_node("Pages/Play/Body")
+		var own: OptionButton = launcher.get_node("Pages/Play/Body/Own")
+		var opponent: OptionButton = launcher.get_node("Pages/Play/Body/Bot")
 		runner.check(box.get_global_rect().encloses(own.get_global_rect()) and box.get_global_rect().encloses(opponent.get_global_rect()), "F5 selectors inside the box at %s" % size)
 		runner.check(not own.get_global_rect().intersects(opponent.get_global_rect()), "F5 selectors do not overlap at %s" % size)
-		for path in ["OfflineRow", "OnlineRow", "JoinRow", "Status"]:
-			runner.check(not launcher.get_node("Center/Box/MatchRow").get_global_rect().intersects(launcher.get_node("Center/Box/" + path).get_global_rect()), "F5 row clear of %s at %s" % [path, size])
-		runner.check(box.get_global_rect().size.x <= 600.0, "F5 launcher box stays under 600 px wide at %s" % size)
+		for path in ["Body/Own", "Body/Bot", "Footer"]:
+			runner.check(not launcher.get_node("Pages/Play/Body/Map").get_global_rect().intersects(launcher.get_node("Pages/Play/" + path).get_global_rect()), "F5 row clear of %s at %s" % [path, size])
+		runner.check(box.get_global_rect().size.x < 1100.0, "F5 Play body stays under 1100 px wide at %s" % size)
 		runner.check(own.item_count == 3 and own.get_item_text(0) == "China" and own.get_item_text(1) == "Free Resistance Coalition" and own.get_item_text(own.selected) == "United States", "F5 selector lists faction display names and defaults to the United States")
 		launcher.free()
 		port.free()
@@ -407,10 +423,10 @@ func test_launcher_faction_selectors_fit(runner) -> bool:
 func _row_texts(row: Node) -> Array:
 	return row.get_children().map(func(node: Node) -> String: return node.text if node is Label else node.name)
 
-func _faction_row_controls(box: Control) -> Array[Control]:
+func _faction_row_controls(page: Control) -> Array[Control]:
 	var controls: Array[Control] = []
-	for path in ["MatchRow/MapLabel", "MatchRow/Map", "OfflineRow/YouLabel", "OfflineRow/Own", "OfflineRow/BotLabel", "OfflineRow/Opponent", "OfflineRow/Offline", "OnlineRow/YouLabel", "OnlineRow/Own", "OnlineRow/Create"]:
-		controls.append(box.get_node(path))
+	for path in ["Body/OwnLabel", "Body/MapLabel", "Body/Own", "Body/Map", "Body/BotLabel", "Body/Bot", "Footer/Start", "Footer/Create"]:
+		controls.append(page.get_node(path))
 	return controls
 
 func test_launcher_faction_rows(runner) -> bool:
@@ -423,42 +439,44 @@ func test_launcher_faction_rows(runner) -> bool:
 		port.add_child(launcher)
 		await runner.process_frame
 		await runner.process_frame
-		var box: Control = launcher.get_node("Center/Box")
-		runner.check(_row_texts(box.get_node("OfflineRow")) == ["You", "Own", "Bot", "Opponent", "Offline"], "N25 OfflineRow children at %s, got %s" % [size, _row_texts(box.get_node("OfflineRow"))])
-		runner.check(_row_texts(box.get_node("OnlineRow")) == ["You", "Own", "Create"], "N25 OnlineRow children at %s, got %s" % [size, _row_texts(box.get_node("OnlineRow"))])
-		runner.check(_row_texts(box.get_node("MatchRow")) == ["Map", "Map"] and box.get_node_or_null("MatchRow/Own") == null, "N25 MatchRow is Map label and Map only at %s" % size)
-		runner.check(box.get_node("OnlineRow/Create").text == "Create match" and box.get_node("OfflineRow/Offline").text == "Start", "N25 button texts kept at %s" % size)
-		var controls: Array[Control] = _faction_row_controls(box)
+		var page: Control = launcher.get_node("Pages/Play")
+		page.get_node("Footer/Create").visible = true
+		await runner.process_frame
+		await runner.process_frame
+		var body: Control = page.get_node("Body")
+		runner.check(_row_texts(body) == ["You", "Map", "Own", "Map", "Bot", "Spacer1", "Bot", "Spacer2", "Advanced"], "N25 Play body children at %s, got %s" % [size, _row_texts(body)])
+		runner.check(page.find_children("Own", "OptionButton", true, false).size() == 1, "N25 Play has one Own selector at %s" % size)
+		runner.check(page.get_node("Footer/Create").text == "Create match" and page.get_node("Footer/Start").text == "Start match", "N25 button texts kept at %s" % size)
+		var controls: Array[Control] = _faction_row_controls(page)
 		var inside: bool = true
 		var clear: bool = true
 		for i in controls.size():
-			inside = inside and Rect2(Vector2.ZERO, Vector2(size)).encloses(controls[i].get_global_rect()) and box.get_global_rect().encloses(controls[i].get_global_rect())
+			inside = inside and Rect2(Vector2.ZERO, Vector2(size)).encloses(controls[i].get_global_rect()) and page.get_global_rect().encloses(controls[i].get_global_rect())
 			for j in range(i + 1, controls.size()):
 				clear = clear and not controls[i].get_global_rect().intersects(controls[j].get_global_rect())
 		runner.check(inside and clear, "N25 row controls inside the viewport and clear of each other at %s" % size)
-		for path in ["OfflineRow/YouLabel", "OfflineRow/BotLabel", "OnlineRow/YouLabel", "MatchRow/MapLabel"]:
-			var label: Label = box.get_node(path)
+		for path in ["Body/OwnLabel", "Body/BotLabel", "Body/MapLabel"]:
+			var label: Label = page.get_node(path)
 			runner.check(label.mouse_filter == Control.MOUSE_FILTER_IGNORE and label.text.to_utf8_buffer().size() == label.text.length(), "N25 %s is plain ASCII and ignores the mouse at %s" % [path, size])
-		var offline_own: OptionButton = box.get_node("OfflineRow/Own")
-		var online_own: OptionButton = box.get_node("OnlineRow/Own")
-		runner.check(offline_own.selected == online_own.selected and offline_own.item_count == 3 and online_own.item_count == 3, "N25 both Own selectors list the factions and start equal at %s" % size)
-		var default_index: int = offline_own.selected
-		online_own.select(0)
-		runner.check(default_index != 0 and offline_own.selected == default_index, "N25 OnlineRow/Own leaves OfflineRow/Own alone at %s" % size)
-		offline_own.select(1)
-		runner.check(online_own.selected == 0, "N25 OfflineRow/Own leaves OnlineRow/Own alone at %s" % size)
-		var second: String = offline_own.get_item_metadata(1)
-		var third: String = offline_own.get_item_metadata(2)
-		offline_own.select(1)
-		box.get_node("OfflineRow/Opponent").select(2)
+		var own: OptionButton = page.get_node("Body/Own")
+		var bot: OptionButton = page.get_node("Body/Bot")
+		runner.check(own.item_count == 3 and bot.item_count == 3 and own.selected == bot.selected, "N25 Own and Bot list the factions and start equal at %s" % size)
+		var default_index: int = own.selected
+		bot.select(0)
+		runner.check(default_index != 0 and own.selected == default_index, "N25 Bot leaves Own alone at %s" % size)
+		own.select(1)
+		runner.check(bot.selected == 0, "N25 Own leaves Bot alone at %s" % size)
+		var second: String = own.get_item_metadata(1)
+		var third: String = own.get_item_metadata(2)
+		bot.select(2)
 		launcher._offline_setup()
-		runner.check(SkirmishMain.factions == {1: second, 2: third}, "N25 offline Start passes OfflineRow/Own and Opponent at %s, got %s" % [size, SkirmishMain.factions])
-		online_own.select(2)
+		runner.check(SkirmishMain.factions == {1: second, 2: third}, "N25 offline Start passes Own and Bot at %s, got %s" % [size, SkirmishMain.factions])
+		own.select(2)
 		launcher._transport = FakeTransport.new()
 		launcher._seat = 1
 		launcher._start(_start_message("dry_wells", 3))
 		var main = runner.root.get_tree().current_scene
-		runner.check(main.driver._own_faction == third, "N25 online match carries OnlineRow/Own's faction at %s, got %s" % [size, main.driver._own_faction])
+		runner.check(main.driver._own_faction == third, "N25 online match carries Own's faction at %s, got %s" % [size, main.driver._own_faction])
 		main.free()
 		await runner.process_frame
 		port.free()
@@ -501,7 +519,7 @@ func test_offline_uses_chosen_map(runner) -> bool:
 	var launcher = Launcher.instantiate()
 	runner.root.add_child(launcher)
 	await runner.process_frame
-	var map_row: OptionButton = launcher.get_node("Center/Box/MatchRow/Map")
+	var map_row: OptionButton = launcher.get_node("Pages/Play/Body/Map")
 	var labels: Array = MatchSettings.PLAY_MAPS.values()
 	runner.check(map_row.item_count == 3 and launcher._map_id() == "dry_wells", "N11 three maps, Dry Wells selected by default")
 	for i in map_row.item_count:
@@ -569,8 +587,8 @@ func test_joiner_refuses_other_map(runner) -> bool:
 	launcher._set_busy(true)
 	runner.check(not launcher._handle(Wire.encode(message)), "N13 the joiner refuses a different map before the simulation exists")
 	runner.check(runner.root.get_tree().current_scene == scene_before and transport.close_calls == 1, "N13 no online scene, transport closed once")
-	runner.check(launcher.get_node("Center/Box/Status").text == "Your copy of Ashfall differs from the host's", "N13 the reason is shown")
-	runner.check(not launcher.get_node("Center/Box/OnlineRow/Create").disabled, "N13 Create usable again")
+	runner.check(launcher.get_node("Pages/Play/Footer/Status").text == "Your copy of Ashfall differs from the host's", "N13 the reason is shown")
+	runner.check(not launcher.get_node("Pages/Play/Footer/Create").disabled, "N13 Create usable again")
 	launcher._process(0.0)
 	launcher.free()
 	SkirmishMain.map_path = before_path
@@ -585,7 +603,7 @@ func test_old_relay_mismatch_is_shown(runner) -> bool:
 	launcher._transport = FakeTransport.new()
 	launcher._set_busy(true)
 	launcher._handle('{"type":"error","reason":"protocol mismatch"}')
-	runner.check(launcher.get_node("Center/Box/Status").text == "protocol mismatch" and not launcher.get_node("Center/Box/OnlineRow/Create").disabled, "N14 a protocol mismatch from an old relay is shown")
+	runner.check(launcher.get_node("Pages/Play/Footer/Status").text == "protocol mismatch" and not launcher.get_node("Pages/Play/Footer/Create").disabled, "N14 a protocol mismatch from an old relay is shown")
 	launcher.free()
 	return true
 
@@ -597,19 +615,19 @@ func test_cancel_and_copy_while_waiting(runner) -> bool:
 	launcher._transport = transport
 	launcher._set_busy(true)
 	launcher.set_process(true)
-	var wait: Control = launcher.get_node("Center/Box/WaitRow")
+	var wait: Control = launcher.get_node("Pages/Waiting")
 	launcher._handle('{"type":"welcome","seat":1,"match":"ABC234"}')
-	runner.check(wait.visible and launcher.get_node("Center/Box/OfflineRow/Offline").disabled and launcher.get_node("Center/Box/OnlineRow/Create").disabled and not launcher.get_node("Center/Box/WaitRow/Copy").disabled and not launcher.get_node("Center/Box/WaitRow/Cancel").disabled, "N17 waiting shows Copy and Cancel, launcher stays busy")
+	runner.check(wait.visible and launcher.get_node("Pages/Play/Footer/Start").disabled and launcher.get_node("Pages/Play/Footer/Create").disabled and not launcher.get_node("Pages/Waiting/Body/Copy").disabled and not launcher.get_node("Pages/Waiting/Footer/Cancel").disabled, "N17 waiting shows Copy and Cancel, launcher stays busy")
 	runner.check(launcher._code == "ABC234", "N18 welcome stores the match code for Copy")
 	if DisplayServer.has_feature(DisplayServer.FEATURE_CLIPBOARD):
-		launcher.get_node("Center/Box/WaitRow/Copy").pressed.emit()
+		launcher.get_node("Pages/Waiting/Body/Copy").pressed.emit()
 		runner.check(DisplayServer.clipboard_get() == "ABC234", "N18 Copy puts the match code on the clipboard")
-	launcher.get_node("Center/Box/WaitRow/Cancel").pressed.emit()
+	launcher.get_node("Pages/Waiting/Footer/Cancel").pressed.emit()
 	var enabled: bool = true
-	for path in ["OfflineRow/Offline", "OnlineRow/Create", "JoinRow/Join", "MatchRow/Map", "OfflineRow/Own", "OnlineRow/Own", "OfflineRow/Opponent"]:
-		enabled = enabled and not launcher.get_node("Center/Box/" + path).disabled
+	for path in ["Play/Footer/Start", "Play/Footer/Create", "Join/Footer/Join", "Play/Body/Map", "Play/Body/Own", "Play/Body/Bot"]:
+		enabled = enabled and not launcher.get_node("Pages/" + path).disabled
 	runner.check(transport.close_calls == 1 and not wait.visible and enabled, "N17 Cancel restores the launcher")
-	runner.check(launcher.get_node("Center/Box/Status").text == "Match cancelled" and not launcher.is_processing(), "N17 Cancel says so and stops polling")
+	runner.check(launcher.get_node("Pages/Play/Footer/Status").text == "Match cancelled" and not launcher.is_processing(), "N17 Cancel says so and stops polling")
 	launcher._handle('{"type":"welcome","seat":2,"match":"ABC234"}')
 	runner.check(not wait.visible, "N18 seat 2 never sees the wait row")
 	await runner.process_frame
@@ -626,8 +644,8 @@ func test_start_without_settings_is_a_protocol_error(runner) -> bool:
 	var message: Dictionary = _start_message("ashfall", 5)
 	message.erase("settings")
 	runner.check(not launcher._handle(JSON.stringify(message)), "N15 a start without settings is not accepted")
-	runner.check(launcher.get_node("Center/Box/Status").text.begins_with("Protocol error"), "N15 protocol error shown")
-	runner.check(transport.close_calls == 1 and not launcher.get_node("Center/Box/OnlineRow/Create").disabled, "N15 transport closed once, Create usable")
+	runner.check(launcher.get_node("Pages/Play/Footer/Status").text.begins_with("Protocol error"), "N15 protocol error shown")
+	runner.check(transport.close_calls == 1 and not launcher.get_node("Pages/Play/Footer/Create").disabled, "N15 transport closed once, Create usable")
 	var other := FakeTransport.new()
 	launcher._transport = other
 	runner.check(not launcher._handle('{"type":"tick","seat":1,"tick":0}') and other.close_calls == 1, "N15 an unexpected message type closes the transport")
@@ -711,21 +729,21 @@ func test_credits_panel_layout(runner) -> bool:
 		port.add_child(launcher)
 		await runner.process_frame
 		await runner.process_frame
-		var panel: Control = launcher.get_node("CreditsPanel")
-		runner.check(not panel.visible and launcher.get_node("Center").visible, "N10 Credits panel starts hidden at %s" % size)
-		launcher.get_node("Center/Box/Credits").pressed.emit()
+		var panel: Control = launcher.get_node("Pages/Credits")
+		runner.check(not panel.visible and launcher.get_node("Pages/Play").visible, "N10 Credits page starts hidden at %s" % size)
+		launcher.get_node("Sidebar/Nav/Credits").pressed.emit()
 		await runner.process_frame
 		await runner.process_frame
-		var text: RichTextLabel = panel.get_node("Box/Text")
-		var close: Control = panel.get_node("Box/Close")
+		var text: RichTextLabel = panel.get_node("Body/Text")
+		var legal: Control = panel.get_node("Body/Legal")
 		var view := Rect2(Vector2.ZERO, Vector2(size))
-		runner.check(panel.visible and view.encloses(panel.get_global_rect()), "N10 Credits panel inside the viewport at %s" % size)
-		runner.check(not launcher.get_node("Center").visible, "N10 launcher controls hidden behind Credits at %s" % size)
-		runner.check(panel.get_global_rect().encloses(text.get_global_rect()) and panel.get_global_rect().encloses(close.get_global_rect()) and not text.get_global_rect().intersects(close.get_global_rect()), "N10 Text and Close fit the panel at %s" % size)
+		runner.check(panel.visible and view.encloses(panel.get_global_rect()), "N10 Credits page inside the viewport at %s" % size)
+		runner.check(not launcher.get_node("Pages/Play").visible, "N10 launcher controls hidden behind Credits at %s" % size)
+		runner.check(panel.get_global_rect().encloses(text.get_global_rect()) and panel.get_global_rect().encloses(legal.get_global_rect()) and not text.get_global_rect().intersects(legal.get_global_rect()), "N10 Text and Legal fit the page at %s" % size)
 		runner.check("Zhelanov" in text.get_parsed_text(), "N10 Credits text names the composers at %s" % size)
 		_credits_wired(runner, text.get_parsed_text(), size)
-		close.pressed.emit()
-		runner.check(not panel.visible and launcher.get_node("Center").visible, "N10 Close returns to the launcher at %s" % size)
+		launcher.get_node("Sidebar/Nav/Play").pressed.emit()
+		runner.check(not panel.visible and launcher.get_node("Pages/Play").visible, "N10 Play returns to the launcher at %s" % size)
 		launcher.free()
 		port.free()
 	return true
@@ -763,29 +781,22 @@ func test_launcher_release_hides_relay(runner) -> bool:
 		port.size = size
 		runner.root.add_child(port)
 		var launcher = await _launcher(runner, port, false)
-		launcher.get_node("Center/Box/WaitRow").visible = true
-		launcher.get_node("Center/Box/ThisBuild").visible = true
+		_force_visible(launcher)
 		await runner.process_frame
 		await runner.process_frame
-		var box: Control = launcher.get_node("Center/Box")
-		var relay: LineEdit = box.get_node("RelayUrl")
+		var box: Control = launcher.get_node("Pages/Play/Body")
+		var relay: LineEdit = box.get_node("Advanced/RelayUrl")
 		runner.check(not box.get_node("Advanced").visible and not relay.visible, "N21 release hides the fold and the relay field at %s" % size)
 		runner.check(relay.text == JoinLink.DEFAULT_RELAY, "N21 release keeps the default relay at %s" % size)
 		launcher._set_busy(true)
 		runner.check(not relay.editable, "N21 busy locks the hidden relay field at %s" % size)
 		launcher._set_busy(false)
 		runner.check(relay.editable, "N21 idle unlocks the hidden relay field at %s" % size)
-		var view := Rect2(Vector2.ZERO, Vector2(size))
-		var rects: Array[Rect2] = []
-		for path in LAUNCHER_PATHS:
-			if path == "Advanced" or path == "RelayUrl" or path == "RelayHelp": continue
-			var control: Control = box.get_node_or_null(path)
-			runner.check(control != null and control.visible and view.encloses(control.get_global_rect()), "N21 %s inside %s" % [path, size])
-			if control != null: rects.append(control.get_global_rect())
-		for i in rects.size():
-			for j in range(i + 1, rects.size()):
-				runner.check(not rects[i].intersects(rects[j]), "N21 controls %d and %d do not overlap at %s" % [i, j, size])
-		print("N21 Center/Box height at %s: %s" % [size, box.get_global_rect().size.y])
+		await _page_controls_ok(runner, launcher, size, "N21", ["Body/Advanced/Toggle", "Body/Advanced/RelayHelp", "Body/Advanced/RelayUrl"])
+		launcher.show_page("Play")
+		await runner.process_frame
+		await runner.process_frame
+		print("N21 Pages/Play/Body height at %s: %s" % [size, box.get_global_rect().size.y])
 		launcher.free()
 		port.free()
 	AudioSettings.path = saved_settings
@@ -794,9 +805,9 @@ func test_launcher_release_hides_relay(runner) -> bool:
 
 func _page_case(runner, prerelease: bool, search: String, label: String) -> Dictionary:
 	var launcher = await _launcher(runner, runner.root, prerelease, search)
-	var box: Control = launcher.get_node("Center/Box")
+	var pages: Control = launcher.get_node("Pages")
 	runner.check(launcher._transport == null and not launcher.is_processing(), "N22 page address never connects: %s" % label)
-	var result := {"code": box.get_node("JoinRow/Code").text, "relay": box.get_node("RelayUrl").text, "relay_visible": box.get_node("RelayUrl").visible, "open": box.get_node("Advanced").button_pressed}
+	var result := {"code": pages.get_node("Join/Body/Code").text, "relay": pages.get_node("Play/Body/Advanced/RelayUrl").text, "relay_visible": pages.get_node("Play/Body/Advanced/RelayUrl").visible, "open": pages.get_node("Play/Body/Advanced/Toggle").button_pressed}
 	launcher.free()
 	return result
 
@@ -816,9 +827,9 @@ func test_launcher_prefills_from_page(runner) -> bool:
 	runner.check(oversize.code == "", "N22 an oversize query is ignored")
 	var first = await _launcher(runner, runner.root, true, both)
 	var back = await _launcher(runner, runner.root, true, both, "", false)
-	var back_box: Control = back.get_node("Center/Box")
-	runner.check(first.get_node("Center/Box/JoinRow/Code").text == "ABC234", "N22 the first visit takes the code")
-	runner.check(back_box.get_node("JoinRow/Code").text == "" and back_box.get_node("RelayUrl").text == "wss://x.example/ws" and back_box.get_node("Advanced").button_pressed, "N22 a return to the launcher drops the code and keeps the relay")
+	var back_pages: Control = back.get_node("Pages")
+	runner.check(first.get_node("Pages/Join/Body/Code").text == "ABC234", "N22 the first visit takes the code")
+	runner.check(back_pages.get_node("Join/Body/Code").text == "" and back_pages.get_node("Play/Body/Advanced/RelayUrl").text == "wss://x.example/ws" and back_pages.get_node("Play/Body/Advanced/Toggle").button_pressed, "N22 a return to the launcher drops the code and keeps the relay")
 	first.free()
 	back.free()
 	AudioSettings.path = saved_settings
@@ -837,43 +848,42 @@ func test_launcher_relay_help(runner) -> bool:
 		port.size = size
 		runner.root.add_child(port)
 		var launcher = await _launcher(runner, port, true)
-		launcher.get_node("Center/Box/WaitRow").visible = true
-		launcher.get_node("Center/Box/ThisBuild").visible = true
+		_force_visible(launcher)
 		await runner.process_frame
-		var box: Control = launcher.get_node("Center/Box")
-		var help: Label = box.get_node_or_null("RelayHelp")
+		var box: Control = launcher.get_node("Pages/Play/Body")
+		var help: Label = box.get_node_or_null("Advanced/RelayHelp")
 		runner.check(help != null and not help.visible, "N26 RelayHelp exists and is hidden while the fold is closed at %s" % size)
 		if help == null:
 			launcher.free()
 			port.free()
 			continue
-		box.get_node("Advanced").button_pressed = true
+		box.get_node("Advanced/Toggle").button_pressed = true
 		await runner.process_frame
 		await runner.process_frame
-		var relay: LineEdit = box.get_node("RelayUrl")
+		var relay: LineEdit = box.get_node("Advanced/RelayUrl")
 		runner.check(help.visible and help.text == RELAY_HELP, "N26 opening the fold shows the exact caption at %s" % size)
 		runner.check(help.get_index() == relay.get_index() - 1, "N26 caption sits directly above the relay field at %s" % size)
 		var view := Rect2(Vector2.ZERO, Vector2(size))
 		runner.check(view.encloses(help.get_global_rect()), "N26 caption inside %s" % size)
-		for path in LAUNCHER_PATHS:
-			var control: Control = box.get_node_or_null(path)
+		for path: String in LAUNCHER_PAGE_PATHS["Play"]:
+			var control: Control = launcher.get_node_or_null("Pages/Play/" + path)
 			if control == null or control == help or not control.visible: continue
 			runner.check(not control.get_global_rect().intersects(help.get_global_rect()), "N26 caption does not overlap %s at %s" % [path, size])
-		var height: float = box.get_global_rect().size.y
-		print("N26 prerelease fold-open worst-case Center/Box at %s: %s x %s, separation %s" % [size, box.get_global_rect().size.x, height, box.get_theme_constant("separation")])
-		runner.check(height <= 720.0 and box.get_global_rect().size.x < 600.0, "N26 worst-case box %s fits 720 high and under 600 wide at %s" % [box.get_global_rect().size, size])
+		var height: float = box.get_combined_minimum_size().y
+		print("N26 prerelease fold-open worst-case Pages/Play/Body at %s: %s x %s" % [size, box.get_global_rect().size.x, height])
+		runner.check(height <= 720.0 and box.get_global_rect().size.x < 1100.0, "N26 worst-case body %s fits 720 high and under 1100 wide at %s" % [box.get_global_rect().size, size])
 		launcher._fail("A very long relay reason that wraps over many lines. ".repeat(8))
 		await runner.process_frame
 		await runner.process_frame
-		runner.check(box.get_global_rect().size.y <= 720.0, "N26 a long Status keeps the worst-case box inside 720 high at %s, got %s" % [size, box.get_global_rect().size.y])
+		runner.check(box.get_combined_minimum_size().y <= 720.0, "N26 a long Status keeps the worst-case body needing at most 720 high at %s, got %s" % [size, box.get_combined_minimum_size().y])
 		launcher.free()
 		var opened = await _launcher(runner, port, true, "?relay=wss%3A%2F%2Fx.example%2Fws")
-		runner.check(opened.get_node("Center/Box/RelayHelp").visible, "N26 ?relay= opens the fold with the caption at %s" % size)
+		runner.check(opened.get_node("Pages/Play/Body/Advanced/RelayHelp").visible, "N26 ?relay= opens the fold with the caption at %s" % size)
 		opened.free()
 		var release = await _launcher(runner, port, false, "?relay=wss%3A%2F%2Fx.example%2Fws")
-		runner.check(not release.get_node("Center/Box/RelayHelp").visible, "N26 release hides the caption on load and ignores ?relay= at %s" % size)
-		runner.check(release.get_node("Center/Box").get_global_rect().size.y <= 720.0 or size.y > 720, "N26 release box fits at %s" % size)
-		print("N26 release Center/Box at %s: %s" % [size, release.get_node("Center/Box").get_global_rect().size])
+		runner.check(not release.get_node("Pages/Play/Body/Advanced/RelayHelp").visible, "N26 release hides the caption on load and ignores ?relay= at %s" % size)
+		runner.check(release.get_node("Pages/Play/Body").get_combined_minimum_size().y <= 720.0 or size.y > 720, "N26 release box fits at %s" % size)
+		print("N26 release Pages/Play/Body at %s: %s" % [size, release.get_node("Pages/Play/Body").get_global_rect().size])
 		release.free()
 		port.free()
 	AudioSettings.path = saved_settings
@@ -887,14 +897,14 @@ func test_copy_link_on_web(runner) -> bool:
 	DirAccess.remove_absolute(scratch)
 	var launcher = await _launcher(runner, runner.root, true, "", "https://wargrid-web-test.fly.dev/")
 	launcher._code = "ABC234"
-	runner.check(launcher.get_node("Center/Box/WaitRow/Copy").text == "Copy link", "N23 Copy reads Copy link on the web")
+	runner.check(launcher.get_node("Pages/Waiting/Body/Copy").text == "Copy link", "N23 Copy reads Copy link on the web")
 	runner.check(launcher._copy_text() == "https://wargrid-web-test.fly.dev/?code=ABC234", "N23 the link carries the code only for the default relay")
-	launcher.get_node("Center/Box/RelayUrl").text = "wss://x.example/ws"
+	launcher.get_node("Pages/Play/Body/Advanced/RelayUrl").text = "wss://x.example/ws"
 	runner.check(launcher._copy_text().ends_with("&relay=wss%3A%2F%2Fx.example%2Fws"), "N23 a non-default relay rides along")
 	launcher.free()
 	var desktop = await _launcher(runner, runner.root, true)
 	desktop._code = "ABC234"
-	runner.check(desktop.get_node("Center/Box/WaitRow/Copy").text == "Copy code" and desktop._copy_text() == "ABC234", "N23 off the web Copy copies the bare code")
+	runner.check(desktop.get_node("Pages/Waiting/Body/Copy").text == "Copy code" and desktop._copy_text() == "ABC234", "N23 off the web Copy copies the bare code")
 	desktop.free()
 	AudioSettings.path = saved_settings
 	DirAccess.remove_absolute(scratch)
