@@ -1,23 +1,24 @@
-[gd_resource type="Theme" load_steps=31 format=3]
+[gd_resource type="Theme" load_steps=32 format=3]
 
-[ext_resource type="FontFile" path="res://fonts/Inter-Regular.woff2" id="font_regular"]
-[ext_resource type="FontFile" path="res://fonts/Inter-SemiBold.woff2" id="font_semibold"]
-[ext_resource type="FontFile" path="res://fonts/Inter-Bold.woff2" id="font_bold"]
+[ext_resource type="FontFile" path="res://fonts/PublicSans-Regular.ttf" id="font_regular"]
+[ext_resource type="FontFile" path="res://fonts/PublicSans-SemiBold.ttf" id="font_semibold"]
+[ext_resource type="FontFile" path="res://fonts/PublicSans-Bold.ttf" id="font_bold"]
+[ext_resource type="FontFile" path="res://fonts/PublicSans-ExtraBold.ttf" id="font_extrabold"]
 [ext_resource type="Texture2D" path="res://ui/switch_on.svg" id="switch_on"]
 [ext_resource type="Texture2D" path="res://ui/switch_off.svg" id="switch_off"]
 [ext_resource type="Texture2D" path="res://ui/dropdown_arrow.svg" id="dropdown_arrow"]
 
 [sub_resource type="StyleBoxFlat" id="field"]
 content_margin_left = 15.0
-content_margin_top = 14.0
+content_margin_top = 13.0
 content_margin_right = 15.0
-content_margin_bottom = 14.0
+content_margin_bottom = 13.0
 bg_color = Color(0.165, 0.165, 0.165, 1)
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
-border_color = Color(0.42, 0.42, 0.42, 1)
+border_color = Color(0.50196, 0.50196, 0.50196, 1)
 corner_radius_top_left = 5
 corner_radius_top_right = 5
 corner_radius_bottom_right = 5
@@ -25,9 +26,9 @@ corner_radius_bottom_left = 5
 
 [sub_resource type="StyleBoxFlat" id="field_hover"]
 content_margin_left = 15.0
-content_margin_top = 14.0
+content_margin_top = 13.0
 content_margin_right = 15.0
-content_margin_bottom = 14.0
+content_margin_bottom = 13.0
 bg_color = Color(0.22, 0.22, 0.22, 1)
 border_width_left = 1
 border_width_top = 1
@@ -41,9 +42,9 @@ corner_radius_bottom_left = 5
 
 [sub_resource type="StyleBoxFlat" id="selected"]
 content_margin_left = 14.0
-content_margin_top = 13.0
+content_margin_top = 12.0
 content_margin_right = 14.0
-content_margin_bottom = 13.0
+content_margin_bottom = 12.0
 bg_color = Color(0.18, 0.43, 0.33, 1)
 corner_radius_top_left = 5
 corner_radius_top_right = 5
@@ -52,9 +53,9 @@ corner_radius_bottom_left = 5
 
 [sub_resource type="StyleBoxFlat" id="nav_hover"]
 content_margin_left = 14.0
-content_margin_top = 13.0
+content_margin_top = 12.0
 content_margin_right = 14.0
-content_margin_bottom = 13.0
+content_margin_bottom = 12.0
 bg_color = Color(0.22, 0.22, 0.22, 1)
 corner_radius_top_left = 5
 corner_radius_top_right = 5
@@ -63,9 +64,9 @@ corner_radius_bottom_left = 5
 
 [sub_resource type="StyleBoxEmpty" id="nav_idle"]
 content_margin_left = 14.0
-content_margin_top = 13.0
+content_margin_top = 12.0
 content_margin_right = 14.0
-content_margin_bottom = 13.0
+content_margin_bottom = 12.0
 
 [sub_resource type="StyleBoxFlat" id="primary"]
 content_margin_left = 34.0
@@ -91,9 +92,9 @@ corner_radius_bottom_left = 5
 
 [sub_resource type="StyleBoxFlat" id="toggle_idle"]
 content_margin_left = 10.0
-content_margin_top = 13.0
+content_margin_top = 12.0
 content_margin_right = 10.0
-content_margin_bottom = 13.0
+content_margin_bottom = 12.0
 bg_color = Color(0.165, 0.165, 0.165, 1)
 corner_radius_top_left = 5
 corner_radius_top_right = 5
@@ -102,9 +103,9 @@ corner_radius_bottom_left = 5
 
 [sub_resource type="StyleBoxFlat" id="toggle_hover"]
 content_margin_left = 10.0
-content_margin_top = 13.0
+content_margin_top = 12.0
 content_margin_right = 10.0
-content_margin_bottom = 13.0
+content_margin_bottom = 12.0
 bg_color = Color(0.22, 0.22, 0.22, 1)
 corner_radius_top_left = 5
 corner_radius_top_right = 5
@@ -113,9 +114,9 @@ corner_radius_bottom_left = 5
 
 [sub_resource type="StyleBoxFlat" id="toggle_selected"]
 content_margin_left = 10.0
-content_margin_top = 13.0
+content_margin_top = 12.0
 content_margin_right = 10.0
-content_margin_bottom = 13.0
+content_margin_bottom = 12.0
 bg_color = Color(0.18, 0.43, 0.33, 1)
 corner_radius_top_left = 5
 corner_radius_top_right = 5
@@ -123,8 +124,8 @@ corner_radius_bottom_right = 5
 corner_radius_bottom_left = 5
 
 [sub_resource type="FontVariation" id="logo_font"]
-base_font = ExtResource("font_bold")
-spacing_glyph = 1
+base_font = ExtResource("font_extrabold")
+spacing_glyph = 2
 
 [sub_resource type="StyleBoxFlat" id="open_slot"]
 content_margin_left = 14.0
@@ -225,7 +226,7 @@ border_width_left = 1
 border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
-border_color = Color(0.6, 0.6, 0.6, 1)
+border_color = Color(0.50196, 0.50196, 0.50196, 1)
 
 [sub_resource type="StyleBoxEmpty" id="link_idle"]
 
@@ -244,7 +245,7 @@ content_margin_bottom = 24.0
 
 [resource]
 default_font = ExtResource("font_regular")
-default_font_size = 14
+default_font_size = 15
 Button/styles/disabled = SubResource("field")
 Button/styles/focus = SubResource("field_hover")
 Button/styles/hover = SubResource("field_hover")
@@ -267,6 +268,8 @@ OptionButton/colors/font_disabled_color = Color(0.5, 0.5, 0.5, 1)
 OptionButton/constants/arrow_margin = 15
 OptionButton/fonts/font = ExtResource("font_semibold")
 OptionButton/icons/arrow = ExtResource("dropdown_arrow")
+LineEdit/colors/font_color = Color(1, 1, 1, 1)
+LineEdit/fonts/font = ExtResource("font_semibold")
 LineEdit/styles/focus = SubResource("field_hover")
 LineEdit/styles/normal = SubResource("field")
 LineEdit/styles/read_only = SubResource("field")
@@ -314,14 +317,14 @@ CreditsText/base_type = &"RichTextLabel"
 CreditsText/styles/normal = SubResource("credits_panel")
 Tag/base_type = &"Label"
 Tag/colors/font_color = Color(0.831, 0.831, 0.831, 1)
-Tag/font_sizes/font_size = 9
+Tag/font_sizes/font_size = 10
 Tag/styles/normal = SubResource("tag")
 PrimaryButton/base_type = &"Button"
 PrimaryButton/colors/font_color = Color(1, 1, 1, 1)
 PrimaryButton/colors/font_disabled_color = Color(0.75, 0.85, 0.8, 1)
 PrimaryButton/colors/font_hover_color = Color(1, 1, 1, 1)
-PrimaryButton/fonts/font = ExtResource("font_bold")
-PrimaryButton/font_sizes/font_size = 16
+PrimaryButton/fonts/font = ExtResource("font_extrabold")
+PrimaryButton/font_sizes/font_size = 17
 PrimaryButton/styles/disabled = SubResource("primary")
 PrimaryButton/styles/focus = SubResource("primary_hover")
 PrimaryButton/styles/hover = SubResource("primary_hover")
@@ -330,51 +333,54 @@ PrimaryButton/styles/normal = SubResource("primary")
 PrimaryButton/styles/pressed = SubResource("primary_hover")
 FooterLink/base_type = &"Button"
 FooterLink/colors/font_color = Color(0.831, 0.831, 0.831, 1)
+FooterLink/colors/font_focus_color = Color(0.831, 0.831, 0.831, 1)
 FooterLink/colors/font_hover_color = Color(1, 1, 1, 1)
-FooterLink/font_sizes/font_size = 14
+FooterLink/colors/font_hover_pressed_color = Color(0.831, 0.831, 0.831, 1)
+FooterLink/colors/font_pressed_color = Color(0.831, 0.831, 0.831, 1)
+FooterLink/font_sizes/font_size = 15
 FooterLink/styles/focus = SubResource("outline_focus")
 FooterLink/styles/hover = SubResource("link_idle")
 FooterLink/styles/hover_pressed = SubResource("link_idle")
 FooterLink/styles/normal = SubResource("link_idle")
 FooterLink/styles/pressed = SubResource("link_idle")
 PageTitle/base_type = &"Label"
-PageTitle/fonts/font = ExtResource("font_bold")
-PageTitle/font_sizes/font_size = 28
+PageTitle/fonts/font = ExtResource("font_extrabold")
+PageTitle/font_sizes/font_size = 30
 FieldLabel/base_type = &"Label"
 FieldLabel/fonts/font = ExtResource("font_bold")
-FieldLabel/font_sizes/font_size = 14
+FieldLabel/font_sizes/font_size = 15
 FieldLabel/styles/normal = SubResource("field_label_margin")
 PanelTitle/base_type = &"Label"
 PanelTitle/fonts/font = ExtResource("font_bold")
-PanelTitle/font_sizes/font_size = 14
+PanelTitle/font_sizes/font_size = 15
 FooterStatus/base_type = &"Label"
 FooterStatus/colors/font_color = Color(0.831, 0.831, 0.831, 1)
-FooterStatus/font_sizes/font_size = 14
+FooterStatus/font_sizes/font_size = 15
 FooterError/base_type = &"FooterStatus"
 FooterError/colors/font_color = Color(1, 0.87, 0.87, 1)
 FooterError/styles/normal = SubResource("status_error")
 Subtitle/base_type = &"Label"
 Subtitle/colors/font_color = Color(0.831, 0.831, 0.831, 1)
-Subtitle/font_sizes/font_size = 14
+Subtitle/font_sizes/font_size = 15
 Subtitle/styles/normal = SubResource("spaced")
 FooterRich/base_type = &"RichTextLabel"
 FooterRich/colors/default_color = Color(0.831, 0.831, 0.831, 1)
-FooterRich/font_sizes/bold_font_size = 14
-FooterRich/font_sizes/normal_font_size = 14
+FooterRich/font_sizes/bold_font_size = 15
+FooterRich/font_sizes/normal_font_size = 15
 FooterRich/fonts/bold_font = ExtResource("font_bold")
 HintRich/base_type = &"RichTextLabel"
 HintRich/colors/default_color = Color(0.831, 0.831, 0.831, 1)
-HintRich/font_sizes/bold_font_size = 12
-HintRich/font_sizes/normal_font_size = 12
+HintRich/font_sizes/bold_font_size = 13
+HintRich/font_sizes/normal_font_size = 13
 HintRich/fonts/bold_font = ExtResource("font_bold")
 Hint/base_type = &"Label"
 Hint/colors/font_color = Color(0.831, 0.831, 0.831, 1)
-Hint/font_sizes/font_size = 12
+Hint/font_sizes/font_size = 13
 Logo/base_type = &"Label"
 Logo/fonts/font = SubResource("logo_font")
-Logo/font_sizes/font_size = 21
+Logo/font_sizes/font_size = 23
 Logo/styles/normal = SubResource("logo_margin")
 SidebarVersion/base_type = &"Label"
 SidebarVersion/colors/font_color = Color(0.831, 0.831, 0.831, 1)
-SidebarVersion/font_sizes/font_size = 11
+SidebarVersion/font_sizes/font_size = 12
 SidebarVersion/styles/normal = SubResource("version_margin")

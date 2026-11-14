@@ -2,13 +2,13 @@
 
 importer="font_data_dynamic"
 type="FontFile"
-uid="uid://5j2qbnsn0ypm"
-path="res://.godot/imported/Inter-SemiBold.woff2-bc34e32320c6e196ac9f58f0ac017f07.fontdata"
+uid="uid://cfynpmitxeb1o"
+path="res://.godot/imported/PublicSans-Bold.ttf-f0f4fe135c1abd5e10a892687d19a394.fontdata"
 
 [deps]
 
-source_file="res://fonts/Inter-SemiBold.woff2"
-dest_files=["res://.godot/imported/Inter-SemiBold.woff2-bc34e32320c6e196ac9f58f0ac017f07.fontdata"]
+source_file="res://fonts/PublicSans-Bold.ttf"
+dest_files=["res://.godot/imported/PublicSans-Bold.ttf-f0f4fe135c1abd5e10a892687d19a394.fontdata"]
 
 [params]
 

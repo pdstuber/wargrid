@@ -27,7 +27,7 @@ What is real and what is not:
 - The minimap is a sketch, not map data.
 - Power reads used / available ("11 / 10" is low power); today's status line prints supply / demand.
 - The glyphs are mock-up drawings (third pass), not game art; the Militia is the weakest at small size.
-- The typeface is Inter (SIL Open Font License); the game has no font file yet.
+- The pictures are set in Inter; the game uses Public Sans (SIL Open Font License, user, 2026-11-14), which sets slightly larger.
 - The card above the dock belongs to the cell under the drawn pointer.
 
 Decided after these pictures and not drawn (design answers, "Questionnaire after round 3"): the refusal line above the dock, a selected enemy unit in the selection panel, the game's own owner colours on the panel edge and progress bars, the forecast in the top strip while a building is armed, an Unload button.

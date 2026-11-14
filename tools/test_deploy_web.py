@@ -23,7 +23,7 @@ class DeployWebTest(unittest.TestCase):
         (self.root / "game/audio").mkdir(parents=True)
         (self.root / "game/audio/CREDITS.md").write_text("")
         (self.root / "game/fonts").mkdir(parents=True)
-        (self.root / "game/fonts/Inter-OFL.txt").write_text("")
+        (self.root / "game/fonts/PublicSans-OFL.txt").write_text("")
         (self.root / "web/site").mkdir(parents=True)
         (self.root / "web/site/old").write_text("")
         bin_dir = self.root / "bin"

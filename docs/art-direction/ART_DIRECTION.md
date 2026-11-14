@@ -139,6 +139,15 @@ Only GPT's static artifact checks (archive: `VALIDATION.md`, `VISUAL_QA.md`) hav
 
 For future comparisons record commit, scene/map/seed, viewport, camera/zoom, visible counts, effect state, platform, baseline and revised images, frame/tick measurements, and reviewer decision. Keep scene composition fixed for renderer comparisons; this revision's before/after sheets are editorial comparisons, not controlled game benchmarks.
 
-## 12. Provenance and rights
+## 12. Interface mock-ups
+
+Applies to mock-ups of the launcher, the HUD and other menus (user, 2026-11-14, from the P2.1 launcher run):
+
+- **Typeface:** Public Sans, the game's UI font, from `game/fonts/` (Regular, SemiBold, Bold, ExtraBold; [decision](../reference/design-answers-2026-11-08.md#new-launcher-user-2026-11-13)). Draw mock-ups in it at the sizes the game uses, so type carries over 1:1. The P2.1 mock-ups were drawn in Helvetica Neue, which the game cannot ship.
+- **Source with every picture:** keep the HTML/CSS (or SVG) a mock-up was rendered from beside it; implementers take sizes, weights, paddings and colours from that source, not from pixels.
+- **Resolution:** export at 2x the layout size (2560x1440 for a 1280x720 layout), WebP lossless or high quality; 1x pictures look blurry on a Retina screen next to the sharp build.
+- **Every state:** draw each state a screen has (empty, error, locked or busy, folds open), not only the happy path.
+
+## 13. Provenance and rights
 
 Read `~/projects/wargrid-art-archive/PROVENANCE.md` before reusing interview images. “Original” in an inherited path is not proof of authenticity. We verify preservation from the supplied ZIP; independent access to the original Q1–Q12 conversation and generation outputs is unavailable. New sheet geometry is newly authored for this revision, with no EA artwork imported or traced. The historical package remains intact. Shipping license/credits for new art remain a separate project decision.

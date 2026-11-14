@@ -199,7 +199,7 @@ static func _nav_of(page_name: String) -> String:
 func _fill_credits() -> void:
 	var text: RichTextLabel = $Pages/Credits/Body/Text
 	if text.text.is_empty():
-		text.text = Credits.text(FileAccess.get_file_as_string("res://audio/CREDITS.md"), FileAccess.get_file_as_string("res://data/maps/NOTICE.md"), Engine.get_license_text(), Engine.get_copyright_info(), Engine.get_license_info(), FileAccess.get_file_as_string("res://fonts/Inter-OFL.txt"))
+		text.text = Credits.text(FileAccess.get_file_as_string("res://audio/CREDITS.md"), FileAccess.get_file_as_string("res://data/maps/NOTICE.md"), Engine.get_license_text(), Engine.get_copyright_info(), Engine.get_license_info(), FileAccess.get_file_as_string("res://fonts/PublicSans-OFL.txt"))
 
 func _show_status(label: Label, text: String, error: bool = false) -> void:
 	label.text = text

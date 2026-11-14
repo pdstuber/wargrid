@@ -2,13 +2,13 @@
 
 importer="font_data_dynamic"
 type="FontFile"
-uid="uid://dp2x1edxk3cou"
-path="res://.godot/imported/Inter-Regular.woff2-527532cfffb7c6fba7c6ded3b1d82b10.fontdata"
+uid="uid://bkvhgppjo1avf"
+path="res://.godot/imported/PublicSans-ExtraBold.ttf-b743681a51de0bebc25ec3a3433ad870.fontdata"
 
 [deps]
 
-source_file="res://fonts/Inter-Regular.woff2"
-dest_files=["res://.godot/imported/Inter-Regular.woff2-527532cfffb7c6fba7c6ded3b1d82b10.fontdata"]
+source_file="res://fonts/PublicSans-ExtraBold.ttf"
+dest_files=["res://.godot/imported/PublicSans-ExtraBold.ttf-b743681a51de0bebc25ec3a3433ad870.fontdata"]
 
 [params]
 
