@@ -1,6 +1,7 @@
 import contextlib
 import io
 import json
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -115,6 +116,40 @@ class SeatVerdictTests(unittest.TestCase):
 
     def test_no_shared_ticks(self):
         self.assertIsNone(seat_verdict(["500\tffff"], LOCAL))
+
+
+class ReplayFailureTests(BisectCase):
+    def replay(self, **run):
+        self.out.mkdir(parents=True)
+        with mock.patch.object(desync_bisect.subprocess, "run", **run):
+            return desync_bisect.replay(["godot"], report(1, LOCAL), self.out, "a", 64)
+
+    def test_timeout_writes_log_and_fails(self):
+        error = subprocess.TimeoutExpired("godot", 1, output="partial out", stderr="SCRIPT ERROR")
+        self.assertFalse(self.replay(side_effect=error))
+        text = (self.out / "oracle-a.log").read_text()
+        self.assertIn("partial out", text)
+        self.assertIn("SCRIPT ERROR", text)
+
+    def test_run_passes_timeout(self):
+        done = subprocess.CompletedProcess([], 0, stdout="ORACLE FINAL", stderr="")
+        run = mock.Mock(return_value=done)
+        self.assertTrue(self.replay(new=run))
+        self.assertEqual(run.call_args.kwargs["timeout"], desync_bisect.ORACLE_TIMEOUT_S)
+        self.assertFalse((self.out / "oracle-a.log").exists())
+
+    def test_nonzero_exit_writes_log(self):
+        done = subprocess.CompletedProcess([], 1, stdout="out text", stderr="SCRIPT ERROR: x")
+        self.assertFalse(self.replay(return_value=done))
+        text = (self.out / "oracle-a.log").read_text()
+        self.assertIn("out text", text)
+        self.assertIn("SCRIPT ERROR: x", text)
+
+    def test_main_names_the_log(self):
+        a = self.write("a.json", report(1, LOCAL))
+        code, text = self.run_main([a], FakeOracle(LOCAL, ok=False))
+        self.assertEqual(code, 2)
+        self.assertIn(str(self.out / "oracle-a.log"), text)
 
 
 class MainTests(BisectCase):

@@ -9,6 +9,9 @@ from pathlib import Path
 from compare_replays import first_divergence, read_trace
 from desync_diff import _walk, ring_divergence
 
+# A script error in oracle mode can leave Godot hanging with no output.
+ORACLE_TIMEOUT_S = 600
+
 
 def wire_lines(command_log: list[dict]) -> list[str]:
     by_tick: dict[int, list[dict]] = {}
@@ -41,8 +44,27 @@ def replay(
     args += ["--oracle-ticks", str(ticks), "--ring-log", str(out / f"ring-{tag}.tsv")]
     if state_ticks:
         args += ["--state-ticks", ",".join(map(str, state_ticks)), "--snapshot-dir", str(out / tag)]
-    run = subprocess.run([*client, "--", *args], capture_output=True, text=True, check=False)
-    return run.returncode == 0 and "ORACLE FINAL" in run.stdout
+    try:
+        run = subprocess.run(
+            [*client, "--", *args], capture_output=True, text=True, check=False, timeout=ORACLE_TIMEOUT_S
+        )
+    except subprocess.TimeoutExpired as expired:
+        _write_oracle_log(out, tag, expired.stdout, expired.stderr)
+        return False
+    ok = run.returncode == 0 and "ORACLE FINAL" in run.stdout
+    if not ok:
+        _write_oracle_log(out, tag, run.stdout, run.stderr)
+    return ok
+
+
+def _oracle_log(out: Path, tag: str) -> Path:
+    return out / f"oracle-{tag}.log"
+
+
+def _write_oracle_log(out: Path, tag: str, stdout: str | bytes | None, stderr: str | bytes | None) -> None:
+    # TimeoutExpired carries bytes even when the run asked for text.
+    text = [x.decode(errors="replace") if isinstance(x, bytes) else x or "" for x in (stdout, stderr)]
+    _oracle_log(out, tag).write_text(f"--- stdout ---\n{text[0]}\n--- stderr ---\n{text[1]}\n")
 
 
 def _ring_digests(out: Path, tag: str) -> list[str]:
@@ -64,7 +86,7 @@ def _seat_lines(reports: list[dict], out: Path, client: list[str], ticks: int) -
     verdicts = [seat_verdict(r["hash_ring"], local) if r.get("hash_ring") else None for r in reports]
     wanted = sorted({t for r, v in zip(reports, verdicts, strict=True) if v for t in (v - 1, v, r["snapshot"]["tick"])})
     if wanted and not replay(client, reports[0], out, "a", ticks, wanted):
-        raise ValueError("oracle failed on the snapshot pass")
+        raise ValueError(f"oracle failed on the snapshot pass, see {_oracle_log(out, 'a')}")
     lines = []
     diverged = False
     for report, verdict in zip(reports, verdicts, strict=True):
@@ -83,7 +105,7 @@ def _seat_lines(reports: list[dict], out: Path, client: list[str], ticks: int) -
 
 def _clients_line(report: dict, out: Path, clients: list[list[str]], ticks: int) -> tuple[str, bool]:
     if not replay(clients[1], report, out, "b", ticks):
-        raise ValueError("client B oracle failed")
+        raise ValueError(f"client B oracle failed, see {_oracle_log(out, 'b')}")
     a, b = _ring_digests(out, "a"), _ring_digests(out, "b")
     index = first_divergence([a, b])
     if index is None:
@@ -91,7 +113,7 @@ def _clients_line(report: dict, out: Path, clients: list[list[str]], ticks: int)
     tick = index + 1
     for client, tag in zip(clients, "ab", strict=True):
         if not replay(client, report, out, tag, ticks, [tick - 1, tick]):
-            raise ValueError("oracle failed on the snapshot pass")
+            raise ValueError(f"oracle failed on the snapshot pass, see {_oracle_log(out, tag)}")
     snapshots = [json.loads((out / tag / f"tick-{tick}.json").read_text()) for tag in "ab"]
     field = _walk(snapshots[0], snapshots[1], "snapshot") or "none"
     return f"CLIENTS DIVERGE AT TICK {tick} FIRST FIELD {field}", True
@@ -110,7 +132,7 @@ def _bisect(reports: list[dict], out: Path, client_b: str | None) -> int:
     ticks = max(_last_tick(r) for r in reports)
     clients = [_client(os.environ.get("WARGRID_CLIENT")), _client(client_b) if client_b else []]
     if not replay(clients[0], reports[0], out, "a", ticks):
-        raise ValueError("oracle failed: no ORACLE FINAL line")
+        raise ValueError(f"oracle failed or timed out, see {_oracle_log(out, 'a')}")
     lines, seats_diverged = _seat_lines(reports, out, clients[0], ticks)
     print("\n".join(lines))
     diverged = diverged or seats_diverged
