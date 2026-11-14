@@ -613,11 +613,12 @@ func test_joiner_refuses_other_map(runner) -> bool:
 	var message: Dictionary = _start_message("ashfall", 5)
 	message.settings.map_hash = "0"
 	var scene_before = runner.root.get_tree().current_scene
+	launcher._origin = "Join"
 	launcher._set_busy(true)
 	runner.check(not launcher._handle(Wire.encode(message)), "N13 the joiner refuses a different map before the simulation exists")
 	runner.check(runner.root.get_tree().current_scene == scene_before and transport.close_calls == 1, "N13 no online scene, transport closed once")
-	runner.check(launcher.get_node("Pages/Play/Footer/Status").text == "Your copy of Ashfall differs from the host's", "N13 the reason is shown")
-	runner.check(not launcher.get_node("Pages/Play/Footer/Create").disabled, "N13 Create usable again")
+	runner.check(launcher.get_node("Pages/Join/Footer/Status").text == "Your copy of Ashfall differs from the host's", "N13 the reason is shown in Join's footer")
+	runner.check(not launcher.get_node("Pages/Join/Footer/Join").disabled, "N13 Join usable again")
 	launcher._process(0.0)
 	launcher.free()
 	SkirmishMain.map_path = before_path
@@ -760,7 +761,7 @@ func test_credits_panel_layout(runner) -> bool:
 		await runner.process_frame
 		var panel: Control = launcher.get_node("Pages/Credits")
 		runner.check(not panel.visible and launcher.get_node("Pages/Play").visible, "N10 Credits page starts hidden at %s" % size)
-		launcher.get_node("Sidebar/Nav/Credits").pressed.emit()
+		launcher.get_node("Sidebar/Nav/Credits").button_pressed = true
 		await runner.process_frame
 		await runner.process_frame
 		var text: RichTextLabel = panel.get_node("Body/Text")
@@ -771,7 +772,7 @@ func test_credits_panel_layout(runner) -> bool:
 		runner.check(panel.get_global_rect().encloses(text.get_global_rect()) and panel.get_global_rect().encloses(legal.get_global_rect()) and not text.get_global_rect().intersects(legal.get_global_rect()), "N10 Text and Legal fit the page at %s" % size)
 		runner.check("Zhelanov" in text.get_parsed_text(), "N10 Credits text names the composers at %s" % size)
 		_credits_wired(runner, text.get_parsed_text(), size)
-		launcher.get_node("Sidebar/Nav/Play").pressed.emit()
+		launcher.get_node("Sidebar/Nav/Play").button_pressed = true
 		runner.check(not panel.visible and launcher.get_node("Pages/Play").visible, "N10 Play returns to the launcher at %s" % size)
 		launcher.free()
 		port.free()

@@ -6,6 +6,8 @@ const AudioSettings = preload("res://scripts/presentation/audio_settings.gd")
 const Launcher = preload("res://scenes/launcher.tscn")
 const LauncherScript = preload("res://scripts/launcher.gd")
 const MatchSettings = preload("res://scripts/match_settings.gd")
+const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
+const OnlineTests = preload("res://tests/test_online_scene.gd")
 const SELECTED := Color(0.18, 0.43, 0.33)
 const FIELD := Color(0.165, 0.165, 0.165)
 const SIZES: Array[Vector2i] = [Vector2i(1280, 720), Vector2i(1920, 1080), Vector2i(2576, 1145)]
@@ -13,7 +15,7 @@ const SIZES: Array[Vector2i] = [Vector2i(1280, 720), Vector2i(1920, 1080), Vecto
 const STRETCHED: Array[Array] = [[Vector2i(1280, 720), Vector2i(1280, 720)], [Vector2i(1920, 1080), Vector2i(1280, 720)], [Vector2i(2576, 1145), Vector2i(1620, 720)]]
 
 func cases() -> Array[Callable]:
-	return [test_picks_defaults, test_picks_fallback_per_field, test_picks_keep_other_sections, test_fullscreen_round_trip, test_sidebar_switches_pages, test_version_in_sidebar, test_aspect_expand_and_restore, test_layout_every_page, test_opens_on_bot_with_picks, test_toggle_friend, test_map_info_and_summary, test_own_faction_shared, test_start_saves_picks, test_advanced_only_prerelease]
+	return [test_picks_defaults, test_picks_fallback_per_field, test_picks_keep_other_sections, test_fullscreen_round_trip, test_sidebar_switches_pages, test_version_in_sidebar, test_aspect_expand_and_restore, test_layout_every_page, test_opens_on_bot_with_picks, test_toggle_friend, test_map_info_and_summary, test_own_faction_shared, test_start_saves_picks, test_advanced_only_prerelease, test_link_opens_join, test_lock_while_connecting, test_waiting_view, test_back_to_menu, test_join_error_footer, test_relay_fields_follow]
 
 func scratch_for(name: String) -> String:
 	var scratch := "user://test-launcher-%s-%d.cfg" % [name, OS.get_process_id()]
@@ -85,7 +87,7 @@ func test_sidebar_switches_pages(runner) -> bool:
 		var nav: Button = launcher.get_node_or_null("Sidebar/Nav/" + page_name)
 		runner.check(nav != null, "L5 nav button %s exists" % page_name)
 		if nav == null: continue
-		nav.pressed.emit()
+		nav.button_pressed = true
 		runner.check(launcher.current_page == page_name and _visible_pages(launcher) == [page_name] and nav.button_pressed, "L5 %s shows only its page, got %s" % [page_name, _visible_pages(launcher)])
 	launcher.show_page("Waiting")
 	runner.check(_visible_pages(launcher) == ["Waiting"] and launcher.get_node("Sidebar/Nav/Play").button_pressed, "L5 Waiting shows alone and presses Play")
@@ -284,4 +286,153 @@ func test_advanced_only_prerelease(runner) -> bool:
 		runner.check(not launcher.get_node("Pages/Play/Body/Advanced").visible, "L9f Play bot hides the fold")
 		launcher.free()
 	AudioSettings.path = saved
+	return true
+
+
+func _texts(node: Node) -> Array[String]:
+	var found: Array[String] = []
+	for label: Node in node.find_children("*", "Label", true, false): found.append(label.text)
+	return found
+
+func _nav_disabled(launcher) -> Array[bool]:
+	var states: Array[bool] = []
+	for page_name: String in LauncherScript.NAV_PAGES: states.append(launcher.get_node("Sidebar/Nav/" + page_name).disabled)
+	return states
+
+func _host(launcher) -> Object:
+	launcher.set_opponent("friend")
+	launcher.get_node("Pages/Play/Footer/Create").pressed.emit()
+	launcher.set_process(false)
+	var transport := OnlineTests.FakeTransport.new()
+	launcher._transport = transport
+	return transport
+
+func test_link_opens_join(runner) -> bool:
+	var saved: String = AudioSettings.path
+	AudioSettings.path = scratch_for("link")
+	LauncherScript.code_applied = false
+	var first = Launcher.instantiate()
+	first.search = "?code=ABC234"
+	runner.root.add_child(first)
+	await runner.process_frame
+	runner.check(first.current_page == "Join" and first.get_node("Pages/Join/Body/Code").text == "ABC234" and first._transport == null, "L10a a join link opens Join with the code and no connection, got %s" % first.current_page)
+	var again = Launcher.instantiate()
+	again.search = "?code=ABC234"
+	runner.root.add_child(again)
+	await runner.process_frame
+	runner.check(again.current_page == "Play", "L10b a stale link does not reopen Join, got %s" % again.current_page)
+	first.free()
+	again.free()
+	AudioSettings.path = saved
+	return true
+
+func test_lock_while_connecting(runner) -> bool:
+	var saved: String = AudioSettings.path
+	var launcher = await _launcher_with(runner, "lock", {})
+	AudioSettings.path = saved
+	var reason := "Connection to relay lost"
+	_host(launcher)
+	runner.check(_nav_disabled(launcher) == [true, true, true, true], "L11 Create locks every nav button, got %s" % [_nav_disabled(launcher)])
+	launcher._fail(reason)
+	var play_status: Label = launcher.get_node("Pages/Play/Footer/Status")
+	runner.check(_nav_disabled(launcher) == [false, false, false, false] and launcher.current_page == "Play" and play_status.text == reason and launcher.opponent == "friend", "L11 a failure before welcome unlocks the nav and shows the reason in Play's footer")
+	var join_own: OptionButton = launcher.get_node("Pages/Join/Body/Own")
+	var index: int = _index_where(join_own, func(item: String) -> bool: return item != launcher._faction(join_own))
+	join_own.select(index)
+	join_own.item_selected.emit(index)
+	runner.check(play_status.text == reason, "M3 changing Own from Join keeps the error in Play's footer, got '%s'" % play_status.text)
+	launcher.set_opponent("bot")
+	runner.check(play_status.text == launcher._summary(), "M3 the next action on Play replaces the error")
+	launcher.free()
+	return true
+
+func test_waiting_view(runner) -> bool:
+	var saved: String = AudioSettings.path
+	var launcher = await _launcher_with(runner, "waiting", {"faction": "china", "map": "ashfall"})
+	AudioSettings.path = saved
+	var transport = _host(launcher)
+	launcher._handle('{"type":"welcome","seat":1,"match":"ABC234"}')
+	var waiting: Control = launcher.get_node("Pages/Waiting")
+	var own: String = Registry.faction("china").display_name
+	runner.check(launcher.current_page == "Waiting" and _nav_disabled(launcher) == [true, true, true, true], "L12a welcome shows Waiting with the nav locked")
+	runner.check(waiting.get_node("Body/Link").text == launcher._copy_text() and "Or tell them the code: ABC234" in _texts(waiting), "L12a link and code line")
+	var one: Array[String] = _texts(waiting.get_node("Body/One"))
+	runner.check("You" in one and own in one and "READY" in one, "L12a row 1 is You, %s, READY, got %s" % [own, one])
+	var two: Array[String] = _texts(waiting.get_node("Body/Two"))
+	runner.check("Open" in two and "waiting for your friend…" in two, "L12a row 2 is Open, got %s" % [two])
+	var map_texts: Array[String] = _texts(waiting.get_node("Body/Map"))
+	runner.check(MatchSettings.PLAY_MAPS["ashfall"] in map_texts and launcher._map_info("ashfall") in map_texts, "L12a map name and info, got %s" % [map_texts])
+	runner.check(waiting.get_node("Footer/Status").text == "Match code ABC234", "L12a footer shows the match code")
+	await runner.process_frame
+	await runner.process_frame
+	var controls: Array[Control] = []
+	_visible_controls(waiting, controls)
+	var inside: bool = true
+	for control in controls: inside = inside and launcher.get_node("Pages").get_global_rect().grow(0.5).encloses(control.get_global_rect())
+	runner.check(controls.size() > 10 and inside, "L12a every Waiting control lies inside the content area")
+	_overlap_free(runner, waiting.get_node("Body"), "Waiting")
+	waiting.get_node("Footer/Cancel").pressed.emit()
+	runner.check(transport.close_calls == 1 and launcher.current_page == "Play" and _nav_disabled(launcher) == [false, false, false, false], "L12b Cancel closes and returns to Play unlocked")
+	runner.check(launcher.get_node("Pages/Play/Footer/Status").text == "Match cancelled" and launcher.opponent == "friend", "L12b Play says Match cancelled and stays on Friend")
+	_host(launcher)
+	launcher._handle('{"type":"welcome","seat":1,"match":"ABC234"}')
+	launcher._handle('{"type":"error","reason":"match is full"}')
+	runner.check(launcher.current_page == "Play" and launcher.get_node("Pages/Play/Footer/Status").text == "match is full" and launcher.opponent == "friend", "L12c a relay error on Waiting returns to Play with the reason")
+	launcher.free()
+	return true
+
+func test_back_to_menu(runner) -> bool:
+	var saved: String = AudioSettings.path
+	AudioSettings.path = scratch_for("back")
+	LauncherSettings.save_picks({"faction": "china", "bot_faction": "frc", "map": "ashfall"})
+	LauncherScript.code_applied = false
+	var first = Launcher.instantiate()
+	first.search = "?code=ABC234"
+	runner.root.add_child(first)
+	await runner.process_frame
+	first.free()
+	var back = Launcher.instantiate()
+	back.search = "?code=ABC234"
+	runner.root.add_child(back)
+	await runner.process_frame
+	AudioSettings.path = saved
+	runner.check(back.current_page == "Play" and back._faction(back.get_node("Pages/Play/Body/Own")) == "china" and back._map_id() == "ashfall", "L13 back to menu shows Play with the remembered picks")
+	runner.check(runner.root.get_tree().root.content_scale_aspect == Window.CONTENT_SCALE_ASPECT_EXPAND, "L13 back to menu sets expand again")
+	back.free()
+	return true
+
+func test_join_error_footer(runner) -> bool:
+	var saved: String = AudioSettings.path
+	var launcher = await _launcher_with(runner, "join-error", {})
+	AudioSettings.path = saved
+	launcher.show_page("Join")
+	launcher.get_node("Pages/Join/Footer/Join").pressed.emit()
+	launcher.set_process(false)
+	runner.check(_nav_disabled(launcher) == [true, true, true, true], "L14 Join locks the nav")
+	launcher._transport = OnlineTests.FakeTransport.new()
+	launcher._fail("Cannot connect to relay")
+	runner.check(launcher.current_page == "Join" and launcher.get_node("Pages/Join/Footer/Status").text == "Cannot connect to relay" and _nav_disabled(launcher) == [false, false, false, false], "L14 the error shows in Join's footer, nav unlocked")
+	launcher.free()
+	return true
+
+func test_relay_fields_follow(runner) -> bool:
+	var saved: String = AudioSettings.path
+	AudioSettings.path = scratch_for("relay")
+	LauncherScript.code_applied = false
+	var launcher = Launcher.instantiate()
+	launcher.prerelease = true
+	launcher.search = "?relay=wss%3A%2F%2Fx.example%2Fws"
+	runner.root.add_child(launcher)
+	await runner.process_frame
+	AudioSettings.path = saved
+	var play: LineEdit = launcher.get_node("Pages/Play/Body/Advanced/RelayUrl")
+	var join: LineEdit = launcher.get_node("Pages/Join/Body/Advanced/RelayUrl")
+	runner.check(play.text == "wss://x.example/ws" and join.text == play.text and play.visible and join.visible, "M2 ?relay= fills and opens both folds")
+	join.text = "wss://y.example/ws"
+	join.text_changed.emit(join.text)
+	runner.check(launcher._relay_url() == "wss://y.example/ws" and play.text == join.text, "M2 typing into Join's field reaches Play and _relay_url()")
+	play.text = "wss://z.example/ws"
+	play.text_changed.emit(play.text)
+	runner.check(launcher._relay_url() == "wss://z.example/ws" and join.text == play.text, "M2 typing into Play's field reaches Join")
+	launcher.free()
 	return true

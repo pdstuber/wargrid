@@ -36,7 +36,7 @@ var _lockstep: RefCounted
 var current_page: String = "Play"
 var opponent: String = "bot"
 var _origin: String = "Play"
-var _syncing: bool = false
+var _play_error: bool = false
 static var code_applied: bool = false
 var prerelease: bool = PlaytestSettings.prerelease()
 var page: String = _page_value("location.origin + location.pathname")
@@ -74,10 +74,8 @@ func _ready() -> void:
 		_transport.close()
 		_fail("Match cancelled"))
 	for page_name in NAV_PAGES:
-		var open := func() -> void:
-			if current_page != page_name and not _syncing: show_page(page_name)
-		get_node("Sidebar/Nav/" + page_name).pressed.connect(open)
-		get_node("Sidebar/Nav/" + page_name).toggled.connect(func(_on: bool) -> void: open.call())
+		get_node("Sidebar/Nav/" + page_name).toggled.connect(func(on: bool) -> void:
+			if on and _nav_of(current_page) != page_name: show_page(page_name))
 	$Sidebar/Version.text = "v" + str(ProjectSettings.get_setting("application/config/version"))
 	set_process(false)
 	show_page("Play")
@@ -103,8 +101,10 @@ func _apply_page() -> void:
 	var query: Dictionary = JoinLink.parse(search)
 	_set_relay(JoinLink.DEFAULT_RELAY)
 	$Pages/Join/Body/Advanced.visible = prerelease
+	var opens_join: bool = not code_applied and not JoinLink.code(query.get("code", "")).is_empty()
 	if not code_applied: $Pages/Join/Body/Code.text = JoinLink.code(query.get("code", ""))
 	code_applied = true # a stale link must not refill the field after "back to menu"
+	if opens_join: show_page("Join")
 	var relay: String = JoinLink.relay(query.get("relay", "")) if prerelease else ""
 	if not relay.is_empty():
 		_set_relay(relay)
@@ -133,11 +133,12 @@ func set_opponent(kind: String) -> void:
 	for path in BOT_ONLY: get_node("Pages/Play/" + path).visible = bot
 	for path in FRIEND_ONLY: get_node("Pages/Play/" + path).visible = not bot
 	$Pages/Play/Body/Advanced.visible = prerelease and not bot
+	_play_error = false
 	_refresh_play()
 
 func _refresh_play() -> void:
 	$Pages/Play/Body/MapInfo.text = _map_info(_map_id())
-	$Pages/Play/Footer/Status.text = _summary() if opponent == "bot" else FRIEND_HINT
+	if not _play_error: $Pages/Play/Footer/Status.text = _summary() if opponent == "bot" else FRIEND_HINT
 
 func _map_info(id: String) -> String:
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(MatchSettings.map_path(id)))
@@ -151,9 +152,14 @@ func _connect_play_controls() -> void:
 	$Pages/Play/Body/Opponent/FriendToggle.pressed.connect(set_opponent.bind("friend"))
 	for path in OWNS:
 		var selector: OptionButton = get_node(path)
-		selector.item_selected.connect(func(index: int) -> void: _set_own(selector.get_item_metadata(index)))
+		var on_play: bool = path.begins_with("Pages/Play")
+		selector.item_selected.connect(func(index: int) -> void:
+			if on_play: _play_error = false
+			_set_own(selector.get_item_metadata(index)))
 	for selector: OptionButton in [$Pages/Play/Body/Bot, $Pages/Play/Body/Map]:
-		selector.item_selected.connect(func(_index: int) -> void: _refresh_play())
+		selector.item_selected.connect(func(_index: int) -> void:
+			_play_error = false
+			_refresh_play())
 	for fold in FOLDS:
 		get_node(fold + "/Toggle").toggled.connect(_set_advanced)
 		get_node(fold + "/RelayUrl").text_changed.connect(_set_relay)
@@ -175,10 +181,11 @@ func _select_id(selector: OptionButton, id: String) -> void:
 func show_page(page_name: String) -> void:
 	current_page = page_name
 	for each in PAGES: get_node("Pages/" + each).visible = each == page_name
-	_syncing = true
-	get_node("Sidebar/Nav/" + ("Play" if page_name == "Waiting" else page_name)).button_pressed = true
-	_syncing = false
+	get_node("Sidebar/Nav/" + _nav_of(page_name)).button_pressed = true
 	if page_name == "Credits": _fill_credits()
+
+static func _nav_of(page_name: String) -> String:
+	return "Play" if page_name == "Waiting" else page_name
 
 func _fill_credits() -> void:
 	var text: RichTextLabel = $Pages/Credits/Body/Text
@@ -270,6 +277,7 @@ func _connect(code: String) -> void:
 	set_process(true)
 
 func _set_busy(busy: bool) -> void:
+	for page_name in NAV_PAGES: get_node("Sidebar/Nav/" + page_name).disabled = busy
 	for path: String in ["Play/Footer/Start", "Play/Footer/Create", "Play/Body/Advanced/RelayUrl", "Join/Body/Advanced/RelayUrl", "Join/Body/Code", "Join/Footer/Join", "Play/Body/Own", "Join/Body/Own", "Play/Body/Bot", "Play/Body/Map", "Play/Body/Opponent/BotToggle", "Play/Body/Opponent/FriendToggle"]:
 		var control: Control = get_node("Pages/" + path)
 		if control is BaseButton: control.disabled = busy
@@ -277,6 +285,7 @@ func _set_busy(busy: bool) -> void:
 
 func _fail(reason: String) -> void:
 	_status_label().text = reason
+	_play_error = _origin == "Play"
 	_transport = null
 	if current_page == "Waiting": show_page(_origin)
 	_set_busy(false)
@@ -307,10 +316,10 @@ func _handle(text: String) -> bool:
 			_seat = message.seat
 			_code = message.match
 			if _seat == 1:
-				$Pages/Waiting/Body/Link.text = _copy_text()
-				$Pages/Waiting/Footer/Status.text = "Match code %s" % message.match
+				_fill_waiting()
 				show_page("Waiting")
-			_status_label().text = "Match code: %s — waiting for player 2" % message.match if _seat == 1 else "Joined match %s" % message.match
+			else:
+				_status_label().text = "Joined match %s" % message.match
 		"start": return _start(message)
 		"error":
 			_transport.close()
@@ -321,6 +330,17 @@ func _handle(text: String) -> bool:
 			_fail("Protocol error: unexpected " + message.type)
 			return false
 	return true
+
+func _fill_waiting() -> void:
+	var body: Control = $Pages/Waiting/Body
+	var own: OptionButton = $Pages/Play/Body/Own
+	var id: String = _map_id()
+	body.get_node("Link").text = _copy_text()
+	body.get_node("CodeHint").text = "Or tell them the code: %s" % _code
+	body.get_node("One/Row/Faction").text = own.get_item_text(own.selected)
+	body.get_node("Map/Name").text = MatchSettings.PLAY_MAPS[id]
+	body.get_node("Map/Info").text = _map_info(id)
+	$Pages/Waiting/Footer/Status.text = "Match code %s" % _code
 
 func _start(message: Dictionary) -> bool:
 	var reason: String = MatchSettings.refusal(message.settings)
