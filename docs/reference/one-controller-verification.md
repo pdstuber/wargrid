@@ -27,7 +27,7 @@ Plan: [One controller plan](../superpowers/plans/2026-11-14-one-controller.md). 
 | 6 | Extract orders (OR1) | Sonnet | GREEN (committed 936e63b) |
 | 7 | Extract the HUD (HU1) | Sonnet | GREEN (uncommitted) |
 | 8 | Docs and package gate (ledger row); end of "no behaviour change" | Sonnet | GREEN (uncommitted) |
-| 9 | F3 toggles the perf overlay during placement (PO19; IC1 re-pin commit) | Sonnet | not started |
+| 9 | F3 toggles the perf overlay during placement (PO19; IC1 re-pin commit) | Sonnet | GREEN (uncommitted) |
 | 10 | Two-tick online frame results reach the HUD (N27: characterise, then fix or guard) | Sonnet | not started |
 | 11a | Fresh-context branch review (refactor and fixes); findings into the Review section | Opus (high) | not started |
 | 11b | One fix round: critical and important findings, test-first | Sonnet | not started |
@@ -104,20 +104,20 @@ Member and simulation counts at Task 0 equal the `35d22b5` expectations in every
 
 | # | Pin | Expected (on `35d22b5`) | Task 0 | Task 4 | Task 5 | Task 8 | Task 9 | Task 10 | Task 11 |
 |---|---|---|---|---|---|---|---|---|---|
-| V1 | `FINAL_DIGEST` | `3958ceaab11986af` | `3958ceaab11986af` (`test_team_match.gd:14`) | `3958ceaab11986af` | | `3958ceaab11986af` | | | |
-| V2 | `TEAM_CORE_SERIES` | `8513092129969516499` | `8513092129969516499` (`:16`) | `8513092129969516499` | | `8513092129969516499` | | | |
-| V3 | `S1_CORE_SERIES` | `4004499097874677431` | `4004499097874677431` (`test_skirmish_match.gd:12`) | `4004499097874677431` | | `4004499097874677431` | | | |
-| V4 | `PINNED`, `EXPECTED_DIGEST`, `SS6_PINNED` | unchanged | `01e256834bdd4dfb` (`test_state_hash.gd:6`); `7c7fbc8d…48a9e7` (`test_view_rows.gd:18`); `SS6_PINNED` present (`test_start_spots.gd:7`) | unchanged (suite green) | | unchanged (suite green) | | | |
-| V5 | four traces | byte-identical to `*-before.tsv` | recorded (1200 / 1200 / 1200 / 100 lines) | `cmp` exit 0 for all four (`replay`, `economy`, `combat`, `team`) | | `cmp` exit 0 for all four (`t8-suite` traces `*-final.tsv`) | | | |
-| V6 | netplay match terminal tick | `9129` | pin present (`run_netplay.sh:91`); netplay not run in Task 0 | 9129 | — | 9129 (`NETPLAY PASSED match 11.2 s`) | | | |
+| V1 | `FINAL_DIGEST` | `3958ceaab11986af` | `3958ceaab11986af` (`test_team_match.gd:14`) | `3958ceaab11986af` | | `3958ceaab11986af` | `3958ceaab11986af` | | |
+| V2 | `TEAM_CORE_SERIES` | `8513092129969516499` | `8513092129969516499` (`:16`) | `8513092129969516499` | | `8513092129969516499` | `8513092129969516499` | | |
+| V3 | `S1_CORE_SERIES` | `4004499097874677431` | `4004499097874677431` (`test_skirmish_match.gd:12`) | `4004499097874677431` | | `4004499097874677431` | `4004499097874677431` | | |
+| V4 | `PINNED`, `EXPECTED_DIGEST`, `SS6_PINNED` | unchanged | `01e256834bdd4dfb` (`test_state_hash.gd:6`); `7c7fbc8d…48a9e7` (`test_view_rows.gd:18`); `SS6_PINNED` present (`test_start_spots.gd:7`) | unchanged (suite green) | | unchanged (suite green) | unchanged (suite green) | | |
+| V5 | four traces | byte-identical to `*-before.tsv` | recorded (1200 / 1200 / 1200 / 100 lines) | `cmp` exit 0 for all four (`replay`, `economy`, `combat`, `team`) | | `cmp` exit 0 for all four (`t8-suite` traces `*-final.tsv`) | `cmp` exit 0 for all four (`*-t9.tsv`) | | |
+| V6 | netplay match terminal tick | `9129` | pin present (`run_netplay.sh:91`); netplay not run in Task 0 | 9129 | — | 9129 (`NETPLAY PASSED match 11.2 s`) | 9129 (`NETPLAY PASSED match 13.1 s`) | | |
 | V7 | `run_team_match.sh` | `won tick=39497 winner=2 units_peak=271` | pin present (`:13`) | — | — | `TEAM MATCH won tick=39497 winner=2 units_peak=271` | — | — | — |
-| V8 | `git diff main -- game/tests \| rg '^-\s*const'` | only the listed preload lines | only `base.tscn` x3, `main.tscn`, `OnlineMain` const lines (Tasks 2, 3, 4) | | | only the `const` preload lines of Tasks 2, 3, 4, 5 (11 lines) | — | — | |
+| V8 | `git diff main -- game/tests \| rg '^-\s*const'` | only the listed preload lines | only `base.tscn` x3, `main.tscn`, `OnlineMain` const lines (Tasks 2, 3, 4) | | | only the `const` preload lines of Tasks 2, 3, 4, 5 (11 lines) | same 11 lines | — | |
 | V9 | `test_hud_summaries_are_pinned` literals | unchanged | present (`test_skirmish_scene.gd:651`), suite green | unchanged (suite green) | | unchanged (suite green) | | | |
-| V10 | `input_script_rows.gd` against the Task 1 commit (from Task 9: against the re-pin commit) | no diff | — | empty diff against `f1c6b78` | | empty diff against `f1c6b78` | re-pin | | |
-| V11 | check-id census | Task 0 set minus the demo-only list, plus the new ids so far | 659 ids (Task 3: 661, adds `IC1 `, `IC2 `) | 661 ids + `OD1 `, `OD2 ` = 663 | | 665 ids = 661 + `OD1 `, `OD2 `, `OR1 `, `HU1 `; no id lost | | | |
-| V12 | simulation, presentation, net, playtest, `project.godot` diff against `main` | empty | — | empty | | empty | | | |
-| V11b | label census | Task 3: exactly 11 demo labels removed, IC1/IC2 added; later: additions only | 3070 lines (Task 3: 3093) | 3095 lines; diff against `labels-t3.txt` adds exactly the OD1, OD2 labels | | 3097 lines; against `labels-t7.txt` no change; against `labels-before.txt` exactly the 11 demo labels removed | | | |
-| V13 | `v13_check.py` | `V13 OK` | — | `V13 OK removed=266 renamed=188 listed=78` | — | `V13 OK removed=439 renamed=352 listed=87` | — | — | |
+| V10 | `input_script_rows.gd` against the Task 1 commit (from Task 9: against the re-pin commit) | no diff | — | empty diff against `f1c6b78` | | empty diff against `f1c6b78` | re-pin: 16 rows, `REPIN OK rows=16` (base becomes the re-pin commit) | | |
+| V11 | check-id census | Task 0 set minus the demo-only list, plus the new ids so far | 659 ids (Task 3: 661, adds `IC1 `, `IC2 `) | 661 ids + `OD1 `, `OD2 ` = 663 | | 665 ids = 661 + `OD1 `, `OD2 `, `OR1 `, `HU1 `; no id lost | 666 ids = 665 + `PO19 ` | | |
+| V12 | simulation, presentation, net, playtest, `project.godot` diff against `main` | empty | — | empty | | empty | empty | | |
+| V11b | label census | Task 3: exactly 11 demo labels removed, IC1/IC2 added; later: additions only | 3070 lines (Task 3: 3093) | 3095 lines; diff against `labels-t3.txt` adds exactly the OD1, OD2 labels | | 3097 lines; against `labels-t7.txt` no change; against `labels-before.txt` exactly the 11 demo labels removed | 3100 lines; against `labels-t8.txt` adds only the 3 PO19 labels | | |
+| V13 | `v13_check.py` | `V13 OK` | — | `V13 OK removed=266 renamed=188 listed=78` | — | `V13 OK removed=439 renamed=352 listed=87` | `V13 OK removed=440 renamed=352 listed=88` | — | |
 
 ## Characterisation rows (Task 1)
 
@@ -251,10 +251,10 @@ Both quirks were found by reading on `4ed3534` and are unchanged on `35d22b5`:
 
 | Item | Value |
 |---|---|
-| Task 9: PO19 red on the Task 8 tree (failing line) | |
-| Task 9: PO19 green; IC1 (and IC2) re-pin diff only `perf=false` → `perf=true` from the F3 row on (`$L/t9-repin.diff`, check script exit) | |
-| Task 9: commits (fix, then re-pin) | |
-| Task 9: suite, traces `cmp`, netplay match, static gates | |
+| Task 9: PO19 red on the Task 8 tree (failing line) | `WARGRID_TEST_ONLY=test_f3_toggles_during_placement`, exit 1, `FAIL: PO19 F3 toggles the overlay during placement and keeps the placement`, `CASES 1 CHECKS 3 FAILURES 1` (`t9-red.log`; the "placement is active" check passed) |
+| Task 9: PO19 green; IC1 (and IC2) re-pin diff only `perf=false` → `perf=true` from the F3 row on (`$L/t9-repin.diff`, check script exit) | fix: `orders.gd` `_placement_input` first lines toggle `_screen._perf` on F3 and return; PO19 green `CASES 1 CHECKS 3 FAILURES 0`. IC2 ran step 10, so both re-pinned: 12 IC1 rows (steps 10-21) + 4 IC2 rows (10, 11, 17, 18); `t9_repin_check.py` exit 0, `REPIN OK rows=16`; `test_input_script_offline` 21 checks and `test_input_script_online` 13 checks green after the re-pin. Before the re-pin the old rows fail at step 10 only (expected) |
+| Task 9: commits (fix, then re-pin) | not yet made; coordinator makes two: (1) `orders.gd`, `test_perf_overlay.gd`, guide ch. 5, this file; (2) `game/tests/input_script_rows.gd` alone (V10's new base) |
+| Task 9: suite, traces `cmp`, netplay match, static gates | full suite with the four traces exit 0, `CASES 863 CHECKS 144279 FAILURES 0`, `TESTS PASSED 144279` (+1 case, +3 checks = PO19; HUD layout tests included); `cmp` against `*-before.tsv` exit 0 for `replay`, `economy`, `combat`, `team`; `NETPLAY PASSED match 13.1 s`, `match terminal tick 9129`; `run_checks.sh` exit 0, `CHECKS PASSED 5`; V12 diff empty; V11 666 ids (+`PO19 `); V11b 3100 lines (+3 PO19 labels only); V13 `V13 OK removed=440 renamed=352 listed=88` (the added reason: PO19 in `cases()`). Logs `t9-*.log` |
 | Task 10: characterisation outcome (a) lost / (b) not lost, guard only / (c) blocked; how the case was built | |
 | Task 10: N27 red (failing line) or "guard only" | |
 | Task 10: N27 green; IC1, IC2, catch-up and restart cases; suite, traces `cmp`, netplay match, static gates | |

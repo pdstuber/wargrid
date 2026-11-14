@@ -3,9 +3,10 @@ extends RefCounted
 
 const Skirmish = preload("res://scenes/skirmish.tscn")
 const Overlay = preload("res://scripts/presentation/perf_overlay.gd")
+const Fixture = preload("res://tests/economy_fixture.gd")
 
 func cases() -> Array[Callable]:
-	return [test_summary_math, test_f3_toggles_hidden_default, test_layout_clear_of_hud, test_step_and_counts_shown, test_skirmish_wired, test_split_share_shown]
+	return [test_summary_math, test_f3_toggles_hidden_default, test_layout_clear_of_hud, test_step_and_counts_shown, test_skirmish_wired, test_split_share_shown, test_f3_toggles_during_placement]
 
 func _scene(runner, packed):
 	var main = packed.instantiate()
@@ -85,5 +86,27 @@ func test_split_share_shown(runner) -> bool:
 	overlay.split_share = 0.97
 	overlay.refresh_text()
 	runner.check(overlay.text.contains("split 97%"), "PO6 split share shown")
+	main.free()
+	return true
+
+func test_f3_toggles_during_placement(runner) -> bool:
+	var main = await _scene(runner, Skirmish)
+	main.driver.sim = Fixture.make_world()
+	main.orders.selected_ids.assign([1])
+	main._refresh()
+	var key := InputEventKey.new()
+	key.physical_keycode = KEY_1
+	key.keycode = KEY_1
+	key.pressed = true
+	main._unhandled_input(key)
+	var kind: String = main.orders._placement_kind
+	var queued: int = main.driver.sim.snapshot().pending_commands.size()
+	var overlay: Label = main.get_node("HUD/PerfOverlay")
+	runner.check(not kind.is_empty(), "PO19 placement is active")
+	_f3(main)
+	var shown: bool = overlay.visible and main.orders._placement_kind == kind and main.driver.sim.snapshot().pending_commands.size() == queued
+	runner.check(shown, "PO19 F3 toggles the overlay during placement and keeps the placement")
+	_f3(main)
+	runner.check(not overlay.visible and main.orders._placement_kind == kind, "PO19 second F3 hides it, placement still active")
 	main.free()
 	return true

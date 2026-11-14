@@ -123,6 +123,9 @@ func _economy_keys(event: InputEvent) -> bool:
 	return false
 
 func _placement_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_F3:
+		_screen._perf.toggle()
+		return
 	if event.is_action_pressed("deselect"):
 		_clear_placement()
 	elif event is InputEventMouseMotion:
