@@ -58,7 +58,7 @@ One line each; scope in blueprint §7. In this order (approved with the packages
 9. **Bots**
 10. **3v3 online**
 
-Not ordered yet (placed 2026-11-12): a new menu music track (one fixed track stays, but not one of the five match tracks; user, 2026-11-14), map pack, Is Wargrid healthy, What's new, Steam Deck controls spike (after P3); desync reports that send themselves (after Relay guards, placed 2026-11-14).
+Not ordered yet (placed 2026-11-12): a new menu music track (one fixed track stays; the menu track never plays in a match, so until then matches play four tracks and Stay the Course returns to them once the new menu track exists; user, 2026-11-14), map pack, Is Wargrid healthy, What's new, Steam Deck controls spike (after P3); desync reports that send themselves (after Relay guards, placed 2026-11-14).
 
 Matching with friends beyond P2.2 (user, 2026-11-13): a permanent friend link and other modern, easy ways to meet a friend are re-explored with the M9 lobby; quick match for strangers comes after M9. No integration with any chat or storefront service (Discord, Steam): the link and code work through any channel.
 
