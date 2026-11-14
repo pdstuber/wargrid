@@ -431,3 +431,16 @@ date,commit,label,machine,metric,scenario,run,p95_ms,p99_ms,mean_ms,method,load,
 2026-11-13,0df5592,auto 0df5592,dev,combat_tick,ramp,1,0.65,1.2,,P1,1.53,log sha256:c2bc142b5dde
 2026-11-13,0df5592,auto 0df5592,dev,combat_tick,frc,1,0.816,1.135,,P1,1.53,log sha256:c2bc142b5dde
 2026-11-13,0df5592,auto 0df5592,dev,lockstep_overhead,contact,1,0.016,0.065,,P1,1.53,log sha256:c2bc142b5dde
+2026-11-14,389c9aa+dirty,Sim quick wins,dev,movement_tick,open,1,0.75,0.904,,P1,1.68,log sha256:38aee737c8ee
+2026-11-14,389c9aa+dirty,Sim quick wins,dev,movement_tick,dense,1,0.74,0.945,,P1,1.68,log sha256:38aee737c8ee
+2026-11-14,389c9aa+dirty,Sim quick wins,dev,combat_tick,open,1,1.846,2.162,,P1,1.68,log sha256:38aee737c8ee
+2026-11-14,389c9aa+dirty,Sim quick wins,dev,combat_tick,dense,1,1.832,2.127,,P1,1.68,log sha256:38aee737c8ee
+2026-11-14,389c9aa+dirty,Sim quick wins,dev,combat_tick,contact,1,1.189,1.565,,P1,1.68,log sha256:38aee737c8ee
+2026-11-14,389c9aa+dirty,Sim quick wins,dev,combat_tick,skirmish3v3,1,1.354,1.447,,P1,1.68,log sha256:38aee737c8ee
+2026-11-14,389c9aa+dirty,Sim quick wins,dev,combat_tick,transports,1,1.112,1.214,,P1,1.68,log sha256:38aee737c8ee
+2026-11-14,389c9aa+dirty,Sim quick wins,dev,combat_tick,defences,1,0.79,2.153,,P1,1.68,log sha256:38aee737c8ee
+2026-11-14,389c9aa+dirty,Sim quick wins,dev,combat_tick,docks,1,0.588,0.605,,P1,1.68,log sha256:38aee737c8ee
+2026-11-14,389c9aa+dirty,Sim quick wins,dev,combat_tick,hordes300,1,2.915,3.397,,P1,1.68,log sha256:38aee737c8ee
+2026-11-14,389c9aa+dirty,Sim quick wins,dev,combat_tick,ramp,1,0.671,1.244,,P1,1.68,log sha256:38aee737c8ee
+2026-11-14,389c9aa+dirty,Sim quick wins,dev,combat_tick,frc,1,0.863,1.148,,P1,1.68,log sha256:38aee737c8ee
+2026-11-14,389c9aa+dirty,Sim quick wins,dev,lockstep_overhead,contact,1,0.016,0.065,,P1,1.68,log sha256:38aee737c8ee

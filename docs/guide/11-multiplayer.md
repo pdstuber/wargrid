@@ -149,7 +149,7 @@ Together these make the protocol an interface any relay can be checked against. 
 
 ## Desync detection
 
-Every 30th tick (`hash_interval`), `finish_tick` attaches the state hash to the outgoing packet, tagged with the tick it describes. The receiver compares it when it advances through that packet's tick, and on a mismatch ends as `ended_desync` before applying that tick's commands. A divergence is therefore caught at most 33 ticks (about 1.1 s, arithmetic) after it happens. What the hash covers, the report and how to find the first differing field are in [chapter 10](10-determinism-and-replays.md#how-a-desync-is-caught-and-narrowed-down). The lockstep overhead (encode, decode, digest on hash ticks) is p99 0.067 ms against a 0.6 ms budget (measured, [ledger budget table](../reference/performance.md#budgets)).
+Every 30th tick (`hash_interval`), `finish_tick` attaches the state hash to the outgoing packet, tagged with the tick it describes. The receiver compares it when it advances through that packet's tick, and on a mismatch ends as `ended_desync` before applying that tick's commands. A divergence is therefore caught at most 33 ticks (about 1.1 s, arithmetic) after it happens. The report (`Lockstep.desync_report`) also carries `hash_ring`, the simulation's last 64 per-tick hashes; they stay on the client and are never sent. What the hash covers, the report and how to find the first differing tick and field are in [chapter 10](10-determinism-and-replays.md#how-a-desync-is-caught-and-narrowed-down). The lockstep overhead (encode, decode, digest on hash ticks) is p99 0.067 ms against a 0.6 ms budget (measured, [ledger budget table](../reference/performance.md#budgets)).
 
 ## What a slow peer does to everyone
 
@@ -205,7 +205,7 @@ Clients ping the relay once per second after their first send, so a healthy but 
 - `relay/room.go` — `registry` (create, join, remove), `room.run`, `admit`, `forward`, `leave`, `recoverCrash`; constants `protocol`, `inputDelay`.
 - `relay/envelope.go` — `parseEnvelope`: what a client may send; size caps.
 - `relay/sender.go` — per-socket write queue; test delay and batch modes.
-- `protocol/vectors/*.json` — the message vectors; `protocol/conformance/conform.go` — the case lists and profiles; `tools/run_conformance.sh`, `tools/run_netplay.sh`, `tools/desync_diff.py` — runners.
+- `protocol/vectors/*.json` — the message vectors; `protocol/conformance/conform.go` — the case lists and profiles; `tools/run_conformance.sh`, `tools/run_netplay.sh`, `tools/desync_diff.py`, `tools/desync_bisect.py` — runners.
 - `game/tests/test_lockstep.gd`, `test_wire.gd`, `test_relay_transport.gd`, `test_online_scene.gd` — the client-side tests.
 
 ## Further reading
@@ -218,4 +218,4 @@ Clients ping the relay once per second after their first send, so a healthy but 
 - Previous: [10. Determinism and replays](10-determinism-and-replays.md). Next: [12. Performance and platforms](12-performance-and-platforms.md). The tick that lockstep gates is in [4. The tick](04-the-tick.md).
 
 ---
-Checked against `2b108ab`; relay rows re-checked against `12c9855`. Files: `game/scripts/net/lockstep.gd`, `game/scripts/net/wire.gd`, `game/scripts/net/relay_transport.gd`, `game/scripts/net/seat_sim.gd`, `game/scripts/net/headless_client.gd`, `game/scripts/online_main.gd`, `game/scripts/launcher.gd`, `relay/main.go`, `relay/room.go`, `relay/envelope.go`, `relay/sender.go`, `relay/envelope_test.go`, `relay/stall_test.go`, `relay/queue_test.go`, `protocol/conformance/conform.go`, `protocol/vectors/tick.json`, `tools/run_conformance.sh`, `tools/run_netplay.sh`
+Checked against `389c9aa`; relay rows re-checked against `12c9855`. Files: `game/scripts/net/lockstep.gd`, `game/scripts/net/wire.gd`, `game/scripts/net/relay_transport.gd`, `game/scripts/net/seat_sim.gd`, `game/scripts/net/headless_client.gd`, `game/scripts/online_main.gd`, `game/scripts/launcher.gd`, `relay/main.go`, `relay/room.go`, `relay/envelope.go`, `relay/sender.go`, `relay/envelope_test.go`, `relay/stall_test.go`, `relay/queue_test.go`, `protocol/conformance/conform.go`, `protocol/vectors/tick.json`, `tools/run_conformance.sh`, `tools/run_netplay.sh`

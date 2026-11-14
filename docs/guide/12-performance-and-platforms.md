@@ -34,7 +34,7 @@ Source: [ledger budget table](../reference/performance.md#budgets). Status at th
 
 - **Plumbing** is measured as the hand-off sum (state fill plus draw-batch sort and build). Since the view rows change it fits 0.91 ms on skirmish3v3 only; the team match, hordes300 and the movement layouts exceed it. No budget changed.
 - **Rendered frame:** the open and dense layouts passed in the 2026-11-08 rows; the later art lab rows (2026-11-10, at the game's start zoom) and the interpolation-on rows (2026-11-11) are **EXCEEDED** on every layout. These rows are report-only, and nothing was loosened ([History rows](../reference/performance.md#history)).
-- **Combat stress rows:** open and hordes300 exceed the simulation budget and dense sits at it (median 1.811 ms over 13 runs). They are accepted as exceeded and held to regression ceilings instead ([gate proposals](../reference/performance.md#gate-proposals-t3-2026-11-08)).
+- **Combat stress rows:** open, dense and hordes300 exceed the simulation budget (dense median was 1.811 ms over 13 runs, then 1.832 ms once the per-tick hash ring landed). They are accepted as exceeded (dense: user, 2026-11-14) and held to regression ceilings instead ([gate proposals](../reference/performance.md#gate-proposals-t3-2026-11-08)).
 
 The ledger's rule: a budget or the factor is never loosened to make a row pass. Either the code gets faster or the target is changed on purpose, with a recorded decision.
 
@@ -45,12 +45,13 @@ Each benchmark builds a fixed scenario with a workload script from `game/scripts
 | Tool | What it runs | Gates? |
 |---|---|---|
 | `sh tools/run_benchmark.sh` | three headless scripts in a row: `run_movement.gd` (layouts open, dense; 300 units), `run_combat.gd` (ten layouts), `run_lockstep.gd` | yes: exit code, no engine errors, a completion line and the exact count of `BUDGET PASS` lines |
-| `sh tools/run_profile.sh` | the same workloads with the zone profiler on (`profiler.gd`, zones such as `step.combat_plan`) | no, reports only |
+| `sh tools/run_profile.sh` | the same workloads with the zone profiler on (`profiler.gd`, zones such as `step.combat_plan`; `step.advance` splits into `advance.move`, `advance.containers`, `advance.horde` and `advance.salvage`) | no, reports only |
+| `sh tools/run_scaling.sh` | the combat open layout at 50, 100, 200, 400 and 800 units total; prints per-zone means and which zones grew by more than 2.2 times in both of the last two doublings | no, reports only (`SCALING COMPLETE 5`) |
 | `sh tools/run_team_match.sh` | a 3v3 bot match on the Ashfall map to the 45,000-tick cap | pins the outcome line, not the time |
 | `sh tools/run_game.sh res://scenes/movement_benchmark.tscn` | the rendered scene: open window, `vsync=off`, layouts open, dense, ashfall, horde | one guard, `ASHFALL_FRAME_P95_MS` 3.3; the rest is reported |
 | `game/benchmarks/bench_runner.gd` | the same workloads in 30-tick chunks per frame, for the `Web Bench`, `macOS Bench` and `Linux Bench` presets (feature tag `wargrid_bench`) | no; used to measure F on the Deck |
 
-The combat script has two kinds of verdict. Seven layouts must pass the budget. Layouts open and hordes300 exceed it and dense sits at it with one worst run over, so all three are held to a `STRESS_CEILING` of "worst of 13 quiet runs + 5 %" instead; the code comment says a ceiling is raised only by a recorded decision with a ledger line. The ceiling stops regressions; it does not make the row pass ([gate proposals](../reference/performance.md#gate-proposals-t3-2026-11-08)).
+The combat script has two kinds of verdict. Seven layouts must pass the budget. Layouts open, dense and hordes300 exceed it (dense only since the hash ring, user decision 2026-11-14), so all three are held to a `STRESS_CEILING` of "worst of 13 quiet runs + 5 %" instead; the code comment says a ceiling is raised only by a recorded decision with a ledger line. The ceiling stops regressions; it does not make the row pass ([gate proposals](../reference/performance.md#gate-proposals-t3-2026-11-08)).
 
 Two kinds of number stay outside wall-clock timing because they cannot flake. The snapshot-size ceiling and the combat target-check counters are asserted in the ordinary test suite ([machine-independent counters](../reference/performance.md#machine-independent-counters)). CI runs neither timing benchmark: "The wall-clock gates in `run_benchmark.sh` stay a local, quiet-host exit-gate step" ([ledger](../reference/performance.md#not-covered-yet)).
 
@@ -192,6 +193,7 @@ A horde mode (about 1,000 simple agents) is also undecided; throwaway spike bran
 - `tools/run_benchmark.sh` — headless gate: movement, combat and lockstep scripts, exit code plus marker and PASS-line counts.
 - `game/benchmarks/run_movement.gd`, `run_combat.gd`, `run_lockstep.gd` — the three gates; `STRESS_CEILING` in `run_combat.gd`, `BUDGET_P99_MS` in `run_lockstep.gd`.
 - `game/benchmarks/run_profile.gd`, `tools/run_profile.sh` — zone profile, never gates.
+- `game/benchmarks/run_scaling.gd`, `tools/run_scaling.sh` — size sweep of the combat open layout, never gates.
 - `game/benchmarks/bench_runner.gd`, `tools/serve_web_bench.py` — workloads in per-frame chunks for desktop and Web bench exports; used for F.
 - `game/benchmarks/run_team_match.gd`, `tools/run_team_match.sh` — the 45,000-tick bot match.
 - `game/scripts/debug/timing_stats.gd` — `summary`, `within`, `BUDGET_P95_MS`, `BUDGET_P99_MS`.
@@ -210,4 +212,4 @@ A horde mode (about 1,000 simple agents) is also undecided; throwaway spike bran
 - Previous: [11. Multiplayer](11-multiplayer.md). Next: [13. Testing and tooling](13-testing-and-tooling.md).
 
 ---
-Checked against `2b108ab`. Files: `tools/run_benchmark.sh`, `tools/run_profile.sh`, `tools/run_team_match.sh`, `tools/export_build.sh`, `tools/deploy_web.sh`, `game/benchmarks/run_movement.gd`, `game/benchmarks/run_combat.gd`, `game/benchmarks/run_lockstep.gd`, `game/benchmarks/bench_runner.gd`, `game/scripts/debug/timing_stats.gd`, `game/scripts/debug/profiler.gd`, `game/scripts/debug/movement_workload.gd`, `game/scripts/debug/combat_workload.gd`, `game/scripts/debug/movement_benchmark.gd`, `game/export_presets.cfg`, `web/Dockerfile`, `web/sws.toml`, `web/fly.toml`
+Checked against `389c9aa`. Files: `tools/run_benchmark.sh`, `tools/run_profile.sh`, `tools/run_team_match.sh`, `tools/export_build.sh`, `tools/deploy_web.sh`, `game/benchmarks/run_movement.gd`, `game/benchmarks/run_combat.gd`, `game/benchmarks/run_lockstep.gd`, `game/benchmarks/bench_runner.gd`, `game/scripts/debug/timing_stats.gd`, `game/scripts/debug/profiler.gd`, `game/scripts/debug/movement_workload.gd`, `game/scripts/debug/combat_workload.gd`, `game/scripts/debug/movement_benchmark.gd`, `game/export_presets.cfg`, `web/Dockerfile`, `web/sws.toml`, `web/fly.toml`, `tools/run_scaling.sh`, `game/benchmarks/run_scaling.gd`

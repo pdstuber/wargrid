@@ -586,14 +586,23 @@ func step() -> void:
 
 # Live state, never the snapshot; floats by raw bits so a change below core_check's 1/1024 shows at its tick.
 func _tick_hash() -> int:
-	var words := PackedInt64Array([_tick, _rng])
+	var words := PackedInt64Array()
+	words.resize(2 + 3 * _entities.size())
+	words[0] = _tick
+	words[1] = _rng
 	var floats := PackedFloat64Array()
+	floats.resize(2 * _entities.size())
+	var w := 2
+	var f := 0
 	for unit: Dictionary in _entities.values():
-		words.append(unit.id)
-		words.append(unit.owner)
-		words.append(unit.hp)
-		floats.append(unit.position[0] + 0.0)
-		floats.append(unit.position[1] + 0.0)
+		var at: Array = unit.position
+		words[w] = unit.id
+		words[w + 1] = unit.owner
+		words[w + 2] = unit.hp
+		floats[f] = at[0] + 0.0
+		floats[f + 1] = at[1] + 0.0
+		w += 3
+		f += 2
 	for building: Dictionary in _buildings.values():
 		words.append(building.id)
 		words.append(building.hp)

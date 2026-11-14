@@ -22,7 +22,7 @@ Status labels: rules in "Rules" are **in force** (those marked *enforced* are ch
 - **Setup RNG:** start spots use Godot's seeded `RandomNumberGenerator` (PCG32; `start_spots.gd` `assign`, `randi_range`), called from `match_settings.gd`. A port reproduces PCG32 or switches to xorshift with one re-pin.
 - **A\* tie-breaks:** `AStarGrid2D` with Manhattan heuristics, `DIAGONAL_MODE_NEVER`, no jumping (`grid_navigation.gd` `_init`); tie-breaking is Godot's and was not read in its source. Golden A\* vectors are a later no-regret step.
 - **Dictionary insertion order** as above.
-- **Digest today:** `state.hash()` (Godot, insertion order, pointer hash for Objects, folds `-0.0`/NaN) plus `core_check`, in `state_hash.gd`; `net/lockstep.gd` sends it on hash ticks. This is the digest matches use today; Wargrid's own digest below is not built yet.
+- **Digest today:** `state.hash()` (Godot, insertion order, pointer hash for Objects, folds `-0.0`/NaN) plus `core_check`, in `state_hash.gd`; `net/lockstep.gd` sends it on hash ticks. This is the digest matches use today; Wargrid's own digest below is not built yet. A per-tick ring (`Simulation.hash_ring`: engine `hash()` over raw words of the live state, 64 ticks, not in the snapshot, not on the wire) only localises a desync to its tick and is never acted on.
 
 ## Native code rules (later Rust or C++ core)
 

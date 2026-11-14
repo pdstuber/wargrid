@@ -18,9 +18,10 @@ flowchart TD
     H["7: Movement<br/>_advance each unit whose status is moving<br/>then Containers.step, Horde.step, Salvage.step"] --> I
     I["8: Combat.fire and Combat.fire_defences<br/>units that did not move fire, damage is applied"] --> J
     J["9: _evaluate_match<br/>is at most one team left?"] --> K
-    K["_tick += 1"]
+    K["_tick += 1"] --> L
+    L["10: hash ring<br/>one hash of the live state<br/>into a 64-slot ring"]
     classDef sim fill:#2f5d8a,stroke:#7fb3e6,color:#ffffff
-    class A,B,C,D,E,F,G,H,I,J,K sim
+    class A,B,C,D,E,F,G,H,I,J,K,L sim
     linkStyle default stroke:#9aa4b2,stroke-width:2px
 ```
 
@@ -124,6 +125,8 @@ Order a group of 150 and steps 9 to 12 stagger: unit number p in the queue (coun
 
 **Moving and shooting exclude each other.** Phase 8 skips every armed unit recorded as moved in phase 7 (passengers excepted). It is a rule of the pipeline, not of one weapon.
 
+**The tick hashes itself last.** After the tick counter moves, `step` stores one hash of the live state in a 64-slot ring (zone `step.hash_ring`, about 0.05 to 0.07 ms on the team match and hordes300). It reads only; it draws no random number and is not in the snapshot. Chapter 10 explains what it is for.
+
 **Match end.** The match-end check runs only while the match is ongoing. When at most one team still owns a building that counts for victory, the status becomes won or draw and every later `step` returns at once.
 
 ## Where the tick is capped, and where it is not
@@ -150,7 +153,7 @@ The path cap covers only the route search. The destination allocation in step 8 
 
 ## Where in the code
 
-- `game/scripts/simulation/simulation.gd` — `step` (the pipeline), `issue_command`, `_validate`, `_payload_fields`, `_apply_orders`, `_command_before`, `_assign_move`, `_service_paths`, `_assign_route`, `_advance`, `_evaluate_match`; constants `PATH_REQUESTS_PER_TICK`, `START_DELAY_TICKS`; queues `_pending`, `_path_queue` (`pop_front` in `_service_paths`; `erase(id)` in `_apply_orders`, `_stop_unit`, `remove_object`); flag `_units_removed`.
+- `game/scripts/simulation/simulation.gd` — `step` (the pipeline), `issue_command`, `_validate`, `_payload_fields`, `_apply_orders`, `_command_before`, `_assign_move`, `_service_paths`, `_assign_route`, `_advance`, `_evaluate_match`, `_tick_hash`, `hash_ring`; constants `HASH_RING_SIZE`, `PATH_REQUESTS_PER_TICK`, `START_DELAY_TICKS`; queues `_pending`, `_path_queue` (`pop_front` in `_service_paths`; `erase(id)` in `_apply_orders`, `_stop_unit`, `remove_object`); flag `_units_removed`.
 - `game/scripts/simulation/destination_allocation.gd` — `assign`: one destination cell per unit.
 - `game/scripts/simulation/grid_navigation.gd` — `route`: the A* behind `_assign_route`.
 - `game/scripts/simulation/locomotion.gd` — `step`: heading, speed and distance per tick; honours `move_after`.
@@ -173,4 +176,4 @@ The path cap covers only the route search. The destination allocation in step 8 
 - Next: [5. Presentation](05-presentation.md) reads the state this chapter produces; [6. Movement](06-movement.md) opens phases 1, 6 and 7.
 
 ---
-Checked against `2b108ab`. Files: `game/scripts/simulation/simulation.gd`, `game/scripts/main.gd`, `game/scripts/base_main.gd`, `game/scripts/skirmish_main.gd`, `game/scripts/online_main.gd`, `game/scripts/net/lockstep.gd`, `game/scripts/net/seat_sim.gd`, `game/scripts/simulation/combat.gd`, `game/scripts/simulation/locomotion.gd`, `game/scripts/simulation/destination_allocation.gd`, `game/scripts/simulation/grid_navigation.gd`, `game/scripts/simulation/construction.gd`, `game/scripts/simulation/production.gd`, `game/scripts/simulation/containers.gd`, `game/scripts/simulation/horde.gd`, `game/scripts/simulation/salvage.gd`, `game/scripts/simulation/rebuild_holes.gd`, `game/scripts/simulation/skirmish.gd`, `game/scripts/simulation/supply_collection.gd`, `game/scripts/debug/profiler.gd`
+Checked against `389c9aa`. Files: `game/scripts/simulation/simulation.gd`, `game/scripts/main.gd`, `game/scripts/base_main.gd`, `game/scripts/skirmish_main.gd`, `game/scripts/online_main.gd`, `game/scripts/net/lockstep.gd`, `game/scripts/net/seat_sim.gd`, `game/scripts/simulation/combat.gd`, `game/scripts/simulation/locomotion.gd`, `game/scripts/simulation/destination_allocation.gd`, `game/scripts/simulation/grid_navigation.gd`, `game/scripts/simulation/construction.gd`, `game/scripts/simulation/production.gd`, `game/scripts/simulation/containers.gd`, `game/scripts/simulation/horde.gd`, `game/scripts/simulation/salvage.gd`, `game/scripts/simulation/rebuild_holes.gd`, `game/scripts/simulation/skirmish.gd`, `game/scripts/simulation/supply_collection.gd`, `game/scripts/debug/profiler.gd`
