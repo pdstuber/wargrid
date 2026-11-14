@@ -92,16 +92,16 @@ Performance against the low-end budget (generated):
 
 | Area | Status | Budget used | vs last run | As of |
 | --- | --- | --- | --- | --- |
-| **Combat, huge battles** | 🔴 Over | ██████████▶ 159% | 🔻 1% better | 2026-11-14 |
+| **Combat, huge battles** | 🔴 Over | ██████████▶ 163% | 🔺 3% worse | 2026-11-14 |
 | **Background upkeep, huge crowds** | 🔴 Over | ██████████▶ 144% | 🆕 first run | 2026-11-08 |
 | Background upkeep, armies on the move | 🟡 Close | █████████░ 98% | 🆕 first run | 2026-11-08 |
-| Combat, normal fights | 🟢 OK | ███████░░░ 73% | 🔻 1% better | 2026-11-14 |
+| Combat, normal fights | 🟢 OK | ███████░░░ 75% | 🔺 2% worse | 2026-11-14 |
 | Drawing the screen | 🟢 OK | ███████░░░ 70% | 🔺 9% worse | 2026-11-13 |
 | Drawing the screen, big map (Ashfall) | 🟢 OK | ██████░░░░ 67% | 🔻 1% better | 2026-11-13 |
-| Combat, normal fights, slowest moments | 🟢 OK | █████░░░░░ 58% | 🔻 1% better | 2026-11-14 |
-| Unit movement | 🟢 OK | ████░░░░░░ 41% | ➖ same | 2026-11-14 |
-| Unit movement, slowest moments | 🟢 OK | ██░░░░░░░░ 26% | 🔺 2% worse | 2026-11-14 |
-| Online play overhead | 🟢 OK | █░░░░░░░░░ 11% | 🔻 1% better | 2026-11-14 |
+| Combat, normal fights, slowest moments | 🟢 OK | █████░░░░░ 59% | 🔺 2% worse | 2026-11-14 |
+| Unit movement | 🟢 OK | ████░░░░░░ 44% | 🔺 7% worse | 2026-11-14 |
+| Unit movement, slowest moments | 🟢 OK | ██░░░░░░░░ 26% | 🔺 1% worse | 2026-11-14 |
+| Online play overhead | 🟢 OK | █░░░░░░░░░ 11% | 🔺 1% worse | 2026-11-14 |
 
 Percent of the limit for a low-end device, estimated from this Mac (see the ledger for how). 🔺 = used more of the limit than last run. Small changes can be run-to-run noise. As of = when that area was last measured; areas drawn from rendered runs update only at milestone gates.
 
