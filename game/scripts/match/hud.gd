@@ -58,7 +58,7 @@ func _economy_hud(state: Dictionary) -> void:
 	if not building.is_empty(): detail = "%s #%d | Work %d/%d" % [Registry.kind(building.kind).display_name,building.id,building.work,Definitions.building(building.kind).ticks * 1000]
 	var resume: String = "Right-click: resume\n" if _screen._view.resume_candidate() != -1 else ""
 	var placing: String = Registry.kind(_screen.orders._placement_kind).get("display_name","")
-	_status.text = "Credits: %d | Power: %d/%d | Tick: %d\n%s | Place: %s\n%s | Right: context/move | E: produce | Esc: cancel\n%s%s" % [player.credits,player.power_supply,player.power_demand,state.tick,detail,placing,_build_hint(),resume,note]
+	_status.text = "Credits: %d | Power: %d/%d | Tick: %d\n%s | Place: %s\n1-9: menu  U: unload | Right: context/move | E: produce | Esc: cancel\n%s%s" % [player.credits,player.power_supply,player.power_demand,state.tick,detail,placing,resume,note]
 	_produce.visible = not building.is_empty() and building.completed and not _screen._production_kind(building, state).is_empty()
 	_cancel_build.visible = not building.is_empty() and not building.completed
 	_refresh_menu(_menu_kinds(state,building))
@@ -73,9 +73,6 @@ func _match_hud(state: Dictionary) -> void:
 	_result.text = result
 	_result.visible = not result.is_empty()
 	_restart_button.visible = not result.is_empty()
-
-func _build_hint() -> String:
-	return "1-9: menu  U: unload"
 
 func _menu_kinds(state: Dictionary, building: Dictionary) -> Array:
 	if not building.is_empty(): return Registry.kind(building.kind).produces if building.completed else []

@@ -53,7 +53,7 @@ var _visuals := VisualDirector.new()
 var _playtest: PlaytestOverlay
 
 func setup(transport: RefCounted, lockstep: RefCounted, seat: int, faction: String = Skirmish.default_faction()) -> void:
-	driver = OnlineDriver.new(transport, lockstep, seat, faction)
+	driver = OnlineDriver.new(transport, lockstep, faction)
 	local_player = seat
 
 func _ready() -> void:
@@ -69,7 +69,7 @@ func _ready() -> void:
 	_perf = PerfOverlay.new()
 	$HUD.add_child(_perf)
 	_pause = PauseMenu.new()
-	_pause.confirm_leave = _confirm_leave()
+	_pause.confirm_leave = driver.confirm_leave()
 	_pause.resume_requested.connect(_pause.close)
 	_pause.leave_requested.connect(_leave)
 	_pause.quit_requested.connect(func() -> void: get_tree().quit())
@@ -148,12 +148,6 @@ func _step_simulation() -> void:
 func menu_open() -> bool:
 	return _pause.visible or _playtest.holds_match()
 
-func _confirm_leave() -> bool:
-	return driver.confirm_leave()
-
-func _pauses_sim() -> bool:
-	return driver.pauses_sim()
-
 func _escape_pending() -> bool:
 	return not driver.sim.match_over() and orders.escape_pending()
 
@@ -183,7 +177,7 @@ func _physics_process(_delta: float) -> void:
 	if _auto_pending: _auto_tick_usec += Time.get_ticks_usec() - started
 
 func _step_frame() -> void:
-	if menu_open() and _pauses_sim(): return
+	if menu_open() and driver.pauses_sim(): return
 	var started: int = Time.get_ticks_usec()
 	var tick_before: int = driver.sim.tick()
 	_step_simulation()

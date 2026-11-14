@@ -1,15 +1,15 @@
 # One controller verification
 
 ```text
-Resume record (updated 2026-11-14: Task 10 GREEN, not committed)
-Branch / base commit / working-tree state: one-controller (worktree ~/projects/wargrid-wt-onecontrol) / 71b1180 (Task 9 re-pin commit) / Task 10 files uncommitted
-Last green task / next incomplete task: Task 10 (outcome: fix, the loss was real) / Task 11a
-Changed paths since last commit: `game/scripts/match/{match_screen,offline_driver,online_driver}.gd` (`step_results`), `game/tests/test_online_scene.gd` (N27), `docs/guide/11-multiplayer.md`, `docs/STATUS.md`, this file
-Last command / cases / checks / failures / exit / marker: full suite with traces / `CASES 864 CHECKS 144282 FAILURES 0` / exit 0 / `TESTS PASSED 144282`; four traces cmp exit 0; netplay match 9129 `NETPLAY PASSED match 15.9 s`; `run_checks.sh` `CHECKS PASSED 5`; roadmap --check and check_public exit 0; V1-V9, V12 unmoved, V10 empty against 71b1180, V13 OK
+Resume record (updated 2026-11-14: Task 11c GREEN, not committed)
+Branch / base commit / working-tree state: one-controller (worktree ~/projects/wargrid-wt-onecontrol) / 4953e9f (Task 11a review commit) / Task 11c files uncommitted
+Last green task / next incomplete task: Task 11c (no 11b fix round needed: 0 critical, 0 important) / Task 12 (wrap-up by the coordinator)
+Changed paths since last commit: `game/scripts/match/{hud,match_screen,online_driver}.gd`, `game/tests/test_skirmish.gd`, `docs/guide/{05-presentation,11-multiplayer}.md` (footers), `docs/packages.md`, `docs/superpowers/plans/2026-11-14-one-controller.md`, this file
+Last command / cases / checks / failures / exit / marker: full suite with traces (`t11c-suite.log`) / `CASES 864 CHECKS 144282 FAILURES 0` / exit 0 / `TESTS PASSED 144282`; four traces cmp exit 0; netplay match 9129 `NETPLAY PASSED match 15.9 s`; `run_checks.sh` `CHECKS PASSED 5`; roadmap --check and check_public exit 0; V1-V9, V12 unmoved, V10 empty against 71b1180, V11 667 ids, V11b 3103 labels unchanged, V13 OK
 Known red case or blocker: none
 Approved decisions, pre-authorizations used, deferred gates: package note "One controller" (user, 2026-11-13); plan "Decisions (user, 2026-11-14)" 1-20; local commits as the night run handoff pre-authorizes (one per GREEN task, two in Task 9); benchmark only in Task 8, alone; Task 1 commit (V10 base): f1c6b78; Task 9 fix commit: 1e3b9f7; Task 9 re-pin commit (V10 base from Task 9): 71b1180
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: Task 11a (fresh-context Opus review of the branch), after the coordinator commits Task 10. Morning items are in "Unverifiable at night" below. Tell the Task 11 reviewer: Task 10 changed `step_results` in both drivers and the screen's `_physics_process` append line; the null guard in `hud.gd` `_match_hud` stays (Task 8).
+Next exact action: coordinator commits Task 11c, then the wrap-up. Morning list is in "Unverifiable at night" below: m2, m4, m7 and the R5 ruling need the user.
 ```
 
 Plan: [One controller plan](../superpowers/plans/2026-11-14-one-controller.md). Spec: `docs/packages.md` package note "One controller" (`:84`); design answers "Package review, second pass" (`:474-505`) and "Main branch audit" (`:363-378`); audit FIX-6 and A-1 (kept outside the repository, `~/projects/wargrid-overnight-work/audit-2026-11-11/`). Logs: `~/projects/wargrid-overnight-work/one-controller/logs/` (outside the repository; commands use the absolute path). A stop after any GREEN task resumes at the next row of the task table: the subagent reads this record, checks `git log --oneline -1` and `git status --short` in the worktree against it, and starts that task's Step 1.
@@ -31,7 +31,7 @@ Plan: [One controller plan](../superpowers/plans/2026-11-14-one-controller.md). 
 | 10 | Two-tick online frame results reach the HUD (N27: characterise, then fix or guard) | Sonnet | GREEN (uncommitted; fix) |
 | 11a | Fresh-context branch review (refactor and fixes); findings into the Review section | Opus (high) | not started |
 | 11b | One fix round: critical and important findings, test-first | Sonnet | not started |
-| 11c | `/ponytail-review` of the diff; cuts re-verified | Sonnet | not started |
+| 11c | `/ponytail-review` of the diff; cuts re-verified | Sonnet | GREEN (uncommitted) |
 
 ## Baseline (Task 0)
 
@@ -221,14 +221,15 @@ Expected on `35d22b5` by reading (Task 2 confirms by running on the old chain):
 | 7 | `game/tests/test_skirmish_scene.gd` | HU1 added to `cases()`; `Hud` preload added | `return [test_skirmish_ready_and_tick, …, test_orders_turn_input_into_payloads]` (the Task 6 form; against `main` the Task 1/4 row covers it) |
 | 10 | `game/tests/test_online_scene.gd` | N27 added to `cases()` | `return [test_seat_two_controls_player_two, …, test_input_script_online]` |
 
-## Accepted reorders (plan R1-R4; reviewer verdict in Task 11)
+## Accepted reorders (plan R1-R5; reviewer verdict in Task 11)
 
 | # | Reorder | Reviewer verdict |
 |---|---|---|
 | R1 | online `observe_command` after `_refresh` | |
 | R2 | online rejection sound and note after `_finish` | |
 | R3 | `_sound.update` after the whole HUD refresh | |
-| R4 | `inspected_id` pruned in `orders.prune` | |
+| R4 | `inspected_id` pruned in `orders.prune` | exact (Task 11a) |
+| R5 | online `_submit` queues an `error` cue and skips the checklist trigger for an order submitted while an own due-time rejection waits for its deferred refresh (review finding m1; offline always behaved so). Agent ruling at night, not a user decision: accept, no code change. Cost if wrong: online error-cue and checklist timing differs slightly from before the branch | accepted by agent ruling; user to confirm in the morning |
 
 ## Gate (Task 8)
 
@@ -267,7 +268,7 @@ Both quirks were found by reading on `4ed3534` and are unchanged on `35d22b5`:
 | 11a reviewer findings: critical / important / minor (count), each with its line | 0 / 0 / 7, listed under "11a findings" below. Fresh Opus reviewer, `git diff 74950e5..HEAD` on `one-controller` at `5739a40` (tree clean before and after; three scratch mutations reverted, `git status --short` empty) |
 | Per new test and ported family: production change that would make it fail | see "11a mutation map" below; three run on `5739a40` (N27, placement guard, R4 prune), the rest from the task records or by reading |
 | 11b fix round: each finding, red line, green; suite, traces `cmp`, netplay match, static gates, V11b, V13 | |
-| 11c `/ponytail-review` cuts and re-verify | |
+| 11c `/ponytail-review` cuts and re-verify | Cuts applied (m3 leftovers, all behaviour-neutral): unused `const SkirmishMain` in `test_skirmish.gd` (V8 stays at 11 `-const` lines: that line was already a removed-and-replaced preload, and V13 stays `removed=440 listed=88`); `hud._build_hint` inlined into the status format string (output byte-identical, IC rows and V9 literals unchanged); `_confirm_leave` and `_pauses_sim` forwarders on the screen replaced by `driver.confirm_leave()` and `driver.pauses_sim()` (no caller outside `match_screen.gd`; no test called them); unused `_seat` parameter dropped from `OnlineDriver._init` (screen `setup` and SK23 call updated; plan Pinned shapes row amended). Skipped: `OnlineDriver.net_line` and `latency_line` both compute the latency and RTT summaries (moved verbatim from `online_main.gd`; merging them is a refactor of tested output, not a cut); the empty `start`, `detach`, `leave` and unused `create` parameters on `OfflineDriver` (the screen calls one driver interface without type checks). Dead-function scan over `game/scripts/match` (every `func` name occurs more than once in `game`): none. Re-verify: `t11c-checks.log` exit 0 `CHECKS PASSED 5`; `t11c-suite.log` exit 0 `CASES 864 CHECKS 144282 FAILURES 0`, `TESTS PASSED 144282` (no check removed); `cmp` exit 0 for `replay`, `economy`, `combat`, `team` (`*-t11c.tsv`); `t11c-match.log` `match terminal tick 9129`, `NETPLAY PASSED match 15.9 s`; roadmap --check and check_public exit 0; V10 empty against 71b1180; V11 667 ids, no diff against `ids-t10.txt`; V11b 3103 labels, no diff against `labels-t10.txt`; V12 empty; V13 `V13 OK removed=440 renamed=352 listed=88` (`t11c-v13.log`). Docs: R5 recorded (below and in the plan); ch. 5 and ch. 11 footers set to `4953e9f` (m5); stale `online_main.gd` paths in "Unverifiable at night" and `docs/packages.md` replaced (m6) |
 | Minors for the morning | m1-m7 below (m1 needs a ruling, no code change recommended) |
 
 ### 11a findings
@@ -276,10 +277,10 @@ No Critical, no Important finding. Minor:
 
 - **m1, online submit: R1 is more than a move** (`game/scripts/match/match_screen.gd:271-278`). The pinned shared `_submit` makes online `observe_command` conditional on `hud.note` being empty after `_refresh()`, and lets online play `_sound.rejected(hud.note)`; `online_main.gd:77-83` always observed and never queued a rejection cue. Scenario: an own due-time rejection lands in a step whose refresh the presentation clock defers to the next rendered frame (`presentation_clock.gd:20-27`); a click in that window makes the submit's `_refresh` consume it, so the online submit queues an `error` cue and skips the focus-card trigger for that command. Offline has always behaved this way (`skirmish_main.gd:91-95` on `main`). Evidence: reading only; no test covers it. Impact: one stray cue and one unticked checklist trigger, rare, presentation only, no simulation or trace effect. Fix: record it as R5 (offline semantics now apply online) in the plan's Accepted reorders; no code change.
 - **m2, online desync report fields lost end-to-end coverage** (`game/tests/test_skirmish.gd:693-698`, `game/scripts/match/online_driver.gd:33-36`, `match_screen.gd:126-127`). SK23 now feeds `create` its values directly, so the screen-statics-to-report path is untested: a mutation `_seed = 0` in `online_driver.create` would pass every test (wrong starts or map would still fail the match tests through `Skirmish.create`; the seed is read only by `_report`). Fix: in N2's desync case (`test_online_scene.gd:131-137`) parse `user://desync/desync-seat2.json` and check `seed`, `map`, `starts` against `SkirmishMain` statics before removing it.
-- **m3, leftovers for 11c** (dead or one-use indirection): `test_skirmish.gd:18` `const SkirmishMain` unused (kept for V8, ledger); `hud.gd:77-78` `_build_hint()` returns a constant (the old M3 override hook); `match_screen.gd:151-155` `_confirm_leave` and `_pauses_sim` only forward to the driver; `online_driver.gd:28` `_seat` parameter unused. None changes behaviour.
+- **m3 (done in 11c), leftovers for 11c** (dead or one-use indirection): `test_skirmish.gd:18` `const SkirmishMain` unused (kept for V8, ledger); `hud.gd:77-78` `_build_hint()` returns a constant (the old M3 override hook); `match_screen.gd:151-155` `_confirm_leave` and `_pauses_sim` only forward to the driver; `online_driver.gd:28` `_seat` parameter unused. None changes behaviour.
 - **m4, profiler zone content shifted** (`match_screen.gd:258-260`, `orders.gd:63-66`): `refresh.selection` now also times the building-id prune and the `hud._inspected` lookup that used to sit in `_refresh` and `refresh.hud`. Names and places kept as pinned; no tool or budget reads these zones (`rg 'refresh\.selection|refresh\.hud' game tools docs` hits only the screen and the plan). Note for anyone comparing old profiles.
-- **m5, guide footers name commits before the code they describe**: ch. 5 `docs/guide/05-presentation.md:228` says `eafb131`, but the F3-in-placement line describes `1e3b9f7`; ch. 11 `docs/guide/11-multiplayer.md:221` says `71b1180`, but the "every advanced tick's command results" clause describes `5739a40`. Fix: set both to the branch head at wrap-up.
-- **m6, stale paths in working docs**: this file's "Unverifiable at night" cites `online_main.gd:97-99` (now `online_driver.gd:108-110`); `docs/packages.md` One controller note still says "Today `online_main.gd` extends …", true only until the merge. Fix at merge or wrap-up.
+- **m5 (fixed in 11c), guide footers name commits before the code they describe**: ch. 5 `docs/guide/05-presentation.md:228` says `eafb131`, but the F3-in-placement line describes `1e3b9f7`; ch. 11 `docs/guide/11-multiplayer.md:221` says `71b1180`, but the "every advanced tick's command results" clause describes `5739a40`. Fix: set both to the branch head at wrap-up.
+- **m6 (fixed in 11c), stale paths in working docs**: this file's "Unverifiable at night" cites `online_main.gd:97-99` (now `online_driver.gd:108-110`); `docs/packages.md` One controller note still says "Today `online_main.gd` extends …", true only until the merge. Fix at merge or wrap-up.
 - **m7, values captured at create instead of read at use** (`offline_driver.gd:14-21`, `online_driver.gd:33-36`): the offline driver stamps `_player` from `local_player` at `_ready` and logs `_factions` from `create`; the online report uses the `create` arguments, not the statics at report time. Equal today: nothing writes `local_player` after `setup`/`_ready` (`rg 'local_player\s*=' game/scripts game/tests`: only `match_screen.gd:57`, `:85`) and the launcher sets statics before the scene starts. A future offline seat switch would have to rebuild the driver.
 
 Rulings and deviations judged:
@@ -331,8 +332,10 @@ The two full-suite mutation runs each failed exactly one check out of 144276 at 
 ## Unverifiable at night (for the morning)
 
 - CI on Linux and Windows, `sh tools/compare_local_traces.sh <run id>` for macOS: need a pushed branch (push needs approval).
-- Browser: the web desync download path (`online_main.gd:97-99`, then the online driver) and the web build of the match screen; covered only by the fake `download` callable in `test_online_scene.gd:140-141`.
+- Browser: the web desync download path (`online_driver.gd:108-110`) and the web build of the match screen; covered only by the fake `download` callable in `test_online_scene.gd:140-141`.
 - The attended offline and online match in a window, before P2.3a starts (user, 2026-11-13).
+- Review minors left for the morning (11c did not touch them): m2 (desync report fields lost end-to-end coverage: N2's desync case should parse `user://desync/desync-seat2.json` and check `seed`, `map`, `starts`), m4 (profiler zone `refresh.selection` now also times the building-id prune and `hud._inspected` lookup; note for anyone comparing old profiles), m7 (offline driver stamps `_player` at `_ready` and the online report uses the `create` arguments; a future seat switch must rebuild the driver).
+- R5 (review finding m1) is an agent ruling at night, not a user decision: accepted with no code change. If the user disagrees, the cost is that online error-cue and checklist timing differs slightly from before the branch (one stray cue and one unticked checklist trigger, rare, presentation only).
 - Rendered benchmark: skipped (Decision 14); `movement_benchmark.tscn` does not load the controller.
 - Commands the night permissions refused, each with its exact text: none in Task 8.
 - The null guard in `hud.gd` `_match_hud` (`var result: String = "" if state.match == null else _result_text(state.match)`, ruling 2026-11-14) turns a future null-match bug into a blank Result label instead of a script error; for the Task 11 reviewer.

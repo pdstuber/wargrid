@@ -25,7 +25,7 @@ var _credit: int = 0
 var _rejections_seen: int = 0
 var _step_results: Array = []
 
-func _init(transport: RefCounted, lockstep: RefCounted, _seat: int, faction: String) -> void:
+func _init(transport: RefCounted, lockstep: RefCounted, faction: String) -> void:
 	_transport = transport
 	_lockstep = lockstep
 	_own_faction = faction

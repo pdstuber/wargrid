@@ -81,7 +81,7 @@ No simulation file changes (V12). The controller decides only what reaches `issu
 
 | Member | Offline | Online (from `online_main.gd`) |
 |---|---|---|
-| `_init` | `(player: int)`, stored as `_player` | `(transport, lockstep, seat, faction)` (today's `setup`, `:19-23`) |
+| `_init` | `(player: int)`, stored as `_player` | `(transport, lockstep, faction)` (today's `setup` minus the seat, which the screen keeps as `local_player`; the unused `seat` parameter went in Task 11c) |
 | `var sim: Simulation` | yes | yes |
 | `create(map_path, starts, factions, match_seed)` | `Skirmish.create(true, "ai", factions, map_path, starts)` (`skirmish_main.gd:57`); `_sequence = 0`; recorder dropped | `Skirmish.create(true, "human", {}, map_path, starts)` (`:36`); keeps them as `_map_path`, `_seed`, `_starts` for the report (never the parameter names: `shadowed_variable` is an error) |
 | `start()` | nothing | `send`, `choose_faction`, `start(sim.snapshot())` (`:28-30`) |
@@ -168,6 +168,7 @@ Merged overrides, same Task: `_finish_selection` = `main.gd:182-204` then `skirm
 - **R2, online rejections:** the rejection sound and `_error` (`online_main.gd:60-65`) come after `_finish()` (`:66`, `:88-92`) instead of before. `_finish` writes the report and latency files and closes the transport; it reads neither.
 - **R3, sound update:** `_sound.update(state)` (`skirmish_main.gd:281`) runs after the whole HUD refresh instead of between the economy and match parts. It reads `state` only; the HUD does not read the sound player.
 - **R4, inspected prune:** `inspected_id` is cleared in `orders.prune(state)` at the start of `_show` instead of inside `_refresh_hud` (`skirmish_main.gd:284`). `view.set_view` and the economy HUD do not read it; `_view.set_inspected(...)` stays after the HUD refresh.
+- **R5, online submit (found by the Task 11a review as m1; agent ruling at night, not a user decision: accept, no code change):** online, the shared `_submit` queues an `error` cue and skips the playtest checklist trigger (`observe_command`) for an order submitted while an own due-time rejection is still waiting for its deferred refresh; offline always behaved so (`skirmish_main.gd:91-95` on `main`). Cost if the ruling is wrong: online error-cue and checklist timing differs slightly from before the branch; presentation only, no simulation or trace effect.
 
 ## Frame-order and interaction cases
 
@@ -192,7 +193,7 @@ No new command and no AI rule in this package. The cases a controller change can
 ## Review focus
 
 1. Dispatch order: the merged `_unhandled_input` equals the chain for every event class (key, motion, left, right, wheel) in every mode (none, dragging, attack-move, placement, building selected, match over).
-2. Moves are verbatim apart from receivers; every reorder is R1-R4.
+2. Moves are verbatim apart from receivers; every reorder is R1-R5.
 3. Test edits are access-path changes only, plus the ports of Task 2 and the deletions of Task 3; no assertion weakened, no expectation changed (V9-V11).
 4. The bot never receives a driver; recorder and seat wrapper still expose `simulation()`.
 5. Audit's second criterion, as a reading only (Decision 18): could the order controls package add an order by touching only `orders.gd` and the HUD hint line?
@@ -763,7 +764,7 @@ All twenty draft questions are answered: the recommendation everywhere except 6 
 9. **`skirmish.tscn`** keeps its name.
 10. **Match settings statics** stay on the screen script (only the preload path changes).
 11. **Folder:** `game/scripts/match/` for the five files.
-12. **Accepted reorders R1-R4** count as "no behaviour change"; the reviewer checks each.
+12. **Accepted reorders R1-R5** count as "no behaviour change"; the reviewer checks each.
 13. **Characterisation cases IC1 and IC2** with literal rows are added (Task 1).
 14. **Rendered benchmark at the gate:** skipped (the rendered benchmark scene does not load the controller).
 15. **Base:** Sim quick wins merged first; met (merged and pushed 2026-11-14, `main` `35d22b5`).
