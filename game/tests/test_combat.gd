@@ -1545,10 +1545,11 @@ func test_splash_index_matches_oracle(runner) -> bool:
 	var radii: Array[float] = [0.2, 0.52, 1.0, 1.8533333333333333]
 	for state in range(50):
 		var sim = _oracle_world(rng)
-		var attackers: Array[Dictionary] = [sim._entities.values()[0], sim._buildings.values()[0], {"id": -1, "owner": 1 + rng.randi() % 3}]
+		var building: Dictionary = sim._buildings.values()[1]
+		var attackers: Array[Dictionary] = [sim._entities.values()[0], building, {"id": -1, "owner": 1 + rng.randi() % 3}]
 		var index: Dictionary = Combat._splash_index(sim, {})
 		var first: bool = true
-		for impact in _impacts(sim, rng):
+		for impact in _impacts(sim, rng) + [Combat._victim_centre(building)]:
 			for radius in radii:
 				for attacker in attackers:
 					var affects: Array = ["enemies"] if rng.randi() % 2 == 0 else ["allies", "enemies", "neutrals"]
@@ -1556,7 +1557,7 @@ func test_splash_index_matches_oracle(runner) -> bool:
 					var actual: Array[Dictionary] = Combat.splash_victims(sim, impact, radius, affects, attacker) if first else Combat.splash_victims(sim, impact, radius, affects, attacker, index)
 					first = false
 					if _ids(actual) != _ids(_oracle_splash(sim, impact, radius, affects, attacker)): mismatches += 1
-	runner.check(queries >= 10000 and mismatches == 0, "SI1 indexed splash equals the full scan (%d queries, %d mismatches)" % [queries, mismatches])
+	runner.check(queries >= 10000 and mismatches == 0, "SI1 indexed splash equals the full scan, with an unmasked building attacker at its own centre (%d queries, %d mismatches)" % [queries, mismatches])
 	return true
 
 func test_splash_hits_passenger_unloaded_this_tick(runner) -> bool:
@@ -1592,19 +1593,22 @@ func test_splash_index_built_only_on_splash_ticks(runner) -> bool:
 	var sim = Fixture.world()
 	sim.add_player(1, 0)
 	sim.add_player(2, 0)
-	sim.spawn(1, Vector2(10.5, 10.5), "usa_tank")
-	sim.spawn(2, Vector2(15.5, 10.5), "usa_tank")
+	for y: float in [9.5, 10.5, 11.5]:
+		sim.spawn(1, Vector2(10.5, y), "usa_tank")
+		sim.spawn(2, Vector2(15.5, y), "usa_tank")
 	Profiler.reset()
 	Profiler.enabled = true
 	var splash_ticks: int = 0
+	var most_shots: int = 0
 	for i in range(200):
 		sim.step()
-		var splashing: bool = false
+		var shots: int = 0
 		for shot in _shots(sim):
-			if not shot.splash and Definitions.weapon(Definitions.profile(Combat.record(sim, shot.attacker_id).kind).weapon).primary_radius > 0.0: splashing = true
-		splash_ticks += 1 if splashing else 0
+			if not shot.splash and Definitions.weapon(Definitions.profile(Combat.record(sim, shot.attacker_id).kind).weapon).primary_radius > 0.0: shots += 1
+		splash_ticks += 1 if shots > 0 else 0
+		most_shots = maxi(most_shots, shots)
 	var builds: int = Profiler.calls(&"combat.splash_index")
 	Profiler.enabled = false
 	Profiler.reset()
-	runner.check(splash_ticks > 0 and builds == splash_ticks, "SI3 one index build per tick with a splash-weapon shot, none otherwise (%d ticks, %d builds)" % [splash_ticks, builds])
+	runner.check(splash_ticks > 0 and most_shots >= 2 and builds == splash_ticks, "SI3 one index build per tick with splash-weapon shots, even with several shots in a tick, none otherwise (%d ticks, %d builds, at most %d shots in a tick)" % [splash_ticks, builds, most_shots])
 	return true

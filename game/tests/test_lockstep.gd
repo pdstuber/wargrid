@@ -451,7 +451,20 @@ func test_hash_ring_outside_snapshot(runner) -> bool:
 	var a = _ring_world(70)
 	var b = _ring_world(70)
 	a.hash_ring()
-	var keys: Array = a.snapshot().keys().filter(func(key: String) -> bool: return "ring" in key or "hash" in key)
-	runner.check(keys.is_empty(), "HR3 the ring is not state (snapshot keys %s)" % str(keys))
+	var digests: Array = []
+	for row: String in a.hash_ring(): digests.append(row.get_slice("\t", 1))
+	var found: Array = []
+	_ring_values_in(a.snapshot(), digests, found)
+	runner.check(found.is_empty(), "HR3 the ring is not state: no ring digest anywhere in the snapshot (found %s)" % str(found))
 	runner.check(StateHash.digest(a.snapshot()) == StateHash.digest(b.snapshot()), "HR3 digest equal with rings computed")
 	return true
+
+func _ring_values_in(value, digests: Array, found: Array) -> void:
+	if value is Dictionary:
+		for key in value: _ring_values_in(value[key], digests, found)
+	elif value is Array or (typeof(value) >= TYPE_PACKED_BYTE_ARRAY and typeof(value) <= TYPE_PACKED_VECTOR4_ARRAY):
+		for item in value: _ring_values_in(item, digests, found)
+	elif value is int and "%08x%08x" % [(value >> 32) & StateHash.MASK, value & StateHash.MASK] in digests:
+		found.append(value)
+	elif value is String and digests.any(func(d: String) -> bool: return d in value):
+		found.append(value)

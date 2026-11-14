@@ -137,7 +137,7 @@ func test_status_lines_and_layout(runner) -> bool:
 	var text: String = desync.main.get_node("HUD/Status").text
 	runner.check(desync.lockstep.status() == "ended_desync" and text.contains("Desync — report saved to") and FileAccess.file_exists("user://desync/desync-seat2.json"), "N2 desync line and report file, got " + text)
 	var report = JSON.parse_string(FileAccess.get_file_as_string("user://desync/desync-seat2.json"))
-	runner.check(report is Dictionary and report.get("seed") == 7 and report.get("map") == SkirmishMain.map_path.get_file().get_basename() and report.get("starts") == SkirmishMain.starts, "N2 desync report carries the screen's seed, map and starts, got " + str(report))
+	runner.check(report is Dictionary and report.get("seed") == 7 and report.get("map") == SkirmishMain.map_path.get_file().get_basename() and report.get("starts") == SkirmishMain.starts and not report.get("hash_ring", []).is_empty(), "N2 desync report carries the screen's seed, map, starts and the sim's hash ring, got " + str(report))
 	_layout_ok(runner, desync.main, "desync")
 	DirAccess.remove_absolute("user://desync/desync-seat2.json")
 	desync.main.free()

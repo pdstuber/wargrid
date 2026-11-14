@@ -108,6 +108,9 @@ class SeatVerdictTests(unittest.TestCase):
         self.assertIsNone(seat_verdict(ring(LOCAL[20:], 21), LOCAL))
         self.assertEqual(seat_verdict(ring(perturbed(41)[20:], 21), LOCAL), 41)
 
+    def test_ticks_sort_as_numbers(self):
+        self.assertEqual(seat_verdict(ring(perturbed(9)), LOCAL), 9)
+
     def test_ring_past_local_end_is_ignored(self):
         self.assertIsNone(seat_verdict([*ring(LOCAL), "99\tffff"], LOCAL))
 
@@ -204,6 +207,18 @@ class MainTests(BisectCase):
         code, text = self.run_main([str(Path(self.dir.name, "missing.json"))], FakeOracle(LOCAL))
         self.assertEqual(code, 2)
         self.assertIn("BISECT FAILED", text)
+
+    def test_malformed_report(self):
+        a = self.write("a.json", report(1, LOCAL, hash_ring=5))
+        code, text = self.run_main([a], FakeOracle(LOCAL))
+        self.assertEqual(code, 2)
+        self.assertIn("BISECT FAILED", text)
+
+    def test_shorter_client_b_ring_differs(self):
+        a = self.write("a.json", report(1, LOCAL))
+        code, text = self.run_main([a, "--client-b", "other-client"], FakeOracle({"a": LOCAL, "b": LOCAL[:40]}))
+        self.assertEqual(code, 1)
+        self.assertIn("CLIENTS DIFFER IN LENGTH 64 AND 40 TICKS\n", text)
 
     def test_clients_diverge(self):
         a = self.write("a.json", report(1, LOCAL))

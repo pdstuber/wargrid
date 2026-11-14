@@ -59,6 +59,10 @@ class DesyncDiffTests(unittest.TestCase):
         second = report(hash_ring=["40\ta", "41\tx", "42\ty"])
         self.assertEqual(ring_divergence(first, second), 41)
 
+    def test_ring_ticks_sort_as_numbers(self):
+        first = report(hash_ring=["9\ta", "10\tb"])
+        self.assertEqual(ring_divergence(first, report(hash_ring=["9\tx", "10\ty"])), 9)
+
     def test_ring_disjoint_ticks(self):
         self.assertIsNone(ring_divergence(report(hash_ring=["1\ta"]), report(hash_ring=["2\tb"])))
 

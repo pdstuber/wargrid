@@ -108,8 +108,10 @@ def _clients_line(report: dict, out: Path, clients: list[list[str]], ticks: int)
         raise ValueError(f"client B oracle failed, see {_oracle_log(out, 'b')}")
     a, b = _ring_digests(out, "a"), _ring_digests(out, "b")
     index = first_divergence([a, b])
+    if index is None and len(a) != len(b):
+        return f"CLIENTS DIFFER IN LENGTH {len(a)} AND {len(b)} TICKS", True
     if index is None:
-        return f"CLIENTS MATCH {min(len(a), len(b))} TICKS", False
+        return f"CLIENTS MATCH {len(a)} TICKS", False
     tick = index + 1
     for client, tag in zip(clients, "ab", strict=True):
         if not replay(client, report, out, tag, ticks, [tick - 1, tick]):
@@ -157,7 +159,7 @@ def main(argv: list[str]) -> int:
         out = args.out or Path(tempfile.mkdtemp(prefix="desync-bisect-"))
         out.mkdir(parents=True, exist_ok=True)
         return _bisect(reports, out, args.client_b)
-    except (OSError, ValueError, KeyError) as error:
+    except (OSError, ValueError, KeyError, TypeError, IndexError) as error:
         print(f"BISECT FAILED {error!r}")
         return 2
 
