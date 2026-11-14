@@ -83,7 +83,7 @@ State phrases come from each item's own verification or evidence file. Several r
 | Native simulation core spike | Done 2026-11-11; CONDITIONAL GO, whole port only | [report](reference/native-sim-spike.md), [verification](reference/native-sim-spike-verification.md) |
 | Performance next | Done 2026-11-11 and merged to local `main`; merge and later work in the design answers | [note](reference/performance-next.md), [verification](reference/performance-next-verification.md) |
 | GDScript static checks | Tasks 1 and 2 done and merged (`3e3aae0`); Task 3 skipped by the user 2026-11-06 | [plan](superpowers/plans/2026-11-05-gdscript-static-checks.md) |
-| Releases (R1) | Done 2026-11-07; v0.6.0 released; latest 0.11.0 (2026-11-12, new look live) | [release verification](reference/release-verification.md) |
+| Releases (R1) | Done 2026-11-07; v0.6.0 released; 0.11.0 (2026-11-12, new look live); latest 0.12.0 (2026-11-14, new launcher live) | [release verification](reference/release-verification.md) |
 | Test environment, logo | On `main` (`68bcc0a`, `73b48a4`) 2026-11-07 | [test environment](superpowers/plans/2026-11-07-test-environment.md), [logo](superpowers/plans/2026-11-07-logo.md) |
 | Zero Hour INI dump tool | Tasks 1 and 2 and the gate-review fixes done 2026-11-09; on `main` | [verification](reference/zh-ini-dump-verification.md) |
 | Zero Hour W3D size reader | Done and on `main` (`92fd4b8`) 2026-11-13, review findings fixed | [verification](reference/w3d-size-reader-verification.md) |
