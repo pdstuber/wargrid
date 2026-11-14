@@ -190,7 +190,7 @@ func _step_frame() -> void:
 	_perf.record_step((Time.get_ticks_usec() - started) / 1000.0)
 	# A stall frame (online, waiting for the peer) is not a step frame; counting it would inflate the split share.
 	var advanced: bool = driver.sim.tick() != tick_before
-	if advanced: stepped_results.append_array(driver.sim.command_results().duplicate(true))
+	if advanced: stepped_results.append_array(driver.step_results())
 	if not is_processing() or (advanced and _clock.stepped(Engine.get_process_frames(), driver.sim.tick())) or (not advanced and _note() != _shown_note): _refresh()
 
 func _present_if_due() -> bool:

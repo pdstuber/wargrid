@@ -23,6 +23,7 @@ var _report_path: String = ""
 var _finished: bool = false
 var _credit: int = 0
 var _rejections_seen: int = 0
+var _step_results: Array = []
 
 func _init(transport: RefCounted, lockstep: RefCounted, _seat: int, faction: String) -> void:
 	_transport = transport
@@ -52,15 +53,20 @@ func step(after_tick: Callable) -> PackedStringArray:
 	for text: Variant in _transport.poll(): _lockstep.receive(text)
 	if not _finished and (_transport.closed() or _transport.silent(Time.get_ticks_usec())): _lockstep.set_relay_lost()
 	_credit = mini(_credit + 1, MAX_CATCH_UP_CREDIT)
+	_step_results = []
 	for i in CATCH_UP_STEPS:
 		if _credit < 1 or not _lockstep.advance(sim): break
 		_credit -= 1
 		after_tick.call()
+		_step_results.append_array(sim.command_results().duplicate(true))
 		var tick: int = sim.tick()
 		_lockstep.finish_tick(tick, sim.snapshot() if _lockstep.wants_snapshot(tick) else null)
 	var rejected: PackedStringArray = _new_rejections()
 	if not _finished and (sim.match_over() or _lockstep.status().begins_with("ended")): _finish()
 	return rejected
+
+func step_results() -> Array:
+	return _step_results
 
 func _new_rejections() -> PackedStringArray:
 	var errors := PackedStringArray()

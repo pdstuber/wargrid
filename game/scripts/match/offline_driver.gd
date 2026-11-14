@@ -34,6 +34,9 @@ func step(after_tick: Callable) -> PackedStringArray:
 	after_tick.call()
 	return PackedStringArray()
 
+func step_results() -> Array:
+	return sim.command_results().duplicate(true)
+
 func submit(payload: Dictionary) -> Dictionary:
 	var state: Dictionary = sim.snapshot()
 	var command: Dictionary = payload.duplicate(true)

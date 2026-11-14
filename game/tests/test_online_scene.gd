@@ -36,7 +36,7 @@ class FakeTransport extends RefCounted:
 	func rtt_samples() -> PackedInt64Array: return PackedInt64Array([40000])
 
 func cases() -> Array[Callable]:
-	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_rejection_line, test_funds_rejection_is_announced, test_overlay_net_line, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_stall_frames_are_not_step_frames, test_notices_reach_the_hud_while_processing, test_launcher_layout, test_launcher_sections, test_launcher_faction_selectors_fit, test_launcher_faction_rows, test_plays_dry_wells_from_each_seat, test_offline_uses_chosen_map, test_restart_keeps_map_and_starts, test_restart_drops_old_stepped_results, test_joiner_refuses_other_map, test_old_relay_mismatch_is_shown, test_cancel_and_copy_while_waiting, test_start_without_settings_is_a_protocol_error, test_both_seats_share_map_and_starts, test_host_told_opponent_left_before_start, test_credits_panel_layout, test_online_playtest_record, test_launcher_release_hides_relay, test_launcher_prefills_from_page, test_launcher_relay_help, test_copy_link_on_web, test_launcher_reads_no_page_off_web, test_input_script_online]
+	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_rejection_line, test_funds_rejection_is_announced, test_overlay_net_line, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_two_tick_frame_keeps_earlier_results, test_stall_frames_are_not_step_frames, test_notices_reach_the_hud_while_processing, test_launcher_layout, test_launcher_sections, test_launcher_faction_selectors_fit, test_launcher_faction_rows, test_plays_dry_wells_from_each_seat, test_offline_uses_chosen_map, test_restart_keeps_map_and_starts, test_restart_drops_old_stepped_results, test_joiner_refuses_other_map, test_old_relay_mismatch_is_shown, test_cancel_and_copy_while_waiting, test_start_without_settings_is_a_protocol_error, test_both_seats_share_map_and_starts, test_host_told_opponent_left_before_start, test_credits_panel_layout, test_online_playtest_record, test_launcher_release_hides_relay, test_launcher_prefills_from_page, test_launcher_relay_help, test_copy_link_on_web, test_launcher_reads_no_page_off_web, test_input_script_online]
 
 func _online(runner, seat: int) -> Dictionary:
 	var transport := FakeTransport.new()
@@ -184,6 +184,32 @@ func test_catch_up_is_bounded(runner) -> bool:
 	_run(online.main, 19)
 	var tick: int = online.main.driver.sim.tick()
 	runner.check(tick > 24 and tick <= 24 + online.main.driver.MAX_CATCH_UP_CREDIT, "N5 catch-up debt is capped, got %d" % tick)
+	online.main.free()
+	return true
+
+const DUE_REJECTION: String = "Footprint outside map or overlaps obstacle"
+
+func _double_build(online: Dictionary) -> void:
+	var order := {"type": "build", "builder_id": 3, "building_kind": "usa_power_plant", "origin": [10, 10]}
+	online.main.driver.submit(order)
+	online.main.driver.submit(order)
+
+func test_two_tick_frame_keeps_earlier_results(runner) -> bool:
+	var control: Dictionary = await _online(runner, 1)
+	_double_build(control)
+	_peer_packets(control.transport, 2, 4, PEER_TICKS)
+	_run(control.main, 6)
+	runner.check(control.main.get_node("HUD/Status").text.contains(DUE_REJECTION), "N27 control: a one-tick frame shows the own due-time rejection")
+	control.main.free()
+	var online: Dictionary = await _online(runner, 1)
+	_double_build(online)
+	_run(online.main, 10)
+	_peer_packets(online.transport, 2, 4, 4)
+	_run(online.main, 1)
+	_peer_packets(online.transport, 2, 5, PEER_TICKS)
+	_run(online.main, 1)
+	runner.check(online.main.driver.sim.tick() == 7, "N27 fixture: the frame advanced ticks 5 and 6, got %d" % online.main.driver.sim.tick())
+	runner.check(online.main.get_node("HUD/Status").text.contains(DUE_REJECTION), "N27 a two-tick frame keeps the earlier tick's own rejection")
 	online.main.free()
 	return true
 
