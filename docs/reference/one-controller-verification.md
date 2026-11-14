@@ -264,11 +264,69 @@ Both quirks were found by reading on `4ed3534` and are unchanged on `35d22b5`:
 
 | Item | Value |
 |---|---|
-| 11a reviewer findings: critical / important / minor (count), each with its line | |
-| Per new test and ported family: production change that would make it fail | |
+| 11a reviewer findings: critical / important / minor (count), each with its line | 0 / 0 / 7, listed under "11a findings" below. Fresh Opus reviewer, `git diff 74950e5..HEAD` on `one-controller` at `5739a40` (tree clean before and after; three scratch mutations reverted, `git status --short` empty) |
+| Per new test and ported family: production change that would make it fail | see "11a mutation map" below; three run on `5739a40` (N27, placement guard, R4 prune), the rest from the task records or by reading |
 | 11b fix round: each finding, red line, green; suite, traces `cmp`, netplay match, static gates, V11b, V13 | |
 | 11c `/ponytail-review` cuts and re-verify | |
-| Minors for the morning | |
+| Minors for the morning | m1-m7 below (m1 needs a ruling, no code change recommended) |
+
+### 11a findings
+
+No Critical, no Important finding. Minor:
+
+- **m1, online submit: R1 is more than a move** (`game/scripts/match/match_screen.gd:271-278`). The pinned shared `_submit` makes online `observe_command` conditional on `hud.note` being empty after `_refresh()`, and lets online play `_sound.rejected(hud.note)`; `online_main.gd:77-83` always observed and never queued a rejection cue. Scenario: an own due-time rejection lands in a step whose refresh the presentation clock defers to the next rendered frame (`presentation_clock.gd:20-27`); a click in that window makes the submit's `_refresh` consume it, so the online submit queues an `error` cue and skips the focus-card trigger for that command. Offline has always behaved this way (`skirmish_main.gd:91-95` on `main`). Evidence: reading only; no test covers it. Impact: one stray cue and one unticked checklist trigger, rare, presentation only, no simulation or trace effect. Fix: record it as R5 (offline semantics now apply online) in the plan's Accepted reorders; no code change.
+- **m2, online desync report fields lost end-to-end coverage** (`game/tests/test_skirmish.gd:693-698`, `game/scripts/match/online_driver.gd:33-36`, `match_screen.gd:126-127`). SK23 now feeds `create` its values directly, so the screen-statics-to-report path is untested: a mutation `_seed = 0` in `online_driver.create` would pass every test (wrong starts or map would still fail the match tests through `Skirmish.create`; the seed is read only by `_report`). Fix: in N2's desync case (`test_online_scene.gd:131-137`) parse `user://desync/desync-seat2.json` and check `seed`, `map`, `starts` against `SkirmishMain` statics before removing it.
+- **m3, leftovers for 11c** (dead or one-use indirection): `test_skirmish.gd:18` `const SkirmishMain` unused (kept for V8, ledger); `hud.gd:77-78` `_build_hint()` returns a constant (the old M3 override hook); `match_screen.gd:151-155` `_confirm_leave` and `_pauses_sim` only forward to the driver; `online_driver.gd:28` `_seat` parameter unused. None changes behaviour.
+- **m4, profiler zone content shifted** (`match_screen.gd:258-260`, `orders.gd:63-66`): `refresh.selection` now also times the building-id prune and the `hud._inspected` lookup that used to sit in `_refresh` and `refresh.hud`. Names and places kept as pinned; no tool or budget reads these zones (`rg 'refresh\.selection|refresh\.hud' game tools docs` hits only the screen and the plan). Note for anyone comparing old profiles.
+- **m5, guide footers name commits before the code they describe**: ch. 5 `docs/guide/05-presentation.md:228` says `eafb131`, but the F3-in-placement line describes `1e3b9f7`; ch. 11 `docs/guide/11-multiplayer.md:221` says `71b1180`, but the "every advanced tick's command results" clause describes `5739a40`. Fix: set both to the branch head at wrap-up.
+- **m6, stale paths in working docs**: this file's "Unverifiable at night" cites `online_main.gd:97-99` (now `online_driver.gd:108-110`); `docs/packages.md` One controller note still says "Today `online_main.gd` extends …", true only until the merge. Fix at merge or wrap-up.
+- **m7, values captured at create instead of read at use** (`offline_driver.gd:14-21`, `online_driver.gd:33-36`): the offline driver stamps `_player` from `local_player` at `_ready` and logs `_factions` from `create`; the online report uses the `create` arguments, not the statics at report time. Equal today: nothing writes `local_player` after `setup`/`_ready` (`rg 'local_player\s*=' game/scripts game/tests`: only `match_screen.gd:57`, `:85`) and the launcher sets statics before the scene starts. A future offline seat switch would have to rebuild the driver.
+
+Rulings and deviations judged:
+
+- **Null guard** (`hud.gd:68`): acceptable. Production worlds always carry a match (`Skirmish.create`); the guard only turns a future null match into a blank Result label in the HUD. `_match_record` (`match_screen.gd:139`) still calls `hud._result_text(state.match)` unguarded, so the playtest record would still raise on a null match; consistent with "production never null".
+- **S2/S3 retargeted clicks, RF6 warm-up tick** (user, 2026-11-14): sound. The M2 scene had no context orders and no bot; on the match scene a right-click on an own Scout Car is an `enter` order and the bot snapshots on tick 0. Every assertion and label is kept; only click points and one warm-up `_physics_process` line differ.
+- **Bs3 mutation note**: confirmed by reading: Bs3 starts with `selected_ids` empty, so deleting the building-select `selected_ids.clear()` (`orders.gd:154`) is caught only by IC1 (first difference at step 12, `sel=[]|bld=12`). Acceptable: the full suite is the gate.
+- **Task 4 N5/SK23 edits**: N5 `driver.MAX_CATCH_UP_CREDIT` is an access path. SK23's new right-hand side equals the old value (the old test set `SkirmishMain.starts` to the same `MatchSettings.starts("ashfall", 7)`); coverage loss is m2.
+- **Task 5 `_refresh_hud` split and removed `OnlineScene` consts**: statements match `base_main.gd:73-89` plus `skirmish_main.gd:279-290` minus the moved prune (R4) and `_sound.update` (R3); the two test files still call `setup(...)` right after `Skirmish.instantiate()` (`test_pause_menu.gd:61-63`, `test_playtest_overlay.gd:73-75`), so they still run the online driver.
+- **Task 6 `orders.prune` holds the building-id prune and inspected clear**: the building-id prune moved from `_refresh` before `_show` into `_show` before the selection prune; nothing between reads `selected_building_id` (`_shown_note`, perf counts, split share). Exact.
+- **Task 7 HUD reads `_screen._local_state`**: harmless; the helper stays on the screen for `_production_kind`.
+
+Accepted reorders, verdict: **R1** holds as written, plus m1. **R2** exact: `_new_rejections` only reads `Lockstep.rejections()` and advances `_rejections_seen`; `_finish` reads neither the note nor the sound. **R3** exact: `_sound.update(state)` is the last line of `hud._refresh_hud` (`hud.gd:47`), after the notice line and the Restart hide; nothing in between reads the sound player. **R4** exact (see Task 6 ruling above): `_view.set_view` and `_economy_hud` do not read `inspected_id`; `set_inspected` stays in `_match_hud`.
+
+### 11a mutation map
+
+| Test or family | Production mutation that fails it | Evidence |
+|---|---|---|
+| IC1 | delete `selected_ids.clear()` in building select (`orders.gd:154`); any reorder of `_combat_input`/`_economy_keys`/`_placement_input`/`_building_input` that changes a key or click outcome in the 21 steps | Task 2 run (first difference at step 12) |
+| IC2 | `online_driver.submit` calls `sim.issue_command` instead of `_lockstep.submit` (pending and sent rows change) | reading |
+| OD1 | `offline_driver.gd:49` `_sequence += 1` without `if result.ok` (second stop gets sequence 2) | reading |
+| OD2 | `Skirmish.issue_opponent(self)` in `offline_driver.step` (memory keyed on the driver, then no `issue_command`) | reading; stub red recorded in Task 4 |
+| OR1 | `orders.handle` not reaching `_selection_input` or `_move` sending other ids or target | stub red recorded in Task 6 |
+| HU1 | drop `result.player == _screen.local_player` in `hud.gd:51` (note becomes "Not yours"), or drop the `_produce.visible` line | reading; stub red recorded in Task 7 |
+| PO19 | delete the F3 branch in `orders.gd:126-128` | red on the Task 8 tree (Task 9 record) |
+| N27 | `online_driver.gd:61` `_step_results = sim.command_results().duplicate(true)` (last tick only) | **run 2026-11-14 on `5739a40`**: `WARGRID_TEST_ONLY=test_two_tick_frame` exit 1, `FAIL: N27 a two-tick frame keeps the earlier tick's own rejection` (`t11a-mut-n27.log`); reverted |
+| K3 (placement guard) | `orders.gd:34` without `_placement_kind.is_empty() and` | **run**: full suite exit 1, only `FAIL: K3 placement mode consumes controls first`, `CASES 864 CHECKS 144275 FAILURES 1` (`t11a-mut-guard.log`); reverted. IC1 alone would not catch it (no A/S/right-click on an enemy during placement) |
+| E1 (R4 prune) | delete `orders.gd:66` inspected clear | **run**: full suite exit 1, only `FAIL: E1 dead enemy clears inspection`, `CASES 864 CHECKS 144275 FAILURES 1` (`t11a-mut-r4.log`); reverted |
+| S | `orders._selection_input` right-click target without `Iso.plane_to_world` (S2 inverse exact target) | reading |
+| Bs | delete `selected_building_id = building.id` (`orders.gd:153`) | Task 2 substitute mutation red |
+| G26 | drop `and not _ctrl` (`orders.gd:211`) | Task 2 red (on the chain) |
+| PO (playtest) | `menu_open` without `_playtest.holds_match()` (PO1 tick frozen while the note is open) | reading |
+
+The two full-suite mutation runs each failed exactly one check out of 144276 at `CASES 864`, so the unmutated tree is green apart from the mutated line (the Task 10 record shows the full green run).
+
+### 11a verified clean
+
+- No script under `game/scripts` extends another controller (`rg -n '^extends "res://scripts/' game/scripts`: no output). V12 diff (`simulation`, `presentation`, `net`, `playtest`, `project.godot`) empty. V8: every removed test `const` is a preload. V13 `V13 OK removed=440 renamed=352 listed=88` (`t11a-v13.log`); every listed row read: ports, demo deletions, SK23, path repoints, `cases()` lines; no changed expectation outside the plan's lists. Pre-tree scan exit 0 (`NO-TREE` N5 offline launch and `test_view.gd:99` V4 only).
+- Task 9 re-pin (`71b1180`): with `perf=` masked, the 16 removed and 16 added rows are byte-identical (IC1 steps 10-21, IC2 steps 10, 11, 17, 18); `git diff 71b1180..HEAD -- game/tests/input_script_rows.gd` empty.
+- Dispatch (`orders.handle`) equals the chain for key, motion, left, right and wheel in none, dragging, attack-move, placement, building selected and match over: guard, deselect clears inspected, combat only outside placement, hover, economy keys (B swallowed), placement returns, building input, selection, pending placement; the M2 B branch was unreachable and is gone. `_finish_selection`, `_enter_placement`, `pan_camera`/`change_zoom` (`orders.busy()`), `_escape_pending`, `_leave`, `_restart`, `playtest_context`, `_hint_point`, `_production_kind`, `_input` match the pinned merges.
+- `_ready` order matches the pinned list (driver, theme and BuildMenu, `Hud.new`, perf, pause, view settings, `_create_world`, clock, camera, first refresh, Produce/Cancel, visuals, auto pick, Restart, music, playtest, `net_line`, `driver.start()`). `setup` runs before `add_child` in the launcher (`launcher.gd:239-241`) and every online test helper.
+- Lifecycle: `orders` (member initializer) and `hud` live as long as the screen and are never replaced (`rg '\.orders = |\.hud = |\.driver = '`: none), so button callables bound to `orders` stay valid across restart; the back-references are plain `Node` fields on `RefCounted` objects, no cycle. `_exit_tree` → `driver.detach()` (offline no-op, online clears `send`).
+- Determinism: the driver path reads wall-clock time only in `_transport.silent(Time.get_ticks_usec())`, as before; the Task 10 append reads `sim.command_results()` after `advance`, never writes simulation or lockstep state; no unordered iteration feeds the simulation. Offline `step_results()` is the old `command_results().duplicate(true)` expression, so offline frames hand the HUD the same array.
+- The bot gets the recorder (`offline_driver.gd:32`), never the driver; `recorder.simulation()` still exposed.
+- Scenes: old `online_skirmish.tscn` differed from `skirmish.tscn` only in the script path and the root node name (`OnlineSkirmish`); nothing references either name (`rg 'OnlineSkirmish|online_skirmish'`: no hit in game, tools, guide, relay, protocol, `.github`).
+- Review focus 5: a new order needs `orders.gd` (input branch, payload, mode reset in `reset()`/`escape_pending()`, `_hint_point`) and the hint line in `hud.gd:72`; nothing else.
+- Guide: the touched chapters' call chains (`orders.handle → _combat_input → _building_input → _selection_input`, `_step_frame → _step_simulation → driver.step`, `hud._refresh_hud → SoundPlayer.update`) match the code; only the footers in m5 lag.
 
 ## Unverifiable at night (for the morning)
 
