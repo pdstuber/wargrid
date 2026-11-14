@@ -214,9 +214,9 @@ func test_checklist_triggers(runner) -> bool:
 	var pile: Dictionary = sim.snapshot().sources[0]
 	var laborer: int = sim.spawn(1, Vector2(pile.origin[0] + 6.5, pile.origin[1] + 8.5), "frc_builder")
 	main._submit({"type": "gather", "entity_ids": [999999], "source_id": pile.id})
-	runner.check(not main._error.is_empty() and not overlay.checked("collect"), "PO6 a rejected gather ticks nothing, error '%s'" % main._error)
+	runner.check(not main.hud.note.is_empty() and not overlay.checked("collect"), "PO6 a rejected gather ticks nothing, error '%s'" % main.hud.note)
 	main._submit({"type": "gather", "entity_ids": [laborer], "source_id": pile.id})
-	runner.check(main._error.is_empty() and overlay.checked("collect") and list.find_child("collect", true, false).button_pressed, "PO6 an accepted gather ticks collect, error '%s'" % main._error)
+	runner.check(main.hud.note.is_empty() and overlay.checked("collect") and list.find_child("collect", true, false).button_pressed, "PO6 an accepted gather ticks collect, error '%s'" % main.hud.note)
 	overlay.observe_command({"type": "build", "building_kind": "frc_supply_center"})
 	runner.check(overlay.checked("cache") and not overlay.checked("workers"), "PO6 build:frc_supply_center ticks cache only")
 	list.find_child("income", true, false).button_pressed = true
@@ -257,7 +257,7 @@ func test_helper_off_changes_nothing(runner) -> bool:
 	var pile: Dictionary = sim.snapshot().sources[0]
 	var laborer: int = sim.spawn(1, Vector2(pile.origin[0] + 6.5, pile.origin[1] + 8.5), "frc_builder")
 	main._submit({"type": "gather", "entity_ids": [laborer], "source_id": pile.id})
-	runner.check(main._error.is_empty() and not overlay.get_node("Checklist").find_child("collect", true, false).button_pressed and PlaytestSession.current == null, "PO7 off: an accepted gather ticks nothing and opens no session, error '%s'" % main._error)
+	runner.check(main.hud.note.is_empty() and not overlay.get_node("Checklist").find_child("collect", true, false).button_pressed and PlaytestSession.current == null, "PO7 off: an accepted gather ticks nothing and opens no session, error '%s'" % main.hud.note)
 	_key(runner, KEY_ESCAPE)
 	_click(main, "Playtest helper: Off")
 	runner.check(overlay.is_active() and overlay.get_node("Checklist").visible and PlaytestSettings.enabled(), "PO7 the pause menu switch turns the helper on mid-match and stores it")
@@ -445,7 +445,7 @@ func test_two_match_session_file(runner) -> bool:
 	var overlay = main.get_node("HUD/Playtest")
 	_camera(main)
 	_move_own_unit(main)
-	runner.check(main._error.is_empty(), "PO12 fixture: the first move is accepted, '%s'" % main._error)
+	runner.check(main.hud.note.is_empty(), "PO12 fixture: the first move is accepted, '%s'" % main.hud.note)
 	_run(main, 60)
 	_mark(overlay, "good", "match one marker")
 	var digests: Array[String] = [StateHash.digest(main.driver.sim.snapshot())]
@@ -456,7 +456,7 @@ func test_two_match_session_file(runner) -> bool:
 	main._restart()
 	runner.check(overlay.get_node("Checklist").visible and not _form_shown(main), "PO12 a restart brings the checklist back and closes the form")
 	_move_own_unit(main)
-	runner.check(main._error.is_empty(), "PO12 fixture: the second move is accepted, '%s'" % main._error)
+	runner.check(main.hud.note.is_empty(), "PO12 fixture: the second move is accepted, '%s'" % main.hud.note)
 	_run(main, 45)
 	_mark(overlay, "bad", "match two first")
 	_run(main, 45)

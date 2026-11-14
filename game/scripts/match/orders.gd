@@ -63,7 +63,7 @@ func reset() -> void:
 func prune(state: Dictionary) -> void:
 	if selected_building_id != -1 and _screen._building(state, selected_building_id).is_empty(): selected_building_id = -1
 	selected_ids.assign(selected_ids.filter(func(id: int) -> bool: return state.units.index_of(id) != -1))
-	if _screen._inspected(state).is_empty(): inspected_id = -1
+	if _screen.hud._inspected(state).is_empty(): inspected_id = -1
 
 func view_selection() -> Array[int]:
 	var ids: Array[int] = []
@@ -132,7 +132,7 @@ func _placement_input(event: InputEvent) -> void:
 		elif event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
 			_update_preview(_screen._view.make_canvas_position_local(event.position))
 			_screen._submit({"type":"build","builder_id":_builder(),"building_kind":_placement_kind,"origin":[_preview_origin.x,_preview_origin.y]})
-			if _screen._error.is_empty(): _clear_placement()
+			if _screen.hud.note.is_empty(): _clear_placement()
 
 func _building_input(event: InputEvent) -> bool:
 	if event.is_action_pressed("deselect"):
@@ -260,7 +260,7 @@ func _builder() -> int:
 func _enter_placement(kind: String) -> void:
 	_attack_move_mode = false
 	if _builder() == -1:
-		_screen._error = "Choose one builder"
+		_screen.hud.note = "Choose one builder"
 		_screen._refresh()
 		return
 	_placement_kind = kind
@@ -293,7 +293,7 @@ func _context_order(id: int) -> bool:
 			if selected_ids.has(unit.id) and Registry.collects(unit.kind).is_empty(): collectors = false
 		if collectors: _screen._submit({"type":"gather","entity_ids":selected_ids.duplicate(),"source_id":id})
 		else:
-			_screen._error = "Choose homogeneous collector selection"
+			_screen.hud.note = "Choose homogeneous collector selection"
 			_screen._refresh()
 		return true
 	var building: Dictionary = _screen._building(state,id)
@@ -303,7 +303,7 @@ func _context_order(id: int) -> bool:
 	if not building.is_empty() and building.owner == _screen.local_player and not building.completed:
 		if _builder() != -1: _screen._submit({"type":"resume_build","builder_id":_builder(),"building_id":id})
 		else:
-			_screen._error = "Choose one builder"
+			_screen.hud.note = "Choose one builder"
 			_screen._refresh()
 		return true
 	return false
@@ -320,7 +320,7 @@ func _unload_selected() -> void:
 	var id: int = selected_building_id if selected_building_id != -1 else (selected_ids[0] if selected_ids.size() == 1 else -1)
 	var building: Dictionary = _screen._building(state,id)
 	if not _container(state,id,building):
-		_screen._error = "Select a container"
+		_screen.hud.note = "Select a container"
 		_screen._refresh()
 		return
 	_screen._submit({"type":"unload","target_id":id})
@@ -336,7 +336,7 @@ func _produce_selected() -> void:
 	var state: Dictionary = _screen.driver.sim.snapshot()
 	var building: Dictionary = _screen._building(state,selected_building_id)
 	if building.is_empty():
-		_screen._error = "Select a production building"
+		_screen.hud.note = "Select a production building"
 		_screen._refresh()
 		return
 	_screen._submit({"type":"produce","building_id":building.id,"unit_kind":_screen._production_kind(building, state)})

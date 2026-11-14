@@ -149,12 +149,12 @@ func test_offline_rejected_order_only_errors(runner) -> bool:
 	var builder: int = _builder(skirmish, 1)
 	var hq: Dictionary = skirmish.driver.sim.snapshot().buildings.filter(func(building: Dictionary) -> bool: return building.owner == 2 and building.kind.ends_with("command_center"))[0]
 	skirmish._submit({"type": "attack", "entity_ids": [builder], "target_id": hq.id})
-	runner.check(skirmish._error == "Attack requires armed units", "OV8 fixture: builder attack fails, got '%s'" % skirmish._error)
+	runner.check(skirmish.hud.note == "Attack requires armed units", "OV8 fixture: builder attack fails, got '%s'" % skirmish.hud.note)
 	runner.check(_unit_line(skirmish) == "", "OV8 rejected order stays silent, got '%s'" % _unit_line(skirmish))
 	skirmish._refresh()
 	runner.check(_cues(skirmish).has("error"), "OV8 rejected order beeps, got %s" % [_cues(skirmish)])
 	skirmish._submit({"type": "build", "builder_id": builder, "building_kind": "usa_barracks", "origin": _own_center_origin(skirmish)})
-	runner.check(skirmish._error != "", "OV8 fixture: blocked build fails, got '%s'" % skirmish._error)
+	runner.check(skirmish.hud.note != "", "OV8 fixture: blocked build fails, got '%s'" % skirmish.hud.note)
 	runner.check(_unit_line(skirmish) == "", "OV8 rejected build by a speaker with a line stays silent, got '%s'" % _unit_line(skirmish))
 	skirmish.free()
 	return true

@@ -87,7 +87,7 @@ func test_placement_input(runner) -> bool:
 	key(main,KEY_1)
 	hover(main,Iso.world_to_plane(Vector2(4.25,4.25)))
 	pointer(main,Iso.world_to_plane(Vector2(4.25,4.25)),MOUSE_BUTTON_LEFT,false)
-	runner.check(not main.orders._placement_kind.is_empty() and main.driver.sim.snapshot() == before and not main._error.is_empty(),"Bs2 invalid remains mode reason")
+	runner.check(not main.orders._placement_kind.is_empty() and main.driver.sim.snapshot() == before and not main.hud.note.is_empty(),"Bs2 invalid remains mode reason")
 	hover(main,Iso.world_to_plane(Vector2(8.25,4.25)))
 	pointer(main,Iso.world_to_plane(Vector2(8.25,4.25)),MOUSE_BUTTON_LEFT,true)
 	pointer(main,Iso.world_to_plane(Vector2(8.25,4.25)),MOUSE_BUTTON_LEFT,false)
@@ -175,7 +175,7 @@ func test_context_orders(runner) -> bool:
 	main.orders.selected_ids.assign([1,air])
 	var before: Dictionary = main.driver.sim.snapshot()
 	pointer(main,Iso.world_to_plane(Vector2(25.5,5.5)),MOUSE_BUTTON_RIGHT,true)
-	runner.check(main.driver.sim.snapshot() == before and not main._error.is_empty(),"Bs4 mixed context rejected")
+	runner.check(main.driver.sim.snapshot() == before and not main.hud.note.is_empty(),"Bs4 mixed context rejected")
 	pointer(main,Iso.world_to_plane(Vector2(6.5,10.5)),MOUSE_BUTTON_RIGHT,true)
 	runner.check(main.driver.sim.snapshot().pending_commands.size() == 2 and main.driver.sim.snapshot().pending_commands.back().type == "move","Bs4 mixed ordinary ground move")
 	main.driver.sim = Fixture.make_world()
@@ -205,16 +205,16 @@ func test_execution_feedback(runner) -> bool:
 	main._refresh()
 	runner.check(main.get_node("HUD/Status").text.contains("Insufficient credits"),"Bs5 due rejection visible")
 	main._submit({"type":"stop","entity_ids":[999]})
-	var error: String = main._error
+	var error: String = main.hud.note
 	main._refresh()
-	runner.check(not error.is_empty() and main._error == error,"Bs5 immediate error persists refresh")
+	runner.check(not error.is_empty() and main.hud.note == error,"Bs5 immediate error persists refresh")
 	main.driver.sim.add_player(2,0)
 	var other: int = main.driver.sim.spawn(2,Vector2(2.5,2.5))
 	Fixture.send(main.driver.sim,{"type":"stop","entity_ids":[other],"player":2})
 	main._physics_process(0.0)
-	runner.check(main._error == error,"Bs5 unrelated player result preserves immediate error")
+	runner.check(main.hud.note == error,"Bs5 unrelated player result preserves immediate error")
 	main._submit({"type":"stop","entity_ids":[1]})
-	runner.check(main._error.is_empty(),"Bs5 accepted clears immediate error")
+	runner.check(main.hud.note.is_empty(),"Bs5 accepted clears immediate error")
 	main.free()
 	return true
 
@@ -257,7 +257,7 @@ func test_resume_status(runner) -> bool:
 	return true
 
 func test_queue_label(runner) -> bool:
-	var BaseMain = load("res://scripts/match/match_screen.gd")
+	var BaseMain = load("res://scripts/match/hud.gd")
 	runner.check(BaseMain.queue_label({"id":10,"kind":"usa_tank","work":270000}) == "Cancel Battle Tank (90%)","Bs5 started entry shows percent, no id or raw work")
 	runner.check(BaseMain.queue_label({"id":12,"kind":"usa_tank","work":0}) == "Cancel Battle Tank (queued)","Bs5 unstarted entry shows queued")
 	return true
@@ -352,7 +352,7 @@ func test_build_menu_wraps_eleven(runner) -> bool:
 	for i in 11:
 		Registry.add_test_kind("test_k%d" % i,{"display_name":"Synthetic %d" % i,"cost":100 + i})
 		kinds.append("test_k%d" % i)
-	main._refresh_menu(kinds)
+	main.hud._refresh_menu(kinds)
 	await runner.process_frame
 	await runner.process_frame
 	var buttons: Array = main.get_node("HUD/Economy/BuildMenu").get_children()
@@ -369,7 +369,7 @@ func test_build_menu_wraps_eleven(runner) -> bool:
 
 func test_build_menu_quantity_label(runner) -> bool:
 	var main = await setup(runner)
-	main._refresh_menu(["china_rifle_infantry","china_rocket_infantry"])
+	main.hud._refresh_menu(["china_rifle_infantry","china_rocket_infantry"])
 	await runner.process_frame
 	await runner.process_frame
 	var buttons: Array = main.get_node("HUD/Economy/BuildMenu").get_children()
