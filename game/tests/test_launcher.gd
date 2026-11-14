@@ -19,6 +19,9 @@ const STRETCHED: Array[Array] = [[Vector2i(1280, 720), Vector2i(1280, 720)], [Ve
 func cases() -> Array[Callable]:
 	return [test_picks_defaults, test_picks_fallback_per_field, test_picks_keep_other_sections, test_fullscreen_round_trip, test_fullscreen_switch, test_this_build_line, test_sidebar_switches_pages, test_version_in_sidebar, test_aspect_expand_and_restore, test_layout_every_page, test_opens_on_bot_with_picks, test_toggle_friend, test_map_info_and_summary, test_own_faction_shared, test_start_saves_picks, test_advanced_only_prerelease, test_link_opens_join, test_lock_while_connecting, test_waiting_view, test_back_to_menu, test_join_error_footer, test_relay_fields_follow]
 
+func _picked(selector: OptionButton) -> String:
+	return selector.get_item_metadata(selector.selected)
+
 func scratch_for(name: String) -> String:
 	var scratch := "user://test-launcher-%s-%d.cfg" % [name, OS.get_process_id()]
 	DirAccess.remove_absolute(scratch)
@@ -198,7 +201,7 @@ func test_opens_on_bot_with_picks(runner) -> bool:
 	var launcher = await _launcher_with(runner, "opens", {"faction": "china", "bot_faction": "frc", "map": "ashfall"})
 	AudioSettings.path = saved
 	var play: Control = launcher.get_node("Pages/Play")
-	runner.check(launcher._faction(play.get_node("Body/Own")) == "china" and launcher._faction(play.get_node("Body/Bot")) == "frc" and launcher._map_id() == "ashfall", "L9a Play shows the remembered picks")
+	runner.check(_picked(play.get_node("Body/Own")) == "china" and _picked(play.get_node("Body/Bot")) == "frc" and launcher._map_id() == "ashfall", "L9a Play shows the remembered picks")
 	runner.check(launcher.opponent == "bot" and play.get_node("Footer/Start").visible and not play.get_node("Footer/Create").visible, "L9a opens on the bot with Start only")
 	launcher.free()
 	return true
@@ -254,11 +257,11 @@ func test_own_faction_shared(runner) -> bool:
 		var index: int = _index_where(join_own, func(item: String) -> bool: return item == id)
 		join_own.select(index)
 		join_own.item_selected.emit(index)
-		runner.check(launcher._faction(play_own) == id, "L9d Join's pick %s reaches Play" % id)
+		runner.check(_picked(play_own) == id, "L9d Join's pick %s reaches Play" % id)
 		var back: int = _index_where(play_own, func(item: String) -> bool: return item != id)
 		play_own.select(back)
 		play_own.item_selected.emit(back)
-		runner.check(launcher._faction(join_own) == launcher._faction(play_own) and launcher._faction(join_own) != id, "L9d Play's pick reaches Join")
+		runner.check(_picked(join_own) == _picked(play_own) and _picked(join_own) != id, "L9d Play's pick reaches Join")
 	launcher.free()
 	return true
 
@@ -341,7 +344,7 @@ func test_lock_while_connecting(runner) -> bool:
 	var play_status: Label = launcher.get_node("Pages/Play/Footer/Status")
 	runner.check(_nav_disabled(launcher) == [false, false, false, false] and launcher.current_page == "Play" and play_status.text == reason and launcher.opponent == "friend", "L11 a failure before welcome unlocks the nav and shows the reason in Play's footer")
 	var join_own: OptionButton = launcher.get_node("Pages/Join/Body/Own")
-	var index: int = _index_where(join_own, func(item: String) -> bool: return item != launcher._faction(join_own))
+	var index: int = _index_where(join_own, func(item: String) -> bool: return item != _picked(join_own))
 	join_own.select(index)
 	join_own.item_selected.emit(index)
 	runner.check(play_status.text == reason, "M3 changing Own from Join keeps the error in Play's footer, got '%s'" % play_status.text)
@@ -400,7 +403,7 @@ func test_back_to_menu(runner) -> bool:
 	runner.root.add_child(back)
 	await runner.process_frame
 	AudioSettings.path = saved
-	runner.check(back.current_page == "Play" and back._faction(back.get_node("Pages/Play/Body/Own")) == "china" and back._map_id() == "ashfall", "L13 back to menu shows Play with the remembered picks")
+	runner.check(back.current_page == "Play" and _picked(back.get_node("Pages/Play/Body/Own")) == "china" and back._map_id() == "ashfall", "L13 back to menu shows Play with the remembered picks")
 	runner.check(runner.root.get_tree().root.content_scale_aspect == Window.CONTENT_SCALE_ASPECT_EXPAND, "L13 back to menu sets expand again")
 	back.free()
 	return true

@@ -200,7 +200,7 @@ Clients ping the relay once per second after their first send, so a healthy but 
 - `game/scripts/net/seat_sim.gd` — wrapper so bot and script code drive a networked seat through `Lockstep.submit`.
 - `game/scripts/net/headless_client.gd` — the netplay test client: seat scripts, stall, kill and perturb hooks, command-log replay.
 - `game/scripts/match/online_driver.gd` — online driver: `submit`, `step` (poll, catch-up credit, `finish_tick`), `notice`, desync report writing, latency line. `match_screen.gd` `setup` creates it.
-- `game/scripts/launcher.gd` — hello, welcome and start handling; builds the `Lockstep` object and starts the match scene with it.
+- `game/scripts/launcher.gd` — hello, welcome and start handling (`_connect`, `_handle`, `_start`); shows the Waiting view after a welcome and locks the sidebar and page controls while connecting or waiting (`_set_busy`; a failure or Cancel match unlocks it); builds the `Lockstep` object and starts the match scene with it.
 - `relay/main.go` — WebSocket handlers (`OnMessage`, `OnClose`), silence and write deadlines, write-queue cap (`writeLater`), `reject`, shutdown and drain.
 - `relay/room.go` — `registry` (create, join, remove), `room.run`, `admit`, `forward`, `leave`, `recoverCrash`; constants `protocol`, `inputDelay`.
 - `relay/envelope.go` — `parseEnvelope`: what a client may send; size caps.
@@ -218,4 +218,4 @@ Clients ping the relay once per second after their first send, so a healthy but 
 - Previous: [10. Determinism and replays](10-determinism-and-replays.md). Next: [12. Performance and platforms](12-performance-and-platforms.md). The tick that lockstep gates is in [4. The tick](04-the-tick.md).
 
 ---
-Checked against `4953e9f`; relay rows re-checked against `12c9855`. Files: `game/scripts/net/lockstep.gd`, `game/scripts/net/wire.gd`, `game/scripts/net/relay_transport.gd`, `game/scripts/net/seat_sim.gd`, `game/scripts/net/headless_client.gd`, `game/scripts/match/online_driver.gd`, `game/scripts/launcher.gd`, `relay/main.go`, `relay/room.go`, `relay/envelope.go`, `relay/sender.go`, `relay/envelope_test.go`, `relay/stall_test.go`, `relay/queue_test.go`, `protocol/conformance/conform.go`, `protocol/vectors/tick.json`, `tools/run_conformance.sh`, `tools/run_netplay.sh`
+Checked against `4953e9f`; relay rows re-checked against `12c9855`; the launcher row against `ff8b093`. Files: `game/scripts/net/lockstep.gd`, `game/scripts/net/wire.gd`, `game/scripts/net/relay_transport.gd`, `game/scripts/net/seat_sim.gd`, `game/scripts/net/headless_client.gd`, `game/scripts/match/online_driver.gd`, `game/scripts/launcher.gd`, `relay/main.go`, `relay/room.go`, `relay/envelope.go`, `relay/sender.go`, `relay/envelope_test.go`, `relay/stall_test.go`, `relay/queue_test.go`, `protocol/conformance/conform.go`, `protocol/vectors/tick.json`, `tools/run_conformance.sh`, `tools/run_netplay.sh`

@@ -38,6 +38,7 @@ Developed with AI coding agents (Claude Code). [AGENTS.md](../AGENTS.md), the [b
   - Small tasks: [static checks plan](superpowers/plans/2026-11-05-gdscript-static-checks.md), [test environment plan](superpowers/plans/2026-11-07-test-environment.md), [logo plan](superpowers/plans/2026-11-07-logo.md).
   - P1: [design](superpowers/specs/2026-11-11-packages-and-playtest-helper-design.md), [plan](superpowers/plans/2026-11-11-packages-and-playtest-helper.md), [verification](reference/p1-playtest-helper-verification.md).
   - P2: [design](superpowers/specs/2026-11-13-p2-you-clicked-we-heard-design.md), [plan](superpowers/plans/2026-11-13-p2-you-clicked-we-heard.md), [F5 addendum](superpowers/plans/2026-11-13-p2-f5-paste-and-links.md), [verification](reference/p2-verification.md).
+  - P2.1 (implemented on branch `p2.1-launcher`, the user's playtest and merge pending): [design](superpowers/specs/2026-11-14-p2.1-new-launcher-design.md), [plan](superpowers/plans/2026-11-14-p2.1-new-launcher.md), [verification](reference/p2.1-verification.md).
   - HUD v4 (decisions for the HUD packages P2.3a and P2.3b and the rest of M7.6): [pictures](images/hud-v4/notes.md), [decisions](reference/design-answers-2026-11-08.md#hud-m76).
   - Map art spike (decisions for P2.4 to P2.6 and the rest of M7.5): [pictures](images/map-art/notes.md), [decisions](reference/design-answers-2026-11-08.md#map-art-faction-shapes-m75-user-2026-11-13).
 
@@ -92,7 +93,7 @@ Local reference check (needs the retail backup, never runs in CI): `python3 tool
 
 Test wrapper imports headlessly before tests, checks exit codes and engine diagnostics, then requires positive completion marker. `GODOT_BIN` accepts one executable path, including spaces. Both wrappers resolve project path from script location.
 
-For separately authorized play: `sh tools/run_game.sh` opens the launcher (pick factions, then start a skirmish or online match; real play uses Dry Wells, while opening `skirmish.tscn` directly, tests and benchmarks use the 48 × 32 `skirmish.json`, see [more maps](reference/more-maps.md)); `sh tools/run_game.sh res://scenes/skirmish.tscn` opens the M4 match directly (blue is you; controls below). It opens a window. Routine checks stay headless.
+For separately authorized play: `sh tools/run_game.sh` opens the launcher (sidebar pages Play, Join, Settings and Credits: pick factions and a map, then start a skirmish against the bot or create or join an online match; real play uses Dry Wells, while opening `skirmish.tscn` directly, tests and benchmarks use the 48 × 32 `skirmish.json`, see [more maps](reference/more-maps.md)); `sh tools/run_game.sh res://scenes/skirmish.tscn` opens the M4 match directly (blue is you; controls below). It opens a window. Routine checks stay headless.
 
 The ordinary suite ends with `TESTS PASSED <checks>`; current case and check counts live in the resume record of [M7 verification](reference/m7-verification.md), not here.
 
