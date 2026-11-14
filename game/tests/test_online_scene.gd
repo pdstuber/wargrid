@@ -59,7 +59,7 @@ func _run(main, frames: int) -> void:
 	for i in frames: main._physics_process(0.0)
 
 func _entity(main, id: int) -> Dictionary:
-	for unit in main.simulation.snapshot().entities:
+	for unit in main.driver.sim.snapshot().entities:
 		if unit.id == id: return unit
 	return {}
 
@@ -94,7 +94,7 @@ func test_seat_two_controls_player_two(runner) -> bool:
 	var commands: Array = _own_commands(online.transport)
 	runner.check(commands.size() == 1 and commands[0].type == "move" and commands[0].player == 2, "N1 move leaves as a player 2 command, got " + str(commands))
 	runner.check(_entity(main, 5).order != null, "N1 the move order reached player 2's builder through lockstep")
-	runner.check(main.simulation.tick() > 4 and online.lockstep.status() == "running", "N1 ticks advance with peer packets")
+	runner.check(main.driver.sim.tick() > 4 and online.lockstep.status() == "running", "N1 ticks advance with peer packets")
 	main.free()
 	var seat1: Dictionary = await _online(runner, 1)
 	seat1.main.selected_ids.assign([3])
@@ -139,8 +139,8 @@ func test_status_lines_and_layout(runner) -> bool:
 
 	var web_desync: Dictionary = await _online(runner, 2)
 	var downloads: Array = []
-	web_desync.main.web = true
-	web_desync.main.download = func(buffer: PackedByteArray, file_name: String, mime: String) -> void: downloads.append([buffer.size(), file_name, mime])
+	web_desync.main.driver.web = true
+	web_desync.main.driver.download = func(buffer: PackedByteArray, file_name: String, mime: String) -> void: downloads.append([buffer.size(), file_name, mime])
 	web_desync.transport.frames.append(Wire.encode(Wire.tick_message(1, 4, [], {"tick": 0, "value": "0000000000000000"})))
 	_run(web_desync.main, 12)
 	var web_text: String = web_desync.main.get_node("HUD/Status").text
@@ -153,15 +153,15 @@ func test_match_end_reports_latency(runner) -> bool:
 	var main = online.main
 	_peer_packets(online.transport, 1, 4, PEER_TICKS)
 	_run(main, 8)
-	runner.check(main.simulation.snapshot().match.status == "ongoing", "N4 fixture: the match started")
-	main.simulation.remove_object(4)
-	main.simulation.remove_object(6)
+	runner.check(main.driver.sim.snapshot().match.status == "ongoing", "N4 fixture: the match started")
+	main.driver.sim.remove_object(4)
+	main.driver.sim.remove_object(6)
 	_run(main, 2)
 	runner.check(online.transport.close_calls == 1, "N4 transport closed once at match end")
-	runner.check(main.latency_line().contains("RTT n=1 p95=40.0 ms"), "N4 latency line carries RTT p95, got " + main.latency_line())
+	runner.check(main.driver.latency_line().contains("RTT n=1 p95=40.0 ms"), "N4 latency line carries RTT p95, got " + main.driver.latency_line())
 	runner.check(FileAccess.file_exists("user://netplay-latency.txt"), "N4 latency file written")
 	_run(main, 2)
-	runner.check(online.lockstep.status() != "ended_relay" and main.notice() == "", "N4 own close after the match is not a relay loss, got " + main.notice())
+	runner.check(online.lockstep.status() != "ended_relay" and main.driver.notice() == "", "N4 own close after the match is not a relay loss, got " + main.driver.notice())
 	main.free()
 	return true
 
@@ -169,21 +169,21 @@ func test_runs_at_tick_rate(runner) -> bool:
 	var online: Dictionary = await _online(runner, 2)
 	_peer_packets(online.transport, 1, 4, PEER_TICKS)
 	_run(online.main, 20)
-	runner.check(online.main.simulation.tick() <= 20, "N5 never faster than one tick per physics frame, got %d" % online.main.simulation.tick())
-	runner.check(online.main.simulation.tick() >= 19, "N5 keeps pace when packets are available, got %d" % online.main.simulation.tick())
+	runner.check(online.main.driver.sim.tick() <= 20, "N5 never faster than one tick per physics frame, got %d" % online.main.driver.sim.tick())
+	runner.check(online.main.driver.sim.tick() >= 19, "N5 keeps pace when packets are available, got %d" % online.main.driver.sim.tick())
 	online.main.free()
 	return true
 
 func test_catch_up_is_bounded(runner) -> bool:
 	var online: Dictionary = await _online(runner, 2)
 	_run(online.main, 10)
-	runner.check(online.main.simulation.tick() == 4, "N5 waits for the first peer packet, got %d" % online.main.simulation.tick())
+	runner.check(online.main.driver.sim.tick() == 4, "N5 waits for the first peer packet, got %d" % online.main.driver.sim.tick())
 	_peer_packets(online.transport, 1, 4, PEER_TICKS)
 	_run(online.main, 1)
-	runner.check(online.main.simulation.tick() == 6, "N5 catch-up is two ticks per frame, got %d" % online.main.simulation.tick())
+	runner.check(online.main.driver.sim.tick() == 6, "N5 catch-up is two ticks per frame, got %d" % online.main.driver.sim.tick())
 	_run(online.main, 19)
-	var tick: int = online.main.simulation.tick()
-	runner.check(tick > 24 and tick <= 24 + online.main.MAX_CATCH_UP_CREDIT, "N5 catch-up debt is capped, got %d" % tick)
+	var tick: int = online.main.driver.sim.tick()
+	runner.check(tick > 24 and tick <= 24 + online.main.driver.MAX_CATCH_UP_CREDIT, "N5 catch-up debt is capped, got %d" % tick)
 	online.main.free()
 	return true
 
@@ -195,7 +195,7 @@ func test_stall_frames_are_not_step_frames(runner) -> bool:
 	_run(main, 3)
 	await runner.process_frame
 	await runner.process_frame
-	runner.check(main.simulation.tick() == 4 and main._clock.split_share() == 0.0, "N5 stall frames neither count as step frames nor refresh, got tick %d share %s" % [main.simulation.tick(), main._clock.split_share()])
+	runner.check(main.driver.sim.tick() == 4 and main._clock.split_share() == 0.0, "N5 stall frames neither count as step frames nor refresh, got tick %d share %s" % [main.driver.sim.tick(), main._clock.split_share()])
 	_peer_packets(online.transport, 1, 4, PEER_TICKS)
 	_run(main, 1)
 	await runner.process_frame
@@ -427,7 +427,7 @@ func test_launcher_faction_rows(runner) -> bool:
 		launcher._seat = 1
 		launcher._start(_start_message("dry_wells", 3))
 		var main = runner.root.get_tree().current_scene
-		runner.check(main._own_faction == third, "N25 online match carries OnlineRow/Own's faction at %s, got %s" % [size, main._own_faction])
+		runner.check(main.driver._own_faction == third, "N25 online match carries OnlineRow/Own's faction at %s, got %s" % [size, main.driver._own_faction])
 		main.free()
 		await runner.process_frame
 		port.free()
@@ -453,7 +453,7 @@ func test_plays_dry_wells_from_each_seat(runner) -> bool:
 		launcher._seat = seat
 		launcher._start(_start_message("dry_wells", 3))
 		var main = runner.root.get_tree().current_scene
-		var map: Dictionary = main.simulation.map_data()
+		var map: Dictionary = main.driver.sim.map_data()
 		var start: Vector2i = MapData.start_cell(map, seat)
 		runner.check(map.name == "Dry Wells" and main.get_node("Camera2D").position == Iso.world_to_plane(Vector2(start) + Vector2(0.5, 0.5)), "N7 seat %d plays the host's map with the camera on its own base" % seat)
 		main.free()
@@ -499,10 +499,10 @@ func test_restart_keeps_map_and_starts(runner) -> bool:
 	var main = load(LauncherScript.OFFLINE_SCENE).instantiate()
 	runner.root.add_child(main)
 	await runner.process_frame
-	var old_sim = main.simulation
+	var old_sim = main.driver.sim
 	main._restart()
-	runner.check(not is_same(old_sim, main.simulation), "N12 Restart builds a new simulation")
-	var start: Vector2i = MapData.start_cell(main.simulation.map_data(), 1)
+	runner.check(not is_same(old_sim, main.driver.sim), "N12 Restart builds a new simulation")
+	var start: Vector2i = MapData.start_cell(main.driver.sim.map_data(), 1)
 	var seat3: Vector2i = MapData.start_cell(MapData.load(SkirmishMain.map_path), 3)
 	runner.check(start == seat3, "N12 Restart keeps seat 1 on the chosen start, got %s want %s" % [start, seat3])
 	runner.check(main.get_node("Camera2D").position == Iso.world_to_plane(Vector2(start) + Vector2(0.5, 0.5)), "N12 camera on the chosen start after Restart")
@@ -619,7 +619,7 @@ func test_both_seats_share_map_and_starts(runner) -> bool:
 		launcher._start(_start_message("ashfall", 11))
 		runner.check(SkirmishMain.match_seed == 11, "N19 seat %d records the host's seed for reports, got %d" % [seat, SkirmishMain.match_seed])
 		var main = runner.root.get_tree().current_scene
-		var map: Dictionary = main.simulation.map_data()
+		var map: Dictionary = main.driver.sim.map_data()
 		var cells: Array = [MapData.start_cell(map, 1), MapData.start_cell(map, 2)]
 		runner.check(cells == [MapData.start_cell(raw, chosen[0]), MapData.start_cell(raw, chosen[1])], "N19 seat %d sim starts on the seeded cells, got %s" % [seat, str(cells)])
 		runner.check(main.get_node("Camera2D").position == Iso.world_to_plane(Vector2(cells[seat - 1]) + Vector2(0.5, 0.5)), "N19 seat %d camera on its own base" % seat)

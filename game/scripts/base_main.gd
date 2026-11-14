@@ -29,16 +29,9 @@ func _ready() -> void:
 func _escape_pending() -> bool:
 	return super() or not _placement_kind.is_empty() or selected_building_id != -1 or not _pending_placement.is_empty()
 
-func _create_simulation() -> Simulation:
-	var sim: Simulation = Simulation.new([],Vector2i(32,32))
-	sim.add_player(1,10000)
-	sim.spawn(1,Vector2(4.5,4.5),"usa_builder")
-	sim.add_supply_source(Vector2i(24,4),200)
-	return sim
-
 func _hint_point(payload: Dictionary) -> Variant:
 	if payload.type != "resume_build": return super._hint_point(payload)
-	var building: Dictionary = _building(simulation.snapshot(),payload.building_id)
+	var building: Dictionary = _building(driver.sim.snapshot(),payload.building_id)
 	if building.is_empty(): return null
 	return Vector2(building.origin[0],building.origin[1]) + Vector2(Definitions.building(building.kind).footprint) / 2.0
 
@@ -65,7 +58,7 @@ func _building(state: Dictionary, id: int) -> Dictionary:
 	return {}
 
 func _refresh() -> void:
-	var state: Dictionary = simulation.view_state()
+	var state: Dictionary = driver.sim.view_state()
 	if selected_building_id != -1 and _building(state,selected_building_id).is_empty(): selected_building_id = -1
 	_show(state)
 	$HUD/Economy.position.y = maxf(116.0,_status.position.y + _status.get_minimum_size().y + 8.0)
@@ -145,7 +138,7 @@ func change_zoom(direction: int) -> void:
 
 func _builder() -> int:
 	if selected_ids.size() != 1: return -1
-	for unit: Dictionary in simulation.snapshot().entities:
+	for unit: Dictionary in driver.sim.snapshot().entities:
 		if unit.id == selected_ids[0] and Registry.is_builder(unit.kind) and unit.owner == local_player: return unit.id
 	return -1
 
@@ -168,10 +161,10 @@ func _clear_placement() -> void:
 
 func _update_preview(plane: Vector2) -> void:
 	_preview_origin = Vector2i(Iso.plane_to_world(plane).floor())
-	var key: Array = [_placement_kind,_preview_origin,simulation.tick()]
+	var key: Array = [_placement_kind,_preview_origin,driver.sim.tick()]
 	if key == _preview_key: return
 	_preview_key = key
-	var preview: Dictionary = simulation.preview_build(local_player,_builder(),_placement_kind,_preview_origin)
+	var preview: Dictionary = driver.sim.preview_build(local_player,_builder(),_placement_kind,_preview_origin)
 	_view.set_build_preview(Construction.cells(_placement_kind,_preview_origin),preview.ok)
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -214,7 +207,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			if _context_order(source if source != -1 else _view.pick_object(plane)) or _set_rally(plane): return
 		if event.button_index == MOUSE_BUTTON_LEFT and not event.pressed and is_selecting():
 			_update_drag(event.position)
-			var building: Dictionary = _building(simulation.snapshot(),_view.pick_object(plane))
+			var building: Dictionary = _building(driver.sim.snapshot(),_view.pick_object(plane))
 			if not _dragged and not building.is_empty() and building.owner == local_player:
 				selected_building_id = building.id
 				selected_ids.clear()
@@ -231,7 +224,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _context_order(id: int) -> bool:
 	if selected_ids.is_empty(): return false
-	var state: Dictionary = simulation.snapshot()
+	var state: Dictionary = driver.sim.snapshot()
 	for source: Dictionary in state.sources:
 		if source.id != id: continue
 		var collectors: bool = true
@@ -262,7 +255,7 @@ func _container(state: Dictionary, id: int, building: Dictionary) -> bool:
 	return not host.is_empty() and host.owner == local_player and host.get("completed",true) and not Registry.kind(host.kind).get("contains",{}).is_empty()
 
 func _unload_selected() -> void:
-	var state: Dictionary = simulation.snapshot()
+	var state: Dictionary = driver.sim.snapshot()
 	var id: int = selected_building_id if selected_building_id != -1 else (selected_ids[0] if selected_ids.size() == 1 else -1)
 	var building: Dictionary = _building(state,id)
 	if not _container(state,id,building):
@@ -272,14 +265,14 @@ func _unload_selected() -> void:
 	_submit({"type":"unload","target_id":id})
 
 func _set_rally(plane: Vector2) -> bool:
-	var building: Dictionary = _building(simulation.snapshot(),selected_building_id)
+	var building: Dictionary = _building(driver.sim.snapshot(),selected_building_id)
 	if building.is_empty() or building.owner != local_player or not Registry.can_rally(building.kind): return false
 	var cell: Vector2 = Iso.plane_to_world(plane).floor() + Vector2(.5,.5)
 	_submit({"type":"set_rally","building_id":building.id,"target":[cell.x,cell.y]})
 	return true
 
 func _produce_selected() -> void:
-	var state: Dictionary = simulation.snapshot()
+	var state: Dictionary = driver.sim.snapshot()
 	var building: Dictionary = _building(state,selected_building_id)
 	if building.is_empty():
 		_error = "Select a production building"

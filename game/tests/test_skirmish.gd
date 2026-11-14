@@ -14,7 +14,7 @@ const MapData = preload("res://scripts/simulation/map_data.gd")
 const StartSpots = preload("res://scripts/simulation/start_spots.gd")
 const StateHash = preload("res://scripts/simulation/state_hash.gd")
 const MatchSettings = preload("res://scripts/match_settings.gd")
-const OnlineMain = preload("res://scripts/online_main.gd")
+const OnlineDriver = preload("res://scripts/match/online_driver.gd")
 const SkirmishMain = preload("res://scripts/skirmish_main.gd")
 
 const ASHFALL := "res://data/maps/ashfall.json"
@@ -691,20 +691,10 @@ func test_replay_oracle_uses_match_map(runner) -> bool:
 	return true
 
 func test_desync_report_names_map_seed_starts(runner) -> bool:
-	var before_path: String = SkirmishMain.map_path
-	var before_starts: Array[int] = SkirmishMain.starts
-	var before_seed: int = SkirmishMain.match_seed
-	SkirmishMain.map_path = MatchSettings.map_path("ashfall")
-	SkirmishMain.starts = MatchSettings.starts("ashfall", 7)
-	SkirmishMain.match_seed = 7
-	var main = OnlineMain.new()
-	main._lockstep = Lockstep.new(1, [1, 2] as Array[int])
-	var report: Dictionary = main._report()
-	runner.check(report.get("map") == "ashfall" and report.get("seed") == 7 and report.get("starts") == SkirmishMain.starts, "SK23 the online desync report names map, seed and starts, got %s" % [[report.get("map"), report.get("seed"), report.get("starts")]])
-	main.free()
-	SkirmishMain.map_path = before_path
-	SkirmishMain.starts = before_starts
-	SkirmishMain.match_seed = before_seed
+	var driver = OnlineDriver.new(null, Lockstep.new(1, [1, 2] as Array[int]), 1, "usa")
+	driver.create(MatchSettings.map_path("ashfall"), MatchSettings.starts("ashfall", 7), {}, 7)
+	var report: Dictionary = driver._report()
+	runner.check(report.get("map") == "ashfall" and report.get("seed") == 7 and report.get("starts") == MatchSettings.starts("ashfall", 7), "SK23 the online desync report names map, seed and starts, got %s" % [[report.get("map"), report.get("seed"), report.get("starts")]])
 	return true
 
 func test_seeded_diagonal_on_broken_crown(runner) -> bool:

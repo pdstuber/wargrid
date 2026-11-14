@@ -65,7 +65,7 @@ func test_step_and_counts_shown(runner) -> bool:
 	var main = await _scene(runner, Skirmish)
 	_f3(main)
 	main._physics_process(0.0)
-	var snapshot: Dictionary = main.simulation.snapshot()
+	var snapshot: Dictionary = main.driver.sim.snapshot()
 	main.get_node("HUD/PerfOverlay").refresh_text()
 	var text: String = main.get_node("HUD/PerfOverlay").text
 	runner.check(text.contains("Units %d | Buildings %d | Tick %d" % [snapshot.entities.size(), snapshot.buildings.size(), snapshot.tick]), "PO4 counts and tick from the live state")

@@ -1,15 +1,15 @@
 # One controller verification
 
 ```text
-Resume record (updated 2026-11-14: Task 3 GREEN, not committed)
-Branch / base commit / working-tree state: one-controller (worktree ~/projects/wargrid-wt-onecontrol) / 0437bdf (Task 2 commit) / Task 3 files uncommitted
-Last green task / next incomplete task: Task 3 / Task 4
-Changed paths since last commit: docs/reference/one-controller-verification.md, game/scenes/main.tscn and base.tscn (git rm, staged), game/tests/test_scene.gd, game/tests/test_sound.gd
-Last command / cases / checks / failures / exit / marker: full suite after Task 3 / 858 / 144264 / 0 / exit 0 / TESTS PASSED 144264 (static gates CHECKS PASSED 5)
+Resume record (updated 2026-11-14: Task 4 GREEN, not committed)
+Branch / base commit / working-tree state: one-controller (worktree ~/projects/wargrid-wt-onecontrol) / 1fc380c (Task 3 commit) / Task 4 files uncommitted
+Last green task / next incomplete task: Task 4 / Task 5
+Changed paths since last commit: docs/reference/one-controller-verification.md, game/scripts/main.gd, base_main.gd, skirmish_main.gd, online_main.gd, new game/scripts/match/offline_driver.gd and online_driver.gd (+ .uid), game/tests/test_skirmish_scene.gd, test_skirmish.gd, test_online_scene.gd and the access-path renames in test_announcer.gd, test_base_scene.gd, test_order_voice.gd, test_pause_menu.gd, test_perf_overlay.gd, test_playtest_overlay.gd, test_playtest_replay.gd, test_scene.gd, test_sound.gd
+Last command / cases / checks / failures / exit / marker: full suite with traces after Task 4 / 860 / 144273 (4 shards; 144266 with WARGRID_TEST_SHARDS=1, HEAD 144264 in both) / 0 / exit 0 / TESTS PASSED 144273 (static gates CHECKS PASSED 5; netplay match terminal tick 9129)
 Known red case or blocker: none
 Approved decisions, pre-authorizations used, deferred gates: package note "One controller" (user, 2026-11-13); plan "Decisions (user, 2026-11-14)" 1-20; local commits as the night run handoff pre-authorizes (one per GREEN task, two in Task 9); benchmark only in Task 8, alone; Task 1 commit (V10 base): f1c6b78; Task 9 re-pin commit (V10 base from Task 9): none yet
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: Task 4 Step 1 (extract the driver); the null guard `skirmish_main.gd:282` (Task 2 amendment 1) is carried byte for byte through Tasks 5 and 7
+Next exact action: Task 5 Step 1 (one screen: merge the chain into match_screen.gd); the null guard `skirmish_main.gd` `var result: String = "" if state.match == null ...` (Task 2 amendment 1) is carried byte for byte through Tasks 5 and 7
 ```
 
 Plan: [One controller plan](../superpowers/plans/2026-11-14-one-controller.md). Spec: `docs/packages.md` package note "One controller" (`:84`); design answers "Package review, second pass" (`:474-505`) and "Main branch audit" (`:363-378`); audit FIX-6 and A-1 (kept outside the repository, `~/projects/wargrid-overnight-work/audit-2026-11-11/`). Logs: `~/projects/wargrid-overnight-work/one-controller/logs/` (outside the repository; commands use the absolute path). A stop after any GREEN task resumes at the next row of the task table: the subagent reads this record, checks `git log --oneline -1` and `git status --short` in the worktree against it, and starts that task's Step 1.
@@ -22,7 +22,7 @@ Plan: [One controller plan](../superpowers/plans/2026-11-14-one-controller.md). 
 | 1 | Characterisation: IC1 offline and IC2 online input scripts | Sonnet | GREEN (uncommitted) |
 | 2 | Port the M2 and M3 scene checks onto the match scene (old chain) | Sonnet | GREEN (committed 0437bdf) |
 | 3 | Delete the demo scenes and demo-only checks | Sonnet | GREEN (uncommitted) |
-| 4 | Extract the driver (OD1, OD2); `main.driver.sim` rename (Decision 6) | Sonnet | not started |
+| 4 | Extract the driver (OD1, OD2); `main.driver.sim` rename (Decision 6) | Sonnet | GREEN (uncommitted) |
 | 5 | One screen: merge the chain, delete the four scripts | Sonnet | not started |
 | 6 | Extract orders (OR1) | Sonnet | not started |
 | 7 | Extract the HUD (HU1) | Sonnet | not started |
@@ -56,20 +56,22 @@ On `35d22b5` by `rg -o '\b(main|skirmish|other|fight|recorder)\.simulation\b' ga
 
 | File | Receiver(s) | On `35d22b5` (of them assignments) | Task 0 | Task 2-3 diff +/- | Task 4 recount | Renamed to |
 |---|---|---|---|---|---|---|
-| `test_base_scene.gd` | `main` | 67 (11) | 67 (main) | | | `main.driver.sim` |
-| `test_skirmish_scene.gd` | `main` 45, `other` 4 | 49 (11) | 49 | | | `.driver.sim` |
-| `test_scene.gd` | `main` | 27 (0) | 27 | | | `main.driver.sim` |
-| `test_online_scene.gd` | `main` (also `online.main`, `web_desync.main`) | 21 (0) | 21 | | | `main.driver.sim` |
-| `test_playtest_overlay.gd` | `main` | 17 (2) | 17 | | | `main.driver.sim` |
-| `test_order_voice.gd` | `main` 4, `skirmish` 5 | 9 (0) | 9 | | | `.driver.sim` |
-| `test_pause_menu.gd` | `main` | 6 (0) | 6 | | | `main.driver.sim` |
-| `test_playtest_replay.gd` | `main` | 3 (0) | 3 (+1 `recorder.simulation`, not renamed) | | | `main.driver.sim` |
-| `test_sound.gd` | `main` | 3 (0) | 3 | | | `main.driver.sim` |
-| `test_announcer.gd` | `skirmish` | 2 (0) | 2 | | | `skirmish.driver.sim` |
-| `test_perf_overlay.gd` | `main` | 1 (0) | 1 | | | `main.driver.sim` |
+| `test_base_scene.gd` | `main` | 67 (11) | 67 (main) | +1 (Task 2) | 68 | `main.driver.sim` |
+| `test_skirmish_scene.gd` | `main` 45, `other` 4 | 49 (11) | 49 | +3 (Task 1, IC1) | 52 (`main` 48, `other` 4) | `.driver.sim` |
+| `test_scene.gd` | `main` | 27 (0) | 27 | -10 (Tasks 2-3: S8, S9 deleted) | 17 | `main.driver.sim` |
+| `test_online_scene.gd` | `main` (also `online.main`, `web_desync.main`) | 21 (0) | 21 | none | 21 | `main.driver.sim` |
+| `test_playtest_overlay.gd` | `main` | 17 (2) | 17 | none | 17 | `main.driver.sim` |
+| `test_order_voice.gd` | `main` 4, `skirmish` 5 | 9 (0) | 9 | none | 9 | `.driver.sim` |
+| `test_pause_menu.gd` | `main` | 6 (0) | 6 | none | 6 | `main.driver.sim` |
+| `test_playtest_replay.gd` | `main` | 3 (0) | 3 (+1 `recorder.simulation`, not renamed) | none | 3 | `main.driver.sim` |
+| `test_sound.gd` | `main` | 3 (0) | 3 | none | 3 | `main.driver.sim` |
+| `test_announcer.gd` | `skirmish` | 2 (0) | 2 | none | 2 | `skirmish.driver.sim` |
+| `test_perf_overlay.gd` | `main` | 1 (0) | 1 | none | 1 | `main.driver.sim` |
 | production `main.gd` / `base_main.gd` / `skirmish_main.gd` / `online_main.gd` | bare `simulation` (pattern in plan Task 4 Step 3) | 19 / 10 / 19 / 7 = 55 (`main.gd:13` is the declaration, removed by hand, so 18 are renamed there) | = 55 (`main.gd:13` is the declaration, removed by hand, so 18 are renamed there) | 19 / 10 / 19 / 7 = 55 (PROD pattern of `rules_t4.py`) | | — | | `driver.sim` (screen), `sim` (driver bodies, Step 2) |
 
 Task 0 totals (`$L/sim-census-before.txt`): 212 hits = `main.` 194, `skirmish.` 7, `other.` 4, `fight.` 6, `recorder.` 1; `main.simulation =` assignments 24 (as expected).
+
+Task 4 recount (`$L/sim-census-t4.txt`, `rg -o`): 199 renamed hits in 11 files (205 - 10 + 1 + 3), `fight.` 6 and `recorder.` 1 unchanged; every differing file is one Tasks 1-3 edited. The asserted rename (`$L/t4-rename.log`, 23 lines, exit 0, `RENAME OK t4 files=15`): the 11 screen-simulation counts above, `_sequence`/`_own_faction`/`web`/`download` 2 (`test_skirmish_scene.gd`) and 4 (`test_online_scene.gd`), `notice(`/`latency_line(` 4 (`test_online_scene.gd`), production `main.gd` 18, `base_main.gd` 10, `skirmish_main.gd` 19, `online_main.gd` 7, KEEP `fight.simulation` 6, `recorder.simulation(` 1 and 1, `overlay.(web|download)` 3, all `ok`, nothing left.
 
 Line counts (`rg -c`) differ from these occurrence counts where a line holds two reads (for example `test_base_scene.gd` 63 lines, `test_online_scene.gd` 16 lines). No production code outside the four chain scripts reads a screen's `simulation` (`rg -n '\.simulation\b' game/scripts`: `skirmish_main.gd:61` `recorder.simulation()`, `lab/art_lab.gd:46` `fight.simulation`).
 
@@ -102,20 +104,20 @@ Member and simulation counts at Task 0 equal the `35d22b5` expectations in every
 
 | # | Pin | Expected (on `35d22b5`) | Task 0 | Task 4 | Task 5 | Task 8 | Task 9 | Task 10 | Task 11 |
 |---|---|---|---|---|---|---|---|---|---|
-| V1 | `FINAL_DIGEST` | `3958ceaab11986af` | `3958ceaab11986af` (`test_team_match.gd:14`) | | | | | | |
-| V2 | `TEAM_CORE_SERIES` | `8513092129969516499` | `8513092129969516499` (`:16`) | | | | | | |
-| V3 | `S1_CORE_SERIES` | `4004499097874677431` | `4004499097874677431` (`test_skirmish_match.gd:12`) | | | | | | |
-| V4 | `PINNED`, `EXPECTED_DIGEST`, `SS6_PINNED` | unchanged | `01e256834bdd4dfb` (`test_state_hash.gd:6`); `7c7fbc8d…48a9e7` (`test_view_rows.gd:18`); `SS6_PINNED` present (`test_start_spots.gd:7`) | | | | | | |
-| V5 | four traces | byte-identical to `*-before.tsv` | recorded (1200 / 1200 / 1200 / 100 lines) | | | | | | |
-| V6 | netplay match terminal tick | `9129` | pin present (`run_netplay.sh:91`); netplay not run in Task 0 | | — | | | | |
+| V1 | `FINAL_DIGEST` | `3958ceaab11986af` | `3958ceaab11986af` (`test_team_match.gd:14`) | `3958ceaab11986af` | | | | | |
+| V2 | `TEAM_CORE_SERIES` | `8513092129969516499` | `8513092129969516499` (`:16`) | `8513092129969516499` | | | | | |
+| V3 | `S1_CORE_SERIES` | `4004499097874677431` | `4004499097874677431` (`test_skirmish_match.gd:12`) | `4004499097874677431` | | | | | |
+| V4 | `PINNED`, `EXPECTED_DIGEST`, `SS6_PINNED` | unchanged | `01e256834bdd4dfb` (`test_state_hash.gd:6`); `7c7fbc8d…48a9e7` (`test_view_rows.gd:18`); `SS6_PINNED` present (`test_start_spots.gd:7`) | unchanged (suite green) | | | | | |
+| V5 | four traces | byte-identical to `*-before.tsv` | recorded (1200 / 1200 / 1200 / 100 lines) | `cmp` exit 0 for all four (`replay`, `economy`, `combat`, `team`) | | | | | |
+| V6 | netplay match terminal tick | `9129` | pin present (`run_netplay.sh:91`); netplay not run in Task 0 | 9129 | — | | | | |
 | V7 | `run_team_match.sh` | `won tick=39497 winner=2 units_peak=271` | pin present (`:13`) | — | — | | — | — | — |
-| V8 | `git diff main -- game/tests \| rg '^-\s*const'` | only the listed preload lines | — | | | | — | — | |
-| V9 | `test_hud_summaries_are_pinned` literals | unchanged | present (`test_skirmish_scene.gd:651`), suite green | | | | | | |
-| V10 | `input_script_rows.gd` against the Task 1 commit (from Task 9: against the re-pin commit) | no diff | — | | | | re-pin | | |
-| V11 | check-id census | Task 0 set minus the demo-only list, plus the new ids so far | 659 ids (Task 3: 661, adds `IC1 `, `IC2 `) | | | | | | |
-| V12 | simulation, presentation, net, playtest, `project.godot` diff against `main` | empty | — | | | | | | |
-| V11b | label census | Task 3: exactly 11 demo labels removed, IC1/IC2 added; later: additions only | 3070 lines (Task 3: 3093) | | | | | | |
-| V13 | `v13_check.py` | `V13 OK` | — | — | — | | — | — | |
+| V8 | `git diff main -- game/tests \| rg '^-\s*const'` | only the listed preload lines | only `base.tscn` x3, `main.tscn`, `OnlineMain` const lines (Tasks 2, 3, 4) | | | | — | — | |
+| V9 | `test_hud_summaries_are_pinned` literals | unchanged | present (`test_skirmish_scene.gd:651`), suite green | unchanged (suite green) | | | | | |
+| V10 | `input_script_rows.gd` against the Task 1 commit (from Task 9: against the re-pin commit) | no diff | — | empty diff against `f1c6b78` | | | re-pin | | |
+| V11 | check-id census | Task 0 set minus the demo-only list, plus the new ids so far | 659 ids (Task 3: 661, adds `IC1 `, `IC2 `) | 661 ids + `OD1 `, `OD2 ` = 663 | | | | | |
+| V12 | simulation, presentation, net, playtest, `project.godot` diff against `main` | empty | — | empty | | | | | |
+| V11b | label census | Task 3: exactly 11 demo labels removed, IC1/IC2 added; later: additions only | 3070 lines (Task 3: 3093) | 3095 lines; diff against `labels-t3.txt` adds exactly the OD1, OD2 labels | | | | | |
+| V13 | `v13_check.py` | `V13 OK` | — | `V13 OK removed=266 renamed=188 listed=78` | — | | — | — | |
 
 ## Characterisation rows (Task 1)
 
@@ -158,16 +160,16 @@ Expected on `35d22b5` by reading (Task 2 confirms by running on the old chain):
 
 | Item | Value |
 |---|---|
-| Task 4: OD1, OD2 red against stubs, then green | |
-| Task 4: rename `$L/t4-rename.log` count lines (paste), exit | |
-| Task 4: pre-tree scan after the rename: exit, lines | |
-| Task 4: SK23 lines changed: `starts` right-hand side → `MatchSettings.starts("ashfall", 7)` (statics no longer set); `main.free()` removed (`RefCounted`); static save and restore removed (the driver does not read the statics) | |
-| Task 4: netplay match terminal tick | |
+| Task 4: OD1, OD2 red against stubs, then green | red: stub drivers, `t4-red.log` exit 1, `FAIL: OD1 …` and `FAIL: OD2 …`, `CASES 2 CHECKS 2 FAILURES 2`; green: `t4-green-od.log` exit 0, `CASES 2 CHECKS 2 FAILURES 0` (OD2 steps the bare simulation to `Skirmish.ATTACK_TICK` first, because the bot only touches its memory from that tick on) |
+| Task 4: rename `$L/t4-rename.log` count lines (paste), exit | exit 0, see the Simulation census section (dry run `t4-rename-dry.log` identical); `rename-t4.done` written |
+| Task 4: pre-tree scan after the rename: exit, lines | exit 0, no `PRE-TREE`; `NO-TREE` `test_online_scene.gd:319` (N5) and `test_view.gd:99`; the third (`test_skirmish.gd` SK23) is gone because SK23 now builds a driver, not a screen |
+| Task 4: SK23 lines changed: `starts` right-hand side → `MatchSettings.starts("ashfall", 7)` (statics no longer set); `main.free()` removed (`RefCounted`); static save and restore removed (the driver does not read the statics) | done; `const SkirmishMain` in `test_skirmish.gd` stays (now unused; removing it would add a `-const` line outside V8's list) |
+| Task 4: netplay match terminal tick | 9129, `NETPLAY PASSED match 16.5 s`, exit 0 (`t4-match.log`) |
 | Task 5: `rg -n '^extends "res://scripts/' game/scripts` before / after | |
 | Task 5: IC1, IC2 unchanged | |
 | Task 6: OR1 red, then green; rename script counts asserted | |
 | Task 7: HU1 red, then green; layout tests green; rename script counts asserted | |
-| Test lines changed other than access paths, ports and deletions (each with its reason) | |
+| Test lines changed other than access paths, ports and deletions (each with its reason) | Task 4: SK23 (see above); OD1, OD2 added to `cases()` and one `const OfflineDriver` preload; N5 `online.main.MAX_CATCH_UP_CREDIT` becomes `online.main.driver.MAX_CATCH_UP_CREDIT` (the const moved with the lockstep loop; not in the plan's rename tables, found by the filtered `test_online_scene` run) |
 
 ## V13 reasons list (copied from `$L/v13-reasons.txt` after each `--add`)
 
@@ -195,6 +197,9 @@ Expected on `35d22b5` by reading (Task 2 confirms by running on the old chain):
 | 2 | `game/tests/test_scene.gd` | port onto skirmish.tscn; S2/S3 clicks on empty ground (amendment 2, user 2026-11-14) | `var main = await setup(runner)` |
 | 3 | `game/tests/test_scene.gd` | Task 3: demo-only check deleted | whole cases `test_obstacle_toggle` (S8) and `test_status_counts` (S9), the `const Demo = preload("res://scenes/main.tscn")` line and the two `cases()` entries (one `cases()` line rewritten, the rest deleted; row-by-row in `v13-reasons.txt`) |
 | 3 | `game/tests/test_sound.gd` | Task 3: demo-only check deleted | the SD22 demo-scene loop `for path in ["res://scenes/main.tscn", "res://scenes/base.tscn"]:` and its 6 body lines (`:331-337`) |
+| 4 | `game/tests/test_skirmish.gd` | SK23 builds an OnlineDriver (starts from MatchSettings, no free, no statics) | 7 lines of `test_desync_report_names_map_seed_starts` (statics save and restore, `OnlineMain.new()`, `main._lockstep =`, `main._report()`, the check line with `SkirmishMain.starts`, `main.free()`) plus `const OnlineMain = preload("res://scripts/online_main.gd")` |
+| 4 | `game/tests/test_skirmish_scene.gd` | OD1, OD2 added to `cases()` | `return [test_skirmish_ready_and_tick, …, test_input_script_offline]` |
+| 4 | `game/tests/test_online_scene.gd` | N5 reads `MAX_CATCH_UP_CREDIT` from the online driver | `runner.check(tick > 24 and tick <= 24 + online.main.MAX_CATCH_UP_CREDIT, …)` |
 
 ## Accepted reorders (plan R1-R4; reviewer verdict in Task 11)
 
@@ -261,3 +266,4 @@ Both quirks were found by reading on `4ed3534` and are unchanged on `35d22b5`:
 - 2026-11-14 night, Task 0 baseline (Sonnet subagent), worktree `one-controller` at `74950e5` (game/ identical to `35d22b5`), load 2.2 to 2.4. Import exit 0; full suite with traces exit 0, 55 s, `CASES 858 CHECKS 144249 FAILURES 0`, `TESTS PASSED 144249`; traces 1200/1200/1200/100 lines; pins and censuses as in the tables above, no drift, no stop condition. Logs in `~/projects/wargrid-overnight-work/one-controller/logs/` (`t0-suite.log`, `t0-import.log`, `t0-pretree.log`, `ids-before.txt`, `labels-before.txt`, `census-before.txt`, `sim-census-before.txt`). Not run in Task 0: lint, warnings, netplay, benchmark.
 - 2026-11-14 night, Task 1 characterisation (Sonnet subagent), worktree `one-controller` at `05d0794`, `game/scripts` untouched. New: `game/tests/input_script_rows.gd` (`IC1_ROWS` 21 lines, `IC2_ROWS` 11 lines), `test_input_script_offline` in `test_skirmish_scene.gd` (helpers `_ic_row`, `_ic_esc`, `_ic_click`, `_ic_box`, `_ic_world`, `_ic_first_difference`), `test_input_script_online` in `test_online_scene.gd` (helpers `_ic_row`, `_ic_esc`, `_ic_plane`, `_ic_first_difference`; it preloads `test_base_scene.gd` for the `key`/`pointer` helpers and sits above `test_launcher_reads_no_page_off_web` so the pre-tree scan output stays the same). IC1 world: own builder is an `frc_builder` (it collects, so the pile step gathers), two `usa_tank`, an `frc_rifle_infantry`, completed `usa_barracks`, unfinished `usa_power_plant` (completed set false), completed `frc_defence` hub with one occupant, one supply pile, enemy `usa_tank`. IC2 ran on seat 1 with the peer packets for ticks 4-200 queued up front; its commands start at sequence 1 (the faction choice is 0). Results: filtered run exit 0 `CASES 2 CHECKS 34`; mutations (a) and (b) red as in the table, reverted; full suite exit 0 `CASES 860 CHECKS 144276 FAILURES 0`, `TESTS PASSED 144276`; `sh tools/run_checks.sh` exit 0 `CHECKS PASSED 5` (lint, warnings, Python, shell, public); `v13_check.py` `V13 OK removed=2 renamed=0 listed=2`. Not run in Task 1: traces comparison (no `game/scripts` change), netplay, benchmark. Logs `t1-*.log` in the logs folder.
 - 2026-11-14 night, Task 3 demo deletion (Sonnet subagent), worktree `one-controller` at `0437bdf`. `git rm game/scenes/main.tscn game/scenes/base.tscn`; `test_scene.gd`: S8 and S9 cases, their `cases()` entries and `const Demo` removed; `test_sound.gd`: SD22 demo loop removed. Full suite exit 0, `CASES 858 CHECKS 144264 FAILURES 0`, `TESTS PASSED 144264` (includes the HUD layout tests; no `FAIL` line); `sh tools/run_checks.sh` exit 0, `CHECKS PASSED 5`; V11, V11b and V13 add as in the table above. `game/scripts` untouched. Not run in Task 3: traces comparison (no `game/scripts` change), netplay, benchmark. Logs `t3-*.log`, `labels-t3.txt`, `ids-t3.txt` in the logs folder.
+- 2026-11-14 night, Task 4 driver extraction (Sonnet subagent), worktree `one-controller` at `1fc380c`, host load 2.7 to 3.3 (another run's godot processes were active). New: `game/scripts/match/offline_driver.gd`, `online_driver.gd`; OD1, OD2 in `test_skirmish_scene.gd` (red against stubs, then green). Chain wired to the drivers as in Pinned shapes (`_create_world`, pinned `_submit` and `_step_simulation`; online `_ready`/`_leave`/`_exit_tree`/`_note`/`_refresh_hud` call the driver); dead consts `CommandRecorder` and `Lockstep` dropped from `skirmish_main.gd`. Rename `t4` asserted counts matched the `rg` recount. Full suite with traces exit 0, 54 s, `CASES 860 CHECKS 144273 FAILURES 0` (HEAD 4-shard 144264; the +9 is a shard-assignment effect of two added cases, with `WARGRID_TEST_SHARDS=1` HEAD 144264 and now 144266 = +2, and per-file filtered counts equal HEAD except the two OD checks); four traces `cmp` exit 0; `sh tools/run_checks.sh` `CHECKS PASSED 5`; `sh tools/run_netplay.sh match` tick 9129; V12 diff empty; V13 OK. Not run: benchmarks (Task 8), rendered checks.

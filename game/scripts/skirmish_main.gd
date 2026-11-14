@@ -5,11 +5,9 @@ const View = preload("res://scripts/presentation/world_view.gd")
 const SoundPlayer = preload("res://scripts/presentation/sound_player.gd")
 const VisualDirector = preload("res://scripts/presentation/visual_director.gd")
 const MusicPlayer = preload("res://scripts/presentation/music_player.gd")
-const CommandRecorder = preload("res://scripts/playtest/command_recorder.gd")
 const FocusCards = preload("res://scripts/playtest/focus_cards.gd")
 const PlaytestOverlay = preload("res://scripts/playtest/playtest_overlay.gd")
 const PlaytestSettings = preload("res://scripts/playtest/playtest_settings.gd")
-const Lockstep = preload("res://scripts/net/lockstep.gd")
 const StateHash = preload("res://scripts/simulation/state_hash.gd")
 var _sound: SoundPlayer = null
 var _auto_samples := PackedFloat32Array()
@@ -22,7 +20,6 @@ var _auto_tick_usec: int = 0
 var _visuals := VisualDirector.new()
 var _attack_move_mode: bool = false
 var inspected_id: int = -1
-var recorder: CommandRecorder
 var _playtest: PlaytestOverlay
 static var factions: Dictionary = Registry.Factions.DEFAULT_SKIRMISH
 static var map_path: String = Skirmish.MAP_PATH
@@ -53,35 +50,30 @@ func _add_playtest() -> void:
 func menu_open() -> bool:
 	return super() or _playtest.holds_match()
 
-func _create_simulation() -> Simulation:
-	return Skirmish.create(true, "ai", factions, map_path, starts)
-
-# Tests swap `simulation` directly; a recorder left on the old one would swallow commands.
-func _recording() -> CommandRecorder:
-	if recorder == null or not is_same(recorder.simulation(), simulation): recorder = CommandRecorder.new(simulation)
-	return recorder
-
-func _issue(command: Dictionary) -> Dictionary:
-	return _recording().issue_command(command)
+func _create_world() -> void:
+	driver.create(map_path, starts, factions, match_seed)
 
 func playtest_context() -> Dictionary:
 	var camera: Vector2 = Iso.plane_to_world(_camera.position)
-	return {"tick": simulation.tick(), "camera": [camera.x, camera.y], "selected": _view_selection(), "over": simulation.match_over(), "menu": _pause.visible}
+	return {"tick": driver.sim.tick(), "camera": [camera.x, camera.y], "selected": _view_selection(), "over": driver.over(), "menu": _pause.visible}
 
 func playtest_match() -> Dictionary:
-	return _match_record("offline", [factions[1], factions[2]], Lockstep.log_lines(_recording().commands()))
+	var played: Dictionary = driver.match_log()
+	return _match_record(played.mode, played.factions, played.commands)
 
 func _match_record(mode: String, match_factions: Array, lines: PackedStringArray) -> Dictionary:
-	var state: Dictionary = simulation.snapshot()
+	var state: Dictionary = driver.sim.snapshot()
 	return {"mode": mode, "map": map_path.get_file().get_basename(), "seed": match_seed, "factions": match_factions, "seat": local_player, "end_tick": state.tick, "end_digest": StateHash.digest(state), "build": PlaytestSettings.build_id(), "result": _result_text(state.match), "commands": lines}
 
 func _escape_pending() -> bool:
-	return not simulation.match_over() and (_attack_move_mode or inspected_id != -1 or super())
+	return not driver.sim.match_over() and (_attack_move_mode or inspected_id != -1 or super())
 
 func _step_simulation() -> void:
-	Skirmish.issue_opponent(_recording())
-	simulation.step()
-	_collect_sound()
+	var rejected: PackedStringArray = driver.step(_collect_sound)
+	if rejected.is_empty(): return
+	_ensure_sound()
+	for error in rejected: _sound.rejected(error)
+	_error = "Rejected: " + rejected[-1]
 
 func _ensure_sound() -> void:
 	if _sound != null: return
@@ -89,15 +81,18 @@ func _ensure_sound() -> void:
 	add_child(_sound)
 
 func _submit(payload: Dictionary) -> void:
-	super._submit(payload)
+	_show_hint(payload)
+	var result: Dictionary = driver.submit(payload)
+	_error = result.error
+	_refresh()
 	if not _error.is_empty(): _sound.rejected(_error)
 	else: _playtest.observe_command(payload)
-	if _last_issue_ok: _sound.order(payload)
+	if result.ok: _sound.order(payload)
 
 func _collect_sound() -> void:
 	_ensure_sound()
-	_sound.collect_step(simulation.tick(), simulation.combat_events(), simulation.command_results())
-	_visuals.collect_step(simulation.tick(), simulation.combat_events(), simulation.command_results())
+	_sound.collect_step(driver.sim.tick(), driver.sim.combat_events(), driver.sim.command_results())
+	_visuals.collect_step(driver.sim.tick(), driver.sim.combat_events(), driver.sim.command_results())
 
 func _production_kind(building: Dictionary, state: Dictionary) -> String:
 	var kind: String = Skirmish.unit_for(_local_state(state).get("faction", Skirmish.default_faction()), building.kind)
@@ -148,7 +143,7 @@ func _leave() -> void:
 
 func _restart() -> void:
 	_playtest.begin_match()
-	simulation = _create_simulation()
+	_create_world()
 	_clock = PresentationClock.new()
 	_sound.director.reset()
 	_sound._unit_voice.stop()
@@ -163,7 +158,6 @@ func _restart() -> void:
 	_dragged = false
 	_error = ""
 	stepped_results.clear()
-	_sequence = 0
 	_last_result_tick = -1
 	_last_result_sequence = -1
 	_selection_box.hide()
@@ -186,12 +180,12 @@ func _finish_selection(point: Vector2) -> void:
 func _enemy_at(plane: Vector2) -> int:
 	var id: int = _view.pick_entity(plane, true)
 	if id == -1: return _view.pick_target(plane, local_player)
-	for unit: Dictionary in simulation.snapshot().entities:
+	for unit: Dictionary in driver.sim.snapshot().entities:
 		if unit.id == id: return id if unit.owner != local_player else -1
 	return -1
 
 func _unhandled_input(event: InputEvent) -> void:
-	if simulation.match_over() or _playtest.holds_match():
+	if driver.sim.match_over() or _playtest.holds_match():
 		return
 	if event.is_action_pressed("deselect"): inspected_id = -1
 	if not _placement_kind.is_empty():
@@ -223,7 +217,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	super._unhandled_input(event)
 
 func _order_defence(event: InputEventMouseButton) -> bool:
-	var building: Dictionary = _building(simulation.snapshot(), selected_building_id)
+	var building: Dictionary = _building(driver.sim.snapshot(), selected_building_id)
 	if building.is_empty() or building.owner != local_player or not building.completed or building.get("combat") == null: return false
 	var enemy: int = _view.pick_target(_view.make_canvas_position_local(event.position), local_player)
 	if enemy == -1: return false
@@ -273,7 +267,7 @@ func _enemy_summary(state: Dictionary) -> String:
 func _result_text(match_state: Dictionary) -> String:
 	if match_state.status == "draw": return "Draw"
 	if match_state.status != "won": return ""
-	return "Victory" if match_state.winner == simulation.team_of(local_player) else "Defeat"
+	return "Victory" if match_state.winner == driver.sim.team_of(local_player) else "Defeat"
 
 func _refresh_hud(state: Dictionary) -> void:
 	_ensure_sound()

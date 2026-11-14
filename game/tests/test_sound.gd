@@ -21,11 +21,11 @@ func test_catch_up_collects_every_step(runner) -> bool:
 	var online: Dictionary = await suite._online(runner, 1)
 	var main = online.main
 	suite._run(main, 10)
-	var before: int = main.simulation.tick()
+	var before: int = main.driver.sim.tick()
 	suite._peer_packets(online.transport, 2, before, before + 3)
 	suite._run(main, 1)
 	var ticks: Array[int] = main._sound.director.consumed_ticks()
-	runner.check(main.simulation.tick() == before + 2, "SD1 frame advanced two ticks, got %d" % (main.simulation.tick() - before))
+	runner.check(main.driver.sim.tick() == before + 2, "SD1 frame advanced two ticks, got %d" % (main.driver.sim.tick() - before))
 	runner.check(ticks.slice(-2) == [before + 1, before + 2], "SD1 update consumed ticks %s, lacks t+1 in a two-step frame" % [ticks])
 	runner.check(main._sound.director.collected_ticks().is_empty(), "SD1 update left steps pending")
 	main.free()

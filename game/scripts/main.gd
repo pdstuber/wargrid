@@ -7,16 +7,15 @@ const Profiler = preload("res://scripts/debug/profiler.gd")
 const PerfOverlay = preload("res://scripts/presentation/perf_overlay.gd")
 const PauseMenu = preload("res://scripts/presentation/pause_menu.gd")
 const GraphicsSettings = preload("res://scripts/presentation/graphics_settings.gd")
+const OfflineDriver = preload("res://scripts/match/offline_driver.gd")
 const LAUNCHER_SCENE: String = "res://scenes/launcher.tscn"
 const MapData = preload("res://scripts/simulation/map_data.gd")
 const ZOOMS: Array[float] = [0.5, 1.0, 2.0]
-var simulation: Simulation = Simulation.new()
+var driver: RefCounted
 var selected_ids: Array[int] = []
 var local_player: int = 1
 var stepped_results: Array = []
-var _sequence: int = 0
 var _error: String = ""
-var _last_issue_ok: bool = false
 var _shown_note: String = ""
 var _selecting: bool = false
 var _dragged: bool = false
@@ -39,6 +38,7 @@ var change_scene: Callable = _change_scene
 @onready var _selection_box: ReferenceRect = $HUD/SelectionBox
 
 func _ready() -> void:
+	if driver == null: driver = OfflineDriver.new(local_player)
 	_perf = PerfOverlay.new()
 	$HUD.add_child(_perf)
 	_pause = PauseMenu.new()
@@ -56,32 +56,35 @@ func _ready() -> void:
 	_view.set_smooth(GraphicsSettings.load_smooth())
 	_view.set_show_destinations(GraphicsSettings.load_destinations())
 	_view.local_player = local_player
-	simulation = _create_simulation()
+	_create_world()
 	_clock = PresentationClock.new()
 	_reset_camera()
 	_refresh()
 
 func _reset_camera() -> void:
-	var size: Array = simulation.snapshot().map.size
+	var size: Array = driver.sim.snapshot().map.size
 	_camera_bounds = Rect2(Vector2.ZERO, Vector2.ZERO)
 	for corner: Variant in [Vector2(size[0], 0), Vector2(0, size[1]), Vector2(size[0], size[1])]:
 		_camera_bounds = _camera_bounds.expand(Iso.world_to_plane(corner))
-	var map: Dictionary = simulation.map_data()
+	var map: Dictionary = driver.sim.map_data()
 	var start := MapData.start_cell(map, local_player) if not map.is_empty() else Vector2i(-1, -1)
 	var focus := Vector2(start) + Vector2(0.5, 0.5) if start.x >= 0 else Vector2(size[0], size[1]) / 2.0
 	_camera.position = Iso.world_to_plane(focus)
 
+func _create_world() -> void:
+	pass
+
 func _step_simulation() -> void:
-	simulation.step()
+	driver.step(func() -> void: pass)
 
 func menu_open() -> bool:
 	return _pause.visible
 
 func _confirm_leave() -> bool:
-	return false
+	return driver.confirm_leave()
 
 func _pauses_sim() -> bool:
-	return true
+	return driver.pauses_sim()
 
 func _escape_pending() -> bool:
 	return _selecting or not selected_ids.is_empty()
@@ -105,16 +108,16 @@ func _input(event: InputEvent) -> void:
 func _physics_process(_delta: float) -> void:
 	if menu_open() and _pauses_sim(): return
 	var started: int = Time.get_ticks_usec()
-	var tick_before: int = simulation.tick()
+	var tick_before: int = driver.sim.tick()
 	_step_simulation()
 	_perf.record_step((Time.get_ticks_usec() - started) / 1000.0)
 	# A stall frame (online, waiting for the peer) is not a step frame; counting it would inflate the split share.
-	var advanced: bool = simulation.tick() != tick_before
-	if advanced: stepped_results.append_array(simulation.command_results().duplicate(true))
-	if not is_processing() or (advanced and _clock.stepped(Engine.get_process_frames(), simulation.tick())) or (not advanced and _note() != _shown_note): _refresh()
+	var advanced: bool = driver.sim.tick() != tick_before
+	if advanced: stepped_results.append_array(driver.sim.command_results().duplicate(true))
+	if not is_processing() or (advanced and _clock.stepped(Engine.get_process_frames(), driver.sim.tick())) or (not advanced and _note() != _shown_note): _refresh()
 
 func _present_if_due() -> bool:
-	if not _clock.rendered(Engine.get_process_frames(), simulation.tick()): return false
+	if not _clock.rendered(Engine.get_process_frames(), driver.sim.tick()): return false
 	_refresh()
 	return true
 
@@ -206,7 +209,7 @@ func _finish_selection(point: Vector2) -> void:
 func _matching_ids(id: int, whole_map: bool) -> Array[int]:
 	var view_rect: Rect2 = _view.get_global_transform_with_canvas().affine_inverse() * get_viewport().get_visible_rect()
 	var kinds: Dictionary = {}
-	for unit: Dictionary in simulation.snapshot().entities:
+	for unit: Dictionary in driver.sim.snapshot().entities:
 		kinds[unit.id] = {"kind": unit.kind, "inside": unit.has("container_id")}
 	var picked: Array[int] = []
 	for other: int in _view.pick_entities(Rect2(-1.0e6, -1.0e6, 2.0e6, 2.0e6) if whole_map else view_rect):
@@ -219,7 +222,7 @@ func _toggle_obstacle() -> void:
 	if not _obstacle_added:
 		for y in range(5, 11):
 			cells.append(Vector2i(10, y))
-	var result: Dictionary = simulation.replace_blocked_cells(cells)
+	var result: Dictionary = driver.sim.replace_blocked_cells(cells)
 	if result.ok:
 		_obstacle_added = not _obstacle_added
 	_error = result.error
@@ -229,7 +232,7 @@ func _move(target: Vector2) -> void:
 	_submit({"type":"move","entity_ids":selected_ids.duplicate(),"target":[target.x,target.y]})
 
 func _refresh() -> void:
-	_show(simulation.view_state())
+	_show(driver.sim.view_state())
 
 func _note() -> String:
 	return _error
@@ -246,16 +249,6 @@ func _show(state: Dictionary) -> void:
 	_refresh_hud(state)
 	Profiler.end(&"refresh.hud", zone)
 	stepped_results.clear()
-
-func _create_simulation() -> Simulation:
-	for y in range(4, 10):
-		for x in range(6, 9):
-			_base_blocked.append(Vector2i(x, y))
-	simulation = Simulation.new(_base_blocked)
-	for y in range(1, 5):
-		for x in range(1, 6):
-			simulation.spawn(1, Vector2(x + 0.5, y + 0.5))
-	return simulation
 
 func _refresh_hud(state: Dictionary) -> void:
 	var counts := {"moving": 0, "path_pending": 0, "arrived": 0, "blocked": 0}
@@ -274,26 +267,14 @@ func is_selecting() -> bool:
 
 func _show_hint(payload: Dictionary) -> void:
 	var point: Variant = _hint_point(payload)
-	if point != null: _view.add_hint(point, simulation.tick())
+	if point != null: _view.add_hint(point, driver.sim.tick())
 
 func _hint_point(payload: Dictionary) -> Variant:
 	if payload.type in ["move", "attack_move", "set_rally"]: return Vector2(payload.target[0], payload.target[1])
 	return null
 
-func _issue(command: Dictionary) -> Dictionary:
-	return simulation.issue_command(command)
-
 func _submit(payload: Dictionary) -> void:
 	_show_hint(payload)
-	var state: Dictionary = simulation.snapshot()
-	var command: Dictionary = payload.duplicate(true)
-	command.tick = command.get("tick",state.tick)
-	command.player = local_player
-	for entry: Variant in state.last_sequences:
-		if entry.player == local_player: _sequence = maxi(_sequence,entry.sequence + 1)
-	command.sequence = _sequence
-	var result: Dictionary = _issue(command)
-	_last_issue_ok = result.ok
-	if result.ok: _sequence += 1
+	var result: Dictionary = driver.submit(payload)
 	_error = result.error
 	_refresh()

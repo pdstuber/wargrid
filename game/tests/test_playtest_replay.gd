@@ -77,8 +77,8 @@ func _scene(runner, factions: Dictionary, map_id: String, seed_value: int):
 
 func _send_move(i: int, main) -> void:
 	if i != MOVE_STEP: return
-	var builder: Dictionary = main.simulation.snapshot().entities.filter(func(unit: Dictionary) -> bool: return unit.owner == 1)[0]
-	var size: Array = main.simulation.snapshot().map.size
+	var builder: Dictionary = main.driver.sim.snapshot().entities.filter(func(unit: Dictionary) -> bool: return unit.owner == 1)[0]
+	var size: Array = main.driver.sim.snapshot().map.size
 	var target := Vector2(size[0] / 2.0, size[1] / 2.0)
 	if Vector2(builder.position[0], builder.position[1]).distance_to(target) < 10.0: target = Vector2(2.5, 2.5)
 	main.selected_ids.assign([builder.id])
@@ -106,7 +106,7 @@ func test_offline_scene_replays_to_same_digest(runner) -> bool:
 	runner.check(record.factions == ["frc", "china"] and record.seat == 1, "RP4 record names factions and seat")
 	runner.check(record.build == PlaytestSettings.build_id(), "RP4 record names its build, got %s" % record.get("build"))
 	runner.check(record.end_tick == STEPS, "RP4 end tick is %d, got %d" % [STEPS, record.end_tick])
-	runner.check(record.end_digest == StateHash.digest(main.simulation.snapshot()), "RP4 end digest is the live digest")
+	runner.check(record.end_digest == StateHash.digest(main.driver.sim.snapshot()), "RP4 end digest is the live digest")
 	var lines: PackedStringArray = record.commands
 	var players: Dictionary = {}
 	for line in lines:
