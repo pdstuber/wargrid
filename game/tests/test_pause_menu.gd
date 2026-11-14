@@ -214,7 +214,9 @@ func test_menu_layout(runner) -> bool:
 		var sliders: Array = menu.find_children("*", "Range", true, false).filter(func(slider: Range) -> bool: return slider.is_visible_in_tree())
 		var labels: Array = menu.find_child("Volume", true, false).find_children("*Label", "Label", true, false)
 		runner.check(sliders.size() == 3 and labels.size() == 4, "E8 menu has 3 sliders and their labels, got %d and %d" % [sliders.size(), labels.size()])
-		for control: Control in sliders + labels:
+		var values: Array = menu.find_child("Volume", true, false).find_children("*Value", "Label", true, false)
+		runner.check(values.size() == 3, "E8 menu shows a value for each slider, got %d" % values.size())
+		for control: Control in sliders + labels + values:
 			var rect: Rect2 = control.get_global_rect()
 			runner.check(Rect2(Vector2.ZERO, Vector2(size)).encloses(rect), "E8 %s inside %s" % [control.name, size])
 			for other in hud: runner.check(not rect.intersects(other), "E8 %s clear of HUD text at %s" % [control.name, size])

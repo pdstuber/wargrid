@@ -327,6 +327,7 @@ func test_launcher_sections(runner) -> bool:
 			launcher._show_status(status, text, true)
 			await runner.process_frame
 			runner.check(status.get_line_count() == 1, "N20 Status stays one line at %s: %s" % [size, text])
+			runner.check(status.get_global_rect().end.x <= play.get_node("Footer/Start").get_global_rect().position.x, "N20 Status ends left of Start at %s: %s" % [size, text])
 		launcher.show_page("Settings")
 		await runner.process_frame
 		await runner.process_frame

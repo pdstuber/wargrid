@@ -27,6 +27,7 @@ const OWNS: Array[String] = ["Pages/Play/Body/Own", "Pages/Join/Body/Own"]
 const FOLDS: Array[String] = ["Pages/Play/Body/Advanced", "Pages/Join/Body/Advanced"]
 const BOT_ONLY: Array[String] = ["Body/BotLabel", "Body/Spacer2", "Body/Bot", "Body/Spacer3", "Footer/Start"]
 const FRIEND_ONLY: Array[String] = ["Body/OpenSlot", "Body/Spacer4", "Footer/Create"]
+# Page content is 960 px wide: leaves room for the 170 px button, the gap and the strip padding.
 const STATUS_WIDTH := 700.0
 const FRIEND_HINT := "You get a link to send to your friend."
 const CANCELLED := "Match cancelled"
