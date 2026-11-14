@@ -228,10 +228,11 @@ func test_switch_saves_without_cards(runner) -> bool:
 	await runner.process_frame
 	var toggle: CheckButton = launcher.get_node("Pages/Settings/Body/Playtest/PlaytestSwitch")
 	runner.check(launcher.get_node_or_null("FocusPanel") == null, "R6 fixture: with no focus cards the launcher builds no FocusPanel")
-	toggle.button_pressed = false
-	runner.check(not PlaytestSettings.enabled("0.11.0-dev"), "R6 the switch stores off without focus cards")
-	toggle.button_pressed = true
-	runner.check(PlaytestSettings.enabled("0.11.0"), "R6 the switch stores on without focus cards")
+	# Flip from the version's default twice; each read uses the opposite default, so only a stored value passes.
+	for i in 2:
+		toggle.button_pressed = not toggle.button_pressed
+		if toggle.button_pressed: runner.check(PlaytestSettings.enabled("0.11.0"), "R6 the switch stores on without focus cards")
+		else: runner.check(not PlaytestSettings.enabled("0.11.0-dev"), "R6 the switch stores off without focus cards")
 	launcher.free()
 	_end(saved)
 	return true
