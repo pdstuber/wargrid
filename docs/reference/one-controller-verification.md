@@ -1,15 +1,15 @@
 # One controller verification
 
 ```text
-Resume record (updated 2026-11-14: Task 11c GREEN, not committed)
-Branch / base commit / working-tree state: one-controller (worktree ~/projects/wargrid-wt-onecontrol) / 4953e9f (Task 11a review commit) / Task 11c files uncommitted
-Last green task / next incomplete task: Task 11c (no 11b fix round needed: 0 critical, 0 important) / Task 12 (wrap-up by the coordinator)
-Changed paths since last commit: `game/scripts/match/{hud,match_screen,online_driver}.gd`, `game/tests/test_skirmish.gd`, `docs/guide/{05-presentation,11-multiplayer}.md` (footers), `docs/packages.md`, `docs/superpowers/plans/2026-11-14-one-controller.md`, this file
-Last command / cases / checks / failures / exit / marker: full suite with traces (`t11c-suite.log`) / `CASES 864 CHECKS 144282 FAILURES 0` / exit 0 / `TESTS PASSED 144282`; four traces cmp exit 0; netplay match 9129 `NETPLAY PASSED match 15.9 s`; `run_checks.sh` `CHECKS PASSED 5`; roadmap --check and check_public exit 0; V1-V9, V12 unmoved, V10 empty against 71b1180, V11 667 ids, V11b 3103 labels unchanged, V13 OK
+Resume record (updated 2026-11-14 day: morning minors done)
+Branch / base commit / working-tree state: one-controller (worktree ~/projects/wargrid-wt-onecontrol) / 827cadf (Task 11c) / m2 test and this file uncommitted
+Last green task / next incomplete task: morning minors (m2 fixed; m4, m7, R5 decided) / branch push for CI, attended match, merge (each needs approval)
+Changed paths since last commit: `game/tests/test_online_scene.gd`, this file
+Last command / cases / checks / failures / exit / marker: full suite (`m2-suite2.log`) / `CASES 864 CHECKS 144276 FAILURES 0` / exit 0 / `TESTS PASSED 144276` (bare 827cadf today: 144275); `run_checks.sh` `CHECKS PASSED 5`. Night: four traces cmp exit 0; netplay match 9129 `NETPLAY PASSED match 15.9 s`; V1-V9, V12 unmoved, V10 empty against 71b1180, V11 667 ids, V11b 3103 labels unchanged, V13 OK
 Known red case or blocker: none
 Approved decisions, pre-authorizations used, deferred gates: package note "One controller" (user, 2026-11-13); plan "Decisions (user, 2026-11-14)" 1-20; local commits as the night run handoff pre-authorizes (one per GREEN task, two in Task 9); benchmark only in Task 8, alone; Task 1 commit (V10 base): f1c6b78; Task 9 fix commit: 1e3b9f7; Task 9 re-pin commit (V10 base from Task 9): 71b1180
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: coordinator commits Task 11c, then the wrap-up. Morning list is in "Unverifiable at night" below: m2, m4, m7 and the R5 ruling need the user.
+Next exact action: commit the m2 test (approval), push the branch for CI, attended match in a window, merge, `sh tools/run_benchmark.sh` on main.
 ```
 
 Plan: [One controller plan](../superpowers/plans/2026-11-14-one-controller.md). Spec: `docs/packages.md` package note "One controller" (`:84`); design answers "Package review, second pass" (`:474-505`) and "Main branch audit" (`:363-378`); audit FIX-6 and A-1 (kept outside the repository, `~/projects/wargrid-overnight-work/audit-2026-11-11/`). Logs: `~/projects/wargrid-overnight-work/one-controller/logs/` (outside the repository; commands use the absolute path). A stop after any GREEN task resumes at the next row of the task table: the subagent reads this record, checks `git log --oneline -1` and `git status --short` in the worktree against it, and starts that task's Step 1.
@@ -229,7 +229,7 @@ Expected on `35d22b5` by reading (Task 2 confirms by running on the old chain):
 | R2 | online rejection sound and note after `_finish` | |
 | R3 | `_sound.update` after the whole HUD refresh | |
 | R4 | `inspected_id` pruned in `orders.prune` | exact (Task 11a) |
-| R5 | online `_submit` queues an `error` cue and skips the checklist trigger for an order submitted while an own due-time rejection waits for its deferred refresh (review finding m1; offline always behaved so). Agent ruling at night, not a user decision: accept, no code change. Cost if wrong: online error-cue and checklist timing differs slightly from before the branch | accepted by agent ruling; user to confirm in the morning |
+| R5 | online `_submit` queues an `error` cue and skips the checklist trigger for an order submitted while an own due-time rejection waits for its deferred refresh (review finding m1; offline always behaved so). Agent ruling at night, not a user decision: accept, no code change. Cost if wrong: online error-cue and checklist timing differs slightly from before the branch | accepted (user, 2026-11-14) |
 
 ## Gate (Task 8)
 
@@ -334,8 +334,9 @@ The two full-suite mutation runs each failed exactly one check out of 144276 at 
 - CI on Linux and Windows, `sh tools/compare_local_traces.sh <run id>` for macOS: need a pushed branch (push needs approval).
 - Browser: the web desync download path (`online_driver.gd:108-110`) and the web build of the match screen; covered only by the fake `download` callable in `test_online_scene.gd:140-141`.
 - The attended offline and online match in a window, before P2.3a starts (user, 2026-11-13).
-- Review minors left for the morning (11c did not touch them): m2 (desync report fields lost end-to-end coverage: N2's desync case should parse `user://desync/desync-seat2.json` and check `seed`, `map`, `starts`), m4 (profiler zone `refresh.selection` now also times the building-id prune and `hud._inspected` lookup; note for anyone comparing old profiles), m7 (offline driver stamps `_player` at `_ready` and the online report uses the `create` arguments; a future seat switch must rebuild the driver).
-- R5 (review finding m1) is an agent ruling at night, not a user decision: accepted with no code change. If the user disagrees, the cost is that online error-cue and checklist timing differs slightly from before the branch (one stray cue and one unticked checklist trigger, rare, presentation only).
+- Review minors, decided (user, 2026-11-14): m2 fixed (N2's desync case starts the screen with seed 7 and checks the report's `seed`, `map`, `starts`; red with `_seed = match_seed * 0` in `online_driver.create`, reverted); m4 note only (profiler zone `refresh.selection` now also times the building-id prune and `hud._inspected` lookup); m7 left (offline driver stamps `_player` at `_ready` and the online report uses the `create` arguments; a future seat switch must rebuild the driver).
+- R5 (review finding m1): accepted, no code change (user, 2026-11-14).
+- Suite check count depends on the environment: `827cadf` gave 144282 checks at night and 144275 on 2026-11-14 (same tree, 864 cases, 0 failures both times; the night log also shows a first-run class registration). Cause not looked for.
 - Rendered benchmark: skipped (Decision 14); `movement_benchmark.tscn` does not load the controller.
 - Commands the night permissions refused, each with its exact text: none in Task 8.
 - The null guard in `hud.gd` `_match_hud` (`var result: String = "" if state.match == null else _result_text(state.match)`, ruling 2026-11-14) turns a future null-match bug into a blank Result label instead of a script error; for the Task 11 reviewer.

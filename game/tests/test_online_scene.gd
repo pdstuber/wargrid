@@ -128,11 +128,16 @@ func test_status_lines_and_layout(runner) -> bool:
 	_run(silent.main, 2)
 	runner.check(silent.lockstep.status() == "ended_relay" and silent.lockstep.end_reason() == "connection to relay lost", "N2 silent relay ends the match with the relay-lost reason")
 	silent.main.free()
+	var before_seed: int = SkirmishMain.match_seed
+	SkirmishMain.match_seed = 7
 	var desync: Dictionary = await _online(runner, 2)
+	SkirmishMain.match_seed = before_seed
 	desync.transport.frames.append(Wire.encode(Wire.tick_message(1, 4, [], {"tick": 0, "value": "0000000000000000"})))
 	_run(desync.main, 12)
 	var text: String = desync.main.get_node("HUD/Status").text
 	runner.check(desync.lockstep.status() == "ended_desync" and text.contains("Desync — report saved to") and FileAccess.file_exists("user://desync/desync-seat2.json"), "N2 desync line and report file, got " + text)
+	var report = JSON.parse_string(FileAccess.get_file_as_string("user://desync/desync-seat2.json"))
+	runner.check(report is Dictionary and report.get("seed") == 7 and report.get("map") == SkirmishMain.map_path.get_file().get_basename() and report.get("starts") == SkirmishMain.starts, "N2 desync report carries the screen's seed, map and starts, got " + str(report))
 	_layout_ok(runner, desync.main, "desync")
 	DirAccess.remove_absolute("user://desync/desync-seat2.json")
 	desync.main.free()
