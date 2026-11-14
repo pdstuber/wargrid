@@ -12,7 +12,7 @@ const COMPONENTS: Array = [
 const LICENSES: Dictionary = {"Expat": "EXPAT-LICENCE-TEXT", "Zlib": "ZLIB-LICENCE-TEXT"}
 
 func cases() -> Array[Callable]:
-	return [test_every_music_row, test_new_row_appears, test_macleod_block, test_voice_line, test_unit_voice_rows, test_maps_notice, test_godot_license, test_wargrid_line, test_third_party_components, test_third_party_engine_data, test_macleod_ignores_earlier_fence, test_crlf_credits]
+	return [test_every_music_row, test_new_row_appears, test_macleod_block, test_voice_line, test_unit_voice_rows, test_maps_notice, test_godot_license, test_wargrid_line, test_third_party_components, test_third_party_engine_data, test_macleod_ignores_earlier_fence, test_crlf_credits, test_inter_notice, test_exports_ship_the_font_licence]
 
 func _credits() -> String:
 	return FileAccess.get_file_as_string(CREDITS_PATH).replace("\r\n", "\n")
@@ -129,4 +129,22 @@ func test_crlf_credits(runner) -> bool:
 	var panel := _panel(text.replace("\n", "\r\n"))
 	runner.check(_block(text) in panel, "CR11 the MacLeod block survives CRLF input")
 	runner.check(panel == _panel(text), "CR11 CRLF input gives the same panel")
+	return true
+
+func test_inter_notice(runner) -> bool:
+	var licence: String = FileAccess.get_file_as_string("res://fonts/Inter-OFL.txt")
+	runner.check("SIL OPEN FONT LICENSE Version 1.1" in licence and "The Inter Project Authors" in licence, "CR12 fixture: the shipped file is Inter's OFL text")
+	var panel := Credits.text(_credits(), _notice(), LICENSE, COMPONENTS, LICENSES, licence)
+	runner.check("Inter 4.1" in panel and "SIL Open Font License 1.1" in panel and "github.com/rsms/inter" in panel, "CR12 the panel names Inter 4.1 and its licence")
+	runner.check(licence in panel, "CR12 the panel carries the OFL text in full")
+	runner.check(panel.find("Inter 4.1") > panel.find("\n\nMaps\n") and panel.find("Inter 4.1") < panel.find("\n\nGodot Engine\n"), "CR12 the font notice sits between Maps and Godot")
+	return true
+
+func test_exports_ship_the_font_licence(runner) -> bool:
+	if not FileAccess.file_exists("res://export_presets.cfg"): return true # exported packs omit the presets
+	var config := ConfigFile.new()
+	runner.check(config.load("res://export_presets.cfg") == OK, "CR13 export presets load")
+	for section: String in config.get_sections():
+		if section.ends_with(".options"): continue
+		runner.check("fonts/Inter-OFL.txt" in str(config.get_value(section, "include_filter", "")), "CR13 %s ships the Inter licence" % config.get_value(section, "name", section))
 	return true

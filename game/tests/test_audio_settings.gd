@@ -11,7 +11,7 @@ const REAL := "user://settings.cfg"
 var scratch: String = "user://test-settings-%d.cfg" % OS.get_process_id() # shards and worktrees share user://
 
 func cases() -> Array[Callable]:
-	return [test_settings_missing_and_corrupt, test_settings_round_trip, test_slider_sets_bus_and_saves, test_bus_levels, test_tests_use_scratch_settings, test_playlist_order_and_gap, test_menu_track_repeats, test_match_playlist_is_shuffled, test_scene_plays_a_shuffled_playlist, test_match_never_repeats_first_track, test_match_reshuffles_every_round, test_mute_toggle, test_mute_key_in_match, test_mute_key_in_launcher_and_text_field]
+	return [test_settings_missing_and_corrupt, test_settings_round_trip, test_slider_sets_bus_and_saves, test_bus_levels, test_tests_use_scratch_settings, test_playlist_order_and_gap, test_menu_track_repeats, test_match_playlist_is_shuffled, test_scene_plays_a_shuffled_playlist, test_match_never_repeats_first_track, test_match_reshuffles_every_round, test_match_never_plays_the_menu_track, test_volume_values_shown, test_mute_toggle, test_mute_key_in_match, test_mute_key_in_launcher_and_text_field]
 
 func _begin() -> String:
 	var saved: String = AudioSettings.path
@@ -109,10 +109,10 @@ func test_playlist_order_and_gap(runner) -> bool:
 	runner.check(player.waiting() and player.track_index() == 0, "AS5 still waiting at 24.9 s")
 	player.advance(0.2)
 	runner.check(player.track_index() == 1 and not player.waiting(), "AS5 next track after 25 s, got %d" % player.track_index())
-	for i in 4:
+	for i in MusicPlayer.PLAYLIST.size() - 1:
 		player.finished.emit()
 		player.advance(25.0)
-	runner.check(player.track_index() == 0, "AS5 wraps after the fifth track, got %d" % player.track_index())
+	runner.check(player.track_index() == 0, "AS5 wraps after the last track, got %d" % player.track_index())
 	player.free()
 	return true
 
@@ -137,10 +137,10 @@ func _sorted(paths: Array[String]) -> Array[String]:
 
 func test_match_playlist_is_shuffled(runner) -> bool:
 	var first := _shuffled_with(1)
-	runner.check(first.size() == 5 and _sorted(first) == _sorted(MusicPlayer.PLAYLIST), "MU1 the shuffle keeps the same five tracks, got %s" % [first])
+	runner.check(first.size() == MusicPlayer.PLAYLIST.size() and _sorted(first) == _sorted(MusicPlayer.PLAYLIST), "MU1 the shuffle keeps the same tracks, got %s" % [first])
 	runner.check(first == _shuffled_with(1), "MU1 one seed gives one order")
 	runner.check(first != _shuffled_with(2), "MU1 seeds 1 and 2 give different orders")
-	var literal: Array[String] = ["res://audio/music/conflict.ogg", "res://audio/music/enemy_spotted.ogg", "res://audio/music/mammoth.ogg", "res://audio/music/stay_the_course.ogg", "res://audio/music/hitman.ogg"]
+	var literal: Array[String] = ["res://audio/music/conflict.ogg", "res://audio/music/enemy_spotted.ogg", "res://audio/music/mammoth.ogg", "res://audio/music/hitman.ogg"]
 	runner.check(MusicPlayer.PLAYLIST == literal, "MU1 PLAYLIST keeps its source order")
 	return true
 
@@ -167,7 +167,7 @@ func test_scene_plays_a_shuffled_playlist(runner) -> bool:
 	var started: Array = await _match_music(runner)
 	var main = started[0]
 	var music = started[1]
-	runner.check(music != null and _sorted(music._paths) == _sorted(MusicPlayer.PLAYLIST), "MU2 the match plays the five tracks")
+	runner.check(music != null and _sorted(music._paths) == _sorted(MusicPlayer.PLAYLIST), "MU2 the match plays the match tracks")
 	music.finished.emit()
 	music.advance(MusicPlayer.GAP_SECONDS)
 	var before: Array[String] = music._paths.duplicate()
@@ -203,12 +203,12 @@ func test_match_never_repeats_first_track(runner) -> bool:
 		last_played = _played(music)
 		started[0].free()
 	runner.check(repeats == 0, "MU3 a new match never starts on the track the previous match last played, repeats %d of 14" % repeats)
-	runner.check(complete, "MU3 every match playlist holds the five tracks")
+	runner.check(complete, "MU3 every match playlist holds the match tracks")
 	return true
 
 func _round_played(music: Node) -> Array[String]:
 	var round_tracks: Array[String] = [_played(music)]
-	for step in 4:
+	for step in MusicPlayer.PLAYLIST.size() - 1:
 		_advance_to_next(music)
 		round_tracks.append(_played(music))
 	return round_tracks
@@ -221,7 +221,7 @@ func test_match_reshuffles_every_round(runner) -> bool:
 	var one := _round_played(music)
 	_advance_to_next(music)
 	var two := _round_played(music)
-	runner.check(_sorted(one) == _sorted(MusicPlayer.PLAYLIST) and _sorted(two) == _sorted(MusicPlayer.PLAYLIST), "MU4 each round plays the five tracks once, got %s then %s" % [one, two])
+	runner.check(_sorted(one) == _sorted(MusicPlayer.PLAYLIST) and _sorted(two) == _sorted(MusicPlayer.PLAYLIST), "MU4 each round plays the match tracks once, got %s then %s" % [one, two])
 	runner.check(one != two, "MU4 round two is a reshuffle, not the same order")
 	var repeats := 0
 	for seed_value in 20:
@@ -229,13 +229,45 @@ func test_match_reshuffles_every_round(runner) -> bool:
 		var long_run := MusicPlayer.new()
 		long_run.play_match(rng, MusicPlayer.GAP_SECONDS)
 		var previous := _played(long_run)
-		for step in 14:
+		for step in 3 * MusicPlayer.PLAYLIST.size() - 1:
 			_advance_to_next(long_run)
 			if _played(long_run) == previous: repeats += 1
 			previous = _played(long_run)
 		long_run.free()
 	runner.check(repeats == 0, "MU4 no track plays twice in a row across three rounds, repeats %d" % repeats)
 	music.free()
+	return true
+
+func test_match_never_plays_the_menu_track(runner) -> bool:
+	runner.check(MusicPlayer.MENU not in MusicPlayer.PLAYLIST, "MU5 the menu track is not in the match playlist")
+	var heard := false
+	for seed_value in 12:
+		var rng := RandomNumberGenerator.new()
+		rng.seed = seed_value
+		var music := MusicPlayer.new()
+		music.play_match(rng, MusicPlayer.GAP_SECONDS)
+		for step in 2 * MusicPlayer.PLAYLIST.size() + 1:
+			if MusicPlayer.MENU in music._paths or _played(music) == MusicPlayer.MENU: heard = true
+			_advance_to_next(music)
+		music.free()
+	runner.check(not heard, "MU5 no shuffled match playlist ever holds or plays the menu track, across two full cycles")
+	return true
+
+func test_volume_values_shown(runner) -> bool:
+	var saved := _begin()
+	var sliders := VolumeSliders.new()
+	runner.root.add_child(sliders)
+	for key: String in ["Music", "Effects", "Voice"]:
+		var value: Label = sliders.get_node_or_null(key + "Value")
+		runner.check(value != null and value.horizontal_alignment == HORIZONTAL_ALIGNMENT_RIGHT and value.get_index() == sliders.get_node(key).get_index() + 1, "AS8 %s has a right-aligned value label right after its slider" % key)
+		if value == null: continue
+		runner.check(value.text == "100", "AS8 %s shows the default 100, got %s" % [key, value.text])
+		sliders.get_node(key).value = 0.8
+		runner.check(value.text == "80", "AS8 %s shows 80 at 0.8, got %s" % [key, value.text])
+		sliders.get_node(key).value = 0.35
+		runner.check(value.text == "35", "AS8 %s shows 35 at 0.35, got %s" % [key, value.text])
+	sliders.free()
+	_end(saved)
 	return true
 
 func test_mute_toggle(runner) -> bool:

@@ -252,9 +252,9 @@ const LAUNCHER_PAGE_PATHS: Dictionary = {
 	"Play:bot": ["Title", "Subtitle", "Body/OwnLabel", "Body/MapLabel", "Body/Own", "Body/Map", "Body/OpponentLabel", "Body/MapInfo", "Body/Opponent", "Body/BotLabel", "Body/Bot", "ThisBuild", "Footer/Status", "Footer/Start"],
 	"Play:friend": ["Title", "Subtitle", "Body/OwnLabel", "Body/MapLabel", "Body/Own", "Body/Map", "Body/OpponentLabel", "Body/MapInfo", "Body/Opponent", "Body/OpenSlot", "Body/Advanced/Toggle", "Body/Advanced/RelayHelp", "Body/Advanced/RelayUrl", "ThisBuild", "Footer/Status", "Footer/Create"],
 	"Join": ["Title", "Subtitle", "Body/CodeLabel", "Body/MapLabel", "Body/Code", "Body/MapHint", "Body/CodeHint", "Body/OwnLabel", "Body/Own", "Body/Advanced/Toggle", "Body/Advanced/RelayHelp", "Body/Advanced/RelayUrl", "ThisBuild", "Footer/Status", "Footer/Join"],
-	"Settings": ["Title", "Subtitle", "Body/Audio/AudioHeader", "Body/Audio/Volume/MusicLabel", "Body/Audio/Volume/Music", "Body/Audio/Volume/EffectsLabel", "Body/Audio/Volume/Effects", "Body/Audio/Volume/VoiceLabel", "Body/Audio/Volume/Voice", "Body/Audio/Volume/MuteLabel", "Body/Audio/Volume/Mute", "Body/Audio/DisplayHeader", "Body/Audio/Fullscreen", "Body/Playtest/GraphicsHeader", "Body/Playtest/Quality", "Body/Playtest/Neon", "Body/Playtest/Smooth", "Body/Playtest/Destinations", "Body/Playtest/PlaytestHeader", "Body/Playtest/PlaytestSwitch", "Body/Playtest/PlaytestHint"],
+	"Settings": ["Title", "Subtitle", "Body/Audio/AudioHeader", "Body/Audio/Volume/MusicLabel", "Body/Audio/Volume/Music", "Body/Audio/Volume/MusicValue", "Body/Audio/Volume/EffectsLabel", "Body/Audio/Volume/Effects", "Body/Audio/Volume/EffectsValue", "Body/Audio/Volume/VoiceLabel", "Body/Audio/Volume/Voice", "Body/Audio/Volume/VoiceValue", "Body/Audio/Volume/MuteLabel", "Body/Audio/Volume/Mute", "Body/Audio/DisplayHeader", "Body/Audio/Fullscreen", "Body/Playtest/GraphicsHeader", "Body/Playtest/Quality", "Body/Playtest/Neon", "Body/Playtest/Smooth", "Body/Playtest/Destinations", "Body/Playtest/PlaytestHeader", "Body/Playtest/PlaytestSwitch", "Body/Playtest/PlaytestHint"],
 	"Credits": ["Title", "Subtitle", "Body/Text", "Body/Legal"],
-	"Waiting": ["Title", "Subtitle", "Body/Left/Invite/Link", "Body/Left/Invite/Copy", "Footer/Status", "Footer/Cancel"],
+	"Waiting": ["Title", "Subtitle", "Body/Left/Invite/Link", "Body/Left/Invite/Copy", "Body/Left/One", "Body/Left/Two", "Body/Right/Map", "Footer/Status", "Footer/Cancel"],
 }
 const LAUNCHER_NAV_ORDER: Array[String] = ["Play", "Join", "Divider", "Settings", "Credits"]
 const PAGE_TITLES: Dictionary = {"Play": "Play", "Join": "Join a match", "Settings": "Settings", "Credits": "Credits", "Waiting": "Waiting for your friend"}
@@ -324,7 +324,7 @@ func test_launcher_sections(runner) -> bool:
 		launcher.show_page("Play")
 		var status: Label = play.get_node("Footer/Status")
 		for text in ["Match code: ABC234 — waiting for player 2", "Connection to relay lost"] + MatchSettings.PLAY_MAPS.values().map(func(label: String) -> String: return "Your copy of %s differs from the host's" % label):
-			status.text = text
+			launcher._show_status(status, text, true)
 			await runner.process_frame
 			runner.check(status.get_line_count() == 1, "N20 Status stays one line at %s: %s" % [size, text])
 		launcher.show_page("Settings")

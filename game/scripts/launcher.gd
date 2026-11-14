@@ -27,6 +27,7 @@ const OWNS: Array[String] = ["Pages/Play/Body/Own", "Pages/Join/Body/Own"]
 const FOLDS: Array[String] = ["Pages/Play/Body/Advanced", "Pages/Join/Body/Advanced"]
 const BOT_ONLY: Array[String] = ["Body/BotLabel", "Body/Spacer2", "Body/Bot", "Body/Spacer3", "Footer/Start"]
 const FRIEND_ONLY: Array[String] = ["Body/OpenSlot", "Body/Spacer4", "Footer/Create"]
+const STATUS_WIDTH := 700.0
 const FRIEND_HINT := "You get a link to send to your friend."
 const CANCELLED := "Match cancelled"
 var _transport: RefCounted
@@ -41,6 +42,7 @@ var _origin: String = "Play"
 var _play_error: bool = false
 static var code_applied: bool = false
 var prerelease: bool = PlaytestSettings.prerelease()
+var focus_cards: Array[Dictionary] = FocusCards.load_cards()
 var page: String = _page_value("location.origin + location.pathname")
 var search: String = _page_value("location.search")
 
@@ -196,11 +198,15 @@ static func _nav_of(page_name: String) -> String:
 func _fill_credits() -> void:
 	var text: RichTextLabel = $Pages/Credits/Body/Text
 	if text.text.is_empty():
-		text.text = Credits.text(FileAccess.get_file_as_string("res://audio/CREDITS.md"), FileAccess.get_file_as_string("res://data/maps/NOTICE.md"), Engine.get_license_text(), Engine.get_copyright_info(), Engine.get_license_info())
+		text.text = Credits.text(FileAccess.get_file_as_string("res://audio/CREDITS.md"), FileAccess.get_file_as_string("res://data/maps/NOTICE.md"), Engine.get_license_text(), Engine.get_copyright_info(), Engine.get_license_info(), FileAccess.get_file_as_string("res://fonts/Inter-OFL.txt"))
 
 func _show_status(label: Label, text: String, error: bool = false) -> void:
 	label.text = text
 	label.theme_type_variation = &"FooterError" if error else &"FooterStatus"
+	var width: float = label.get_theme_font(&"font").get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, label.get_theme_font_size(&"font_size")).x
+	var wide: bool = width > STATUS_WIDTH
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART if wide else TextServer.AUTOWRAP_OFF
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL if wide else Control.SIZE_SHRINK_BEGIN
 
 func _status_label() -> Label:
 	return get_node("Pages/%s/Footer/Status" % _origin)
@@ -217,13 +223,12 @@ func _add_playtest() -> void:
 	column.add_child(toggle)
 	column.move_child(toggle, $Pages/Settings/Body/Playtest/PlaytestHeader.get_index() + 1)
 	toggle.toggled.connect(PlaytestSettings.save_enabled)
-	var cards: Array[Dictionary] = FocusCards.load_cards()
-	if cards.is_empty(): return
-	var panel := FocusCardView.new(cards, PlaytestSession.open_count)
+	if focus_cards.is_empty(): return
+	var panel := FocusCardView.new(focus_cards, PlaytestSession.open_count)
 	add_child(panel)
 	var builds: Array[Button] = [$Pages/Play/ThisBuild, $Pages/Join/ThisBuild]
 	var show_panel := func(open: bool) -> void:
-		for build: Button in builds: build.text = "This build: " + FocusCards.card(FocusCards.shown(), cards).title
+		for build: Button in builds: build.text = "This build: " + FocusCards.card(FocusCards.shown(), focus_cards).title
 		panel.visible = open
 		_set_shell_visible(not open)
 	show_panel.call(false)
@@ -255,33 +260,47 @@ func _add_graphics() -> void:
 	var header: Label = $Pages/Settings/Body/Audio/AudioHeader.duplicate()
 	header.name = "GraphicsHeader"
 	header.text = "Graphics"
-	column.add_child(header)
-	column.move_child(header, 0)
-	var buttons: Array[Button] = [
-		_graphics_button("Quality", func() -> String: return "Quality: " + ("Low" if GraphicsSettings.stored_quality() == GraphicsSettings.LOW else "High"),
-			func() -> void: GraphicsSettings.save_quality(GraphicsSettings.HIGH if GraphicsSettings.stored_quality() == GraphicsSettings.LOW else GraphicsSettings.LOW)),
-		_graphics_button("Neon", func() -> String: return "Neon colours: " + ("On" if GraphicsSettings.load_neon() else "Off"),
-			func() -> void: GraphicsSettings.save_neon(not GraphicsSettings.load_neon())),
-		_graphics_button("Smooth", func() -> String: return "Smooth movement: " + ("On" if GraphicsSettings.load_smooth() else "Off"),
-			func() -> void: GraphicsSettings.save_smooth(not GraphicsSettings.load_smooth())),
-		_graphics_button("Destinations", func() -> String: return "Show unit destinations: " + ("On" if GraphicsSettings.load_destinations() else "Off"),
-			func() -> void: GraphicsSettings.save_destinations(not GraphicsSettings.load_destinations())),
+	var controls: Array[Control] = [
+		header, _quality_toggle(),
+		_graphics_switch("Neon", "Neon colours", GraphicsSettings.load_neon(), GraphicsSettings.save_neon),
+		_graphics_switch("Smooth", "Smooth movement", GraphicsSettings.load_smooth(), GraphicsSettings.save_smooth),
+		_graphics_switch("Destinations", "Show unit destinations", GraphicsSettings.load_destinations(), GraphicsSettings.save_destinations),
 	]
-	for button: Button in buttons:
-		column.add_child(button)
-		column.move_child(button, header.get_index() + 1 + buttons.find(button))
+	for control: Control in controls:
+		column.add_child(control)
+		column.move_child(control, controls.find(control))
 
-# Mirrors the Esc menu's labels and cycle; pause_menu.gd keeps its state in the menu, so it cannot be shared as is.
-func _graphics_button(button_name: String, label: Callable, press: Callable) -> Button:
-	var button := Button.new()
-	button.name = button_name
-	button.text = label.call()
-	button.custom_minimum_size.x = 260.0
-	button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	button.pressed.connect(func() -> void:
-		press.call()
-		button.text = label.call())
-	return button
+func _quality_toggle() -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.name = "Quality"
+	row.add_theme_constant_override("separation", 6)
+	var sides: Dictionary = {"Low": GraphicsSettings.LOW, "High": GraphicsSettings.HIGH}
+	var buttons: Dictionary = {}
+	var refresh := func() -> void:
+		for side: String in sides: buttons[side].set_pressed_no_signal(GraphicsSettings.stored_quality() == sides[side])
+	for side: String in sides:
+		var button := Button.new()
+		button.name = side
+		button.text = side + " quality"
+		button.toggle_mode = true
+		button.theme_type_variation = &"ToggleButton"
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.pressed.connect(func() -> void:
+			GraphicsSettings.save_quality(sides[side])
+			refresh.call())
+		buttons[side] = button
+		row.add_child(button)
+	refresh.call()
+	return row
+
+# Same stored keys and labels as the Esc menu; pause_menu.gd keeps its state in the menu, so it cannot be shared as is.
+func _graphics_switch(switch_name: String, label: String, on: bool, save: Callable) -> CheckButton:
+	var toggle := CheckButton.new()
+	toggle.name = switch_name
+	toggle.text = label
+	toggle.button_pressed = on
+	toggle.toggled.connect(save)
+	return toggle
 
 static func fullscreen_target(on: bool, current: DisplayServer.WindowMode) -> int:
 	var is_fullscreen: bool = current == DisplayServer.WINDOW_MODE_FULLSCREEN or current == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
@@ -303,7 +322,6 @@ func _add_audio() -> void:
 	sliders.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	sliders.add_theme_constant_override("v_separation", 15)
 	for title: String in ["MusicLabel", "EffectsLabel", "VoiceLabel", "MuteLabel"]: sliders.get_node(title).custom_minimum_size.x = 104.0
-	sliders.get_node("Mute").size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	$Pages/Settings/Body/Audio.add_child(sliders)
 
 func _fill_factions() -> void:
@@ -414,11 +432,11 @@ func _fill_waiting() -> void:
 	var own: OptionButton = $Pages/Play/Body/Own
 	var id: String = _map_id()
 	body.get_node("Left/Invite/Link").text = _copy_text()
-	body.get_node("Left/CodeHint").text = "Or tell them the code: %s" % _code
+	body.get_node("Left/CodeHint").text = "Or tell them the code: [b]%s[/b]" % _code
 	body.get_node("Left/One/Row/Faction").text = own.get_item_text(own.selected)
 	body.get_node("Right/Map/Box/Name").text = MatchSettings.PLAY_MAPS[id]
 	body.get_node("Right/Map/Box/Info").text = _map_info(id)
-	$Pages/Waiting/Footer/Status.text = "Match code %s" % _code
+	$Pages/Waiting/Footer/Status.text = "Match code [b]%s[/b]" % _code
 
 func _start(message: Dictionary) -> bool:
 	var reason: String = MatchSettings.refusal(message.settings)

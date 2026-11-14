@@ -1,4 +1,10 @@
-[gd_resource type="Theme" load_steps=20 format=3]
+[gd_resource type="Theme" load_steps=26 format=3]
+
+[ext_resource type="FontFile" path="res://fonts/Inter-Regular.woff2" id="font_regular"]
+[ext_resource type="FontFile" path="res://fonts/Inter-SemiBold.woff2" id="font_semibold"]
+[ext_resource type="FontFile" path="res://fonts/Inter-Bold.woff2" id="font_bold"]
+[ext_resource type="Texture2D" path="res://ui/switch_on.svg" id="switch_on"]
+[ext_resource type="Texture2D" path="res://ui/switch_off.svg" id="switch_off"]
 
 [sub_resource type="StyleBoxFlat" id="field"]
 content_margin_left = 14.0
@@ -88,15 +94,6 @@ content_margin_top = 12.0
 content_margin_right = 14.0
 content_margin_bottom = 12.0
 bg_color = Color(0, 0, 0, 0)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.5, 0.5, 0.5, 1)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
 
 [sub_resource type="StyleBoxFlat" id="open_slot_gap"]
 content_margin_left = 14.0
@@ -105,15 +102,6 @@ content_margin_right = 14.0
 content_margin_bottom = 12.0
 expand_margin_top = -16.0
 bg_color = Color(0, 0, 0, 0)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.5, 0.5, 0.5, 1)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
 
 [sub_resource type="StyleBoxFlat" id="player_row"]
 content_margin_left = 14.0
@@ -158,8 +146,38 @@ border_color = Color(0.6, 0.5, 0.5, 1)
 [sub_resource type="StyleBoxEmpty" id="field_label_margin"]
 content_margin_top = 16.0
 
-[sub_resource type="FontVariation" id="bold"]
-variation_embolden = 0.5
+[sub_resource type="StyleBoxEmpty" id="switch_idle"]
+content_margin_left = 6.0
+content_margin_top = 4.0
+content_margin_right = 6.0
+content_margin_bottom = 4.0
+
+[sub_resource type="StyleBoxFlat" id="switch_hover"]
+content_margin_left = 6.0
+content_margin_top = 4.0
+content_margin_right = 6.0
+content_margin_bottom = 4.0
+bg_color = Color(0.22, 0.22, 0.22, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="outline_focus"]
+content_margin_left = 6.0
+content_margin_top = 4.0
+content_margin_right = 6.0
+content_margin_bottom = 4.0
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.6, 0.6, 0.6, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
 
 [sub_resource type="StyleBoxFlat" id="tag"]
 content_margin_left = 6.0
@@ -187,12 +205,14 @@ content_margin_top = 10.0
 content_margin_bottom = 24.0
 
 [resource]
+default_font = ExtResource("font_regular")
 default_font_size = 15
 Button/styles/disabled = SubResource("field")
 Button/styles/focus = SubResource("field_hover")
 Button/styles/hover = SubResource("field_hover")
 Button/styles/normal = SubResource("field")
-Button/styles/pressed = SubResource("selected")
+Button/styles/hover_pressed = SubResource("field_hover")
+Button/styles/pressed = SubResource("field_hover")
 Button/colors/font_disabled_color = Color(0.5, 0.5, 0.5, 1)
 OptionButton/styles/disabled = SubResource("field")
 OptionButton/styles/focus = SubResource("field_hover")
@@ -203,7 +223,18 @@ OptionButton/colors/font_disabled_color = Color(0.5, 0.5, 0.5, 1)
 LineEdit/styles/focus = SubResource("field_hover")
 LineEdit/styles/normal = SubResource("field")
 LineEdit/styles/read_only = SubResource("field")
+CheckButton/icons/checked = ExtResource("switch_on")
+CheckButton/icons/checked_disabled = ExtResource("switch_on")
+CheckButton/icons/unchecked = ExtResource("switch_off")
+CheckButton/icons/unchecked_disabled = ExtResource("switch_off")
+CheckButton/styles/disabled = SubResource("switch_idle")
+CheckButton/styles/focus = SubResource("outline_focus")
+CheckButton/styles/hover = SubResource("switch_hover")
+CheckButton/styles/hover_pressed = SubResource("switch_hover")
+CheckButton/styles/normal = SubResource("switch_idle")
+CheckButton/styles/pressed = SubResource("switch_idle")
 NavButton/base_type = &"Button"
+NavButton/fonts/font = ExtResource("font_semibold")
 NavButton/styles/disabled = SubResource("nav_idle")
 NavButton/styles/focus = SubResource("nav_hover")
 NavButton/styles/hover = SubResource("nav_hover")
@@ -212,6 +243,7 @@ NavButton/styles/normal = SubResource("nav_idle")
 NavButton/styles/pressed = SubResource("selected")
 ToggleButton/base_type = &"Button"
 ToggleButton/styles/hover_pressed = SubResource("selected")
+ToggleButton/styles/pressed = SubResource("selected")
 OpenSlot/base_type = &"PanelContainer"
 OpenSlot/styles/panel = SubResource("open_slot")
 OpenSlotGap/base_type = &"PanelContainer"
@@ -230,29 +262,32 @@ PrimaryButton/base_type = &"Button"
 PrimaryButton/colors/font_color = Color(1, 1, 1, 1)
 PrimaryButton/colors/font_disabled_color = Color(0.75, 0.85, 0.8, 1)
 PrimaryButton/colors/font_hover_color = Color(1, 1, 1, 1)
+PrimaryButton/fonts/font = ExtResource("font_semibold")
 PrimaryButton/font_sizes/font_size = 17
 PrimaryButton/styles/disabled = SubResource("primary")
 PrimaryButton/styles/focus = SubResource("primary_hover")
 PrimaryButton/styles/hover = SubResource("primary_hover")
+PrimaryButton/styles/hover_pressed = SubResource("primary_hover")
 PrimaryButton/styles/normal = SubResource("primary")
 PrimaryButton/styles/pressed = SubResource("primary_hover")
 FooterLink/base_type = &"Button"
 FooterLink/colors/font_color = Color(0.8, 0.8, 0.8, 1)
 FooterLink/colors/font_hover_color = Color(1, 1, 1, 1)
 FooterLink/font_sizes/font_size = 14
-FooterLink/styles/focus = SubResource("link_idle")
+FooterLink/styles/focus = SubResource("outline_focus")
 FooterLink/styles/hover = SubResource("link_idle")
+FooterLink/styles/hover_pressed = SubResource("link_idle")
 FooterLink/styles/normal = SubResource("link_idle")
 FooterLink/styles/pressed = SubResource("link_idle")
 PageTitle/base_type = &"Label"
-PageTitle/fonts/font = SubResource("bold")
+PageTitle/fonts/font = ExtResource("font_bold")
 PageTitle/font_sizes/font_size = 32
 FieldLabel/base_type = &"Label"
-FieldLabel/fonts/font = SubResource("bold")
+FieldLabel/fonts/font = ExtResource("font_semibold")
 FieldLabel/font_sizes/font_size = 14
 FieldLabel/styles/normal = SubResource("field_label_margin")
 PanelTitle/base_type = &"Label"
-PanelTitle/fonts/font = SubResource("bold")
+PanelTitle/fonts/font = ExtResource("font_semibold")
 PanelTitle/font_sizes/font_size = 14
 FooterStatus/base_type = &"Label"
 FooterStatus/colors/font_color = Color(0.8, 0.8, 0.8, 1)
@@ -264,10 +299,21 @@ Subtitle/base_type = &"Label"
 Subtitle/colors/font_color = Color(0.8, 0.8, 0.8, 1)
 Subtitle/font_sizes/font_size = 14
 Subtitle/styles/normal = SubResource("spaced")
+FooterRich/base_type = &"RichTextLabel"
+FooterRich/colors/default_color = Color(0.8, 0.8, 0.8, 1)
+FooterRich/font_sizes/bold_font_size = 14
+FooterRich/font_sizes/normal_font_size = 14
+FooterRich/fonts/bold_font = ExtResource("font_bold")
+HintRich/base_type = &"RichTextLabel"
+HintRich/colors/default_color = Color(0.8, 0.8, 0.8, 1)
+HintRich/font_sizes/bold_font_size = 12
+HintRich/font_sizes/normal_font_size = 12
+HintRich/fonts/bold_font = ExtResource("font_bold")
 Hint/base_type = &"Label"
 Hint/colors/font_color = Color(0.8, 0.8, 0.8, 1)
 Hint/font_sizes/font_size = 12
 Logo/base_type = &"Label"
+Logo/fonts/font = ExtResource("font_bold")
 Logo/font_sizes/font_size = 22
 Logo/styles/normal = SubResource("logo_margin")
 SidebarVersion/base_type = &"Label"

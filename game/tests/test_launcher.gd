@@ -11,6 +11,11 @@ const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const OnlineTests = preload("res://tests/test_online_scene.gd")
 const LOOPBACK := "wss://127.0.0.1:9/ws"
 const FocusCards = preload("res://scripts/playtest/focus_cards.gd")
+const PauseMenu = preload("res://scripts/presentation/pause_menu.gd")
+const PlaytestSettings = preload("res://scripts/playtest/playtest_settings.gd")
+const Credits = preload("res://scripts/presentation/credits.gd")
+const DashedPanel = preload("res://scripts/presentation/dashed_panel.gd")
+const INTER := "res://fonts/Inter-Regular.woff2"
 const SELECTED := Color(0.18, 0.43, 0.33)
 const FIELD := Color(0.165, 0.165, 0.165)
 const SIZES: Array[Vector2i] = [Vector2i(1280, 720), Vector2i(1920, 1080), Vector2i(2576, 1145)]
@@ -18,7 +23,7 @@ const SIZES: Array[Vector2i] = [Vector2i(1280, 720), Vector2i(1920, 1080), Vecto
 const STRETCHED: Array[Array] = [[Vector2i(1920, 1080), Vector2i(1280, 720)], [Vector2i(2576, 1145), Vector2i(1620, 720)]]
 
 func cases() -> Array[Callable]:
-	return [test_picks_defaults, test_picks_fallback_per_field, test_picks_keep_other_sections, test_fullscreen_target, test_fullscreen_switch, test_this_build_line, test_graphics_group, test_graphics_shows_stored, test_sidebar_switches_pages, test_aspect_expand_and_restore, test_layout_every_page, test_opens_on_bot_with_picks, test_toggle_friend, test_map_info_and_summary, test_own_faction_shared, test_start_saves_picks, test_advanced_only_prerelease, test_link_opens_join, test_lock_while_connecting, test_waiting_view, test_join_error_footer, test_join_needs_code, test_relay_fields_follow, test_column_widths, test_player_rows_padded, test_footer_status_style, test_vertical_rhythm, test_waiting_two_columns]
+	return [test_picks_defaults, test_picks_fallback_per_field, test_picks_keep_other_sections, test_fullscreen_target, test_fullscreen_switch, test_this_build_line, test_graphics_group, test_graphics_shows_stored, test_graphics_mirror_esc_menu, test_no_green_on_switches, test_mute_is_a_switch, test_inter_font, test_footer_error_hugs_text, test_waiting_bold_codes_and_dashed_slots, test_sidebar_switches_pages, test_aspect_expand_and_restore, test_layout_every_page, test_opens_on_bot_with_picks, test_toggle_friend, test_map_info_and_summary, test_own_faction_shared, test_start_saves_picks, test_advanced_only_prerelease, test_link_opens_join, test_lock_while_connecting, test_waiting_view, test_join_error_footer, test_join_needs_code, test_relay_fields_follow, test_column_widths, test_player_rows_padded, test_footer_status_style, test_vertical_rhythm, test_waiting_two_columns]
 
 func _picked(selector: OptionButton) -> String:
 	return selector.get_item_metadata(selector.selected)
@@ -292,6 +297,7 @@ func test_advanced_only_prerelease(runner) -> bool:
 func _texts(node: Node) -> Array[String]:
 	var found: Array[String] = []
 	for label: Node in node.find_children("*", "Label", true, false): found.append(label.text)
+	for rich: RichTextLabel in node.find_children("*", "RichTextLabel", true, false): found.append(rich.get_parsed_text())
 	return found
 
 func _nav_disabled(launcher) -> Array[bool]:
@@ -378,7 +384,7 @@ func test_waiting_view(runner) -> bool:
 	runner.check("Open" in two and "waiting for your friend…" in two, "L12a row 2 is Open, got %s" % [two])
 	var map_texts: Array[String] = _texts(waiting.get_node("Body/Right/Map"))
 	runner.check(MatchSettings.PLAY_MAPS["ashfall"] in map_texts and launcher._map_info("ashfall") in map_texts, "L12a map name and info, got %s" % [map_texts])
-	runner.check(waiting.get_node("Footer/Status").text == "Match code ABC234", "L12a footer shows the match code")
+	runner.check(waiting.get_node("Footer/Status").get_parsed_text() == "Match code ABC234", "L12a footer shows the match code")
 	await runner.process_frame
 	await runner.process_frame
 	var controls: Array[Control] = []
@@ -495,7 +501,10 @@ func test_this_build_line(runner) -> bool:
 		var build: Button = launcher.get_node("Pages/%s/ThisBuild" % page_name)
 		runner.check(not build.visible, "L15b %s ThisBuild is hidden while the switch is off" % page_name)
 		runner.check(build.get_index() + 1 == launcher.get_node("Pages/%s/Divider" % page_name).get_index(), "L15b %s ThisBuild sits just above the divider" % page_name)
-		runner.check(build.theme_type_variation == &"FooterLink" and build.flat, "L15b %s ThisBuild is a line-style link" % page_name)
+		runner.check(build.theme_type_variation == &"FooterLink" and build.get_theme_stylebox("normal") is StyleBoxEmpty, "L15b %s ThisBuild is a line-style link" % page_name)
+		runner.check(not build.flat, "R4 %s ThisBuild leaves flat off, the link style alone makes it a line" % page_name)
+		var focus: StyleBox = build.get_theme_stylebox("focus")
+		runner.check(focus is StyleBoxFlat and focus.border_width_left > 0, "R3 %s ThisBuild shows a visible focus outline" % page_name)
 	toggle.button_pressed = true
 	for page_name: String in ["Play", "Join"]:
 		var build: Button = launcher.get_node("Pages/%s/ThisBuild" % page_name)
@@ -516,33 +525,39 @@ func test_graphics_group(runner) -> bool:
 	var column: Control = launcher.get_node("Pages/Settings/Body/Playtest")
 	var header: Label = column.get_node_or_null("GraphicsHeader")
 	runner.check(header != null and header.text == "Graphics" and header.theme_type_variation == &"FieldLabel", "G1 Graphics has its own header in the page style")
-	var quality: Button = column.get_node_or_null("Quality")
-	var neon: Button = column.get_node_or_null("Neon")
-	var smooth: Button = column.get_node_or_null("Smooth")
-	var destinations: Button = column.get_node_or_null("Destinations")
-	runner.check(quality != null and neon != null and smooth != null and destinations != null, "G1 the four controls exist")
-	if quality == null or neon == null or smooth == null or destinations == null:
+	var quality: Control = column.get_node_or_null("Quality")
+	var low: Button = column.get_node_or_null("Quality/Low")
+	var high: Button = column.get_node_or_null("Quality/High")
+	var neon: CheckButton = column.get_node_or_null("Neon")
+	var smooth: CheckButton = column.get_node_or_null("Smooth")
+	var destinations: CheckButton = column.get_node_or_null("Destinations")
+	runner.check(quality != null and low != null and high != null and neon != null and smooth != null and destinations != null, "G1 the quality toggle and three switches exist")
+	if quality == null or low == null or high == null or neon == null or smooth == null or destinations == null:
 		launcher.free()
 		_restore(saved)
 		return true
 	runner.check(header.get_index() + 1 == quality.get_index() and quality.get_index() + 1 == neon.get_index() and neon.get_index() + 1 == smooth.get_index() and smooth.get_index() + 1 == destinations.get_index(), "G1 the controls follow the header in order")
-	runner.check(quality.text == "Quality: High" and neon.text == "Neon colours: Off" and smooth.text == "Smooth movement: On" and destinations.text == "Show unit destinations: Off", "G2 defaults read like the Esc menu, got %s | %s | %s | %s" % [quality.text, neon.text, smooth.text, destinations.text])
-	quality.pressed.emit()
-	runner.check(GraphicsSettings.load_quality() == GraphicsSettings.LOW and quality.text == "Quality: Low", "G3 Quality to Low is stored and shown, got %s" % quality.text)
-	quality.pressed.emit()
-	runner.check(GraphicsSettings.load_quality() == GraphicsSettings.HIGH and quality.text == "Quality: High", "G3 Quality back to High is stored and shown")
-	neon.pressed.emit()
-	runner.check(GraphicsSettings.load_neon() and neon.text == "Neon colours: On", "G3 Neon on is stored and shown")
-	neon.pressed.emit()
-	runner.check(not GraphicsSettings.load_neon() and neon.text == "Neon colours: Off", "G3 Neon off is stored and shown")
-	smooth.pressed.emit()
-	runner.check(not GraphicsSettings.load_smooth() and smooth.text == "Smooth movement: Off", "G3 Smooth off is stored and shown")
-	smooth.pressed.emit()
-	runner.check(GraphicsSettings.load_smooth() and smooth.text == "Smooth movement: On", "G3 Smooth on is stored and shown")
-	destinations.pressed.emit()
-	runner.check(GraphicsSettings.load_destinations() and destinations.text == "Show unit destinations: On", "G3 Destinations on is stored and shown")
-	destinations.pressed.emit()
-	runner.check(not GraphicsSettings.load_destinations() and destinations.text == "Show unit destinations: Off", "G3 Destinations off is stored and shown")
+	runner.check(low.theme_type_variation == &"ToggleButton" and high.theme_type_variation == &"ToggleButton" and low.toggle_mode and high.toggle_mode, "F2 Quality is a Low|High toggle styled like Bot|Friend")
+	runner.check(not low.button_pressed and high.button_pressed and not neon.button_pressed and smooth.button_pressed and not destinations.button_pressed, "G2 defaults read like the Esc menu: High, Neon off, Smooth on, Destinations off")
+	runner.check(neon.text == "Neon colours" and smooth.text == "Smooth movement" and destinations.text == "Show unit destinations", "G2 the switches keep the Esc menu's labels, got %s | %s | %s" % [neon.text, smooth.text, destinations.text])
+	low.pressed.emit()
+	runner.check(GraphicsSettings.load_quality() == GraphicsSettings.LOW and low.button_pressed and not high.button_pressed, "G3 Quality to Low is stored and shown")
+	low.pressed.emit()
+	runner.check(GraphicsSettings.load_quality() == GraphicsSettings.LOW and low.button_pressed and not high.button_pressed, "G3 pressing the selected side keeps it selected")
+	high.pressed.emit()
+	runner.check(GraphicsSettings.load_quality() == GraphicsSettings.HIGH and high.button_pressed and not low.button_pressed, "G3 Quality back to High is stored and shown")
+	neon.button_pressed = true
+	runner.check(GraphicsSettings.load_neon(), "G3 Neon on is stored")
+	neon.button_pressed = false
+	runner.check(not GraphicsSettings.load_neon(), "G3 Neon off is stored")
+	smooth.button_pressed = false
+	runner.check(not GraphicsSettings.load_smooth(), "G3 Smooth off is stored")
+	smooth.button_pressed = true
+	runner.check(GraphicsSettings.load_smooth(), "G3 Smooth on is stored")
+	destinations.button_pressed = true
+	runner.check(GraphicsSettings.load_destinations(), "G3 Destinations on is stored")
+	destinations.button_pressed = false
+	runner.check(not GraphicsSettings.load_destinations(), "G3 Destinations off is stored")
 	launcher.free()
 	_restore(saved)
 	return true
@@ -559,11 +574,35 @@ func test_graphics_shows_stored(runner) -> bool:
 	await runner.process_frame
 	var column: Control = launcher.get_node("Pages/Settings/Body/Playtest")
 	var shown: Array = []
-	for each: String in ["Quality", "Neon", "Smooth", "Destinations"]:
+	for each: String in ["Quality/Low", "Quality/High", "Neon", "Smooth", "Destinations"]:
 		var button: Button = column.get_node_or_null(each)
-		shown.append(button.text if button != null else "missing")
-	runner.check(shown == ["Quality: Low", "Neon colours: On", "Smooth movement: Off", "Show unit destinations: On"], "G4 stored values show on the controls, got %s" % [shown])
+		shown.append(button.button_pressed if button != null else "missing")
+	runner.check(shown == [true, false, true, false, true], "G4 stored values show on the controls, got %s" % [shown])
 	launcher.free()
+	_restore(saved)
+	return true
+
+func test_graphics_mirror_esc_menu(runner) -> bool:
+	var saved: String = AudioSettings.path
+	AudioSettings.path = scratch_for("graphics-mirror")
+	for stored: Array in [[GraphicsSettings.LOW, true, false, true], [GraphicsSettings.HIGH, false, true, false]]:
+		GraphicsSettings.save_quality(stored[0])
+		GraphicsSettings.save_neon(stored[1])
+		GraphicsSettings.save_smooth(stored[2])
+		GraphicsSettings.save_destinations(stored[3])
+		var launcher = Launcher.instantiate()
+		runner.root.add_child(launcher)
+		await runner.process_frame
+		var menu = PauseMenu.new(false)
+		var column: Control = launcher.get_node("Pages/Settings/Body/Playtest")
+		var quality: String = "Low" if column.get_node("Quality/Low").button_pressed else "High"
+		runner.check(menu.find_child("Quality", true, false).text == "Quality: " + quality, "R2 launcher and Esc menu agree on Quality for %s" % [stored])
+		for each: String in ["Neon", "Smooth", "Destinations"]:
+			var control: CheckButton = column.get_node(each)
+			var expected: String = "%s: %s" % [control.text, "On" if control.button_pressed else "Off"]
+			runner.check(menu.find_child(each, true, false).text == expected, "R2 launcher %s switch and Esc menu button say the same, expected %s for %s" % [each, expected, stored])
+		menu.free()
+		launcher.free()
 	_restore(saved)
 	return true
 
@@ -638,8 +677,10 @@ func test_footer_status_style(runner) -> bool:
 	var saved: String = AudioSettings.path
 	var launcher = await _launcher_with(runner, "footer-style", {})
 	_restore(saved)
-	var info_size: int = launcher.get_node("Pages/Waiting/Footer/Status").get_theme_font_size("font_size")
+	var info_size: int = launcher.get_node("Pages/Join/Footer/Status").get_theme_font_size("font_size")
 	runner.check(info_size <= 14, "L19c the footer text is at most 14 px, got %s" % info_size)
+	var waiting_size: int = launcher.get_node("Pages/Waiting/Footer/Status").get_theme_font_size("normal_font_size")
+	runner.check(waiting_size <= 14, "L19c the Waiting footer text is at most 14 px, got %s" % waiting_size)
 	var seen: Dictionary = {}
 	for page_name: String in ["Play", "Join"]:
 		launcher.show_page(page_name)
@@ -664,7 +705,7 @@ func test_footer_status_style(runner) -> bool:
 	launcher.free()
 	return true
 
-func _text_top(label: Label) -> float:
+func _text_top(label: Control) -> float:
 	return label.get_global_rect().position.y + label.get_theme_stylebox("normal").get_margin(SIDE_TOP)
 
 func test_vertical_rhythm(runner) -> bool:
@@ -675,9 +716,9 @@ func test_vertical_rhythm(runner) -> bool:
 	var rows: Array = [["Play", "bot", "Body/OwnLabel", "Body/Own", "Body/OpponentLabel"], ["Play", "bot", "Body/OpponentLabel", "Body/Opponent", "Body/BotLabel"], ["Join", "bot", "Body/CodeLabel", "Body/Code", "Body/CodeHint", 6.0, 10.0], ["Waiting", "bot", "Body/Left/InviteLabel", "Body/Left/Invite", "Body/Left/CodeHint", 6.0, 10.0]]
 	for row: Array in rows:
 		await _settle(runner, launcher, row[0], row[1])
-		var label: Label = launcher.get_node_or_null("Pages/%s/%s" % [row[0], row[2]])
+		var label: Control = launcher.get_node_or_null("Pages/%s/%s" % [row[0], row[2]])
 		var control: Control = launcher.get_node_or_null("Pages/%s/%s" % [row[0], row[3]])
-		var next: Label = launcher.get_node_or_null("Pages/%s/%s" % [row[0], row[4]])
+		var next: Control = launcher.get_node_or_null("Pages/%s/%s" % [row[0], row[4]])
 		var low: float = row[5] if row.size() > 5 else 20.0
 		var high: float = row[6] if row.size() > 6 else 26.0
 		runner.check(label != null and control != null and next != null, "L19d %s rows exist: %s" % [row[0], row])
@@ -720,7 +761,118 @@ func test_waiting_two_columns(runner) -> bool:
 		runner.check(link.get_global_rect().end.x <= copy.get_global_rect().position.x and absf(link.get_global_rect().get_center().y - copy.get_global_rect().get_center().y) < 2.0, "L19e Copy sits beside the link field on one row")
 		runner.check(map.get_global_rect().position.x >= left.get_global_rect().end.x + 30.0, "L19e the map panel is in a second column")
 		runner.check(map.size.x >= 370.0 and map.size.x <= 390.0, "L19e the map panel is about 380 px wide, got %s" % map.size.x)
-		runner.check(launcher.get_node("Pages/Waiting/Footer/Cancel").text == "Cancel match" and launcher.get_node("Pages/Waiting/Footer/Status").text == "Match code K7Q2", "L19e footer shows the match code and Cancel")
+		runner.check(launcher.get_node("Pages/Waiting/Footer/Cancel").text == "Cancel match" and launcher.get_node("Pages/Waiting/Footer/Status").get_parsed_text() == "Match code K7Q2", "L19e footer shows the match code and Cancel")
+	built[1].free()
+	built[0].free()
+	AudioSettings.path = saved
+	return true
+
+const BUTTON_STATES: Array[String] = ["normal", "hover", "pressed", "hover_pressed", "disabled", "focus"]
+
+func test_no_green_on_switches(runner) -> bool:
+	var saved: String = AudioSettings.path
+	var launcher = await _launcher_with(runner, "no-green", {}, true)
+	_restore(saved)
+	var switches: Array[Node] = launcher.find_children("*", "CheckButton", true, false)
+	runner.check(switches.size() >= 6, "U1 fixture: Playtest, Mute, Fullscreen and three Graphics switches exist, got %d" % switches.size())
+	var checked: int = 0
+	for button: BaseButton in launcher.find_children("*", "BaseButton", true, false):
+		if button.theme_type_variation == &"NavButton" or button.theme_type_variation == &"ToggleButton": continue
+		for state: String in BUTTON_STATES:
+			var style: StyleBox = button.get_theme_stylebox(state)
+			checked += 1
+			runner.check(not (style is StyleBoxFlat and style.bg_color == SELECTED), "U1 %s draws no selection green in its %s state" % [button.get_path(), state])
+	runner.check(checked > 100, "U1 the sweep covered the controls, got %d state checks" % checked)
+	for button: CheckButton in switches:
+		var hover: StyleBox = button.get_theme_stylebox("hover")
+		var hover_pressed: StyleBox = button.get_theme_stylebox("hover_pressed")
+		runner.check(hover is StyleBoxFlat and hover.bg_color.r > FIELD.r and hover.bg_color.r < 0.3, "U1 %s hovers in a slightly lighter field colour" % button.name)
+		runner.check(hover_pressed is StyleBoxFlat and hover_pressed.bg_color == hover.bg_color, "U1 %s looks the same hovered on or off" % button.name)
+		runner.check(not (button.get_theme_stylebox("pressed") is StyleBoxFlat and button.get_theme_stylebox("pressed").bg_color.a > 0.0), "U1 %s has no fill when on" % button.name)
+		var on: Texture2D = button.get_theme_icon("checked")
+		var off: Texture2D = button.get_theme_icon("unchecked")
+		runner.check(on != null and off != null and on != off and on.resource_path.begins_with("res://ui/") and off.resource_path.begins_with("res://ui/"), "U1 %s shows its state with the launcher's own knob icons" % button.name)
+	launcher.free()
+	return true
+
+func test_mute_is_a_switch(runner) -> bool:
+	var saved: String = AudioSettings.path
+	var launcher = await _launcher_with(runner, "mute-switch", {})
+	_restore(saved)
+	launcher.show_page("Settings")
+	await runner.process_frame
+	await runner.process_frame
+	var mute: Control = launcher.get_node("Pages/Settings/Body/Audio/Volume/Mute")
+	var music: Control = launcher.get_node("Pages/Settings/Body/Audio/Volume/Music")
+	runner.check(mute is CheckButton and mute.text == "Mute", "U2 Mute is a switch with the word Mute")
+	runner.check(mute.size.x <= mute.get_combined_minimum_size().x + 1.0, "U2 Mute is not stretched across the column, got %s" % mute.size.x)
+	runner.check(absf(mute.get_global_rect().position.x - music.get_global_rect().position.x) <= 1.0, "U2 Mute is left-aligned with the sliders")
+	launcher.free()
+	return true
+
+func test_inter_font(runner) -> bool:
+	var theme: Theme = load("res://ui/launcher_theme.tres")
+	var font: Font = theme.default_font
+	runner.check(font is FontFile and font.resource_path == INTER, "F1 the launcher default font is Inter Regular, got %s" % [font.resource_path if font != null else "none"])
+	runner.check(font != null and font.has_char(65) and font.get_string_size("Wargrid", HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x > 30.0, "F1 the woff2 imports and measures text")
+	for type: String in ["PageTitle", "FieldLabel", "PanelTitle"]:
+		var heavy: Font = theme.get_font("font", type)
+		runner.check(heavy is FontFile and heavy.resource_path in ["res://fonts/Inter-SemiBold.woff2", "res://fonts/Inter-Bold.woff2"], "F1 %s uses a real Inter weight, got %s" % [type, heavy.resource_path])
+	var fake: int = 0
+	for type: String in theme.get_font_type_list():
+		for each: String in theme.get_font_list(type):
+			var variation: Font = theme.get_font(each, type)
+			if variation is FontVariation and variation.variation_embolden != 0.0: fake += 1
+	runner.check(fake == 0, "F1 no fake bold left in the launcher theme, got %d" % fake)
+	for file: String in ["Inter-Regular.woff2", "Inter-SemiBold.woff2", "Inter-Bold.woff2", "Inter-OFL.txt"]:
+		runner.check(FileAccess.file_exists("res://fonts/" + file), "F1 %s ships in game/fonts" % file)
+	return true
+
+func test_footer_error_hugs_text(runner) -> bool:
+	var saved: String = AudioSettings.path
+	var launcher = await _launcher_with(runner, "hug", {})
+	_restore(saved)
+	launcher.show_page("Join")
+	launcher._origin = "Join"
+	launcher._fail("Cannot connect to relay")
+	await runner.process_frame
+	await runner.process_frame
+	var status: Label = launcher.get_node("Pages/Join/Footer/Status")
+	var button: Control = launcher.get_node("Pages/Join/Footer/Join")
+	var font: Font = status.get_theme_font("font")
+	var text_width: float = font.get_string_size(status.text, HORIZONTAL_ALIGNMENT_LEFT, -1, status.get_theme_font_size("font_size")).x
+	runner.check(status.size.x <= text_width + 40.0 and status.get_line_count() == 1, "F3 a short error strip hugs its text, strip %s for text %s" % [status.size.x, text_width])
+	var long_text: String = "Your copy of Ashfall differs from the host's, so the match cannot start until both sides run the same build of the game; ask your friend to reload the page. " + "More detail. ".repeat(8)
+	launcher._fail(long_text)
+	await runner.process_frame
+	await runner.process_frame
+	runner.check(status.get_line_count() > 1, "F3 a long message wraps, got %d lines" % status.get_line_count())
+	runner.check(status.get_global_rect().end.x <= button.get_global_rect().position.x and status.size.x > 400.0, "F3 the wrapped strip stays inside the footer's left area, got %s against the button at %s" % [status.get_global_rect(), button.get_global_rect().position.x])
+	launcher._fail("Cannot connect to relay")
+	await runner.process_frame
+	await runner.process_frame
+	runner.check(status.size.x <= text_width + 40.0 and status.get_line_count() == 1, "F3 a short message after a long one hugs again, got %s" % status.size.x)
+	launcher.free()
+	return true
+
+func test_waiting_bold_codes_and_dashed_slots(runner) -> bool:
+	var saved: String = AudioSettings.path
+	AudioSettings.path = scratch_for("waiting-bold")
+	var built: Array = _port_with_launcher(runner, Vector2i(1280, 720), Vector2i(1280, 720))
+	var launcher = built[1]
+	await _settle(runner, launcher, "Waiting")
+	var footer: Control = launcher.get_node("Pages/Waiting/Footer/Status")
+	var hint: Control = launcher.get_node("Pages/Waiting/Body/Left/CodeHint")
+	for each: Control in [footer, hint]:
+		runner.check(each is RichTextLabel and each.bbcode_enabled and "[b]K7Q2[/b]" in each.text, "F4 %s shows the code in bold, got %s" % [each.name, each.text if each is RichTextLabel else "not rich text"])
+		runner.check(each is RichTextLabel and each.get_theme_font("bold_font").resource_path == "res://fonts/Inter-Bold.woff2", "F4 %s bold is real Inter Bold" % each.name)
+	runner.check(launcher.get_node("Pages/Waiting/Body/Left/Invite/Link").get_theme_font("font").resource_path == INTER, "F4 the invite link stays in Inter")
+	var dashed: Array[Control] = [launcher.get_node("Pages/Waiting/Body/Left/Two"), launcher.get_node("Pages/Play/Body/OpenSlot")]
+	for row: Control in dashed:
+		var style: StyleBox = row.get_theme_stylebox("panel")
+		runner.check(row.get_script() == DashedPanel and style is StyleBoxFlat and style.border_width_left == 0 and style.border_width_top == 0, "F4 %s draws a dashed outline instead of a solid border" % row.get_path())
+	var corners: PackedVector2Array = DashedPanel.edges(Rect2(0, 0, 100, 40))
+	runner.check(corners == PackedVector2Array([Vector2(0, 0), Vector2(100, 0), Vector2(100, 0), Vector2(100, 40), Vector2(100, 40), Vector2(0, 40), Vector2(0, 40), Vector2(0, 0)]), "F4 the dashed outline has four edges, got %s" % [corners])
 	built[1].free()
 	built[0].free()
 	AudioSettings.path = saved

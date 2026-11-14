@@ -3,8 +3,7 @@ extends AudioStreamPlayer
 const GAP_SECONDS := 25.0
 const MENU := "res://audio/music/stay_the_course.ogg"
 const PLAYLIST: Array[String] = [
-	"res://audio/music/conflict.ogg", "res://audio/music/enemy_spotted.ogg", "res://audio/music/mammoth.ogg",
-	"res://audio/music/stay_the_course.ogg", "res://audio/music/hitman.ogg",
+	"res://audio/music/conflict.ogg", "res://audio/music/enemy_spotted.ogg", "res://audio/music/mammoth.ogg", "res://audio/music/hitman.ogg",
 ]
 var _paths: Array[String] = []
 var _gap: float = 0.0

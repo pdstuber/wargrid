@@ -13,7 +13,7 @@ var sessions: String = "user://test-playtests-%d" % OS.get_process_id()
 var saved_dir: String = ""
 
 func cases() -> Array[Callable]:
-	return [test_shipped_focus_file_valid, test_focus_validation, test_trigger_matching, test_switch_defaults_and_override, test_build_id, test_launcher_focus_card, test_launcher_shows_open_sitting_card, test_capture_bounds, test_marker_fields, test_session_schema, test_session_web_download, test_session_desktop_write, test_session_resumes_after_restart, test_suite_playtest_dir_redirected]
+	return [test_shipped_focus_file_valid, test_focus_validation, test_trigger_matching, test_switch_defaults_and_override, test_build_id, test_launcher_focus_card, test_switch_saves_without_cards, test_launcher_shows_open_sitting_card, test_capture_bounds, test_marker_fields, test_session_schema, test_session_web_download, test_session_desktop_write, test_session_resumes_after_restart, test_suite_playtest_dir_redirected]
 
 func _begin() -> String:
 	var saved: String = AudioSettings.path
@@ -159,7 +159,6 @@ func test_launcher_focus_card(runner) -> bool:
 		runner.root.add_child(port)
 		var view := Rect2(Vector2.ZERO, Vector2(size))
 		var label := str(size)
-		runner.check(port.size == size, "PT6 the viewport really is %s" % label)
 		for page_name: String in ["Play", "Join"]:
 			await _check_this_build(runner, port, view, "%s %s" % [page_name, label], page_name)
 		port.free()
@@ -169,6 +168,7 @@ func test_launcher_focus_card(runner) -> bool:
 func _check_this_build(runner, port: SubViewport, view: Rect2, label: String, page_name: String) -> void:
 	PlaytestSettings.save_enabled(true)
 	var launcher = await _launcher(runner, port, page_name)
+	runner.check(launcher.get_viewport().get_visible_rect().size == view.size, "PT6 the viewport really is %s" % label)
 	var page: Control = launcher.get_node("Pages/" + page_name)
 	var button: Button = launcher.get_node_or_null("Pages/%s/ThisBuild" % page_name)
 	runner.check(button != null and button.visible, "PT6 ThisBuild shows with the helper on at %s" % label)
@@ -218,6 +218,23 @@ func _check_this_build(runner, port: SubViewport, view: Rect2, label: String, pa
 		await runner.process_frame
 		runner.check(button == null or not button.visible, "PT6 switching off hides ThisBuild at %s" % label)
 	launcher.free()
+
+func test_switch_saves_without_cards(runner) -> bool:
+	var saved := _begin()
+	var launcher = Launcher.instantiate()
+	var none: Array[Dictionary] = []
+	launcher.focus_cards = none
+	runner.root.add_child(launcher)
+	await runner.process_frame
+	var toggle: CheckButton = launcher.get_node("Pages/Settings/Body/Playtest/PlaytestSwitch")
+	runner.check(launcher.get_node_or_null("FocusPanel") == null, "R6 fixture: with no focus cards the launcher builds no FocusPanel")
+	toggle.button_pressed = false
+	runner.check(not PlaytestSettings.enabled("0.11.0-dev"), "R6 the switch stores off without focus cards")
+	toggle.button_pressed = true
+	runner.check(PlaytestSettings.enabled("0.11.0"), "R6 the switch stores on without focus cards")
+	launcher.free()
+	_end(saved)
+	return true
 
 func _image(width: int, height: int) -> Image:
 	var image := Image.create(width, height, false, Image.FORMAT_RGB8)

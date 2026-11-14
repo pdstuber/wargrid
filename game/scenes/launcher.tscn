@@ -1,8 +1,9 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/launcher.gd" id="1"]
 [ext_resource type="Theme" path="res://ui/launcher_theme.tres" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/advanced_fold.tscn" id="3"]
+[ext_resource type="Script" path="res://scripts/presentation/dashed_panel.gd" id="4"]
 
 [sub_resource type="ButtonGroup" id="nav"]
 
@@ -195,6 +196,7 @@ layout_mode = 2
 [node name="OpenSlot" type="PanelContainer" parent="Pages/Play/Body"]
 layout_mode = 2
 visible = false
+script = ExtResource("4")
 theme_type_variation = &"OpenSlotGap"
 
 [node name="Row" type="HBoxContainer" parent="Pages/Play/Body/OpenSlot"]
@@ -222,7 +224,6 @@ visible = false
 layout_mode = 2
 size_flags_horizontal = 0
 theme_type_variation = &"FooterLink"
-flat = true
 visible = false
 
 [node name="Divider" type="HSeparator" parent="Pages/Play"]
@@ -235,12 +236,15 @@ theme_override_constants/separation = 16
 
 [node name="Status" type="Label" parent="Pages/Play/Footer"]
 layout_mode = 2
-size_flags_horizontal = 3
 size_flags_vertical = 4
 custom_minimum_size = Vector2(0, 24)
 theme_type_variation = &"FooterStatus"
-autowrap_mode = 3
 max_lines_visible = 3
+
+[node name="Fill" type="Control" parent="Pages/Play/Footer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.01
 
 [node name="Start" type="Button" parent="Pages/Play/Footer"]
 layout_mode = 2
@@ -338,7 +342,6 @@ layout_mode = 2
 layout_mode = 2
 size_flags_horizontal = 0
 theme_type_variation = &"FooterLink"
-flat = true
 visible = false
 
 [node name="Divider" type="HSeparator" parent="Pages/Join"]
@@ -351,12 +354,15 @@ theme_override_constants/separation = 16
 
 [node name="Status" type="Label" parent="Pages/Join/Footer"]
 layout_mode = 2
-size_flags_horizontal = 3
 size_flags_vertical = 4
 custom_minimum_size = Vector2(0, 24)
 theme_type_variation = &"FooterStatus"
-autowrap_mode = 3
 max_lines_visible = 3
+
+[node name="Fill" type="Control" parent="Pages/Join/Footer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.01
 
 [node name="Join" type="Button" parent="Pages/Join/Footer"]
 layout_mode = 2
@@ -494,9 +500,12 @@ layout_mode = 2
 theme_type_variation = &"PrimaryButton"
 text = "Copy code"
 
-[node name="CodeHint" type="Label" parent="Pages/Waiting/Body/Left"]
+[node name="CodeHint" type="RichTextLabel" parent="Pages/Waiting/Body/Left"]
 layout_mode = 2
-theme_type_variation = &"Hint"
+theme_type_variation = &"HintRich"
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
 
 [node name="PlayersLabel" type="Label" parent="Pages/Waiting/Body/Left"]
 layout_mode = 2
@@ -531,6 +540,7 @@ theme_type_variation = &"Hint"
 
 [node name="Two" type="PanelContainer" parent="Pages/Waiting/Body/Left"]
 layout_mode = 2
+script = ExtResource("4")
 theme_type_variation = &"OpenSlot"
 
 [node name="Row" type="HBoxContainer" parent="Pages/Waiting/Body/Left/Two"]
@@ -584,14 +594,15 @@ layout_mode = 2
 custom_minimum_size = Vector2(0, 88)
 theme_override_constants/separation = 16
 
-[node name="Status" type="Label" parent="Pages/Waiting/Footer"]
+[node name="Status" type="RichTextLabel" parent="Pages/Waiting/Footer"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
 custom_minimum_size = Vector2(0, 24)
-theme_type_variation = &"FooterStatus"
-autowrap_mode = 3
-max_lines_visible = 3
+theme_type_variation = &"FooterRich"
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
 
 [node name="Cancel" type="Button" parent="Pages/Waiting/Footer"]
 layout_mode = 2

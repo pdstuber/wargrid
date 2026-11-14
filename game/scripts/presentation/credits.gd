@@ -1,11 +1,12 @@
 extends RefCounted
 
 const WARGRID_LINE: String = "Wargrid © 2026 Philipp Stuber. Free software under the GNU GPL v3 or later, with no warranty. License and source: github.com/pdstuber/wargrid"
+const INTER_LINE: String = "Inter 4.1, Copyright (c) 2016 The Inter Project Authors (github.com/rsms/inter), licensed under the SIL Open Font License 1.1."
 const MACLEOD_HEADING: String = "Attribution text requested by Kevin MacLeod"
 
-static func text(credits_md: String, notice_md: String, license_text: String, components: Array, licenses: Dictionary) -> String:
+static func text(credits_md: String, notice_md: String, license_text: String, components: Array, licenses: Dictionary, font_license: String = "") -> String:
 	var md: String = credits_md.replace("\r\n", "\n")
-	var parts: PackedStringArray = [WARGRID_LINE, "Music\n" + _music(md), _voice(md), "Maps\n" + notice_md, "Godot Engine\n" + license_text, _third_party(components, licenses)]
+	var parts: PackedStringArray = [WARGRID_LINE, "Music\n" + _music(md), _voice(md), "Maps\n" + notice_md, "Fonts\n" + INTER_LINE + "\n\n" + font_license, "Godot Engine\n" + license_text, _third_party(components, licenses)]
 	return "\n\n".join(parts)
 
 static func _third_party(components: Array, licenses: Dictionary) -> String:
