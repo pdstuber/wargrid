@@ -472,6 +472,7 @@ func test_launcher_faction_rows(runner) -> bool:
 		launcher._offline_setup()
 		runner.check(SkirmishMain.factions == {1: second, 2: third}, "N25 offline Start passes Own and Bot at %s, got %s" % [size, SkirmishMain.factions])
 		own.select(2)
+		runner.check(runner.root.get_tree().root.content_scale_aspect == Window.CONTENT_SCALE_ASPECT_EXPAND, "N25 the launcher keeps expand until the match starts at %s" % size)
 		launcher._transport = FakeTransport.new()
 		launcher._seat = 1
 		launcher._start(_start_message("dry_wells", 3))
@@ -479,6 +480,7 @@ func test_launcher_faction_rows(runner) -> bool:
 		runner.check(main.driver._own_faction == third, "N25 online match carries Own's faction at %s, got %s" % [size, main.driver._own_faction])
 		main.free()
 		await runner.process_frame
+		runner.check(runner.root.get_tree().root.content_scale_aspect == Window.CONTENT_SCALE_ASPECT_KEEP, "N25 a match start restores keep at %s" % size)
 		port.free()
 	SkirmishMain.factions = before[0]
 	SkirmishMain.map_path = before[1]
@@ -875,7 +877,10 @@ func test_launcher_relay_help(runner) -> bool:
 		launcher._fail("A very long relay reason that wraps over many lines. ".repeat(8))
 		await runner.process_frame
 		await runner.process_frame
-		runner.check(box.get_combined_minimum_size().y <= 720.0, "N26 a long Status keeps the worst-case body needing at most 720 high at %s, got %s" % [size, box.get_combined_minimum_size().y])
+		var pages: Control = launcher.get_node("Pages")
+		var view_rect := Rect2(Vector2.ZERO, Vector2(size))
+		runner.check(pages.get_combined_minimum_size().y <= 720.0, "N26 a long Status keeps the worst-case Play page needing at most 720 high at %s, got %s" % [size, pages.get_combined_minimum_size().y])
+		runner.check(view_rect.encloses(launcher.get_node("Pages/Play/Footer/Status").get_global_rect()) and view_rect.encloses(launcher.get_node("Pages/Play/Footer/Start").get_global_rect()), "N26 a long Status keeps Status and Start inside the viewport at %s" % size)
 		launcher.free()
 		var opened = await _launcher(runner, port, true, "?relay=wss%3A%2F%2Fx.example%2Fws")
 		runner.check(opened.get_node("Pages/Play/Body/Advanced/RelayHelp").visible, "N26 ?relay= opens the fold with the caption at %s" % size)

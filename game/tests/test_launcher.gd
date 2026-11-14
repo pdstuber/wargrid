@@ -6,6 +6,8 @@ const AudioSettings = preload("res://scripts/presentation/audio_settings.gd")
 const Launcher = preload("res://scenes/launcher.tscn")
 const LauncherScript = preload("res://scripts/launcher.gd")
 const SIZES: Array[Vector2i] = [Vector2i(1280, 720), Vector2i(1920, 1080), Vector2i(2576, 1145)]
+# canvas_items + expand lays a window out at 720 logical px high; 2576x1145 becomes roundi(720 * 2576 / 1145) wide
+const STRETCHED: Array[Array] = [[Vector2i(1280, 720), Vector2i(1280, 720)], [Vector2i(1920, 1080), Vector2i(1280, 720)], [Vector2i(2576, 1145), Vector2i(1620, 720)]]
 
 func cases() -> Array[Callable]:
 	return [test_picks_defaults, test_picks_fallback_per_field, test_picks_keep_other_sections, test_fullscreen_round_trip, test_sidebar_switches_pages, test_version_in_sidebar, test_aspect_expand_and_restore, test_layout_every_page]
@@ -125,10 +127,17 @@ func test_layout_every_page(runner) -> bool:
 	var scratch := "user://test-launcher-layout-%d.cfg" % OS.get_process_id()
 	AudioSettings.path = scratch
 	DirAccess.remove_absolute(scratch)
-	for size in SIZES:
+	var layouts: Array[Array] = []
+	for size in SIZES: layouts.append([size, size])
+	layouts.append_array(STRETCHED)
+	for pair in layouts:
+		var size: Vector2i = pair[1]
 		var port := SubViewport.new()
-		port.size = size
+		port.size = pair[0]
+		port.size_2d_override = size
+		port.size_2d_override_stretch = true
 		runner.root.add_child(port)
+		runner.check(port.get_visible_rect().size == Vector2(size), "L8 fixture: the viewport lays out at %s, got %s" % [size, port.get_visible_rect().size])
 		var launcher = Launcher.instantiate()
 		launcher.prerelease = true
 		port.add_child(launcher)
@@ -146,7 +155,7 @@ func test_layout_every_page(runner) -> bool:
 			launcher.show_page(page_name)
 			await runner.process_frame
 			await runner.process_frame
-			var label := "%s at %s" % [page_name, size]
+			var label := "%s at %s (window %s)" % [page_name, size, pair[0]]
 			runner.check(sidebar.get_global_rect().position.y == 0.0 and absf(sidebar.get_global_rect().size.y - size.y) <= 1.0, "L8 sidebar spans the full height, %s" % label)
 			runner.check(absf(content.get_global_rect().end.x - size.x) <= 1.0 and absf(content.get_global_rect().end.y - size.y) <= 1.0, "L8 content reaches the right and bottom edge, %s, got %s" % [label, content.get_global_rect()])
 			runner.check(view.encloses(content.get_global_rect()) and not content.get_global_rect().intersects(sidebar.get_global_rect()), "L8 sidebar and content sit side by side inside the viewport, %s" % label)
