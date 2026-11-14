@@ -69,7 +69,9 @@ func _ready() -> void:
 		_connect(""))
 	$Pages/Join/Footer/Join.pressed.connect(func() -> void:
 		_origin = "Join"
-		_connect($Pages/Join/Body/Code.text.strip_edges().to_upper()))
+		var code: String = JoinLink.code($Pages/Join/Body/Code.text.strip_edges())
+		if code.is_empty(): $Pages/Join/Footer/Status.text = "Enter the 6-character match code"
+		else: _connect(code))
 	$Pages/Waiting/Body/Copy.pressed.connect(func() -> void: DisplayServer.clipboard_set(_copy_text()))
 	$Pages/Waiting/Footer/Cancel.pressed.connect(func() -> void:
 		_transport.close()
@@ -235,7 +237,12 @@ func _add_fullscreen() -> void:
 	toggle.toggled.connect(func(on: bool) -> void:
 		LauncherSettings.save_fullscreen(on)
 		_apply_fullscreen(on))
-	$Pages/Settings/Body/Audio.add_child(toggle)
+	var audio: VBoxContainer = $Pages/Settings/Body/Audio
+	var header: Label = audio.get_node("AudioHeader").duplicate()
+	header.name = "DisplayHeader"
+	header.text = "Display"
+	audio.add_child(header)
+	audio.add_child(toggle)
 	_apply_fullscreen(toggle.button_pressed)
 
 static func fullscreen_target(on: bool, current: DisplayServer.WindowMode) -> int:
@@ -301,11 +308,17 @@ func _connect(code: String) -> void:
 	set_process(true)
 
 func _set_busy(busy: bool) -> void:
-	for page_name in NAV_PAGES: get_node("Sidebar/Nav/" + page_name).disabled = busy
+	for page_name in NAV_PAGES: _lock(get_node("Sidebar/Nav/" + page_name), busy)
 	for path: String in ["Play/Footer/Start", "Play/Footer/Create", "Play/Body/Advanced/RelayUrl", "Join/Body/Advanced/RelayUrl", "Join/Body/Code", "Join/Footer/Join", "Play/Body/Own", "Join/Body/Own", "Play/Body/Bot", "Play/Body/Map", "Play/Body/Opponent/BotToggle", "Play/Body/Opponent/FriendToggle"]:
 		var control: Control = get_node("Pages/" + path)
-		if control is BaseButton: control.disabled = busy
+		if control is BaseButton: _lock(control, busy)
 		else: control.editable = not busy
+
+# Godot draws a disabled button in its disabled style even when pressed; the selected item must stay green.
+func _lock(button: BaseButton, busy: bool) -> void:
+	button.disabled = busy
+	if busy and button.button_pressed: button.add_theme_stylebox_override("disabled", button.get_theme_stylebox("pressed"))
+	else: button.remove_theme_stylebox_override("disabled")
 
 func _fail(reason: String) -> void:
 	_status_label().text = reason

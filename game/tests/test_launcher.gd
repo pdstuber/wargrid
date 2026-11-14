@@ -17,7 +17,7 @@ const SIZES: Array[Vector2i] = [Vector2i(1280, 720), Vector2i(1920, 1080), Vecto
 const STRETCHED: Array[Array] = [[Vector2i(1920, 1080), Vector2i(1280, 720)], [Vector2i(2576, 1145), Vector2i(1620, 720)]]
 
 func cases() -> Array[Callable]:
-	return [test_picks_defaults, test_picks_fallback_per_field, test_picks_keep_other_sections, test_fullscreen_target, test_fullscreen_switch, test_this_build_line, test_sidebar_switches_pages, test_aspect_expand_and_restore, test_layout_every_page, test_opens_on_bot_with_picks, test_toggle_friend, test_map_info_and_summary, test_own_faction_shared, test_start_saves_picks, test_advanced_only_prerelease, test_link_opens_join, test_lock_while_connecting, test_waiting_view, test_join_error_footer, test_relay_fields_follow]
+	return [test_picks_defaults, test_picks_fallback_per_field, test_picks_keep_other_sections, test_fullscreen_target, test_fullscreen_switch, test_this_build_line, test_sidebar_switches_pages, test_aspect_expand_and_restore, test_layout_every_page, test_opens_on_bot_with_picks, test_toggle_friend, test_map_info_and_summary, test_own_faction_shared, test_start_saves_picks, test_advanced_only_prerelease, test_link_opens_join, test_lock_while_connecting, test_waiting_view, test_join_error_footer, test_join_needs_code, test_relay_fields_follow]
 
 func _picked(selector: OptionButton) -> String:
 	return selector.get_item_metadata(selector.selected)
@@ -27,11 +27,15 @@ func scratch_for(name: String) -> String:
 	DirAccess.remove_absolute(scratch)
 	return scratch
 
+func _restore(saved: String) -> void:
+	DirAccess.remove_absolute(AudioSettings.path)
+	AudioSettings.path = saved
+
 func test_picks_defaults(runner) -> bool:
 	var saved: String = AudioSettings.path
 	AudioSettings.path = scratch_for("defaults")
 	var picks: Dictionary = LauncherSettings.load_picks()
-	AudioSettings.path = saved
+	_restore(saved)
 	runner.check(picks == {"faction": "usa", "bot_faction": "usa", "map": "dry_wells"}, "L1 defaults without a file, got %s" % [picks])
 	return true
 
@@ -44,7 +48,7 @@ func test_picks_fallback_per_field(runner) -> bool:
 	config.set_value("launcher", "map", 3)
 	config.save(AudioSettings.path)
 	var picks: Dictionary = LauncherSettings.load_picks()
-	AudioSettings.path = saved
+	_restore(saved)
 	runner.check(picks == {"faction": "frc", "bot_faction": "usa", "map": "dry_wells"}, "L2 bad fields fall back one by one, got %s" % [picks])
 	return true
 
@@ -58,7 +62,7 @@ func test_picks_keep_other_sections(runner) -> bool:
 	LauncherSettings.save_picks({"faction": "china"})
 	var after := ConfigFile.new()
 	after.load(AudioSettings.path)
-	AudioSettings.path = saved
+	_restore(saved)
 	runner.check(after.get_value("audio", "music", null) == 0.5, "L3 audio survives")
 	runner.check(after.get_value("playtest", "enabled", null) == false, "L3 playtest survives")
 	runner.check(after.get_value("launcher", "faction", null) == "china", "L3 faction saved")
@@ -174,8 +178,7 @@ func test_layout_every_page(runner) -> bool:
 			_overlap_free(runner, launcher.get_node("Pages/" + page_name), label)
 		launcher.free()
 		port.free()
-	AudioSettings.path = saved
-	DirAccess.remove_absolute(scratch)
+	_restore(saved)
 	return true
 
 func _launcher_with(runner, name: String, picks: Dictionary, prerelease: bool = false):
@@ -190,7 +193,7 @@ func _launcher_with(runner, name: String, picks: Dictionary, prerelease: bool = 
 func test_opens_on_bot_with_picks(runner) -> bool:
 	var saved: String = AudioSettings.path
 	var launcher = await _launcher_with(runner, "opens", {"faction": "china", "bot_faction": "frc", "map": "ashfall"})
-	AudioSettings.path = saved
+	_restore(saved)
 	var play: Control = launcher.get_node("Pages/Play")
 	runner.check(_picked(play.get_node("Body/Own")) == "china" and _picked(play.get_node("Body/Bot")) == "frc" and launcher._map_id() == "ashfall", "L9a Play shows the remembered picks")
 	runner.check(launcher.opponent == "bot" and play.get_node("Footer/Start").visible and not play.get_node("Footer/Create").visible, "L9a opens on the bot with Start only")
@@ -200,7 +203,7 @@ func test_opens_on_bot_with_picks(runner) -> bool:
 func test_toggle_friend(runner) -> bool:
 	var saved: String = AudioSettings.path
 	var launcher = await _launcher_with(runner, "toggle", {})
-	AudioSettings.path = saved
+	_restore(saved)
 	var play: Control = launcher.get_node("Pages/Play")
 	var bot_toggle: Button = play.get_node("Body/Opponent/BotToggle")
 	var friend_toggle: Button = play.get_node("Body/Opponent/FriendToggle")
@@ -219,7 +222,7 @@ func test_toggle_friend(runner) -> bool:
 func test_map_info_and_summary(runner) -> bool:
 	var saved: String = AudioSettings.path
 	var launcher = await _launcher_with(runner, "info", {"faction": "usa", "bot_faction": "frc", "map": "dry_wells"})
-	AudioSettings.path = saved
+	_restore(saved)
 	for id: String in MatchSettings.PLAY_MAPS:
 		var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(MatchSettings.map_path(id)))
 		runner.check(launcher._map_info(id) == "%d start positions · %d supply sources" % [data.starts.size(), data.sources.size()], "L9c map info for %s, got '%s'" % [id, launcher._map_info(id)])
@@ -237,7 +240,7 @@ func _index_where(selector: OptionButton, matches: Callable) -> int:
 func test_own_faction_shared(runner) -> bool:
 	var saved: String = AudioSettings.path
 	var launcher = await _launcher_with(runner, "shared", {"faction": "usa"})
-	AudioSettings.path = saved
+	_restore(saved)
 	var play_own: OptionButton = launcher.get_node("Pages/Play/Body/Own")
 	var join_own: OptionButton = launcher.get_node_or_null("Pages/Join/Body/Own")
 	runner.check(join_own != null, "L9d Join has its own faction selector")
@@ -264,7 +267,7 @@ func test_start_saves_picks(runner) -> bool:
 	launcher._select_id(launcher.get_node("Pages/Play/Body/Map"), "ashfall")
 	launcher._offline_setup()
 	var stored: Dictionary = LauncherSettings.load_picks()
-	AudioSettings.path = saved
+	_restore(saved)
 	runner.check(stored == {"faction": "china", "bot_faction": "frc", "map": "ashfall"}, "L9e a bot start saves all three, got %s" % [stored])
 	launcher.free()
 	return true
@@ -281,7 +284,7 @@ func test_advanced_only_prerelease(runner) -> bool:
 		launcher.set_opponent("bot")
 		runner.check(not launcher.get_node("Pages/Play/Body/Advanced").visible, "L9f Play bot hides the fold")
 		launcher.free()
-	AudioSettings.path = saved
+	_restore(saved)
 	return true
 
 
@@ -294,6 +297,11 @@ func _nav_disabled(launcher) -> Array[bool]:
 	var states: Array[bool] = []
 	for page_name: String in LauncherScript.NAV_PAGES: states.append(launcher.get_node("Sidebar/Nav/" + page_name).disabled)
 	return states
+
+func _drawn_green(button: Button) -> bool:
+	var styles: Dictionary = {BaseButton.DRAW_NORMAL: "normal", BaseButton.DRAW_PRESSED: "pressed", BaseButton.DRAW_HOVER: "hover", BaseButton.DRAW_DISABLED: "disabled", BaseButton.DRAW_HOVER_PRESSED: "hover_pressed"}
+	var style: StyleBox = button.get_theme_stylebox(styles[button.get_draw_mode()])
+	return style is StyleBoxFlat and style.bg_color == SELECTED
 
 func _host(launcher) -> Object:
 	launcher._set_relay(LOOPBACK)
@@ -323,17 +331,20 @@ func test_link_opens_join(runner) -> bool:
 	runner.check(_picked(again.get_node("Pages/Play/Body/Own")) == "china" and again._map_id() == "ashfall", "L13 back to menu shows the remembered picks")
 	runner.check(runner.root.get_tree().root.content_scale_aspect == Window.CONTENT_SCALE_ASPECT_EXPAND, "L13 back to menu sets expand again")
 	again.free()
-	AudioSettings.path = saved
+	_restore(saved)
 	return true
 
 func test_lock_while_connecting(runner) -> bool:
 	var saved: String = AudioSettings.path
 	var launcher = await _launcher_with(runner, "lock", {})
-	AudioSettings.path = saved
+	_restore(saved)
 	var reason := "Connection to relay lost"
 	_host(launcher)
 	runner.check(launcher._relay_url() == LOOPBACK, "L11 fixture: the relay is a loopback literal, so no DNS lookup starts")
 	runner.check(_nav_disabled(launcher) == [true, true, true, true], "L11 Create locks every nav button, got %s" % [_nav_disabled(launcher)])
+	var friend_toggle: Button = launcher.get_node("Pages/Play/Body/Opponent/FriendToggle")
+	runner.check(launcher.get_node("Sidebar/Nav/Play").disabled and friend_toggle.disabled, "L11 the Friend toggle locks with the nav")
+	runner.check(_drawn_green(launcher.get_node("Sidebar/Nav/Play")) and _drawn_green(friend_toggle), "L17 while connecting the Play nav and the Friend toggle still draw green")
 	launcher._fail(reason)
 	var play_status: Label = launcher.get_node("Pages/Play/Footer/Status")
 	runner.check(_nav_disabled(launcher) == [false, false, false, false] and launcher.current_page == "Play" and play_status.text == reason and launcher.opponent == "friend", "L11 a failure before welcome unlocks the nav and shows the reason in Play's footer")
@@ -350,12 +361,15 @@ func test_lock_while_connecting(runner) -> bool:
 func test_waiting_view(runner) -> bool:
 	var saved: String = AudioSettings.path
 	var launcher = await _launcher_with(runner, "waiting", {"faction": "china", "map": "ashfall"})
-	AudioSettings.path = saved
+	_restore(saved)
 	var transport = _host(launcher)
 	launcher._handle('{"type":"welcome","seat":1,"match":"ABC234"}')
 	var waiting: Control = launcher.get_node("Pages/Waiting")
 	var own: String = Registry.faction("china").display_name
 	runner.check(launcher.current_page == "Waiting" and _nav_disabled(launcher) == [true, true, true, true], "L12a welcome shows Waiting with the nav locked")
+	runner.check(_drawn_green(launcher.get_node("Sidebar/Nav/Play")), "L17 Waiting draws the Play nav green")
+	for other: String in ["Join", "Settings", "Credits"]:
+		runner.check(not _drawn_green(launcher.get_node("Sidebar/Nav/" + other)), "L17 Waiting leaves %s idle" % other)
 	runner.check(waiting.get_node("Body/Link").text == launcher._copy_text() and "Or tell them the code: ABC234" in _texts(waiting), "L12a link and code line")
 	var one: Array[String] = _texts(waiting.get_node("Body/One"))
 	runner.check("You" in one and own in one and "READY" in one, "L12a row 1 is You, %s, READY, got %s" % [own, one])
@@ -385,16 +399,37 @@ func test_waiting_view(runner) -> bool:
 func test_join_error_footer(runner) -> bool:
 	var saved: String = AudioSettings.path
 	var launcher = await _launcher_with(runner, "join-error", {})
-	AudioSettings.path = saved
+	_restore(saved)
 	launcher.show_page("Join")
 	launcher._set_relay(LOOPBACK)
 	runner.check(launcher._relay_url() == LOOPBACK, "L14 fixture: the relay is a loopback literal, so no DNS lookup starts")
+	launcher.get_node("Pages/Join/Body/Code").text = "ABC234"
 	launcher.get_node("Pages/Join/Footer/Join").pressed.emit()
 	launcher.set_process(false)
 	runner.check(_nav_disabled(launcher) == [true, true, true, true], "L14 Join locks the nav")
 	launcher._transport = OnlineTests.FakeTransport.new()
 	launcher._fail("Cannot connect to relay")
 	runner.check(launcher.current_page == "Join" and launcher.get_node("Pages/Join/Footer/Status").text == "Cannot connect to relay" and _nav_disabled(launcher) == [false, false, false, false], "L14 the error shows in Join's footer, nav unlocked")
+	launcher.free()
+	return true
+
+func test_join_needs_code(runner) -> bool:
+	var saved: String = AudioSettings.path
+	var launcher = await _launcher_with(runner, "join-code", {})
+	_restore(saved)
+	launcher.show_page("Join")
+	launcher._set_relay(LOOPBACK)
+	var status: Label = launcher.get_node("Pages/Join/Footer/Status")
+	for text: String in ["", "ABC", "ABC10O"]:
+		launcher.get_node("Pages/Join/Body/Code").text = text
+		launcher.get_node("Pages/Join/Footer/Join").pressed.emit()
+		launcher.set_process(false)
+		runner.check(launcher._transport == null and launcher.current_page == "Join" and status.text == "Enter the 6-character match code", "L18 code '%s' does not connect and says what to enter, got '%s'" % [text, status.text])
+	launcher.get_node("Pages/Join/Body/Code").text = "abc234"
+	launcher.get_node("Pages/Join/Footer/Join").pressed.emit()
+	launcher.set_process(false)
+	runner.check(launcher._transport != null and _nav_disabled(launcher) == [true, true, true, true], "L18 a valid code (lower case typed) connects")
+	launcher._transport = null
 	launcher.free()
 	return true
 
@@ -407,7 +442,7 @@ func test_relay_fields_follow(runner) -> bool:
 	launcher.search = "?relay=wss%3A%2F%2Fx.example%2Fws"
 	runner.root.add_child(launcher)
 	await runner.process_frame
-	AudioSettings.path = saved
+	_restore(saved)
 	var play: LineEdit = launcher.get_node("Pages/Play/Body/Advanced/RelayUrl")
 	var join: LineEdit = launcher.get_node("Pages/Join/Body/Advanced/RelayUrl")
 	runner.check(play.text == "wss://x.example/ws" and join.text == play.text and play.visible and join.visible, "M2 ?relay= fills and opens both folds")
@@ -428,6 +463,8 @@ func test_fullscreen_switch(runner) -> bool:
 	await runner.process_frame
 	var fullscreen: CheckButton = launcher.get_node_or_null("Pages/Settings/Body/Audio/Fullscreen")
 	runner.check(fullscreen != null and not fullscreen.button_pressed, "L15a Fullscreen exists and is off by default")
+	var display: Label = launcher.get_node_or_null("Pages/Settings/Body/Audio/DisplayHeader")
+	runner.check(display != null and display.text == "Display" and fullscreen != null and display.get_index() == fullscreen.get_index() - 1, "L15c Fullscreen sits under its own Display header")
 	if fullscreen != null:
 		fullscreen.button_pressed = true
 		runner.check(LauncherSettings.fullscreen(), "L15a pressing Fullscreen saves true")
@@ -440,7 +477,7 @@ func test_fullscreen_switch(runner) -> bool:
 	await runner.process_frame
 	runner.check(launcher.get_node("Pages/Settings/Body/Audio/Fullscreen").button_pressed, "L15a the stored value shows on the switch")
 	launcher.free()
-	AudioSettings.path = saved
+	_restore(saved)
 	return true
 
 func test_this_build_line(runner) -> bool:
@@ -459,5 +496,5 @@ func test_this_build_line(runner) -> bool:
 	toggle.button_pressed = false
 	runner.check(not build.visible, "L15b ThisBuild hides again when switched off")
 	launcher.free()
-	AudioSettings.path = saved
+	_restore(saved)
 	return true
