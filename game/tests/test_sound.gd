@@ -328,13 +328,6 @@ func test_scenes_boot_with_sound(runner) -> bool:
 	await runner.process_frame
 	runner.check(online.main.get_node_or_null("Sound") != null, "SD22 online has a Sound child")
 	online.main.free()
-	for path in ["res://scenes/main.tscn", "res://scenes/base.tscn"]:
-		var scene = load(path).instantiate()
-		runner.root.add_child(scene)
-		await runner.process_frame
-		await runner.process_frame
-		runner.check(scene.get_node_or_null("Sound") == null, "SD22 %s has no Sound child" % path)
-		scene.free()
 	return true
 
 func test_bus_layout(runner) -> bool:

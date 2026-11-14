@@ -1,15 +1,15 @@
 # One controller verification
 
 ```text
-Resume record (updated 2026-11-14: Task 2 GREEN, not committed)
-Branch / base commit / working-tree state: one-controller (worktree ~/projects/wargrid-wt-onecontrol) / f1c6b78 (Task 1 commit) / Task 2 files uncommitted
-Last green task / next incomplete task: Task 2 / Task 3
-Changed paths since last commit: docs/reference/one-controller-verification.md, docs/superpowers/plans/2026-11-14-one-controller.md, game/scripts/skirmish_main.gd (null guard :282, amendment 1), game/tests/test_scene.gd, test_base_scene.gd, test_pause_menu.gd, test_perf_overlay.gd
-Last command / cases / checks / failures / exit / marker: full suite after Task 2 / 860 / 144276 / 0 / exit 0 / TESTS PASSED 144276 (static gates CHECKS PASSED 5)
+Resume record (updated 2026-11-14: Task 3 GREEN, not committed)
+Branch / base commit / working-tree state: one-controller (worktree ~/projects/wargrid-wt-onecontrol) / 0437bdf (Task 2 commit) / Task 3 files uncommitted
+Last green task / next incomplete task: Task 3 / Task 4
+Changed paths since last commit: docs/reference/one-controller-verification.md, game/scenes/main.tscn and base.tscn (git rm, staged), game/tests/test_scene.gd, game/tests/test_sound.gd
+Last command / cases / checks / failures / exit / marker: full suite after Task 3 / 858 / 144264 / 0 / exit 0 / TESTS PASSED 144264 (static gates CHECKS PASSED 5)
 Known red case or blocker: none
 Approved decisions, pre-authorizations used, deferred gates: package note "One controller" (user, 2026-11-13); plan "Decisions (user, 2026-11-14)" 1-20; local commits as the night run handoff pre-authorizes (one per GREEN task, two in Task 9); benchmark only in Task 8, alone; Task 1 commit (V10 base): f1c6b78; Task 9 re-pin commit (V10 base from Task 9): none yet
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: Task 3 Step 1 (delete the demo scenes and demo-only checks); the null guard `skirmish_main.gd:282` (Task 2 amendment 1) is carried byte for byte through Tasks 5 and 7
+Next exact action: Task 4 Step 1 (extract the driver); the null guard `skirmish_main.gd:282` (Task 2 amendment 1) is carried byte for byte through Tasks 5 and 7
 ```
 
 Plan: [One controller plan](../superpowers/plans/2026-11-14-one-controller.md). Spec: `docs/packages.md` package note "One controller" (`:84`); design answers "Package review, second pass" (`:474-505`) and "Main branch audit" (`:363-378`); audit FIX-6 and A-1 (kept outside the repository, `~/projects/wargrid-overnight-work/audit-2026-11-11/`). Logs: `~/projects/wargrid-overnight-work/one-controller/logs/` (outside the repository; commands use the absolute path). A stop after any GREEN task resumes at the next row of the task table: the subagent reads this record, checks `git log --oneline -1` and `git status --short` in the worktree against it, and starts that task's Step 1.
@@ -20,8 +20,8 @@ Plan: [One controller plan](../superpowers/plans/2026-11-14-one-controller.md). 
 |---|---|---|---|
 | 0 | Baseline: worktree, import, suite and traces, pins, member and simulation censuses, pre-tree scan, check-id census | Sonnet | GREEN (uncommitted) |
 | 1 | Characterisation: IC1 offline and IC2 online input scripts | Sonnet | GREEN (uncommitted) |
-| 2 | Port the M2 and M3 scene checks onto the match scene (old chain) | Sonnet | GREEN (uncommitted) |
-| 3 | Delete the demo scenes and demo-only checks | Sonnet | not started |
+| 2 | Port the M2 and M3 scene checks onto the match scene (old chain) | Sonnet | GREEN (committed 0437bdf) |
+| 3 | Delete the demo scenes and demo-only checks | Sonnet | GREEN (uncommitted) |
 | 4 | Extract the driver (OD1, OD2); `main.driver.sim` rename (Decision 6) | Sonnet | not started |
 | 5 | One screen: merge the chain, delete the four scripts | Sonnet | not started |
 | 6 | Extract orders (OR1) | Sonnet | not started |
@@ -112,9 +112,9 @@ Member and simulation counts at Task 0 equal the `35d22b5` expectations in every
 | V8 | `git diff main -- game/tests \| rg '^-\s*const'` | only the listed preload lines | — | | | | — | — | |
 | V9 | `test_hud_summaries_are_pinned` literals | unchanged | present (`test_skirmish_scene.gd:651`), suite green | | | | | | |
 | V10 | `input_script_rows.gd` against the Task 1 commit (from Task 9: against the re-pin commit) | no diff | — | | | | re-pin | | |
-| V11 | check-id census | Task 0 set minus the demo-only list, plus the new ids so far | 659 ids | | | | | | |
+| V11 | check-id census | Task 0 set minus the demo-only list, plus the new ids so far | 659 ids (Task 3: 661, adds `IC1 `, `IC2 `) | | | | | | |
 | V12 | simulation, presentation, net, playtest, `project.godot` diff against `main` | empty | — | | | | | | |
-| V11b | label census | Task 3: exactly 11 demo labels removed, IC1/IC2 added; later: additions only | 3070 lines | | | | | | |
+| V11b | label census | Task 3: exactly 11 demo labels removed, IC1/IC2 added; later: additions only | 3070 lines (Task 3: 3093) | | | | | | |
 | V13 | `v13_check.py` | `V13 OK` | — | — | — | | — | — | |
 
 ## Characterisation rows (Task 1)
@@ -137,12 +137,12 @@ Expected on `35d22b5` by reading (Task 2 confirms by running on the old chain):
 | File | Families | Fixture on `skirmish.tscn` | Outcome |
 |---|---|---|---|
 | `test_scene.gd` | S1-S7, G26 | `_m2_world()` (`main.gd:250-258` + `add_player(1, 0)`), `_reset_camera()` | ported; S2/S3 right-clicks on empty ground (amendment 2) |
-| `test_scene.gd` | S8 (eight labels: B adds, B removes, move onto toggle cell, occupied setup, occupied rejected, rejection reason, vacate, preserves next action) | — | demo-only, pending demo removal, deleted in Task 3 |
-| `test_scene.gd` | S9 (move issued, status counts) | — | demo-only (M2 HUD), pending demo removal, deleted in Task 3 |
+| `test_scene.gd` | S8 (eight labels: B adds, B removes, move onto toggle cell, occupied setup, occupied rejected, rejection reason, vacate, preserves next action) | — | demo-only, deleted in Task 3 (done) |
+| `test_scene.gd` | S9 (move issued, status counts) | — | demo-only (M2 HUD), deleted in Task 3 (done) |
 | `test_base_scene.gd` | Bs1-Bs6, H6, RF1, RF5, RF6, RF8, M1-M6 | `_m3_world()` (`Fixture.make_world()` + supply source) | ported; RF6 warm-up tick (amendment 3) |
 | `test_pause_menu.gd` | E1 (Base half, `:90`; `const Base` `:4`) | `_m3_world()` | ported |
 | `test_perf_overlay.gd` | PO cases on `Base` (`:39`, `:50`, `:66`, `:84`) | `_m3_world()` where the builder is read | ported |
-| `test_sound.gd` | SD22 demo row (`:331-337`) | — | demo-only, deleted in Task 3 |
+| `test_sound.gd` | SD22 demo row (`:331-337`) | — | demo-only, deleted in Task 3 (done) |
 | `test_view.gd` | V4 hook (`:99`) | `main.gd` until Task 5, then `match_screen.gd` | ported in Task 5 |
 | `test_online_scene.gd` | N5 script path (`:318`) | — | expectation path changed in Task 5 (reason: the offline scene's script moved) |
 
@@ -152,7 +152,7 @@ Expected on `35d22b5` by reading (Task 2 confirms by running on the old chain):
 | Task 2: bot needed `add_player(2, 0)` on a fixture world (yes / no) | no (a second player made `Bs1 authored economy` fail on `players.size() == 1` and still left the null match; reverted) |
 | Task 2: mutations (G26 Ctrl, Bs3 building select) fail the ported check | G26: `main.gd:191` `and not _ctrl` dropped: exit 1, `G26 Ctrl double click is a plain click`; reverted. Bs3 as written (`base_main.gd:220` `selected_ids.clear()` deleted): filtered `test_base_scene` exit 0, NOT red there (the check starts with `selected_ids` empty); the full suite catches it only through `IC1 row 11` (Task 1 characterisation). Substitute mutation `base_main.gd:219` `selected_building_id = building.id` deleted: filtered exit 1, `Bs3 building selection outline`; reverted. `git diff --stat game/scripts` shows only the null guard |
 | Task 2: amendments (user, 2026-11-14) | (1) null guard `skirmish_main.gd:282`: kept; carried verbatim by Tasks 5 and 7, told to the Task 11 reviewer. (2) S2/S3 clicks on empty ground (five `test_scene.gd` lines). (3) RF6 warm-up tick (`test_base_scene.gd`, one added line). Step 6 full suite: exit 0, CASES 860, CHECKS 144276, `TESTS PASSED 144276` (equals Task 1); static gates `CHECKS PASSED 5` |
-| Task 3: V11 diff equals the demo-only list | |
+| Task 3: V11 diff equals the demo-only list | Yes. Full suite (`t3-suite.log`): exit 0, CASES 858, CHECKS 144264 (Task 2: 860 / 144276; minus the two S8/S9 cases and 12 checks: 8 S8, 2 S9, 2 SD22 loop iterations), `TESTS PASSED 144264`. `rg -n 'scenes/(main|base)\.tscn' game tools` prints nothing. V11b (`labels-t3.txt`, 3093 lines vs 3070): `diff labels-before labels-t3` removes exactly 11 labels (8 `S8`, 2 `S9`, 1 `"SD22 `) and adds only 34 `IC1`/`IC2` labels. V11 id census: `diff ids-before ids-t3` adds only `IC1 `, `IC2 ` (S8, S9, SD22 stay: other files use them). Static gates `CHECKS PASSED 5`. `v13_check.py --add` for Task 3: 47 removed lines listed (below). `setup(runner, packed = Main)` keeps its unused parameter (Task 5 may drop it with the chain) |
 
 ## Driver, screen, orders, HUD (Tasks 4-7)
 
@@ -193,6 +193,8 @@ Expected on `35d22b5` by reading (Task 2 confirms by running on the old chain):
 | 2 | `game/tests/test_scene.gd` | port onto skirmish.tscn; S2/S3 clicks on empty ground (amendment 2, user 2026-11-14) | `await click(runner, view, Iso.world_to_plane(Vector2(5.5, 3.5)), MOUSE_BUTTON_RIGHT)` |
 | 2 | `game/tests/test_scene.gd` | port onto skirmish.tscn; S2/S3 clicks on empty ground (amendment 2, user 2026-11-14) | `var main = await setup(runner)` |
 | 2 | `game/tests/test_scene.gd` | port onto skirmish.tscn; S2/S3 clicks on empty ground (amendment 2, user 2026-11-14) | `var main = await setup(runner)` |
+| 3 | `game/tests/test_scene.gd` | Task 3: demo-only check deleted | whole cases `test_obstacle_toggle` (S8) and `test_status_counts` (S9), the `const Demo = preload("res://scenes/main.tscn")` line and the two `cases()` entries (one `cases()` line rewritten, the rest deleted; row-by-row in `v13-reasons.txt`) |
+| 3 | `game/tests/test_sound.gd` | Task 3: demo-only check deleted | the SD22 demo-scene loop `for path in ["res://scenes/main.tscn", "res://scenes/base.tscn"]:` and its 6 body lines (`:331-337`) |
 
 ## Accepted reorders (plan R1-R4; reviewer verdict in Task 11)
 
@@ -258,3 +260,4 @@ Both quirks were found by reading on `4ed3534` and are unchanged on `35d22b5`:
 - 2026-11-14, readiness review fixes (fresh Opus review: READY AFTER FIXES), tree `main` `35d22b5`, docs only. Applied findings 1, 3-8, 10-14, 16, 17 after checking each against `35d22b5`; 2 and 9 as the coordinator directed; 15 is in the settings copy. Run scripts written to the logs folder from the plan text (byte-identical, checked). Tested outside the repository on a scratch git copy of `game/tests` and `game/scripts`: `rename.py t4` with the `35d22b5` counts (`RENAME OK t4 files=15`), then `v13_check.py` (`V13 OK removed=197 renamed=197 listed=0`; a hand edit of N5 is `UNEXPLAINED` until `--add` lists it, then `V13 OK`; an unlisted V4 edit fails); `rename.py t6`/`t7` dry runs confirm the per-file counts in the rules comments; `pretree.py` exit 0 with three `NO-TREE` lines; label census 3070 lines, of which the demo set is 8 S8, 2 S9, 1 SD22.
 - 2026-11-14 night, Task 0 baseline (Sonnet subagent), worktree `one-controller` at `74950e5` (game/ identical to `35d22b5`), load 2.2 to 2.4. Import exit 0; full suite with traces exit 0, 55 s, `CASES 858 CHECKS 144249 FAILURES 0`, `TESTS PASSED 144249`; traces 1200/1200/1200/100 lines; pins and censuses as in the tables above, no drift, no stop condition. Logs in `~/projects/wargrid-overnight-work/one-controller/logs/` (`t0-suite.log`, `t0-import.log`, `t0-pretree.log`, `ids-before.txt`, `labels-before.txt`, `census-before.txt`, `sim-census-before.txt`). Not run in Task 0: lint, warnings, netplay, benchmark.
 - 2026-11-14 night, Task 1 characterisation (Sonnet subagent), worktree `one-controller` at `05d0794`, `game/scripts` untouched. New: `game/tests/input_script_rows.gd` (`IC1_ROWS` 21 lines, `IC2_ROWS` 11 lines), `test_input_script_offline` in `test_skirmish_scene.gd` (helpers `_ic_row`, `_ic_esc`, `_ic_click`, `_ic_box`, `_ic_world`, `_ic_first_difference`), `test_input_script_online` in `test_online_scene.gd` (helpers `_ic_row`, `_ic_esc`, `_ic_plane`, `_ic_first_difference`; it preloads `test_base_scene.gd` for the `key`/`pointer` helpers and sits above `test_launcher_reads_no_page_off_web` so the pre-tree scan output stays the same). IC1 world: own builder is an `frc_builder` (it collects, so the pile step gathers), two `usa_tank`, an `frc_rifle_infantry`, completed `usa_barracks`, unfinished `usa_power_plant` (completed set false), completed `frc_defence` hub with one occupant, one supply pile, enemy `usa_tank`. IC2 ran on seat 1 with the peer packets for ticks 4-200 queued up front; its commands start at sequence 1 (the faction choice is 0). Results: filtered run exit 0 `CASES 2 CHECKS 34`; mutations (a) and (b) red as in the table, reverted; full suite exit 0 `CASES 860 CHECKS 144276 FAILURES 0`, `TESTS PASSED 144276`; `sh tools/run_checks.sh` exit 0 `CHECKS PASSED 5` (lint, warnings, Python, shell, public); `v13_check.py` `V13 OK removed=2 renamed=0 listed=2`. Not run in Task 1: traces comparison (no `game/scripts` change), netplay, benchmark. Logs `t1-*.log` in the logs folder.
+- 2026-11-14 night, Task 3 demo deletion (Sonnet subagent), worktree `one-controller` at `0437bdf`. `git rm game/scenes/main.tscn game/scenes/base.tscn`; `test_scene.gd`: S8 and S9 cases, their `cases()` entries and `const Demo` removed; `test_sound.gd`: SD22 demo loop removed. Full suite exit 0, `CASES 858 CHECKS 144264 FAILURES 0`, `TESTS PASSED 144264` (includes the HUD layout tests; no `FAIL` line); `sh tools/run_checks.sh` exit 0, `CHECKS PASSED 5`; V11, V11b and V13 add as in the table above. `game/scripts` untouched. Not run in Task 3: traces comparison (no `game/scripts` change), netplay, benchmark. Logs `t3-*.log`, `labels-t3.txt`, `ids-t3.txt` in the logs folder.
