@@ -3,6 +3,7 @@ extends RefCounted
 
 const LauncherSettings = preload("res://scripts/launcher_settings.gd")
 const AudioSettings = preload("res://scripts/presentation/audio_settings.gd")
+const GraphicsSettings = preload("res://scripts/presentation/graphics_settings.gd")
 const Launcher = preload("res://scenes/launcher.tscn")
 const LauncherScript = preload("res://scripts/launcher.gd")
 const MatchSettings = preload("res://scripts/match_settings.gd")
@@ -17,7 +18,7 @@ const SIZES: Array[Vector2i] = [Vector2i(1280, 720), Vector2i(1920, 1080), Vecto
 const STRETCHED: Array[Array] = [[Vector2i(1920, 1080), Vector2i(1280, 720)], [Vector2i(2576, 1145), Vector2i(1620, 720)]]
 
 func cases() -> Array[Callable]:
-	return [test_picks_defaults, test_picks_fallback_per_field, test_picks_keep_other_sections, test_fullscreen_target, test_fullscreen_switch, test_this_build_line, test_sidebar_switches_pages, test_aspect_expand_and_restore, test_layout_every_page, test_opens_on_bot_with_picks, test_toggle_friend, test_map_info_and_summary, test_own_faction_shared, test_start_saves_picks, test_advanced_only_prerelease, test_link_opens_join, test_lock_while_connecting, test_waiting_view, test_join_error_footer, test_join_needs_code, test_relay_fields_follow, test_column_widths, test_player_rows_padded, test_footer_status_style, test_vertical_rhythm, test_waiting_two_columns]
+	return [test_picks_defaults, test_picks_fallback_per_field, test_picks_keep_other_sections, test_fullscreen_target, test_fullscreen_switch, test_this_build_line, test_graphics_group, test_graphics_shows_stored, test_sidebar_switches_pages, test_aspect_expand_and_restore, test_layout_every_page, test_opens_on_bot_with_picks, test_toggle_friend, test_map_info_and_summary, test_own_faction_shared, test_start_saves_picks, test_advanced_only_prerelease, test_link_opens_join, test_lock_while_connecting, test_waiting_view, test_join_error_footer, test_join_needs_code, test_relay_fields_follow, test_column_widths, test_player_rows_padded, test_footer_status_style, test_vertical_rhythm, test_waiting_two_columns]
 
 func _picked(selector: OptionButton) -> String:
 	return selector.get_item_metadata(selector.selected)
@@ -488,13 +489,80 @@ func test_this_build_line(runner) -> bool:
 	await runner.process_frame
 	var toggle: CheckButton = launcher.get_node("Pages/Settings/Body/Playtest/PlaytestSwitch")
 	toggle.button_pressed = false
-	var build: Button = launcher.get_node("Pages/Settings/Body/Playtest/ThisBuild")
-	runner.check(not build.visible, "L15b ThisBuild is hidden while the switch is off")
-	toggle.button_pressed = true
 	var title: String = FocusCards.load_cards()[0].title
-	runner.check(build.visible and build.text == "This build: " + title and title == "The new menu", "L15b ThisBuild names the first card when on, got %s" % build.text)
+	runner.check(launcher.get_node_or_null("Pages/Settings/Body/Playtest/ThisBuild") == null, "L15b Settings no longer holds ThisBuild")
+	for page_name: String in ["Play", "Join"]:
+		var build: Button = launcher.get_node("Pages/%s/ThisBuild" % page_name)
+		runner.check(not build.visible, "L15b %s ThisBuild is hidden while the switch is off" % page_name)
+		runner.check(build.get_index() + 1 == launcher.get_node("Pages/%s/Divider" % page_name).get_index(), "L15b %s ThisBuild sits just above the divider" % page_name)
+		runner.check(build.theme_type_variation == &"FooterLink" and build.flat, "L15b %s ThisBuild is a line-style link" % page_name)
+	toggle.button_pressed = true
+	for page_name: String in ["Play", "Join"]:
+		var build: Button = launcher.get_node("Pages/%s/ThisBuild" % page_name)
+		runner.check(build.visible and build.text == "This build: " + title and title == "The new menu", "L15b %s ThisBuild names the first card when on, got %s" % [page_name, build.text])
 	toggle.button_pressed = false
-	runner.check(not build.visible, "L15b ThisBuild hides again when switched off")
+	for page_name: String in ["Play", "Join"]:
+		runner.check(not launcher.get_node("Pages/%s/ThisBuild" % page_name).visible, "L15b %s ThisBuild hides again when switched off" % page_name)
+	launcher.free()
+	_restore(saved)
+	return true
+
+func test_graphics_group(runner) -> bool:
+	var saved: String = AudioSettings.path
+	AudioSettings.path = scratch_for("graphics")
+	var launcher = Launcher.instantiate()
+	runner.root.add_child(launcher)
+	await runner.process_frame
+	var column: Control = launcher.get_node("Pages/Settings/Body/Playtest")
+	var header: Label = column.get_node_or_null("GraphicsHeader")
+	runner.check(header != null and header.text == "Graphics" and header.theme_type_variation == &"FieldLabel", "G1 Graphics has its own header in the page style")
+	var quality: Button = column.get_node_or_null("Quality")
+	var neon: Button = column.get_node_or_null("Neon")
+	var smooth: Button = column.get_node_or_null("Smooth")
+	var destinations: Button = column.get_node_or_null("Destinations")
+	runner.check(quality != null and neon != null and smooth != null and destinations != null, "G1 the four controls exist")
+	if quality == null or neon == null or smooth == null or destinations == null:
+		launcher.free()
+		_restore(saved)
+		return true
+	runner.check(header.get_index() + 1 == quality.get_index() and quality.get_index() + 1 == neon.get_index() and neon.get_index() + 1 == smooth.get_index() and smooth.get_index() + 1 == destinations.get_index(), "G1 the controls follow the header in order")
+	runner.check(quality.text == "Quality: High" and neon.text == "Neon colours: Off" and smooth.text == "Smooth movement: On" and destinations.text == "Show unit destinations: Off", "G2 defaults read like the Esc menu, got %s | %s | %s | %s" % [quality.text, neon.text, smooth.text, destinations.text])
+	quality.pressed.emit()
+	runner.check(GraphicsSettings.load_quality() == GraphicsSettings.LOW and quality.text == "Quality: Low", "G3 Quality to Low is stored and shown, got %s" % quality.text)
+	quality.pressed.emit()
+	runner.check(GraphicsSettings.load_quality() == GraphicsSettings.HIGH and quality.text == "Quality: High", "G3 Quality back to High is stored and shown")
+	neon.pressed.emit()
+	runner.check(GraphicsSettings.load_neon() and neon.text == "Neon colours: On", "G3 Neon on is stored and shown")
+	neon.pressed.emit()
+	runner.check(not GraphicsSettings.load_neon() and neon.text == "Neon colours: Off", "G3 Neon off is stored and shown")
+	smooth.pressed.emit()
+	runner.check(not GraphicsSettings.load_smooth() and smooth.text == "Smooth movement: Off", "G3 Smooth off is stored and shown")
+	smooth.pressed.emit()
+	runner.check(GraphicsSettings.load_smooth() and smooth.text == "Smooth movement: On", "G3 Smooth on is stored and shown")
+	destinations.pressed.emit()
+	runner.check(GraphicsSettings.load_destinations() and destinations.text == "Show unit destinations: On", "G3 Destinations on is stored and shown")
+	destinations.pressed.emit()
+	runner.check(not GraphicsSettings.load_destinations() and destinations.text == "Show unit destinations: Off", "G3 Destinations off is stored and shown")
+	launcher.free()
+	_restore(saved)
+	return true
+
+func test_graphics_shows_stored(runner) -> bool:
+	var saved: String = AudioSettings.path
+	AudioSettings.path = scratch_for("graphics-stored")
+	GraphicsSettings.save_quality(GraphicsSettings.LOW)
+	GraphicsSettings.save_neon(true)
+	GraphicsSettings.save_smooth(false)
+	GraphicsSettings.save_destinations(true)
+	var launcher = Launcher.instantiate()
+	runner.root.add_child(launcher)
+	await runner.process_frame
+	var column: Control = launcher.get_node("Pages/Settings/Body/Playtest")
+	var shown: Array = []
+	for each: String in ["Quality", "Neon", "Smooth", "Destinations"]:
+		var button: Button = column.get_node_or_null(each)
+		shown.append(button.text if button != null else "missing")
+	runner.check(shown == ["Quality: Low", "Neon colours: On", "Smooth movement: Off", "Show unit destinations: On"], "G4 stored values show on the controls, got %s" % [shown])
 	launcher.free()
 	_restore(saved)
 	return true

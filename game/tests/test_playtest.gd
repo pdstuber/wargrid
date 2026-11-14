@@ -138,10 +138,10 @@ func _clear_of_siblings(runner, box: Control, control: Control, view: Rect2, lab
 		if other != control and other is Control and other.visible:
 			runner.check(not control.get_global_rect().intersects(other.get_global_rect()), "PT6 %s clear of %s" % [label, other.name])
 
-func _launcher(runner, port: SubViewport):
+func _launcher(runner, port: SubViewport, page_name: String = "Settings"):
 	var launcher = Launcher.instantiate()
 	port.add_child(launcher)
-	launcher.show_page("Settings")
+	launcher.show_page(page_name)
 	await runner.process_frame
 	await runner.process_frame
 	return launcher
@@ -159,55 +159,65 @@ func test_launcher_focus_card(runner) -> bool:
 		runner.root.add_child(port)
 		var view := Rect2(Vector2.ZERO, Vector2(size))
 		var label := str(size)
-		PlaytestSettings.save_enabled(true)
-		var launcher = await _launcher(runner, port)
-		runner.check(launcher.get_viewport().get_visible_rect().size == Vector2(size), "PT6 the viewport really is %s, got %s" % [size, launcher.get_viewport().get_visible_rect().size])
-		var box: Control = launcher.get_node("Pages/Settings/Body/Playtest")
-		var button: Button = launcher.get_node_or_null("Pages/Settings/Body/Playtest/ThisBuild")
-		runner.check(button != null and button.visible, "PT6 ThisBuild shows with the helper on at %s" % label)
-		if button != null:
-			_clear_of_siblings(runner, box, button, view, "ThisBuild " + label)
-			runner.check(box.get_child(box.get_node("PlaytestHint").get_index() + 1) == button, "PT6 ThisBuild sits right after PlaytestHint")
-			button.pressed.emit()
-			await runner.process_frame
-			await runner.process_frame
-			var panel: Control = launcher.get_node_or_null("FocusPanel")
-			runner.check(panel != null and panel.visible and not launcher.get_node("Pages").visible, "PT6 ThisBuild opens FocusPanel and hides the pages at %s" % label)
-			if panel != null:
-				runner.check(view.encloses(panel.get_global_rect()), "PT6 FocusPanel inside the viewport at %s" % label)
-				_labels_inside(runner, panel, view, label)
-				var picker: OptionButton = panel.find_child("Picker", true, false)
-				runner.check(picker.item_count == 5, "PT6 Picker lists 5 cards, got %d" % picker.item_count)
-				picker.select(2)
-				picker.item_selected.emit(2)
-				runner.check(FocusCards.chosen == "p1-frc-economy", "PT6 choosing item 3 sets the chosen card, got %s" % FocusCards.chosen)
-				panel.find_child("Close", true, false).pressed.emit()
-				runner.check(not panel.visible and launcher.get_node("Pages").visible, "PT6 Close returns to the launcher at %s" % label)
-		launcher.free()
-		FocusCards.chosen = ""
-		PlaytestSettings.save_enabled(false)
-		launcher = await _launcher(runner, port)
-		box = launcher.get_node("Pages/Settings/Body/Playtest")
-		button = launcher.get_node_or_null("Pages/Settings/Body/Playtest/ThisBuild")
-		runner.check(button == null or not button.visible, "PT6 ThisBuild hidden with the switch off at %s" % label)
-		var toggle: CheckButton = launcher.get_node_or_null("Pages/Settings/Body/Playtest/PlaytestSwitch")
-		runner.check(toggle != null and not toggle.button_pressed, "PT6 PlaytestSwitch shows and starts off at %s" % label)
-		if toggle != null:
-			_clear_of_siblings(runner, box, toggle, view, "PlaytestSwitch " + label)
-			toggle.button_pressed = true
-			await runner.process_frame
-			await runner.process_frame
-			button = launcher.get_node_or_null("Pages/Settings/Body/Playtest/ThisBuild")
-			runner.check(button != null and button.visible, "PT6 pressing the switch shows ThisBuild at %s" % label)
-			runner.check(PlaytestSettings.enabled("0.11.0"), "PT6 pressing the switch stores it at %s" % label)
-			if button != null: _clear_of_siblings(runner, box, button, view, "ThisBuild after switch " + label)
-			toggle.button_pressed = false
-			await runner.process_frame
-			runner.check(button == null or not button.visible, "PT6 switching off hides ThisBuild at %s" % label)
-		launcher.free()
+		runner.check(port.size == size, "PT6 the viewport really is %s" % label)
+		for page_name: String in ["Play", "Join"]:
+			await _check_this_build(runner, port, view, "%s %s" % [page_name, label], page_name)
 		port.free()
 	_end(saved)
 	return true
+
+func _check_this_build(runner, port: SubViewport, view: Rect2, label: String, page_name: String) -> void:
+	PlaytestSettings.save_enabled(true)
+	var launcher = await _launcher(runner, port, page_name)
+	var page: Control = launcher.get_node("Pages/" + page_name)
+	var button: Button = launcher.get_node_or_null("Pages/%s/ThisBuild" % page_name)
+	runner.check(button != null and button.visible, "PT6 ThisBuild shows with the helper on at %s" % label)
+	if button != null:
+		_clear_of_siblings(runner, page, button, view, "ThisBuild " + label)
+		runner.check(page.get_child(button.get_index() + 1).name == "Divider", "PT6 ThisBuild sits just above the footer divider at %s" % label)
+		button.pressed.emit()
+		await runner.process_frame
+		await runner.process_frame
+		var panel: Control = launcher.get_node_or_null("FocusPanel")
+		runner.check(panel != null and panel.visible and not launcher.get_node("Pages").visible, "PT6 ThisBuild opens FocusPanel and hides the pages at %s" % label)
+		if panel != null:
+			runner.check(view.encloses(panel.get_global_rect()), "PT6 FocusPanel inside the viewport at %s" % label)
+			_labels_inside(runner, panel, view, label)
+			var picker: OptionButton = panel.find_child("Picker", true, false)
+			runner.check(picker.item_count == 5, "PT6 Picker lists 5 cards, got %d" % picker.item_count)
+			picker.select(2)
+			picker.item_selected.emit(2)
+			runner.check(FocusCards.chosen == "p1-frc-economy", "PT6 choosing item 3 sets the chosen card, got %s" % FocusCards.chosen)
+			panel.find_child("Close", true, false).pressed.emit()
+			runner.check(not panel.visible and launcher.get_node("Pages").visible, "PT6 Close returns to the launcher at %s" % label)
+	launcher.free()
+	FocusCards.chosen = ""
+	PlaytestSettings.save_enabled(false)
+	launcher = await _launcher(runner, port, "Settings")
+	var box: Control = launcher.get_node("Pages/Settings/Body/Playtest")
+	var kept: Array = []
+	for child in box.get_children(): kept.append(str(child.name))
+	runner.check(kept == ["GraphicsHeader", "Quality", "Neon", "Smooth", "Destinations", "PlaytestHeader", "PlaytestSwitch", "PlaytestHint"], "PT6 the Playtest column keeps only Graphics, then the switch and its hint at %s, got %s" % [label, kept])
+	var toggle: CheckButton = launcher.get_node_or_null("Pages/Settings/Body/Playtest/PlaytestSwitch")
+	runner.check(toggle != null and not toggle.button_pressed, "PT6 PlaytestSwitch shows and starts off at %s" % label)
+	button = launcher.get_node_or_null("Pages/%s/ThisBuild" % page_name)
+	runner.check(button == null or not button.visible, "PT6 ThisBuild hidden with the switch off at %s" % label)
+	if toggle != null:
+		_clear_of_siblings(runner, box, toggle, view, "PlaytestSwitch " + label)
+		toggle.button_pressed = true
+		await runner.process_frame
+		launcher.show_page(page_name)
+		await runner.process_frame
+		await runner.process_frame
+		button = launcher.get_node_or_null("Pages/%s/ThisBuild" % page_name)
+		runner.check(button != null and button.visible, "PT6 pressing the switch shows ThisBuild at %s" % label)
+		runner.check(PlaytestSettings.enabled("0.11.0"), "PT6 pressing the switch stores it at %s" % label)
+		if button != null: _clear_of_siblings(runner, launcher.get_node("Pages/" + page_name), button, view, "ThisBuild after switch " + label)
+		launcher.show_page("Settings")
+		toggle.button_pressed = false
+		await runner.process_frame
+		runner.check(button == null or not button.visible, "PT6 switching off hides ThisBuild at %s" % label)
+	launcher.free()
 
 func _image(width: int, height: int) -> Image:
 	var image := Image.create(width, height, false, Image.FORMAT_RGB8)
@@ -233,7 +243,7 @@ func test_launcher_shows_open_sitting_card(runner) -> bool:
 	var port := SubViewport.new()
 	port.size = Vector2i(1280, 720)
 	runner.root.add_child(port)
-	var launcher = await _launcher(runner, port)
+	var launcher = await _launcher(runner, port, "Play")
 	var picker: OptionButton = launcher.get_node("FocusPanel").find_child("Picker", true, false)
 	runner.check(not picker.disabled, "PT6b with no sitting the picker is enabled")
 	launcher.free()
@@ -241,10 +251,10 @@ func test_launcher_shows_open_sitting_card(runner) -> bool:
 	stored.finish_match({"mode": "offline", "end_tick": 10})
 	PlaytestSession.current = null
 	FocusCards.chosen = ""
-	launcher = await _launcher(runner, port)
+	launcher = await _launcher(runner, port, "Play")
 	var title: String = FocusCards.card(SHIPPED[2], FocusCards.load_cards()).title
 	var panel: Control = launcher.get_node("FocusPanel")
-	runner.check(launcher.get_node("Pages/Settings/Body/Playtest/ThisBuild").text == "This build: " + title, "PT6b ThisBuild names the open sitting's card, got %s" % launcher.get_node("Pages/Settings/Body/Playtest/ThisBuild").text)
+	runner.check(launcher.get_node("Pages/Play/ThisBuild").text == "This build: " + title, "PT6b ThisBuild names the open sitting's card, got %s" % launcher.get_node("Pages/Play/ThisBuild").text)
 	runner.check(panel.find_child("Picker", true, false).disabled, "PT6b the picker is disabled while a sitting is open")
 	var shown := PackedStringArray()
 	for label: Label in panel.find_children("*", "Label", true, false): shown.append(label.text)

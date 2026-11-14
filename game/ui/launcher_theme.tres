@@ -171,6 +171,8 @@ border_width_right = 1
 border_width_bottom = 1
 border_color = Color(0.6, 0.6, 0.6, 1)
 
+[sub_resource type="StyleBoxEmpty" id="link_idle"]
+
 [sub_resource type="StyleBoxEmpty" id="spaced"]
 content_margin_bottom = 5.0
 
@@ -234,6 +236,14 @@ PrimaryButton/styles/focus = SubResource("primary_hover")
 PrimaryButton/styles/hover = SubResource("primary_hover")
 PrimaryButton/styles/normal = SubResource("primary")
 PrimaryButton/styles/pressed = SubResource("primary_hover")
+FooterLink/base_type = &"Button"
+FooterLink/colors/font_color = Color(0.8, 0.8, 0.8, 1)
+FooterLink/colors/font_hover_color = Color(1, 1, 1, 1)
+FooterLink/font_sizes/font_size = 14
+FooterLink/styles/focus = SubResource("link_idle")
+FooterLink/styles/hover = SubResource("link_idle")
+FooterLink/styles/normal = SubResource("link_idle")
+FooterLink/styles/pressed = SubResource("link_idle")
 PageTitle/base_type = &"Label"
 PageTitle/fonts/font = SubResource("bold")
 PageTitle/font_sizes/font_size = 32

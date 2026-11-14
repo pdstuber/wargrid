@@ -11,6 +11,7 @@ const VolumeSliders = preload("res://scripts/presentation/volume_sliders.gd")
 const SkirmishMain = preload("res://scripts/match/match_screen.gd")
 const MatchSettings = preload("res://scripts/match_settings.gd")
 const LauncherSettings = preload("res://scripts/launcher_settings.gd")
+const GraphicsSettings = preload("res://scripts/presentation/graphics_settings.gd")
 const Credits = preload("res://scripts/presentation/credits.gd")
 const PlaytestSettings = preload("res://scripts/playtest/playtest_settings.gd")
 const JoinLink = preload("res://scripts/join_link.gd")
@@ -60,6 +61,7 @@ func _ready() -> void:
 	_apply_picks()
 	_add_audio()
 	_add_fullscreen()
+	_add_graphics()
 	_add_playtest()
 	$Pages/Play/Footer/Start.pressed.connect(func() -> void:
 		_offline_setup()
@@ -214,24 +216,22 @@ func _add_playtest() -> void:
 	toggle.button_pressed = PlaytestSettings.enabled()
 	column.add_child(toggle)
 	column.move_child(toggle, $Pages/Settings/Body/Playtest/PlaytestHeader.get_index() + 1)
+	toggle.toggled.connect(PlaytestSettings.save_enabled)
 	var cards: Array[Dictionary] = FocusCards.load_cards()
 	if cards.is_empty(): return
 	var panel := FocusCardView.new(cards, PlaytestSession.open_count)
 	add_child(panel)
-	var build := Button.new()
-	build.name = "ThisBuild"
-	build.visible = toggle.button_pressed
-	column.add_child(build)
+	var builds: Array[Button] = [$Pages/Play/ThisBuild, $Pages/Join/ThisBuild]
 	var show_panel := func(open: bool) -> void:
-		build.text = "This build: " + FocusCards.card(FocusCards.shown(), cards).title
+		for build: Button in builds: build.text = "This build: " + FocusCards.card(FocusCards.shown(), cards).title
 		panel.visible = open
 		_set_shell_visible(not open)
 	show_panel.call(false)
-	build.pressed.connect(show_panel.bind(true))
+	for build: Button in builds:
+		build.visible = toggle.button_pressed
+		build.pressed.connect(show_panel.bind(true))
+		toggle.toggled.connect(build.set_visible)
 	panel.get_node("Box/Close").pressed.connect(show_panel.bind(false))
-	toggle.toggled.connect(func(on: bool) -> void:
-		PlaytestSettings.save_enabled(on)
-		build.visible = on)
 
 func _add_fullscreen() -> void:
 	if OS.has_feature("web"): return
@@ -249,6 +249,39 @@ func _add_fullscreen() -> void:
 	audio.add_child(header)
 	audio.add_child(toggle)
 	_apply_fullscreen(toggle.button_pressed)
+
+func _add_graphics() -> void:
+	var column: VBoxContainer = $Pages/Settings/Body/Playtest
+	var header: Label = $Pages/Settings/Body/Audio/AudioHeader.duplicate()
+	header.name = "GraphicsHeader"
+	header.text = "Graphics"
+	column.add_child(header)
+	column.move_child(header, 0)
+	var buttons: Array[Button] = [
+		_graphics_button("Quality", func() -> String: return "Quality: " + ("Low" if GraphicsSettings.stored_quality() == GraphicsSettings.LOW else "High"),
+			func() -> void: GraphicsSettings.save_quality(GraphicsSettings.HIGH if GraphicsSettings.stored_quality() == GraphicsSettings.LOW else GraphicsSettings.LOW)),
+		_graphics_button("Neon", func() -> String: return "Neon colours: " + ("On" if GraphicsSettings.load_neon() else "Off"),
+			func() -> void: GraphicsSettings.save_neon(not GraphicsSettings.load_neon())),
+		_graphics_button("Smooth", func() -> String: return "Smooth movement: " + ("On" if GraphicsSettings.load_smooth() else "Off"),
+			func() -> void: GraphicsSettings.save_smooth(not GraphicsSettings.load_smooth())),
+		_graphics_button("Destinations", func() -> String: return "Show unit destinations: " + ("On" if GraphicsSettings.load_destinations() else "Off"),
+			func() -> void: GraphicsSettings.save_destinations(not GraphicsSettings.load_destinations())),
+	]
+	for button: Button in buttons:
+		column.add_child(button)
+		column.move_child(button, header.get_index() + 1 + buttons.find(button))
+
+# Mirrors the Esc menu's labels and cycle; pause_menu.gd keeps its state in the menu, so it cannot be shared as is.
+func _graphics_button(button_name: String, label: Callable, press: Callable) -> Button:
+	var button := Button.new()
+	button.name = button_name
+	button.text = label.call()
+	button.custom_minimum_size.x = 260.0
+	button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	button.pressed.connect(func() -> void:
+		press.call()
+		button.text = label.call())
+	return button
 
 static func fullscreen_target(on: bool, current: DisplayServer.WindowMode) -> int:
 	var is_fullscreen: bool = current == DisplayServer.WINDOW_MODE_FULLSCREEN or current == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN

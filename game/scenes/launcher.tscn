@@ -218,6 +218,13 @@ visible = false
 layout_mode = 2
 visible = false
 
+[node name="ThisBuild" type="Button" parent="Pages/Play"]
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"FooterLink"
+flat = true
+visible = false
+
 [node name="Divider" type="HSeparator" parent="Pages/Play"]
 layout_mode = 2
 
@@ -326,6 +333,13 @@ layout_mode = 2
 
 [node name="Advanced" parent="Pages/Join/Body" instance=ExtResource("3")]
 layout_mode = 2
+
+[node name="ThisBuild" type="Button" parent="Pages/Join"]
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"FooterLink"
+flat = true
+visible = false
 
 [node name="Divider" type="HSeparator" parent="Pages/Join"]
 layout_mode = 2
