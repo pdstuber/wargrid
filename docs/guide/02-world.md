@@ -111,7 +111,7 @@ Cell (40, 23) has its four corners at (544, 1008), (576, 1024), (544, 1040) and 
 
 The way back is the algebraic inverse. The right-click in step 6 uses it, and so do the picking functions of the world view. A test covers the projection (`game/tests/test_isometric.gd`).
 
-`main._unhandled_input → Iso.plane_to_world`, `WorldView.pick_target → Iso.plane_to_world`
+`orders._selection_input → Iso.plane_to_world`, `WorldView.pick_target → Iso.plane_to_world`
 
 ## How cells become tiles
 
@@ -187,7 +187,7 @@ Distances are straight lines between start cells; ties go to the lowest index. T
 - `game/scripts/simulation/definitions/definitions.gd` — `SOURCE_FOOTPRINT` (4 × 5), `source_footprint`, the `slot` key on building kinds.
 - `game/scripts/presentation/isometric.gd` — `world_to_plane`, `plane_to_world`.
 - `game/scripts/presentation/terrain_view.gd` — `set_map`, `_draw_ground`, `_build_ground` (cached in `_ground`), `_draw_blocked`, `CLIFF_HEIGHT`.
-- `game/scripts/main.gd` — `_reset_camera` (bounds from projected corners, start on the local seat), `_unhandled_input`.
+- `game/scripts/match/match_screen.gd` — `_reset_camera` (bounds from projected corners, start on the local seat). `game/scripts/match/orders.gd` — `handle`, `_selection_input`.
 - `game/scripts/presentation/world_view.gd` — `pick_target`, `pick_source`, `pick_object` (`_pick_bounds` for units), the `TerrainView` child set up in `_init`.
 - `game/scripts/launcher.gd` — `_offline_setup`, `_start` (compute the start spots).
 - `tools/zh_map/convert.py` — `load`, `read_map`, `resample` (with `_wet`), `place` (with `_supply_site`), `route_matrix`, `route_widths`, `convert`, `write_json`; `refpack.py` decoder; `test_zh_map.py`.
@@ -205,4 +205,4 @@ Distances are straight lines between start cells; ties go to the lowest index. T
 - Next: [3. Entities](03-entities.md) puts units and buildings on this grid; [6. Movement](06-movement.md) walks routes over it.
 
 ---
-Checked against `2b108ab`. Files: `game/scripts/simulation/map_data.gd`, `game/scripts/simulation/start_spots.gd`, `game/scripts/simulation/grid_navigation.gd`, `game/scripts/simulation/simulation.gd`, `game/scripts/simulation/skirmish.gd`, `game/scripts/simulation/definitions/definitions.gd`, `game/scripts/presentation/isometric.gd`, `game/scripts/presentation/terrain_view.gd`, `game/scripts/presentation/world_view.gd`, `game/scripts/match_settings.gd`, `game/scripts/launcher.gd`, `game/scripts/main.gd`, `tools/zh_map/convert.py`, `tools/zh_map/refpack.py`, `game/data/maps/NOTICE.md`, `game/data/maps/dry_wells.json`
+Checked against `60b6674`. Files: `game/scripts/simulation/map_data.gd`, `game/scripts/simulation/start_spots.gd`, `game/scripts/simulation/grid_navigation.gd`, `game/scripts/simulation/simulation.gd`, `game/scripts/simulation/skirmish.gd`, `game/scripts/simulation/definitions/definitions.gd`, `game/scripts/presentation/isometric.gd`, `game/scripts/presentation/terrain_view.gd`, `game/scripts/presentation/world_view.gd`, `game/scripts/match_settings.gd`, `game/scripts/launcher.gd`, `game/scripts/match/match_screen.gd`, `game/scripts/match/orders.gd`, `tools/zh_map/convert.py`, `tools/zh_map/refpack.py`, `game/data/maps/NOTICE.md`, `game/data/maps/dry_wells.json`

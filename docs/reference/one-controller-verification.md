@@ -1,15 +1,15 @@
 # One controller verification
 
 ```text
-Resume record (updated 2026-11-14: Task 7 GREEN, not committed)
-Branch / base commit / working-tree state: one-controller (worktree ~/projects/wargrid-wt-onecontrol) / 936e63b (Task 6 commit) / Task 7 files uncommitted
-Last green task / next incomplete task: Task 7 / Task 8
-Changed paths since last commit: docs/reference/one-controller-verification.md, new game/scripts/match/hud.gd (+ .uid), game/scripts/match/match_screen.gd, game/scripts/match/orders.gd; tests: test_announcer.gd, test_base_scene.gd, test_order_voice.gd, test_playtest_overlay.gd, test_skirmish_scene.gd
-Last command / cases / checks / failures / exit / marker: full suite with traces after Task 7 / 862 / 144276 / 0 / exit 0 / TESTS PASSED 144276 (static gates CHECKS PASSED 5; netplay match terminal tick 9129; four traces cmp exit 0)
+Resume record (updated 2026-11-14: Task 8 GREEN, not committed)
+Branch / base commit / working-tree state: one-controller (worktree ~/projects/wargrid-wt-onecontrol) / 60b6674 (Task 7 commit) / Task 8 files uncommitted
+Last green task / next incomplete task: Task 8 (refactor gate; "no behaviour change" ends here) / Task 9
+Changed paths since last commit: docs only: README.md and docs/reference/performance.md (generated benchmark blocks), docs/reference/perf-history.csv (13 rows), docs/reference/performance.md (History row), docs/STATUS.md, docs/development.md, docs/packages.md, docs/guide/{01,02,03,04,05,07,08,09,10,11,13}*.md and docs/guide/README.md, this file; no game/ change
+Last command / cases / checks / failures / exit / marker: benchmark `PERF_LABEL="One controller" sh tools/run_benchmark.sh` / exit 0 / BENCHMARK PASSED 2, COMBAT BENCHMARK PASSED 10, LOCKSTEP BENCHMARK PASSED 1, BUDGET EXCEEDED open dense hordes300 (accepted). Before it: full suite with traces 862 / 144276 / 0 / exit 0 / TESTS PASSED 144276; four traces cmp exit 0; CHECKS PASSED 5; netplay match 9129, perturb, relay-down, relay-term PASSED; CONFORMANCE PASSED 41; team match won tick=39497 winner=2 units_peak=271; V8, V10, V11, V11b, V12, V13 OK
 Known red case or blocker: none
 Approved decisions, pre-authorizations used, deferred gates: package note "One controller" (user, 2026-11-13); plan "Decisions (user, 2026-11-14)" 1-20; local commits as the night run handoff pre-authorizes (one per GREEN task, two in Task 9); benchmark only in Task 8, alone; Task 1 commit (V10 base): f1c6b78; Task 9 re-pin commit (V10 base from Task 9): none yet
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: Task 8 Step 1 (docs and package gate). The null guard `var result: String = "" if state.match == null else _result_text(state.match)` is now in `hud.gd` `_match_hud`, byte for byte; tell the Task 11 reviewer. Task 8 guide places: `hud.gd` is the HUD object (labels, buttons, menu, queue, note line); `hud.note` replaces the screen's `_error`
+Next exact action: Task 9 Step 1 (F3 toggles the perf overlay during placement), after the coordinator commits Task 8. Morning items are in "Unverifiable at night" below. Task 8 history (the previous action): Step 1 (docs and package gate). The null guard `var result: String = "" if state.match == null else _result_text(state.match)` is now in `hud.gd` `_match_hud`, byte for byte; tell the Task 11 reviewer. Task 8 guide places: `hud.gd` is the HUD object (labels, buttons, menu, queue, note line); `hud.note` replaces the screen's `_error`
 ```
 
 Plan: [One controller plan](../superpowers/plans/2026-11-14-one-controller.md). Spec: `docs/packages.md` package note "One controller" (`:84`); design answers "Package review, second pass" (`:474-505`) and "Main branch audit" (`:363-378`); audit FIX-6 and A-1 (kept outside the repository, `~/projects/wargrid-overnight-work/audit-2026-11-11/`). Logs: `~/projects/wargrid-overnight-work/one-controller/logs/` (outside the repository; commands use the absolute path). A stop after any GREEN task resumes at the next row of the task table: the subagent reads this record, checks `git log --oneline -1` and `git status --short` in the worktree against it, and starts that task's Step 1.
@@ -26,7 +26,7 @@ Plan: [One controller plan](../superpowers/plans/2026-11-14-one-controller.md). 
 | 5 | One screen: merge the chain, delete the four scripts | Sonnet | GREEN (uncommitted) |
 | 6 | Extract orders (OR1) | Sonnet | GREEN (committed 936e63b) |
 | 7 | Extract the HUD (HU1) | Sonnet | GREEN (uncommitted) |
-| 8 | Docs and package gate (ledger row); end of "no behaviour change" | Sonnet | not started |
+| 8 | Docs and package gate (ledger row); end of "no behaviour change" | Sonnet | GREEN (uncommitted) |
 | 9 | F3 toggles the perf overlay during placement (PO19; IC1 re-pin commit) | Sonnet | not started |
 | 10 | Two-tick online frame results reach the HUD (N27: characterise, then fix or guard) | Sonnet | not started |
 | 11a | Fresh-context branch review (refactor and fixes); findings into the Review section | Opus (high) | not started |
@@ -104,20 +104,20 @@ Member and simulation counts at Task 0 equal the `35d22b5` expectations in every
 
 | # | Pin | Expected (on `35d22b5`) | Task 0 | Task 4 | Task 5 | Task 8 | Task 9 | Task 10 | Task 11 |
 |---|---|---|---|---|---|---|---|---|---|
-| V1 | `FINAL_DIGEST` | `3958ceaab11986af` | `3958ceaab11986af` (`test_team_match.gd:14`) | `3958ceaab11986af` | | | | | |
-| V2 | `TEAM_CORE_SERIES` | `8513092129969516499` | `8513092129969516499` (`:16`) | `8513092129969516499` | | | | | |
-| V3 | `S1_CORE_SERIES` | `4004499097874677431` | `4004499097874677431` (`test_skirmish_match.gd:12`) | `4004499097874677431` | | | | | |
-| V4 | `PINNED`, `EXPECTED_DIGEST`, `SS6_PINNED` | unchanged | `01e256834bdd4dfb` (`test_state_hash.gd:6`); `7c7fbc8d…48a9e7` (`test_view_rows.gd:18`); `SS6_PINNED` present (`test_start_spots.gd:7`) | unchanged (suite green) | | | | | |
-| V5 | four traces | byte-identical to `*-before.tsv` | recorded (1200 / 1200 / 1200 / 100 lines) | `cmp` exit 0 for all four (`replay`, `economy`, `combat`, `team`) | | | | | |
-| V6 | netplay match terminal tick | `9129` | pin present (`run_netplay.sh:91`); netplay not run in Task 0 | 9129 | — | | | | |
-| V7 | `run_team_match.sh` | `won tick=39497 winner=2 units_peak=271` | pin present (`:13`) | — | — | | — | — | — |
-| V8 | `git diff main -- game/tests \| rg '^-\s*const'` | only the listed preload lines | only `base.tscn` x3, `main.tscn`, `OnlineMain` const lines (Tasks 2, 3, 4) | | | | — | — | |
-| V9 | `test_hud_summaries_are_pinned` literals | unchanged | present (`test_skirmish_scene.gd:651`), suite green | unchanged (suite green) | | | | | |
-| V10 | `input_script_rows.gd` against the Task 1 commit (from Task 9: against the re-pin commit) | no diff | — | empty diff against `f1c6b78` | | | re-pin | | |
-| V11 | check-id census | Task 0 set minus the demo-only list, plus the new ids so far | 659 ids (Task 3: 661, adds `IC1 `, `IC2 `) | 661 ids + `OD1 `, `OD2 ` = 663 | | | | | |
-| V12 | simulation, presentation, net, playtest, `project.godot` diff against `main` | empty | — | empty | | | | | |
-| V11b | label census | Task 3: exactly 11 demo labels removed, IC1/IC2 added; later: additions only | 3070 lines (Task 3: 3093) | 3095 lines; diff against `labels-t3.txt` adds exactly the OD1, OD2 labels | | | | | |
-| V13 | `v13_check.py` | `V13 OK` | — | `V13 OK removed=266 renamed=188 listed=78` | — | | — | — | |
+| V1 | `FINAL_DIGEST` | `3958ceaab11986af` | `3958ceaab11986af` (`test_team_match.gd:14`) | `3958ceaab11986af` | | `3958ceaab11986af` | | | |
+| V2 | `TEAM_CORE_SERIES` | `8513092129969516499` | `8513092129969516499` (`:16`) | `8513092129969516499` | | `8513092129969516499` | | | |
+| V3 | `S1_CORE_SERIES` | `4004499097874677431` | `4004499097874677431` (`test_skirmish_match.gd:12`) | `4004499097874677431` | | `4004499097874677431` | | | |
+| V4 | `PINNED`, `EXPECTED_DIGEST`, `SS6_PINNED` | unchanged | `01e256834bdd4dfb` (`test_state_hash.gd:6`); `7c7fbc8d…48a9e7` (`test_view_rows.gd:18`); `SS6_PINNED` present (`test_start_spots.gd:7`) | unchanged (suite green) | | unchanged (suite green) | | | |
+| V5 | four traces | byte-identical to `*-before.tsv` | recorded (1200 / 1200 / 1200 / 100 lines) | `cmp` exit 0 for all four (`replay`, `economy`, `combat`, `team`) | | `cmp` exit 0 for all four (`t8-suite` traces `*-final.tsv`) | | | |
+| V6 | netplay match terminal tick | `9129` | pin present (`run_netplay.sh:91`); netplay not run in Task 0 | 9129 | — | 9129 (`NETPLAY PASSED match 11.2 s`) | | | |
+| V7 | `run_team_match.sh` | `won tick=39497 winner=2 units_peak=271` | pin present (`:13`) | — | — | `TEAM MATCH won tick=39497 winner=2 units_peak=271` | — | — | — |
+| V8 | `git diff main -- game/tests \| rg '^-\s*const'` | only the listed preload lines | only `base.tscn` x3, `main.tscn`, `OnlineMain` const lines (Tasks 2, 3, 4) | | | only the `const` preload lines of Tasks 2, 3, 4, 5 (11 lines) | — | — | |
+| V9 | `test_hud_summaries_are_pinned` literals | unchanged | present (`test_skirmish_scene.gd:651`), suite green | unchanged (suite green) | | unchanged (suite green) | | | |
+| V10 | `input_script_rows.gd` against the Task 1 commit (from Task 9: against the re-pin commit) | no diff | — | empty diff against `f1c6b78` | | empty diff against `f1c6b78` | re-pin | | |
+| V11 | check-id census | Task 0 set minus the demo-only list, plus the new ids so far | 659 ids (Task 3: 661, adds `IC1 `, `IC2 `) | 661 ids + `OD1 `, `OD2 ` = 663 | | 665 ids = 661 + `OD1 `, `OD2 `, `OR1 `, `HU1 `; no id lost | | | |
+| V12 | simulation, presentation, net, playtest, `project.godot` diff against `main` | empty | — | empty | | empty | | | |
+| V11b | label census | Task 3: exactly 11 demo labels removed, IC1/IC2 added; later: additions only | 3070 lines (Task 3: 3093) | 3095 lines; diff against `labels-t3.txt` adds exactly the OD1, OD2 labels | | 3097 lines; against `labels-t7.txt` no change; against `labels-before.txt` exactly the 11 demo labels removed | | | |
+| V13 | `v13_check.py` | `V13 OK` | — | `V13 OK removed=266 renamed=188 listed=78` | — | `V13 OK removed=439 renamed=352 listed=87` | — | — | |
 
 ## Characterisation rows (Task 1)
 
@@ -233,14 +233,14 @@ Expected on `35d22b5` by reading (Task 2 confirms by running on the old chain):
 
 | Item | Value |
 |---|---|
-| Tree, `uptime` start / end | |
-| Full suite: CASES, CHECKS, exit; traces `cmp` | |
-| `run_checks.sh` marker | |
-| Netplay `match` (tick), `perturb`, `relay-down`, `relay-term` | |
-| Conformance | |
-| Team match line | |
-| Benchmark markers; `BUDGET EXCEEDED` line; ledger row recorded | |
-| `roadmap.py --check`, `check_public.sh` | |
+| Tree, `uptime` start / end | `one-controller` at `60b6674` (Task 7 commit) plus the uncommitted Task 8 docs diff; `game/` identical to that commit. Suite 10:19 load 2.58 / 2.29 / 2.74 at end; benchmark `uptime` 1.56 / 2.07 / 2.58 at start (10:21), 1.93 / 2.09 / 2.57 at end; no godot or generalszh process before it |
+| Full suite: CASES, CHECKS, exit; traces `cmp` | on the final tree with the four traces: `CASES 862 CHECKS 144276 FAILURES 0`, exit 0, `TESTS PASSED 144276` (includes the HUD layout tests; no `FAIL` line); `cmp` against `*-before.tsv` exit 0 for `replay`, `economy`, `combat`, `team` |
+| `run_checks.sh` marker | exit 0, `CHECKS PASSED 5` (run again after the performance ledger row below; see the evidence row) |
+| Netplay `match` (tick), `perturb`, `relay-down`, `relay-term` | `match terminal tick 9129`, `NETPLAY PASSED match 11.2 s`; `perturb` 2.2 s, `relay-down` 2.6 s, `relay-term` 3.2 s; all exit 0 |
+| Conformance | exit 0, `CONFORMANCE PASSED 41` |
+| Team match line | exit 0, `TEAM MATCH won tick=39497 winner=2 units_peak=271` (V7) |
+| Benchmark markers; `BUDGET EXCEEDED` line; ledger row recorded | `PERF_LABEL="One controller" sh tools/run_benchmark.sh` exit 0: `BENCHMARK PASSED 2`, `COMBAT BENCHMARK PASSED 10`, `LOCKSTEP BENCHMARK PASSED 1` (p99 0.068 ms), `recorded 13 rows, run 1`; last line `BUDGET EXCEEDED open dense hordes300 (regression ceilings held)` (the accepted line); OVER BUDGET open 1.895 / 2.285, dense 1.867 / 2.210, hordes300 2.911 / 3.439. `perf-history.csv` and the `performance.md` / `README.md` generated blocks recorded by the script; History row added by hand. No rendered rerun (Decision 14) |
+| `roadmap.py --check`, `check_public.sh` | `roadmap.py` exit 0 (no README change), `--check` exit 0; `PUBLIC CHECK PASSED` |
 
 ## Fixes after the gate (Tasks 9, 10; Decision 17)
 
@@ -275,7 +275,9 @@ Both quirks were found by reading on `4ed3534` and are unchanged on `35d22b5`:
 - Browser: the web desync download path (`online_main.gd:97-99`, then the online driver) and the web build of the match screen; covered only by the fake `download` callable in `test_online_scene.gd:140-141`.
 - The attended offline and online match in a window, before P2.3a starts (user, 2026-11-13).
 - Rendered benchmark: skipped (Decision 14); `movement_benchmark.tscn` does not load the controller.
-- Commands the night permissions refused, each with its exact text (filled in by the run).
+- Commands the night permissions refused, each with its exact text: none in Task 8.
+- The null guard in `hud.gd` `_match_hud` (`var result: String = "" if state.match == null else _result_text(state.match)`, ruling 2026-11-14) turns a future null-match bug into a blank Result label instead of a script error; for the Task 11 reviewer.
+- Guide chapters 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 13 and the guide README were re-pointed to the match screen, `driver`, `orders` and `hud`; their `Checked against` footers now read `60b6674`, which is the Task 7 commit the claims were verified against (code read, no chapter re-measured). Tasks 9 and 10 refresh ch. 5 and ch. 11 again.
 
 ## Evidence rows (append-only)
 
@@ -286,3 +288,4 @@ Both quirks were found by reading on `4ed3534` and are unchanged on `35d22b5`:
 - 2026-11-14 night, Task 1 characterisation (Sonnet subagent), worktree `one-controller` at `05d0794`, `game/scripts` untouched. New: `game/tests/input_script_rows.gd` (`IC1_ROWS` 21 lines, `IC2_ROWS` 11 lines), `test_input_script_offline` in `test_skirmish_scene.gd` (helpers `_ic_row`, `_ic_esc`, `_ic_click`, `_ic_box`, `_ic_world`, `_ic_first_difference`), `test_input_script_online` in `test_online_scene.gd` (helpers `_ic_row`, `_ic_esc`, `_ic_plane`, `_ic_first_difference`; it preloads `test_base_scene.gd` for the `key`/`pointer` helpers and sits above `test_launcher_reads_no_page_off_web` so the pre-tree scan output stays the same). IC1 world: own builder is an `frc_builder` (it collects, so the pile step gathers), two `usa_tank`, an `frc_rifle_infantry`, completed `usa_barracks`, unfinished `usa_power_plant` (completed set false), completed `frc_defence` hub with one occupant, one supply pile, enemy `usa_tank`. IC2 ran on seat 1 with the peer packets for ticks 4-200 queued up front; its commands start at sequence 1 (the faction choice is 0). Results: filtered run exit 0 `CASES 2 CHECKS 34`; mutations (a) and (b) red as in the table, reverted; full suite exit 0 `CASES 860 CHECKS 144276 FAILURES 0`, `TESTS PASSED 144276`; `sh tools/run_checks.sh` exit 0 `CHECKS PASSED 5` (lint, warnings, Python, shell, public); `v13_check.py` `V13 OK removed=2 renamed=0 listed=2`. Not run in Task 1: traces comparison (no `game/scripts` change), netplay, benchmark. Logs `t1-*.log` in the logs folder.
 - 2026-11-14 night, Task 3 demo deletion (Sonnet subagent), worktree `one-controller` at `0437bdf`. `git rm game/scenes/main.tscn game/scenes/base.tscn`; `test_scene.gd`: S8 and S9 cases, their `cases()` entries and `const Demo` removed; `test_sound.gd`: SD22 demo loop removed. Full suite exit 0, `CASES 858 CHECKS 144264 FAILURES 0`, `TESTS PASSED 144264` (includes the HUD layout tests; no `FAIL` line); `sh tools/run_checks.sh` exit 0, `CHECKS PASSED 5`; V11, V11b and V13 add as in the table above. `game/scripts` untouched. Not run in Task 3: traces comparison (no `game/scripts` change), netplay, benchmark. Logs `t3-*.log`, `labels-t3.txt`, `ids-t3.txt` in the logs folder.
 - 2026-11-14 night, Task 4 driver extraction (Sonnet subagent), worktree `one-controller` at `1fc380c`, host load 2.7 to 3.3 (another run's godot processes were active). New: `game/scripts/match/offline_driver.gd`, `online_driver.gd`; OD1, OD2 in `test_skirmish_scene.gd` (red against stubs, then green). Chain wired to the drivers as in Pinned shapes (`_create_world`, pinned `_submit` and `_step_simulation`; online `_ready`/`_leave`/`_exit_tree`/`_note`/`_refresh_hud` call the driver); dead consts `CommandRecorder` and `Lockstep` dropped from `skirmish_main.gd`. Rename `t4` asserted counts matched the `rg` recount. Full suite with traces exit 0, 54 s, `CASES 860 CHECKS 144273 FAILURES 0` (HEAD 4-shard 144264; the +9 is a shard-assignment effect of two added cases, with `WARGRID_TEST_SHARDS=1` HEAD 144264 and now 144266 = +2, and per-file filtered counts equal HEAD except the two OD checks); four traces `cmp` exit 0; `sh tools/run_checks.sh` `CHECKS PASSED 5`; `sh tools/run_netplay.sh match` tick 9129; V12 diff empty; V13 OK. Not run: benchmarks (Task 8), rendered checks.
+- 2026-11-14 night, Task 8 docs and package gate (Sonnet subagent), worktree `one-controller` at `60b6674` plus the uncommitted docs diff; `game/` untouched. Guide chapters 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 13 and the guide README now describe one match screen (`match_screen.gd`) with the offline or online driver, `orders.gd` and `hud.gd`; each claim read against `game/scripts/match/` (launcher `setup` path, `_ready` driver choice, `orders.handle` order, `hud._refresh_hud`, `offline_driver._recording`, `online_driver.step`). Notes: `development.md` (demo scene run lines dropped), `packages.md` (one clause on `seat_sim.gd`), `STATUS.md` night 2 row. Gates on the final tree: full suite with traces `CASES 862 CHECKS 144276 FAILURES 0`; four traces `cmp` exit 0; `run_checks.sh` `CHECKS PASSED 5` (twice, the second after the ledger and verification edits); netplay `match` 9129, `perturb`, `relay-down`, `relay-term` passed; `CONFORMANCE PASSED 41`; team match `won tick=39497 winner=2 units_peak=271`; V8, V10, V11 (665 ids), V11b (3097 lines), V12 (empty), V13 (`V13 OK removed=439 renamed=352 listed=87`); `rg -n '^extends "res://scripts/' game/scripts` empty; benchmark as in the Gate table, host load 1.56 at start. Not run: rendered benchmark (Decision 14), CI, browser. Logs `t8-*.log` in the logs folder.

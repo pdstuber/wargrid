@@ -58,10 +58,10 @@ Take two Battle Tanks. Player 1's tank A stands idle in `guard` mode and belongs
 8. After all units have been visited, the pending damage is applied: B drops to 420 HP. The shot event stays readable through `combat_events` until the next `step` clears it.  
    `Combat.fire: hit.hp = maxi(0, hit.hp - damage[id])`
 
-**After the tick.** The driver hands the events and the new state to presentation. This is the only place a turret turns, and nothing in the simulation waits for it.
+**After the tick.** The match screen hands the events and the new state to presentation. This is the only place a turret turns, and nothing in the simulation waits for it.
 
 9. The visual director adds a muzzle flash at A and a hit flash at B. It also steps A's drawn turret toward B by at most 0.15 rad per refresh that brings a new tick, so a half turn takes at least 21 ticks, about a third of the reload (arithmetic from `TURRET_RATE`). The shot has already happened by then.  
-   `skirmish_main → VisualDirector.collect_step; WorldView → VisualDirector.update → _aim`
+   `match_screen._collect_sound → VisualDirector.collect_step; WorldView → VisualDirector.update → _aim`
 
 **Ticks T+1 to T+59.** `plan` keeps A's target: it is still valid and still in reach, so there is no rescan. `fire` skips A because the tick is before the weapon is ready again.
 
@@ -223,4 +223,4 @@ A profile of 2026-11-11 on the Mac mini ([data layout decision](../reference/dat
 - Next: [9. AI](09-ai.md) issues the commands that drive the bot armies; [5. Presentation](05-presentation.md) draws the shots and the turret.
 
 ---
-Checked against `ae09473`. Files: `game/scripts/simulation/combat.gd`, `game/scripts/simulation/combat_definitions.gd`, `game/scripts/simulation/containers.gd`, `game/scripts/simulation/horde.gd`, `game/scripts/simulation/simulation.gd`, `game/scripts/simulation/definitions/shared.gd`, `game/scripts/simulation/definitions/usa.gd`, `game/scripts/simulation/definitions/china.gd`, `game/scripts/simulation/definitions/frc.gd`, `game/scripts/presentation/visual_director.gd`, `game/scripts/skirmish_main.gd`
+Checked against `60b6674`. Files: `game/scripts/simulation/combat.gd`, `game/scripts/simulation/combat_definitions.gd`, `game/scripts/simulation/containers.gd`, `game/scripts/simulation/horde.gd`, `game/scripts/simulation/simulation.gd`, `game/scripts/simulation/definitions/shared.gd`, `game/scripts/simulation/definitions/usa.gd`, `game/scripts/simulation/definitions/china.gd`, `game/scripts/simulation/definitions/frc.gd`, `game/scripts/presentation/visual_director.gd`, `game/scripts/match/match_screen.gd`

@@ -31,7 +31,7 @@ Who calls `step` is outside the simulation:
 
 ```mermaid
 flowchart TD
-    P["Godot _physics_process<br/>fixed rate, project.godot"] --> S["_step_simulation<br/>in main.gd"]
+    P["Godot _physics_process<br/>fixed rate, project.godot"] --> S["_step_simulation<br/>in match_screen.gd"]
     S --> O["Skirmish:<br/>issue_opponent, step"]
     S --> N["Online: poll relay,<br/>Lockstep.advance"]
     N --> N2{"every seat's packet<br/>for this tick?"}
@@ -59,14 +59,14 @@ A player selects a tank and right-clicks. Say `tick()` is N at that moment, and 
 **Before the tick (offline).**
 
 1. The click builds a move command for the selected units and hands it to the submit function.  
-   `main._move → main._submit`
+   `orders._move → match_screen._submit`
 2. The submit function stamps the current tick, the local seat as player and the next sequence number, then offers the command to the simulation.  
-   `main._submit → Simulation.issue_command`
+   `match_screen._submit → driver.submit → Simulation.issue_command`
 3. The simulation validates it: required fields, a tick not in the past, a sequence higher than the player's last, at least one named unit that exists and none owned by another player, and a target inside the map and walkable. A rejection returns an error text and the HUD shows it. An accepted command is copied into a normalised form and queued.  
    `issue_command → _validate → _payload_fields → _pending`
 
-Online, step 2 differs: the online scene hands the payload to lockstep, which stamps the tick of the next packet to be sent (one more than the **input delay** ahead of the current tick) and queues the command; chapter 11.  
-`online_main._submit → Lockstep.submit`
+Online, step 2 differs: the online driver hands the payload to lockstep, which stamps the tick of the next packet to be sent (one more than the **input delay** ahead of the current tick) and queues the command; chapter 11.  
+`online_driver.submit → Lockstep.submit`
 
 **Tick N, phase 1: apply orders.**
 
@@ -145,7 +145,7 @@ The path cap covers only the route search. The destination allocation in step 8 
 
 **The tick rate is a literal.** `Locomotion.step` divides speeds and accelerations by `30.0`. The blueprint ([section 11](../blueprint.md#11-performance-multiplayer-and-future-architecture)) keeps movement and firing at 30 per second and lists split rates, with unit decisions running less often, as "not built". Adding them means changing the pipeline, not a setting.
 
-**The slowest peer sets the pace, and catch-up is rationed.** `Lockstep.advance` returns false while any seat's packet for the tick is missing, so no peer runs ahead of the slowest machine or connection, and a seat that leaves ends the match (`ended_left`). When late packets arrive in a burst, the online scene may run up to `CATCH_UP_STEPS` ticks per physics callback. Each is paid from a credit that grows by one per callback and is capped at `MAX_CATCH_UP_CREDIT`. The credit exists because the first online match ran at about 57 ticks per second, nearly double speed, before it bounded the catch-up ([m5-online](../reference/m5-online.md)). `MAX_QUEUED_TICKS` guards the other side: a peer with 300 packets queued ends the match as a protocol error ("peer too far ahead"); a legitimate peer queues about twice the input delay.
+**The slowest peer sets the pace, and catch-up is rationed.** `Lockstep.advance` returns false while any seat's packet for the tick is missing, so no peer runs ahead of the slowest machine or connection, and a seat that leaves ends the match (`ended_left`). When late packets arrive in a burst, the online driver may run up to `CATCH_UP_STEPS` ticks per physics callback. Each is paid from a credit that grows by one per callback and is capped at `MAX_CATCH_UP_CREDIT`. The credit exists because the first online match ran at about 57 ticks per second, nearly double speed, before it bounded the catch-up ([m5-online](../reference/m5-online.md)). `MAX_QUEUED_TICKS` guards the other side: a peer with 300 packets queued ends the match as a protocol error ("peer too far ahead"); a legitimate peer queues about twice the input delay.
 
 **Linear work every tick, measured small.** `step` rebuilds and sorts the id list of all units each tick: zone `step.ids`, about 2 % of `step` (0.013 to 0.039 ms mean on three scenarios; measured, [data layout decision](../reference/data-layout-decision.md), section 2). The path queue is a plain `Array` used as a first-in-first-out queue, and both ends are linear: taking from the front and erasing a unit by id shift the rest of the array. The path service takes up to eight from the front each tick, and order application, stopping a unit and removing an object erase by id. Godot's [Array reference](https://docs.godotengine.org/en/stable/classes/class_array.html) says both "may have a noticeable performance cost, especially on larger arrays". Re-ordering k units while q wait costs about k times q element moves. No profile zone isolates the queue, so its share is not measured (speculation: irrelevant below a few hundred pending units). The copy that does show in profiles is the full `snapshot()`. Bots take one per decision tick (`Skirmish.issue_opponents`), and online play takes one per hash tick (`Lockstep.wants_snapshot`).
 
@@ -157,9 +157,10 @@ The path cap covers only the route search. The destination allocation in step 8 
 - `game/scripts/simulation/destination_allocation.gd` — `assign`: one destination cell per unit.
 - `game/scripts/simulation/grid_navigation.gd` — `route`: the A* behind `_assign_route`.
 - `game/scripts/simulation/locomotion.gd` — `step`: heading, speed and distance per tick; honours `move_after`.
-- `game/scripts/main.gd` — `_move` (builds the move payload), `_submit` (offline stamping), `_physics_process`, `_step_simulation`, `_process`.
-- `game/scripts/base_main.gd`, `game/scripts/skirmish_main.gd` — input to payload; `skirmish_main.gd` `_step_simulation` (bot, then step).
-- `game/scripts/online_main.gd` — `_submit` (to lockstep), `_step_simulation` (catch-up loop), `CATCH_UP_STEPS`, `MAX_CATCH_UP_CREDIT`.
+- `game/scripts/match/match_screen.gd` — `_submit`, `_physics_process`, `_step_frame`, `_step_simulation`, `_process`.
+- `game/scripts/match/orders.gd` — input to payload (`_move`, `_context_order`, ...).
+- `game/scripts/match/offline_driver.gd` — `submit` (offline stamping), `step` (bot, then step).
+- `game/scripts/match/online_driver.gd` — `submit` (to lockstep), `step` (catch-up loop), `CATCH_UP_STEPS`, `MAX_CATCH_UP_CREDIT`.
 - `game/scripts/net/lockstep.gd` — `submit`, `advance` (feed packet commands, then `step`), `finish_tick`, `MAX_QUEUED_TICKS`.
 - `game/scripts/net/seat_sim.gd` — wrapper whose `issue_command` goes through lockstep, so bot and script code can drive a networked seat.
 - `game/scripts/simulation/combat.gd`, `construction.gd`, `production.gd`, `supply_collection.gd`, `containers.gd`, `horde.gd`, `salvage.gd`, `rebuild_holes.gd` — the per-phase `static func step`, `plan` and `fire`.
@@ -176,4 +177,4 @@ The path cap covers only the route search. The destination allocation in step 8 
 - Next: [5. Presentation](05-presentation.md) reads the state this chapter produces; [6. Movement](06-movement.md) opens phases 1, 6 and 7.
 
 ---
-Checked against `ae09473`. Files: `game/scripts/simulation/simulation.gd`, `game/scripts/main.gd`, `game/scripts/base_main.gd`, `game/scripts/skirmish_main.gd`, `game/scripts/online_main.gd`, `game/scripts/net/lockstep.gd`, `game/scripts/net/seat_sim.gd`, `game/scripts/simulation/combat.gd`, `game/scripts/simulation/locomotion.gd`, `game/scripts/simulation/destination_allocation.gd`, `game/scripts/simulation/grid_navigation.gd`, `game/scripts/simulation/construction.gd`, `game/scripts/simulation/production.gd`, `game/scripts/simulation/containers.gd`, `game/scripts/simulation/horde.gd`, `game/scripts/simulation/salvage.gd`, `game/scripts/simulation/rebuild_holes.gd`, `game/scripts/simulation/skirmish.gd`, `game/scripts/simulation/supply_collection.gd`, `game/scripts/debug/profiler.gd`
+Checked against `60b6674`. Files: `game/scripts/simulation/simulation.gd`, `game/scripts/match/match_screen.gd`, `game/scripts/match/orders.gd`, `game/scripts/match/offline_driver.gd`, `game/scripts/match/online_driver.gd`, `game/scripts/net/lockstep.gd`, `game/scripts/net/seat_sim.gd`, `game/scripts/simulation/combat.gd`, `game/scripts/simulation/locomotion.gd`, `game/scripts/simulation/destination_allocation.gd`, `game/scripts/simulation/grid_navigation.gd`, `game/scripts/simulation/construction.gd`, `game/scripts/simulation/production.gd`, `game/scripts/simulation/containers.gd`, `game/scripts/simulation/horde.gd`, `game/scripts/simulation/salvage.gd`, `game/scripts/simulation/rebuild_holes.gd`, `game/scripts/simulation/skirmish.gd`, `game/scripts/simulation/supply_collection.gd`, `game/scripts/debug/profiler.gd`

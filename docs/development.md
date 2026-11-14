@@ -49,7 +49,7 @@ Older milestone state paragraphs (M3, M4.1, M4): [development history](reference
 
 ## Working tree and controls
 
-`game/` contains a custom-drawn desert scene, engine-light simulation and explicit test suites. `tools/` contains launch/test wrappers and replay comparison. Controls of the M2 movement demo and the M3 base scene: [development history](reference/development-history.md).
+`game/` contains a custom-drawn desert scene, engine-light simulation and explicit test suites. `tools/` contains launch/test wrappers and replay comparison. Controls of the former M2 movement demo and M3 base scenes (deleted by the One controller package; the match scene took over their input): [development history](reference/development-history.md), history only.
 
 M4 skirmish controls (on top of the base controls; the skirmish scene pans with the arrow keys only, because A and S are combat keys): 4 places a barracks (1/2/3 as before); E produces infantry at a barracks and a tank at a factory; right-click an enemy unit or building to attack with the selection (mixed infantry and tanks are one group; any unarmed member rejects the whole order with a HUD message); A then left-click ground attack-moves; S stops; Escape or right-click cancels attack-move mode. Victory, defeat or draw shows a Restart button, which rebuilds the whole match.
 
@@ -92,7 +92,7 @@ Local reference check (needs the retail backup, never runs in CI): `python3 tool
 
 Test wrapper imports headlessly before tests, checks exit codes and engine diagnostics, then requires positive completion marker. `GODOT_BIN` accepts one executable path, including spaces. Both wrappers resolve project path from script location.
 
-For separately authorized play: `sh tools/run_game.sh` opens the launcher (pick factions, then start a skirmish or online match; real play uses Dry Wells, while opening `skirmish.tscn` directly, tests and benchmarks use the 48 × 32 `skirmish.json`, see [more maps](reference/more-maps.md)); `sh tools/run_game.sh res://scenes/skirmish.tscn` opens the M4 match directly (blue is you; controls below); `sh tools/run_game.sh res://scenes/base.tscn` opens M3 base; `sh tools/run_game.sh res://scenes/main.tscn` opens the M2 movement demo. Both open windows. Routine checks stay headless.
+For separately authorized play: `sh tools/run_game.sh` opens the launcher (pick factions, then start a skirmish or online match; real play uses Dry Wells, while opening `skirmish.tscn` directly, tests and benchmarks use the 48 × 32 `skirmish.json`, see [more maps](reference/more-maps.md)); `sh tools/run_game.sh res://scenes/skirmish.tscn` opens the M4 match directly (blue is you; controls below). It opens a window. Routine checks stay headless.
 
 The ordinary suite ends with `TESTS PASSED <checks>`; current case and check counts live in the resume record of [M7 verification](reference/m7-verification.md), not here.
 

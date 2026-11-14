@@ -6,11 +6,11 @@ This chapter follows one click across the wire, then opens the three pieces: loc
 
 ## Three pieces, one packet per tick
 
-On each machine the online scene script feeds `Lockstep`, the object that decides when a tick may run. Lockstep encodes through `wire.gd`, and `relay_transport.gd` moves the text over a WebSocket. The relay is a separate Go program that never sees the game.
+On each machine the online driver feeds `Lockstep`, the object that decides when a tick may run. Lockstep encodes through `wire.gd`, and `relay_transport.gd` moves the text over a WebSocket. The relay is a separate Go program that never sees the game.
 
 ```mermaid
 flowchart TD
-    OM["online_main.gd<br/>driver: submit, advance,<br/>finish_tick"] --> LS["lockstep.gd<br/>stamp, queue, wait,<br/>compare hashes"]
+    OM["online_driver.gd<br/>driver: submit, advance,<br/>finish_tick"] --> LS["lockstep.gd<br/>stamp, queue, wait,<br/>compare hashes"]
     LS --> WI["wire.gd<br/>encode, decode,<br/>validate"]
     LS --> SIM["Simulation<br/>issue_command, step"]
     WI --> RT["relay_transport.gd<br/>WebSocket, ping,<br/>silence timer"]
@@ -36,14 +36,14 @@ The price is that a packet crosses the network every tick (30 per second) per se
 
 Two seats, input delay 4 (the relay announces it in the start message; [chapter 4](04-the-tick.md) shows where the online driver steps). Player 1 on machine A orders a tank to move while A's simulation stands at tick 100, with its packets up to tick 104 already sent.
 
-1. The click arrives as an ordinary move payload and the online scene hands it to lockstep instead of the simulation. Lockstep stamps it with tick 105 (the next packet not yet sent), the local seat as player and the next sequence number, and queues it.  
-   `online_main._submit → Lockstep.submit`
-2. Machine A finishes tick 100 and the scene calls `finish_tick(101)`. The packet for tick 105 is built from the queue (plus a hash on every 30th tick) and encoded as JSON text. A also stores it for itself, decoded back from that same text, then sends it.  
-   `online_main._step_simulation → Lockstep.finish_tick → Wire.encode, Wire.decode`
+1. The click arrives as an ordinary move payload and the online driver hands it to lockstep instead of the simulation. Lockstep stamps it with tick 105 (the next packet not yet sent), the local seat as player and the next sequence number, and queues it.  
+   `online_driver.submit → Lockstep.submit`
+2. Machine A finishes tick 100 and the driver calls `finish_tick(101)`. The packet for tick 105 is built from the queue (plus a hash on every 30th tick) and encoded as JSON text. A also stores it for itself, decoded back from that same text, then sends it.  
+   `online_driver.step → Lockstep.finish_tick → Wire.encode, Wire.decode`
 3. The relay's WebSocket handler parses the frame, checks it is well formed, and posts it to the room's goroutine. The room checks that the seat number matches the connection and that this is exactly the next tick from that seat. It then writes the same bytes to every other seat.  
    `relay.OnMessage → parseEnvelope → room.post → room.forward`
 4. Machine B polls its socket, decodes the frame and stores the packet under seat 1, tick 105, after checking seat, order, each command's player and tick stamp, and the queue limit.  
-   `online_main._step_simulation → RelayTransport.poll → Lockstep.receive`
+   `online_driver.step → RelayTransport.poll → Lockstep.receive`
 5. Once both machines have reached tick 105 and hold every seat's packet for it, lockstep runs the tick. For each seat in seat order, lockstep feeds the packet's commands to the simulation, which validates them as in [chapter 4](04-the-tick.md), then calls `step`, whose first phase applies the move. A and B run identical inputs in identical order.  
    `Lockstep.advance → Simulation.issue_command → Simulation.step`
 6. On A only, lockstep records the click-to-execution time and any rejection for the status line.  
@@ -72,7 +72,7 @@ flowchart TD
 
 ## Lockstep: when may a tick run?
 
-`Lockstep` is a plain object with no scene or socket; the scene gives it frames and asks it questions. Its state is one table of packets per seat, keyed by tick.
+`Lockstep` is a plain object with no scene or socket; the driver gives it frames and asks it questions. Its state is one table of packets per seat, keyed by tick.
 
 **Starting.** The first packets cannot arrive before they are sent, so the constructor fills ticks 0 to delay-1 with empty packets for every seat. `start` then sends the first real packet, for tick `delay` (the relay refuses anything earlier). A command queued before `start` (every client queues `choose_faction`) is stamped with that same tick. The simulation runs its first four ticks without waiting.
 
@@ -84,11 +84,11 @@ flowchart TD
 4. Feed every seat's commands to `issue_command`, seats in ascending order, then drop those packets.
 5. Call `step`, move on to the next tick, return true.
 
-`finish_tick` runs after each successful advance: it builds and sends the packet for `tick + delay`. The scene calls the two in that order, and that pairing is why a seat stays at most `delay` ticks ahead of its slowest peer.
+`finish_tick` runs after each successful advance: it builds and sends the packet for `tick + delay`. The driver calls the two in that order, and that pairing is why a seat stays at most `delay` ticks ahead of its slowest peer.
 
 **Checks on every received packet.** A packet from an unknown seat or from the receiver's own seat, a tick that is not exactly the previous one plus one, a command whose player or tick differs from the packet's, or a seat with 300 packets already queued (`MAX_QUEUED_TICKS`) ends the match as a protocol error. TCP delivers in order, so "tick out of order" means a buggy or modified peer. The player field check means a seat cannot issue orders as another player; the simulation's own validation ([chapter 4](04-the-tick.md)) also refuses orders for units owned by someone else.
 
-**Pacing.** Waiting for packets slows the game down, but the opposite problem exists: after a stall, packets arrive in a burst, and running them as fast as possible would speed the game up. `online_main._step_simulation` rations catch-up with a small credit counter, as [chapter 4](04-the-tick.md#trade-offs-and-limits) describes. The first online match ran at about 57 ticks per second before this existed ([M5 findings](../reference/m5-online.md#what-broke-and-why)).
+**Pacing.** Waiting for packets slows the game down, but the opposite problem exists: after a stall, packets arrive in a burst, and running them as fast as possible would speed the game up. `online_driver.step` rations catch-up with a small credit counter, as [chapter 4](04-the-tick.md#trade-offs-and-limits) describes. The first online match ran at about 57 ticks per second before this existed ([M5 findings](../reference/m5-online.md#what-broke-and-why)).
 
 **Ending.** Lockstep reports failure as a status, not an exception, and `advance` returns false from then on. The statuses are `ended_left` (a seat left), `ended_relay` (the relay sent an error or the connection was lost), `ended_desync` and `ended_protocol`. The scene turns them into the HUD line and, for a desync, writes the report. [Playing online](../playing-online.md#status-lines) lists the player-facing wording.
 
@@ -170,7 +170,7 @@ Every 30th tick (`hash_interval`), `finish_tick` attaches the state hash to the 
 | Relay unreachable | each client: a socket close, or the silence timer (5 s without any frame, pongs count) | `ended_relay`, "Connection to relay lost"; the `relay-down` scenario (relay killed) asserts both clients end within 2 s |
 | Sends bad frames | relay, or the receiver if the relay passed the frame | relay-detected: `error` to the sender (`ended_relay`), `left` to the others (`ended_left`); receiver-detected: `ended_protocol` on that receiver |
 
-Clients ping the relay once per second after their first send, so a healthy but idle connection keeps both timers fresh. The online scene never pauses the simulation (`_pauses_sim` is false), so a peer is running, waiting or gone; there is no pause rule.
+Clients ping the relay once per second after their first send, so a healthy but idle connection keeps both timers fresh. The online driver never pauses the simulation (`pauses_sim` is false), so a peer is running, waiting or gone; there is no pause rule.
 
 **`left` ends the match.** When a seat leaves, the others can still run ticks up to the leaver's last forwarded tick, because those packets are in hand. When the simulation needs the next tick, or a packet is missing, lockstep ends the match as `ended_left`. There is no pause, no bot takeover and no reconnect. "Dropped player becomes a bot" and reconnect with command-log replay are on the M9 list (proposed, not built: [M5 findings](../reference/m5-online.md#m9-list)). A leaver before the start means a refused map or version, and the HUD says so.
 
@@ -199,8 +199,8 @@ Clients ping the relay once per second after their first send, so a healthy but 
 - `game/scripts/net/relay_transport.gd` — `RelayTransport`: WebSocket peer, `poll`, `send_text`, once-a-second ping, 5 s silence (`silent`), round-trip samples.
 - `game/scripts/net/seat_sim.gd` — wrapper so bot and script code drive a networked seat through `Lockstep.submit`.
 - `game/scripts/net/headless_client.gd` — the netplay test client: seat scripts, stall, kill and perturb hooks, command-log replay.
-- `game/scripts/online_main.gd` — online scene: `setup`, `_submit`, `_step_simulation` (poll, catch-up credit, `finish_tick`), `notice`, desync report writing, latency line.
-- `game/scripts/launcher.gd` — hello, welcome and start handling; builds the `Lockstep` object and the online scene.
+- `game/scripts/match/online_driver.gd` — online driver: `submit`, `step` (poll, catch-up credit, `finish_tick`), `notice`, desync report writing, latency line. `match_screen.gd` `setup` creates it.
+- `game/scripts/launcher.gd` — hello, welcome and start handling; builds the `Lockstep` object and starts the match scene with it.
 - `relay/main.go` — WebSocket handlers (`OnMessage`, `OnClose`), silence and write deadlines, write-queue cap (`writeLater`), `reject`, shutdown and drain.
 - `relay/room.go` — `registry` (create, join, remove), `room.run`, `admit`, `forward`, `leave`, `recoverCrash`; constants `protocol`, `inputDelay`.
 - `relay/envelope.go` — `parseEnvelope`: what a client may send; size caps.
@@ -218,4 +218,4 @@ Clients ping the relay once per second after their first send, so a healthy but 
 - Previous: [10. Determinism and replays](10-determinism-and-replays.md). Next: [12. Performance and platforms](12-performance-and-platforms.md). The tick that lockstep gates is in [4. The tick](04-the-tick.md).
 
 ---
-Checked against `ae09473`; relay rows re-checked against `12c9855`. Files: `game/scripts/net/lockstep.gd`, `game/scripts/net/wire.gd`, `game/scripts/net/relay_transport.gd`, `game/scripts/net/seat_sim.gd`, `game/scripts/net/headless_client.gd`, `game/scripts/online_main.gd`, `game/scripts/launcher.gd`, `relay/main.go`, `relay/room.go`, `relay/envelope.go`, `relay/sender.go`, `relay/envelope_test.go`, `relay/stall_test.go`, `relay/queue_test.go`, `protocol/conformance/conform.go`, `protocol/vectors/tick.json`, `tools/run_conformance.sh`, `tools/run_netplay.sh`
+Checked against `60b6674`; relay rows re-checked against `12c9855`. Files: `game/scripts/net/lockstep.gd`, `game/scripts/net/wire.gd`, `game/scripts/net/relay_transport.gd`, `game/scripts/net/seat_sim.gd`, `game/scripts/net/headless_client.gd`, `game/scripts/match/online_driver.gd`, `game/scripts/launcher.gd`, `relay/main.go`, `relay/room.go`, `relay/envelope.go`, `relay/sender.go`, `relay/envelope_test.go`, `relay/stall_test.go`, `relay/queue_test.go`, `protocol/conformance/conform.go`, `protocol/vectors/tick.json`, `tools/run_conformance.sh`, `tools/run_netplay.sh`
