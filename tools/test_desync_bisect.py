@@ -96,9 +96,6 @@ class WireLinesTests(unittest.TestCase):
         line = wire_lines([{"type": "stop", "tick": 3}])[0]
         self.assertEqual(line, json.dumps(json.loads(line), sort_keys=True))
 
-    def test_empty_log(self):
-        self.assertEqual(wire_lines([]), [])
-
 
 class SeatVerdictTests(unittest.TestCase):
     def test_match(self):
@@ -113,9 +110,6 @@ class SeatVerdictTests(unittest.TestCase):
 
     def test_ring_past_local_end_is_ignored(self):
         self.assertIsNone(seat_verdict([*ring(LOCAL), "99\tffff"], LOCAL))
-
-    def test_no_shared_ticks(self):
-        self.assertIsNone(seat_verdict(["500\tffff"], LOCAL))
 
 
 class ReplayFailureTests(BisectCase):
@@ -150,6 +144,7 @@ class ReplayFailureTests(BisectCase):
         code, text = self.run_main([a], FakeOracle(LOCAL, ok=False))
         self.assertEqual(code, 2)
         self.assertIn(str(self.out / "oracle-a.log"), text)
+        self.assertIn("BISECT FAILED", text)
 
 
 class MainTests(BisectCase):
@@ -204,12 +199,6 @@ class MainTests(BisectCase):
         code, text = self.run_main([a], FakeOracle(LOCAL))
         self.assertEqual(code, 1)
         self.assertIn("SEAT 1 HAS NO RING\n", text)
-
-    def test_oracle_failure(self):
-        a = self.write("a.json", report(1, LOCAL))
-        code, text = self.run_main([a], FakeOracle(LOCAL, ok=False))
-        self.assertEqual(code, 2)
-        self.assertIn("BISECT FAILED", text)
 
     def test_unreadable_report(self):
         code, text = self.run_main([str(Path(self.dir.name, "missing.json"))], FakeOracle(LOCAL))

@@ -136,8 +136,8 @@ The in-game playtest helper (chapter 5) saves a JSON session file with answers, 
 
 ## Desync and scaling tools
 
-- **`tools/desync_bisect.py REPORT [REPORT2] [--client-b CMD]`** replays a desync report's command log through the headless oracle, which writes one ring hash per tick, and prints the first tick where each seat's report leaves the local replay and the first differing snapshot field (`SEAT 2 DIVERGES FROM LOCAL REPLAY AT TICK 41`). It exits 1 on any divergence and 2 on a tool failure. The `perturb` netplay scenario runs it and asserts its lines. Details: [chapter 10](10-determinism-and-replays.md#how-a-desync-is-caught-and-narrowed-down).
-- **`sh tools/run_scaling.sh`** runs the combat open layout at 50, 100, 200, 400 and 800 units total with the zone profiler on and prints per-zone means and `SCALING_SUPERLINEAR`, the zones that grew by more than 2.2 times in both of the last two doublings. It never gates; `SCALING COMPLETE 5` only says the sweep ran and every size fired shots and splash inside the timed window ([chapter 12](12-performance-and-platforms.md)).
+- **`tools/desync_bisect.py REPORT [REPORT2] [--client-b CMD]`** replays a desync report's command log through the headless oracle and prints the first tick where each seat's report leaves the local replay; exits 1 on any divergence, 2 on a tool failure ([chapter 10](10-determinism-and-replays.md#how-a-desync-is-caught-and-narrowed-down)).
+- **`sh tools/run_scaling.sh`** runs the combat open layout at 50 to 800 units with the zone profiler on and prints per-zone means; it never gates ([chapter 12](12-performance-and-platforms.md)).
 
 ## Static checks
 

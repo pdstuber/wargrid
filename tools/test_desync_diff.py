@@ -65,35 +65,22 @@ class DesyncDiffTests(unittest.TestCase):
     def test_ring_missing(self):
         self.assertIsNone(ring_divergence(report(), report(hash_ring=["1\ta"])))
 
-    def test_cli_names_ring_tick(self):
-        import subprocess
-        import sys
-
-        with tempfile.TemporaryDirectory() as d:
-            a, b = Path(d, "a.json"), Path(d, "b.json")
-            a.write_text(json.dumps(report(hash_ring=["41\ta"])))
-            b.write_text(json.dumps(report(command_log=[], hash_ring=["41\tb"])))
-            tool = str(Path(__file__).parent / "desync_diff.py")
-            run = subprocess.run([sys.executable, tool, str(a), str(b)], capture_output=True, text=True, check=False)
-            self.assertEqual(run.returncode, 1)
-            self.assertIn("ring diverges at tick 41", run.stdout)
-
     def test_cli_exit_codes(self):
         import subprocess
         import sys
 
         with tempfile.TemporaryDirectory() as d:
             a, b = Path(d, "a.json"), Path(d, "b.json")
-            a.write_text(json.dumps(report()))
-            b.write_text(json.dumps(report(seat=2)))
+            a.write_text(json.dumps(report(hash_ring=["41\ta"])))
+            b.write_text(json.dumps(report(seat=2, hash_ring=["41\ta"])))
             tool = str(Path(__file__).parent / "desync_diff.py")
             self.assertEqual(
                 subprocess.run([sys.executable, tool, str(a), str(b)], capture_output=True, check=False).returncode, 0
             )
-            b.write_text(json.dumps(report(command_log=[])))
-            self.assertEqual(
-                subprocess.run([sys.executable, tool, str(a), str(b)], capture_output=True, check=False).returncode, 1
-            )
+            b.write_text(json.dumps(report(command_log=[], hash_ring=["41\tb"])))
+            run = subprocess.run([sys.executable, tool, str(a), str(b)], capture_output=True, text=True, check=False)
+            self.assertEqual(run.returncode, 1)
+            self.assertIn("ring diverges at tick 41", run.stdout)
 
 
 if __name__ == "__main__":

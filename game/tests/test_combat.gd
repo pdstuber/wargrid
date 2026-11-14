@@ -1559,13 +1559,10 @@ func test_splash_index_matches_oracle(runner) -> bool:
 	runner.check(queries >= 10000 and mismatches == 0, "SI1 indexed splash equals the full scan (%d queries, %d mismatches)" % [queries, mismatches])
 	return true
 
-func _splash_kinds() -> void:
+func test_splash_hits_passenger_unloaded_this_tick(runner) -> bool:
 	var row: Dictionary = Registry.kind("usa_rifle_infantry").duplicate(true)
 	row.radius = 0.45
 	Registry.add_test_kind("si_wide_infantry", row)
-
-func test_splash_hits_passenger_unloaded_this_tick(runner) -> bool:
-	_splash_kinds()
 	var sim = Fixture.world()
 	sim.add_player(1, 10000)
 	sim.add_player(2, 0)
