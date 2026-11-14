@@ -360,6 +360,13 @@ Asked one at a time after the native sim spike; analysis and experiments in [per
 - Worker thread for the simulation: the user wants to pursue it ("unless you tell me it is not worth it"); design in [worker thread design](../superpowers/specs/2026-11-12-worker-thread-design.md), stage 1 (single-threaded `SimPump` boundary) first, the thread itself after a browser measurement.
 - Order of the next work (user agreed, 2026-11-11): 1 golden scenarios, 2 interpolation rework, 3 worker thread stage 1 (`SimPump` boundary), 4 the worker thread itself only if a browser measurement shows a main-thread win. Each is started by the user explicitly.
 
+## Worker-thread experiment preparation (user, 2026-11-14)
+
+- First deliverable: a scratch experiment with measurements, not a production `SimPump` implementation. Architecture reference: [worker thread design](../superpowers/specs/2026-11-12-worker-thread-design.md).
+- Base: One controller after integration, not its unmerged branch.
+- Overnight scope: headless checks. Rendered browser measurements remain an attended follow-up; headless results alone do not establish the design's browser performance go/no-go.
+- These choices define preparation scope; implementation still requires an explicit start.
+
 ## Main branch audit (user, 2026-11-11 night)
 
 Answers to an outside audit of `main` at `ec78012` (audit and fix list kept outside the repo in `~/projects/wargrid-overnight-work/audit-2026-11-11/`). Fixes applied the same night on branch `verify/2026-11-11`: WB18 made platform-stable, CI check in kickoff and wrap-up, web desync download, lockstep queue bound, `chases` in the snapshot, release actions pinned by SHA.
