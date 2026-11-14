@@ -51,6 +51,9 @@ if __name__ == "__main__":
         print(f"ring diverges at tick {tick}")
     difference = first_difference(*reports)
     if difference is None:
+        if tick is not None:
+            print("RING ONLY")
+            sys.exit(1)
         print("IDENTICAL")
         sys.exit(0)
     print(difference)

@@ -125,7 +125,7 @@ Order a group of 150 and steps 9 to 12 stagger: unit number p in the queue (coun
 
 **Moving and shooting exclude each other.** Phase 8 skips every armed unit recorded as moved in phase 7 (passengers excepted). It is a rule of the pipeline, not of one weapon.
 
-**The tick hashes itself last.** After the tick counter moves, `step` stores one hash of the live state in a 64-slot ring (zone `step.hash_ring`, about 0.05 to 0.07 ms on the team match and hordes300). It reads only; it draws no random number and is not in the snapshot. Chapter 10 explains what it is for.
+**The tick hashes itself last, so a desync report can name the exact tick two machines split.** After the tick counter moves, `step` stores one hash of the live state in a 64-slot ring (zone `step.hash_ring`, about 0.05 to 0.07 ms on the team match and hordes300). It reads only; it draws no random number and is not in the snapshot. Chapter 10 explains what it is for.
 
 **Match end.** The match-end check runs only while the match is ongoing. When at most one team still owns a building that counts for victory, the status becomes won or draw and every later `step` returns at once.
 

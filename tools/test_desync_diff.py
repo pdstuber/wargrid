@@ -81,6 +81,11 @@ class DesyncDiffTests(unittest.TestCase):
             run = subprocess.run([sys.executable, tool, str(a), str(b)], capture_output=True, text=True, check=False)
             self.assertEqual(run.returncode, 1)
             self.assertIn("ring diverges at tick 41", run.stdout)
+            b.write_text(json.dumps(report(seat=2, hash_ring=["41\tb"])))
+            run = subprocess.run([sys.executable, tool, str(a), str(b)], capture_output=True, text=True, check=False)
+            self.assertEqual(run.returncode, 1)
+            self.assertIn("RING ONLY", run.stdout)
+            self.assertNotIn("IDENTICAL", run.stdout)
 
 
 if __name__ == "__main__":
