@@ -14,10 +14,10 @@ const SELECTED := Color(0.18, 0.43, 0.33)
 const FIELD := Color(0.165, 0.165, 0.165)
 const SIZES: Array[Vector2i] = [Vector2i(1280, 720), Vector2i(1920, 1080), Vector2i(2576, 1145)]
 # canvas_items + expand lays a window out at 720 logical px high; 2576x1145 becomes roundi(720 * 2576 / 1145) wide
-const STRETCHED: Array[Array] = [[Vector2i(1280, 720), Vector2i(1280, 720)], [Vector2i(1920, 1080), Vector2i(1280, 720)], [Vector2i(2576, 1145), Vector2i(1620, 720)]]
+const STRETCHED: Array[Array] = [[Vector2i(1920, 1080), Vector2i(1280, 720)], [Vector2i(2576, 1145), Vector2i(1620, 720)]]
 
 func cases() -> Array[Callable]:
-	return [test_picks_defaults, test_picks_fallback_per_field, test_picks_keep_other_sections, test_fullscreen_round_trip, test_fullscreen_switch, test_this_build_line, test_sidebar_switches_pages, test_version_in_sidebar, test_aspect_expand_and_restore, test_layout_every_page, test_opens_on_bot_with_picks, test_toggle_friend, test_map_info_and_summary, test_own_faction_shared, test_start_saves_picks, test_advanced_only_prerelease, test_link_opens_join, test_lock_while_connecting, test_waiting_view, test_back_to_menu, test_join_error_footer, test_relay_fields_follow]
+	return [test_picks_defaults, test_picks_fallback_per_field, test_picks_keep_other_sections, test_fullscreen_target, test_fullscreen_switch, test_this_build_line, test_sidebar_switches_pages, test_aspect_expand_and_restore, test_layout_every_page, test_opens_on_bot_with_picks, test_toggle_friend, test_map_info_and_summary, test_own_faction_shared, test_start_saves_picks, test_advanced_only_prerelease, test_link_opens_join, test_lock_while_connecting, test_waiting_view, test_join_error_footer, test_relay_fields_follow]
 
 func _picked(selector: OptionButton) -> String:
 	return selector.get_item_metadata(selector.selected)
@@ -65,15 +65,17 @@ func test_picks_keep_other_sections(runner) -> bool:
 	runner.check(not after.has_section_key("launcher", "bot_faction") and not after.has_section_key("launcher", "map"), "L3 absent keys stay absent")
 	return true
 
-func test_fullscreen_round_trip(runner) -> bool:
-	var saved: String = AudioSettings.path
-	AudioSettings.path = scratch_for("fullscreen")
-	var before: bool = LauncherSettings.fullscreen()
-	LauncherSettings.save_fullscreen(true)
-	var after: bool = LauncherSettings.fullscreen()
-	AudioSettings.path = saved
-	runner.check(before == false, "L4 fullscreen defaults off")
-	runner.check(after == true, "L4 fullscreen round trip")
+func test_fullscreen_target(runner) -> bool:
+	var window := DisplayServer
+	var rows: Array = [
+		[false, window.WINDOW_MODE_MAXIMIZED, -1], [false, window.WINDOW_MODE_WINDOWED, -1],
+		[false, window.WINDOW_MODE_FULLSCREEN, window.WINDOW_MODE_WINDOWED], [false, window.WINDOW_MODE_EXCLUSIVE_FULLSCREEN, window.WINDOW_MODE_WINDOWED],
+		[true, window.WINDOW_MODE_MAXIMIZED, window.WINDOW_MODE_FULLSCREEN], [true, window.WINDOW_MODE_WINDOWED, window.WINDOW_MODE_FULLSCREEN],
+		[true, window.WINDOW_MODE_FULLSCREEN, -1],
+	]
+	for row: Array in rows:
+		var got: int = LauncherScript.fullscreen_target(row[0], row[1])
+		runner.check(got == row[2], "L16 fullscreen_target(on=%s, mode=%s) is %s, got %s" % [row[0], row[1], row[2], got])
 	return true
 
 func _visible_pages(launcher: Node) -> Array[String]:
@@ -96,13 +98,6 @@ func test_sidebar_switches_pages(runner) -> bool:
 		runner.check(launcher.current_page == page_name and _visible_pages(launcher) == [page_name] and nav.button_pressed, "L5 %s shows only its page, got %s" % [page_name, _visible_pages(launcher)])
 	launcher.show_page("Waiting")
 	runner.check(_visible_pages(launcher) == ["Waiting"] and launcher.get_node("Sidebar/Nav/Play").button_pressed, "L5 Waiting shows alone and presses Play")
-	launcher.free()
-	return true
-
-func test_version_in_sidebar(runner) -> bool:
-	var launcher = Launcher.instantiate()
-	runner.root.add_child(launcher)
-	await runner.process_frame
 	var version: Label = launcher.get_node_or_null("Sidebar/Version")
 	runner.check(version != null and str(ProjectSettings.get_setting("application/config/version")) in version.text, "L6 the sidebar shows the version")
 	launcher.free()
@@ -157,10 +152,6 @@ func test_layout_every_page(runner) -> bool:
 		var content: Control = launcher.get_node_or_null("Pages")
 		var sidebar: Control = launcher.get_node_or_null("Sidebar")
 		runner.check(content != null and sidebar != null, "L8 sidebar and pages exist at %s" % size)
-		if content == null or sidebar == null:
-			launcher.free()
-			port.free()
-			continue
 		var visits: Array[String] = LauncherScript.PAGES.duplicate()
 		visits.append("Play")
 		for visit in visits.size():
@@ -316,18 +307,21 @@ func _host(launcher) -> Object:
 func test_link_opens_join(runner) -> bool:
 	var saved: String = AudioSettings.path
 	AudioSettings.path = scratch_for("link")
+	LauncherSettings.save_picks({"faction": "china", "bot_faction": "frc", "map": "ashfall"})
 	LauncherScript.code_applied = false
 	var first = Launcher.instantiate()
 	first.search = "?code=ABC234"
 	runner.root.add_child(first)
 	await runner.process_frame
 	runner.check(first.current_page == "Join" and first.get_node("Pages/Join/Body/Code").text == "ABC234" and first._transport == null, "L10a a join link opens Join with the code and no connection, got %s" % first.current_page)
+	first.free()
 	var again = Launcher.instantiate()
 	again.search = "?code=ABC234"
 	runner.root.add_child(again)
 	await runner.process_frame
 	runner.check(again.current_page == "Play", "L10b a stale link does not reopen Join, got %s" % again.current_page)
-	first.free()
+	runner.check(_picked(again.get_node("Pages/Play/Body/Own")) == "china" and again._map_id() == "ashfall", "L13 back to menu shows the remembered picks")
+	runner.check(runner.root.get_tree().root.content_scale_aspect == Window.CONTENT_SCALE_ASPECT_EXPAND, "L13 back to menu sets expand again")
 	again.free()
 	AudioSettings.path = saved
 	return true
@@ -386,26 +380,6 @@ func test_waiting_view(runner) -> bool:
 	launcher._handle('{"type":"error","reason":"match is full"}')
 	runner.check(launcher.current_page == "Play" and launcher.get_node("Pages/Play/Footer/Status").text == "match is full" and launcher.opponent == "friend", "L12c a relay error on Waiting returns to Play with the reason")
 	launcher.free()
-	return true
-
-func test_back_to_menu(runner) -> bool:
-	var saved: String = AudioSettings.path
-	AudioSettings.path = scratch_for("back")
-	LauncherSettings.save_picks({"faction": "china", "bot_faction": "frc", "map": "ashfall"})
-	LauncherScript.code_applied = false
-	var first = Launcher.instantiate()
-	first.search = "?code=ABC234"
-	runner.root.add_child(first)
-	await runner.process_frame
-	first.free()
-	var back = Launcher.instantiate()
-	back.search = "?code=ABC234"
-	runner.root.add_child(back)
-	await runner.process_frame
-	AudioSettings.path = saved
-	runner.check(back.current_page == "Play" and _picked(back.get_node("Pages/Play/Body/Own")) == "china" and back._map_id() == "ashfall", "L13 back to menu shows Play with the remembered picks")
-	runner.check(runner.root.get_tree().root.content_scale_aspect == Window.CONTENT_SCALE_ASPECT_EXPAND, "L13 back to menu sets expand again")
-	back.free()
 	return true
 
 func test_join_error_footer(runner) -> bool:

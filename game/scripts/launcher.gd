@@ -238,10 +238,16 @@ func _add_fullscreen() -> void:
 	$Pages/Settings/Body/Audio.add_child(toggle)
 	_apply_fullscreen(toggle.button_pressed)
 
+static func fullscreen_target(on: bool, current: DisplayServer.WindowMode) -> int:
+	var is_fullscreen: bool = current == DisplayServer.WINDOW_MODE_FULLSCREEN or current == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
+	if on: return -1 if current == DisplayServer.WINDOW_MODE_FULLSCREEN else DisplayServer.WINDOW_MODE_FULLSCREEN
+	return DisplayServer.WINDOW_MODE_WINDOWED if is_fullscreen else -1
+
 # The window mode stays untouched headless so tests never flip a real window.
 func _apply_fullscreen(on: bool) -> void:
 	if DisplayServer.get_name() == "headless": return
-	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if on else DisplayServer.WINDOW_MODE_WINDOWED)
+	var target: int = fullscreen_target(on, DisplayServer.window_get_mode())
+	if target >= 0: DisplayServer.window_set_mode(target as DisplayServer.WindowMode)
 
 func _add_audio() -> void:
 	add_child(SoundPlayer.new(0))
@@ -378,6 +384,7 @@ func _start(message: Dictionary) -> bool:
 	SkirmishMain.starts = MatchSettings.starts(id, message.seed)
 	var game: Node = OnlineScene.instantiate()
 	game.setup(_transport, _lockstep, _seat, _faction($Pages/Play/Body/Own))
+	get_tree().root.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
 	get_tree().root.add_child(game)
 	get_tree().current_scene = game
 	queue_free()
