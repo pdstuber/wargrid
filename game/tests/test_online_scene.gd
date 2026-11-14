@@ -4,6 +4,7 @@ extends RefCounted
 const OnlineScene = preload("res://scenes/skirmish.tscn")
 const Launcher = preload("res://scenes/launcher.tscn")
 const LauncherScript = preload("res://scripts/launcher.gd")
+const LauncherSettings = preload("res://scripts/launcher_settings.gd")
 const AudioSettings = preload("res://scripts/presentation/audio_settings.gd")
 const MatchSettings = preload("res://scripts/match_settings.gd")
 const PlaytestSettings = preload("res://scripts/playtest/playtest_settings.gd")
@@ -36,7 +37,7 @@ class FakeTransport extends RefCounted:
 	func rtt_samples() -> PackedInt64Array: return PackedInt64Array([40000])
 
 func cases() -> Array[Callable]:
-	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_rejection_line, test_funds_rejection_is_announced, test_overlay_net_line, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_two_tick_frame_keeps_earlier_results, test_stall_frames_are_not_step_frames, test_notices_reach_the_hud_while_processing, test_launcher_layout, test_launcher_sections, test_launcher_faction_selectors_fit, test_launcher_faction_rows, test_plays_dry_wells_from_each_seat, test_offline_uses_chosen_map, test_restart_keeps_map_and_starts, test_restart_drops_old_stepped_results, test_joiner_refuses_other_map, test_old_relay_mismatch_is_shown, test_cancel_and_copy_while_waiting, test_start_without_settings_is_a_protocol_error, test_both_seats_share_map_and_starts, test_host_told_opponent_left_before_start, test_credits_panel_layout, test_online_playtest_record, test_launcher_release_hides_relay, test_launcher_prefills_from_page, test_launcher_relay_help, test_copy_link_on_web, test_launcher_reads_no_page_off_web, test_input_script_online]
+	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_rejection_line, test_funds_rejection_is_announced, test_overlay_net_line, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_two_tick_frame_keeps_earlier_results, test_stall_frames_are_not_step_frames, test_notices_reach_the_hud_while_processing, test_launcher_layout, test_launcher_sections, test_launcher_faction_selectors_fit, test_launcher_faction_rows, test_plays_dry_wells_from_each_seat, test_offline_uses_chosen_map, test_online_start_saves_picks, test_restart_keeps_map_and_starts, test_restart_drops_old_stepped_results, test_joiner_refuses_other_map, test_old_relay_mismatch_is_shown, test_cancel_and_copy_while_waiting, test_start_without_settings_is_a_protocol_error, test_both_seats_share_map_and_starts, test_host_told_opponent_left_before_start, test_credits_panel_layout, test_online_playtest_record, test_launcher_release_hides_relay, test_launcher_prefills_from_page, test_launcher_relay_help, test_copy_link_on_web, test_launcher_reads_no_page_off_web, test_input_script_online]
 
 func _online(runner, seat: int) -> Dictionary:
 	var transport := FakeTransport.new()
@@ -248,8 +249,9 @@ func test_notices_reach_the_hud_while_processing(runner) -> bool:
 	return true
 
 const LAUNCHER_PAGE_PATHS: Dictionary = {
-	"Play": ["Title", "Subtitle", "Body/OwnLabel", "Body/MapLabel", "Body/Own", "Body/Map", "Body/BotLabel", "Body/Bot", "Body/Advanced/Toggle", "Body/Advanced/RelayHelp", "Body/Advanced/RelayUrl", "Footer/Status", "Footer/Start", "Footer/Create"],
-	"Join": ["Title", "Subtitle", "Body/CodeLabel", "Body/MapLabel", "Body/Code", "Body/MapHint", "Body/CodeHint", "Footer/Status", "Footer/Join"],
+	"Play:bot": ["Title", "Subtitle", "Body/OwnLabel", "Body/MapLabel", "Body/Own", "Body/Map", "Body/OpponentLabel", "Body/MapInfo", "Body/Opponent", "Body/BotLabel", "Body/Bot", "Footer/Status", "Footer/Start"],
+	"Play:friend": ["Title", "Subtitle", "Body/OwnLabel", "Body/MapLabel", "Body/Own", "Body/Map", "Body/OpponentLabel", "Body/MapInfo", "Body/Opponent", "Body/OpenSlot", "Body/Advanced/Toggle", "Body/Advanced/RelayHelp", "Body/Advanced/RelayUrl", "Footer/Status", "Footer/Create"],
+	"Join": ["Title", "Subtitle", "Body/CodeLabel", "Body/MapLabel", "Body/Code", "Body/MapHint", "Body/CodeHint", "Body/OwnLabel", "Body/Own", "Body/Advanced/Toggle", "Body/Advanced/RelayHelp", "Body/Advanced/RelayUrl", "Footer/Status", "Footer/Join"],
 	"Settings": ["Title", "Subtitle", "Body/Audio/AudioHeader", "Body/Audio/Volume/MusicLabel", "Body/Audio/Volume/Music", "Body/Audio/Volume/EffectsLabel", "Body/Audio/Volume/Effects", "Body/Audio/Volume/VoiceLabel", "Body/Audio/Volume/Voice", "Body/Audio/Volume/MuteLabel", "Body/Audio/Volume/Mute", "Body/Playtest/PlaytestHeader", "Body/Playtest/PlaytestSwitch", "Body/Playtest/PlaytestHint", "Body/Playtest/ThisBuild"],
 	"Credits": ["Title", "Subtitle", "Body/Text", "Body/Legal"],
 	"Waiting": ["Title", "Subtitle", "Body/Link", "Body/Copy", "Footer/Status", "Footer/Cancel"],
@@ -258,25 +260,29 @@ const LAUNCHER_NAV_ORDER: Array[String] = ["Play", "Join", "Divider", "Settings"
 const PAGE_TITLES: Dictionary = {"Play": "Play", "Join": "Join a match", "Settings": "Settings", "Credits": "Credits", "Waiting": "Waiting for your friend"}
 
 func _force_visible(launcher: Node) -> void:
-	launcher.get_node("Pages/Play/Footer/Create").visible = true
+	launcher.set_opponent("friend")
 	launcher.get_node("Pages/Settings/Body/Playtest/ThisBuild").visible = true
 
 func _page_controls_ok(runner, launcher: Node, size: Vector2i, id: String, skip: Array = []) -> void:
 	var view := Rect2(Vector2.ZERO, Vector2(size))
 	var content: Control = launcher.get_node("Pages")
-	for page_name: String in LAUNCHER_PAGE_PATHS:
+	var opponent: String = launcher.opponent
+	for key: String in LAUNCHER_PAGE_PATHS:
+		var page_name: String = key.get_slice(":", 0)
+		if ":" in key: launcher.set_opponent(key.get_slice(":", 1))
 		launcher.show_page(page_name)
 		await runner.process_frame
 		await runner.process_frame
 		var rects: Array[Rect2] = []
-		for path: String in LAUNCHER_PAGE_PATHS[page_name]:
+		for path: String in LAUNCHER_PAGE_PATHS[key]:
 			if path in skip: continue
 			var control: Control = launcher.get_node_or_null("Pages/%s/%s" % [page_name, path])
-			runner.check(control != null and control.visible and view.encloses(control.get_global_rect()) and content.get_global_rect().grow(0.5).encloses(control.get_global_rect()), "%s %s/%s inside %s" % [id, page_name, path, size])
+			runner.check(control != null and control.visible and view.encloses(control.get_global_rect()) and content.get_global_rect().grow(0.5).encloses(control.get_global_rect()), "%s %s/%s inside %s" % [id, key, path, size])
 			if control != null: rects.append(control.get_global_rect())
 		for i in rects.size():
 			for j in range(i + 1, rects.size()):
-				runner.check(not rects[i].intersects(rects[j]), "%s %s controls %d and %d do not overlap at %s" % [id, page_name, i, j, size])
+				runner.check(not rects[i].intersects(rects[j]), "%s %s controls %d and %d do not overlap at %s" % [id, key, i, j, size])
+	launcher.set_opponent(opponent)
 
 func test_launcher_sections(runner) -> bool:
 	var saved_settings: String = AudioSettings.path
@@ -310,14 +316,14 @@ func test_launcher_sections(runner) -> bool:
 		var advanced: Button = play.get_node_or_null("Body/Advanced/Toggle")
 		var relay: LineEdit = play.get_node_or_null("Body/Advanced/RelayUrl")
 		if advanced != null and relay != null:
-			runner.check(not advanced.button_pressed and not relay.visible and advanced.text == "Show advanced settings" and not advanced.flat, "N20 Advanced starts closed, as a visible button, at %s" % size)
+			runner.check(not advanced.button_pressed and not relay.visible and advanced.text == "Advanced settings" and not advanced.flat, "N20 Advanced starts closed, as a visible button, at %s" % size)
 			runner.check(relay.text == "wss://relay.pdstuber.dev/ws", "N20 closed fold keeps the default relay URL at %s" % size)
 			launcher._set_busy(true)
 			runner.check(not relay.editable and not relay.visible, "N20 busy locks the hidden relay field at %s" % size)
 			launcher._set_busy(false)
 			runner.check(relay.editable, "N20 idle unlocks the relay field at %s" % size)
 			advanced.button_pressed = true
-			runner.check(relay.visible and advanced.text == "Hide advanced settings", "N20 opening Advanced shows the relay field at %s" % size)
+			runner.check(relay.visible and advanced.button_pressed, "N20 opening Advanced shows the relay field at %s" % size)
 			runner.check(advanced.text.to_utf8_buffer().size() == advanced.text.length(), "N20 toggle text is plain ASCII, the default font has no arrow glyphs, at %s" % size)
 			await _page_controls_ok(runner, launcher, size, "N20")
 			launcher.show_page("Play")
@@ -444,7 +450,7 @@ func test_launcher_faction_rows(runner) -> bool:
 		await runner.process_frame
 		await runner.process_frame
 		var body: Control = page.get_node("Body")
-		runner.check(_row_texts(body) == ["You", "Map", "Own", "Map", "Bot", "Spacer1", "Bot", "Spacer2", "Advanced"], "N25 Play body children at %s, got %s" % [size, _row_texts(body)])
+		runner.check(_row_texts(body) == ["You", "Map", "Own", "Map", "Opponent", launcher._map_info("dry_wells"), "Opponent", "Spacer1", "Bot", "Spacer2", "Bot", "Spacer3", "OpenSlot", "Spacer4", "Advanced"], "N25 Play body children at %s, got %s" % [size, _row_texts(body)])
 		runner.check(page.find_children("Own", "OptionButton", true, false).size() == 1, "N25 Play has one Own selector at %s" % size)
 		runner.check(page.get_node("Footer/Create").text == "Create match" and page.get_node("Footer/Start").text == "Start match", "N25 button texts kept at %s" % size)
 		var controls: Array[Control] = _faction_row_controls(page)
@@ -512,6 +518,27 @@ func test_plays_dry_wells_from_each_seat(runner) -> bool:
 	SkirmishMain.map_path = before
 	SkirmishMain.starts = before_starts
 	SkirmishMain.match_seed = before_seed
+	return true
+
+func test_online_start_saves_picks(runner) -> bool:
+	var before := [SkirmishMain.map_path, SkirmishMain.starts, SkirmishMain.match_seed]
+	for seat in [1, 2]:
+		LauncherSettings.save_picks({"faction": "usa", "bot_faction": "china", "map": "dry_wells"})
+		var launcher = Launcher.instantiate()
+		runner.root.add_child(launcher)
+		await runner.process_frame
+		launcher._set_own("frc")
+		launcher._transport = FakeTransport.new()
+		launcher._seat = seat
+		launcher._start(_start_message("ashfall", 3))
+		var picks: Dictionary = LauncherSettings.load_picks()
+		var expected: Dictionary = {"faction": "frc", "bot_faction": "china", "map": "ashfall" if seat == 1 else "dry_wells"}
+		runner.check(picks == expected, "L9e seat %d start saves %s, got %s" % [seat, expected, picks])
+		runner.root.get_tree().current_scene.free()
+		await runner.process_frame
+	SkirmishMain.map_path = before[0]
+	SkirmishMain.starts = before[1]
+	SkirmishMain.match_seed = before[2]
 	return true
 
 func test_offline_uses_chosen_map(runner) -> bool:
@@ -867,7 +894,7 @@ func test_launcher_relay_help(runner) -> bool:
 		runner.check(help.get_index() == relay.get_index() - 1, "N26 caption sits directly above the relay field at %s" % size)
 		var view := Rect2(Vector2.ZERO, Vector2(size))
 		runner.check(view.encloses(help.get_global_rect()), "N26 caption inside %s" % size)
-		for path: String in LAUNCHER_PAGE_PATHS["Play"]:
+		for path: String in LAUNCHER_PAGE_PATHS["Play:friend"]:
 			var control: Control = launcher.get_node_or_null("Pages/Play/" + path)
 			if control == null or control == help or not control.visible: continue
 			runner.check(not control.get_global_rect().intersects(help.get_global_rect()), "N26 caption does not overlap %s at %s" % [path, size])

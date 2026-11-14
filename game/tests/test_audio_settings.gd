@@ -283,6 +283,7 @@ func test_mute_key_in_launcher_and_text_field(runner) -> bool:
 	runner.root.push_input(_key(KEY_M, 109))
 	runner.check(AudioServer.is_bus_mute(0), "AS9 M mutes Master in the launcher")
 	runner.root.push_input(_key(KEY_M, 109))
+	launcher.set_opponent("friend")
 	launcher.get_node("Pages/Play/Body/Advanced/Toggle").button_pressed = true
 	var field: LineEdit = launcher.find_child("RelayUrl", true, false)
 	field.grab_focus()

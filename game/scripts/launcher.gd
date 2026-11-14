@@ -10,6 +10,7 @@ const MusicPlayer = preload("res://scripts/presentation/music_player.gd")
 const VolumeSliders = preload("res://scripts/presentation/volume_sliders.gd")
 const SkirmishMain = preload("res://scripts/match/match_screen.gd")
 const MatchSettings = preload("res://scripts/match_settings.gd")
+const LauncherSettings = preload("res://scripts/launcher_settings.gd")
 const Credits = preload("res://scripts/presentation/credits.gd")
 const PlaytestSettings = preload("res://scripts/playtest/playtest_settings.gd")
 const JoinLink = preload("res://scripts/join_link.gd")
@@ -21,6 +22,11 @@ const HEADLESS_FLAGS: Array[String] = ["--netclient", "--relay", "--replay-log",
 const PAGES: Array[String] = ["Play", "Join", "Settings", "Credits", "Waiting"]
 const NAV_PAGES: Array[String] = ["Play", "Join", "Settings", "Credits"]
 const SHELL: Array[String] = ["SidebarBg", "ContentBg", "Sidebar", "Pages"]
+const OWNS: Array[String] = ["Pages/Play/Body/Own", "Pages/Join/Body/Own"]
+const FOLDS: Array[String] = ["Pages/Play/Body/Advanced", "Pages/Join/Body/Advanced"]
+const BOT_ONLY: Array[String] = ["Body/BotLabel", "Body/Spacer2", "Body/Bot", "Body/Spacer3", "Footer/Start"]
+const FRIEND_ONLY: Array[String] = ["Body/OpenSlot", "Body/Spacer4", "Footer/Create"]
+const FRIEND_HINT := "You get a link to send to your friend."
 var _transport: RefCounted
 var _match: String = ""
 var _seat: int = 0
@@ -28,6 +34,7 @@ var _code: String = ""
 var _hello_sent: bool = false
 var _lockstep: RefCounted
 var current_page: String = "Play"
+var opponent: String = "bot"
 var _origin: String = "Play"
 var _syncing: bool = false
 static var code_applied: bool = false
@@ -49,12 +56,13 @@ func _ready() -> void:
 			return
 	_fill_factions()
 	_fill_maps()
+	_apply_picks()
 	_add_audio()
 	_add_playtest()
 	$Pages/Play/Footer/Start.pressed.connect(func() -> void:
 		_offline_setup()
 		get_tree().change_scene_to_file(OFFLINE_SCENE))
-	$Pages/Play/Body/Advanced/Toggle.toggled.connect(_set_advanced)
+	_connect_play_controls()
 	$Pages/Play/Footer/Create.pressed.connect(func() -> void:
 		_origin = "Play"
 		_connect(""))
@@ -73,6 +81,7 @@ func _ready() -> void:
 	$Sidebar/Version.text = "v" + str(ProjectSettings.get_setting("application/config/version"))
 	set_process(false)
 	show_page("Play")
+	set_opponent("bot")
 	_apply_page()
 	_install_paste_shim()
 
@@ -80,7 +89,7 @@ func _install_paste_shim() -> void:
 	if not OS.has_feature("web"):
 		return
 	PasteShim.adopt($Pages/Join/Body/Code)
-	PasteShim.adopt($Pages/Play/Body/Advanced/RelayUrl)
+	for fold in FOLDS: PasteShim.adopt(get_node(fold + "/RelayUrl"))
 	if not get_tree().root.has_node("PasteShim"):
 		get_tree().root.add_child.call_deferred(PasteShim.new())
 
@@ -88,24 +97,80 @@ static func _page_value(expression: String) -> String:
 	return str(JavaScriptBridge.eval(expression)) if OS.has_feature("web") else ""
 
 func _copy_text() -> String:
-	return _code if page.is_empty() else JoinLink.link(page, _code, $Pages/Play/Body/Advanced/RelayUrl.text.strip_edges())
+	return _code if page.is_empty() else JoinLink.link(page, _code, _relay_url())
 
 func _apply_page() -> void:
 	var query: Dictionary = JoinLink.parse(search)
-	$Pages/Play/Body/Advanced/RelayUrl.text = JoinLink.DEFAULT_RELAY
-	$Pages/Play/Body/Advanced.visible = prerelease
+	_set_relay(JoinLink.DEFAULT_RELAY)
+	$Pages/Join/Body/Advanced.visible = prerelease
 	if not code_applied: $Pages/Join/Body/Code.text = JoinLink.code(query.get("code", ""))
 	code_applied = true # a stale link must not refill the field after "back to menu"
 	var relay: String = JoinLink.relay(query.get("relay", "")) if prerelease else ""
 	if not relay.is_empty():
-		$Pages/Play/Body/Advanced/RelayUrl.text = relay
-		$Pages/Play/Body/Advanced/Toggle.button_pressed = true
+		_set_relay(relay)
+		_set_advanced(true)
 	$Pages/Waiting/Body/Copy.text = "Copy link" if not page.is_empty() else "Copy code"
 
 func _set_advanced(open: bool) -> void:
-	$Pages/Play/Body/Advanced/RelayUrl.visible = open
-	$Pages/Play/Body/Advanced/RelayHelp.visible = open
-	$Pages/Play/Body/Advanced/Toggle.text = "Hide advanced settings" if open else "Show advanced settings"
+	for fold in FOLDS:
+		get_node(fold + "/Toggle").set_pressed_no_signal(open)
+		get_node(fold + "/RelayUrl").visible = open
+		get_node(fold + "/RelayHelp").visible = open
+
+func _set_relay(url: String) -> void:
+	for fold in FOLDS:
+		var field: LineEdit = get_node(fold + "/RelayUrl")
+		if field.text != url: field.text = url
+
+func _relay_url() -> String:
+	return $Pages/Play/Body/Advanced/RelayUrl.text.strip_edges()
+
+func set_opponent(kind: String) -> void:
+	opponent = kind
+	var bot: bool = kind == "bot"
+	$Pages/Play/Body/Opponent/BotToggle.set_pressed_no_signal(bot)
+	$Pages/Play/Body/Opponent/FriendToggle.set_pressed_no_signal(not bot)
+	for path in BOT_ONLY: get_node("Pages/Play/" + path).visible = bot
+	for path in FRIEND_ONLY: get_node("Pages/Play/" + path).visible = not bot
+	$Pages/Play/Body/Advanced.visible = prerelease and not bot
+	_refresh_play()
+
+func _refresh_play() -> void:
+	$Pages/Play/Body/MapInfo.text = _map_info(_map_id())
+	$Pages/Play/Footer/Status.text = _summary() if opponent == "bot" else FRIEND_HINT
+
+func _map_info(id: String) -> String:
+	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(MatchSettings.map_path(id)))
+	return "%d start positions · %d supply sources" % [data.starts.size(), data.sources.size()]
+
+func _summary() -> String:
+	return "%s · %s vs %s bot" % [MatchSettings.PLAY_MAPS[_map_id()], Registry.faction(_faction($Pages/Play/Body/Own)).display_name, Registry.faction(_faction($Pages/Play/Body/Bot)).display_name]
+
+func _connect_play_controls() -> void:
+	$Pages/Play/Body/Opponent/BotToggle.pressed.connect(set_opponent.bind("bot"))
+	$Pages/Play/Body/Opponent/FriendToggle.pressed.connect(set_opponent.bind("friend"))
+	for path in OWNS:
+		var selector: OptionButton = get_node(path)
+		selector.item_selected.connect(func(index: int) -> void: _set_own(selector.get_item_metadata(index)))
+	for selector: OptionButton in [$Pages/Play/Body/Bot, $Pages/Play/Body/Map]:
+		selector.item_selected.connect(func(_index: int) -> void: _refresh_play())
+	for fold in FOLDS:
+		get_node(fold + "/Toggle").toggled.connect(_set_advanced)
+		get_node(fold + "/RelayUrl").text_changed.connect(_set_relay)
+
+func _apply_picks() -> void:
+	var picks: Dictionary = LauncherSettings.load_picks()
+	_select_id($Pages/Play/Body/Bot, picks.bot_faction)
+	_select_id($Pages/Play/Body/Map, picks.map)
+	_set_own(picks.faction)
+
+func _set_own(id: String) -> void:
+	for path in OWNS: _select_id(get_node(path), id)
+	_refresh_play()
+
+func _select_id(selector: OptionButton, id: String) -> void:
+	for index in selector.item_count:
+		if selector.get_item_metadata(index) == id: selector.select(index)
 
 func show_page(page_name: String) -> void:
 	current_page = page_name
@@ -165,7 +230,7 @@ func _add_audio() -> void:
 func _fill_factions() -> void:
 	var ids: Array = Registry.Factions.FACTIONS.keys()
 	ids.sort()
-	for selector: OptionButton in [$Pages/Play/Body/Own, $Pages/Play/Body/Bot]:
+	for selector: OptionButton in [$Pages/Play/Body/Own, $Pages/Join/Body/Own, $Pages/Play/Body/Bot]:
 		for id: String in ids:
 			selector.add_item(Registry.faction(id).display_name)
 			selector.set_item_metadata(selector.item_count - 1, id)
@@ -186,6 +251,7 @@ func _map_id() -> String:
 
 func _offline_setup() -> void:
 	var id: String = _map_id()
+	LauncherSettings.save_picks({"faction": _faction($Pages/Play/Body/Own), "bot_faction": _faction($Pages/Play/Body/Bot), "map": id})
 	SkirmishMain.factions = {1: _faction($Pages/Play/Body/Own), 2: _faction($Pages/Play/Body/Bot)}
 	SkirmishMain.map_path = MatchSettings.map_path(id)
 	SkirmishMain.match_seed = randi()
@@ -195,7 +261,7 @@ func _connect(code: String) -> void:
 	_match = code
 	_hello_sent = false
 	_transport = RelayTransport.new()
-	var error: Error = _transport.connect_to($Pages/Play/Body/Advanced/RelayUrl.text.strip_edges())
+	var error: Error = _transport.connect_to(_relay_url())
 	if error != OK:
 		_fail("Cannot connect to relay")
 		return
@@ -204,7 +270,7 @@ func _connect(code: String) -> void:
 	set_process(true)
 
 func _set_busy(busy: bool) -> void:
-	for path: String in ["Play/Footer/Start", "Play/Footer/Create", "Play/Body/Advanced/RelayUrl", "Join/Body/Code", "Join/Footer/Join", "Play/Body/Own", "Play/Body/Bot", "Play/Body/Map"]:
+	for path: String in ["Play/Footer/Start", "Play/Footer/Create", "Play/Body/Advanced/RelayUrl", "Join/Body/Advanced/RelayUrl", "Join/Body/Code", "Join/Footer/Join", "Play/Body/Own", "Join/Body/Own", "Play/Body/Bot", "Play/Body/Map", "Play/Body/Opponent/BotToggle", "Play/Body/Opponent/FriendToggle"]:
 		var control: Control = get_node("Pages/" + path)
 		if control is BaseButton: control.disabled = busy
 		else: control.editable = not busy
@@ -266,6 +332,9 @@ func _start(message: Dictionary) -> bool:
 	seats.assign(message.seats)
 	_lockstep = Lockstep.new(_seat, seats, message.delay)
 	var id: String = message.settings.map
+	var picks: Dictionary = {"faction": _faction($Pages/Play/Body/Own)}
+	if _seat == 1: picks["map"] = id
+	LauncherSettings.save_picks(picks)
 	SkirmishMain.map_path = MatchSettings.map_path(id)
 	SkirmishMain.match_seed = message.seed
 	SkirmishMain.starts = MatchSettings.starts(id, message.seed)

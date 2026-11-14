@@ -95,6 +95,7 @@ func _run() -> void:
 		_active_case = test.get_method()
 		_case_lock.unlock()
 		case_count += 1
+		DirAccess.remove_absolute(AudioSettings.path) # remembered launcher picks must not leak into the next case
 		var before: int = checks
 		var completed: Variant = await test.call(self)
 		if completed is not bool or completed != true or checks == before:
