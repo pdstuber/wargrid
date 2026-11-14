@@ -60,7 +60,7 @@ Q8. Should tank turrets turn on their own toward their target?
 Q9. How many detail levels, and when do they switch?
    a) One per existing zoom step: far at 0.5, normal at 1, close at 2   b) By measured on-screen size with hysteresis (art bible §9)   c) One drawing at every zoom
    Recommendation: a, because there are exactly three fixed zooms, so the zoom itself is the threshold and nothing can flicker. Why it matters: b needs tuning and tests for no gain.
-   **Answered 2026-11-09: a, one detail level per zoom step.**
+   **Answered 2026-11-09: a, one detail level per zoom step.** Narrowed 2026-11-14 (map art round 4): zoom 2 adds up to four finishing parts per shape; zoom 0.5 draws the zoom 1 parts ([design answers](../reference/design-answers-2026-11-08.md#map-art-faction-shapes-m75-user-2026-11-13)).
 
 Q10. Should ground units cast a shadow? **A/B**
    a) A small dark patch under every unit — interview Q10 ("shadows"; sheet 01)   b) No, only aircraft get a shadow on the ground (sheet 00)

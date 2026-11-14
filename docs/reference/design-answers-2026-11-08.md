@@ -583,7 +583,46 @@ Agent assessment from round 3:
 - The windowed check of shape parts in a UI control is run at once (the recommendation was the next session). Result (agent run), one window, Godot 4.7.2 with the compatibility renderer, today's shapes at 22, 28 and 64 px on one dark slab colour: the shapes draw in a `Control` through the same call the world uses, in the right order, hard-edged and without seams; the control must clip its contents; sizes are layout pixels, because the game stretches its 1280x720 layout. As one flat colour, infantry and, barely, the helicopter read at 22 px, the tank loses its barrel at 22 px, and Vehicle Factory and Headquarters are the same rhombus at every size. In two tones (top faces light, other faces muted) all five tested shapes are recognisable at 28 px; at 22 px the two buildings differ by a roof block of 2 to 3 px. Agent assessment: baked two-tone glyphs are workable for units and need the picked faction bodies to tell buildings apart; a glyph control is about 40 lines on public calls, no game change. Not proven: other renderers and GPUs, the web build, the game's stretched and HiDPI scales (the run turned the stretch off), clipping inside scrolled containers, the cost of many glyphs.
 - Second half of the spike, in this order: damage looks for the 14 new building bodies (P2.6's first step), tanks with the wedge asked again for hulls, detail per zoom step, the weak spots of rounds 1 to 3; then ground, owner colours, cliffs and decoration.
 
-Contrast, computed (WCAG relative luminance): no owner colour of the default set reaches 3:1 against the sand ground `#A88E5C` (blue 1.68, red 1.72, green 1.27, gold 1.30, orange 1.02, purple 1.94, teal 1.05, pink 1.19), and the Neon set does not either (best: yellow 2.40). A shape separates from the sand through its dark side faces (`#263842` 3.87, `#3D515F` 2.63). On the dark biome `#7B7566` the side faces drop to 2.65 and 1.80, and only Neon yellow passes (3.50). **Owner colour against ground goes to an A/B in a later round of this spike** (user, 2026-11-13), part of its second half.
+**Round 4, prettier shapes** (user, 2026-11-14; all six picks as recommended, no comments; judged on sand with the default set, Row view):
+- **Damaged buildings lose their corners on the camera side:** at 70 % one corner facing the camera goes and the remaining roof turns dark, at 35 % a second, different corner goes and one thin smoke column rises, clear of doors and the Headquarters tower. Drawn for all 14 picked bodies; picked against corners taken off the rear and the skyline, and against today's shared-slab rule. This is P2.6's first step.
+- **Tanks tell their faction by hull outline, boxes only:** USA long and slim, China broad (both China tanks share the hull and differ by turret: one long barrel against a short twin-barrel block), FRC short with a set-back, lopsided turret. Picked against the same tanks with sloped hull plates, so "boxes and cylinders" stands for hulls too.
+- **Zoom 0.5 draws the same parts as zoom 1;** **zoom 2 adds up to four finishing parts per shape** (window bands, vents, track bands, hatches) that leave the outline unchanged. This narrows the 2026-11-09 answer "one detail level per zoom step" to an added level at zoom 2; at zoom 0.5 cylinders still lose sides as today.
+- **Weak spots fixed:** China's power plant drums now clearly top its barracks, which is the lowest building again; FRC's barracks reads as three unequal rooms in a row; the USA soldier's pale head shows under the helmet; the Scout Car's and Armed Pickup's guns are at least 2 px at zoom 1.
+
+**Questionnaire after round 4** (user, 2026-11-14; all as recommended):
+- FRC's tank goes back to today's hull length (0.7 cells) and the Armed Pickup is shortened to about 0.65, so the tank stays the bigger vehicle; the round 4 drawing had the tank at 0.56 and the pickup at 0.86.
+- The zoom-dependent drawing code (`_build_parts` reading the detail level, which today it ignores) rides with P2.4, with its units' zoom 2 versions; P2.6 brings the buildings' zoom 2 versions.
+- Round 5 (ground, owner colours, cliffs, decoration) follows in the same session.
+
+Agent assessment from round 4:
+- Cutting a corner out of one box means splitting it, so a damaged body can have more primitives than the healthy one; the healthy shape is unchanged.
+- At zoom 0.5 every building and tank part is already at least 2 px wide; only weapons on small units are thinner, and dropping them removes the unit's role cue. So a reduced zoom 0.5 level gains nothing; the thicker weapons go into the shape at every zoom instead.
+- At zoom 0.5 a sloped hull plate is a slightly darker face, too little for a new primitive.
+- The faction tanks change hull sizes that `game/tests/test_shapes.gd` pins; the USA soldier fix widens the torso slightly to keep the owner-colour share above the audit's 30 %. Neither is checked in Godot.
+- The zoom 0.5 and zoom 2 tank versions on the page were built on today's hulls; P2.4 redraws them on the picked hulls.
+
+**Round 5, the world** (user, 2026-11-14; all six picks as recommended, no comments; judged in the base view at zoom 0.5, mostly on sand):
+- **Darker unit and building sides** (`SIDE` `#1c2e39`, `SIDE_DARK` `#0e1b23` in `game/scripts/presentation/palette.gd`), so the dark side band reaches 3:1 on both grounds (`SIDE` 4.46 on sand and 3.05 on the dark ground, against 2.63 and 1.80 today); picked against today's sides with a tighter, darker contact shadow.
+- **Lifted default owner colours:** `44adf4 d54f3b 4fc389 ecdc3c e08522 9249ac 008d8d ffa5d4` in place of today's set. Every owner pair stays at least 22 apart (CIELAB distance) in normal vision and under simulated deuteranopia and protanopia (today's blue and purple: 5.2), and gold moves away from sand. No owner top reaches 3:1 against sand, which would need an almost black or almost white colour; the side band carries the outline. Picked against richer, darker owners.
+- **Neon stays opt-in;** the default set stays the default.
+- **Firmer cliffs:** top lightened 0.22 and sides darkened 0.55 (today 0.15 and 0.4), height unchanged, so the side reaches 3.23 against sand (today 2.3); picked against today's cliffs with a thin lit rim on the top edge.
+- **Decoration lies flat on the ground:** roads as lighter strips, rock plates and tree discs with flat shadows, water as a muted blue-grey surface; nothing has height, so nothing can hide a unit. Picked against low raised rocks and tree clusters. None of it exists in the code.
+- **Fog at 0.65 brightness** rather than half, so frozen buildings and the side band keep more contrast and the fog edge stays visible.
+
+**Questionnaire after round 5** (user, 2026-11-14; all as recommended):
+- Fog brightness 0.65 replaces half brightness (Zero Hour's default, answered 2026-11-10 with "re-check once the ground is sand") as the fog package's starting value; the fog package confirms it in the game, since the page only multiplied brightness.
+- The palette changes (side band, owner colours, cliffs) ride with P2.4.
+- Flat decoration lands with the next map ports, whose converter learns roads, rocks, trees and water.
+- The Neon set fails the colour-vision check (blue against purple 1.5 under deuteranopia) and its teal `#00d8e8` sits close to the HUD's cyan: recorded on the findings list.
+
+Agent assessment from round 5:
+- With the darker sides, building sides look nearly black at zoom 1 on the dark ground and doors on side faces lose contrast.
+- A unit standing right in front of a cliff face loses its side band against the dark face (contrast 1.1 to 1.5) with either cliff option; its owner-coloured top carries it there.
+- Under either fog value some frozen owner pairs fall under the colour-vision distance of 20.
+- Raised decoration would have to be drawn in the terrain layer and sorted with the cliff cells to stay under units; the picked flat decoration needs neither. Raised cliff cells are blocked today, so no unit stands on top of a cliff.
+- The game's per-cell ground shade is at most 4 % either way.
+
+Contrast, computed (WCAG relative luminance): no owner colour of the default set reaches 3:1 against the sand ground `#A88E5C` (blue 1.68, red 1.72, green 1.27, gold 1.30, orange 1.02, purple 1.94, teal 1.05, pink 1.19), and the Neon set does not either (best: yellow 2.40). A shape separates from the sand through its dark side faces (`#263842` 3.87, `#3D515F` 2.63). On the dark biome `#7B7566` the side faces drop to 2.65 and 1.80, and only Neon yellow passes (3.50). **Owner colour against ground goes to an A/B in a later round (done: round 5, 2026-11-14) of this spike** (user, 2026-11-13), part of its second half.
 
 Where the game differs from decided answers (inventory, 2026-11-13; none changed by this spike): selection is drawn green (`game/scripts/presentation/world_view.gd`), decided white; supply sources show two lines of text and construction a percentage, decided no text on the map; vehicle wrecks exist only in the art lab, and a death shows a dark ground patch that fades in two seconds, not a body that fades; a zoom step changes only the number of cylinder sides, decided one detail level per zoom step; big supply sources look the same from 40 to 400 boxes; salvage crates are a 4 px square.
 

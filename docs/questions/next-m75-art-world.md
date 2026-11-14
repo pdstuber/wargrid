@@ -40,7 +40,7 @@ Q5. When is the cell grid shown?
 Q6. How should fogged areas look (M7.9)? **A/B**
    a) Darkened to about half brightness — ZH default (gamedata.ini:444-447)   b) A grey veil: colour drained, brightness kept   c) Slightly darker and colour drained
    Recommendation: c, because half brightness on muted ground nearly hides the map you were promised as revealed, while drained colour still says "not seen now". Why it matters: owner colours of frozen enemy buildings must still read.
-   **Answered 2026-11-10 (in-game A/B): A, darkened to half brightness (the Zero Hour default).** Re-check once the ground is sand; the lab fog sat on dark and sand ground alike.
+   **Answered 2026-11-10 (in-game A/B): A, darkened to half brightness (the Zero Hour default).** Re-check once the ground is sand; the lab fog sat on dark and sand ground alike. Re-checked 2026-11-14 on sand (map art round 5): starting value 0.65 brightness instead, to be confirmed in the game by the fog package ([design answers](../reference/design-answers-2026-11-08.md#map-art-faction-shapes-m75-user-2026-11-13)).
 
 Q7. How should a travelling shell or rocket look? **A/B**
    a) A short bright dash flying to the target   b) A small dot with a fading trail   c) No visible shell, only muzzle flash and impact

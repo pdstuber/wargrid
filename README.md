@@ -79,7 +79,7 @@ What is done and what comes next (generated from [packages](docs/packages.md) an
 | 💡 | Crowds that sort themselves | Later |
 | 💡 | Fog of war | Later |
 | 💡 | Ground batch A | Later |
-| 💡 | Tanks, terrain and colours | Later |
+| 💡 | Wrecks | Later |
 | 💡 | Ground batch B | Later |
 | 💡 | Bots | Later |
 | 💡 | 3v3 online | Later |
