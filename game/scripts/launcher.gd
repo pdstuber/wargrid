@@ -433,11 +433,11 @@ func _fill_waiting() -> void:
 	var own: OptionButton = $Pages/Play/Body/Own
 	var id: String = _map_id()
 	body.get_node("Left/Invite/Link").text = _copy_text()
-	body.get_node("Left/CodeHint").text = "Or tell them the code: [b]%s[/b]" % _code
+	body.get_node("Left/CodeHint").text = "Or tell them the code: [b][color=#ffffff]%s[/color][/b]" % _code
 	body.get_node("Left/One/Row/Faction").text = own.get_item_text(own.selected)
 	body.get_node("Right/Map/Box/Name").text = MatchSettings.PLAY_MAPS[id]
 	body.get_node("Right/Map/Box/Info").text = _map_info(id)
-	$Pages/Waiting/Footer/Status.text = "Match code [b]%s[/b]" % _code
+	$Pages/Waiting/Footer/Status.text = "Match code [b][color=#ffffff]%s[/color][/b]" % _code
 
 func _start(message: Dictionary) -> bool:
 	var reason: String = MatchSettings.refusal(message.settings)

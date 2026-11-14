@@ -23,7 +23,7 @@ const SIZES: Array[Vector2i] = [Vector2i(1280, 720), Vector2i(1920, 1080), Vecto
 const STRETCHED: Array[Array] = [[Vector2i(1920, 1080), Vector2i(1280, 720)], [Vector2i(2576, 1145), Vector2i(1620, 720)]]
 
 func cases() -> Array[Callable]:
-	return [test_picks_defaults, test_picks_fallback_per_field, test_picks_keep_other_sections, test_fullscreen_target, test_fullscreen_switch, test_this_build_line, test_graphics_group, test_graphics_shows_stored, test_graphics_mirror_esc_menu, test_no_green_on_switches, test_mute_is_a_switch, test_inter_font, test_footer_error_hugs_text, test_waiting_bold_codes_and_dashed_slots, test_sidebar_switches_pages, test_aspect_expand_and_restore, test_layout_every_page, test_opens_on_bot_with_picks, test_toggle_friend, test_map_info_and_summary, test_own_faction_shared, test_start_saves_picks, test_advanced_only_prerelease, test_link_opens_join, test_lock_while_connecting, test_waiting_view, test_join_error_footer, test_join_needs_code, test_relay_fields_follow, test_column_widths, test_player_rows_padded, test_footer_status_style, test_vertical_rhythm, test_waiting_two_columns]
+	return [test_picks_defaults, test_picks_fallback_per_field, test_picks_keep_other_sections, test_fullscreen_target, test_fullscreen_switch, test_this_build_line, test_graphics_group, test_graphics_shows_stored, test_graphics_mirror_esc_menu, test_no_green_on_switches, test_mute_is_a_switch, test_inter_font, test_type_matches_mockups, test_font_rendering, test_dropdown_arrow, test_control_heights, test_footer_error_hugs_text, test_waiting_bold_codes_and_dashed_slots, test_sidebar_switches_pages, test_aspect_expand_and_restore, test_layout_every_page, test_opens_on_bot_with_picks, test_toggle_friend, test_map_info_and_summary, test_own_faction_shared, test_start_saves_picks, test_advanced_only_prerelease, test_link_opens_join, test_lock_while_connecting, test_waiting_view, test_join_error_footer, test_join_needs_code, test_relay_fields_follow, test_column_widths, test_player_rows_padded, test_footer_status_style, test_vertical_rhythm, test_waiting_two_columns]
 
 func _picked(selector: OptionButton) -> String:
 	return selector.get_item_metadata(selector.selected)
@@ -828,6 +828,78 @@ func test_inter_font(runner) -> bool:
 		runner.check(FileAccess.file_exists("res://fonts/" + file), "F1 %s ships in game/fonts" % file)
 	return true
 
+const SEMIBOLD := "res://fonts/Inter-SemiBold.woff2"
+const BOLD := "res://fonts/Inter-Bold.woff2"
+const MUTED := Color(0.831, 0.831, 0.831)
+
+func _font_path(font: Font) -> String:
+	return font.base_font.resource_path if font is FontVariation else font.resource_path
+
+func test_type_matches_mockups(runner) -> bool:
+	var saved: String = AudioSettings.path
+	var launcher = await _launcher_with(runner, "type", {})
+	_restore(saved)
+	runner.check(launcher.theme.default_font_size == 14, "T1 the base size is 15 px x 0.93 = 14, got %s" % launcher.theme.default_font_size)
+	for path: String in ["Pages/Play/Body/Own", "Pages/Play/Body/Map", "Pages/Play/Body/Bot", "Pages/Join/Body/Own"]:
+		var dropdown: OptionButton = launcher.get_node(path)
+		runner.check(_font_path(dropdown.get_theme_font("font")) == SEMIBOLD, "T1 %s value is SemiBold, got %s" % [path, _font_path(dropdown.get_theme_font("font"))])
+		runner.check(dropdown.get_theme_color("font_color") == Color.WHITE and dropdown.get_theme_color("font_hover_color") == Color.WHITE, "T1 %s value is white, not muted" % path)
+	for side: String in ["BotToggle", "FriendToggle"]:
+		var toggle: Button = launcher.get_node("Pages/Play/Body/Opponent/" + side)
+		runner.check(_font_path(toggle.get_theme_font("font")) == SEMIBOLD, "T1 %s is SemiBold" % side)
+		runner.check(toggle.get_theme_color("font_color") == MUTED and toggle.get_theme_color("font_pressed_color") == Color.WHITE, "T1 %s is muted off and white on" % side)
+	for nav: Button in launcher.get_node("Sidebar/Nav").get_children().filter(func(each: Node) -> bool: return each is Button):
+		runner.check(_font_path(nav.get_theme_font("font")) == SEMIBOLD and nav.get_theme_color("font_color") == MUTED and nav.get_theme_color("font_pressed_color") == Color.WHITE, "T1 nav %s is SemiBold, muted off and white on" % nav.name)
+	var weights: Dictionary = {"PageTitle": [BOLD, 28], "FieldLabel": [BOLD, 14], "PanelTitle": [BOLD, 14], "Logo": [BOLD, 21], "PrimaryButton": [BOLD, 16]}
+	for type: String in weights:
+		var font: Font = launcher.theme.get_font("font", type)
+		runner.check(_font_path(font) == weights[type][0] and launcher.theme.get_font_size("font_size", type) == weights[type][1], "T1 %s is Inter Bold at %s px" % [type, weights[type][1]])
+	var logo: Font = launcher.theme.get_font("font", "Logo")
+	runner.check(logo is FontVariation and logo.spacing_glyph >= 1, "T1 the logo has letter spacing like .wm")
+	runner.check(_font_path(launcher.theme.get_font("font", "CheckButton")) == INTER, "T1 switch labels stay Regular")
+	runner.check(launcher.theme.get_font_size("font_size", "Tag") == 9, "T1 the tag is 10 px x 0.93 = 9")
+	var muted: Color = launcher.theme.get_color("font_color", "Subtitle")
+	runner.check(muted == MUTED, "T1 muted text is #d4d4d4 like --muted, got %s" % muted)
+	launcher.free()
+	return true
+
+func test_font_rendering(runner) -> bool:
+	for file: String in ["Regular", "SemiBold", "Bold"]:
+		var font: FontFile = load("res://fonts/Inter-%s.woff2" % file)
+		runner.check(font.hinting == TextServer.HINTING_NONE, "T2 Inter %s has no hinting, got %s" % [file, font.hinting])
+		runner.check(font.subpixel_positioning == TextServer.SUBPIXEL_POSITIONING_ONE_HALF, "T2 Inter %s positions glyphs at half pixels, got %s" % [file, font.subpixel_positioning])
+		runner.check(font.antialiasing == TextServer.FONT_ANTIALIASING_GRAY and not font.multichannel_signed_distance_field, "T2 Inter %s is grayscale antialiased, no MSDF" % file)
+	return true
+
+func test_dropdown_arrow(runner) -> bool:
+	var saved: String = AudioSettings.path
+	var launcher = await _launcher_with(runner, "arrow", {})
+	_restore(saved)
+	for path: String in ["Pages/Play/Body/Own", "Pages/Play/Body/Map", "Pages/Play/Body/Bot", "Pages/Join/Body/Own"]:
+		var dropdown: OptionButton = launcher.get_node(path)
+		var arrow: Texture2D = dropdown.get_theme_icon("arrow")
+		runner.check(arrow.resource_path == "res://ui/dropdown_arrow.svg" and arrow.get_size() == Vector2(10, 5), "T3 %s uses the 10x5 solid triangle, got %s %s" % [path, arrow.resource_path, arrow.get_size()])
+		runner.check(dropdown.get_theme_constant("arrow_margin") == 15, "T3 %s leaves the CSS 14 px padding plus 1 px border right of the arrow, got %s" % [path, dropdown.get_theme_constant("arrow_margin")])
+	var image: Image = load("res://ui/dropdown_arrow.svg").get_image()
+	runner.check(image.get_pixel(5, 0).a > 0.9 and image.get_pixel(5, 4).a > 0.5 and image.get_pixel(0, 4).a < 0.1, "T3 the arrow points down: wide on top, a point at the bottom")
+	launcher.free()
+	return true
+
+func test_control_heights(runner) -> bool:
+	var saved: String = AudioSettings.path
+	var launcher = await _launcher_with(runner, "heights", {})
+	_restore(saved)
+	var dropdown: float = launcher.get_node("Pages/Play/Body/Own").get_combined_minimum_size().y
+	runner.check(absf(dropdown - 45.0) <= 1.0, "T4 .dd is 11 + 21 + 11 + 2 border = 45 px high, got %s" % dropdown)
+	var toggle: float = launcher.get_node("Pages/Play/Body/Opponent/BotToggle").get_combined_minimum_size().y
+	runner.check(absf(toggle - 43.0) <= 1.0, "T4 .seg b is 11 + 21 + 11 = 43 px high, got %s" % toggle)
+	var nav: float = launcher.get_node("Sidebar/Nav/Play").get_combined_minimum_size().y
+	runner.check(absf(nav - 43.0) <= 1.0, "T4 .nav a is 11 + 21 + 11 = 43 px high, got %s" % nav)
+	var start: float = launcher.get_node("Pages/Play/Footer/Start").get_combined_minimum_size().y
+	runner.check(absf(start - 52.0) <= 1.0, "T4 .go is 14 + 24 + 14 = 52 px high, got %s" % start)
+	launcher.free()
+	return true
+
 func test_footer_error_hugs_text(runner) -> bool:
 	var saved: String = AudioSettings.path
 	var launcher = await _launcher_with(runner, "hug", {})
@@ -864,7 +936,7 @@ func test_waiting_bold_codes_and_dashed_slots(runner) -> bool:
 	var footer: Control = launcher.get_node("Pages/Waiting/Footer/Status")
 	var hint: Control = launcher.get_node("Pages/Waiting/Body/Left/CodeHint")
 	for each: Control in [footer, hint]:
-		runner.check(each is RichTextLabel and each.bbcode_enabled and "[b]K7Q2[/b]" in each.text, "F4 %s shows the code in bold, got %s" % [each.name, each.text if each is RichTextLabel else "not rich text"])
+		runner.check(each is RichTextLabel and each.bbcode_enabled and "[b][color=#ffffff]K7Q2[/color][/b]" in each.text, "F4 %s shows the code in bold, got %s" % [each.name, each.text if each is RichTextLabel else "not rich text"])
 		runner.check(each is RichTextLabel and each.get_theme_font("bold_font").resource_path == "res://fonts/Inter-Bold.woff2", "F4 %s bold is real Inter Bold" % each.name)
 	runner.check(launcher.get_node("Pages/Waiting/Body/Left/Invite/Link").get_theme_font("font").resource_path == INTER, "F4 the invite link stays in Inter")
 	var dashed: Array[Control] = [launcher.get_node("Pages/Waiting/Body/Left/Two"), launcher.get_node("Pages/Play/Body/OpenSlot")]
