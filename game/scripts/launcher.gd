@@ -58,6 +58,7 @@ func _ready() -> void:
 	_fill_maps()
 	_apply_picks()
 	_add_audio()
+	_add_fullscreen()
 	_add_playtest()
 	$Pages/Play/Footer/Start.pressed.connect(func() -> void:
 		_offline_setup()
@@ -224,6 +225,23 @@ func _add_playtest() -> void:
 	toggle.toggled.connect(func(on: bool) -> void:
 		PlaytestSettings.save_enabled(on)
 		build.visible = on)
+
+func _add_fullscreen() -> void:
+	if OS.has_feature("web"): return
+	var toggle := CheckButton.new()
+	toggle.name = "Fullscreen"
+	toggle.text = "Fullscreen"
+	toggle.button_pressed = LauncherSettings.fullscreen()
+	toggle.toggled.connect(func(on: bool) -> void:
+		LauncherSettings.save_fullscreen(on)
+		_apply_fullscreen(on))
+	$Pages/Settings/Body/Audio.add_child(toggle)
+	_apply_fullscreen(toggle.button_pressed)
+
+# The window mode stays untouched headless so tests never flip a real window.
+func _apply_fullscreen(on: bool) -> void:
+	if DisplayServer.get_name() == "headless": return
+	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if on else DisplayServer.WINDOW_MODE_WINDOWED)
 
 func _add_audio() -> void:
 	add_child(SoundPlayer.new(0))

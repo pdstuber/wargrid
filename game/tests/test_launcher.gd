@@ -9,6 +9,7 @@ const MatchSettings = preload("res://scripts/match_settings.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const OnlineTests = preload("res://tests/test_online_scene.gd")
 const LOOPBACK := "wss://127.0.0.1:9/ws"
+const FocusCards = preload("res://scripts/playtest/focus_cards.gd")
 const SELECTED := Color(0.18, 0.43, 0.33)
 const FIELD := Color(0.165, 0.165, 0.165)
 const SIZES: Array[Vector2i] = [Vector2i(1280, 720), Vector2i(1920, 1080), Vector2i(2576, 1145)]
@@ -16,7 +17,7 @@ const SIZES: Array[Vector2i] = [Vector2i(1280, 720), Vector2i(1920, 1080), Vecto
 const STRETCHED: Array[Array] = [[Vector2i(1280, 720), Vector2i(1280, 720)], [Vector2i(1920, 1080), Vector2i(1280, 720)], [Vector2i(2576, 1145), Vector2i(1620, 720)]]
 
 func cases() -> Array[Callable]:
-	return [test_picks_defaults, test_picks_fallback_per_field, test_picks_keep_other_sections, test_fullscreen_round_trip, test_sidebar_switches_pages, test_version_in_sidebar, test_aspect_expand_and_restore, test_layout_every_page, test_opens_on_bot_with_picks, test_toggle_friend, test_map_info_and_summary, test_own_faction_shared, test_start_saves_picks, test_advanced_only_prerelease, test_link_opens_join, test_lock_while_connecting, test_waiting_view, test_back_to_menu, test_join_error_footer, test_relay_fields_follow]
+	return [test_picks_defaults, test_picks_fallback_per_field, test_picks_keep_other_sections, test_fullscreen_round_trip, test_fullscreen_switch, test_this_build_line, test_sidebar_switches_pages, test_version_in_sidebar, test_aspect_expand_and_restore, test_layout_every_page, test_opens_on_bot_with_picks, test_toggle_friend, test_map_info_and_summary, test_own_faction_shared, test_start_saves_picks, test_advanced_only_prerelease, test_link_opens_join, test_lock_while_connecting, test_waiting_view, test_back_to_menu, test_join_error_footer, test_relay_fields_follow]
 
 func scratch_for(name: String) -> String:
 	var scratch := "user://test-launcher-%s-%d.cfg" % [name, OS.get_process_id()]
@@ -440,4 +441,46 @@ func test_relay_fields_follow(runner) -> bool:
 	play.text_changed.emit(play.text)
 	runner.check(launcher._relay_url() == "wss://z.example/ws" and join.text == play.text, "M2 typing into Play's field reaches Join")
 	launcher.free()
+	return true
+
+func test_fullscreen_switch(runner) -> bool:
+	var saved: String = AudioSettings.path
+	AudioSettings.path = scratch_for("fullscreen-switch")
+	var launcher = Launcher.instantiate()
+	runner.root.add_child(launcher)
+	await runner.process_frame
+	var fullscreen: CheckButton = launcher.get_node_or_null("Pages/Settings/Body/Audio/Fullscreen")
+	runner.check(fullscreen != null and not fullscreen.button_pressed, "L15a Fullscreen exists and is off by default")
+	if fullscreen != null:
+		fullscreen.button_pressed = true
+		runner.check(LauncherSettings.fullscreen(), "L15a pressing Fullscreen saves true")
+		fullscreen.button_pressed = false
+		runner.check(not LauncherSettings.fullscreen(), "L15a releasing Fullscreen saves false")
+	launcher.free()
+	LauncherSettings.save_fullscreen(true)
+	launcher = Launcher.instantiate()
+	runner.root.add_child(launcher)
+	await runner.process_frame
+	runner.check(launcher.get_node("Pages/Settings/Body/Audio/Fullscreen").button_pressed, "L15a the stored value shows on the switch")
+	launcher.free()
+	AudioSettings.path = saved
+	return true
+
+func test_this_build_line(runner) -> bool:
+	var saved: String = AudioSettings.path
+	AudioSettings.path = scratch_for("this-build")
+	var launcher = Launcher.instantiate()
+	runner.root.add_child(launcher)
+	await runner.process_frame
+	var toggle: CheckButton = launcher.get_node("Pages/Settings/Body/Playtest/PlaytestSwitch")
+	toggle.button_pressed = false
+	var build: Button = launcher.get_node("Pages/Settings/Body/Playtest/ThisBuild")
+	runner.check(not build.visible, "L15b ThisBuild is hidden while the switch is off")
+	toggle.button_pressed = true
+	var title: String = FocusCards.load_cards()[0].title
+	runner.check(build.visible and build.text == "This build: " + title and title == "The new menu", "L15b ThisBuild names the first card when on, got %s" % build.text)
+	toggle.button_pressed = false
+	runner.check(not build.visible, "L15b ThisBuild hides again when switched off")
+	launcher.free()
+	AudioSettings.path = saved
 	return true

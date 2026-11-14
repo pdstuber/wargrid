@@ -1,4 +1,14 @@
 [
+ {"id": "p2.1-new-launcher", "title": "The new menu",
+  "new": ["The menu has a sidebar: Play, Join, Settings, Credits.", "It remembers your faction, the bot's faction and the map.", "Invite links open Join with the code filled in."],
+  "try": [
+   {"id": "bot", "text": "Start a bot match from Play"},
+   {"id": "invite", "text": "Create a friend match and open the link in a second tab"},
+   {"id": "remember", "text": "Restart the game and check your last picks are there"}],
+  "questions": [
+   {"id": "menu", "text": "I found what I wanted in the menu quickly"},
+   {"id": "waiting_lock", "text": "Not being able to leave the waiting view except with Cancel was fine"},
+   {"id": "no_bars", "text": "The menu filled my window without black bars"}]},
  {"id": "p2-you-clicked", "title": "Every order heard",
   "new": ["Units answer every order with a short voice line.", "The menu has sections; the relay URL sits under Advanced.", "Match music is shuffled each match."],
   "try": [

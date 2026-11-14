@@ -6,7 +6,7 @@ const MarkerCapture = preload("res://scripts/playtest/marker_capture.gd")
 const PlaytestSettings = preload("res://scripts/playtest/playtest_settings.gd")
 const FocusCards = preload("res://scripts/playtest/focus_cards.gd")
 const Launcher = preload("res://scenes/launcher.tscn")
-const SHIPPED := ["p2-you-clicked", "p1-frc-economy", "p1-frc-tunnels-online", "p1-look-and-m6-fixes"]
+const SHIPPED := ["p2.1-new-launcher", "p2-you-clicked", "p1-frc-economy", "p1-frc-tunnels-online", "p1-look-and-m6-fixes"]
 var scratch: String = "user://test-playtest-settings-%d.cfg" % OS.get_process_id()
 var commit_scratch: String = "user://test-playtest-commit-%d.txt" % OS.get_process_id()
 var sessions: String = "user://test-playtests-%d" % OS.get_process_id()
@@ -177,10 +177,10 @@ func test_launcher_focus_card(runner) -> bool:
 				runner.check(view.encloses(panel.get_global_rect()), "PT6 FocusPanel inside the viewport at %s" % label)
 				_labels_inside(runner, panel, view, label)
 				var picker: OptionButton = panel.find_child("Picker", true, false)
-				runner.check(picker.item_count == 4, "PT6 Picker lists 4 cards, got %d" % picker.item_count)
-				picker.select(1)
-				picker.item_selected.emit(1)
-				runner.check(FocusCards.chosen == "p1-frc-economy", "PT6 choosing item 2 sets the chosen card, got %s" % FocusCards.chosen)
+				runner.check(picker.item_count == 5, "PT6 Picker lists 5 cards, got %d" % picker.item_count)
+				picker.select(2)
+				picker.item_selected.emit(2)
+				runner.check(FocusCards.chosen == "p1-frc-economy", "PT6 choosing item 3 sets the chosen card, got %s" % FocusCards.chosen)
 				panel.find_child("Close", true, false).pressed.emit()
 				runner.check(not panel.visible and launcher.get_node("Pages").visible, "PT6 Close returns to the launcher at %s" % label)
 		launcher.free()
@@ -237,12 +237,12 @@ func test_launcher_shows_open_sitting_card(runner) -> bool:
 	var picker: OptionButton = launcher.get_node("FocusPanel").find_child("Picker", true, false)
 	runner.check(not picker.disabled, "PT6b with no sitting the picker is enabled")
 	launcher.free()
-	var stored := PlaytestSession.resume_or_open(SHIPPED[1], "0.11.0-dev+abc")
+	var stored := PlaytestSession.resume_or_open(SHIPPED[2], "0.11.0-dev+abc")
 	stored.finish_match({"mode": "offline", "end_tick": 10})
 	PlaytestSession.current = null
 	FocusCards.chosen = ""
 	launcher = await _launcher(runner, port)
-	var title: String = FocusCards.card(SHIPPED[1], FocusCards.load_cards()).title
+	var title: String = FocusCards.card(SHIPPED[2], FocusCards.load_cards()).title
 	var panel: Control = launcher.get_node("FocusPanel")
 	runner.check(launcher.get_node("Pages/Settings/Body/Playtest/ThisBuild").text == "This build: " + title, "PT6b ThisBuild names the open sitting's card, got %s" % launcher.get_node("Pages/Settings/Body/Playtest/ThisBuild").text)
 	runner.check(panel.find_child("Picker", true, false).disabled, "PT6b the picker is disabled while a sitting is open")
