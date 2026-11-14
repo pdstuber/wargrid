@@ -114,7 +114,7 @@ func test_marker_pauses_offline(runner) -> bool:
 	var main = await _scene(runner)
 	main._physics_process(0.0)
 	var unit: int = _own_unit(main)
-	main.selected_ids.assign([unit])
+	main.orders.selected_ids.assign([unit])
 	var tick: int = main.driver.sim.tick()
 	var camera := _camera(main)
 	_key(runner, KEY_N)
@@ -167,7 +167,7 @@ func test_note_typing_is_not_a_hotkey(runner) -> bool:
 	var saved: String = _begin()
 	var main = await _scene(runner)
 	_camera(main)
-	main.selected_ids.assign([_own_unit(main)])
+	main.orders.selected_ids.assign([_own_unit(main)])
 	var commands: int = main.playtest_match().commands.size()
 	_key(runner, KEY_N)
 	var text: LineEdit = main.get_node("HUD/Playtest/MarkerDialog").find_child("Text", true, false)
@@ -176,9 +176,9 @@ func test_note_typing_is_not_a_hotkey(runner) -> bool:
 	_key(runner, KEY_S, 115)
 	_key(runner, KEY_1, 49)
 	_key(runner, KEY_N, 110)
-	runner.check(text.text == "as1n" and not main._attack_move_mode, "PO4 letters go into the text, not attack-move, got '%s'" % text.text)
+	runner.check(text.text == "as1n" and not main.orders._attack_move_mode, "PO4 letters go into the text, not attack-move, got '%s'" % text.text)
 	runner.check(main.playtest_match().commands.size() == commands and _dialog(main).visible, "PO4 typing issues no command and keeps the note open")
-	main.selected_ids.clear()
+	main.orders.selected_ids.clear()
 	_key(runner, KEY_ESCAPE)
 	runner.check(not _dialog(main).visible and not main.get_node("HUD/PauseMenu").visible, "PO4 Esc closes the note and leaves the pause menu closed")
 	main.free()
@@ -275,7 +275,7 @@ func test_overlay_layout(runner) -> bool:
 		runner.root.add_child(port)
 		var main = await _scene(runner, Skirmish, port)
 		_camera(main)
-		main.selected_ids.assign([_own_unit(main)])
+		main.orders.selected_ids.assign([_own_unit(main)])
 		main._refresh()
 		main.get_node("HUD/Playtest").open_marker()
 		await runner.process_frame
@@ -324,10 +324,10 @@ func _run(main, steps: int) -> void:
 	for i in steps: main._physics_process(0.0)
 
 func _move_own_unit(main) -> void:
-	main.selected_ids.assign([_own_unit(main)])
+	main.orders.selected_ids.assign([_own_unit(main)])
 	for unit: Dictionary in main.driver.sim.snapshot().entities:
-		if unit.id == main.selected_ids[0]:
-			main._move(Vector2(unit.position[0] + 4.0, unit.position[1]))
+		if unit.id == main.orders.selected_ids[0]:
+			main.orders._move(Vector2(unit.position[0] + 4.0, unit.position[1]))
 			return
 
 func _mark(overlay, kind: String, text: String) -> void:
@@ -464,7 +464,7 @@ func test_two_match_session_file(runner) -> bool:
 	digests.append(StateHash.digest(main.driver.sim.snapshot()))
 	commands.append(main.playtest_match().commands)
 	var scenes := _scenes(main)
-	main.selected_ids.clear()
+	main.orders.selected_ids.clear()
 	_key(runner, KEY_ESCAPE)
 	_click(main, "Back to main menu")
 	runner.check(_form_shown(main) and scenes.is_empty(), "PO12 leaving match 2 shows its review")

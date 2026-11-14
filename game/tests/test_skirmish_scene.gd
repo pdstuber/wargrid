@@ -15,7 +15,7 @@ const IcRows = preload("res://tests/input_script_rows.gd")
 const OfflineDriver = preload("res://scripts/match/offline_driver.gd")
 
 func cases() -> Array[Callable]:
-	return [test_skirmish_ready_and_tick, test_combat_context_input, test_match_hud_and_restart, test_combat_view, test_hud_layout_and_focus, test_hud_build_line, test_enemy_selection_read_only, test_rally_input_and_marker, test_supply_pile_labels, test_attack_move_hint_and_rejection, test_selection_prunes_dead, test_order_marks_own_only, test_health_bar_clear_of_boxes, test_result_clear_of_status, test_silent_keys_explain, test_hud_strings_use_display_names, test_hud_font_size_is_shared, test_defence_attack_scene, test_enter_unload_scene, test_right_click_pile_gathers, test_right_click_pile_in_launcher_flow, test_frc_laborer_right_click_pile, test_one_snapshot_per_refresh, test_refresh_waits_for_next_frame, test_auto_pick_samples_present_time, test_hud_summaries_are_pinned, test_input_script_offline, test_offline_driver_stamps_like_the_scene, test_offline_driver_bot_memory_on_simulation]
+	return [test_skirmish_ready_and_tick, test_combat_context_input, test_match_hud_and_restart, test_combat_view, test_hud_layout_and_focus, test_hud_build_line, test_enemy_selection_read_only, test_rally_input_and_marker, test_supply_pile_labels, test_attack_move_hint_and_rejection, test_selection_prunes_dead, test_order_marks_own_only, test_health_bar_clear_of_boxes, test_result_clear_of_status, test_silent_keys_explain, test_hud_strings_use_display_names, test_hud_font_size_is_shared, test_defence_attack_scene, test_enter_unload_scene, test_right_click_pile_gathers, test_right_click_pile_in_launcher_flow, test_frc_laborer_right_click_pile, test_one_snapshot_per_refresh, test_refresh_waits_for_next_frame, test_auto_pick_samples_present_time, test_hud_summaries_are_pinned, test_input_script_offline, test_offline_driver_stamps_like_the_scene, test_offline_driver_bot_memory_on_simulation, test_orders_turn_input_into_payloads]
 
 func _setup(runner):
 	var main = Scene.instantiate()
@@ -33,7 +33,7 @@ func _arena(main) -> Dictionary:
 	var ids := {"infantry": sim.spawn(1, Vector2(10.5, 10.5), "usa_rifle_infantry"), "tank": sim.spawn(1, Vector2(11.5, 10.5), "usa_tank"), "enemy": sim.spawn(2, Vector2(15.5, 10.5), "usa_tank")}
 	sim.start_match([1, 2] as Array[int])
 	main.driver.sim = sim
-	main.selected_ids.assign([ids.infantry, ids.tank])
+	main.orders.selected_ids.assign([ids.infantry, ids.tank])
 	main._refresh()
 	return ids
 
@@ -73,42 +73,42 @@ func test_combat_context_input(runner) -> bool:
 			runner.check(_pending(main) == before + 1 and _pending(main, "move") == 0, "K3 enemy right-click submits one attack at zoom " + str(zoom))
 	var group: Array = main.driver.sim.snapshot().pending_commands.filter(func(command: Dictionary) -> bool: return command.type == "attack")
 	runner.check(group[0].entity_ids == [ids.infantry, ids.tank] and group[0].target_id == ids.enemy, "K3 mixed infantry and tank is one group command")
-	main.selected_ids.assign([1, ids.infantry])
+	main.orders.selected_ids.assign([1, ids.infantry])
 	var pending: int = _pending(main)
 	helper.pointer(main, enemy_point, MOUSE_BUTTON_RIGHT, true)
 	runner.check(_pending(main) == pending + 1 and _pending(main, "move") == 0 and main._error.is_empty(), "K3 an unarmed member no longer rejects the click")
-	main.selected_ids.assign([ids.infantry, ids.tank])
+	main.orders.selected_ids.assign([ids.infantry, ids.tank])
 	pending = _pending(main)
 	helper.key(main, KEY_A)
 	helper.pointer(main, Iso.world_to_plane(Vector2(20.5, 12.5)), MOUSE_BUTTON_LEFT, true)
 	helper.pointer(main, Iso.world_to_plane(Vector2(20.5, 12.5)), MOUSE_BUTTON_LEFT, false)
-	runner.check(_pending(main) == pending + 1 and _pending(main, "attack_move") == 1 and not main._attack_move_mode, "K3 A then ground click submits one attack_move")
+	runner.check(_pending(main) == pending + 1 and _pending(main, "attack_move") == 1 and not main.orders._attack_move_mode, "K3 A then ground click submits one attack_move")
 	helper.key(main, KEY_S)
 	runner.check(_pending(main, "stop") == 1, "K3 S submits one stop")
 	pending = _pending(main)
 	helper.key(main, KEY_A)
-	runner.check(main._attack_move_mode, "K3 A enters attack-move mode")
+	runner.check(main.orders._attack_move_mode, "K3 A enters attack-move mode")
 	helper.key(main, KEY_ESCAPE)
-	runner.check(not main._attack_move_mode and main.selected_ids == [ids.infantry, ids.tank], "K3 Escape cancels attack-move and keeps the selection")
+	runner.check(not main.orders._attack_move_mode and main.orders.selected_ids == [ids.infantry, ids.tank], "K3 Escape cancels attack-move and keeps the selection")
 	helper.pointer(main, Iso.world_to_plane(Vector2(20.5, 12.5)), MOUSE_BUTTON_LEFT, true)
 	helper.pointer(main, Iso.world_to_plane(Vector2(20.5, 12.5)), MOUSE_BUTTON_LEFT, false)
 	runner.check(_pending(main) == pending, "K3 no attack-move after Escape")
-	main.selected_ids.assign([ids.infantry, ids.tank])
+	main.orders.selected_ids.assign([ids.infantry, ids.tank])
 	helper.key(main, KEY_A)
-	runner.check(main._attack_move_mode, "K3 A re-enters attack-move mode")
+	runner.check(main.orders._attack_move_mode, "K3 A re-enters attack-move mode")
 	helper.pointer(main, enemy_point, MOUSE_BUTTON_RIGHT, true)
-	runner.check(not main._attack_move_mode and _pending(main) == pending, "K3 right-click cancels attack-move without an attack")
-	main.selected_ids.assign([ids.infantry, ids.tank])
+	runner.check(not main.orders._attack_move_mode and _pending(main) == pending, "K3 right-click cancels attack-move without an attack")
+	main.orders.selected_ids.assign([ids.infantry, ids.tank])
 	helper.key(main, KEY_A)
-	main.selected_ids.assign([1])
+	main.orders.selected_ids.assign([1])
 	helper.key(main, KEY_1)
-	runner.check(not main._attack_move_mode and main._placement_kind == "usa_power_plant", "K3 placement clears a stale attack-move mode")
+	runner.check(not main.orders._attack_move_mode and main.orders._placement_kind == "usa_power_plant", "K3 placement clears a stale attack-move mode")
 	helper.key(main, KEY_ESCAPE)
-	main.selected_ids.assign([1])
+	main.orders.selected_ids.assign([1])
 	main._refresh()
 	helper.key(main, KEY_1)
 	helper.key(main, KEY_A)
-	runner.check(main._placement_kind == "usa_power_plant" and not main._attack_move_mode, "K3 placement mode consumes controls first")
+	runner.check(main.orders._placement_kind == "usa_power_plant" and not main.orders._attack_move_mode, "K3 placement mode consumes controls first")
 	main.free()
 	return true
 
@@ -116,7 +116,7 @@ func test_match_hud_and_restart(runner) -> bool:
 	var main = await _setup(runner)
 	runner.check(View.owner_color(1) != View.owner_color(2), "K4 owner colors differ")
 	var ids: Dictionary = _arena(main)
-	main.selected_ids.assign([ids.tank])
+	main.orders.selected_ids.assign([ids.tank])
 	main._refresh()
 	var text: String = main.get_node("HUD/Status").text
 	runner.check(text.contains("Credits") and text.contains("Battle Tank #" + str(ids.tank)) and text.contains("HP 480/480") and text.contains("guard"), "K4 credits, kind, HP and order in the HUD")
@@ -134,19 +134,19 @@ func test_match_hud_and_restart(runner) -> bool:
 	main._submit({"type": "move", "entity_ids": [ids.tank], "target": [12.5, 12.5]})
 	main._unhandled_input(InputEventKey.new())
 	runner.check(main.driver.sim.snapshot() == before and main._error == "Match ended", "K4 terminal match accepts no orders")
-	main._placement_kind = "usa_power_plant"
-	main._attack_move_mode = true
+	main.orders._placement_kind = "usa_power_plant"
+	main.orders._attack_move_mode = true
 	main.driver._sequence = 7
 	main._error = "old"
 	main._last_result_tick = 99
 	main._last_result_sequence = 99
-	main._selecting = true
-	main._dragged = true
+	main.orders._selecting = true
+	main.orders._dragged = true
 	main.get_node("Camera2D").position = Vector2(500, 500)
 	main.get_node("Camera2D").zoom = Vector2.ONE * 2.0
 	main.get_node("HUD/Restart").pressed.emit()
-	runner.check(main.driver.sim.snapshot() == Skirmish.create().snapshot() and main.selected_ids.is_empty() and main._placement_kind.is_empty() and not main._attack_move_mode and main.driver._sequence == 0 and main._error.is_empty() and main.get_node("Camera2D").zoom == Vector2.ONE and not main.get_node("HUD/Result").visible and main._last_result_tick == -1 and main._last_result_sequence == -1 and not main._selecting and not main._dragged and main.get_node("Camera2D").position != Vector2(500, 500) and main.get_node("WorldView")._preview_cells.is_empty(), "K4 restart leaves nothing from the old match")
-	main.selected_ids.assign([1])
+	runner.check(main.driver.sim.snapshot() == Skirmish.create().snapshot() and main.orders.selected_ids.is_empty() and main.orders._placement_kind.is_empty() and not main.orders._attack_move_mode and main.driver._sequence == 0 and main._error.is_empty() and main.get_node("Camera2D").zoom == Vector2.ONE and not main.get_node("HUD/Result").visible and main._last_result_tick == -1 and main._last_result_sequence == -1 and not main.orders._selecting and not main.orders._dragged and main.get_node("Camera2D").position != Vector2(500, 500) and main.get_node("WorldView")._preview_cells.is_empty(), "K4 restart leaves nothing from the old match")
+	main.orders.selected_ids.assign([1])
 	main._submit({"type": "move", "entity_ids": [1], "target": [6.5, 14.5]})
 	runner.check(main._error.is_empty() and _pending(main, "move") == 1, "K4 first order after restart is valid")
 	for loser in [[1, "Defeat"], [-1, "Draw"]]:
@@ -193,7 +193,7 @@ func test_combat_view(runner) -> bool:
 func test_hud_layout_and_focus(runner) -> bool:
 	var main = await _setup(runner)
 	var ids: Dictionary = _arena(main)
-	main.selected_ids.assign([ids.tank])
+	main.orders.selected_ids.assign([ids.tank])
 	main._refresh()
 	var status: Label = main.get_node("HUD/Status")
 	var economy: Control = main.get_node("HUD/Economy")
@@ -203,14 +203,14 @@ func test_hud_layout_and_focus(runner) -> bool:
 	main._unhandled_input(_right_click(main, Iso.world_to_plane(Vector2(15.5, 10.5)) + Vector2(0, -8)))
 	main._physics_process(0.0)
 	runner.check(view.focus_targets() == {ids.enemy: true}, "K5 explicit attack target is marked strongly, got " + str(view.focus_targets()))
-	main.selected_ids.clear()
+	main.orders.selected_ids.clear()
 	main._refresh()
 	runner.check(view.focus_targets().is_empty(), "K5 focus shows only for the selection")
-	main.inspected_id = ids.enemy
+	main.orders.inspected_id = ids.enemy
 	main._refresh()
 	runner.check(economy.position.y >= status.position.y + status.get_minimum_size().y, "K5 buttons below an inspected enemy line")
 	var pile: Dictionary = _pile_world(main)
-	main.selected_ids.assign([pile.waiting])
+	main.orders.selected_ids.assign([pile.waiting])
 	main._refresh()
 	runner.check(economy.position.y >= status.position.y + status.get_minimum_size().y, "K5 buttons below a queued collector line")
 	main.free()
@@ -225,7 +225,7 @@ func _pile_world(main) -> Dictionary:
 	Fixture.steps(sim, 19)
 	sim.start_match([1, 2] as Array[int])
 	main.driver.sim = sim
-	main.selected_ids.clear()
+	main.orders.selected_ids.clear()
 	main._refresh()
 	return {"source": source, "docked": first, "waiting": second}
 
@@ -249,7 +249,7 @@ func test_enemy_selection_read_only(runner) -> bool:
 	helper.pointer(main, enemy_point, MOUSE_BUTTON_LEFT, true)
 	helper.pointer(main, enemy_point, MOUSE_BUTTON_LEFT, false)
 	var text: String = main.get_node("HUD/Status").text
-	runner.check(main.inspected_id == ids.enemy and main.selected_ids.is_empty(), "E1 left-click selects the enemy read-only and replaces own selection")
+	runner.check(main.orders.inspected_id == ids.enemy and main.orders.selected_ids.is_empty(), "E1 left-click selects the enemy read-only and replaces own selection")
 	runner.check(text.contains("Enemy (P2) Battle Tank #%d HP 480/480" % ids.enemy), "E1 enemy line, got " + text)
 	runner.check(text.contains("HP 480/480 | guard"), "E1 idle enemy shows its mode, got " + text)
 	var before: Dictionary = main.driver.sim.snapshot()
@@ -258,16 +258,16 @@ func test_enemy_selection_read_only(runner) -> bool:
 	helper.key(main, KEY_S)
 	helper.pointer(main, enemy_point, MOUSE_BUTTON_RIGHT, true)
 	helper.pointer(main, Iso.world_to_plane(Vector2(20.5, 12.5)), MOUSE_BUTTON_RIGHT, true)
-	runner.check(main.driver.sim.snapshot() == before and not main._attack_move_mode and main.inspected_id == ids.enemy, "E1 E, A, S and right-clicks send nothing")
+	runner.check(main.driver.sim.snapshot() == before and not main.orders._attack_move_mode and main.orders.inspected_id == ids.enemy, "E1 E, A, S and right-clicks send nothing")
 	var own_point: Vector2 = Iso.world_to_plane(Vector2(10.5, 10.5)) + Vector2(0, -8)
 	helper.pointer(main, own_point, MOUSE_BUTTON_LEFT, true)
 	helper.pointer(main, own_point, MOUSE_BUTTON_LEFT, false)
-	runner.check(main.selected_ids == [ids.infantry] and main.inspected_id == -1, "E1 own click selects own unit and clears inspection")
+	runner.check(main.orders.selected_ids == [ids.infantry] and main.orders.inspected_id == -1, "E1 own click selects own unit and clears inspection")
 	helper.pointer(main, enemy_point, MOUSE_BUTTON_LEFT, true)
 	helper.pointer(main, enemy_point, MOUSE_BUTTON_LEFT, false)
 	main.driver.sim.remove_object(ids.enemy)
 	main._refresh()
-	runner.check(main.inspected_id == -1, "E1 dead enemy clears inspection")
+	runner.check(main.orders.inspected_id == -1, "E1 dead enemy clears inspection")
 	main.free()
 	return true
 
@@ -277,14 +277,14 @@ func test_rally_input_and_marker(runner) -> bool:
 	var sim = Skirmish.create()
 	var barracks: int = Fixture.build(runner, sim, "usa_barracks", Vector2i(12, 12))
 	main.driver.sim = sim
-	main.selected_ids.clear()
+	main.orders.selected_ids.clear()
 	main._refresh()
 	var view = main.get_node("WorldView")
 	runner.check(view.rally_marker().is_empty(), "R1 no marker without a selection")
 	var click: Vector2 = Iso.world_to_plane(Vector2(13.5, 13.5))
 	helper.pointer(main, click, MOUSE_BUTTON_LEFT, true)
 	helper.pointer(main, click, MOUSE_BUTTON_LEFT, false)
-	runner.check(main.selected_building_id == barracks and view.rally_marker() == [16.5, 13.5], "R1 marker shows the default rally while selected")
+	runner.check(main.orders.selected_building_id == barracks and view.rally_marker() == [16.5, 13.5], "R1 marker shows the default rally while selected")
 	helper.pointer(main, Iso.world_to_plane(Vector2(20.5, 14.5)), MOUSE_BUTTON_RIGHT, true)
 	var orders: Array = sim.snapshot().pending_commands.filter(func(command: Dictionary) -> bool: return command.type == "set_rally")
 	runner.check(orders.size() == 1 and orders[0].building_id == barracks and orders[0].target == [20.5, 14.5], "R1 right-click on ground issues set_rally for that cell")
@@ -293,8 +293,8 @@ func test_rally_input_and_marker(runner) -> bool:
 	helper.key(main, KEY_ESCAPE)
 	runner.check(view.rally_marker().is_empty(), "R1 marker absent when deselected")
 	var reactor: int = Fixture.build(runner, sim, "usa_power_plant", Vector2i(20, 20))
-	main.selected_building_id = reactor
-	main.selected_ids.assign([reactor])
+	main.orders.selected_building_id = reactor
+	main.orders.selected_ids.assign([reactor])
 	main._refresh()
 	runner.check(view.rally_marker().is_empty(), "R1 no marker for a reactor, which cannot take a rally")
 	main.free()
@@ -309,10 +309,10 @@ func test_supply_pile_labels(runner) -> bool:
 	runner.check(view.pile_lines(source) == PackedStringArray(["Boxes %d" % source.boxes, "docked 1 · waiting 1"]), "S1 pile label, got " + str(view.pile_lines(source)))
 	var points: PackedVector2Array = view.pile_text_points(source)
 	runner.check(points.size() == 2 and points[1].y - points[0].y >= ThemeDB.fallback_font.get_height(UiStyle.FONT_SIZE), "S1 pile lines are a full text height apart, got " + str(points))
-	main.selected_ids.assign([pile.waiting])
+	main.orders.selected_ids.assign([pile.waiting])
 	main._refresh()
 	runner.check(main.get_node("HUD/Status").text.contains("waiting_source (1st in line)"), "S1 waiting collector shows its place in line")
-	main.selected_ids.assign([pile.docked])
+	main.orders.selected_ids.assign([pile.docked])
 	main._refresh()
 	var text: String = main.get_node("HUD/Status").text
 	runner.check(text.contains("| loading") and not text.contains("in line"), "S1 docked collector shows its phase only")
@@ -335,12 +335,12 @@ func test_attack_move_hint_and_rejection(runner) -> bool:
 	helper.pointer(main, Iso.world_to_plane(Vector2(20.5, 12.5)), MOUSE_BUTTON_LEFT, true)
 	helper.pointer(main, Iso.world_to_plane(Vector2(20.5, 12.5)), MOUSE_BUTTON_LEFT, false)
 	runner.check(view.hints().size() == 1, "H3 attack-move click leaves one hint")
-	main.selected_ids.assign([ids.infantry])
+	main.orders.selected_ids.assign([ids.infantry])
 	var before: int = view.hints().size()
 	main.driver.sim.remove_object(ids.infantry)
 	helper.pointer(main, Iso.world_to_plane(Vector2(8.5, 8.5)), MOUSE_BUTTON_RIGHT, true)
 	runner.check(view.hints().size() == before, "H3 a second command replaces the marker, still one")
-	main.selected_ids.clear()
+	main.orders.selected_ids.clear()
 	view.add_hint(Vector2(1, 1), 0)
 	helper.pointer(main, Iso.world_to_plane(Vector2(9.5, 9.5)), MOUSE_BUTTON_RIGHT, true)
 	runner.check(view.hints().size() == 1 and view.hints()[0].point == Vector2(1, 1), "H3 a right click with no movable selection adds no marker")
@@ -352,7 +352,7 @@ func test_selection_prunes_dead(runner) -> bool:
 	var ids: Dictionary = _arena(main)
 	main.driver.sim.remove_object(ids.tank)
 	main._refresh()
-	runner.check(main.selected_ids == [ids.infantry], "H4 selection keeps only live ids, got " + str(main.selected_ids))
+	runner.check(main.orders.selected_ids == [ids.infantry], "H4 selection keeps only live ids, got " + str(main.orders.selected_ids))
 	main.free()
 	return true
 
@@ -381,8 +381,8 @@ func test_health_bar_clear_of_boxes(runner) -> bool:
 func test_result_clear_of_status(runner) -> bool:
 	var main = await _setup(runner)
 	var ids: Dictionary = _arena(main)
-	main.selected_ids.assign([ids.tank])
-	main.inspected_id = ids.enemy
+	main.orders.selected_ids.assign([ids.tank])
+	main.orders.inspected_id = ids.enemy
 	main.driver.sim.remove_object(3)
 	main.driver.sim.remove_object(4)
 	main._physics_process(0.0)
@@ -399,12 +399,12 @@ func test_silent_keys_explain(runner) -> bool:
 	var helper = BaseScene.new()
 	var main = await _setup(runner)
 	var ids: Dictionary = _arena(main)
-	main.selected_ids.assign([ids.infantry])
+	main.orders.selected_ids.assign([ids.infantry])
 	var before: Dictionary = main.driver.sim.snapshot()
 	helper.key(main, KEY_1)
-	runner.check(main._placement_kind.is_empty() and main.driver.sim.snapshot() == before and main._error == "Choose one builder", "P4 build key without a builder says why, got '%s'" % main._error)
+	runner.check(main.orders._placement_kind.is_empty() and main.driver.sim.snapshot() == before and main._error == "Choose one builder", "P4 build key without a builder says why, got '%s'" % main._error)
 	main._error = ""
-	main.selected_ids.clear()
+	main.orders.selected_ids.clear()
 	helper.key(main, KEY_E)
 	runner.check(main.driver.sim.snapshot() == before and main._error == "Select a production building", "P4 E without a building says why, got '%s'" % main._error)
 	main.free()
@@ -421,26 +421,26 @@ func test_hud_strings_use_display_names(runner) -> bool:
 	var sim = Skirmish.create()
 	var barracks: int = Fixture.build(runner, sim, "usa_barracks", Vector2i(12, 12))
 	main.driver.sim = sim
-	main.selected_building_id = barracks
-	main._produce_selected()
-	main._produce_selected()
+	main.orders.selected_building_id = barracks
+	main.orders._produce_selected()
+	main.orders._produce_selected()
 	main._physics_process(0.0)
 	await runner.process_frame
 	runner.check(main.get_node("HUD/Economy/Produce").text == "Produce Rifleman (E)", "N1 produce button names the unit, got " + main.get_node("HUD/Economy/Produce").text)
 	runner.check(main.get_node("HUD/Economy/Queue").get_child_count() == 2, "N1 fixture: two queue entries")
 	var shown: Array[String] = _hud_texts(main)
 	var builder: int = sim.snapshot().entities.filter(func(unit: Dictionary) -> bool: return unit.owner == 1 and unit.kind == "usa_builder")[0].id
-	main.selected_building_id = -1
-	main.selected_ids.assign([builder])
-	main._enter_placement("usa_power_plant")
+	main.orders.selected_building_id = -1
+	main.orders.selected_ids.assign([builder])
+	main.orders._enter_placement("usa_power_plant")
 	runner.check(main.get_node("HUD/Status").text.contains("Place: Power Plant"), "N1 placement line names the building")
 	shown.append_array(_hud_texts(main))
-	main._clear_placement()
+	main.orders._clear_placement()
 	var enemy: Dictionary = sim.snapshot().buildings.filter(func(building: Dictionary) -> bool: return building.owner == 2)[0]
-	main.inspected_id = enemy.id
+	main.orders.inspected_id = enemy.id
 	main._refresh()
 	shown.append_array(_hud_texts(main))
-	main.selected_building_id = sim.snapshot().buildings.filter(func(building: Dictionary) -> bool: return building.owner == 1 and building.kind == "usa_command_center")[0].id
+	main.orders.selected_building_id = sim.snapshot().buildings.filter(func(building: Dictionary) -> bool: return building.owner == 1 and building.kind == "usa_command_center")[0].id
 	main._refresh()
 	shown.append_array(_hud_texts(main))
 	await runner.process_frame
@@ -451,8 +451,8 @@ func test_hud_strings_use_display_names(runner) -> bool:
 func test_hud_font_size_is_shared(runner) -> bool:
 	var main = await _setup(runner)
 	var barracks: int = Fixture.build(runner, main.driver.sim, "usa_barracks", Vector2i(12, 12))
-	main.selected_building_id = barracks
-	main._produce_selected()
+	main.orders.selected_building_id = barracks
+	main.orders._produce_selected()
 	main._physics_process(0.0)
 	await runner.process_frame
 	var controls: Array = [main.get_node("HUD/Status"), main.get_node("HUD/Economy/Produce"), main.get_node("HUD/Economy/CancelBuild")]
@@ -473,8 +473,8 @@ func test_defence_attack_scene(runner) -> bool:
 	var distant: int = sim.spawn(2, Vector2(30.5, 30.5), "usa_tank")
 	sim.start_match([1, 2] as Array[int])
 	main.driver.sim = sim
-	main.selected_ids.clear()
-	main.selected_building_id = defence
+	main.orders.selected_ids.clear()
+	main.orders.selected_building_id = defence
 	main._refresh()
 	helper.pointer(main, Iso.world_to_plane(Vector2(15.5, 10.5)) + Vector2(0, -8), MOUSE_BUTTON_RIGHT, true)
 	var orders: Array = sim.snapshot().pending_commands.filter(func(command: Dictionary) -> bool: return command.type == "defence_attack")
@@ -493,7 +493,7 @@ func test_enter_unload_scene(runner) -> bool:
 	var rifle: int = sim.spawn(1, Vector2(14.5, 10.5), "frc_rifle_infantry")
 	sim.start_match([1, 2] as Array[int])
 	main.driver.sim = sim
-	main.selected_ids.assign([rifle])
+	main.orders.selected_ids.assign([rifle])
 	main._refresh()
 	var orders = func(type: String) -> Array: return sim.snapshot().pending_commands.filter(func(command: Dictionary) -> bool: return command.type == type)
 	helper.pointer(main, Iso.world_to_plane(Vector2(10.5, 10.5)) + Vector2(0, -8), MOUSE_BUTTON_RIGHT, true)
@@ -502,14 +502,14 @@ func test_enter_unload_scene(runner) -> bool:
 	helper.pointer(main, Iso.world_to_plane(Vector2(20.5, 10.5)) + Vector2(0, -8), MOUSE_BUTTON_RIGHT, true)
 	var attacks: Array = orders.call("attack")
 	runner.check(attacks.size() == 1 and attacks[0].target_id == enemy_hub and orders.call("enter").size() == 1, "TU1 right-click on an enemy hub still attacks")
-	main.selected_ids.clear()
-	main.selected_building_id = hub
+	main.orders.selected_ids.clear()
+	main.orders.selected_building_id = hub
 	main._refresh()
 	helper.key(main, KEY_U)
 	var unloads: Array = orders.call("unload")
 	runner.check(unloads.size() == 1 and unloads[0].target_id == hub, "TU1 U with the hub selected submits unload")
-	main.selected_building_id = -1
-	main.selected_ids.assign([rifle])
+	main.orders.selected_building_id = -1
+	main.orders.selected_ids.assign([rifle])
 	main._refresh()
 	helper.key(main, KEY_U)
 	runner.check(orders.call("unload").size() == 1 and main._error == "Select a container", "TU1 U without a container says why, got '%s'" % main._error)
@@ -532,7 +532,7 @@ func test_right_click_pile_gathers(runner) -> bool:
 		var unit: int = sim.spawn(1, Vector2(15.5, 9.5), kind)
 		sim.start_match([1, 2] as Array[int])
 		main.driver.sim = sim
-		main.selected_ids.assign([unit])
+		main.orders.selected_ids.assign([unit])
 		main._refresh()
 		helper.pointer(main, Iso.world_to_plane(Vector2(21.5, 9.5)), MOUSE_BUTTON_RIGHT, true)
 		var orders: Array = sim.snapshot().pending_commands
@@ -549,7 +549,7 @@ func test_right_click_pile_in_launcher_flow(runner) -> bool:
 		var pile: Dictionary = sim.snapshot().sources[0]
 		var collector: int = sim.spawn(1, Vector2(pile.origin[0] + 6.5, pile.origin[1] + 8.5), faction + ("_builder" if faction == "frc" else "_collector"))
 		var centre := Vector2(pile.origin[0] + 2.0, pile.origin[1] + 2.5)
-		main.selected_ids.assign([collector])
+		main.orders.selected_ids.assign([collector])
 		main._refresh()
 		helper.pointer(main, Iso.world_to_plane(centre), MOUSE_BUTTON_RIGHT, true)
 		runner.check(_pending(main, "gather") == 1, "K11 %s collector right-click on the pile gathers, pending %s" % [faction, str(sim.snapshot().pending_commands)])
@@ -575,20 +575,20 @@ func test_frc_laborer_right_click_pile(runner) -> bool:
 	var site: Dictionary = Fixture.send(sim, {"type": "build", "builder_id": laborers[1], "building_kind": "frc_barracks", "origin": [pile.origin[0] + 8, pile.origin[1] + 8]})
 	runner.check(site.ok, "K13 foundation for the laborer: " + site.error)
 	Fixture.steps(sim, 40)
-	main.selected_ids.assign(laborers)
+	main.orders.selected_ids.assign(laborers)
 	main._refresh()
 	helper.pointer(main, click, MOUSE_BUTTON_RIGHT, true)
 	var orders: Array = sim.snapshot().pending_commands.filter(func(c: Dictionary) -> bool: return c.type == "gather")
 	runner.check(orders.size() == 1 and orders[0].entity_ids == laborers and orders[0].source_id == pile.id, "K13 several laborers, one of them building, right-click the pile gathers, got %s err %s" % [str(sim.snapshot().pending_commands), main._error])
 	Fixture.steps(sim, 3)
 	runner.check(sim.snapshot().entities.filter(func(u: Dictionary) -> bool: return u.id in laborers and u.collection.enabled).size() == laborers.size(), "K13 every laborer, including the builder, starts collecting")
-	main.selected_ids.assign([laborers[0]])
+	main.orders.selected_ids.assign([laborers[0]])
 	main._refresh()
 	helper.key(main, KEY_1)
-	var ghost: String = main._placement_kind
+	var ghost: String = main.orders._placement_kind
 	helper.pointer(main, click, MOUSE_BUTTON_RIGHT, true)
 	var gathers: int = _pending(main, "gather")
-	runner.check(not ghost.is_empty() and main._placement_kind.is_empty(), "K13 right-click with a build ghost cancels the ghost, ghost was " + ghost)
+	runner.check(not ghost.is_empty() and main.orders._placement_kind.is_empty(), "K13 right-click with a build ghost cancels the ghost, ghost was " + ghost)
 	helper.pointer(main, click, MOUSE_BUTTON_RIGHT, true)
 	runner.check(_pending(main, "gather") == gathers + 1, "K13 the next right-click on the pile gathers")
 	main.free()
@@ -598,7 +598,7 @@ func test_one_snapshot_per_refresh(runner) -> bool:
 	var main = await _setup(runner)
 	var sim = Skirmish.create()
 	main.driver.sim = sim
-	main.selected_building_id = Fixture.build(runner, sim, "usa_barracks", Vector2i(12, 12))
+	main.orders.selected_building_id = Fixture.build(runner, sim, "usa_barracks", Vector2i(12, 12))
 	Profiler.reset()
 	Profiler.enabled = true
 	main._refresh()
@@ -666,11 +666,11 @@ func test_hud_summaries_are_pinned(runner) -> bool:
 	var view: Dictionary = sim.view_state()
 	var texts: Array[String] = []
 	for id: int in [firing[0], waiting[-1], working[0], plain[0]]:
-		main.selected_ids.assign([id])
+		main.orders.selected_ids.assign([id])
 		texts.append(main._selected_summary(view))
-	main.selected_ids.clear()
+	main.orders.selected_ids.clear()
 	for id: int in [enemy_unit[0], enemy_building[0]]:
-		main.inspected_id = id
+		main.orders.inspected_id = id
 		texts.append(main._enemy_summary(view))
 	runner.check(texts == HUD_TEXTS, "HUD1 pinned summary texts, got " + str(texts))
 	main.free()
@@ -681,7 +681,7 @@ func _ic_row(main, step: int, seen: Array, status: bool = false) -> String:
 	var added: PackedStringArray = []
 	for command: Dictionary in pending.slice(mini(seen[0], pending.size())): added.append(JSON.stringify(command))
 	seen[0] = pending.size()
-	var row: String = "%d|sel=%s|bld=%d|insp=%d|place=%s|pend=%s|am=%s|esc=%s|menu=%s|perf=%s|%s" % [step, main.selected_ids, main.selected_building_id, main.inspected_id, main._placement_kind, main._pending_placement, main._attack_move_mode, main._escape_pending(), main.menu_open(), main._perf.visible, ";".join(added)]
+	var row: String = "%d|sel=%s|bld=%d|insp=%d|place=%s|pend=%s|am=%s|esc=%s|menu=%s|perf=%s|%s" % [step, main.orders.selected_ids, main.orders.selected_building_id, main.orders.inspected_id, main.orders._placement_kind, main.orders._pending_placement, main.orders._attack_move_mode, main._escape_pending(), main.menu_open(), main._perf.visible, ";".join(added)]
 	return row + "|" + main.get_node("HUD/Status").text if status else row
 
 func _ic_esc(main) -> void:
@@ -739,7 +739,7 @@ func test_input_script_offline(runner) -> bool:
 	var sim_orders = func(type: String) -> int: return _pending(main, type)
 	helper.pointer(main, tanks[0], MOUSE_BUTTON_LEFT, true)
 	helper.pointer(main, tanks[1], MOUSE_BUTTON_LEFT, false)
-	runner.check(main.selected_ids == [ids.tank_a, ids.tank_b], "IC1 step 1 took effect")
+	runner.check(main.orders.selected_ids == [ids.tank_a, ids.tank_b], "IC1 step 1 took effect")
 	rows.append(_ic_row(main, 1, seen))
 	helper.pointer(main, Iso.world_to_plane(Vector2(20.5, 10.5)), MOUSE_BUTTON_RIGHT, true)
 	runner.check(sim_orders.call("move") == 1, "IC1 step 2 took effect")
@@ -758,10 +758,10 @@ func test_input_script_offline(runner) -> bool:
 	helper.pointer(main, tanks[0], MOUSE_BUTTON_LEFT, true)
 	helper.key(main, KEY_S)
 	helper.pointer(main, tanks[1], MOUSE_BUTTON_LEFT, false)
-	runner.check(sim_orders.call("stop") == 1 and main.selected_ids == [ids.tank_a, ids.tank_b], "IC1 step 6 took effect")
+	runner.check(sim_orders.call("stop") == 1 and main.orders.selected_ids == [ids.tank_a, ids.tank_b], "IC1 step 6 took effect")
 	rows.append(_ic_row(main, 6, seen))
 	_ic_esc(main)
-	runner.check(main.selected_ids.is_empty(), "IC1 step 7 took effect")
+	runner.check(main.orders.selected_ids.is_empty(), "IC1 step 7 took effect")
 	rows.append(_ic_row(main, 7, seen))
 	_ic_esc(main)
 	runner.check(main.menu_open(), "IC1 step 8 opened the menu")
@@ -770,7 +770,7 @@ func test_input_script_offline(runner) -> bool:
 	rows.append(_ic_row(main, 8, seen))
 	_ic_click(helper, main, at.call(6.5, 12.5))
 	helper.key(main, KEY_1)
-	runner.check(not main._placement_kind.is_empty(), "IC1 step 9 took effect")
+	runner.check(not main.orders._placement_kind.is_empty(), "IC1 step 9 took effect")
 	rows.append(_ic_row(main, 9, seen, true))
 	helper.key(main, KEY_F3)
 	rows.append(_ic_row(main, 10, seen))
@@ -800,14 +800,14 @@ func test_input_script_offline(runner) -> bool:
 	helper.pointer(main, builder_box[0], MOUSE_BUTTON_LEFT, true)
 	helper.key(main, KEY_1)
 	helper.pointer(main, builder_box[1], MOUSE_BUTTON_LEFT, false)
-	runner.check(not main._placement_kind.is_empty() and main._pending_placement.is_empty(), "IC1 step 17 took effect")
+	runner.check(not main.orders._placement_kind.is_empty() and main.orders._pending_placement.is_empty(), "IC1 step 17 took effect")
 	rows.append(_ic_row(main, 17, seen))
 	_ic_esc(main)
 	_ic_esc(main)
-	runner.check(main._placement_kind.is_empty() and main.selected_ids.is_empty(), "IC1 step 18 took effect")
+	runner.check(main.orders._placement_kind.is_empty() and main.orders.selected_ids.is_empty(), "IC1 step 18 took effect")
 	rows.append(_ic_row(main, 18, seen))
 	_ic_click(helper, main, at.call(15.5, 6.5))
-	runner.check(main.inspected_id == ids.enemy, "IC1 step 19 took effect")
+	runner.check(main.orders.inspected_id == ids.enemy, "IC1 step 19 took effect")
 	rows.append(_ic_row(main, 19, seen, true))
 	_ic_click(helper, main, at.call(6.5, 12.5))
 	helper.pointer(main, at.call(35.0, 9.0), MOUSE_BUTTON_RIGHT, true)
@@ -840,4 +840,28 @@ func test_offline_driver_bot_memory_on_simulation(runner) -> bool:
 	while driver.sim.tick() < Skirmish.ATTACK_TICK: driver.sim.step()
 	driver.step(func() -> void: pass)
 	runner.check(driver.sim.has_meta(Skirmish.BOT_META) and not driver.has_meta(Skirmish.BOT_META), "OD2 bot memory lives on the simulation, not the driver")
+	return true
+
+func _mouse(main, plane: Vector2, button: MouseButton, pressed: bool) -> InputEventMouseButton:
+	var event := InputEventMouseButton.new()
+	event.position = main.get_node("WorldView").get_global_transform_with_canvas() * plane
+	event.button_index = button
+	event.pressed = pressed
+	return event
+
+func test_orders_turn_input_into_payloads(runner) -> bool:
+	var main = await _setup(runner)
+	var ids: Dictionary = _arena(main)
+	var orders = main.orders
+	orders.selected_ids.clear()
+	var box: Array[Vector2] = _ic_box(Iso.world_to_plane(Vector2(10.5, 10.5)), Iso.world_to_plane(Vector2(11.5, 10.5)), 30.0)
+	orders.handle(_mouse(main, box[0], MOUSE_BUTTON_LEFT, true))
+	orders.handle(_mouse(main, box[1], MOUSE_BUTTON_LEFT, false))
+	var ground := Vector2(12.5, 13.5)
+	var before: int = _pending(main, "move")
+	orders.handle(_mouse(main, Iso.world_to_plane(ground), MOUSE_BUTTON_RIGHT, true))
+	var moves: Array = main.driver.sim.snapshot().pending_commands.filter(func(command: Dictionary) -> bool: return command.type == "move")
+	var payload_ok: bool = moves.size() == before + 1 and moves[-1].entity_ids == orders.selected_ids and Vector2(moves[-1].target[0], moves[-1].target[1]).distance_to(ground) <= 1e-3
+	runner.check(orders.selected_ids == [ids.infantry, ids.tank] and payload_ok, "OR1 orders own the selection and emit the move payload")
+	main.free()
 	return true

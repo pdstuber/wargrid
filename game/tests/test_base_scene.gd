@@ -65,7 +65,7 @@ func test_base_ready(runner) -> bool:
 func test_placement_input(runner) -> bool:
 	var main = await setup(runner)
 	main.driver.sim = Fixture.make_world()
-	main.selected_ids.assign([1])
+	main.orders.selected_ids.assign([1])
 	main._refresh()
 	var camera: Camera2D = main.get_node("Camera2D")
 	var before: Dictionary = main.driver.sim.snapshot()
@@ -77,31 +77,31 @@ func test_placement_input(runner) -> bool:
 			await runner.process_frame
 			key(main,KEY_1)
 			hover(main,Iso.world_to_plane(Vector2(8.25,4.25)))
-			runner.check(main._placement_kind == "usa_power_plant" and main.get_node("WorldView")._preview_cells == [Vector2i(8,4),Vector2i(9,4),Vector2i(8,5),Vector2i(9,5)],"Bs2 transformed snapped preview")
+			runner.check(main.orders._placement_kind == "usa_power_plant" and main.get_node("WorldView")._preview_cells == [Vector2i(8,4),Vector2i(9,4),Vector2i(8,5),Vector2i(9,5)],"Bs2 transformed snapped preview")
 			var position: Vector2 = camera.position
 			main.pan_camera(Vector2.RIGHT,1.0)
 			main.change_zoom(1)
 			runner.check(camera.position == position and camera.zoom.x == zoom,"Bs2 placement freezes camera")
 			key(main,KEY_ESCAPE)
-			runner.check(main.selected_ids == [1] and main._placement_kind.is_empty() and main.driver.sim.snapshot() == before,"Bs2 cancel no order spend preserves selection")
+			runner.check(main.orders.selected_ids == [1] and main.orders._placement_kind.is_empty() and main.driver.sim.snapshot() == before,"Bs2 cancel no order spend preserves selection")
 	key(main,KEY_1)
 	hover(main,Iso.world_to_plane(Vector2(4.25,4.25)))
 	pointer(main,Iso.world_to_plane(Vector2(4.25,4.25)),MOUSE_BUTTON_LEFT,false)
-	runner.check(not main._placement_kind.is_empty() and main.driver.sim.snapshot() == before and not main._error.is_empty(),"Bs2 invalid remains mode reason")
+	runner.check(not main.orders._placement_kind.is_empty() and main.driver.sim.snapshot() == before and not main._error.is_empty(),"Bs2 invalid remains mode reason")
 	hover(main,Iso.world_to_plane(Vector2(8.25,4.25)))
 	pointer(main,Iso.world_to_plane(Vector2(8.25,4.25)),MOUSE_BUTTON_LEFT,true)
 	pointer(main,Iso.world_to_plane(Vector2(8.25,4.25)),MOUSE_BUTTON_LEFT,false)
 	var state: Dictionary = main.driver.sim.snapshot()
-	runner.check(main._placement_kind.is_empty() and state.pending_commands.size() == 1,"Bs2 release exactly one build")
+	runner.check(main.orders._placement_kind.is_empty() and state.pending_commands.size() == 1,"Bs2 release exactly one build")
 	if not state.pending_commands.is_empty(): runner.check(state.pending_commands[0].type == "build" and state.pending_commands[0].origin == [8,4] and state.pending_commands[0].builder_id == 1 and state.pending_commands[0].sequence == 0,"Bs2 envelope")
 	var queued: Dictionary = main.driver.sim.snapshot()
 	pointer(main,Iso.world_to_plane(Vector2(4.5,4.5)) + Vector2(0,-8),MOUSE_BUTTON_LEFT,true)
 	key(main,KEY_2)
-	runner.check(main.is_selecting() and main._placement_kind.is_empty(),"Bs2 placement key waits for gesture")
+	runner.check(main.orders.is_selecting() and main.orders._placement_kind.is_empty(),"Bs2 placement key waits for gesture")
 	pointer(main,Iso.world_to_plane(Vector2(4.5,4.5)) + Vector2(0,-8),MOUSE_BUTTON_LEFT,false)
-	runner.check(not main.is_selecting() and main._placement_kind == "usa_supply_center","Bs2 deferred placement after selection")
+	runner.check(not main.orders.is_selecting() and main.orders._placement_kind == "usa_supply_center","Bs2 deferred placement after selection")
 	pointer(main,Iso.world_to_plane(Vector2(10,10)),MOUSE_BUTTON_RIGHT,true)
-	runner.check(main._placement_kind.is_empty() and main.selected_ids == [1] and main.driver.sim.snapshot() == queued,"Bs2 right cancel preserves state")
+	runner.check(main.orders._placement_kind.is_empty() and main.orders.selected_ids == [1] and main.driver.sim.snapshot() == queued,"Bs2 right cancel preserves state")
 	main.free()
 	return true
 
@@ -113,8 +113,8 @@ func test_production_ui(runner) -> bool:
 	main._refresh()
 	pointer(main,Iso.world_to_plane(Vector2(11.5,5.5)),MOUSE_BUTTON_LEFT,true)
 	pointer(main,Iso.world_to_plane(Vector2(11.5,5.5)),MOUSE_BUTTON_LEFT,false)
-	runner.check(main.selected_building_id == depot and main.selected_ids.is_empty() and main.get_node("WorldView")._selection.keys() == [depot],"Bs3 building selection outline")
-	main.selected_building_id = depot
+	runner.check(main.orders.selected_building_id == depot and main.orders.selected_ids.is_empty() and main.get_node("WorldView")._selection.keys() == [depot],"Bs3 building selection outline")
+	main.orders.selected_building_id = depot
 	main.get_node("HUD/Economy/Produce").pressed.emit()
 	key(main,KEY_E)
 	var state: Dictionary = main.driver.sim.snapshot()
@@ -148,17 +148,17 @@ func test_production_ui(runner) -> bool:
 	runner.check(main.has_node("HUD/Economy/Produce") and main.get_node("HUD/Economy/Produce").mouse_filter == Control.MOUSE_FILTER_STOP,"Bs3 GUI consumes mouse")
 	main.driver.sim.remove_object(depot)
 	main._refresh()
-	runner.check(main.selected_building_id == -1,"Bs3 removed selection cleared")
+	runner.check(main.orders.selected_building_id == -1,"Bs3 removed selection cleared")
 	Fixture.send(main.driver.sim,{"type":"build","builder_id":1,"building_kind":"usa_power_plant","origin":[8,12]})
 	main._physics_process(0.0)
 	var foundation: int = main.driver.sim.snapshot().buildings.back().id
-	main.selected_building_id = foundation
+	main.orders.selected_building_id = foundation
 	main._refresh()
 	var credits: int = main.driver.sim.snapshot().players[0].credits
 	main.get_node("HUD/Economy/CancelBuild").pressed.emit()
 	runner.check(main.driver.sim.snapshot().pending_commands.size() == 1 and main.driver.sim.snapshot().pending_commands[0].type == "cancel_build","Bs3 CancelBuild signal submits exactly once")
 	main._physics_process(0.0)
-	runner.check(Fixture.object(main.driver.sim,foundation).is_empty() and main.driver.sim.snapshot().players[0].credits == credits + 800 and main.selected_building_id == -1,"Bs3 CancelBuild refunds selected foundation")
+	runner.check(Fixture.object(main.driver.sim,foundation).is_empty() and main.driver.sim.snapshot().players[0].credits == credits + 800 and main.orders.selected_building_id == -1,"Bs3 CancelBuild refunds selected foundation")
 	main.free()
 	return true
 
@@ -167,12 +167,12 @@ func test_context_orders(runner) -> bool:
 	main.driver.sim = Fixture.make_world()
 	var source: int = main.driver.sim.add_supply_source(Vector2i(24,4),8)
 	var air: int = main.driver.sim.spawn(1,Vector2(2.5,2.5),"usa_collector")
-	main.selected_ids.assign([air])
+	main.orders.selected_ids.assign([air])
 	main._refresh()
 	pointer(main,Iso.world_to_plane(Vector2(25.5,5.5)),MOUSE_BUTTON_RIGHT,true)
 	var pending: Array = main.driver.sim.snapshot().pending_commands
 	runner.check(pending.size() == 1 and pending[0].type == "gather" and pending[0].source_id == source,"Bs4 collector context gather")
-	main.selected_ids.assign([1,air])
+	main.orders.selected_ids.assign([1,air])
 	var before: Dictionary = main.driver.sim.snapshot()
 	pointer(main,Iso.world_to_plane(Vector2(25.5,5.5)),MOUSE_BUTTON_RIGHT,true)
 	runner.check(main.driver.sim.snapshot() == before and not main._error.is_empty(),"Bs4 mixed context rejected")
@@ -183,7 +183,7 @@ func test_context_orders(runner) -> bool:
 	main.driver.sim.step()
 	Fixture.send(main.driver.sim,{"type":"stop","entity_ids":[1]})
 	main.driver.sim.step()
-	main.selected_ids.assign([1])
+	main.orders.selected_ids.assign([1])
 	main._refresh()
 	pointer(main,Iso.world_to_plane(Vector2(8.5,4.5)),MOUSE_BUTTON_RIGHT,true)
 	var resumed: Array = main.driver.sim.snapshot().pending_commands
@@ -191,7 +191,7 @@ func test_context_orders(runner) -> bool:
 	pointer(main,Iso.world_to_plane(Vector2(4.5,4.5)) + Vector2(0,-8),MOUSE_BUTTON_LEFT,true)
 	var selecting: Dictionary = main.driver.sim.snapshot()
 	pointer(main,Iso.world_to_plane(Vector2(8.5,4.5)),MOUSE_BUTTON_RIGHT,true)
-	runner.check(main.is_selecting() and main.driver.sim.snapshot() == selecting,"Bs4 context suppressed during active selection")
+	runner.check(main.orders.is_selecting() and main.driver.sim.snapshot() == selecting,"Bs4 context suppressed during active selection")
 	key(main,KEY_ESCAPE)
 	main.free()
 	return true
@@ -221,7 +221,7 @@ func test_execution_feedback(runner) -> bool:
 func test_preview_hover_cost(runner) -> bool:
 	var main = await setup(runner)
 	main.driver.sim = Fixture.make_world()
-	main.selected_ids.assign([1])
+	main.orders.selected_ids.assign([1])
 	main._refresh()
 	key(main,KEY_1)
 	var before: int = main.driver.sim.navigation_builds()
@@ -242,7 +242,7 @@ func test_resume_status(runner) -> bool:
 	main.driver.sim.step()
 	Fixture.send(main.driver.sim,{"type":"stop","entity_ids":[1]})
 	main.driver.sim.step()
-	main.selected_ids.assign([1])
+	main.orders.selected_ids.assign([1])
 	main._refresh()
 	var status: Label = main.get_node("HUD/Status")
 	hover(main,Iso.world_to_plane(Vector2(8.5,4.5)))
@@ -265,7 +265,7 @@ func test_queue_label(runner) -> bool:
 func test_one_snapshot_per_refresh(runner) -> bool:
 	var main = await setup(runner)
 	main.driver.sim = Fixture.make_world()
-	main.selected_building_id = 1
+	main.orders.selected_building_id = 1
 	Profiler.reset()
 	Profiler.enabled = true
 	main._refresh()
@@ -328,21 +328,21 @@ func test_build_menu_from_capabilities(runner) -> bool:
 	Fixture.build(runner,main.driver.sim,"usa_power_plant",Vector2i(5,5))
 	Fixture.build(runner,main.driver.sim,"usa_supply_center",Vector2i(10,4))
 	var factory: int = Fixture.build(runner,main.driver.sim,"usa_factory",Vector2i(14,4))
-	main.selected_ids.assign([1])
+	main.orders.selected_ids.assign([1])
 	main._refresh()
 	runner.check(_menu_texts(main) == ["1: Power Plant $800","2: Supply Depot $2000","3: Barracks $600","4: Vehicle Factory $2000","5: Missile Battery $1000"],"M1 builder menu lists its builds, got %s" % [_menu_texts(main)])
-	main.selected_ids.clear()
-	main.selected_building_id = factory
+	main.orders.selected_ids.clear()
+	main.orders.selected_building_id = factory
 	main._refresh()
 	runner.check(_menu_texts(main) == ["1: Scout Car $700","2: Battle Tank $900"],"M2 factory menu lists produces, got %s" % [_menu_texts(main)])
 	key(main,KEY_2)
 	var pending: Array = main.driver.sim.snapshot().pending_commands
 	runner.check(pending.size() == 1 and pending[0].type == "produce" and pending[0].unit_kind == "usa_tank","M3 number key trains the n-th entry")
-	main.selected_building_id = -1
-	main.selected_ids.assign([1])
+	main.orders.selected_building_id = -1
+	main.orders.selected_ids.assign([1])
 	main._refresh()
 	key(main,KEY_4)
-	runner.check(main._placement_kind == "usa_factory","M4 key 4 places the fourth build")
+	runner.check(main.orders._placement_kind == "usa_factory","M4 key 4 places the fourth build")
 	main.free()
 	return true
 

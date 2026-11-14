@@ -61,7 +61,7 @@ func test_ready(runner) -> bool:
 	runner.check(positions.size() == 20, "S1 unique starts")
 	runner.check(state.map.blocked_cells.size() == 18, "S1 static obstacle")
 	runner.check(main.has_node("Camera2D") and main.has_node("WorldView") and main.has_node("HUD/Status"), "S1 scene nodes")
-	runner.check(main.selected_ids == [], "S1 no selection")
+	runner.check(main.orders.selected_ids == [], "S1 no selection")
 	runner.check(main.get_node("Camera2D").position == Iso.world_to_plane(Vector2(8, 8)), "S1 camera center")
 	runner.check(main.get_node("HUD/Status").mouse_filter == Control.MOUSE_FILTER_IGNORE, "S1 HUD click through")
 	runner.check(ProjectSettings.get_setting("physics/common/physics_ticks_per_second") == 30, "S1 tick rate")
@@ -86,7 +86,7 @@ func test_clicks(runner) -> bool:
 			camera.force_update_scroll()
 			await runner.process_frame
 			await select(runner, main)
-			runner.check(main.selected_ids == [1], "S2 transformed selection " + str([center, zoom]))
+			runner.check(main.orders.selected_ids == [1], "S2 transformed selection " + str([center, zoom]))
 			await click(runner, view, Iso.world_to_plane(Vector2(4.5, 5.5)), MOUSE_BUTTON_RIGHT)
 			var state: Dictionary = main.driver.sim.snapshot()
 			runner.check(state.pending_commands.size() == sequence + 1, "S2 one command per press")
@@ -120,7 +120,7 @@ func test_rejection(runner) -> bool:
 	runner.check(queued.pending_commands.size() == 1 and queued.pending_commands[0].sequence == 1, "S3 rejection did not consume sequence")
 	runner.check(not main.get_node("HUD/Status").text.contains("Target"), "S3 accepted clears error")
 	await click(runner, view, Iso.world_to_plane(Vector2(0.5, 0.5)), MOUSE_BUTTON_LEFT)
-	runner.check(main.selected_ids == [], "S3 empty clears")
+	runner.check(main.orders.selected_ids == [], "S3 empty clears")
 	await click(runner, view, Iso.world_to_plane(Vector2(4.5, 4.5)), MOUSE_BUTTON_RIGHT)
 	runner.check(main.driver.sim.snapshot() == queued, "S3 unselected right no order")
 	await select(runner, main)
@@ -132,7 +132,7 @@ func test_rejection(runner) -> bool:
 	escape.pressed = false
 	Input.parse_input_event(escape)
 	await runner.process_frame
-	runner.check(main.selected_ids == [], "S3 escape clears")
+	runner.check(main.orders.selected_ids == [], "S3 escape clears")
 	main.free()
 	return true
 
@@ -227,16 +227,16 @@ func test_boxes(runner) -> bool:
 			await runner.process_frame
 			for reverse in [false, true]:
 				await _box(runner, main, Vector2(33, 81) if reverse else Vector2(-33, 47), Vector2(-33, 47) if reverse else Vector2(33, 81))
-				runner.check(main.selected_ids == [1, 2, 6, 7], "S6 transformed/reverse box " + str([center, zoom, reverse]))
+				runner.check(main.orders.selected_ids == [1, 2, 6, 7], "S6 transformed/reverse box " + str([center, zoom, reverse]))
 	await click(runner, main.get_node("WorldView"), Iso.world_to_plane(Vector2(5.5, 1.5)) + Vector2(0, -8), MOUSE_BUTTON_LEFT)
 	await _box(runner, main, Vector2(-33, 47), Vector2(33, 81), true)
 	await _box(runner, main, Vector2(-33, 47), Vector2(33, 81), true)
-	runner.check(main.selected_ids == [1, 2, 5, 6, 7], "S6 Shift union sorted without duplicates")
+	runner.check(main.orders.selected_ids == [1, 2, 5, 6, 7], "S6 Shift union sorted without duplicates")
 	var transform: Transform2D = main.get_node("WorldView").get_global_transform_with_canvas()
 	var empty: Vector2 = transform * Vector2(0, 0)
 	await _mouse(runner, main, empty, MOUSE_BUTTON_LEFT, true, true)
 	await _mouse(runner, main, empty, MOUSE_BUTTON_LEFT, false, true)
-	runner.check(main.selected_ids == [1, 2, 5, 6, 7], "S6 Shift empty preserves")
+	runner.check(main.orders.selected_ids == [1, 2, 5, 6, 7], "S6 Shift empty preserves")
 	await click(runner, main.get_node("WorldView"), Iso.world_to_plane(Vector2(12.5, 12.5)), MOUSE_BUTTON_RIGHT)
 	var pending: Array = main.driver.sim.snapshot().pending_commands
 	runner.check(pending.size() == 1 and pending[0].entity_ids == [1, 2, 5, 6, 7], "S6 exactly one sorted group order")
@@ -249,9 +249,9 @@ func test_drag_rules(runner) -> bool:
 	var transform: Transform2D = main.get_node("WorldView").get_global_transform_with_canvas()
 	var point: Vector2 = transform * (Iso.world_to_plane(Vector2(1.5, 1.5)) + Vector2(0, -8))
 	await _mouse(runner, main, point, MOUSE_BUTTON_LEFT, true)
-	runner.check(main.selected_ids == [], "S7 selection waits for release")
+	runner.check(main.orders.selected_ids == [], "S7 selection waits for release")
 	await _mouse(runner, main, point + Vector2(5, 0), MOUSE_BUTTON_LEFT, false)
-	runner.check(main.selected_ids == [1], "S7 five-pixel excursion is click")
+	runner.check(main.orders.selected_ids == [1], "S7 five-pixel excursion is click")
 	await _mouse(runner, main, point, MOUSE_BUTTON_LEFT, true)
 	await _motion(runner, point + Vector2(6, 0))
 	var before: Vector2 = camera.position
@@ -263,12 +263,12 @@ func test_drag_rules(runner) -> bool:
 	await _mouse(runner, main, point, MOUSE_BUTTON_RIGHT, false)
 	runner.check(main.driver.sim.snapshot().pending_commands == [], "S7 right during drag ignored")
 	await _mouse(runner, main, point + Vector2(5, 0), MOUSE_BUTTON_LEFT, false)
-	runner.check(main.selected_ids == [], "S7 max excursion retains drag classification")
+	runner.check(main.orders.selected_ids == [], "S7 max excursion retains drag classification")
 	await _mouse(runner, main, point, MOUSE_BUTTON_LEFT, true)
 	await _motion(runner, point + Vector2(100, 100))
 	await _key(runner, KEY_ESCAPE)
 	await _mouse(runner, main, point + Vector2(100, 100), MOUSE_BUTTON_LEFT, false)
-	runner.check(main.selected_ids == [] and not main.get_node("HUD/SelectionBox").visible, "S7 Escape cancels drag and later release")
+	runner.check(main.orders.selected_ids == [] and not main.get_node("HUD/SelectionBox").visible, "S7 Escape cancels drag and later release")
 	main.pan_camera(Vector2.RIGHT, 0.25)
 	runner.check(camera.position != before, "S7 camera resumes after cancel")
 	main.free()
@@ -314,7 +314,7 @@ func test_double_click_same_kind_on_screen(runner) -> bool:
 	var main = fixture.main
 	runner.check(fixture.far != -1 and fixture.tank != -1 and fixture.enemy != -1, "G26 fixture spawned")
 	await _double_click(runner, main, Iso.world_to_plane(Vector2(3.5, 1.5)) + Vector2(0, -8))
-	runner.check(main.selected_ids == _light_ids([20]), "G26 double click picks visible own same kind, not tank, off-screen or passenger")
+	runner.check(main.orders.selected_ids == _light_ids([20]), "G26 double click picks visible own same kind, not tank, off-screen or passenger")
 	main.free()
 	return true
 
@@ -324,7 +324,7 @@ func test_double_click_alt_whole_map(runner) -> bool:
 	await _double_click(runner, main, Iso.world_to_plane(Vector2(3.5, 1.5)) + Vector2(0, -8), false, false, true)
 	var expected := _light_ids([20])
 	expected.append(fixture.far)
-	runner.check(main.selected_ids == expected, "G26 Alt double click spans the whole map")
+	runner.check(main.orders.selected_ids == expected, "G26 Alt double click spans the whole map")
 	main.free()
 	return true
 
@@ -332,12 +332,12 @@ func test_double_click_shift_keeps(runner) -> bool:
 	var fixture: Dictionary = await _double_fixture(runner)
 	var main = fixture.main
 	await click(runner, main.get_node("WorldView"), Iso.world_to_plane(Vector2(3.5, 6.5)) + Vector2(0, -8), MOUSE_BUTTON_LEFT)
-	runner.check(main.selected_ids == [fixture.tank], "G26 tank selected first")
+	runner.check(main.orders.selected_ids == [fixture.tank], "G26 tank selected first")
 	await _double_click(runner, main, Iso.world_to_plane(Vector2(3.5, 1.5)) + Vector2(0, -8), true)
 	var expected := _light_ids([20])
 	expected.append(fixture.tank)
 	expected.sort()
-	runner.check(main.selected_ids == expected, "G26 Shift double click keeps the earlier selection")
+	runner.check(main.orders.selected_ids == expected, "G26 Shift double click keeps the earlier selection")
 	main.free()
 	return true
 
@@ -345,7 +345,7 @@ func test_double_click_ctrl_ignored(runner) -> bool:
 	var fixture: Dictionary = await _double_fixture(runner)
 	var main = fixture.main
 	await _double_click(runner, main, Iso.world_to_plane(Vector2(3.5, 1.5)) + Vector2(0, -8), false, true)
-	runner.check(main.selected_ids == [3], "G26 Ctrl double click is a plain click")
+	runner.check(main.orders.selected_ids == [3], "G26 Ctrl double click is a plain click")
 	main.free()
 	return true
 
@@ -353,8 +353,8 @@ func test_double_click_enemy_or_ground_plain(runner) -> bool:
 	var fixture: Dictionary = await _double_fixture(runner)
 	var main = fixture.main
 	await _double_click(runner, main, Iso.world_to_plane(Vector2(2.5, 6.5)) + Vector2(0, -8))
-	runner.check(main.selected_ids == [], "G26 double click on an enemy selects nothing")
+	runner.check(main.orders.selected_ids == [], "G26 double click on an enemy selects nothing")
 	await _double_click(runner, main, Iso.world_to_plane(Vector2(12.5, 12.5)))
-	runner.check(main.selected_ids == [], "G26 double click on empty ground selects nothing")
+	runner.check(main.orders.selected_ids == [], "G26 double click on empty ground selects nothing")
 	main.free()
 	return true

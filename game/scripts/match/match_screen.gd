@@ -8,12 +8,12 @@ const PauseMenu = preload("res://scripts/presentation/pause_menu.gd")
 const GraphicsSettings = preload("res://scripts/presentation/graphics_settings.gd")
 const OfflineDriver = preload("res://scripts/match/offline_driver.gd")
 const OnlineDriver = preload("res://scripts/match/online_driver.gd")
+const Orders = preload("res://scripts/match/orders.gd")
 const LAUNCHER_SCENE: String = "res://scenes/launcher.tscn"
 const MapData = preload("res://scripts/simulation/map_data.gd")
 const ZOOMS: Array[float] = [0.5, 1.0, 2.0]
 const Definitions = preload("res://scripts/simulation/economy_definitions.gd")
 const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
-const Construction = preload("res://scripts/simulation/construction.gd")
 const UiStyle = preload("res://scripts/presentation/ui_style.gd")
 const MENU_COLUMNS: int = 4
 const Skirmish = preload("res://scripts/simulation/skirmish.gd")
@@ -32,29 +32,13 @@ static var map_path: String = Skirmish.MAP_PATH
 static var starts: Array[int] = []
 static var match_seed: int = 0
 var driver: RefCounted
-var selected_ids: Array[int] = []
-var selected_building_id: int = -1
+var orders: RefCounted = Orders.new(self)
 var local_player: int = 1
 var stepped_results: Array = []
-var inspected_id: int = -1
 var _error: String = ""
 var _shown_note: String = ""
-var _selecting: bool = false
-var _dragged: bool = false
-var _start: Vector2
-var _start_selection: Array[int] = []
-var _shift: bool = false
-var _double: bool = false
-var _ctrl: bool = false
-var _alt: bool = false
-var _placement_kind: String = ""
-var _pending_placement: String = ""
-var _preview_origin: Vector2i
 var _last_result_tick: int = -1
 var _last_result_sequence: int = -1
-var _preview_key: Array = []
-var _menu: Array = []
-var _attack_move_mode: bool = false
 var _camera_bounds: Rect2
 @onready var _view: Node2D = $WorldView
 @onready var _camera: Camera2D = $Camera2D
@@ -106,8 +90,8 @@ func _ready() -> void:
 	_clock = PresentationClock.new()
 	_reset_camera()
 	_refresh()
-	$HUD/Economy/Produce.pressed.connect(_produce_selected)
-	$HUD/Economy/CancelBuild.pressed.connect(_cancel_build)
+	$HUD/Economy/Produce.pressed.connect(orders._produce_selected)
+	$HUD/Economy/CancelBuild.pressed.connect(orders._cancel_build)
 	_view.set_visuals(_visuals)
 	_start_auto_pick(GraphicsSettings.load_quality() == -1 and DisplayServer.get_name() != "headless")
 	$HUD/Restart.pressed.connect(_restart)
@@ -147,7 +131,7 @@ func _create_world() -> void:
 
 func playtest_context() -> Dictionary:
 	var camera: Vector2 = Iso.plane_to_world(_camera.position)
-	return {"tick": driver.sim.tick(), "camera": [camera.x, camera.y], "selected": _view_selection(), "over": driver.over(), "menu": _pause.visible}
+	return {"tick": driver.sim.tick(), "camera": [camera.x, camera.y], "selected": orders.view_selection(), "over": driver.over(), "menu": _pause.visible}
 
 func playtest_match() -> Dictionary:
 	var played: Dictionary = driver.match_log()
@@ -174,7 +158,7 @@ func _pauses_sim() -> bool:
 	return driver.pauses_sim()
 
 func _escape_pending() -> bool:
-	return not driver.sim.match_over() and (_attack_move_mode or inspected_id != -1 or _selecting or not selected_ids.is_empty() or not _placement_kind.is_empty() or selected_building_id != -1 or not _pending_placement.is_empty())
+	return not driver.sim.match_over() and orders.escape_pending()
 
 func _leave() -> void:
 	driver.leave()
@@ -246,13 +230,13 @@ func _auto_sample(frame_ms: float) -> void:
 	_view.set_quality(quality)
 
 func pan_camera(direction: Vector2, delta: float) -> void:
-	if _selecting or not _placement_kind.is_empty():
+	if orders.busy():
 		return
 	_camera.position += direction.normalized() * 400.0 * delta / _camera.zoom.x
 	_camera.position = _camera.position.clamp(_camera_bounds.position, _camera_bounds.end)
 
 func change_zoom(direction: int) -> void:
-	if _selecting or not _placement_kind.is_empty():
+	if orders.busy():
 		return
 	var index: int = ZOOMS.find(_camera.zoom.x)
 	index = clampi(index + signi(direction), 0, ZOOMS.size() - 1)
@@ -260,188 +244,10 @@ func change_zoom(direction: int) -> void:
 	_view.set_zoom(ZOOMS[index])
 
 func _unhandled_input(event: InputEvent) -> void:
-	if driver.sim.match_over() or _playtest.holds_match():
-		return
-	if event.is_action_pressed("deselect"): inspected_id = -1
-	if _placement_kind.is_empty() and _combat_input(event): return
-	_hover(event)
-	if _economy_keys(event): return
-	if not _placement_kind.is_empty():
-		_placement_input(event)
-		return
-	if _building_input(event): return
-	_selection_input(event)
-	if not is_selecting() and not _pending_placement.is_empty():
-		var pending: String = _pending_placement
-		_pending_placement = ""
-		_enter_placement(pending)
-
-func _combat_input(event: InputEvent) -> bool:
-	if event is InputEventKey and event.pressed and not event.echo and not is_selecting():
-		if event.physical_keycode == KEY_A and not selected_ids.is_empty():
-			_attack_move_mode = true
-			return true
-		if event.physical_keycode == KEY_S and not selected_ids.is_empty():
-			_submit({"type":"stop","entity_ids":selected_ids.duplicate()})
-			return true
-	if _attack_move_mode and (event.is_action_pressed("deselect") or (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed)):
-		_attack_move_mode = false
-		return true
-	if _attack_move_mode and event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if not event.pressed:
-			_attack_move_mode = false
-			var target: Vector2 = _ground(event)
-			_submit({"type":"attack_move","entity_ids":selected_ids.duplicate(),"target":[target.x,target.y]})
-		return true
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed and not is_selecting() and _order_defence(event):
-		return true
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed and not is_selecting() and not selected_ids.is_empty():
-		var enemy: int = _view.pick_target(_view.make_canvas_position_local(event.position), local_player)
-		if enemy != -1:
-			_submit({"type":"attack","entity_ids":selected_ids.duplicate(),"target_id":enemy})
-			return true
-	return false
-
-func _hover(event: InputEvent) -> void:
-	if event is InputEventMouseMotion:
-		var hovered: int = _view.pick_object(_view.make_canvas_position_local(event.position))
-		if hovered != _view.hovered_id():
-			_view.set_hovered(hovered)
-			_refresh()
-
-func _economy_keys(event: InputEvent) -> bool:
-	if not (event is InputEventKey and event.pressed and not event.echo): return false
-	if event.physical_keycode == KEY_B: return true
-	var index: int = event.physical_keycode - KEY_1
-	if index >= 0 and index < _menu.size():
-		_menu_choose(index,true)
-		return true
-	if event.physical_keycode == KEY_E:
-		if not is_selecting() and _placement_kind.is_empty(): _produce_selected()
-		return true
-	if event.physical_keycode == KEY_U:
-		if not is_selecting() and _placement_kind.is_empty(): _unload_selected()
-		return true
-	return false
-
-func _placement_input(event: InputEvent) -> void:
-	if event.is_action_pressed("deselect"):
-		_clear_placement()
-	elif event is InputEventMouseMotion:
-		_update_preview(_view.make_canvas_position_local(event.position))
-	elif event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_RIGHT and event.pressed: _clear_placement()
-		elif event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
-			_update_preview(_view.make_canvas_position_local(event.position))
-			_submit({"type":"build","builder_id":_builder(),"building_kind":_placement_kind,"origin":[_preview_origin.x,_preview_origin.y]})
-			if _error.is_empty(): _clear_placement()
-
-func _building_input(event: InputEvent) -> bool:
-	if event.is_action_pressed("deselect"):
-		selected_building_id = -1
-		_pending_placement = ""
-	if event is InputEventMouseButton:
-		var plane: Vector2 = _view.make_canvas_position_local(event.position)
-		if event.button_index == MOUSE_BUTTON_RIGHT and event.pressed and not is_selecting():
-			var source: int = _view.pick_source(plane)
-			if _context_order(source if source != -1 else _view.pick_object(plane)) or _set_rally(plane): return true
-		if event.button_index == MOUSE_BUTTON_LEFT and not event.pressed and is_selecting():
-			_update_drag(event.position)
-			var building: Dictionary = _building(driver.sim.snapshot(),_view.pick_object(plane))
-			if not _dragged and not building.is_empty() and building.owner == local_player:
-				selected_building_id = building.id
-				selected_ids.clear()
-				_selecting = false
-				_selection_box.hide()
-				_refresh()
-				return true
-			selected_building_id = -1
-	return false
-
-func _selection_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_F3:
-		_perf.toggle()
-	elif event.is_action_pressed("deselect"):
-		selected_ids.clear()
-		_selecting = false
-		_selection_box.hide()
-		_refresh()
-	elif event is InputEventMouseMotion and _selecting:
-		_update_drag(event.position)
-	elif event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_LEFT:
-			if event.pressed:
-				_selecting = true
-				_dragged = false
-				_start = event.position
-				_start_selection = selected_ids.duplicate()
-				_shift = event.shift_pressed
-				_double = event.double_click
-				_ctrl = event.ctrl_pressed
-				_alt = event.alt_pressed
-			elif _selecting:
-				_finish_selection(event.position)
-		elif event.pressed and not _selecting:
-			match event.button_index:
-				MOUSE_BUTTON_RIGHT:
-					if not selected_ids.is_empty():
-						_move(Iso.plane_to_world(_view.make_canvas_position_local(event.position)))
-				MOUSE_BUTTON_WHEEL_UP:
-					change_zoom(1)
-				MOUSE_BUTTON_WHEEL_DOWN:
-					change_zoom(-1)
-
-func _update_drag(point: Vector2) -> void:
-	_dragged = _dragged or _start.distance_to(point) >= 6.0
-	var rect := Rect2(_start, point - _start).abs()
-	_selection_box.position = rect.position
-	_selection_box.size = rect.size
-	_selection_box.visible = _dragged
-
-func _finish_selection(point: Vector2) -> void:
-	_update_drag(point)
-	var picked: Array[int] = []
-	if _dragged:
-		var from: Vector2 = _view.make_canvas_position_local(_start)
-		var to: Vector2 = _view.make_canvas_position_local(point)
-		picked = _view.pick_entities(Rect2(from, to - from))
-	else:
-		var id: int = _view.pick_entity(_view.make_canvas_position_local(point))
-		if id != -1 and _double and not _ctrl:
-			picked = _matching_ids(id, _alt)
-		elif id != -1:
-			picked.append(id)
-	selected_ids.clear()
-	if _shift:
-		selected_ids.assign(_start_selection)
-	for id in picked:
-		if not selected_ids.has(id):
-			selected_ids.append(id)
-	selected_ids.sort()
-	_selecting = false
-	_selection_box.hide()
-	_refresh()
-	inspected_id = -1
-	if not _dragged and selected_ids.is_empty(): inspected_id = _enemy_at(_view.make_canvas_position_local(point))
-	_refresh()
-
-func _matching_ids(id: int, whole_map: bool) -> Array[int]:
-	var view_rect: Rect2 = _view.get_global_transform_with_canvas().affine_inverse() * get_viewport().get_visible_rect()
-	var kinds: Dictionary = {}
-	for unit: Dictionary in driver.sim.snapshot().entities:
-		kinds[unit.id] = {"kind": unit.kind, "inside": unit.has("container_id")}
-	var picked: Array[int] = []
-	for other: int in _view.pick_entities(Rect2(-1.0e6, -1.0e6, 2.0e6, 2.0e6) if whole_map else view_rect):
-		if kinds[other].kind == kinds[id].kind and not kinds[other].inside:
-			picked.append(other)
-	return picked
-
-func _move(target: Vector2) -> void:
-	_submit({"type":"move","entity_ids":selected_ids.duplicate(),"target":[target.x,target.y]})
+	orders.handle(event)
 
 func _refresh() -> void:
 	var state: Dictionary = driver.sim.view_state()
-	if selected_building_id != -1 and _building(state,selected_building_id).is_empty(): selected_building_id = -1
 	_show(state)
 	$HUD/Economy.position.y = maxf(116.0,_status.position.y + _status.get_minimum_size().y + 8.0)
 
@@ -453,34 +259,17 @@ func _show(state: Dictionary) -> void:
 	_perf.set_counts(state.units.size(), state.get("buildings", []).size(), state.tick)
 	_perf.split_share = _clock.split_share()
 	var zone: int = Profiler.begin()
-	selected_ids.assign(selected_ids.filter(func(id: int) -> bool: return state.units.index_of(id) != -1))
+	orders.prune(state)
 	Profiler.end(&"refresh.selection", zone)
-	_view.set_view(state, _view_selection())
+	_view.set_view(state, orders.view_selection())
 	zone = Profiler.begin()
 	_refresh_hud(state)
 	Profiler.end(&"refresh.hud", zone)
 	stepped_results.clear()
 
-func _view_selection() -> Array[int]:
-	var ids: Array[int] = []
-	if selected_building_id != -1: ids.append(selected_building_id)
-	else: ids.assign(selected_ids)
-	return ids
-
-func is_selecting() -> bool:
-	return _selecting
-
 func _show_hint(payload: Dictionary) -> void:
-	var point: Variant = _hint_point(payload)
+	var point: Variant = orders._hint_point(payload)
 	if point != null: _view.add_hint(point, driver.sim.tick())
-
-func _hint_point(payload: Dictionary) -> Variant:
-	if payload.type != "resume_build":
-		if payload.type in ["move", "attack_move", "set_rally"]: return Vector2(payload.target[0], payload.target[1])
-		return null
-	var building: Dictionary = _building(driver.sim.snapshot(),payload.building_id)
-	if building.is_empty(): return null
-	return Vector2(building.origin[0],building.origin[1]) + Vector2(Definitions.building(building.kind).footprint) / 2.0
 
 func _submit(payload: Dictionary) -> void:
 	_show_hint(payload)
@@ -534,11 +323,11 @@ func _economy_hud(state: Dictionary) -> void:
 			_last_result_tick = result.tick
 			_last_result_sequence = result.sequence
 	var player: Dictionary = _local_state(state)
-	var building: Dictionary = _building(state,selected_building_id)
-	var detail: String = "Units: " + str(selected_ids)
+	var building: Dictionary = _building(state,orders.selected_building_id)
+	var detail: String = "Units: " + str(orders.selected_ids)
 	if not building.is_empty(): detail = "%s #%d | Work %d/%d" % [Registry.kind(building.kind).display_name,building.id,building.work,Definitions.building(building.kind).ticks * 1000]
 	var resume: String = "Right-click: resume\n" if _view.resume_candidate() != -1 else ""
-	var placing: String = Registry.kind(_placement_kind).get("display_name","")
+	var placing: String = Registry.kind(orders._placement_kind).get("display_name","")
 	_status.text = "Credits: %d | Power: %d/%d | Tick: %d\n%s | Place: %s\n%s | Right: context/move | E: produce | Esc: cancel\n%s%s" % [player.credits,player.power_supply,player.power_demand,state.tick,detail,placing,_build_hint(),resume,_error]
 	$HUD/Economy/Produce.visible = not building.is_empty() and building.completed and not _production_kind(building, state).is_empty()
 	$HUD/Economy/CancelBuild.visible = not building.is_empty() and not building.completed
@@ -547,9 +336,8 @@ func _economy_hud(state: Dictionary) -> void:
 
 func _match_hud(state: Dictionary) -> void:
 	var result: String = "" if state.match == null else _result_text(state.match)
-	var building: Dictionary = _building(state, selected_building_id)
-	if _inspected(state).is_empty(): inspected_id = -1
-	_view.set_inspected(inspected_id)
+	var building: Dictionary = _building(state, orders.selected_building_id)
+	_view.set_inspected(orders.inspected_id)
 	$HUD/Economy/Produce.text = "Produce %s (E)" % Registry.kind(_production_kind(building, state)).get("display_name", "") if not building.is_empty() else "Produce (E)"
 	_status.text += "\n" + (_selected_summary(state) + _enemy_summary(state)) + ("A: attack-move click | S: stop | You are %s (P%d)" % [("blue" if local_player == 1 else "red"), local_player] if result.is_empty() else "")
 	$HUD/Result.text = result
@@ -559,8 +347,8 @@ func _match_hud(state: Dictionary) -> void:
 func _menu_kinds(state: Dictionary, building: Dictionary) -> Array:
 	if not building.is_empty(): return Registry.kind(building.kind).produces if building.completed else []
 	var kind: String = Registry.faction(_local_state(state).get("faction",Registry.Factions.DEFAULT_FACTION)).get("start_unit","")
-	if selected_ids.size() == 1:
-		var i: int = state.units.index_of(selected_ids[0])
+	if orders.selected_ids.size() == 1:
+		var i: int = state.units.index_of(orders.selected_ids[0])
 		var unit_kind: String = state.units.kinds[state.units.kind[i]] if i != -1 else ""
 		if Registry.is_builder(unit_kind): kind = unit_kind
 	return Registry.kind(kind).get("builds",[])
@@ -570,22 +358,16 @@ static func menu_label(index: int, kind: String) -> String:
 	return "%d: %s%s $%d" % [index + 1,Registry.kind(kind).display_name," x%d" % quantity if quantity > 1 else "",Registry.kind(kind).cost]
 
 func _refresh_menu(kinds: Array) -> void:
-	_menu = kinds
+	orders.menu = kinds
 	var grid: GridContainer = $HUD/Economy/BuildMenu
 	while grid.get_child_count() > kinds.size(): grid.get_child(grid.get_child_count() - 1).free()
 	for i in kinds.size():
 		var button: Button = grid.get_child(i) if i < grid.get_child_count() else null
 		if button == null:
 			button = Button.new()
-			button.pressed.connect(_menu_choose.bind(i,false))
+			button.pressed.connect(orders._menu_choose.bind(i,false))
 			grid.add_child(button)
 		button.text = menu_label(i,kinds[i])
-
-func _menu_choose(index: int, from_key: bool) -> void:
-	var kind: String = _menu[index]
-	if selected_building_id != -1: _submit({"type":"produce","building_id":selected_building_id,"unit_kind":kind})
-	elif from_key and is_selecting(): _pending_placement = kind
-	else: _enter_placement(kind)
 
 func _refresh_queue(queue: Array) -> void:
 	var ids: Array = queue.map(func(entry: Dictionary) -> String: return str(entry.id))
@@ -596,7 +378,7 @@ func _refresh_queue(queue: Array) -> void:
 		if button == null:
 			button = Button.new()
 			button.name = str(entry.id)
-			button.pressed.connect(_cancel_entry.bind(entry.id))
+			button.pressed.connect(orders._cancel_entry.bind(entry.id))
 			$HUD/Economy/Queue.add_child(button)
 		button.text = queue_label(entry)
 
@@ -604,102 +386,6 @@ static func queue_label(entry: Dictionary) -> String:
 	var label: String = Registry.kind(entry.kind).display_name
 	if entry.work == 0: return "Cancel %s (queued)" % label
 	return "Cancel %s (%d%%)" % [label,entry.work * 100 / (Definitions.unit(entry.kind).ticks * 1000)]
-
-func _builder() -> int:
-	if selected_ids.size() != 1: return -1
-	for unit: Dictionary in driver.sim.snapshot().entities:
-		if unit.id == selected_ids[0] and Registry.is_builder(unit.kind) and unit.owner == local_player: return unit.id
-	return -1
-
-func _enter_placement(kind: String) -> void:
-	_attack_move_mode = false
-	if _builder() == -1:
-		_error = "Choose one builder"
-		_refresh()
-		return
-	_placement_kind = kind
-	selected_building_id = -1
-	_preview_key = []
-	_update_preview(_view.get_local_mouse_position())
-	_refresh()
-
-func _clear_placement() -> void:
-	_placement_kind = ""
-	var empty: Array[Vector2i] = []
-	_view.set_build_preview(empty,false)
-	_refresh()
-
-func _update_preview(plane: Vector2) -> void:
-	_preview_origin = Vector2i(Iso.plane_to_world(plane).floor())
-	var key: Array = [_placement_kind,_preview_origin,driver.sim.tick()]
-	if key == _preview_key: return
-	_preview_key = key
-	var preview: Dictionary = driver.sim.preview_build(local_player,_builder(),_placement_kind,_preview_origin)
-	_view.set_build_preview(Construction.cells(_placement_kind,_preview_origin),preview.ok)
-
-func _context_order(id: int) -> bool:
-	if selected_ids.is_empty(): return false
-	var state: Dictionary = driver.sim.snapshot()
-	for source: Dictionary in state.sources:
-		if source.id != id: continue
-		var collectors: bool = true
-		for unit: Dictionary in state.entities:
-			if selected_ids.has(unit.id) and Registry.collects(unit.kind).is_empty(): collectors = false
-		if collectors: _submit({"type":"gather","entity_ids":selected_ids.duplicate(),"source_id":id})
-		else:
-			_error = "Choose homogeneous collector selection"
-			_refresh()
-		return true
-	var building: Dictionary = _building(state,id)
-	if selected_ids != [id] and _container(state,id,building):
-		_submit({"type":"enter","entity_ids":selected_ids.filter(func(unit_id: int) -> bool: return unit_id != id),"target_id":id})
-		return true
-	if not building.is_empty() and building.owner == local_player and not building.completed:
-		if _builder() != -1: _submit({"type":"resume_build","builder_id":_builder(),"building_id":id})
-		else:
-			_error = "Choose one builder"
-			_refresh()
-		return true
-	return false
-
-func _container(state: Dictionary, id: int, building: Dictionary) -> bool:
-	var host: Dictionary = building
-	if host.is_empty():
-		for unit: Dictionary in state.entities:
-			if unit.id == id: host = unit
-	return not host.is_empty() and host.owner == local_player and host.get("completed",true) and not Registry.kind(host.kind).get("contains",{}).is_empty()
-
-func _unload_selected() -> void:
-	var state: Dictionary = driver.sim.snapshot()
-	var id: int = selected_building_id if selected_building_id != -1 else (selected_ids[0] if selected_ids.size() == 1 else -1)
-	var building: Dictionary = _building(state,id)
-	if not _container(state,id,building):
-		_error = "Select a container"
-		_refresh()
-		return
-	_submit({"type":"unload","target_id":id})
-
-func _set_rally(plane: Vector2) -> bool:
-	var building: Dictionary = _building(driver.sim.snapshot(),selected_building_id)
-	if building.is_empty() or building.owner != local_player or not Registry.can_rally(building.kind): return false
-	var cell: Vector2 = Iso.plane_to_world(plane).floor() + Vector2(.5,.5)
-	_submit({"type":"set_rally","building_id":building.id,"target":[cell.x,cell.y]})
-	return true
-
-func _produce_selected() -> void:
-	var state: Dictionary = driver.sim.snapshot()
-	var building: Dictionary = _building(state,selected_building_id)
-	if building.is_empty():
-		_error = "Select a production building"
-		_refresh()
-		return
-	_submit({"type":"produce","building_id":building.id,"unit_kind":_production_kind(building, state)})
-
-func _cancel_entry(id: int) -> void:
-	_submit({"type":"cancel_production","building_id":selected_building_id,"production_id":id})
-
-func _cancel_build() -> void:
-	_submit({"type":"cancel_build","building_id":selected_building_id})
 
 func _restart() -> void:
 	if not driver.can_restart(): return
@@ -709,14 +395,7 @@ func _restart() -> void:
 	_sound.director.reset()
 	_sound._unit_voice.stop()
 	_visuals.reset()
-	selected_ids.clear()
-	selected_building_id = -1
-	inspected_id = -1
-	_placement_kind = ""
-	_pending_placement = ""
-	_attack_move_mode = false
-	_selecting = false
-	_dragged = false
+	orders.reset()
 	_error = ""
 	stepped_results.clear()
 	_last_result_tick = -1
@@ -729,27 +408,9 @@ func _restart() -> void:
 	_view.set_build_preview(empty, false)
 	_refresh()
 
-func _ground(event: InputEventMouseButton) -> Vector2:
-	return Iso.plane_to_world(_view.make_canvas_position_local(event.position))
-
-func _enemy_at(plane: Vector2) -> int:
-	var id: int = _view.pick_entity(plane, true)
-	if id == -1: return _view.pick_target(plane, local_player)
-	for unit: Dictionary in driver.sim.snapshot().entities:
-		if unit.id == id: return id if unit.owner != local_player else -1
-	return -1
-
-func _order_defence(event: InputEventMouseButton) -> bool:
-	var building: Dictionary = _building(driver.sim.snapshot(), selected_building_id)
-	if building.is_empty() or building.owner != local_player or not building.completed or building.get("combat") == null: return false
-	var enemy: int = _view.pick_target(_view.make_canvas_position_local(event.position), local_player)
-	if enemy == -1: return false
-	_submit({"type":"defence_attack","building_id":building.id,"target_id":enemy})
-	return true
-
 func _selected_summary(state: Dictionary) -> String:
-	if selected_ids.size() != 1: return ""
-	var i: int = state.units.index_of(selected_ids[0])
+	if orders.selected_ids.size() != 1: return ""
+	var i: int = state.units.index_of(orders.selected_ids[0])
 	if i == -1: return ""
 	var unit: Dictionary = _unit_record(state.units, i)
 	var line: String = "%s #%d HP %d/%d" % [Registry.kind(unit.kind).display_name, unit.id, unit.hp / 1000, unit.max_hp / 1000]
@@ -773,10 +434,10 @@ func _ordinal(n: int) -> String:
 	return str(n) + suffix
 
 func _inspected(state: Dictionary) -> Dictionary:
-	var i: int = state.units.index_of(inspected_id)
+	var i: int = state.units.index_of(orders.inspected_id)
 	if i != -1: return _unit_record(state.units, i)
 	for building: Dictionary in state.buildings:
-		if building.id == inspected_id: return building
+		if building.id == orders.inspected_id: return building
 	return {}
 
 func _enemy_summary(state: Dictionary) -> String:

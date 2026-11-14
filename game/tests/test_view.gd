@@ -98,11 +98,11 @@ func test_build_preview(runner) -> bool:
 	runner.check(view.get("_preview_cells") == [],"V4 preview clear")
 	var main = preload("res://scripts/match/match_screen.gd").new()
 	var ids: Array[int] = [1]
-	main.selected_ids = ids
-	runner.check(main._view_selection() == [1],"V4 default selection hook")
-	var selected: Array[int] = main._view_selection()
+	main.orders.selected_ids = ids
+	runner.check(main.orders.view_selection() == [1],"V4 default selection hook")
+	var selected: Array[int] = main.orders.view_selection()
 	selected.clear()
-	runner.check(main.selected_ids == [1],"V4 hook selection copied")
+	runner.check(main.orders.selected_ids == [1],"V4 hook selection copied")
 	main.free()
 	view.free()
 	return true

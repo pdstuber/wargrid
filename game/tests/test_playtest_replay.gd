@@ -81,7 +81,7 @@ func _send_move(i: int, main) -> void:
 	var size: Array = main.driver.sim.snapshot().map.size
 	var target := Vector2(size[0] / 2.0, size[1] / 2.0)
 	if Vector2(builder.position[0], builder.position[1]).distance_to(target) < 10.0: target = Vector2(2.5, 2.5)
-	main.selected_ids.assign([builder.id])
+	main.orders.selected_ids.assign([builder.id])
 	main._submit({"type": "move", "entity_ids": [builder.id], "target": [target.x, target.y]})
 
 func _replay(lines: PackedStringArray, args: Dictionary):
