@@ -828,8 +828,9 @@ func test_public_sans_font(runner) -> bool:
 			var variation: Font = theme.get_font(each, type)
 			if variation is FontVariation and variation.variation_embolden != 0.0: fake += 1
 	runner.check(fake == 0, "F1 no fake bold left in the launcher theme, got %d" % fake)
-	for file: String in ["PublicSans-Regular.ttf", "PublicSans-SemiBold.ttf", "PublicSans-Bold.ttf", "PublicSans-ExtraBold.ttf", "PublicSans-OFL.txt"]:
-		runner.check(FileAccess.file_exists("res://fonts/" + file), "F1 %s ships in game/fonts" % file)
+	for file: String in ["PublicSans-Regular.ttf", "PublicSans-SemiBold.ttf", "PublicSans-Bold.ttf", "PublicSans-ExtraBold.ttf"]:
+		runner.check(ResourceLoader.exists("res://fonts/" + file) and load("res://fonts/" + file) is FontFile, "F1 %s ships in game/fonts" % file)
+	runner.check(FileAccess.file_exists("res://fonts/PublicSans-OFL.txt"), "F1 PublicSans-OFL.txt ships in game/fonts")
 	return true
 
 const SEMIBOLD := "res://fonts/PublicSans-SemiBold.ttf"

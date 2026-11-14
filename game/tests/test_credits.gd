@@ -141,7 +141,8 @@ func test_public_sans_notice(runner) -> bool:
 	return true
 
 func test_exports_ship_the_font_licence(runner) -> bool:
-	if not FileAccess.file_exists("res://export_presets.cfg"): return true # exported packs omit the presets
+	runner.check(FileAccess.file_exists("res://fonts/PublicSans-OFL.txt"), "CR13 the licence is in the project or pack")
+	if not FileAccess.file_exists("res://export_presets.cfg"): return true # exported packs omit the presets; the project run checks them
 	var config := ConfigFile.new()
 	runner.check(config.load("res://export_presets.cfg") == OK, "CR13 export presets load")
 	for section: String in config.get_sections():
