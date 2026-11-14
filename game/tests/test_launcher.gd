@@ -792,6 +792,7 @@ func test_no_green_on_switches(runner) -> bool:
 		var on: Texture2D = button.get_theme_icon("checked")
 		var off: Texture2D = button.get_theme_icon("unchecked")
 		runner.check(on != null and off != null and on != off and on.resource_path.begins_with("res://ui/") and off.resource_path.begins_with("res://ui/"), "U1 %s shows its state with the launcher's own knob icons" % button.name)
+		runner.check(_close(on.get_image().get_pixel(1, 1), SELECTED) and not _close(off.get_image().get_pixel(1, 1), SELECTED), "U1b %s draws its track in the selection green when on and not when off" % button.name)
 	launcher.free()
 	return true
 
@@ -917,6 +918,9 @@ func test_round4_minors(runner) -> bool:
 		runner.check(style is StyleBoxFlat and style.border_color.is_equal_approx(line) and style.border_width_left == 1, "M3 %s border is the CSS --line #808080, got %s" % [pair[0], style.border_color if style is StyleBoxFlat else "no flat style"])
 	return true
 
+func _close(a: Color, b: Color) -> bool:
+	return absf(a.r - b.r) < 0.01 and absf(a.g - b.g) < 0.01 and absf(a.b - b.b) < 0.01
+
 func test_long_dropdown_text_keeps_a_gap(runner) -> bool:
 	var saved: String = AudioSettings.path
 	AudioSettings.path = scratch_for("round4-gap")
@@ -930,8 +934,8 @@ func test_long_dropdown_text_keeps_a_gap(runner) -> bool:
 			var font: Font = dropdown.get_theme_font("font")
 			var text_width: float = font.get_string_size(dropdown.text, HORIZONTAL_ALIGNMENT_LEFT, -1, dropdown.get_theme_font_size("font_size")).x
 			var arrow: float = dropdown.get_theme_icon("arrow").get_size().x
-			var used: float = dropdown.get_theme_stylebox("normal").get_margin(SIDE_LEFT) + text_width + arrow + dropdown.get_theme_constant("arrow_margin")
-			runner.check(dropdown.text == "Free Resistance Coalition" and used + 8.0 <= dropdown.size.x, "M4 %s/%s keeps 8 px between '%s' and the arrow at 1280x720: needs %s of %s" % [page_name, path, dropdown.text, used + 8.0, dropdown.size.x])
+			var gap: float = dropdown.size.x - dropdown.get_theme_constant("arrow_margin") - arrow - (dropdown.get_theme_stylebox("normal").get_margin(SIDE_LEFT) + text_width)
+			runner.check(dropdown.text == "Free Resistance Coalition" and gap >= 8.0, "M4 %s/%s keeps 8 px between '%s' and the arrow at 1280x720, got %s" % [page_name, path, dropdown.text, gap])
 	built[1].free()
 	built[0].free()
 	_restore(saved)
