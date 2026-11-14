@@ -1,15 +1,15 @@
 # One controller verification
 
 ```text
-Resume record (updated 2026-11-14: Task 0 GREEN, not committed)
-Branch / base commit / working-tree state: one-controller (worktree ~/projects/wargrid-wt-onecontrol) / main 74950e5 (= 35d22b5 plus the plan commit; game/ unchanged) / only this file modified
-Last green task / next incomplete task: Task 0 / Task 1
-Changed paths since last commit: docs/reference/one-controller-verification.md
-Last command / cases / checks / failures / exit / marker: full suite with traces on 74950e5 / 858 / 144249 / 0 / exit 0 / TESTS PASSED 144249
+Resume record (updated 2026-11-14: Task 1 GREEN, not committed)
+Branch / base commit / working-tree state: one-controller (worktree ~/projects/wargrid-wt-onecontrol) / 05d0794 (Task 0 commit; game/ = 35d22b5) / Task 1 files uncommitted
+Last green task / next incomplete task: Task 1 / Task 2
+Changed paths since last commit: docs/reference/one-controller-verification.md, game/tests/input_script_rows.gd (new, with .uid), game/tests/test_skirmish_scene.gd, game/tests/test_online_scene.gd
+Last command / cases / checks / failures / exit / marker: full suite after Task 1 / 860 / 144276 / 0 / exit 0 / TESTS PASSED 144276 (static gates CHECKS PASSED 5)
 Known red case or blocker: none
 Approved decisions, pre-authorizations used, deferred gates: package note "One controller" (user, 2026-11-13); plan "Decisions (user, 2026-11-14)" 1-20; local commits as the night run handoff pre-authorizes (one per GREEN task, two in Task 9); benchmark only in Task 8, alone; Task 1 commit (V10 base): none yet; Task 9 re-pin commit (V10 base from Task 9): none yet
 Usage so far (python3 tools/session_usage.py <session files>): n/a
-Next exact action: Task 1 Step 1 (characterisation input scripts IC1, IC2)
+Next exact action: Task 2 Step 1 (port the M2 and M3 scene checks onto the match scene); the coordinator commits Task 1 first and records its hash in the Approved line and the Characterisation rows
 ```
 
 Plan: [One controller plan](../superpowers/plans/2026-11-14-one-controller.md). Spec: `docs/packages.md` package note "One controller" (`:84`); design answers "Package review, second pass" (`:474-505`) and "Main branch audit" (`:363-378`); audit FIX-6 and A-1 (kept outside the repository, `~/projects/wargrid-overnight-work/audit-2026-11-11/`). Logs: `~/projects/wargrid-overnight-work/one-controller/logs/` (outside the repository; commands use the absolute path). A stop after any GREEN task resumes at the next row of the task table: the subagent reads this record, checks `git log --oneline -1` and `git status --short` in the worktree against it, and starts that task's Step 1.
@@ -19,7 +19,7 @@ Plan: [One controller plan](../superpowers/plans/2026-11-14-one-controller.md). 
 | Task | What | Model | Status |
 |---|---|---|---|
 | 0 | Baseline: worktree, import, suite and traces, pins, member and simulation censuses, pre-tree scan, check-id census | Sonnet | GREEN (uncommitted) |
-| 1 | Characterisation: IC1 offline and IC2 online input scripts | Sonnet | not started |
+| 1 | Characterisation: IC1 offline and IC2 online input scripts | Sonnet | GREEN (uncommitted) |
 | 2 | Port the M2 and M3 scene checks onto the match scene (old chain) | Sonnet | not started |
 | 3 | Delete the demo scenes and demo-only checks | Sonnet | not started |
 | 4 | Extract the driver (OD1, OD2); `main.driver.sim` rename (Decision 6) | Sonnet | not started |
@@ -121,13 +121,14 @@ Member and simulation counts at Task 0 equal the `35d22b5` expectations in every
 
 | Item | Value |
 |---|---|
-| IC1 steps run / rows | |
-| IC2 steps run (which IC1 steps the online world allowed; step 10 yes / no) / rows | |
-| Two runs identical | |
-| Mutation (a) tick default: IC1 first failing row | |
-| Mutation (b) `not is_selecting()` guard: IC1 / IC2 first failing row | |
+| IC1 steps run / rows | all 21 steps / 21 rows (steps 3, 9, 12, 19 carry the `HUD/Status` text; step 21 adds `tick=1`) |
+| IC2 steps run (which IC1 steps the online world allowed; step 10 yes / no) / rows | 1, 2, 4, 6, 7, 8, 9, 10, 11, 17, 18 / 11 rows; step 10 (F3 during placement) yes, so Task 9 re-pins IC2 as well; step 9 carries the Status text |
+| Two runs identical | yes (captured logs `t1-cap1.log`, `t1-cap2.log` compare equal for both cases) |
+| Mutation (a) tick default: IC1 first failing row | row 1 (step 2, `"tick":1` instead of 0); reverted, `git diff --stat` shows no `game/scripts` change |
+| Mutation (b) `not is_selecting()` guard: IC1 / IC2 first failing row | IC1 row 5 (step 6, extra `stop`), IC2 row 3 (step 6, extra `stop`); reverted |
 | Task 1 commit (V10 base until Task 9; also in the resume record) | |
-| Each step's intended effect checked before pinning (`IC1 step %d took effect`) | |
+| Censuses after Task 1 (V11, V11b) | check ids 661 (659 plus `IC1`, `IC2`); labels 3104 (3070 plus 34 `IC1`/`IC2` labels); pre-tree scan exit 0, `NO-TREE` lines now `test_online_scene.gd:319` (N5, was `:317`: two preload lines added), `test_skirmish.gd:700`, `test_view.gd:99` |
+| Each step's intended effect checked before pinning (`IC1 step %d took effect`) | yes, every step has its check (IC1: 21 steps incl. a separate `IC1 step 8 opened the menu`; IC2 likewise); none was missing an effect |
 
 ## Ported checks (Task 2) and demo-only list (Task 3)
 
@@ -171,6 +172,8 @@ Expected on `35d22b5` by reading (Task 2 confirms by running on the old chain):
 
 | Task | File | Reason | Removed line (or count, for a whole deleted case) |
 |---|---|---|---|
+| 1 | `game/tests/test_skirmish_scene.gd` | IC1 added to `cases()` | `return [test_skirmish_ready_and_tick, …, test_hud_summaries_are_pinned]` |
+| 1 | `game/tests/test_online_scene.gd` | IC2 added to `cases()` | `return [test_seat_two_controls_player_two, …, test_launcher_reads_no_page_off_web]` |
 
 ## Accepted reorders (plan R1-R4; reviewer verdict in Task 11)
 
@@ -235,3 +238,4 @@ Both quirks were found by reading on `4ed3534` and are unchanged on `35d22b5`:
 - 2026-11-14, plan refinement after the kickoff questionnaire, tree `~/projects/wargrid` `main` `35d22b5` clean, docs only (no suite, no Godot run). Read: `AGENTS.md`, `docs/night-run.md` Coordinator rules, `docs/milestone-prompt.md` stop conditions, the draft plan with its "Answers (user, 2026-11-14)", the Sim quick wins plan and verification file (format); the four controller scripts in full; `lockstep.gd` `advance` and `desync_report`, `simulation.gd` `issue_command` and the due-command loop, `tools/test_sim_boundary.py`, `tools/run_tests.sh`, `tools/check_public.sh`. Diff `4ed3534..35d22b5` on `game/`: the controller scripts changed only at `online_main.gd:109` (`desync_report(simulation)`); tests changed only in `test_combat.gd`, `test_defences.gd`, `test_lockstep.gd` and `test_playtest_replay.gd` (one case appended). Anchors: every explicit `file:line` in the plan compared between both trees and re-read on `35d22b5`; drifted and fixed: `simulation.gd:160-164` → `issue_command` `:159`, `normalized` `:164-168`; `docs/development.md:50` → `:52` (was the section heading); guide ch. 4 `:33`/`:68`/`:157-159`/`:176` → `:34`/`:69`/`:160-162`/`:179`, ch. 10 `:81`/`:138`/`:160` → `:82`/`:143`/`:166`, ch. 13 footer `:239` → `:246`; added `test_pause_menu.gd:4` (Base preload, Task 2), `test_online_scene.gd:318` (N5 path, Task 5), guide ch. 1 `:37`, `:45`, `:92-94`, ch. 2 `:114`, ch. 4 `:62`, `:64`, ch. 5 `:9`, `:153`, `:156`, README footer `:117`. Counts verified on `35d22b5`: simulation census above (212 / 194 / 24; 205 renamed in 11 files; production 55); member census as in the draft; free check ids `IC1`, `IC2`, `OD1`, `OD2`, `OR1`, `HU1`, `PO19`, `N27`. Scripts run read-only against the tree: the plan's pre-tree scan (exit 0, three `NO-TREE` lines, no `PRE-TREE`; a planted pre-tree read is caught) and the Task 4 rename script in `--dry` mode with the `35d22b5` counts (`RENAME OK`), and for real on a scratch copy (260 `driver.sim` after, no old match left). Not verified: whether an own due-time rejection can be built in a two-tick online frame (Task 10 Step 1 decides), the Task 2 ports on `skirmish.tscn`, and IC2's step set.
 - 2026-11-14, readiness review fixes (fresh Opus review: READY AFTER FIXES), tree `main` `35d22b5`, docs only. Applied findings 1, 3-8, 10-14, 16, 17 after checking each against `35d22b5`; 2 and 9 as the coordinator directed; 15 is in the settings copy. Run scripts written to the logs folder from the plan text (byte-identical, checked). Tested outside the repository on a scratch git copy of `game/tests` and `game/scripts`: `rename.py t4` with the `35d22b5` counts (`RENAME OK t4 files=15`), then `v13_check.py` (`V13 OK removed=197 renamed=197 listed=0`; a hand edit of N5 is `UNEXPLAINED` until `--add` lists it, then `V13 OK`; an unlisted V4 edit fails); `rename.py t6`/`t7` dry runs confirm the per-file counts in the rules comments; `pretree.py` exit 0 with three `NO-TREE` lines; label census 3070 lines, of which the demo set is 8 S8, 2 S9, 1 SD22.
 - 2026-11-14 night, Task 0 baseline (Sonnet subagent), worktree `one-controller` at `74950e5` (game/ identical to `35d22b5`), load 2.2 to 2.4. Import exit 0; full suite with traces exit 0, 55 s, `CASES 858 CHECKS 144249 FAILURES 0`, `TESTS PASSED 144249`; traces 1200/1200/1200/100 lines; pins and censuses as in the tables above, no drift, no stop condition. Logs in `~/projects/wargrid-overnight-work/one-controller/logs/` (`t0-suite.log`, `t0-import.log`, `t0-pretree.log`, `ids-before.txt`, `labels-before.txt`, `census-before.txt`, `sim-census-before.txt`). Not run in Task 0: lint, warnings, netplay, benchmark.
+- 2026-11-14 night, Task 1 characterisation (Sonnet subagent), worktree `one-controller` at `05d0794`, `game/scripts` untouched. New: `game/tests/input_script_rows.gd` (`IC1_ROWS` 21 lines, `IC2_ROWS` 11 lines), `test_input_script_offline` in `test_skirmish_scene.gd` (helpers `_ic_row`, `_ic_esc`, `_ic_click`, `_ic_box`, `_ic_world`, `_ic_first_difference`), `test_input_script_online` in `test_online_scene.gd` (helpers `_ic_row`, `_ic_esc`, `_ic_plane`, `_ic_first_difference`; it preloads `test_base_scene.gd` for the `key`/`pointer` helpers and sits above `test_launcher_reads_no_page_off_web` so the pre-tree scan output stays the same). IC1 world: own builder is an `frc_builder` (it collects, so the pile step gathers), two `usa_tank`, an `frc_rifle_infantry`, completed `usa_barracks`, unfinished `usa_power_plant` (completed set false), completed `frc_defence` hub with one occupant, one supply pile, enemy `usa_tank`. IC2 ran on seat 1 with the peer packets for ticks 4-200 queued up front; its commands start at sequence 1 (the faction choice is 0). Results: filtered run exit 0 `CASES 2 CHECKS 34`; mutations (a) and (b) red as in the table, reverted; full suite exit 0 `CASES 860 CHECKS 144276 FAILURES 0`, `TESTS PASSED 144276`; `sh tools/run_checks.sh` exit 0 `CHECKS PASSED 5` (lint, warnings, Python, shell, public); `v13_check.py` `V13 OK removed=2 renamed=0 listed=2`. Not run in Task 1: traces comparison (no `game/scripts` change), netplay, benchmark. Logs `t1-*.log` in the logs folder.

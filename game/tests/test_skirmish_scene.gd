@@ -11,9 +11,10 @@ const Registry = preload("res://scripts/simulation/definitions/definitions.gd")
 const Profiler = preload("res://scripts/debug/profiler.gd")
 const UiStyle = preload("res://scripts/presentation/ui_style.gd")
 const ViewRows = preload("res://tests/test_view_rows.gd")
+const IcRows = preload("res://tests/input_script_rows.gd")
 
 func cases() -> Array[Callable]:
-	return [test_skirmish_ready_and_tick, test_combat_context_input, test_match_hud_and_restart, test_combat_view, test_hud_layout_and_focus, test_hud_build_line, test_enemy_selection_read_only, test_rally_input_and_marker, test_supply_pile_labels, test_attack_move_hint_and_rejection, test_selection_prunes_dead, test_order_marks_own_only, test_health_bar_clear_of_boxes, test_result_clear_of_status, test_silent_keys_explain, test_hud_strings_use_display_names, test_hud_font_size_is_shared, test_defence_attack_scene, test_enter_unload_scene, test_right_click_pile_gathers, test_right_click_pile_in_launcher_flow, test_frc_laborer_right_click_pile, test_one_snapshot_per_refresh, test_refresh_waits_for_next_frame, test_auto_pick_samples_present_time, test_hud_summaries_are_pinned]
+	return [test_skirmish_ready_and_tick, test_combat_context_input, test_match_hud_and_restart, test_combat_view, test_hud_layout_and_focus, test_hud_build_line, test_enemy_selection_read_only, test_rally_input_and_marker, test_supply_pile_labels, test_attack_move_hint_and_rejection, test_selection_prunes_dead, test_order_marks_own_only, test_health_bar_clear_of_boxes, test_result_clear_of_status, test_silent_keys_explain, test_hud_strings_use_display_names, test_hud_font_size_is_shared, test_defence_attack_scene, test_enter_unload_scene, test_right_click_pile_gathers, test_right_click_pile_in_launcher_flow, test_frc_laborer_right_click_pile, test_one_snapshot_per_refresh, test_refresh_waits_for_next_frame, test_auto_pick_samples_present_time, test_hud_summaries_are_pinned, test_input_script_offline]
 
 func _setup(runner):
 	var main = Scene.instantiate()
@@ -671,5 +672,149 @@ func test_hud_summaries_are_pinned(runner) -> bool:
 		main.inspected_id = id
 		texts.append(main._enemy_summary(view))
 	runner.check(texts == HUD_TEXTS, "HUD1 pinned summary texts, got " + str(texts))
+	main.free()
+	return true
+
+func _ic_row(main, step: int, seen: Array, status: bool = false) -> String:
+	var pending: Array = main.simulation.snapshot().pending_commands
+	var added: PackedStringArray = []
+	for command: Dictionary in pending.slice(mini(seen[0], pending.size())): added.append(JSON.stringify(command))
+	seen[0] = pending.size()
+	var row: String = "%d|sel=%s|bld=%d|insp=%d|place=%s|pend=%s|am=%s|esc=%s|menu=%s|perf=%s|%s" % [step, main.selected_ids, main.selected_building_id, main.inspected_id, main._placement_kind, main._pending_placement, main._attack_move_mode, main._escape_pending(), main.menu_open(), main._perf.visible, ";".join(added)]
+	return row + "|" + main.get_node("HUD/Status").text if status else row
+
+func _ic_esc(main) -> void:
+	var event := InputEventKey.new()
+	event.physical_keycode = KEY_ESCAPE
+	event.keycode = KEY_ESCAPE
+	event.pressed = true
+	var pass_on: bool = not main._pause.visible and main._escape_pending()
+	main._input(event)
+	if pass_on: main._unhandled_input(event)
+
+func _ic_click(helper, main, plane: Vector2) -> void:
+	helper.pointer(main, plane, MOUSE_BUTTON_LEFT, true)
+	helper.pointer(main, plane, MOUSE_BUTTON_LEFT, false)
+
+func _ic_box(plane_a: Vector2, plane_b: Vector2, margin: float) -> Array[Vector2]:
+	var low := Vector2(minf(plane_a.x, plane_b.x), minf(plane_a.y, plane_b.y)) - Vector2.ONE * margin
+	var high := Vector2(maxf(plane_a.x, plane_b.x), maxf(plane_a.y, plane_b.y)) + Vector2.ONE * margin
+	return [low, high]
+
+func _ic_world(main) -> Dictionary:
+	var sim = Skirmish.create(false)
+	var ids := {}
+	ids.tank_a = sim.spawn(1, Vector2(10.5, 6.5), "usa_tank")
+	ids.tank_b = sim.spawn(1, Vector2(11.5, 6.5), "usa_tank")
+	ids.enemy = sim.spawn(2, Vector2(15.5, 6.5), "usa_tank")
+	ids.builder = sim.spawn(1, Vector2(6.5, 12.5), "frc_builder")
+	ids.infantry = sim.spawn(1, Vector2(14.5, 14.5), "frc_rifle_infantry")
+	ids.barracks = Fixture.add_completed(sim, 1, "usa_barracks", Vector2i(20, 20))
+	ids.site = Fixture.add_completed(sim, 1, "usa_power_plant", Vector2i(26, 12))
+	sim._buildings[ids.site].completed = false
+	ids.hub = Fixture.add_completed(sim, 1, "frc_defence", Vector2i(30, 22))
+	ids.occupant = sim.spawn(1, Vector2(28.5, 22.5), "frc_rifle_infantry")
+	sim._entities[ids.occupant].container_id = ids.hub
+	sim._entities[ids.occupant].position = [30.5, 22.5]
+	ids.pile = sim.add_supply_source(Vector2i(34, 8), 10)
+	sim.start_match([1, 2] as Array[int])
+	main.simulation = sim
+	main._refresh()
+	return ids
+
+func _ic_first_difference(rows: PackedStringArray, expected: PackedStringArray) -> int:
+	for i in maxi(rows.size(), expected.size()):
+		if i >= rows.size() or i >= expected.size() or rows[i] != expected[i]: return i
+	return -1
+
+func test_input_script_offline(runner) -> bool:
+	var helper = BaseScene.new()
+	var main = await _setup(runner)
+	var ids: Dictionary = _ic_world(main)
+	var seen: Array = [0]
+	var rows := PackedStringArray()
+	var at = func(x: float, y: float) -> Vector2: return Iso.world_to_plane(Vector2(x, y)) + Vector2(0, -8)
+	var tanks: Array[Vector2] = _ic_box(Iso.world_to_plane(Vector2(10.5, 6.5)), Iso.world_to_plane(Vector2(11.5, 6.5)), 30.0)
+	var sim_orders = func(type: String) -> int: return _pending(main, type)
+	helper.pointer(main, tanks[0], MOUSE_BUTTON_LEFT, true)
+	helper.pointer(main, tanks[1], MOUSE_BUTTON_LEFT, false)
+	runner.check(main.selected_ids == [ids.tank_a, ids.tank_b], "IC1 step 1 took effect")
+	rows.append(_ic_row(main, 1, seen))
+	helper.pointer(main, Iso.world_to_plane(Vector2(20.5, 10.5)), MOUSE_BUTTON_RIGHT, true)
+	runner.check(sim_orders.call("move") == 1, "IC1 step 2 took effect")
+	rows.append(_ic_row(main, 2, seen))
+	helper.key(main, KEY_A)
+	helper.pointer(main, Iso.world_to_plane(Vector2(24.5, 8.5)), MOUSE_BUTTON_LEFT, true)
+	helper.pointer(main, Iso.world_to_plane(Vector2(24.5, 8.5)), MOUSE_BUTTON_LEFT, false)
+	runner.check(sim_orders.call("attack_move") == 1, "IC1 step 3 took effect")
+	rows.append(_ic_row(main, 3, seen, true))
+	helper.key(main, KEY_S)
+	runner.check(sim_orders.call("stop") == 1, "IC1 step 4 took effect")
+	rows.append(_ic_row(main, 4, seen))
+	helper.pointer(main, at.call(15.5, 6.5), MOUSE_BUTTON_RIGHT, true)
+	runner.check(sim_orders.call("attack") == 1, "IC1 step 5 took effect")
+	rows.append(_ic_row(main, 5, seen))
+	helper.pointer(main, tanks[0], MOUSE_BUTTON_LEFT, true)
+	helper.key(main, KEY_S)
+	helper.pointer(main, tanks[1], MOUSE_BUTTON_LEFT, false)
+	runner.check(sim_orders.call("stop") == 1 and main.selected_ids == [ids.tank_a, ids.tank_b], "IC1 step 6 took effect")
+	rows.append(_ic_row(main, 6, seen))
+	_ic_esc(main)
+	runner.check(main.selected_ids.is_empty(), "IC1 step 7 took effect")
+	rows.append(_ic_row(main, 7, seen))
+	_ic_esc(main)
+	runner.check(main.menu_open(), "IC1 step 8 opened the menu")
+	_ic_esc(main)
+	runner.check(not main.menu_open(), "IC1 step 8 took effect")
+	rows.append(_ic_row(main, 8, seen))
+	_ic_click(helper, main, at.call(6.5, 12.5))
+	helper.key(main, KEY_1)
+	runner.check(not main._placement_kind.is_empty(), "IC1 step 9 took effect")
+	rows.append(_ic_row(main, 9, seen, true))
+	helper.key(main, KEY_F3)
+	rows.append(_ic_row(main, 10, seen))
+	helper.pointer(main, Iso.world_to_plane(Vector2(36.5, 26.5)), MOUSE_BUTTON_LEFT, false)
+	runner.check(sim_orders.call("build") == 1, "IC1 step 11 took effect")
+	rows.append(_ic_row(main, 11, seen))
+	_ic_click(helper, main, at.call(21.0, 21.0))
+	helper.key(main, KEY_E)
+	runner.check(sim_orders.call("produce") == 1, "IC1 step 12 took effect")
+	rows.append(_ic_row(main, 12, seen, true))
+	helper.pointer(main, Iso.world_to_plane(Vector2(26.5, 16.5)), MOUSE_BUTTON_RIGHT, true)
+	runner.check(sim_orders.call("set_rally") == 1, "IC1 step 13 took effect")
+	rows.append(_ic_row(main, 13, seen))
+	_ic_click(helper, main, at.call(6.5, 12.5))
+	helper.pointer(main, at.call(27.0, 13.0), MOUSE_BUTTON_RIGHT, true)
+	runner.check(sim_orders.call("resume_build") == 1, "IC1 step 14 took effect")
+	rows.append(_ic_row(main, 14, seen))
+	_ic_click(helper, main, at.call(30.5, 22.5))
+	helper.key(main, KEY_U)
+	runner.check(sim_orders.call("unload") == 1, "IC1 step 15 took effect")
+	rows.append(_ic_row(main, 15, seen))
+	_ic_click(helper, main, at.call(14.5, 14.5))
+	helper.pointer(main, at.call(30.5, 22.5), MOUSE_BUTTON_RIGHT, true)
+	runner.check(sim_orders.call("enter") == 1, "IC1 step 16 took effect")
+	rows.append(_ic_row(main, 16, seen))
+	var builder_box: Array[Vector2] = _ic_box(Iso.world_to_plane(Vector2(6.5, 12.5)), Iso.world_to_plane(Vector2(6.5, 12.5)), 30.0)
+	helper.pointer(main, builder_box[0], MOUSE_BUTTON_LEFT, true)
+	helper.key(main, KEY_1)
+	helper.pointer(main, builder_box[1], MOUSE_BUTTON_LEFT, false)
+	runner.check(not main._placement_kind.is_empty() and main._pending_placement.is_empty(), "IC1 step 17 took effect")
+	rows.append(_ic_row(main, 17, seen))
+	_ic_esc(main)
+	_ic_esc(main)
+	runner.check(main._placement_kind.is_empty() and main.selected_ids.is_empty(), "IC1 step 18 took effect")
+	rows.append(_ic_row(main, 18, seen))
+	_ic_click(helper, main, at.call(15.5, 6.5))
+	runner.check(main.inspected_id == ids.enemy, "IC1 step 19 took effect")
+	rows.append(_ic_row(main, 19, seen, true))
+	_ic_click(helper, main, at.call(6.5, 12.5))
+	helper.pointer(main, at.call(35.0, 9.0), MOUSE_BUTTON_RIGHT, true)
+	runner.check(sim_orders.call("gather") == 1, "IC1 step 20 took effect")
+	rows.append(_ic_row(main, 20, seen))
+	main._physics_process(0.0)
+	rows.append(_ic_row(main, 21, seen) + "|tick=%d" % main.simulation.tick())
+	var first: int = _ic_first_difference(rows, IcRows.IC1_ROWS)
+	runner.check(first == -1, "IC1 row %d matches the chain recorded 2026-11-14, got %s" % [first, rows[first] if first >= 0 and first < rows.size() else "no row"])
 	main.free()
 	return true

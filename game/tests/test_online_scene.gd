@@ -8,6 +8,8 @@ const AudioSettings = preload("res://scripts/presentation/audio_settings.gd")
 const MatchSettings = preload("res://scripts/match_settings.gd")
 const PlaytestSettings = preload("res://scripts/playtest/playtest_settings.gd")
 const SkirmishMain = preload("res://scripts/skirmish_main.gd")
+const BaseScene = preload("res://tests/test_base_scene.gd")
+const IcRows = preload("res://tests/input_script_rows.gd")
 const JoinLink = preload("res://scripts/join_link.gd")
 const Lockstep = preload("res://scripts/net/lockstep.gd")
 const Wire = preload("res://scripts/net/wire.gd")
@@ -34,7 +36,7 @@ class FakeTransport extends RefCounted:
 	func rtt_samples() -> PackedInt64Array: return PackedInt64Array([40000])
 
 func cases() -> Array[Callable]:
-	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_rejection_line, test_funds_rejection_is_announced, test_overlay_net_line, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_stall_frames_are_not_step_frames, test_notices_reach_the_hud_while_processing, test_launcher_layout, test_launcher_sections, test_launcher_faction_selectors_fit, test_launcher_faction_rows, test_plays_dry_wells_from_each_seat, test_offline_uses_chosen_map, test_restart_keeps_map_and_starts, test_restart_drops_old_stepped_results, test_joiner_refuses_other_map, test_old_relay_mismatch_is_shown, test_cancel_and_copy_while_waiting, test_start_without_settings_is_a_protocol_error, test_both_seats_share_map_and_starts, test_host_told_opponent_left_before_start, test_credits_panel_layout, test_online_playtest_record, test_launcher_release_hides_relay, test_launcher_prefills_from_page, test_launcher_relay_help, test_copy_link_on_web, test_launcher_reads_no_page_off_web]
+	return [test_seat_two_controls_player_two, test_status_lines_and_layout, test_rejection_line, test_funds_rejection_is_announced, test_overlay_net_line, test_match_end_reports_latency, test_runs_at_tick_rate, test_catch_up_is_bounded, test_stall_frames_are_not_step_frames, test_notices_reach_the_hud_while_processing, test_launcher_layout, test_launcher_sections, test_launcher_faction_selectors_fit, test_launcher_faction_rows, test_plays_dry_wells_from_each_seat, test_offline_uses_chosen_map, test_restart_keeps_map_and_starts, test_restart_drops_old_stepped_results, test_joiner_refuses_other_map, test_old_relay_mismatch_is_shown, test_cancel_and_copy_while_waiting, test_start_without_settings_is_a_protocol_error, test_both_seats_share_map_and_starts, test_host_told_opponent_left_before_start, test_credits_panel_layout, test_online_playtest_record, test_launcher_release_hides_relay, test_launcher_prefills_from_page, test_launcher_relay_help, test_copy_link_on_web, test_launcher_reads_no_page_off_web, test_input_script_online]
 
 func _online(runner, seat: int) -> Dictionary:
 	var transport := FakeTransport.new()
@@ -865,6 +867,98 @@ func test_copy_link_on_web(runner) -> bool:
 	desktop.free()
 	AudioSettings.path = saved_settings
 	DirAccess.remove_absolute(scratch)
+	return true
+
+func _ic_row(main, transport: FakeTransport, step: int, seen: Array, status: bool = false) -> String:
+	var sent: Array = _own_commands(transport)
+	var added: PackedStringArray = []
+	for command: Dictionary in sent.slice(mini(seen[0], sent.size())): added.append(JSON.stringify(command))
+	seen[0] = sent.size()
+	var row: String = "%d|sel=%s|bld=%d|insp=%d|place=%s|pend=%s|am=%s|esc=%s|menu=%s|perf=%s|%s" % [step, main.selected_ids, main.selected_building_id, main.inspected_id, main._placement_kind, main._pending_placement, main._attack_move_mode, main._escape_pending(), main.menu_open(), main._perf.visible, ";".join(added)]
+	return row + "|" + main.get_node("HUD/Status").text if status else row
+
+func _ic_esc(main) -> void:
+	var event := InputEventKey.new()
+	event.physical_keycode = KEY_ESCAPE
+	event.keycode = KEY_ESCAPE
+	event.pressed = true
+	var pass_on: bool = not main._pause.visible and main._escape_pending()
+	main._input(event)
+	if pass_on: main._unhandled_input(event)
+
+func _ic_plane(main, id: int) -> Vector2:
+	var unit: Dictionary = _entity(main, id)
+	return Iso.world_to_plane(Vector2(unit.position[0], unit.position[1]))
+
+func _ic_first_difference(rows: PackedStringArray, expected: PackedStringArray) -> int:
+	for i in maxi(rows.size(), expected.size()):
+		if i >= rows.size() or i >= expected.size() or rows[i] != expected[i]: return i
+	return -1
+
+func test_input_script_online(runner) -> bool:
+	var helper = BaseScene.new()
+	var online: Dictionary = await _online(runner, 1)
+	var main = online.main
+	var transport: FakeTransport = online.transport
+	_peer_packets(transport, 2, 4, 200)
+	_run(main, 8)
+	runner.check(not _entity(main, 3).is_empty(), "IC2 fixture: the own start unit exists")
+	var seen: Array = [0]
+	var rows := PackedStringArray()
+	var step = func(number: int, frames: int, status: bool = false) -> void:
+		_run(main, frames)
+		rows.append(_ic_row(main, transport, number, seen, status))
+	var commands = func(type: String) -> int: return _own_commands(transport).filter(func(command: Dictionary) -> bool: return command.type == type).size()
+	var box = func() -> Array: return [_ic_plane(main, 3) - Vector2.ONE * 40.0, _ic_plane(main, 3) + Vector2.ONE * 40.0]
+	var corners: Array = box.call()
+	helper.pointer(main, corners[0], MOUSE_BUTTON_LEFT, true)
+	helper.pointer(main, corners[1], MOUSE_BUTTON_LEFT, false)
+	step.call(1, 3)
+	runner.check(main.selected_ids.has(3), "IC2 step 1 took effect")
+	helper.pointer(main, Iso.world_to_plane(Vector2(12.5, 18.5)), MOUSE_BUTTON_RIGHT, true)
+	step.call(2, 3)
+	runner.check(commands.call("move") == 1, "IC2 step 2 took effect")
+	helper.key(main, KEY_S)
+	step.call(4, 3)
+	runner.check(commands.call("stop") == 1, "IC2 step 4 took effect")
+	corners = box.call()
+	helper.pointer(main, corners[0], MOUSE_BUTTON_LEFT, true)
+	helper.key(main, KEY_S)
+	helper.pointer(main, corners[1], MOUSE_BUTTON_LEFT, false)
+	step.call(6, 3)
+	runner.check(commands.call("stop") == 1 and main.selected_ids.has(3), "IC2 step 6 took effect")
+	_ic_esc(main)
+	step.call(7, 3)
+	runner.check(main.selected_ids.is_empty(), "IC2 step 7 took effect")
+	_ic_esc(main)
+	runner.check(main.menu_open(), "IC2 step 8 opened the menu")
+	_ic_esc(main)
+	step.call(8, 3)
+	runner.check(not main.menu_open(), "IC2 step 8 took effect")
+	var at: Vector2 = _ic_plane(main, 3) + Vector2(0, -8)
+	helper.pointer(main, at, MOUSE_BUTTON_LEFT, true)
+	helper.pointer(main, at, MOUSE_BUTTON_LEFT, false)
+	helper.key(main, KEY_1)
+	step.call(9, 3, true)
+	runner.check(not main._placement_kind.is_empty(), "IC2 step 9 took effect")
+	helper.key(main, KEY_F3)
+	step.call(10, 3)
+	helper.pointer(main, Iso.world_to_plane(Vector2(10.5, 10.5)), MOUSE_BUTTON_LEFT, false)
+	step.call(11, 3)
+	runner.check(commands.call("build") == 1, "IC2 step 11 took effect")
+	corners = box.call()
+	helper.pointer(main, corners[0], MOUSE_BUTTON_LEFT, true)
+	helper.key(main, KEY_1)
+	helper.pointer(main, corners[1], MOUSE_BUTTON_LEFT, false)
+	step.call(17, 3)
+	runner.check(not main._placement_kind.is_empty() and main._pending_placement.is_empty(), "IC2 step 17 took effect")
+	_ic_esc(main)
+	_ic_esc(main)
+	step.call(18, 3)
+	runner.check(main._placement_kind.is_empty() and main.selected_ids.is_empty(), "IC2 step 18 took effect")
+	var first: int = _ic_first_difference(rows, IcRows.IC2_ROWS)
+	runner.check(first == -1, "IC2 row %d matches the chain recorded 2026-11-14, got %s" % [first, rows[first] if first >= 0 and first < rows.size() else "no row"])
+	main.free()
 	return true
 
 func test_launcher_reads_no_page_off_web(runner) -> bool:
