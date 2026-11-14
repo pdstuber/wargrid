@@ -71,3 +71,12 @@ Next exact action: none for R1; later releases follow [development notes > Relea
 - Live: web and relay `/health` 200; `--probe-relay wss://relay.pdstuber.dev/ws` printed `RELAY WELCOME 73`; the user opened the live site in Firefox and saw the new look.
 - After: `main` set to `0.12.0-dev` (`0ce6471`).
 - Unverified: Chrome, Safari, the desktop zips on any machine, an online match on the live build.
+
+## 0.12.0 release (2026-11-14, tag `v0.12.0` on `79ba46f`)
+
+- Before tagging, the full suite at version `0.12.0` on branch `release-0.12.0` caught `R6 the switch stores off without focus cards`: a release build starts with the playtest switch off, so the old test order stored nothing. Fixed test-only in `70b04d2` (flip from the default twice), green in release and `-dev` builds, red when the save line is removed. Branch CI run 43622809456 green.
+- Prerelease first to prove the release step changed for the font licence: tag `v0.12.0-rc.1` on its own commit with `config/version="0.12.0-rc.1"` (`tools/release_version.py` requires the tag to equal the version). Run 43623517769 green; the prerelease has the three zips, and the Linux zip carries `PublicSans-OFL.txt` beside `LICENSE`, `GODOT_LICENSES.txt`, `CREDITS.md`, `NOTICE.md` and `README.txt`.
+- Release run 43626231660 on `79ba46f`: all test jobs and Compare replays green; production approved by the user on GitHub; relay and web deployed; release published with the Linux, macOS and Windows zips.
+- Live: relay and web `/health` 200.
+- After: `main` set to `0.13.0-dev` (`3c729d3`, full suite green on it).
+- Unverified: the live site opened by a player after the deploy, the desktop zips on any machine, an online match on the live build, `--probe-relay` against the live relay.
