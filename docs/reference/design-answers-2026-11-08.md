@@ -366,6 +366,7 @@ Asked one at a time after the native sim spike; analysis and experiments in [per
 - Base: One controller after integration, not its unmerged branch.
 - Overnight scope: headless checks. Rendered browser measurements remain an attended follow-up; headless results alone do not establish the design's browser performance go/no-go.
 - These choices define preparation scope; implementation still requires an explicit start.
+- Second round (user, 2026-11-14): Flatter worst ticks first; the spike goes at the end of the night lane. A Safari and Chromium check of a threaded export comes first, attended. Thin scope: a scratch worker driver in the real match scene, a headless digest check, threaded exports built overnight, plus one fault probe (a script error in the worker fails loudly, no hang); the full reader audit and other fault probes only after a go. Lever A1 (step and hand-off in separate frames, no threads) is a third arm in the browser A/B. Go rule: a gain above twice the A/A spread on skirmish3v3 and the team match against the better of current `main` and A1, no worse frame tails; hordes300 reported as stress, outside the rule.
 
 ## Main branch audit (user, 2026-11-11 night)
 
